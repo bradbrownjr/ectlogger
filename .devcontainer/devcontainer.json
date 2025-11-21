@@ -24,8 +24,6 @@
     }
   },
 
-  "postCreateCommand": "chmod +x *.sh && ./install.sh",
-
   "customizations": {
     "vscode": {
       "extensions": [
