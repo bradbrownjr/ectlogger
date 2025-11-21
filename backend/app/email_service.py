@@ -19,13 +19,17 @@ class EmailService:
         message.attach(html_part)
 
         try:
+            # Port 465 uses SSL, port 587 uses STARTTLS
+            use_tls = settings.smtp_port == 465
+            
             await aiosmtplib.send(
                 message,
                 hostname=settings.smtp_host,
                 port=settings.smtp_port,
                 username=settings.smtp_user,
                 password=settings.smtp_password,
-                start_tls=True,
+                use_tls=use_tls,
+                start_tls=(settings.smtp_port == 587),
             )
         except Exception as e:
             print(f"Failed to send email: {e}")
