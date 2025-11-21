@@ -47,8 +47,16 @@ class EmailService:
             <style>
                 body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
                 .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                .button { display: inline-block; padding: 12px 24px; background-color: #1976d2; 
-                         color: white; text-decoration: none; border-radius: 4px; margin: 20px 0; }
+                .button { 
+                    display: inline-block; 
+                    padding: 12px 24px; 
+                    background-color: #1976d2; 
+                    color: #ffffff !important; 
+                    text-decoration: none; 
+                    border-radius: 4px; 
+                    margin: 20px 0;
+                    font-weight: bold;
+                }
                 .footer { margin-top: 30px; font-size: 12px; color: #666; }
             </style>
         </head>
@@ -56,7 +64,7 @@ class EmailService:
             <div class="container">
                 <h2>Sign in to {{ app_name }}</h2>
                 <p>Click the button below to sign in to your account:</p>
-                <a href="{{ magic_link }}" class="button">Sign In</a>
+                <a href="{{ magic_link }}" class="button" style="color: #ffffff;">Sign In</a>
                 <p>Or copy and paste this link into your browser:</p>
                 <p style="word-break: break-all; color: #1976d2;">{{ magic_link }}</p>
                 <p>This link will expire in 15 minutes.</p>

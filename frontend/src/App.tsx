@@ -8,6 +8,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import NetView from './pages/NetView';
 import CreateNet from './pages/CreateNet';
+import VerifyMagicLink from './pages/VerifyMagicLink';
 import Navbar from './components/Navbar';
 
 const theme = createTheme({
@@ -36,6 +37,7 @@ const AppRoutes: React.FC = () => {
       <Box component="main" sx={{ flexGrow: 1, bgcolor: 'background.default' }}>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/auth/verify" element={<VerifyMagicLink />} />
           <Route
             path="/dashboard"
             element={
