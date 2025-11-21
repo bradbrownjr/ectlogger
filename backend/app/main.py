@@ -20,7 +20,12 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.frontend_url, "http://localhost:3000"],
+    allow_origins=[
+        settings.frontend_url,
+        "http://localhost:3000",
+        "https://*.app.github.dev"  # Allow GitHub Codespaces
+    ],
+    allow_origin_regex=r"https://.*\.app\.github\.dev",  # Codespaces pattern
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
