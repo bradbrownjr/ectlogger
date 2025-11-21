@@ -39,7 +39,7 @@ fi
 # Activate virtual environment and install dependencies
 echo "Installing backend dependencies..."
 cd backend
-source venv/bin/activate
+. venv/bin/activate
 pip install -r requirements.txt -q
 cd ..
 
@@ -73,7 +73,7 @@ echo ""
 # Start backend in background
 echo "📡 Starting backend server on http://localhost:8000"
 cd backend
-source venv/bin/activate
+. venv/bin/activate
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 &
 BACKEND_PID=$!
 cd ..

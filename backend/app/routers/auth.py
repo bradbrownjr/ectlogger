@@ -90,10 +90,19 @@ async def request_magic_link(
     db: AsyncSession = Depends(get_db)
 ):
     """Request a magic link to sign in via email"""
-    token = create_magic_link_token(request.email)
-    await EmailService.send_magic_link(request.email, token)
-    
-    return {"message": "Magic link sent to your email"}
+    try:
+        token = create_magic_link_token(request.email)
+        await EmailService.send_magic_link(request.email, token)
+        return {"message": "Magic link sent to your email"}
+    except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"ERROR sending magic link: {str(e)}")
+        print(error_details)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to send email: {str(e)}"
+        )
 
 
 @router.post("/magic-link/verify", response_model=Token)
