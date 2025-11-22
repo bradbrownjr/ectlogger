@@ -79,16 +79,20 @@ install_dependencies() {
     
     # Check and install Node.js
     if ! command -v node &> /dev/null; then
-        echo "Node.js not found. Installing..."
+        echo "Node.js not found. Installing Node.js 22.x LTS..."
         case "$OS" in
             ubuntu|debian)
-                curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+                # Install Node.js 22.x LTS from NodeSource
+                curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
                 $install_cmd nodejs
                 ;;
             fedora|rhel|centos)
-                $install_cmd nodejs npm
+                # Use NodeSource for Fedora/RHEL to get latest LTS
+                curl -fsSL https://rpm.nodesource.com/setup_22.x | sudo bash -
+                $install_cmd nodejs
                 ;;
             macos)
+                # Homebrew installs latest stable by default
                 $install_cmd node
                 ;;
         esac
