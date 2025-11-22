@@ -228,52 +228,152 @@ echo "🔧 Configuration..."
 chmod +x *.sh 2>/dev/null
 echo "✓ Scripts made executable"
 
-# Check for .env
+# Step 1: Configuration
+CONFIG_DONE=false
 if [ ! -f "backend/.env" ]; then
     echo ""
     echo "⚠️  Configuration needed!"
     echo ""
-    echo "Would you like to configure now? (Y/n)"
-    read -r response
-    if [[ ! "$response" =~ ^[Nn]$ ]]; then
+    read -p "Would you like to configure now? (Y/n) " -n 1 -r
+    echo ""
+    echo ""
+    if [[ ! "$REPLY" =~ ^[Nn]$ ]]; then
         ./configure.sh
+        CONFIG_DONE=true
     else
+        echo "ℹ️  You can configure later by running: ./configure.sh"
+    fi
+    echo ""
+else
+    CONFIG_DONE=true
+fi
+
+# Step 2: Service Installation (only if configured and systemd available)
+SERVICE_INSTALLED=false
+if [ "$CONFIG_DONE" = true ] && command -v systemctl &> /dev/null; then
+    echo ""
+    echo "================================="
+    echo "🔧 Systemd Service Setup"
+    echo "================================="
+    echo ""
+    echo "Would you like to install ECTLogger as a system service?"
+    echo "This allows ECTLogger to:"
+    echo "  • Start automatically on boot"
+    echo "  • Run in the background"
+    echo "  • Be managed with systemctl commands"
+    echo ""
+    read -p "Install as service? (y/n) " -n 1 -r
+    echo ""
+    echo ""
+    
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        # Get current directory and user
+        INSTALL_DIR=$(pwd)
+        CURRENT_USER=$(whoami)
+        
+        echo "📍 Installation directory: $INSTALL_DIR"
+        echo "👤 Service will run as: $CURRENT_USER"
         echo ""
-        echo "You can configure later by running: ./configure.sh"
+        
+        # Create service file
+        SERVICE_FILE="/tmp/ectlogger.service"
+        cat > "$SERVICE_FILE" << EOF
+[Unit]
+Description=ECTLogger - ECT/SKYWARN Net Logger
+After=network.target
+
+[Service]
+Type=simple
+User=$CURRENT_USER
+Group=$CURRENT_USER
+WorkingDirectory=$INSTALL_DIR
+Environment="PATH=$INSTALL_DIR/backend/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+Environment="NODE_PATH=$INSTALL_DIR/frontend/node_modules"
+ExecStart=/bin/bash $INSTALL_DIR/start.sh --service
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutStopSec=30
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+EOF
+        
+        echo "📝 Installing systemd service..."
+        
+        # Copy service file to systemd directory
+        sudo cp "$SERVICE_FILE" /etc/systemd/system/ectlogger.service
+        
+        # Set permissions
+        sudo chmod 644 /etc/systemd/system/ectlogger.service
+        
+        # Reload systemd
+        sudo systemctl daemon-reload
+        
+        echo "✓ Service installed"
+        echo ""
+        
+        # Ask if user wants to enable on boot
+        read -p "Enable ECTLogger to start on boot? (y/n) " -n 1 -r
+        echo ""
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            sudo systemctl enable ectlogger
+            echo "✓ Service enabled for auto-start on boot"
+        else
+            echo "ℹ️  Service not enabled. Run 'sudo systemctl enable ectlogger' to enable."
+        fi
+        
+        SERVICE_INSTALLED=true
+        echo ""
+    else
+        echo "ℹ️  Skipping service installation. You can install later by running: ./install-service.sh"
+        echo ""
     fi
 fi
 
 echo ""
 echo "================================="
-echo "✓ Installation complete!"
+echo "✅ Installation Complete!"
+echo "================================="
 echo ""
 
-# Offer to install systemd service (Linux only)
-if command -v systemctl &> /dev/null; then
-    echo "🔧 Systemd detected!"
-    echo ""
-    read -p "Would you like to install ECTLogger as a system service? (y/n) " -n 1 -r
-    echo ""
-    
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        chmod +x install-service.sh
-        ./install-service.sh
-    else
-        echo "ℹ️  You can install the service later by running: ./install-service.sh"
-    fi
-    echo ""
-fi
-
-echo "Next steps:"
-if [ ! -f "backend/.env" ]; then
+# Show next steps based on what was done
+if [ "$CONFIG_DONE" = false ]; then
+    echo "📋 Next steps:"
     echo "1. Configure the application: ./configure.sh"
-    echo "2. Start the application: ./start.sh"
+    if [ "$SERVICE_INSTALLED" = true ]; then
+        echo "2. Start the service: sudo systemctl start ectlogger"
+    else
+        echo "2. Start the application: ./start.sh"
+    fi
+elif [ "$SERVICE_INSTALLED" = true ]; then
+    echo "🎉 ECTLogger is ready to use!"
+    echo ""
+    echo "📋 Service commands:"
+    echo "  Start:   sudo systemctl start ectlogger"
+    echo "  Stop:    sudo systemctl stop ectlogger"
+    echo "  Restart: sudo systemctl restart ectlogger"
+    echo "  Status:  sudo systemctl status ectlogger"
+    echo "  Logs:    sudo journalctl -u ectlogger -f"
+    echo ""
+    echo "To uninstall the service:"
+    echo "  sudo systemctl stop ectlogger"
+    echo "  sudo systemctl disable ectlogger"
+    echo "  sudo rm /etc/systemd/system/ectlogger.service"
+    echo "  sudo systemctl daemon-reload"
 else
-    echo "1. Start the application: ./start.sh"
+    echo "🎉 ECTLogger is ready to use!"
+    echo ""
+    echo "📋 To start the application:"
+    echo "  ./start.sh"
 fi
+
 echo ""
-echo "Access the application at:"
+echo "🌐 Access the application at:"
 echo "  Frontend: http://localhost:3000"
 echo "  API Docs: http://localhost:8000/docs"
 echo ""
-echo "For help, see QUICKSTART.md or SETUP.md"
+echo "📚 For help, see QUICKSTART.md or SETUP.md"
