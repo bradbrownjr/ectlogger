@@ -101,13 +101,6 @@ const Login: React.FC = () => {
               We'll send you a secure link to sign in. No password required!
             </Typography>
           </Box>
-
-          {/* OAuth buttons would go here */}
-          <Box sx={{ mt: 3 }}>
-            <Typography variant="body2" align="center" color="text.secondary">
-              OAuth providers (Google, Microsoft, GitHub) can be configured in settings
-            </Typography>
-          </Box>
         </Paper>
       </Box>
     </Container>
