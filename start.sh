@@ -6,6 +6,19 @@
 echo "🚀 Starting ECTLogger..."
 echo ""
 
+# Check for updates (skip if not in git repo)
+if command -v git &> /dev/null && git rev-parse --git-dir > /dev/null 2>&1; then
+    CURRENT_COMMIT=$(git rev-parse HEAD 2>/dev/null)
+    git fetch origin $(git rev-parse --abbrev-ref HEAD) --quiet 2>/dev/null
+    REMOTE_COMMIT=$(git rev-parse origin/$(git rev-parse --abbrev-ref HEAD) 2>/dev/null)
+    
+    if [ "$CURRENT_COMMIT" != "$REMOTE_COMMIT" ] && [ -n "$REMOTE_COMMIT" ]; then
+        echo "📦 Update available! Run './update.sh' to update."
+        echo ""
+    fi
+fi
+
+
 # Check if Python is installed
 if command -v python3 &> /dev/null; then
     PYTHON_VERSION=$(python3 --version)
