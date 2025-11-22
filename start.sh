@@ -97,7 +97,7 @@ sleep 3
 # Start frontend in background
 echo "🌐 Starting frontend server on http://localhost:3000"
 cd frontend
-npm run dev &
+npm run dev -- --host 0.0.0.0 &
 FRONTEND_PID=$!
 cd ..
 
