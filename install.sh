@@ -230,7 +230,18 @@ echo "✓ Scripts made executable"
 
 # Step 1: Configuration
 CONFIG_DONE=false
-if [ ! -f "backend/.env" ]; then
+if [ -f "backend/.env" ]; then
+    echo "✓ Configuration file found (backend/.env)"
+    echo ""
+    read -p "Would you like to reconfigure? (y/N) " -n 1 -r
+    echo ""
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        echo ""
+        ./configure.sh
+    fi
+    CONFIG_DONE=true
+    echo ""
+else
     echo ""
     echo "⚠️  Configuration needed!"
     echo ""
@@ -241,23 +252,23 @@ if [ ! -f "backend/.env" ]; then
         ./configure.sh
         CONFIG_DONE=true
     else
-        echo "ℹ️  You can configure later by running: ./configure.sh"
+        echo "⚠️  WARNING: Application cannot start without configuration!"
+        echo "ℹ️  You must run ./configure.sh before starting the application"
     fi
     echo ""
-else
-    CONFIG_DONE=true
 fi
 
 # Step 2: Service Installation (only if configured and systemd available)
 SERVICE_INSTALLED=false
-if [ "$CONFIG_DONE" = true ] && command -v systemctl &> /dev/null; then
-    echo ""
-    echo "================================="
-    echo "🔧 Systemd Service Setup"
-    echo "================================="
-    echo ""
-    echo "Would you like to install ECTLogger as a system service?"
-    echo "This allows ECTLogger to:"
+if command -v systemctl &> /dev/null; then
+    if [ "$CONFIG_DONE" = true ]; then
+        echo ""
+        echo "================================="
+        echo "🔧 Systemd Service Setup"
+        echo "================================="
+        echo ""
+        echo "Would you like to install ECTLogger as a system service?"
+        echo "This allows ECTLogger to:"
     echo "  • Start automatically on boot"
     echo "  • Run in the background"
     echo "  • Be managed with systemctl commands"
@@ -330,6 +341,12 @@ EOF
         echo ""
     else
         echo "ℹ️  Skipping service installation. You can install later by running: ./install-service.sh"
+        echo ""
+    fi
+    else
+        echo ""
+        echo "⚠️  Cannot install service: Application must be configured first"
+        echo "   Run ./configure.sh then ./install-service.sh to set up the service"
         echo ""
     fi
 fi
