@@ -185,6 +185,12 @@ chmod +x *.sh
 ./start.sh        # Start the application
 ```
 
+**Optional: Install as systemd service (Linux):**
+```bash
+./install-service.sh  # Install systemd service
+sudo systemctl start ectlogger
+```
+
 **Windows:**
 ```powershell
 .\start.ps1       # Automated installation and startup

@@ -1,0 +1,19 @@
+[Unit]
+Description=ECTLogger - ECT/SKYWARN Net Logger
+After=network.target
+
+[Service]
+Type=forking
+User=%USER%
+Group=%USER%
+WorkingDirectory=%INSTALL_DIR%
+Environment="PATH=%INSTALL_DIR%/backend/venv/bin:/usr/local/bin:/usr/bin:/bin"
+ExecStart=%INSTALL_DIR%/start.sh --service
+ExecStop=/bin/kill -TERM $MAINPID
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

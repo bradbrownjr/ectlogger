@@ -3,18 +3,70 @@
 # ECTLogger Startup Script for Linux/macOS
 # This script starts both the backend and frontend servers
 
+# Check if running as systemd service
+SERVICE_MODE=false
+if [ "$1" = "--service" ]; then
+    SERVICE_MODE=true
+fi
+
+# Check if systemd service is available
+SERVICE_INSTALLED=false
+if command -v systemctl &> /dev/null && systemctl list-unit-files ectlogger.service &> /dev/null; then
+    SERVICE_INSTALLED=true
+fi
+
+# If service is installed and not in service mode, offer to use systemd
+if [ "$SERVICE_INSTALLED" = true ] && [ "$SERVICE_MODE" = false ]; then
+    echo "🔧 ECTLogger systemd service detected"
+    echo ""
+    echo "Would you like to:"
+    echo "  1) Start via systemd service (recommended)"
+    echo "  2) Run directly in this terminal"
+    echo ""
+    read -p "Choose option (1/2): " -n 1 -r
+    echo ""
+    
+    if [[ $REPLY =~ ^[1]$ ]]; then
+        echo "Starting ECTLogger service..."
+        sudo systemctl start ectlogger
+        
+        # Wait a moment for service to start
+        sleep 2
+        
+        # Show status
+        sudo systemctl status ectlogger --no-pager
+        
+        echo ""
+        echo "✅ ECTLogger service started!"
+        echo ""
+        echo "🌐 Frontend: http://localhost:3000"
+        echo "📡 Backend:  http://localhost:8000"
+        echo "📚 API Docs: http://localhost:8000/docs"
+        echo ""
+        echo "Service commands:"
+        echo "  Stop:    sudo systemctl stop ectlogger"
+        echo "  Restart: sudo systemctl restart ectlogger"
+        echo "  Status:  sudo systemctl status ectlogger"
+        echo "  Logs:    sudo journalctl -u ectlogger -f"
+        echo ""
+        exit 0
+    fi
+fi
+
 echo "🚀 Starting ECTLogger..."
 echo ""
 
-# Check for updates (skip if not in git repo)
-if command -v git &> /dev/null && git rev-parse --git-dir > /dev/null 2>&1; then
-    CURRENT_COMMIT=$(git rev-parse HEAD 2>/dev/null)
-    git fetch origin $(git rev-parse --abbrev-ref HEAD) --quiet 2>/dev/null
-    REMOTE_COMMIT=$(git rev-parse origin/$(git rev-parse --abbrev-ref HEAD) 2>/dev/null)
-    
-    if [ "$CURRENT_COMMIT" != "$REMOTE_COMMIT" ] && [ -n "$REMOTE_COMMIT" ]; then
-        echo "📦 Update available! Run './update.sh' to update."
-        echo ""
+# Check for updates (skip if not in git repo or in service mode)
+if [ "$SERVICE_MODE" = false ]; then
+    if command -v git &> /dev/null && git rev-parse --git-dir > /dev/null 2>&1; then
+        CURRENT_COMMIT=$(git rev-parse HEAD 2>/dev/null)
+        git fetch origin $(git rev-parse --abbrev-ref HEAD) --quiet 2>/dev/null
+        REMOTE_COMMIT=$(git rev-parse origin/$(git rev-parse --abbrev-ref HEAD) 2>/dev/null)
+        
+        if [ "$CURRENT_COMMIT" != "$REMOTE_COMMIT" ] && [ -n "$REMOTE_COMMIT" ]; then
+            echo "📦 Update available! Run './update.sh' to update."
+            echo ""
+        fi
     fi
 fi
 
@@ -108,7 +160,14 @@ echo "🌐 Frontend: http://localhost:3000"
 echo "📡 Backend:  http://localhost:8000"
 echo "📚 API Docs: http://localhost:8000/docs"
 echo ""
-echo "Press Ctrl+C to stop both servers."
+
+if [ "$SERVICE_MODE" = true ]; then
+    echo "Running in service mode..."
+    # Don't trap signals in service mode, let systemd handle it
+    wait
+else
+    echo "Press Ctrl+C to stop both servers."
+fi
 
 # Function to cleanup on exit
 cleanup() {
@@ -119,8 +178,11 @@ cleanup() {
     exit 0
 }
 
-# Trap Ctrl+C and call cleanup
-trap cleanup INT
+# Only trap signals in interactive mode
+if [ "$SERVICE_MODE" = false ]; then
+    # Trap Ctrl+C and call cleanup
+    trap cleanup INT
+fi
 
-# Wait for user to press Ctrl+C
+# Wait for user to press Ctrl+C (or for systemd to stop us)
 wait

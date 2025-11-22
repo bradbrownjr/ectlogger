@@ -247,6 +247,23 @@ echo ""
 echo "================================="
 echo "✓ Installation complete!"
 echo ""
+
+# Offer to install systemd service (Linux only)
+if command -v systemctl &> /dev/null; then
+    echo "🔧 Systemd detected!"
+    echo ""
+    read -p "Would you like to install ECTLogger as a system service? (y/n) " -n 1 -r
+    echo ""
+    
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        chmod +x install-service.sh
+        ./install-service.sh
+    else
+        echo "ℹ️  You can install the service later by running: ./install-service.sh"
+    fi
+    echo ""
+fi
+
 echo "Next steps:"
 if [ ! -f "backend/.env" ]; then
     echo "1. Configure the application: ./configure.sh"
