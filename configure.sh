@@ -93,6 +93,51 @@ echo ""
 echo "✓ Email configuration saved"
 echo ""
 
+# Frontend URL configuration
+echo "🌐 Frontend URL Configuration"
+echo "=============================="
+echo ""
+
+# Detect LAN IP address
+LAN_IP=""
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    # macOS
+    LAN_IP=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || echo "localhost")
+elif command -v hostname &> /dev/null; then
+    # Linux - try hostname -I first, then fallback to ip command
+    LAN_IP=$(hostname -I 2>/dev/null | awk '{print $1}')
+    if [ -z "$LAN_IP" ]; then
+        LAN_IP=$(ip route get 1 2>/dev/null | grep -oP 'src \K\S+' || echo "localhost")
+    fi
+else
+    LAN_IP="localhost"
+fi
+
+# Clean up any whitespace
+LAN_IP=$(echo "$LAN_IP" | xargs)
+
+echo "Detected LAN IP: $LAN_IP"
+echo ""
+echo "Frontend URL (press Enter for http://$LAN_IP:3000):"
+echo "Examples:"
+echo "  - http://$LAN_IP:3000 (LAN access - recommended)"
+echo "  - http://localhost:3000 (local machine only)"
+echo "  - https://ectlogger.example.com (production domain)"
+echo "  - https://codespace-url.app.github.dev (GitHub Codespaces)"
+read -r frontend_url
+frontend_url=${frontend_url:-http://$LAN_IP:3000}
+
+# Update .env file
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    sed -i '' "s|FRONTEND_URL=.*|FRONTEND_URL=$frontend_url|" backend/.env
+else
+    sed -i "s|FRONTEND_URL=.*|FRONTEND_URL=$frontend_url|" backend/.env
+fi
+
+echo ""
+echo "✓ Frontend URL configured: $frontend_url"
+echo ""
+
 # Database choice
 echo "💾 Database Configuration"
 echo "========================="
