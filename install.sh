@@ -13,31 +13,172 @@ if [ "$EUID" -eq 0 ]; then
    exit 1
 fi
 
-# Check Python
-echo "Checking Python..."
-if ! command -v python3 &> /dev/null; then
-    echo "✗ Python3 not found!"
-    echo ""
-    echo "Please install Python 3.9 or higher:"
-    echo "  Ubuntu/Debian: sudo apt install python3 python3-pip python3-venv"
-    echo "  Fedora/RHEL: sudo dnf install python3 python3-pip"
-    echo "  macOS: brew install python3"
-    exit 1
-fi
-echo "✓ Python3 found"
+# Detect OS
+detect_os() {
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        OS=$ID
+        VERSION=$VERSION_ID
+    elif [ -f /etc/redhat-release ]; then
+        OS="rhel"
+    elif [ "$(uname)" == "Darwin" ]; then
+        OS="macos"
+    else
+        OS="unknown"
+    fi
+}
 
-# Check Node.js
-echo "Checking Node.js..."
-if ! command -v node &> /dev/null; then
-    echo "✗ Node.js not found!"
+# Install dependencies function
+install_dependencies() {
+    local pkg_manager=""
+    local install_cmd=""
+    
+    detect_os
+    
+    case "$OS" in
+        ubuntu|debian)
+            pkg_manager="apt"
+            install_cmd="sudo apt update && sudo apt install -y"
+            ;;
+        fedora|rhel|centos)
+            pkg_manager="dnf"
+            install_cmd="sudo dnf install -y"
+            ;;
+        macos)
+            if ! command -v brew &> /dev/null; then
+                echo "⚠️  Homebrew not found. Installing Homebrew..."
+                /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+            fi
+            pkg_manager="brew"
+            install_cmd="brew install"
+            ;;
+        *)
+            echo "⚠️  Unsupported OS. Please install dependencies manually."
+            return 1
+            ;;
+    esac
+    
+    echo "Detected OS: $OS"
     echo ""
-    echo "Please install Node.js 18 or higher:"
-    echo "  Ubuntu/Debian: curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash - && sudo apt install -y nodejs"
-    echo "  Fedora/RHEL: sudo dnf install nodejs"
-    echo "  macOS: brew install node"
+    
+    # Check and install Python
+    if ! command -v python3 &> /dev/null; then
+        echo "Python3 not found. Installing..."
+        case "$OS" in
+            ubuntu|debian)
+                $install_cmd python3 python3-pip python3-venv python3-dev build-essential libssl-dev libffi-dev
+                ;;
+            fedora|rhel|centos)
+                $install_cmd python3 python3-pip python3-devel gcc openssl-devel libffi-devel
+                ;;
+            macos)
+                $install_cmd python3
+                ;;
+        esac
+    fi
+    
+    # Check and install Node.js
+    if ! command -v node &> /dev/null; then
+        echo "Node.js not found. Installing..."
+        case "$OS" in
+            ubuntu|debian)
+                curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+                $install_cmd nodejs
+                ;;
+            fedora|rhel|centos)
+                $install_cmd nodejs npm
+                ;;
+            macos)
+                $install_cmd node
+                ;;
+        esac
+    fi
+    
+    # Check and install Rust (needed for some Python packages like cryptography)
+    if ! command -v rustc &> /dev/null; then
+        echo "Rust not found. Installing (needed for cryptography packages)..."
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+        source "$HOME/.cargo/env"
+    fi
+    
+    # Install additional build dependencies
+    case "$OS" in
+        ubuntu|debian)
+            echo "Installing build dependencies..."
+            $install_cmd pkg-config libssl-dev
+            ;;
+        fedora|rhel|centos)
+            echo "Installing build dependencies..."
+            $install_cmd pkg-config openssl-devel
+            ;;
+    esac
+}
+
+# Check for missing dependencies
+MISSING_DEPS=()
+
+if ! command -v python3 &> /dev/null; then
+    MISSING_DEPS+=("Python3")
+fi
+
+if ! command -v node &> /dev/null; then
+    MISSING_DEPS+=("Node.js")
+fi
+
+if ! command -v rustc &> /dev/null; then
+    MISSING_DEPS+=("Rust")
+fi
+
+# Offer to install missing dependencies
+if [ ${#MISSING_DEPS[@]} -gt 0 ]; then
+    echo "⚠️  Missing dependencies: ${MISSING_DEPS[*]}"
+    echo ""
+    echo "Would you like to install missing dependencies automatically? (Y/n)"
+    read -r response
+    if [[ ! "$response" =~ ^[Nn]$ ]]; then
+        install_dependencies
+        if [ $? -ne 0 ]; then
+            echo ""
+            echo "❌ Automatic installation failed. Please install manually:"
+            echo "  Ubuntu/Debian: sudo apt install python3 python3-pip python3-venv python3-dev build-essential libssl-dev pkg-config"
+            echo "  Fedora/RHEL: sudo dnf install python3 python3-pip python3-devel gcc openssl-devel pkg-config"
+            echo "  macOS: brew install python3 node"
+            echo ""
+            echo "For Rust: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh"
+            exit 1
+        fi
+    else
+        echo ""
+        echo "Please install the following manually:"
+        echo "  Ubuntu/Debian: sudo apt install python3 python3-pip python3-venv python3-dev build-essential libssl-dev pkg-config nodejs"
+        echo "  Fedora/RHEL: sudo dnf install python3 python3-pip python3-devel gcc openssl-devel pkg-config nodejs"
+        echo "  macOS: brew install python3 node"
+        echo ""
+        echo "For Rust: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh"
+        exit 1
+    fi
+fi
+
+# Final verification
+echo ""
+echo "Verifying installations..."
+if ! command -v python3 &> /dev/null; then
+    echo "✗ Python3 still not found!"
     exit 1
 fi
-echo "✓ Node.js found"
+echo "✓ Python3 found: $(python3 --version)"
+
+if ! command -v node &> /dev/null; then
+    echo "✗ Node.js still not found!"
+    exit 1
+fi
+echo "✓ Node.js found: $(node --version)"
+
+if ! command -v rustc &> /dev/null; then
+    echo "⚠️  Rust not found (may be needed for some packages)"
+else
+    echo "✓ Rust found: $(rustc --version)"
+fi
 
 echo ""
 echo "🔧 Setting up backend..."
