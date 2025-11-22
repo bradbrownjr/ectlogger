@@ -17,15 +17,15 @@ app = FastAPI(title=settings.app_name, version="1.0.0")
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# CORS configuration
+# CORS configuration - Allow frontend URL from config
+# This supports LAN IPs, localhost, and production domains
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         settings.frontend_url,
-        "http://localhost:3000",
-        "https://*.app.github.dev"  # Allow GitHub Codespaces
+        "http://localhost:3000",  # Fallback for local development
+        "http://127.0.0.1:3000",  # Explicit localhost
     ],
-    allow_origin_regex=r"https://.*\.app\.github\.dev",  # Codespaces pattern
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
