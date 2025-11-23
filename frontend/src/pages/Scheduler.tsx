@@ -85,7 +85,7 @@ const Scheduler: React.FC = () => {
 
   const handleCreateNetFromSchedule = async (scheduleId: number) => {
     try {
-      const response = await templateApi.createNetFromSchedule(scheduleId);
+      const response = await templateApi.createNetFromTemplate(scheduleId);
       navigate(`/nets/${response.data.id}`);
     } catch (error: any) {
       console.error('Failed to create net from schedule:', error);
