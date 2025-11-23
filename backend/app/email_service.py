@@ -10,6 +10,18 @@ class EmailService:
     @staticmethod
     async def send_email(to_email: str, subject: str, html_content: str):
         """Send an email using SMTP"""
+        print(f"\n{'='*60}")
+        print(f"📧 EMAIL SERVICE - Starting email send process")
+        print(f"{'='*60}")
+        print(f"To: {to_email}")
+        print(f"Subject: {subject}")
+        print(f"From: {settings.smtp_from_name} <{settings.smtp_from_email}>")
+        print(f"\n📡 SMTP Configuration:")
+        print(f"  Host: {settings.smtp_host}")
+        print(f"  Port: {settings.smtp_port}")
+        print(f"  Username: {settings.smtp_user}")
+        print(f"  Password: {'*' * len(settings.smtp_password)} (hidden)")
+        
         message = MIMEMultipart("alternative")
         message["Subject"] = subject
         message["From"] = f"{settings.smtp_from_name} <{settings.smtp_from_email}>"
@@ -22,6 +34,9 @@ class EmailService:
             # Port 465 uses SSL, port 587 uses STARTTLS
             use_tls = settings.smtp_port == 465
             
+            print(f"\n🔌 Connecting to SMTP server...")
+            print(f"  SSL Mode: {'TLS (port 465)' if use_tls else 'STARTTLS (port 587)' if settings.smtp_port == 587 else 'Plain'}")
+            
             await aiosmtplib.send(
                 message,
                 hostname=settings.smtp_host,
@@ -31,13 +46,40 @@ class EmailService:
                 use_tls=use_tls,
                 start_tls=(settings.smtp_port == 587),
             )
+            
+            print(f"\n✅ SUCCESS: Email sent successfully to {to_email}")
+            print(f"{'='*60}\n")
+            
+        except aiosmtplib.SMTPException as e:
+            print(f"\n❌ SMTP ERROR: {type(e).__name__}")
+            print(f"Error message: {str(e)}")
+            print(f"\n💡 Troubleshooting tips:")
+            print(f"  1. Check SMTP credentials in .env file")
+            print(f"  2. Verify SMTP_HOST and SMTP_PORT are correct")
+            print(f"  3. For Gmail: Use App Password, not regular password")
+            print(f"  4. Check if firewall is blocking port {settings.smtp_port}")
+            print(f"  5. Verify SMTP_USER is the full email address")
+            print(f"{'='*60}\n")
+            raise
         except Exception as e:
-            print(f"Failed to send email: {e}")
+            print(f"\n❌ UNEXPECTED ERROR: {type(e).__name__}")
+            print(f"Error message: {str(e)}")
+            print(f"\n💡 Possible causes:")
+            print(f"  1. Network connectivity issue")
+            print(f"  2. DNS resolution failed for {settings.smtp_host}")
+            print(f"  3. Firewall or antivirus blocking connection")
+            print(f"  4. SMTP server temporarily unavailable")
+            print(f"{'='*60}\n")
             raise
 
     @staticmethod
     async def send_magic_link(email: str, token: str, expire_days: int = 30):
         """Send magic link email for authentication"""
+        print(f"\n🔐 MAGIC LINK REQUEST:")
+        print(f"  Email: {email}")
+        print(f"  Token: {token[:20]}...{token[-10:]} (truncated)")
+        print(f"  Expires in: {expire_days} days")
+        
         magic_link = f"{settings.frontend_url}/auth/verify?token={token}"
         
         # Format expiration time nicely
