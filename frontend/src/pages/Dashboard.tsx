@@ -59,7 +59,8 @@ const Dashboard: React.FC = () => {
   const handleStartNet = async (netId: number) => {
     try {
       await netApi.start(netId);
-      await fetchNets();
+      // Navigate to the net view so owner is automatically "joined"
+      navigate(`/nets/${netId}`);
     } catch (error) {
       console.error('Failed to start net:', error);
     }
@@ -142,7 +143,7 @@ const Dashboard: React.FC = () => {
                     View
                   </Button>
                   {net.status === 'active' && (
-                    <Button size="small" color="primary">
+                    <Button size="small" color="primary" onClick={() => navigate(`/nets/${net.id}`)}>
                       Join
                     </Button>
                   )}
