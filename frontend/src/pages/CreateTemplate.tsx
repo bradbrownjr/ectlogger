@@ -8,17 +8,24 @@ import {
   Typography,
   Box,
   FormControl,
-  InputLabel,
   Select,
   MenuItem,
-  Chip,
-  OutlinedInput,
   Checkbox,
   FormControlLabel,
   FormGroup,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  IconButton,
 } from '@mui/material';
-import { templateApi } from '../services/api';
-import api from '../services/api';
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
+import CheckIcon from '@mui/icons-material/Check';
+import CloseIcon from '@mui/icons-material/Close';
+import { templateApi, frequencyApi } from '../services/api';
 
 interface Frequency {
   id: number;
@@ -38,6 +45,9 @@ const CreateTemplate: React.FC = () => {
   const [description, setDescription] = useState('');
   const [frequencies, setFrequencies] = useState<Frequency[]>([]);
   const [selectedFrequencyIds, setSelectedFrequencyIds] = useState<number[]>([]);
+  const [newFrequency, setNewFrequency] = useState({ frequency: '', mode: 'FM', network: '', talkgroup: '', description: '' });
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editForm, setEditForm] = useState<Frequency | null>(null);
   const [fieldConfig, setFieldConfig] = useState({
     name: { enabled: true, required: false },
     location: { enabled: true, required: false },
@@ -58,11 +68,284 @@ const CreateTemplate: React.FC = () => {
 
   const fetchFrequencies = async () => {
     try {
-      const response = await api.get('/frequencies/');
+      const response = await frequencyApi.list();
       setFrequencies(response.data);
     } catch (error) {
       console.error('Failed to fetch frequencies:', error);
     }
+  };
+
+  const handleAddFrequency = async (e?: React.KeyboardEvent) => {
+    if (e && e.key !== 'Enter') return;
+    if (!newFrequency.frequency && !newFrequency.network) return;
+    
+    try {
+      const cleanData = {
+        frequency: newFrequency.frequency || null,
+        mode: newFrequency.mode,
+        network: newFrequency.network || null,
+        talkgroup: newFrequency.talkgroup || null,
+        description: newFrequency.description || null,
+      };
+      
+      const response = await frequencyApi.create(cleanData);
+      setFrequencies([...frequencies, response.data]);
+      setSelectedFrequencyIds([...selectedFrequencyIds, response.data.id]);
+      setNewFrequency({ frequency: '', mode: 'FM', network: '', talkgroup: '', description: '' });
+    } catch (error) {
+      console.error('Failed to create frequency:', error);
+      alert('Failed to create frequency. Check that you filled in required fields.');
+    }
+  };
+
+  const handleDeleteFrequency = async (id: number) => {
+    if (!confirm('Delete this frequency?')) return;
+    
+    try {
+      await frequencyApi.delete(id);
+      setFrequencies(frequencies.filter((f: Frequency) => f.id !== id));
+      setSelectedFrequencyIds(selectedFrequencyIds.filter((fid: number) => fid !== id));
+    } catch (error) {
+      console.error('Failed to delete frequency:', error);
+    }
+  };
+
+  const startEdit = (freq: Frequency) => {
+    setEditingId(freq.id!);
+    setEditForm({ ...freq });
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditForm(null);
+  };
+
+  const saveEdit = async (e?: React.KeyboardEvent) => {
+    if (e && e.key !== 'Enter') return;
+    if (!editForm || !editingId) return;
+    
+    try {
+      const cleanData = {
+        frequency: editForm.frequency || null,
+        mode: editForm.mode,
+        network: editForm.network || null,
+        talkgroup: editForm.talkgroup || null,
+        description: editForm.description || null,
+      };
+      
+      const response = await frequencyApi.update(editingId, cleanData);
+      setFrequencies(frequencies.map((f: Frequency) => f.id === editingId ? response.data : f));
+      setEditingId(null);
+      setEditForm(null);
+    } catch (error) {
+      console.error('Failed to update frequency:', error);
+      alert('Failed to update frequency.');
+    }
+  };
+
+  const toggleSelection = (id: number) => {
+    setSelectedFrequencyIds((prev: number[]) =>
+      prev.includes(id) ? prev.filter((fid: number) => fid !== id) : [...prev, id]
+    );
+  };
+
+  const getDisplayText = (freq: Frequency) => {
+    if (freq.frequency) return freq.frequency;
+    if (freq.network) return freq.network;
+    return 'N/A';
+  };
+
+  const renderEditableRow = (freq: Frequency) => {
+    const isEditing = editingId === freq.id;
+    const form = isEditing ? editForm! : freq;
+    const isAnalog = ['FM', 'SSB'].includes(form.mode);
+    const isYSF = form.mode === 'YSF';
+
+    return (
+      <TableRow key={freq.id}>
+        <TableCell padding="checkbox">
+          <Checkbox
+            checked={selectedFrequencyIds.includes(freq.id!)}
+            onChange={() => toggleSelection(freq.id!)}
+          />
+        </TableCell>
+        <TableCell>
+          {isEditing ? (
+            <FormControl size="small" fullWidth>
+              <Select
+                value={form.mode}
+                onChange={(e: any) => setEditForm({ ...form, mode: e.target.value })}
+              >
+                <MenuItem value="FM">FM</MenuItem>
+                <MenuItem value="SSB">SSB</MenuItem>
+                <MenuItem value="DMR">DMR</MenuItem>
+                <MenuItem value="D-STAR">D-STAR</MenuItem>
+                <MenuItem value="YSF">YSF</MenuItem>
+                <MenuItem value="P25">P25</MenuItem>
+              </Select>
+            </FormControl>
+          ) : (
+            freq.mode
+          )}
+        </TableCell>
+        <TableCell>
+          {isEditing ? (
+            isAnalog ? (
+              <TextField
+                size="small"
+                fullWidth
+                value={form.frequency || ''}
+                onChange={(e: any) => setEditForm({ ...form, frequency: e.target.value, network: '', talkgroup: '' })}
+                onKeyPress={saveEdit}
+                placeholder="146.520 MHz"
+              />
+            ) : (
+              <TextField
+                size="small"
+                fullWidth
+                value={form.network || ''}
+                onChange={(e: any) => setEditForm({ ...form, network: e.target.value, frequency: '' })}
+                onKeyPress={saveEdit}
+                placeholder={isYSF ? "Room (e.g., UFB)" : "Network"}
+              />
+            )
+          ) : (
+            getDisplayText(freq)
+          )}
+        </TableCell>
+        <TableCell>
+          {isEditing && !isAnalog && !isYSF ? (
+            <TextField
+              size="small"
+              fullWidth
+              value={form.talkgroup || ''}
+              onChange={(e: any) => setEditForm({ ...form, talkgroup: e.target.value })}
+              onKeyPress={saveEdit}
+              placeholder="TG"
+            />
+          ) : !isAnalog && freq.talkgroup ? (
+            freq.talkgroup
+          ) : (
+            '-'
+          )}
+        </TableCell>
+        <TableCell>
+          {isEditing ? (
+            <TextField
+              size="small"
+              fullWidth
+              value={form.description || ''}
+              onChange={(e: any) => setEditForm({ ...form, description: e.target.value })}
+              onKeyPress={saveEdit}
+            />
+          ) : (
+            freq.description || '-'
+          )}
+        </TableCell>
+        <TableCell>
+          {isEditing ? (
+            <>
+              <IconButton size="small" onClick={saveEdit} color="primary">
+                <CheckIcon />
+              </IconButton>
+              <IconButton size="small" onClick={cancelEdit}>
+                <CloseIcon />
+              </IconButton>
+            </>
+          ) : (
+            <>
+              <IconButton size="small" onClick={() => startEdit(freq)}>
+                <EditIcon />
+              </IconButton>
+              <IconButton size="small" onClick={() => handleDeleteFrequency(freq.id!)} color="error">
+                <DeleteIcon />
+              </IconButton>
+            </>
+          )}
+        </TableCell>
+      </TableRow>
+    );
+  };
+
+  const renderNewRow = () => {
+    const isAnalog = ['FM', 'SSB'].includes(newFrequency.mode);
+    const isYSF = newFrequency.mode === 'YSF';
+
+    return (
+      <TableRow>
+        <TableCell padding="checkbox"></TableCell>
+        <TableCell>
+          <FormControl size="small" fullWidth>
+            <Select
+              value={newFrequency.mode}
+              onChange={(e: any) => setNewFrequency({ ...newFrequency, mode: e.target.value })}
+            >
+              <MenuItem value="FM">FM</MenuItem>
+              <MenuItem value="SSB">SSB</MenuItem>
+              <MenuItem value="DMR">DMR</MenuItem>
+              <MenuItem value="D-STAR">D-STAR</MenuItem>
+              <MenuItem value="YSF">YSF</MenuItem>
+              <MenuItem value="P25">P25</MenuItem>
+            </Select>
+          </FormControl>
+        </TableCell>
+        <TableCell>
+          {isAnalog ? (
+            <TextField
+              size="small"
+              fullWidth
+              value={newFrequency.frequency}
+              onChange={(e: any) => setNewFrequency({ ...newFrequency, frequency: e.target.value, network: '', talkgroup: '' })}
+              onKeyPress={handleAddFrequency}
+              placeholder="146.520 MHz"
+            />
+          ) : (
+            <TextField
+              size="small"
+              fullWidth
+              value={newFrequency.network}
+              onChange={(e: any) => setNewFrequency({ ...newFrequency, network: e.target.value, frequency: '' })}
+              onKeyPress={handleAddFrequency}
+              placeholder={isYSF ? "UFB, America-Link..." : "Network name"}
+            />
+          )}
+        </TableCell>
+        <TableCell>
+          {!isAnalog && !isYSF ? (
+            <TextField
+              size="small"
+              fullWidth
+              value={newFrequency.talkgroup}
+              onChange={(e: any) => setNewFrequency({ ...newFrequency, talkgroup: e.target.value })}
+              onKeyPress={handleAddFrequency}
+              placeholder="TG"
+            />
+          ) : (
+            '-'
+          )}
+        </TableCell>
+        <TableCell>
+          <TextField
+            size="small"
+            fullWidth
+            value={newFrequency.description}
+            onChange={(e: any) => setNewFrequency({ ...newFrequency, description: e.target.value })}
+            onKeyPress={handleAddFrequency}
+            placeholder="Optional"
+          />
+        </TableCell>
+        <TableCell>
+          <Button
+            size="small"
+            variant="contained"
+            onClick={() => handleAddFrequency()}
+            disabled={!newFrequency.frequency && !newFrequency.network}
+          >
+            Add
+          </Button>
+        </TableCell>
+      </TableRow>
+    );
   };
 
   const fetchTemplateData = async () => {
@@ -104,17 +387,6 @@ const CreateTemplate: React.FC = () => {
     }
   };
 
-  const getFrequencyDisplay = (freq: Frequency) => {
-    if (freq.frequency) {
-      return `${freq.frequency} ${freq.mode}`;
-    } else if (freq.network && freq.talkgroup) {
-      return `${freq.network} TG${freq.talkgroup} (${freq.mode})`;
-    } else if (freq.network) {
-      return `${freq.network} (${freq.mode})`;
-    }
-    return freq.mode;
-  };
-
   const handleFieldToggle = (field: string, property: 'enabled' | 'required') => {
     setFieldConfig(prev => ({
       ...prev,
@@ -154,32 +426,32 @@ const CreateTemplate: React.FC = () => {
             helperText="Optional description of the net template"
           />
 
-          <FormControl fullWidth margin="normal">
-            <InputLabel>Frequencies</InputLabel>
-            <Select
-              multiple
-              value={selectedFrequencyIds}
-              onChange={(e) => setSelectedFrequencyIds(e.target.value as number[])}
-              input={<OutlinedInput label="Frequencies" />}
-              renderValue={(selected) => (
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                  {selected.map((id) => {
-                    const freq = frequencies.find(f => f.id === id);
-                    return freq ? (
-                      <Chip key={id} label={getFrequencyDisplay(freq)} size="small" />
-                    ) : null;
-                  })}
-                </Box>
-              )}
-            >
-              {frequencies.map((freq) => (
-                <MenuItem key={freq.id} value={freq.id}>
-                  {getFrequencyDisplay(freq)}
-                  {freq.description && ` - ${freq.description}`}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <Typography variant="h6" sx={{ mt: 4, mb: 2 }}>
+            Communication Plan
+          </Typography>
+
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Check the boxes to select frequencies for this template. Press Enter in any field to add a new frequency.
+          </Typography>
+
+          <TableContainer>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell padding="checkbox">Use</TableCell>
+                  <TableCell>Mode</TableCell>
+                  <TableCell>Frequency/Network</TableCell>
+                  <TableCell>TG/Room</TableCell>
+                  <TableCell>Description</TableCell>
+                  <TableCell>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {frequencies.map((freq: Frequency) => renderEditableRow(freq))}
+                {renderNewRow()}
+              </TableBody>
+            </Table>
+          </TableContainer>
 
           <Box sx={{ mt: 3, mb: 2 }}>
             <Typography variant="h6" gutterBottom>

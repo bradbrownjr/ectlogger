@@ -34,7 +34,6 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import DownloadIcon from '@mui/icons-material/Download';
 import ArchiveIcon from '@mui/icons-material/Archive';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { netApi, checkInApi } from '../services/api';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -314,16 +313,6 @@ const NetView: React.FC = () => {
     }
   };
 
-  const handleClone = async () => {
-    try {
-      const response = await api.post(`/nets/${netId}/clone`);
-      navigate(`/nets/${response.data.id}/edit`);
-    } catch (error) {
-      console.error('Failed to clone net:', error);
-      alert('Failed to clone net');
-    }
-  };
-
   const handleCheckIn = async () => {
     // Validate required fields
     if (!checkInForm.callsign) {
@@ -433,14 +422,6 @@ const NetView: React.FC = () => {
                     Archive
                   </Button>
                 )}
-                <Button 
-                  variant="outlined" 
-                  startIcon={<ContentCopyIcon />}
-                  onClick={handleClone} 
-                  sx={{ mr: 1 }}
-                >
-                  Clone
-                </Button>
               </>
             )}
             <Button variant="outlined" onClick={() => navigate('/dashboard')}>
