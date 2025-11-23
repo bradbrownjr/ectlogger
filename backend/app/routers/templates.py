@@ -52,7 +52,7 @@ async def create_template(
     )
     template = result.scalar_one()
     
-    return NetTemplateResponse.from_orm(template, subscriber_count=0)
+    return NetTemplateResponse.from_orm(template, subscriber_count=0, is_subscribed=False)
 
 
 @router.get("/", response_model=List[NetTemplateResponse])
@@ -78,7 +78,7 @@ async def list_templates(
     result = await db.execute(query)
     templates = result.scalars().all()
     
-    # Get subscriber counts for each template
+    # Get subscriber counts and subscription status for each template
     template_responses = []
     for template in templates:
         count_result = await db.execute(
@@ -86,7 +86,22 @@ async def list_templates(
             .where(NetTemplateSubscription.template_id == template.id)
         )
         subscriber_count = count_result.scalar() or 0
-        template_responses.append(NetTemplateResponse.from_orm(template, subscriber_count=subscriber_count))
+        
+        # Check if current user is subscribed
+        subscription_result = await db.execute(
+            select(NetTemplateSubscription)
+            .where(
+                NetTemplateSubscription.template_id == template.id,
+                NetTemplateSubscription.user_id == current_user.id
+            )
+        )
+        is_subscribed = subscription_result.scalar_one_or_none() is not None
+        
+        template_responses.append(NetTemplateResponse.from_orm(
+            template, 
+            subscriber_count=subscriber_count,
+            is_subscribed=is_subscribed
+        ))
     
     return template_responses
 
@@ -94,6 +109,7 @@ async def list_templates(
 @router.get("/{template_id}", response_model=NetTemplateResponse)
 async def get_template(
     template_id: int,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Get template by ID"""
@@ -114,7 +130,17 @@ async def get_template(
     )
     subscriber_count = count_result.scalar() or 0
     
-    return NetTemplateResponse.from_orm(template, subscriber_count=subscriber_count)
+    # Check if current user is subscribed
+    subscription_result = await db.execute(
+        select(NetTemplateSubscription)
+        .where(
+            NetTemplateSubscription.template_id == template_id,
+            NetTemplateSubscription.user_id == current_user.id
+        )
+    )
+    is_subscribed = subscription_result.scalar_one_or_none() is not None
+    
+    return NetTemplateResponse.from_orm(template, subscriber_count=subscriber_count, is_subscribed=is_subscribed)
 
 
 @router.put("/{template_id}", response_model=NetTemplateResponse)
@@ -181,7 +207,17 @@ async def update_template(
     )
     subscriber_count = count_result.scalar() or 0
     
-    return NetTemplateResponse.from_orm(template, subscriber_count=subscriber_count)
+    # Check if current user is subscribed
+    subscription_result = await db.execute(
+        select(NetTemplateSubscription)
+        .where(
+            NetTemplateSubscription.template_id == template_id,
+            NetTemplateSubscription.user_id == current_user.id
+        )
+    )
+    is_subscribed = subscription_result.scalar_one_or_none() is not None
+    
+    return NetTemplateResponse.from_orm(template, subscriber_count=subscriber_count, is_subscribed=is_subscribed)
 
 
 @router.delete("/{template_id}", status_code=status.HTTP_204_NO_CONTENT)

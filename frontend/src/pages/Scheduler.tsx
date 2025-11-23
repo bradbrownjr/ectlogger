@@ -37,6 +37,7 @@ interface Schedule {
   is_active: boolean;
   subscriber_count: number;
   frequencies: any[];
+  is_subscribed: boolean;
 }
 
 const Scheduler: React.FC = () => {
@@ -44,7 +45,6 @@ const Scheduler: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [currentSchedule, setCurrentSchedule] = useState<Schedule | null>(null);
-  const [subscribedSchedules, setSubscribedSchedules] = useState<Set<number>>(new Set());
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -56,9 +56,6 @@ const Scheduler: React.FC = () => {
     try {
       const response = await templateApi.list();
       setSchedules(response.data);
-      
-      // Check which Scheduler user is subscribed to (would need separate endpoint)
-      // For now, we'll track subscriptions locally
     } catch (error) {
       console.error('Failed to fetch schedules:', error);
     } finally {
@@ -69,23 +66,17 @@ const Scheduler: React.FC = () => {
   const handleSubscribe = async (scheduleId: number) => {
     try {
       await templateApi.subscribe(scheduleId);
-      setsubscribedSchedules(prev => new Set(prev).add(scheduleId));
-      fetchSchedules(); // Refresh to update subscriber count
+      fetchSchedules(); // Refresh to update subscription status and subscriber count
     } catch (error: any) {
       console.error('Failed to subscribe:', error);
-      console.error('Failed to subscribe:', error);
+      alert(error.response?.data?.detail || 'Failed to subscribe');
     }
   };
 
   const handleUnsubscribe = async (scheduleId: number) => {
     try {
       await templateApi.unsubscribe(scheduleId);
-      setSubscribedSchedules(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(scheduleId);
-        return newSet;
-      });
-      fetchSchedules(); // Refresh to update subscriber count
+      fetchSchedules(); // Refresh to update subscription status and subscriber count
     } catch (error: any) {
       console.error('Failed to unsubscribe:', error);
       alert(error.response?.data?.detail || 'Failed to unsubscribe');
@@ -198,7 +189,7 @@ const Scheduler: React.FC = () => {
                     </Button>
                   </Box>
                   <Box>
-                    {subscribedSchedules.has(Schedule.id) ? (
+                    {Schedule.is_subscribed ? (
                       <IconButton
                         size="small"
                         color="primary"

@@ -197,9 +197,10 @@ class NetTemplateResponse(NetTemplateBase):
     created_at: datetime
     frequencies: List[FrequencyResponse] = []
     subscriber_count: int = 0
+    is_subscribed: bool = False
 
     @classmethod
-    def from_orm(cls, template, subscriber_count: int = 0):
+    def from_orm(cls, template, subscriber_count: int = 0, is_subscribed: bool = False):
         import json
         data = {
             'id': template.id,
@@ -210,7 +211,8 @@ class NetTemplateResponse(NetTemplateBase):
             'is_active': template.is_active,
             'created_at': template.created_at,
             'frequencies': [FrequencyResponse.model_validate(f) for f in template.frequencies],
-            'subscriber_count': subscriber_count
+            'subscriber_count': subscriber_count,
+            'is_subscribed': is_subscribed
         }
         return cls(**data)
 
