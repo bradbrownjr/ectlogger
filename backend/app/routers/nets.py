@@ -190,6 +190,21 @@ async def start_net(
     await db.commit()
     await db.refresh(net, ['frequencies'])
     
+    # Auto-check-in the NCS
+    from app.models import CheckIn, StationStatus
+    ncs_check_in = CheckIn(
+        net_id=net_id,
+        user_id=current_user.id,
+        callsign=current_user.callsign or current_user.email.split('@')[0].upper(),
+        name=current_user.name or '',
+        location=current_user.location or '',
+        status=StationStatus.CHECKED_IN,
+        checked_in_by_id=current_user.id,
+        is_recheck=False
+    )
+    db.add(ncs_check_in)
+    await db.commit()
+    
     # Send email notification to net owner and template subscribers
     try:
         emails_to_notify = []
