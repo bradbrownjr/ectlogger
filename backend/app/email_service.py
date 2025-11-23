@@ -114,11 +114,11 @@ This is an automated message, please do not reply.
         <body>
             <div class="container">
                 <h2>Sign in to {{ app_name }}</h2>
-                <p>Click the button below to sign in to your account:</p>
+                <p>Click the button below to sign in to your account.</p>
+                <p><strong>This link is valid for {{ expire_text }}.</strong></p>
                 <a href="{{ magic_link }}" class="button" style="color: #ffffff;">Sign In</a>
                 <p>Or copy and paste this link into your browser:</p>
                 <p style="word-break: break-all; color: #1976d2;">{{ magic_link }}</p>
-                <p><strong>This link is valid for {{ expire_text }}.</strong></p>
                 <div class="footer">
                     <p>If you didn't request this email, you can safely ignore it.</p>
                 </div>
