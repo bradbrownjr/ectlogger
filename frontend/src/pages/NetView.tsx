@@ -268,6 +268,7 @@ const NetView: React.FC = () => {
     try {
       await netApi.start(Number(netId));
       fetchNet();
+      fetchCheckIns();
     } catch (error) {
       console.error('Failed to start net:', error);
     }
