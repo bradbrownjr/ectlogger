@@ -237,6 +237,9 @@ SMTP_PASSWORD=your-app-password
 # Magic Link Configuration
 MAGIC_LINK_EXPIRE_DAYS=30  # Valid for 30 days (great for long events!)
 
+# Logging
+LOG_LEVEL=INFO  # DEBUG, INFO, WARNING, ERROR
+
 # OAuth (optional)
 GOOGLE_CLIENT_ID=your-google-client-id
 MICROSOFT_CLIENT_ID=your-microsoft-client-id

@@ -5,6 +5,7 @@ from sqlalchemy import select
 from app.database import get_db
 from app.models import User, UserRole
 from app.auth import verify_token
+from app.logger import logger
 
 security = HTTPBearer()
 
@@ -14,23 +15,23 @@ async def get_current_user(
     db: AsyncSession = Depends(get_db)
 ) -> User:
     token = credentials.credentials
-    print(f"[AUTH] get_current_user called")
-    print(f"[AUTH] Token received: {token[:20]}...{token[-10:]}")
+    logger.debug("AUTH", "Authenticating user from token")
+    logger.debug("AUTH", f"Token: {token[:20]}...{token[-10:]}")
     
     payload = verify_token(token)
     
     if payload is None:
-        print(f"[AUTH] Token verification FAILED - invalid token")
+        logger.warning("AUTH", "Token verification failed")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials"
         )
     
-    print(f"[AUTH] Token verified, payload: {payload}")
+    logger.debug("AUTH", f"Token verified, payload: {payload}")
     
     user_id_str = payload.get("sub")
     if user_id_str is None:
-        print(f"[AUTH] No 'sub' claim in token payload")
+        logger.warning("AUTH", "No 'sub' claim in token payload")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials"
@@ -39,9 +40,9 @@ async def get_current_user(
     # Convert subject from string to int
     try:
         user_id = int(user_id_str)
-        print(f"[AUTH] User ID from token: {user_id}")
+        logger.debug("AUTH", f"User ID from token: {user_id}")
     except (ValueError, TypeError):
-        print(f"[AUTH] Invalid user ID format: {user_id_str}")
+        logger.warning("AUTH", f"Invalid user ID format: {user_id_str}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials"

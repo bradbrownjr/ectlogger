@@ -4,23 +4,18 @@ from email.mime.multipart import MIMEMultipart
 from jinja2 import Template
 from typing import List
 from app.config import settings
+from app.logger import logger
 
 
 class EmailService:
     @staticmethod
     async def send_email(to_email: str, subject: str, html_content: str):
         """Send an email using SMTP"""
-        print(f"\n{'='*60}")
-        print(f"[EMAIL] Starting email send process")
-        print(f"{'='*60}")
-        print(f"To: {to_email}")
-        print(f"Subject: {subject}")
-        print(f"From: {settings.smtp_from_name} <{settings.smtp_from_email}>")
-        print(f"\n[SMTP] Configuration:")
-        print(f"  Host: {settings.smtp_host}")
-        print(f"  Port: {settings.smtp_port}")
-        print(f"  Username: {settings.smtp_user}")
-        print(f"  Password: {'*' * len(settings.smtp_password)} (hidden)")
+        logger.info("EMAIL", f"Sending email to {to_email}")
+        logger.debug("EMAIL", f"Subject: {subject}")
+        logger.debug("EMAIL", f"From: {settings.smtp_from_name} <{settings.smtp_from_email}>")
+        logger.debug("SMTP", f"Host: {settings.smtp_host}:{settings.smtp_port}")
+        logger.debug("SMTP", f"Username: {settings.smtp_user}")
         
         message = MIMEMultipart("alternative")
         message["Subject"] = subject
@@ -54,8 +49,8 @@ This is an automated message, please do not reply.
             # Port 465 uses SSL, port 587 uses STARTTLS
             use_tls = settings.smtp_port == 465
             
-            print(f"\n[SMTP] Connecting to SMTP server...")
-            print(f"  SSL Mode: {'TLS (port 465)' if use_tls else 'STARTTLS (port 587)' if settings.smtp_port == 587 else 'Plain'}")
+            ssl_mode = 'TLS (port 465)' if use_tls else 'STARTTLS (port 587)' if settings.smtp_port == 587 else 'Plain'
+            logger.debug("SMTP", f"Connecting with {ssl_mode}...")
             
             await aiosmtplib.send(
                 message,
@@ -67,38 +62,24 @@ This is an automated message, please do not reply.
                 start_tls=(settings.smtp_port == 587),
             )
             
-            print(f"\n[SUCCESS] Email sent successfully to {to_email}")
-            print(f"{'='*60}\n")
+            logger.info("EMAIL", f"Email sent successfully to {to_email}")
             
         except aiosmtplib.SMTPException as e:
-            print(f"\n[ERROR] SMTP ERROR: {type(e).__name__}")
-            print(f"Error message: {str(e)}")
-            print(f"\n[TROUBLESHOOTING] Tips:")
-            print(f"  1. Check SMTP credentials in .env file")
-            print(f"  2. Verify SMTP_HOST and SMTP_PORT are correct")
-            print(f"  3. For Gmail: Use App Password, not regular password")
-            print(f"  4. Check if firewall is blocking port {settings.smtp_port}")
-            print(f"  5. Verify SMTP_USER is the full email address")
-            print(f"{'='*60}\n")
+            logger.error("SMTP", f"SMTP error: {type(e).__name__}: {str(e)}")
+            logger.info("SMTP", "Check SMTP credentials in .env file")
+            logger.info("SMTP", f"Verify SMTP_HOST ({settings.smtp_host}) and SMTP_PORT ({settings.smtp_port})")
             raise
         except Exception as e:
-            print(f"\n[ERROR] UNEXPECTED ERROR: {type(e).__name__}")
-            print(f"Error message: {str(e)}")
-            print(f"\n[TROUBLESHOOTING] Possible causes:")
-            print(f"  1. Network connectivity issue")
-            print(f"  2. DNS resolution failed for {settings.smtp_host}")
-            print(f"  3. Firewall or antivirus blocking connection")
-            print(f"  4. SMTP server temporarily unavailable")
-            print(f"{'='*60}\n")
+            logger.error("EMAIL", f"Unexpected error: {type(e).__name__}: {str(e)}")
+            logger.debug("EMAIL", f"Check network connectivity to {settings.smtp_host}")
             raise
 
     @staticmethod
     async def send_magic_link(email: str, token: str, expire_days: int = 30):
         """Send magic link email for authentication"""
-        print(f"\n[MAGIC LINK] Request:")
-        print(f"  Email: {email}")
-        print(f"  Token: {token[:20]}...{token[-10:]} (truncated)")
-        print(f"  Expires in: {expire_days} days")
+        logger.info("MAGIC LINK", f"Generating magic link for {email}")
+        logger.debug("MAGIC LINK", f"Token: {token[:20]}...{token[-10:]} (truncated)")
+        logger.debug("MAGIC LINK", f"Expires in: {expire_days} days")
         
         magic_link = f"{settings.frontend_url}/auth/verify?token={token}"
         

@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 30
     magic_link_expire_days: int = 30  # Magic link validity period
     
+    # Logging
+    log_level: str = "INFO"  # DEBUG, INFO, WARNING, ERROR
+    
     # Frontend
     frontend_url: str = "http://localhost:3000"
     

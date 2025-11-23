@@ -9,6 +9,7 @@ from app.schemas import Token, UserResponse, MagicLinkRequest, MagicLinkVerify
 from app.auth import create_access_token, create_magic_link_token, verify_magic_link_token
 from app.email_service import EmailService
 from app.config import settings
+from app.logger import logger
 from datetime import timedelta
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
@@ -90,15 +91,15 @@ async def request_magic_link(
     db: AsyncSession = Depends(get_db)
 ):
     """Request a magic link to sign in via email"""
-    print(f"\n[API] Magic link request received for {request.email}")
+    logger.info("API", f"Magic link request received for {request.email}")
     
     try:
         token = create_magic_link_token(request.email)
-        print(f"[API] Token generated successfully")
+        logger.debug("API", "Token generated successfully")
         
         await EmailService.send_magic_link(request.email, token, settings.magic_link_expire_days)
         
-        print(f"[API] Magic link request completed successfully")
+        logger.info("API", f"Magic link sent successfully to {request.email}")
         return {
             "message": "Magic link sent to your email",
             "expires_in_days": settings.magic_link_expire_days
@@ -106,14 +107,8 @@ async def request_magic_link(
     except Exception as e:
         import traceback
         error_details = traceback.format_exc()
-        print(f"\n{'='*60}")
-        print(f"[ERROR] API ERROR: Failed to send magic link")
-        print(f"{'='*60}")
-        print(f"Error type: {type(e).__name__}")
-        print(f"Error message: {str(e)}")
-        print(f"\nFull traceback:")
-        print(error_details)
-        print(f"{'='*60}\n")
+        logger.error("API", f"Failed to send magic link: {type(e).__name__}: {str(e)}")
+        logger.debug("API", f"Full traceback:\n{error_details}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to send email: {str(e)}"
@@ -126,23 +121,23 @@ async def verify_magic_link(
     db: AsyncSession = Depends(get_db)
 ):
     """Verify magic link token and sign in"""
-    print(f"\n[API] Magic link verification request received")
-    print(f"[API] Token: {request.token[:20]}...{request.token[-10:]} (truncated)")
+    logger.info("API", "Magic link verification request received")
+    logger.debug("API", f"Token: {request.token[:20]}...{request.token[-10:]} (truncated)")
     
     email = verify_magic_link_token(request.token)
     
     if not email:
-        print(f"[ERROR] Invalid or expired token")
+        logger.warning("API", "Invalid or expired magic link token")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired magic link"
         )
     
-    print(f"[API] Token valid for email: {email}")
+    logger.debug("API", f"Token valid for email: {email}")
     
     # Get or create user
     user = await get_or_create_user(db, email, email, "email", email)
-    print(f"[API] User retrieved/created: {user.email} (ID: {user.id})")
+    logger.info("API", f"User authenticated: {user.email} (ID: {user.id})")
     
     # Create access token (sub must be string per JWT spec)
     access_token = create_access_token(
@@ -150,7 +145,7 @@ async def verify_magic_link(
         expires_delta=timedelta(minutes=settings.access_token_expire_minutes)
     )
     
-    print(f"[API] Access token created, verification complete")
+    logger.debug("API", "Access token created successfully")
     
     return Token(
         access_token=access_token,

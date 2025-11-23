@@ -31,7 +31,12 @@ import re
 if match := re.match(r'http://([0-9.]+):3000', settings.frontend_url):
     allowed_origins.append(f"http://{match.group(1)}:8000")
 
-print(f"\\n[CORS] Allowed origins: {allowed_origins}\\n")
+print(f"\n{'='*60}")
+print(f"ECTLogger Backend Starting")
+print(f"{'='*60}")
+print(f"Log Level: {settings.log_level.upper()}")
+print(f"CORS Origins: {', '.join(allowed_origins)}")
+print(f"{'='*60}\n")
 
 app.add_middleware(
     CORSMiddleware,

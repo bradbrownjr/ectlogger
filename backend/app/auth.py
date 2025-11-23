@@ -3,6 +3,7 @@ from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from app.config import settings
+from app.logger import logger
 from itsdangerous import URLSafeTimedSerializer
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -16,27 +17,27 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     else:
         expire = datetime.utcnow() + timedelta(minutes=settings.access_token_expire_minutes)
     to_encode.update({"exp": expire})
-    print(f"[AUTH] Creating JWT with payload: {to_encode}")
-    print(f"[AUTH] Using algorithm: {settings.algorithm}")
-    print(f"[AUTH] Using secret key (first 10 chars): {settings.secret_key[:10]}...")
+    logger.debug("AUTH", f"Creating JWT with payload: {to_encode}")
+    logger.debug("AUTH", f"Using algorithm: {settings.algorithm}")
+    logger.debug("AUTH", f"Using secret key (first 10 chars): {settings.secret_key[:10]}...")
     encoded_jwt = jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
-    print(f"[AUTH] JWT created: {encoded_jwt[:30]}...{encoded_jwt[-20:]}")
+    logger.debug("AUTH", f"JWT created: {encoded_jwt[:30]}...{encoded_jwt[-20:]}")
     return encoded_jwt
 
 
 def verify_token(token: str):
     try:
-        print(f"[AUTH] Attempting to decode token...")
-        print(f"[AUTH] Algorithm: {settings.algorithm}")
-        print(f"[AUTH] Secret key (first 10 chars): {settings.secret_key[:10]}...")
+        logger.debug("AUTH", "Attempting to decode token...")
+        logger.debug("AUTH", f"Algorithm: {settings.algorithm}")
+        logger.debug("AUTH", f"Secret key (first 10 chars): {settings.secret_key[:10]}...")
         payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
-        print(f"[AUTH] Token decoded successfully: {payload}")
+        logger.debug("AUTH", f"Token decoded successfully: {payload}")
         return payload
     except JWTError as e:
-        print(f"[AUTH] JWT decode error: {type(e).__name__}: {str(e)}")
+        logger.warning("AUTH", f"JWT decode error: {type(e).__name__}: {str(e)}")
         return None
     except Exception as e:
-        print(f"[AUTH] Unexpected error decoding token: {type(e).__name__}: {str(e)}")
+        logger.error("AUTH", f"Unexpected error decoding token: {type(e).__name__}: {str(e)}")
         return None
 
 
