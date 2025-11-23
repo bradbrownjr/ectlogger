@@ -111,11 +111,17 @@ async def websocket_endpoint(websocket: WebSocket, net_id: int, token: str = Non
     
     try:
         payload = verify_token(token)
-        user_email = payload.get("sub")
+        user_id_str = payload.get("sub")
+        
+        if not user_id_str:
+            await websocket.close(code=1008, reason="Invalid token")
+            return
+            
+        user_id = int(user_id_str)
         
         # Verify user exists
         async for db in get_db():
-            result = await db.execute(select(User).where(User.email == user_email))
+            result = await db.execute(select(User).where(User.id == user_id))
             user = result.scalar_one_or_none()
             if not user or not user.is_active:
                 await websocket.close(code=1008, reason="Invalid user")
