@@ -166,17 +166,25 @@ const CreateNet: React.FC = () => {
                     size="small"
                     sx={{ minWidth: 200 }}
                   />
+                ) : newFrequency.mode === 'YSF' ? (
+                  <TextField
+                    label="Room Name (e.g., UFB, America-Link)"
+                    value={newFrequency.network}
+                    onChange={(e) => setNewFrequency({ ...newFrequency, network: e.target.value })}
+                    size="small"
+                    sx={{ minWidth: 250 }}
+                  />
                 ) : (
                   <>
                     <TextField
-                      label="Network (e.g., Wires-X, Brandmeister)"
+                      label={newFrequency.mode === 'DMR' ? 'Network (e.g., Brandmeister)' : newFrequency.mode === 'D-STAR' ? 'Reflector (e.g., REF030C)' : 'Network'}
                       value={newFrequency.network}
                       onChange={(e) => setNewFrequency({ ...newFrequency, network: e.target.value })}
                       size="small"
                       sx={{ minWidth: 200 }}
                     />
                     <TextField
-                      label="Talkgroup/Room (optional)"
+                      label={newFrequency.mode === 'DMR' ? 'Talkgroup' : 'Room (optional)'}
                       value={newFrequency.talkgroup}
                       onChange={(e) => setNewFrequency({ ...newFrequency, talkgroup: e.target.value })}
                       size="small"
