@@ -39,10 +39,22 @@ async def create_check_in(
     existing_check_in = result.scalar_one_or_none()
     is_recheck = existing_check_in is not None
     
+    # Try to automatically link to existing user by callsign
+    linked_user_id = None
+    result = await db.execute(
+        select(User).where(
+            (User.callsign == check_in_data.callsign) | 
+            (User.callsigns.like(f'%"{check_in_data.callsign}"%'))
+        )
+    )
+    matching_user = result.scalar_one_or_none()
+    if matching_user:
+        linked_user_id = matching_user.id
+    
     # Create check-in
     check_in = CheckIn(
         net_id=net_id,
-        user_id=current_user.id if current_user else None,
+        user_id=linked_user_id,
         callsign=check_in_data.callsign,
         name=check_in_data.name,
         location=check_in_data.location,

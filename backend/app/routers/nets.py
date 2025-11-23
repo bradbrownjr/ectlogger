@@ -190,9 +190,14 @@ async def start_net(
     await db.commit()
     await db.refresh(net, ['frequencies'])
     
-    # Send notifications to subscribers
-    # TODO: Query users who have signed up for this net
-    # For now, we'll skip this and implement it when we add subscriptions
+    # Send email notification to net owner
+    try:
+        result = await db.execute(select(User).where(User.id == net.owner_id))
+        owner = result.scalar_one_or_none()
+        if owner and owner.email:
+            await EmailService.send_net_notification([owner.email], net.name, net.id)
+    except Exception as e:
+        print(f"Failed to send net start notification: {e}")
     
     return NetResponse.from_orm(net)
 
