@@ -37,7 +37,7 @@ const ProfileSetupDialog: React.FC = () => {
     setSaving(true);
 
     try {
-      await api.patch(`/users/${user?.id}`, formData);
+      await api.put('/users/me', formData);
       
       // Refresh user data
       const token = localStorage.getItem('token');
@@ -76,11 +76,11 @@ const ProfileSetupDialog: React.FC = () => {
 
           <TextField
             fullWidth
-            label="Call Sign"
+            label="Primary Call Sign"
             value={formData.callsign}
             onChange={(e) => setFormData({ ...formData, callsign: e.target.value.toUpperCase() })}
             margin="normal"
-            helperText="Amateur radio (e.g., KC1JMH) or GMRS (e.g., WRAT256) call sign (optional)"
+            helperText="Your primary Amateur Radio or GMRS call sign (optional). Additional call signs can be added later in your profile."
             inputProps={{ style: { textTransform: 'uppercase' } }}
           />
         </Box>
