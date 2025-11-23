@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     secret_key: str
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
+    magic_link_expire_days: int = 30  # Magic link validity period
     
     # Frontend
     frontend_url: str = "http://localhost:3000"

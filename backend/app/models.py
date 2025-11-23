@@ -65,7 +65,7 @@ class User(Base):
 
     # Relationships
     owned_nets = relationship("Net", back_populates="owner", foreign_keys="Net.owner_id")
-    check_ins = relationship("CheckIn", back_populates="user")
+    check_ins = relationship("CheckIn", back_populates="user", foreign_keys="CheckIn.user_id")
     chat_messages = relationship("ChatMessage", back_populates="user")
 
 

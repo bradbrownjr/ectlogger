@@ -92,8 +92,11 @@ async def request_magic_link(
     """Request a magic link to sign in via email"""
     try:
         token = create_magic_link_token(request.email)
-        await EmailService.send_magic_link(request.email, token)
-        return {"message": "Magic link sent to your email"}
+        await EmailService.send_magic_link(request.email, token, settings.magic_link_expire_days)
+        return {
+            "message": "Magic link sent to your email",
+            "expires_in_days": settings.magic_link_expire_days
+        }
     except Exception as e:
         import traceback
         error_details = traceback.format_exc()

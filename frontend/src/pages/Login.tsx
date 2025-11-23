@@ -105,6 +105,10 @@ const Login: React.FC = () => {
             <Typography variant="body2" sx={{ mt: 2 }} color="text.secondary">
               We'll send you a secure link to sign in. No password required!
             </Typography>
+            
+            <Typography variant="caption" display="block" sx={{ mt: 1 }} color="text.secondary" align="center">
+              Magic links are valid for 30 days, keeping you connected during extended emergency events.
+            </Typography>
           </Box>
         </Paper>
       </Box>

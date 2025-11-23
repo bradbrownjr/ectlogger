@@ -71,6 +71,7 @@ See [QUICKSTART.md](QUICKSTART.md) for detailed instructions.
 - **[SETUP.md](SETUP.md)** - Complete installation and configuration guide
 - **[PRODUCTION-DEPLOYMENT.md](PRODUCTION-DEPLOYMENT.md)** - Deploy to production with SSL/reverse proxy
 - **[SECURITY.md](SECURITY.md)** - Security features and best practices
+- **[MAGIC-LINK-CONFIGURATION.md](MAGIC-LINK-CONFIGURATION.md)** - Configure magic link expiration for extended operations
 - **[DEVELOPMENT.md](DEVELOPMENT.md)** - Development guide and architecture
 
 ## 🛠️ Technology Stack
@@ -232,6 +233,9 @@ SECRET_KEY=your-secret-key-here
 SMTP_HOST=smtp.gmail.com
 SMTP_USER=your-email@gmail.com
 SMTP_PASSWORD=your-app-password
+
+# Magic Link Configuration
+MAGIC_LINK_EXPIRE_DAYS=30  # Valid for 30 days (great for long events!)
 
 # OAuth (optional)
 GOOGLE_CLIENT_ID=your-google-client-id

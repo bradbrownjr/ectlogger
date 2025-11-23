@@ -29,12 +29,15 @@ def verify_token(token: str):
 
 
 def create_magic_link_token(email: str) -> str:
-    """Create a magic link token that expires in 15 minutes"""
+    """Create a magic link token that expires based on config setting"""
     return serializer.dumps(email, salt='magic-link')
 
 
-def verify_magic_link_token(token: str, max_age: int = 900) -> Optional[str]:
-    """Verify magic link token (default 15 minutes expiry)"""
+def verify_magic_link_token(token: str, max_age: int = None) -> Optional[str]:
+    """Verify magic link token with configurable expiry"""
+    from app.config import settings
+    if max_age is None:
+        max_age = settings.magic_link_expire_days * 24 * 60 * 60  # Convert days to seconds
     try:
         email = serializer.loads(token, salt='magic-link', max_age=max_age)
         return email

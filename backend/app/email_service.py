@@ -36,9 +36,17 @@ class EmailService:
             raise
 
     @staticmethod
-    async def send_magic_link(email: str, token: str):
+    async def send_magic_link(email: str, token: str, expire_days: int = 30):
         """Send magic link email for authentication"""
         magic_link = f"{settings.frontend_url}/auth/verify?token={token}"
+        
+        # Format expiration time nicely
+        if expire_days == 1:
+            expire_text = "24 hours"
+        elif expire_days < 1:
+            expire_text = f"{int(expire_days * 24)} hours"
+        else:
+            expire_text = f"{expire_days} days"
         
         html_template = Template("""
         <!DOCTYPE html>
@@ -67,7 +75,7 @@ class EmailService:
                 <a href="{{ magic_link }}" class="button" style="color: #ffffff;">Sign In</a>
                 <p>Or copy and paste this link into your browser:</p>
                 <p style="word-break: break-all; color: #1976d2;">{{ magic_link }}</p>
-                <p>This link will expire in 15 minutes.</p>
+                <p><strong>This link is valid for {{ expire_text }}.</strong></p>
                 <div class="footer">
                     <p>If you didn't request this email, you can safely ignore it.</p>
                 </div>
@@ -78,7 +86,8 @@ class EmailService:
         
         html_content = html_template.render(
             app_name=settings.app_name,
-            magic_link=magic_link
+            magic_link=magic_link,
+            expire_text=expire_text
         )
         
         await EmailService.send_email(
