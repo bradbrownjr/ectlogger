@@ -79,6 +79,19 @@ export const checkInApi = {
     api.delete(`/check-ins/check-ins/${id}`),
 };
 
+// Template API
+export const templateApi = {
+  create: (data: any) => api.post('/templates/', data),
+  list: (params?: { my_templates?: boolean; include_inactive?: boolean }) => 
+    api.get('/templates/', { params }),
+  get: (id: number) => api.get(`/templates/${id}`),
+  update: (id: number, data: any) => api.put(`/templates/${id}`, data),
+  delete: (id: number) => api.delete(`/templates/${id}`),
+  subscribe: (id: number) => api.post(`/templates/${id}/subscribe`),
+  unsubscribe: (id: number) => api.delete(`/templates/${id}/subscribe`),
+  createNetFromTemplate: (id: number) => api.post(`/templates/${id}/create-net`),
+};
+
 // Frequency API
 export const frequencyApi = {
   create: (data: any) => api.post('/frequencies/', data),

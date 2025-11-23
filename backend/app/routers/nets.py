@@ -190,12 +190,33 @@ async def start_net(
     await db.commit()
     await db.refresh(net, ['frequencies'])
     
-    # Send email notification to net owner
+    # Send email notification to net owner and template subscribers
     try:
+        emails_to_notify = []
+        
+        # Add net owner
         result = await db.execute(select(User).where(User.id == net.owner_id))
         owner = result.scalar_one_or_none()
         if owner and owner.email:
-            await EmailService.send_net_notification([owner.email], net.name, net.id)
+            emails_to_notify.append(owner.email)
+        
+        # If net was created from template, add all subscribers
+        if net.template_id:
+            from app.models import NetTemplateSubscription
+            result = await db.execute(
+                select(User)
+                .join(NetTemplateSubscription, NetTemplateSubscription.user_id == User.id)
+                .where(NetTemplateSubscription.template_id == net.template_id)
+                .where(User.email_notifications == True)
+            )
+            subscribers = result.scalars().all()
+            for subscriber in subscribers:
+                if subscriber.email and subscriber.email not in emails_to_notify:
+                    emails_to_notify.append(subscriber.email)
+        
+        # Send notifications
+        if emails_to_notify:
+            await EmailService.send_net_notification(emails_to_notify, net.name, net.id)
     except Exception as e:
         print(f"Failed to send net start notification: {e}")
     

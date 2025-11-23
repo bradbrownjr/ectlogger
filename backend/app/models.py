@@ -22,6 +22,13 @@ net_invitations = Table(
     Column('invited_at', DateTime(timezone=True), server_default=func.now())
 )
 
+net_template_frequencies = Table(
+    'net_template_frequencies',
+    Base.metadata,
+    Column('template_id', Integer, ForeignKey('net_templates.id', ondelete='CASCADE')),
+    Column('frequency_id', Integer, ForeignKey('frequencies.id', ondelete='CASCADE'))
+)
+
 
 class UserRole(str, enum.Enum):
     ADMIN = "admin"
@@ -67,6 +74,8 @@ class User(Base):
 
     # Relationships
     owned_nets = relationship("Net", back_populates="owner", foreign_keys="Net.owner_id")
+    owned_templates = relationship("NetTemplate", back_populates="owner")
+    template_subscriptions = relationship("NetTemplateSubscription", back_populates="user")
     check_ins = relationship("CheckIn", back_populates="user", foreign_keys="CheckIn.user_id")
     chat_messages = relationship("ChatMessage", back_populates="user")
 
@@ -80,6 +89,7 @@ class Net(Base):
     status = Column(Enum(NetStatus), default=NetStatus.DRAFT)
     owner_id = Column(Integer, ForeignKey("users.id"))
     active_frequency_id = Column(Integer, ForeignKey("frequencies.id"), nullable=True)
+    template_id = Column(Integer, ForeignKey("net_templates.id"), nullable=True)
     field_config = Column(Text, default='{"name": {"enabled": true, "required": false}, "location": {"enabled": true, "required": false}, "skywarn_number": {"enabled": false, "required": false}, "weather_observation": {"enabled": false, "required": false}, "power_source": {"enabled": false, "required": false}, "feedback": {"enabled": false, "required": false}, "notes": {"enabled": false, "required": false}}')  # JSON config for check-in fields
     started_at = Column(DateTime(timezone=True))
     closed_at = Column(DateTime(timezone=True))
@@ -88,12 +98,45 @@ class Net(Base):
 
     # Relationships
     owner = relationship("User", back_populates="owned_nets", foreign_keys=[owner_id])
+    template = relationship("NetTemplate", back_populates="nets", foreign_keys=[template_id])
     frequencies = relationship("Frequency", secondary=net_frequencies, back_populates="nets")
     active_frequency = relationship("Frequency", foreign_keys=[active_frequency_id])
     check_ins = relationship("CheckIn", back_populates="net", cascade="all, delete-orphan")
     chat_messages = relationship("ChatMessage", back_populates="net", cascade="all, delete-orphan")
     net_roles = relationship("NetRole", back_populates="net", cascade="all, delete-orphan")
     custom_field_values = relationship("CustomFieldValue", back_populates="net", cascade="all, delete-orphan")
+
+
+class NetTemplate(Base):
+    __tablename__ = "net_templates"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(200), nullable=False)
+    description = Column(Text)
+    owner_id = Column(Integer, ForeignKey("users.id"))
+    field_config = Column(Text, default='{"name": {"enabled": true, "required": false}, "location": {"enabled": true, "required": false}, "skywarn_number": {"enabled": false, "required": false}, "weather_observation": {"enabled": false, "required": false}, "power_source": {"enabled": false, "required": false}, "feedback": {"enabled": false, "required": false}, "notes": {"enabled": false, "required": false}}')
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    # Relationships
+    owner = relationship("User", back_populates="owned_templates")
+    frequencies = relationship("Frequency", secondary=net_template_frequencies)
+    subscriptions = relationship("NetTemplateSubscription", back_populates="template", cascade="all, delete-orphan")
+    nets = relationship("Net", back_populates="template")
+
+
+class NetTemplateSubscription(Base):
+    __tablename__ = "net_template_subscriptions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    template_id = Column(Integer, ForeignKey("net_templates.id"))
+    user_id = Column(Integer, ForeignKey("users.id"))
+    subscribed_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    template = relationship("NetTemplate", back_populates="subscriptions")
+    user = relationship("User", back_populates="template_subscriptions")
 
 
 class Frequency(Base):

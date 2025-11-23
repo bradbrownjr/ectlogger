@@ -5,7 +5,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from app.config import settings
 from app.database import init_db
-from app.routers import auth, users, nets, check_ins, frequencies
+from app.routers import auth, users, nets, check_ins, frequencies, templates
 from app.security import sanitize_html
 from typing import Dict, List
 import json
@@ -65,6 +65,7 @@ app.include_router(users.router)
 app.include_router(nets.router)
 app.include_router(check_ins.router)
 app.include_router(frequencies.router)
+app.include_router(templates.router)
 
 
 # WebSocket connection manager

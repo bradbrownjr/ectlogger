@@ -171,6 +171,63 @@ class NetResponse(NetBase):
         from_attributes = True
 
 
+# Net Template Schemas
+class NetTemplateBase(BaseModel):
+    name: str = Field(max_length=200, min_length=1)
+    description: Optional[str] = Field(None, max_length=2000)
+    field_config: Optional[dict] = None
+
+
+class NetTemplateCreate(NetTemplateBase):
+    frequency_ids: Optional[List[int]] = []
+
+
+class NetTemplateUpdate(BaseModel):
+    name: Optional[str] = Field(None, max_length=200, min_length=1)
+    description: Optional[str] = Field(None, max_length=2000)
+    field_config: Optional[dict] = None
+    frequency_ids: Optional[List[int]] = None
+    is_active: Optional[bool] = None
+
+
+class NetTemplateResponse(NetTemplateBase):
+    id: int
+    owner_id: int
+    is_active: bool
+    created_at: datetime
+    frequencies: List[FrequencyResponse] = []
+    subscriber_count: int = 0
+
+    @classmethod
+    def from_orm(cls, template, subscriber_count: int = 0):
+        import json
+        data = {
+            'id': template.id,
+            'name': template.name,
+            'description': template.description,
+            'owner_id': template.owner_id,
+            'field_config': json.loads(template.field_config) if template.field_config else None,
+            'is_active': template.is_active,
+            'created_at': template.created_at,
+            'frequencies': [FrequencyResponse.model_validate(f) for f in template.frequencies],
+            'subscriber_count': subscriber_count
+        }
+        return cls(**data)
+
+    class Config:
+        from_attributes = True
+
+
+class NetTemplateSubscriptionResponse(BaseModel):
+    id: int
+    template_id: int
+    user_id: int
+    subscribed_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
 # CheckIn Schemas
 class CheckInBase(BaseModel):
     callsign: str = Field(max_length=20, min_length=3, pattern=r'^[A-Z0-9/]+$')

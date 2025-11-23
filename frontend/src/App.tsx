@@ -9,6 +9,8 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import NetView from './pages/NetView';
 import CreateNet from './pages/CreateNet';
+import Templates from './pages/Templates';
+import CreateTemplate from './pages/CreateTemplate';
 import VerifyMagicLink from './pages/VerifyMagicLink';
 import AdminUsers from './pages/AdminUsers';
 import Profile from './pages/Profile';
@@ -103,6 +105,30 @@ const AppRoutes: React.FC = () => {
             element={
               <PrivateRoute>
                 <Profile />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/templates"
+            element={
+              <PrivateRoute>
+                <Templates />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/templates/create"
+            element={
+              <PrivateRoute>
+                <CreateTemplate />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/templates/:templateId/edit"
+            element={
+              <PrivateRoute>
+                <CreateTemplate />
               </PrivateRoute>
             }
           />

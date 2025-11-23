@@ -29,6 +29,12 @@ const Navbar: React.FC = () => {
           📻 ECTLogger
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Button color="inherit" onClick={() => navigate('/dashboard')}>
+            Dashboard
+          </Button>
+          <Button color="inherit" onClick={() => navigate('/templates')}>
+            Templates
+          </Button>
           {user?.role === 'admin' && (
             <Button color="inherit" onClick={() => navigate('/admin/users')}>
               Admin
