@@ -60,17 +60,15 @@ class FrequencyBase(BaseModel):
     network: Optional[str] = Field(None, max_length=100)  # e.g., "Wires-X", "Brandmeister", "REF030C"
     talkgroup: Optional[str] = Field(None, max_length=50)  # e.g., "31665", "Room 12345"
     description: Optional[str] = Field(None, max_length=500)
-    
+
+
+class FrequencyCreate(FrequencyBase):
     @model_validator(mode='after')
     def validate_freq_or_network(self):
         """Ensure either frequency or network is provided."""
         if not self.frequency and not self.network:
             raise ValueError('Either frequency or network must be provided')
         return self
-
-
-class FrequencyCreate(FrequencyBase):
-    pass
 
 
 class FrequencyResponse(FrequencyBase):
