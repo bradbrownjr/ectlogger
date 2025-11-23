@@ -29,13 +29,19 @@ async def create_net(
     db.add(net)
     await db.flush()
     
-    # Add frequencies
+    # Add frequencies using the association table directly to avoid lazy loading
     if net_data.frequency_ids:
+        # Verify frequencies exist
         result = await db.execute(
             select(Frequency).where(Frequency.id.in_(net_data.frequency_ids))
         )
         frequencies = result.scalars().all()
-        net.frequencies = list(frequencies)
+        
+        # Insert into association table directly
+        for freq in frequencies:
+            await db.execute(
+                net_frequencies.insert().values(net_id=net.id, frequency_id=freq.id)
+            )
     
     await db.commit()
     await db.refresh(net, ['frequencies'])
