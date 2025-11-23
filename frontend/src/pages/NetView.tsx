@@ -567,8 +567,7 @@ const NetView: React.FC = () => {
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
                             e.preventDefault();
-                            const nextInput = (e.target as HTMLElement).parentElement?.parentElement?.nextElementSibling?.querySelector('input');
-                            if (nextInput) (nextInput as HTMLInputElement).focus();
+                            handleCheckIn();
                           }
                         }}
                         placeholder="Callsign"
@@ -586,8 +585,7 @@ const NetView: React.FC = () => {
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                               e.preventDefault();
-                              const nextInput = (e.target as HTMLElement).parentElement?.parentElement?.nextElementSibling?.querySelector('input');
-                              if (nextInput) (nextInput as HTMLInputElement).focus();
+                              handleCheckIn();
                             }
                           }}
                           placeholder="Name"
@@ -605,8 +603,7 @@ const NetView: React.FC = () => {
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                               e.preventDefault();
-                              const nextInput = (e.target as HTMLElement).parentElement?.parentElement?.nextElementSibling?.querySelector('input');
-                              if (nextInput) (nextInput as HTMLInputElement).focus();
+                              handleCheckIn();
                             }
                           }}
                           placeholder="Location"
@@ -624,8 +621,7 @@ const NetView: React.FC = () => {
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                               e.preventDefault();
-                              const nextInput = (e.target as HTMLElement).parentElement?.parentElement?.nextElementSibling?.querySelector('input');
-                              if (nextInput) (nextInput as HTMLInputElement).focus();
+                              handleCheckIn();
                             }
                           }}
                           placeholder="SKYWARN #"
@@ -643,8 +639,7 @@ const NetView: React.FC = () => {
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                               e.preventDefault();
-                              const nextInput = (e.target as HTMLElement).parentElement?.parentElement?.nextElementSibling?.querySelector('input');
-                              if (nextInput) (nextInput as HTMLInputElement).focus();
+                              handleCheckIn();
                             }
                           }}
                           placeholder="Weather"
@@ -662,8 +657,7 @@ const NetView: React.FC = () => {
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                               e.preventDefault();
-                              const nextInput = (e.target as HTMLElement).parentElement?.parentElement?.nextElementSibling?.querySelector('input');
-                              if (nextInput) (nextInput as HTMLInputElement).focus();
+                              handleCheckIn();
                             }
                           }}
                           placeholder="Power"
