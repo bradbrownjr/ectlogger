@@ -59,13 +59,33 @@ echo ""
 # Check for updates (skip if not in git repo or in service mode)
 if [ "$SERVICE_MODE" = false ]; then
     if command -v git &> /dev/null && git rev-parse --git-dir > /dev/null 2>&1; then
-        CURRENT_COMMIT=$(git rev-parse HEAD 2>/dev/null)
-        git fetch origin $(git rev-parse --abbrev-ref HEAD) --quiet 2>/dev/null
-        REMOTE_COMMIT=$(git rev-parse origin/$(git rev-parse --abbrev-ref HEAD) 2>/dev/null)
+        # Prompt with 5 second timeout
+        read -t 5 -p "Check for updates? (y/N - auto-continues in 5s): " -n 1 -r
+        RESPONSE=$?
+        echo ""
         
-        if [ "$CURRENT_COMMIT" != "$REMOTE_COMMIT" ] && [ -n "$REMOTE_COMMIT" ]; then
-            echo "📦 Update available! Run './update.sh' to update."
+        # Check if timeout (exit code 142) or if user didn't press Y
+        if [ $RESPONSE -ne 0 ] || [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            echo "Skipping update check."
             echo ""
+        else
+            echo "Checking for updates..."
+            CURRENT_COMMIT=$(git rev-parse HEAD 2>/dev/null)
+            git fetch origin $(git rev-parse --abbrev-ref HEAD) --quiet 2>/dev/null
+            REMOTE_COMMIT=$(git rev-parse origin/$(git rev-parse --abbrev-ref HEAD) 2>/dev/null)
+            
+            if [ "$CURRENT_COMMIT" != "$REMOTE_COMMIT" ] && [ -n "$REMOTE_COMMIT" ]; then
+                echo "📦 Update available!"
+                echo ""
+                ./update.sh
+                echo ""
+                echo "Update complete! Restarting..."
+                echo ""
+                exec ./start.sh "$@"
+            else
+                echo "✓ Already running the latest version."
+                echo ""
+            fi
         fi
     fi
 fi
