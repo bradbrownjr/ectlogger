@@ -54,8 +54,13 @@ const Login: React.FC = () => {
       await authApi.requestMagicLink(email);
       setMessage('Check your email for a magic link to sign in!');
       setEmail('');
-    } catch (err) {
-      setError('Failed to send magic link. Please try again.');
+    } catch (err: any) {
+      // Check if it's a connection error
+      if (err?.message?.includes('ERR_CONNECTION_REFUSED') || err?.message?.includes('Network Error') || err?.code === 'ERR_NETWORK') {
+        setError('Cannot connect to server. Please ensure the backend is running and check your firewall/ad blocker settings.');
+      } else {
+        setError('Failed to send magic link. Please check your ad blocker settings and try again.');
+      }
     } finally {
       setLoading(false);
     }

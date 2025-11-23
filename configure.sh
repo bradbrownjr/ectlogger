@@ -118,12 +118,21 @@ LAN_IP=$(echo "$LAN_IP" | xargs)
 
 echo "Detected LAN IP: $LAN_IP"
 echo ""
-echo "Frontend URL (press Enter for http://$LAN_IP:3000):"
-echo "Examples:"
-echo "  - http://$LAN_IP:3000 (LAN access - recommended)"
+echo "Frontend URL - Where users will access the application:"
+echo ""
+echo "For testing/LAN use:"
+echo "  - http://$LAN_IP:3000 (recommended for local network)"
 echo "  - http://localhost:3000 (local machine only)"
-echo "  - https://ectlogger.example.com (production domain)"
-echo "  - https://codespace-url.app.github.dev (GitHub Codespaces)"
+echo ""
+echo "For production with reverse proxy (same domain as API):"
+echo "  - https://ectlogger.example.com"
+echo "  - https://nets.example.org"
+echo ""
+echo "⚠️  Note: Production deployments should use a reverse proxy to serve"
+echo "   both frontend and backend on the same domain (prevents CORS/XSS issues)."
+echo "   See PRODUCTION-DEPLOYMENT.md for setup instructions."
+echo ""
+echo "Enter Frontend URL (press Enter for http://$LAN_IP:3000):"
 read -r frontend_url
 frontend_url=${frontend_url:-http://$LAN_IP:3000}
 
@@ -136,6 +145,34 @@ fi
 
 echo ""
 echo "✓ Frontend URL configured: $frontend_url"
+echo ""
+
+# Configure frontend .env for API connection
+BACKEND_URL="http://$LAN_IP:8000"
+echo ""
+echo "Backend API URL - Where the frontend will connect to the API:"
+echo ""
+echo "For testing/LAN use:"
+echo "  - http://$LAN_IP:8000 (recommended for local network)"
+echo "  - http://localhost:8000 (local machine only)"
+echo ""
+echo "For production with reverse proxy:"
+echo "  - https://ectlogger.example.com/api"
+echo "  - https://nets.example.org/api"
+echo ""
+echo "⚠️  Production: Must be on the same domain as frontend (with /api path)"
+echo "   to prevent cross-origin blocking. See PRODUCTION-DEPLOYMENT.md."
+echo ""
+echo "Enter Backend API URL (press Enter for $BACKEND_URL):"
+read -r backend_url
+backend_url=${backend_url:-$BACKEND_URL}
+
+# Create frontend/.env
+cat > frontend/.env << EOF
+VITE_API_URL=$backend_url
+EOF
+
+echo "✓ Frontend configured to connect to: $backend_url"
 echo ""
 
 # Database choice

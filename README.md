@@ -69,6 +69,8 @@ See [QUICKSTART.md](QUICKSTART.md) for detailed instructions.
 
 - **[QUICKSTART.md](QUICKSTART.md)** - Get up and running in 5 minutes
 - **[SETUP.md](SETUP.md)** - Complete installation and configuration guide
+- **[PRODUCTION-DEPLOYMENT.md](PRODUCTION-DEPLOYMENT.md)** - Deploy to production with SSL/reverse proxy
+- **[SECURITY.md](SECURITY.md)** - Security features and best practices
 - **[DEVELOPMENT.md](DEVELOPMENT.md)** - Development guide and architecture
 
 ## 🛠️ Technology Stack
