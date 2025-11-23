@@ -72,7 +72,7 @@ const Dashboard: React.FC = () => {
           📻 Net Dashboard
         </Typography>
         <Typography variant="body1" color="text.secondary">
-          Welcome, {user?.name || user?.email}
+          Welcome, {user?.callsign || user?.name || user?.email}
         </Typography>
       </Box>
 

@@ -11,7 +11,9 @@ import NetView from './pages/NetView';
 import CreateNet from './pages/CreateNet';
 import VerifyMagicLink from './pages/VerifyMagicLink';
 import AdminUsers from './pages/AdminUsers';
+import Profile from './pages/Profile';
 import Navbar from './components/Navbar';
+import ProfileSetupDialog from './components/ProfileSetupDialog';
 
 const getDesignTokens = (mode: PaletteMode) => ({
   palette: {
@@ -51,6 +53,7 @@ const AppRoutes: React.FC = () => {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       {isAuthenticated && <Navbar />}
+      {isAuthenticated && <ProfileSetupDialog />}
       <Box component="main" sx={{ flexGrow: 1, bgcolor: 'background.default' }}>
         <Routes>
           <Route path="/login" element={<Login />} />
@@ -92,6 +95,14 @@ const AppRoutes: React.FC = () => {
             element={
               <PrivateRoute>
                 <AdminUsers />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <PrivateRoute>
+                <Profile />
               </PrivateRoute>
             }
           />

@@ -34,9 +34,13 @@ const Navbar: React.FC = () => {
               Admin
             </Button>
           )}
-          <Typography variant="body2">
+          <Button 
+            color="inherit" 
+            onClick={() => navigate('/profile')}
+            sx={{ textTransform: 'none' }}
+          >
             {user?.callsign || user?.name || user?.email}
-          </Typography>
+          </Button>
           <IconButton color="inherit" onClick={toggleColorMode} title={`Switch to ${mode === 'light' ? 'dark' : 'light'} mode`}>
             {mode === 'light' ? <Brightness4Icon /> : <Brightness7Icon />}
           </IconButton>

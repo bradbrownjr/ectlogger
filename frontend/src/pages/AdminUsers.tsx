@@ -236,7 +236,7 @@ const AdminUsers: React.FC = () => {
         <DialogContent>
           <Box sx={{ pt: 2, minWidth: 300 }}>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Changing role for: {selectedUser?.email}
+              Changing role for: {selectedUser?.callsign || selectedUser?.name || selectedUser?.email}
             </Typography>
             <FormControl fullWidth>
               <InputLabel>Role</InputLabel>
