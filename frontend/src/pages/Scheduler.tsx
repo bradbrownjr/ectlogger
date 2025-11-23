@@ -112,7 +112,7 @@ const Scheduler: React.FC = () => {
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" component="h1" gutterBottom>
-          📅 Net Scheduler
+          📅 Nets
         </Typography>
         <Typography variant="body1" color="text.secondary">
           Create recurring net schedules and subscribe to notifications
@@ -120,7 +120,7 @@ const Scheduler: React.FC = () => {
       </Box>
 
       {loading ? (
-        <Typography>Loading Scheduler...</Typography>
+        <Typography>Loading Nets...</Typography>
       ) : schedules.length === 0 ? (
         <Box sx={{ textAlign: 'center', mt: 8 }}>
           <Typography variant="h6" color="text.secondary" gutterBottom>

@@ -33,7 +33,7 @@ const Navbar: React.FC = () => {
             Dashboard
           </Button>
           <Button color="inherit" onClick={() => navigate('/scheduler')}>
-            Scheduler
+            Nets
           </Button>
           {user?.role === 'admin' && (
             <Button color="inherit" onClick={() => navigate('/admin/users')}>
