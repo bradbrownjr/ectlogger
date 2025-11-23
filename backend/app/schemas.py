@@ -55,9 +55,34 @@ class UserResponse(UserBase):
 
 # Frequency Schemas
 class FrequencyBase(BaseModel):
-    frequency: str = Field(max_length=20, min_length=1, pattern=r'^[0-9.]+\s*(MHz|KHz|GHz)?$')
-    mode: str = Field(max_length=20, pattern=r'^(FM|AM|SSB|USB|LSB|CW|DIGITAL|DMR|D-STAR|FUSION|P25)$')
+    frequency: Optional[str] = Field(None, max_length=20, pattern=r'^[0-9.]+\s*(MHz|KHz|GHz)?$')
+    mode: str = Field(max_length=20, pattern=r'^(FM|AM|SSB|USB|LSB|CW|DIGITAL|DMR|D-STAR|FUSION|YSF|P25)$')
+    network: Optional[str] = Field(None, max_length=100)  # e.g., "Wires-X", "Brandmeister", "REF030C"
+    talkgroup: Optional[str] = Field(None, max_length=50)  # e.g., "31665", "Room 12345"
     description: Optional[str] = Field(None, max_length=500)
+    
+    @field_validator('frequency', 'network')
+    @classmethod
+    def validate_freq_or_network(cls, v, info):
+        """Ensure either frequency or network is provided."""
+        # Skip validation if this is the field being set
+        if v:
+            return v
+        
+        # Check if we're validating the second field
+        if info.field_name == 'network' and 'frequency' in info.data:
+            # If frequency exists, network is optional
+            if info.data.get('frequency'):
+                return v
+            # If no frequency, require network
+            if not v:
+                raise ValueError('Either frequency or network must be provided')
+        elif info.field_name == 'frequency' and 'network' in info.data:
+            # If network exists, frequency is optional
+            if info.data.get('network'):
+                return v
+        
+        return v
 
 
 class FrequencyCreate(FrequencyBase):

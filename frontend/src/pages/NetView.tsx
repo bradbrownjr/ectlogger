@@ -40,8 +40,10 @@ interface Net {
 
 interface Frequency {
   id: number;
-  frequency: string;
+  frequency?: string;
   mode: string;
+  network?: string;
+  talkgroup?: string;
   description?: string;
 }
 
@@ -249,7 +251,7 @@ const NetView: React.FC = () => {
               {net.frequencies.map((freq) => (
                 <Chip 
                   key={freq.id}
-                  label={`${freq.frequency} ${freq.mode}`}
+                  label={`${freq.frequency || `${freq.network}${freq.talkgroup ? ` TG${freq.talkgroup}` : ''}`} ${freq.mode}`}
                   color={freq.id === net.active_frequency_id ? 'primary' : 'default'}
                 />
               ))}

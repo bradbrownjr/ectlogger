@@ -97,8 +97,10 @@ class Frequency(Base):
     __tablename__ = "frequencies"
 
     id = Column(Integer, primary_key=True, index=True)
-    frequency = Column(String(50), nullable=False)  # e.g., "146.520 MHz"
-    mode = Column(String(50), nullable=False)  # e.g., "FM", "SSB", "DMR"
+    frequency = Column(String(50), nullable=True)  # e.g., "146.520 MHz" (optional for digital modes)
+    mode = Column(String(50), nullable=False)  # e.g., "FM", "SSB", "DMR", "YSF", "D-STAR"
+    network = Column(String(100), nullable=True)  # e.g., "Wires-X", "Brandmeister", "REF030C"
+    talkgroup = Column(String(50), nullable=True)  # e.g., "31665", "Room 12345"
     description = Column(String(255))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 

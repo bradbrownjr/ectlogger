@@ -19,9 +19,11 @@ import AddIcon from '@mui/icons-material/Add';
 import { netApi, frequencyApi } from '../services/api';
 
 interface Frequency {
-  id: number;
-  frequency: string;
+  id?: number;
+  frequency?: string;
   mode: string;
+  network?: string;
+  talkgroup?: string;
   description?: string;
 }
 
@@ -30,7 +32,7 @@ const CreateNet: React.FC = () => {
   const [description, setDescription] = useState('');
   const [frequencies, setFrequencies] = useState<Frequency[]>([]);
   const [selectedFrequencies, setSelectedFrequencies] = useState<number[]>([]);
-  const [newFrequency, setNewFrequency] = useState({ frequency: '', mode: 'FM' });
+  const [newFrequency, setNewFrequency] = useState({ frequency: '', mode: 'FM', network: '', talkgroup: '' });
   const [showNewFrequency, setShowNewFrequency] = useState(false);
   const navigate = useNavigate();
 
@@ -52,7 +54,7 @@ const CreateNet: React.FC = () => {
       const response = await frequencyApi.create(newFrequency);
       setFrequencies([...frequencies, response.data]);
       setSelectedFrequencies([...selectedFrequencies, response.data.id]);
-      setNewFrequency({ frequency: '', mode: 'FM' });
+      setNewFrequency({ frequency: '', mode: 'FM', network: '', talkgroup: '' });
       setShowNewFrequency(false);
     } catch (error) {
       console.error('Failed to create frequency:', error);
@@ -114,7 +116,7 @@ const CreateNet: React.FC = () => {
                   {(selected as number[]).map((value) => {
                     const freq = frequencies.find((f) => f.id === value);
                     return freq ? (
-                      <Chip key={value} label={`${freq.frequency} ${freq.mode}`} />
+                      <Chip key={value} label={`${freq.frequency || `${freq.network}${freq.talkgroup ? ` TG${freq.talkgroup}` : ''}`} ${freq.mode}`} />
                     ) : null;
                   })}
                 </Box>
@@ -122,7 +124,7 @@ const CreateNet: React.FC = () => {
             >
               {frequencies.map((freq) => (
                 <MenuItem key={freq.id} value={freq.id}>
-                  {freq.frequency} {freq.mode} {freq.description && `- ${freq.description}`}
+                  {freq.frequency || `${freq.network}${freq.talkgroup ? ` TG${freq.talkgroup}` : ''}`} {freq.mode} {freq.description && `- ${freq.description}`}
                 </MenuItem>
               ))}
             </Select>
@@ -139,15 +141,9 @@ const CreateNet: React.FC = () => {
           ) : (
             <Box sx={{ mt: 2, p: 2, border: '1px solid #ccc', borderRadius: 1 }}>
               <Typography variant="subtitle2" gutterBottom>
-                New Frequency
+                New Frequency/Network
               </Typography>
-              <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                <TextField
-                  label="Frequency (e.g., 146.520 MHz)"
-                  value={newFrequency.frequency}
-                  onChange={(e) => setNewFrequency({ ...newFrequency, frequency: e.target.value })}
-                  size="small"
-                />
+              <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
                 <FormControl size="small" sx={{ minWidth: 120 }}>
                   <InputLabel>Mode</InputLabel>
                   <Select
@@ -162,6 +158,32 @@ const CreateNet: React.FC = () => {
                     <MenuItem value="P25">P25</MenuItem>
                   </Select>
                 </FormControl>
+                {['FM', 'SSB'].includes(newFrequency.mode) ? (
+                  <TextField
+                    label="Frequency (e.g., 146.520 MHz)"
+                    value={newFrequency.frequency}
+                    onChange={(e) => setNewFrequency({ ...newFrequency, frequency: e.target.value })}
+                    size="small"
+                    sx={{ minWidth: 200 }}
+                  />
+                ) : (
+                  <>
+                    <TextField
+                      label="Network (e.g., Wires-X, Brandmeister)"
+                      value={newFrequency.network}
+                      onChange={(e) => setNewFrequency({ ...newFrequency, network: e.target.value })}
+                      size="small"
+                      sx={{ minWidth: 200 }}
+                    />
+                    <TextField
+                      label="Talkgroup/Room (optional)"
+                      value={newFrequency.talkgroup}
+                      onChange={(e) => setNewFrequency({ ...newFrequency, talkgroup: e.target.value })}
+                      size="small"
+                      sx={{ minWidth: 150 }}
+                    />
+                  </>
+                )}
                 <Button variant="contained" size="small" onClick={handleAddFrequency}>
                   Add
                 </Button>
