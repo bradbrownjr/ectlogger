@@ -86,18 +86,8 @@ const Scheduler: React.FC = () => {
   const handleCreateNetFromSchedule = async (scheduleId: number) => {
     try {
       const response = await templateApi.createNetFromSchedule(scheduleId);
-      const netId = response.data.id;
-      navigate(`/nets/${netId}/edit`);
-    } catch (error: any) {
-      console.error('Failed to unsubscribe:', error);
-    }
-  };
-
-  const handleCreateNetFromSchedule = async (scheduleId: number) => {
-    try {
-      const response = await templateApi.createNetFromSchedule(scheduleId);
       navigate(`/nets/${response.data.id}`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create net from schedule:', error);
       alert(error.response?.data?.detail || 'Failed to create net');
     }
