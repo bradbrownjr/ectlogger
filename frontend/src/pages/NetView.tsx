@@ -33,6 +33,8 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import DownloadIcon from '@mui/icons-material/Download';
+import ArchiveIcon from '@mui/icons-material/Archive';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { netApi, checkInApi } from '../services/api';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -302,6 +304,27 @@ const NetView: React.FC = () => {
     }
   };
 
+  const handleArchive = async () => {
+    if (!confirm('Archive this net? It will be hidden from the main dashboard.')) return;
+    try {
+      await api.post(`/nets/${netId}/archive`);
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Failed to archive net:', error);
+      alert('Failed to archive net');
+    }
+  };
+
+  const handleClone = async () => {
+    try {
+      const response = await api.post(`/nets/${netId}/clone`);
+      navigate(`/nets/${response.data.id}/edit`);
+    } catch (error) {
+      console.error('Failed to clone net:', error);
+      alert('Failed to clone net');
+    }
+  };
+
   const handleCheckIn = async () => {
     try {
       await checkInApi.create(Number(netId), checkInForm);
@@ -378,14 +401,34 @@ const NetView: React.FC = () => {
               </Button>
             )}
             {net.status === 'closed' && (
-              <Button 
-                variant="outlined" 
-                startIcon={<DownloadIcon />}
-                onClick={handleExportCSV} 
-                sx={{ mr: 1 }}
-              >
-                Export CSV
-              </Button>
+              <>
+                <Button 
+                  variant="outlined" 
+                  startIcon={<DownloadIcon />}
+                  onClick={handleExportCSV} 
+                  sx={{ mr: 1 }}
+                >
+                  Export CSV
+                </Button>
+                {canManage && (
+                  <Button 
+                    variant="outlined" 
+                    startIcon={<ArchiveIcon />}
+                    onClick={handleArchive} 
+                    sx={{ mr: 1 }}
+                  >
+                    Archive
+                  </Button>
+                )}
+                <Button 
+                  variant="outlined" 
+                  startIcon={<ContentCopyIcon />}
+                  onClick={handleClone} 
+                  sx={{ mr: 1 }}
+                >
+                  Clone
+                </Button>
+              </>
             )}
             <Button variant="outlined" onClick={() => navigate('/dashboard')}>
               Back

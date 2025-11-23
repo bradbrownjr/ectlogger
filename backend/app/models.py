@@ -35,6 +35,7 @@ class NetStatus(str, enum.Enum):
     SCHEDULED = "scheduled"
     ACTIVE = "active"
     CLOSED = "closed"
+    ARCHIVED = "archived"
 
 
 class StationStatus(str, enum.Enum):

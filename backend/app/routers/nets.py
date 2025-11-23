@@ -79,16 +79,20 @@ async def create_net(
 @router.get("/", response_model=List[NetResponse])
 async def list_nets(
     status: NetStatus = None,
+    include_archived: bool = False,
     skip: int = 0,
     limit: int = 100,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """List nets with optional status filter"""
+    """List nets with optional status filter, excludes archived by default"""
     query = select(Net).options(selectinload(Net.frequencies))
     
     if status:
         query = query.where(Net.status == status)
+    elif not include_archived:
+        # Exclude archived nets by default
+        query = query.where(Net.status != NetStatus.ARCHIVED)
     
     query = query.offset(skip).limit(limit).order_by(Net.created_at.desc())
     
@@ -369,6 +373,73 @@ async def delete_net(
     await db.commit()
     
     return None
+
+
+@router.post("/{net_id}/archive", response_model=NetResponse)
+async def archive_net(
+    net_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Archive a closed net"""
+    result = await db.execute(
+        select(Net).options(selectinload(Net.frequencies)).where(Net.id == net_id)
+    )
+    net = result.scalar_one_or_none()
+    
+    if not net:
+        raise HTTPException(status_code=404, detail="Net not found")
+    
+    # Check permissions
+    if net.owner_id != current_user.id and current_user.role.value != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized to archive this net")
+    
+    if net.status != NetStatus.CLOSED:
+        raise HTTPException(status_code=400, detail="Only closed nets can be archived")
+    
+    net.status = NetStatus.ARCHIVED
+    await db.commit()
+    await db.refresh(net, ['frequencies'])
+    
+    return NetResponse.from_orm(net)
+
+
+@router.post("/{net_id}/clone", response_model=NetResponse)
+async def clone_net(
+    net_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Clone a net with its settings, frequencies, and field configuration"""
+    result = await db.execute(
+        select(Net).options(selectinload(Net.frequencies)).where(Net.id == net_id)
+    )
+    original_net = result.scalar_one_or_none()
+    
+    if not net:
+        raise HTTPException(status_code=404, detail="Net not found")
+    
+    # Create new net with copied settings
+    new_net = Net(
+        name=f"{original_net.name} (Copy)",
+        description=original_net.description,
+        owner_id=current_user.id,
+        field_config=original_net.field_config,
+        status=NetStatus.DRAFT
+    )
+    db.add(new_net)
+    await db.flush()
+    
+    # Copy frequencies
+    for freq in original_net.frequencies:
+        await db.execute(
+            net_frequencies.insert().values(net_id=new_net.id, frequency_id=freq.id)
+        )
+    
+    await db.commit()
+    await db.refresh(new_net, ['frequencies'])
+    
+    return NetResponse.from_orm(new_net)
 
 
 @router.post("/{net_id}/roles")
