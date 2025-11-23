@@ -11,12 +11,12 @@ class EmailService:
     async def send_email(to_email: str, subject: str, html_content: str):
         """Send an email using SMTP"""
         print(f"\n{'='*60}")
-        print(f"📧 EMAIL SERVICE - Starting email send process")
+        print(f"[EMAIL] Starting email send process")
         print(f"{'='*60}")
         print(f"To: {to_email}")
         print(f"Subject: {subject}")
         print(f"From: {settings.smtp_from_name} <{settings.smtp_from_email}>")
-        print(f"\n📡 SMTP Configuration:")
+        print(f"\n[SMTP] Configuration:")
         print(f"  Host: {settings.smtp_host}")
         print(f"  Port: {settings.smtp_port}")
         print(f"  Username: {settings.smtp_user}")
@@ -34,7 +34,7 @@ class EmailService:
             # Port 465 uses SSL, port 587 uses STARTTLS
             use_tls = settings.smtp_port == 465
             
-            print(f"\n🔌 Connecting to SMTP server...")
+            print(f"\n[SMTP] Connecting to SMTP server...")
             print(f"  SSL Mode: {'TLS (port 465)' if use_tls else 'STARTTLS (port 587)' if settings.smtp_port == 587 else 'Plain'}")
             
             await aiosmtplib.send(
@@ -47,13 +47,13 @@ class EmailService:
                 start_tls=(settings.smtp_port == 587),
             )
             
-            print(f"\n✅ SUCCESS: Email sent successfully to {to_email}")
+            print(f"\n[SUCCESS] Email sent successfully to {to_email}")
             print(f"{'='*60}\n")
             
         except aiosmtplib.SMTPException as e:
-            print(f"\n❌ SMTP ERROR: {type(e).__name__}")
+            print(f"\n[ERROR] SMTP ERROR: {type(e).__name__}")
             print(f"Error message: {str(e)}")
-            print(f"\n💡 Troubleshooting tips:")
+            print(f"\n[TROUBLESHOOTING] Tips:")
             print(f"  1. Check SMTP credentials in .env file")
             print(f"  2. Verify SMTP_HOST and SMTP_PORT are correct")
             print(f"  3. For Gmail: Use App Password, not regular password")
@@ -62,9 +62,9 @@ class EmailService:
             print(f"{'='*60}\n")
             raise
         except Exception as e:
-            print(f"\n❌ UNEXPECTED ERROR: {type(e).__name__}")
+            print(f"\n[ERROR] UNEXPECTED ERROR: {type(e).__name__}")
             print(f"Error message: {str(e)}")
-            print(f"\n💡 Possible causes:")
+            print(f"\n[TROUBLESHOOTING] Possible causes:")
             print(f"  1. Network connectivity issue")
             print(f"  2. DNS resolution failed for {settings.smtp_host}")
             print(f"  3. Firewall or antivirus blocking connection")
@@ -75,7 +75,7 @@ class EmailService:
     @staticmethod
     async def send_magic_link(email: str, token: str, expire_days: int = 30):
         """Send magic link email for authentication"""
-        print(f"\n🔐 MAGIC LINK REQUEST:")
+        print(f"\n[MAGIC LINK] Request:")
         print(f"  Email: {email}")
         print(f"  Token: {token[:20]}...{token[-10:]} (truncated)")
         print(f"  Expires in: {expire_days} days")

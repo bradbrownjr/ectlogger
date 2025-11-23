@@ -90,15 +90,15 @@ async def request_magic_link(
     db: AsyncSession = Depends(get_db)
 ):
     """Request a magic link to sign in via email"""
-    print(f"\n\ud83d\udd11 API: Magic link request received for {request.email}")
+    print(f"\n[API] Magic link request received for {request.email}")
     
     try:
         token = create_magic_link_token(request.email)
-        print(f"\u2705 Token generated successfully")
+        print(f"[API] Token generated successfully")
         
         await EmailService.send_magic_link(request.email, token, settings.magic_link_expire_days)
         
-        print(f"\u2705 API: Magic link request completed successfully")
+        print(f"[API] Magic link request completed successfully")
         return {
             "message": "Magic link sent to your email",
             "expires_in_days": settings.magic_link_expire_days
@@ -107,7 +107,7 @@ async def request_magic_link(
         import traceback
         error_details = traceback.format_exc()
         print(f"\n{'='*60}")
-        print(f"\u274c API ERROR: Failed to send magic link")
+        print(f"[ERROR] API ERROR: Failed to send magic link")
         print(f"{'='*60}")
         print(f"Error type: {type(e).__name__}")
         print(f"Error message: {str(e)}")

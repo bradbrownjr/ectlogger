@@ -19,13 +19,23 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # CORS configuration - Allow frontend URL from config
 # This supports LAN IPs, localhost, and production domains
+# Also allow requests from any origin on the same host (for LAN deployments)
+allowed_origins = [
+    settings.frontend_url,
+    "http://localhost:3000",  # Fallback for local development
+    "http://127.0.0.1:3000",  # Explicit localhost
+]
+
+# If frontend_url has an IP address, also allow that IP for backend (port 8000)
+import re
+if match := re.match(r'http://([0-9.]+):3000', settings.frontend_url):
+    allowed_origins.append(f"http://{match.group(1)}:8000")
+
+print(f"\\n[CORS] Allowed origins: {allowed_origins}\\n")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        settings.frontend_url,
-        "http://localhost:3000",  # Fallback for local development
-        "http://127.0.0.1:3000",  # Explicit localhost
-    ],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
