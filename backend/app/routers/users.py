@@ -80,3 +80,65 @@ async def update_user_role(
     await db.commit()
     await db.refresh(user)
     return UserResponse.from_orm(user)
+
+
+@router.put("/{user_id}/ban", response_model=UserResponse)
+async def ban_user(
+    user_id: int,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Ban/deactivate user (admin only)"""
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if user.id == current_user.id:
+        raise HTTPException(status_code=400, detail="Cannot ban yourself")
+    
+    user.is_active = False
+    await db.commit()
+    await db.refresh(user)
+    return UserResponse.from_orm(user)
+
+
+@router.put("/{user_id}/unban", response_model=UserResponse)
+async def unban_user(
+    user_id: int,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Unban/activate user (admin only)"""
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    user.is_active = True
+    await db.commit()
+    await db.refresh(user)
+    return UserResponse.from_orm(user)
+
+
+@router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_user(
+    user_id: int,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Delete user (admin only)"""
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if user.id == current_user.id:
+        raise HTTPException(status_code=400, detail="Cannot delete yourself")
+    
+    await db.delete(user)
+    await db.commit()
+    return None

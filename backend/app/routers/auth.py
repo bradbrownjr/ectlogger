@@ -71,17 +71,25 @@ async def get_or_create_user(db: AsyncSession, email: str, name: str, provider: 
         await db.refresh(user)
         return user
     
+    # Check if this is the first user - make them admin
+    result = await db.execute(select(User))
+    user_count = len(result.scalars().all())
+    
     # Create new user
     user = User(
         email=email,
         name=name,
         oauth_provider=provider,
         oauth_id=provider_id,
-        role=UserRole.USER
+        role=UserRole.ADMIN if user_count == 0 else UserRole.USER
     )
     db.add(user)
     await db.commit()
     await db.refresh(user)
+    
+    if user.role == UserRole.ADMIN:
+        logger.info("API", f"First user created as admin: {email}")
+    
     return user
 
 

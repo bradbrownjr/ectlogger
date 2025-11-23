@@ -13,6 +13,27 @@ from app.email_service import EmailService
 router = APIRouter(prefix="/nets", tags=["nets"])
 
 
+async def check_net_permission(db: AsyncSession, net: Net, user: User, required_roles: List[str] = None) -> bool:
+    """Check if user has permission to manage a net (owner, admin, or has required role)"""
+    # Owner and admin always have permission
+    if net.owner_id == user.id or user.role.value == "admin":
+        return True
+    
+    # Check if user has required role for this net
+    if required_roles:
+        result = await db.execute(
+            select(NetRole).where(
+                NetRole.net_id == net.id,
+                NetRole.user_id == user.id,
+                NetRole.role.in_(required_roles)
+            )
+        )
+        if result.scalar_one_or_none():
+            return True
+    
+    return False
+
+
 @router.post("/", response_model=NetResponse, status_code=status.HTTP_201_CREATED)
 async def create_net(
     net_data: NetCreate,
@@ -104,8 +125,8 @@ async def update_net(
     if not net:
         raise HTTPException(status_code=404, detail="Net not found")
     
-    # Check permissions
-    if net.owner_id != current_user.id and current_user.role.value != "admin":
+    # Check permissions - owner, admin, or NCS can update
+    if not await check_net_permission(db, net, current_user, ["NCS"]):
         raise HTTPException(status_code=403, detail="Not authorized to update this net")
     
     # Update fields
@@ -141,8 +162,8 @@ async def start_net(
     if not net:
         raise HTTPException(status_code=404, detail="Net not found")
     
-    # Check permissions
-    if net.owner_id != current_user.id and current_user.role.value != "admin":
+    # Check permissions - owner, admin, or NCS can start
+    if not await check_net_permission(db, net, current_user, ["NCS"]):
         raise HTTPException(status_code=403, detail="Not authorized to start this net")
     
     if net.status == NetStatus.ACTIVE:
@@ -232,3 +253,109 @@ async def delete_net(
     await db.commit()
     
     return None
+
+
+@router.post("/{net_id}/roles")
+async def assign_net_role(
+    net_id: int,
+    user_id: int,
+    role: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Assign a role to a user for a net (owner or admin only)"""
+    result = await db.execute(select(Net).where(Net.id == net_id))
+    net = result.scalar_one_or_none()
+    
+    if not net:
+        raise HTTPException(status_code=404, detail="Net not found")
+    
+    # Only owner or admin can assign roles
+    if net.owner_id != current_user.id and current_user.role.value != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized to assign roles")
+    
+    # Verify user exists
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Check if role already exists
+    result = await db.execute(
+        select(NetRole).where(
+            NetRole.net_id == net_id,
+            NetRole.user_id == user_id,
+            NetRole.role == role
+        )
+    )
+    existing_role = result.scalar_one_or_none()
+    
+    if existing_role:
+        raise HTTPException(status_code=400, detail="User already has this role")
+    
+    # Create role
+    net_role = NetRole(net_id=net_id, user_id=user_id, role=role)
+    db.add(net_role)
+    await db.commit()
+    
+    return {"message": f"Role {role} assigned to user {user_id}"}
+
+
+@router.delete("/{net_id}/roles/{role_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def remove_net_role(
+    net_id: int,
+    role_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Remove a role from a user (owner or admin only)"""
+    result = await db.execute(select(Net).where(Net.id == net_id))
+    net = result.scalar_one_or_none()
+    
+    if not net:
+        raise HTTPException(status_code=404, detail="Net not found")
+    
+    # Only owner or admin can remove roles
+    if net.owner_id != current_user.id and current_user.role.value != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized to remove roles")
+    
+    result = await db.execute(select(NetRole).where(NetRole.id == role_id))
+    role = result.scalar_one_or_none()
+    
+    if not role:
+        raise HTTPException(status_code=404, detail="Role not found")
+    
+    await db.delete(role)
+    await db.commit()
+    return None
+
+
+@router.get("/{net_id}/roles")
+async def list_net_roles(
+    net_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """List all roles for a net"""
+    result = await db.execute(
+        select(NetRole).where(NetRole.net_id == net_id)
+    )
+    roles = result.scalars().all()
+    
+    # Get user details for each role
+    role_list = []
+    for role in roles:
+        result = await db.execute(select(User).where(User.id == role.user_id))
+        user = result.scalar_one_or_none()
+        if user:
+            role_list.append({
+                "id": role.id,
+                "user_id": user.id,
+                "email": user.email,
+                "name": user.name,
+                "callsign": user.callsign,
+                "role": role.role,
+                "assigned_at": role.assigned_at
+            })
+    
+    return role_list
