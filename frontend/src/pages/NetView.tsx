@@ -227,9 +227,14 @@ const NetView: React.FC = () => {
           </Box>
           <Box>
             {canManage && net.status === 'draft' && (
-              <Button variant="contained" onClick={handleStartNet} sx={{ mr: 1 }}>
-                Start Net
-              </Button>
+              <>
+                <Button variant="outlined" onClick={() => navigate(`/nets/${netId}/edit`)} sx={{ mr: 1 }}>
+                  Edit
+                </Button>
+                <Button variant="contained" onClick={handleStartNet} sx={{ mr: 1 }}>
+                  Start Net
+                </Button>
+              </>
             )}
             {canManage && net.status === 'active' && (
               <Button variant="contained" color="error" onClick={handleCloseNet} sx={{ mr: 1 }}>

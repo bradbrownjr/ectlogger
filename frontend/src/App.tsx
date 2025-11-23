@@ -55,6 +55,14 @@ const AppRoutes: React.FC = () => {
             }
           />
           <Route
+            path="/nets/:netId/edit"
+            element={
+              <PrivateRoute>
+                <CreateNet />
+              </PrivateRoute>
+            }
+          />
+          <Route
             path="/nets/:netId"
             element={
               <PrivateRoute>

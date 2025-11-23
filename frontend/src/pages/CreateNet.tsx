@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   Container,
   Paper,
@@ -35,6 +35,7 @@ interface Frequency {
 }
 
 const CreateNet: React.FC = () => {
+  const { netId } = useParams<{ netId: string }>();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [frequencies, setFrequencies] = useState<Frequency[]>([]);
@@ -43,10 +44,27 @@ const CreateNet: React.FC = () => {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<Frequency | null>(null);
   const navigate = useNavigate();
+  const isEditMode = !!netId;
 
   useEffect(() => {
     fetchFrequencies();
-  }, []);
+    if (netId) {
+      fetchNetData();
+    }
+  }, [netId]);
+
+  const fetchNetData = async () => {
+    if (!netId) return;
+    try {
+      const response = await netApi.get(parseInt(netId));
+      setName(response.data.name);
+      setDescription(response.data.description || '');
+      setSelectedFrequencies(response.data.frequencies.map((f: Frequency) => f.id!));
+    } catch (error) {
+      console.error('Failed to fetch net:', error);
+      alert('Failed to load net data');
+    }
+  };
 
   const fetchFrequencies = async () => {
     try {
@@ -334,14 +352,24 @@ const CreateNet: React.FC = () => {
 
   const handleCreateNet = async () => {
     try {
-      const response = await netApi.create({
-        name,
-        description,
-        frequency_ids: selectedFrequencies,
-      });
-      navigate(`/nets/${response.data.id}`);
+      if (isEditMode) {
+        const response = await netApi.update(parseInt(netId!), {
+          name,
+          description,
+          frequency_ids: selectedFrequencies,
+        });
+        navigate(`/nets/${response.data.id}`);
+      } else {
+        const response = await netApi.create({
+          name,
+          description,
+          frequency_ids: selectedFrequencies,
+        });
+        navigate(`/nets/${response.data.id}`);
+      }
     } catch (error) {
-      console.error('Failed to create net:', error);
+      console.error('Failed to save net:', error);
+      alert('Failed to save net');
     }
   };
 
@@ -349,7 +377,7 @@ const CreateNet: React.FC = () => {
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       <Paper sx={{ p: 3 }}>
         <Typography variant="h4" component="h1" gutterBottom>
-          Create New Net
+          {isEditMode ? 'Edit Net' : 'Create New Net'}
         </Typography>
 
         <Box sx={{ mt: 3 }}>
@@ -408,7 +436,7 @@ const CreateNet: React.FC = () => {
               onClick={handleCreateNet}
               disabled={!name || selectedFrequencies.length === 0}
             >
-              Create Net
+              {isEditMode ? 'Save Changes' : 'Create Net'}
             </Button>
           </Box>
         </Box>
