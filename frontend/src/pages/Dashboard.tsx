@@ -21,6 +21,7 @@ interface Net {
   name: string;
   description: string;
   status: string;
+  owner_id: number;
   started_at?: string;
   frequencies: any[];
 }
@@ -55,6 +56,15 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const handleStartNet = async (netId: number) => {
+    try {
+      await netApi.start(netId);
+      await fetchNets();
+    } catch (error) {
+      console.error('Failed to start net:', error);
+    }
+  };
+
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
@@ -79,7 +89,7 @@ const Dashboard: React.FC = () => {
         </Box>
       ) : (
         <Grid container spacing={3}>
-          {nets.map((net) => (
+          {nets.map((net: Net) => (
             <Grid item xs={12} sm={6} md={4} key={net.id}>
               <Card>
                 <CardContent>
@@ -98,11 +108,36 @@ const Dashboard: React.FC = () => {
                   </Typography>
                   {net.frequencies.length > 0 && (
                     <Typography variant="caption" color="text.secondary">
-                      Frequencies: {net.frequencies.map(f => f.frequency).join(', ')}
+                      Frequencies: {net.frequencies.map((f: any) => {
+                        if (f.frequency) {
+                          return f.frequency;
+                        } else if (f.network && f.talkgroup) {
+                          return `${f.network} TG${f.talkgroup}`;
+                        } else if (f.network) {
+                          return f.network;
+                        }
+                        return '';
+                      }).filter((s: string) => s).join(', ')}
                     </Typography>
                   )}
                 </CardContent>
                 <CardActions>
+                  {net.status === 'draft' && (user?.id === net.owner_id || user?.role === 'admin') && (
+                    <>
+                      <Button
+                        size="small"
+                        onClick={() => navigate(`/nets/${net.id}/edit`)}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        size="small"
+                        onClick={() => handleStartNet(net.id)}
+                      >
+                        Start Net
+                      </Button>
+                    </>
+                  )}
                   <Button size="small" onClick={() => navigate(`/nets/${net.id}`)}>
                     View
                   </Button>

@@ -86,6 +86,7 @@ const NetView: React.FC = () => {
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
   const [netRoles, setNetRoles] = useState<NetRole[]>([]);
   const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [owner, setOwner] = useState<any>(null);
   const [selectedUserId, setSelectedUserId] = useState<number | ''>('');
   const [selectedRole, setSelectedRole] = useState<string>('NCS');
   const [ws, setWs] = useState<WebSocket | null>(null);
@@ -118,6 +119,12 @@ const NetView: React.FC = () => {
       }
     };
   }, [netId]);
+
+  useEffect(() => {
+    if (net?.owner_id) {
+      fetchOwner();
+    }
+  }, [net?.owner_id]);
 
   const connectWebSocket = () => {
     // Get JWT token from localStorage
@@ -190,6 +197,16 @@ const NetView: React.FC = () => {
       setAllUsers(response.data);
     } catch (error) {
       console.error('Failed to fetch users:', error);
+    }
+  };
+
+  const fetchOwner = async () => {
+    if (!net) return;
+    try {
+      const response = await api.get(`/users/${net.owner_id}`);
+      setOwner(response.data);
+    } catch (error) {
+      console.error('Failed to fetch owner:', error);
     }
   };
 
@@ -363,23 +380,29 @@ const NetView: React.FC = () => {
                 </Button>
               )}
             </Box>
-            {netRoles.length > 0 ? (
-              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                {netRoles.map((role) => (
-                  <Chip 
-                    key={role.id}
-                    label={`${role.callsign || role.name || role.email} (${role.role})`}
-                    color="secondary"
-                    size="small"
-                    onDelete={canManage ? () => handleRemoveRole(role.id) : undefined}
-                  />
-                ))}
-              </Box>
-            ) : (
-              <Typography variant="body2" color="text.secondary">
-                No staff roles assigned yet
-              </Typography>
-            )}
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              {owner && (
+                <Chip 
+                  label={`${owner.callsign || owner.name || owner.email} (OWNER)`}
+                  color="primary"
+                  size="small"
+                />
+              )}
+              {netRoles.map((role) => (
+                <Chip 
+                  key={role.id}
+                  label={`${role.callsign || role.name || role.email} (${role.role})`}
+                  color="secondary"
+                  size="small"
+                  onDelete={canManage ? () => handleRemoveRole(role.id) : undefined}
+                />
+              ))}
+              {!owner && netRoles.length === 0 && (
+                <Typography variant="body2" color="text.secondary">
+                  No staff roles assigned yet
+                </Typography>
+              )}
+            </Box>
           </Box>
         )}
 
