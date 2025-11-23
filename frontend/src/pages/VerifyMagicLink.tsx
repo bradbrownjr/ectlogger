@@ -22,11 +22,15 @@ const VerifyMagicLink: React.FC = () => {
       }
 
       try {
+        console.log('[VERIFY] Starting magic link verification...');
         const response = await authApi.verifyMagicLink(token);
-        login(response.data.access_token, response.data.user);
+        console.log('[VERIFY] Verification successful, logging in...');
+        await login(response.data.access_token);
+        console.log('[VERIFY] Login complete, navigating to dashboard...');
         navigate('/dashboard');
       } catch (err: any) {
-        console.error('Verification failed:', err);
+        console.error('[VERIFY] Verification failed:', err);
+        console.error('[VERIFY] Error details:', err.response?.data);
         setError(err.response?.data?.detail || 'Invalid or expired magic link');
         setVerifying(false);
       }

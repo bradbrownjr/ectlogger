@@ -126,22 +126,31 @@ async def verify_magic_link(
     db: AsyncSession = Depends(get_db)
 ):
     """Verify magic link token and sign in"""
+    print(f"\n[API] Magic link verification request received")
+    print(f"[API] Token: {request.token[:20]}...{request.token[-10:]} (truncated)")
+    
     email = verify_magic_link_token(request.token)
     
     if not email:
+        print(f"[ERROR] Invalid or expired token")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired magic link"
         )
     
+    print(f"[API] Token valid for email: {email}")
+    
     # Get or create user
     user = await get_or_create_user(db, email, email, "email", email)
+    print(f"[API] User retrieved/created: {user.email} (ID: {user.id})")
     
     # Create access token
     access_token = create_access_token(
         data={"sub": user.id},
         expires_delta=timedelta(minutes=settings.access_token_expire_minutes)
     )
+    
+    print(f"[API] Access token created, verification complete")
     
     return Token(
         access_token=access_token,

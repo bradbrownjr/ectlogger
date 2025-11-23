@@ -34,10 +34,15 @@ const Login: React.FC = () => {
     setLoading(true);
     setError('');
     try {
+      console.log('[LOGIN] Verifying magic link token...');
       const response = await authApi.verifyMagicLink(token);
+      console.log('[LOGIN] Verification successful, logging in...');
       await login(response.data.access_token);
-      navigate('/');
-    } catch (err) {
+      console.log('[LOGIN] Login complete, navigating to dashboard...');
+      navigate('/dashboard');
+    } catch (err: any) {
+      console.error('[LOGIN] Verification failed:', err);
+      console.error('[LOGIN] Error details:', err.response?.data);
       setError('Invalid or expired magic link. Please request a new one.');
     } finally {
       setLoading(false);
