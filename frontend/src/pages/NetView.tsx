@@ -313,6 +313,17 @@ const NetView: React.FC = () => {
     }
   };
 
+  const handleDelete = async () => {
+    if (!confirm('Delete this net permanently? This cannot be undone.')) return;
+    try {
+      await api.delete(`/nets/${netId}`);
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Failed to delete net:', error);
+      alert('Failed to delete net');
+    }
+  };
+
   const handleCheckIn = async () => {
     // Validate required fields
     if (!checkInForm.callsign) {
@@ -423,6 +434,17 @@ const NetView: React.FC = () => {
                   </Button>
                 )}
               </>
+            )}
+            {canManage && (net.status === 'draft' || net.status === 'archived') && (
+              <Button 
+                variant="outlined" 
+                color="error"
+                startIcon={<DeleteIcon />}
+                onClick={handleDelete} 
+                sx={{ mr: 1 }}
+              >
+                Delete
+              </Button>
             )}
             <Button variant="outlined" onClick={() => navigate('/dashboard')}>
               Back
