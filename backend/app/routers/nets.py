@@ -35,7 +35,7 @@ async def create_net(
             select(Frequency).where(Frequency.id.in_(net_data.frequency_ids))
         )
         frequencies = result.scalars().all()
-        net.frequencies.extend(frequencies)
+        net.frequencies = list(frequencies)
     
     await db.commit()
     await db.refresh(net, ['frequencies'])

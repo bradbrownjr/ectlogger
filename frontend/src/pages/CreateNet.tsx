@@ -135,7 +135,6 @@ const CreateNet: React.FC = () => {
 
   const getDisplayText = (freq: Frequency) => {
     if (freq.frequency) return freq.frequency;
-    if (freq.network && freq.talkgroup) return `${freq.network} TG${freq.talkgroup}`;
     if (freq.network) return freq.network;
     return 'N/A';
   };
