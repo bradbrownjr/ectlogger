@@ -116,6 +116,7 @@ class FrequencyResponse(FrequencyBase):
 class NetBase(BaseModel):
     name: str = Field(max_length=200, min_length=1)
     description: Optional[str] = Field(None, max_length=2000)
+    field_config: Optional[dict] = None
 
 
 class NetCreate(NetBase):
@@ -142,10 +143,29 @@ class NetResponse(NetBase):
     status: NetStatus
     owner_id: int
     active_frequency_id: Optional[int] = None
+    field_config: Optional[dict] = None
     started_at: Optional[datetime] = None
     closed_at: Optional[datetime] = None
     created_at: datetime
     frequencies: List[FrequencyResponse] = []
+
+    @classmethod
+    def from_orm(cls, net):
+        import json
+        data = {
+            'id': net.id,
+            'name': net.name,
+            'description': net.description,
+            'status': net.status,
+            'owner_id': net.owner_id,
+            'active_frequency_id': net.active_frequency_id,
+            'field_config': json.loads(net.field_config) if net.field_config else None,
+            'started_at': net.started_at,
+            'closed_at': net.closed_at,
+            'created_at': net.created_at,
+            'frequencies': [FrequencyResponse.model_validate(f) for f in net.frequencies]
+        }
+        return cls(**data)
 
     class Config:
         from_attributes = True

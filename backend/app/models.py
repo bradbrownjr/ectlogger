@@ -79,6 +79,7 @@ class Net(Base):
     status = Column(Enum(NetStatus), default=NetStatus.DRAFT)
     owner_id = Column(Integer, ForeignKey("users.id"))
     active_frequency_id = Column(Integer, ForeignKey("frequencies.id"), nullable=True)
+    field_config = Column(Text, default='{"name": {"enabled": true, "required": false}, "location": {"enabled": true, "required": false}, "skywarn_number": {"enabled": false, "required": false}, "weather_observation": {"enabled": false, "required": false}, "power_source": {"enabled": false, "required": false}, "feedback": {"enabled": false, "required": false}, "notes": {"enabled": false, "required": false}}')  # JSON config for check-in fields
     started_at = Column(DateTime(timezone=True))
     closed_at = Column(DateTime(timezone=True))
     created_at = Column(DateTime(timezone=True), server_default=func.now())

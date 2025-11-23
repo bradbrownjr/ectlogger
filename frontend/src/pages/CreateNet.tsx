@@ -43,6 +43,15 @@ const CreateNet: React.FC = () => {
   const [newFrequency, setNewFrequency] = useState({ frequency: '', mode: 'FM', network: '', talkgroup: '', description: '' });
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<Frequency | null>(null);
+  const [fieldConfig, setFieldConfig] = useState({
+    name: { enabled: true, required: false },
+    location: { enabled: true, required: false },
+    skywarn_number: { enabled: false, required: false },
+    weather_observation: { enabled: false, required: false },
+    power_source: { enabled: false, required: false },
+    feedback: { enabled: false, required: false },
+    notes: { enabled: false, required: false },
+  });
   const navigate = useNavigate();
   const isEditMode = !!netId;
 
@@ -60,6 +69,9 @@ const CreateNet: React.FC = () => {
       setName(response.data.name);
       setDescription(response.data.description || '');
       setSelectedFrequencies(response.data.frequencies.map((f: Frequency) => f.id!));
+      if (response.data.field_config) {
+        setFieldConfig(response.data.field_config);
+      }
     } catch (error) {
       console.error('Failed to fetch net:', error);
       alert('Failed to load net data');
@@ -357,6 +369,7 @@ const CreateNet: React.FC = () => {
           name,
           description,
           frequency_ids: selectedFrequencies,
+          field_config: fieldConfig,
         });
         navigate(`/nets/${response.data.id}`);
       } else {
@@ -364,6 +377,7 @@ const CreateNet: React.FC = () => {
           name,
           description,
           frequency_ids: selectedFrequencies,
+          field_config: fieldConfig,
         });
         navigate(`/nets/${response.data.id}`);
       }
@@ -399,6 +413,49 @@ const CreateNet: React.FC = () => {
             multiline
             rows={3}
           />
+
+          <Typography variant="h6" sx={{ mt: 4, mb: 2 }}>
+            Check-In Fields
+          </Typography>
+
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Configure which fields are available during check-in. Callsign is always required.
+          </Typography>
+
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 3 }}>
+            {Object.entries(fieldConfig).map(([fieldName, config]) => (
+              <Box key={fieldName} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Checkbox
+                  checked={config.enabled}
+                  onChange={(e: any) => 
+                    setFieldConfig({
+                      ...fieldConfig,
+                      [fieldName]: { ...config, enabled: e.target.checked, required: e.target.checked ? config.required : false }
+                    })
+                  }
+                />
+                <Typography sx={{ minWidth: 200 }}>
+                  {fieldName.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                </Typography>
+                {config.enabled && (
+                  <Checkbox
+                    checked={config.required}
+                    onChange={(e: any) =>
+                      setFieldConfig({
+                        ...fieldConfig,
+                        [fieldName]: { ...config, required: e.target.checked }
+                      })
+                    }
+                  />
+                )}
+                {config.enabled && (
+                  <Typography variant="body2" color="text.secondary">
+                    Required
+                  </Typography>
+                )}
+              </Box>
+            ))}
+          </Box>
 
           <Typography variant="h6" sx={{ mt: 4, mb: 2 }}>
             Communication Plan

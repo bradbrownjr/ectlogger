@@ -44,11 +44,14 @@ async def create_net(
     db: AsyncSession = Depends(get_db)
 ):
     """Create a new net"""
+    import json
+    
     net = Net(
         name=net_data.name,
         description=net_data.description,
         owner_id=current_user.id,
-        status=NetStatus.DRAFT
+        status=NetStatus.DRAFT,
+        field_config=json.dumps(net_data.field_config) if net_data.field_config else None
     )
     db.add(net)
     await db.flush()
@@ -133,8 +136,13 @@ async def update_net(
         raise HTTPException(status_code=403, detail="Not authorized to update this net")
     
     # Update fields
-    for field, value in net_update.dict(exclude_unset=True, exclude={'frequency_ids'}).items():
-        setattr(net, field, value)
+    import json
+    update_data = net_update.dict(exclude_unset=True, exclude={'frequency_ids'})
+    for field, value in update_data.items():
+        if field == 'field_config' and value is not None:
+            setattr(net, field, json.dumps(value))
+        else:
+            setattr(net, field, value)
     
     # Update frequencies if provided
     if net_update.frequency_ids is not None:
