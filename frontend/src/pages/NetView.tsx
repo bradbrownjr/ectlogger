@@ -320,6 +320,17 @@ const NetView: React.FC = () => {
       return;
     }
 
+    // Validate name and location (always required by backend)
+    if (!checkInForm.name || checkInForm.name.trim() === '') {
+      alert('Name is required');
+      return;
+    }
+
+    if (!checkInForm.location || checkInForm.location.trim() === '') {
+      alert('Location is required');
+      return;
+    }
+
     try {
       await checkInApi.create(Number(netId), checkInForm);
       
@@ -698,13 +709,11 @@ const NetView: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         <IconButton size="small">
-                          <EditIcon fontSize="small" />
+                          <EditIcon />
                         </IconButton>
-                        {canManage && (
-                          <IconButton size="small" color="error">
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
-                        )}
+                        <IconButton size="small">
+                          <DeleteIcon />
+                        </IconButton>
                       </TableCell>
                     </TableRow>
                   ))}
