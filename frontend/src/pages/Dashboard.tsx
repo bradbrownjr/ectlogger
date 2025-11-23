@@ -23,6 +23,8 @@ interface Net {
   status: string;
   owner_id: number;
   started_at?: string;
+  closed_at?: string;
+  created_at: string;
   frequencies: any[];
 }
 
@@ -107,6 +109,21 @@ const Dashboard: React.FC = () => {
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                     {net.description || 'No description'}
                   </Typography>
+                  {(net.status === 'closed' && net.closed_at) && (
+                    <Typography variant="caption" display="block" color="text.secondary" sx={{ mb: 1 }}>
+                      Closed: {new Date(net.closed_at).toLocaleString()}
+                    </Typography>
+                  )}
+                  {(net.status === 'active' && net.started_at) && (
+                    <Typography variant="caption" display="block" color="text.secondary" sx={{ mb: 1 }}>
+                      Started: {new Date(net.started_at).toLocaleString()}
+                    </Typography>
+                  )}
+                  {(net.status === 'draft' || net.status === 'scheduled') && (
+                    <Typography variant="caption" display="block" color="text.secondary" sx={{ mb: 1 }}>
+                      Created: {new Date(net.created_at).toLocaleString()}
+                    </Typography>
+                  )}
                   {net.frequencies.length > 0 && (
                     <Typography variant="caption" color="text.secondary">
                       Frequencies: {net.frequencies.map((f: any) => {

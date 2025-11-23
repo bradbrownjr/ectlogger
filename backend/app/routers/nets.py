@@ -416,7 +416,7 @@ async def clone_net(
     )
     original_net = result.scalar_one_or_none()
     
-    if not net:
+    if not original_net:
         raise HTTPException(status_code=404, detail="Net not found")
     
     # Create new net with copied settings

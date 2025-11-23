@@ -55,6 +55,7 @@ interface Net {
   frequencies: Frequency[];
   started_at?: string;
   closed_at?: string;
+  created_at: string;
 }
 
 interface Frequency {
@@ -441,6 +442,24 @@ const NetView: React.FC = () => {
             {net.description}
           </Typography>
         )}
+
+        <Box sx={{ mb: 2 }}>
+          {net.status === 'closed' && net.closed_at && (
+            <Typography variant="body2" color="text.secondary">
+              📅 Closed: {new Date(net.closed_at).toLocaleString()}
+            </Typography>
+          )}
+          {net.status === 'active' && net.started_at && (
+            <Typography variant="body2" color="text.secondary">
+              📅 Started: {new Date(net.started_at).toLocaleString()}
+            </Typography>
+          )}
+          {(net.status === 'draft' || net.status === 'scheduled') && net.created_at && (
+            <Typography variant="body2" color="text.secondary">
+              📅 Created: {new Date(net.created_at).toLocaleString()}
+            </Typography>
+          )}
+        </Box>
 
         {net.frequencies.length > 0 && (
           <Box sx={{ mb: 3 }}>
