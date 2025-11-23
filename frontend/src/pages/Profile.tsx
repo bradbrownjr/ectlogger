@@ -38,7 +38,7 @@ const Profile: React.FC = () => {
     setSaving(true);
 
     try {
-      await api.patch(`/users/${user?.id}`, formData);
+      await api.put('/users/me', formData);
       
       // Refresh user data
       const token = localStorage.getItem('token');
