@@ -13,6 +13,15 @@ if ! command -v git &> /dev/null; then
     exit 1
 fi
 
+# Configure git credential caching if not already set
+if [ -z "$(git config --global credential.helper)" ]; then
+    echo "Configuring Git credential cache (1 hour)..."
+    git config --global credential.helper cache
+    git config --global credential.helper 'cache --timeout=3600'
+    echo "✓ Credentials will be cached for 1 hour"
+    echo ""
+fi
+
 # Check if we're in a git repository
 if ! git rev-parse --git-dir > /dev/null 2>&1; then
     echo "✗ Not a git repository. Cannot check for updates."
