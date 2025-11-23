@@ -7,6 +7,13 @@ echo "🔄 ECTLogger Update Checker"
 echo "============================"
 echo ""
 
+# Check if service is running and warn
+if command -v systemctl &> /dev/null && systemctl is-active --quiet ectlogger.service 2>/dev/null; then
+    echo "ℹ️  ECTLogger service is currently running"
+    echo "   It will be stopped during the update and can be restarted after."
+    echo ""
+fi
+
 # Check if git is installed
 if ! command -v git &> /dev/null; then
     echo "✗ Git not found. Please install git to check for updates."
@@ -80,6 +87,15 @@ fi
 echo ""
 echo "Updating ECTLogger..."
 
+# Check if systemd service is running
+SERVICE_WAS_RUNNING=false
+if command -v systemctl &> /dev/null && systemctl is-active --quiet ectlogger.service 2>/dev/null; then
+    SERVICE_WAS_RUNNING=true
+    echo "🛑 Stopping ectlogger service..."
+    sudo systemctl stop ectlogger.service
+    echo "✓ Service stopped"
+fi
+
 # Stash local changes if needed
 if [ "$HAS_LOCAL_CHANGES" = true ]; then
     echo "Preserving local changes..."
@@ -129,10 +145,41 @@ if git pull origin $CURRENT_BRANCH; then
     
     echo ""
     echo "✓ Update complete!"
-    echo ""
-    echo "⚠️  Please restart the application:"
-    echo "  1. Stop current servers (Ctrl+C if running)"
-    echo "  2. Run: ./start.sh"
+    
+    # Offer to restart service if it was running
+    if [ "$SERVICE_WAS_RUNNING" = true ]; then
+        echo ""
+        echo "Would you like to restart the service now? (Y/n)"
+        read -r restart_response
+        
+        if [[ ! "$restart_response" =~ ^[Nn]$ ]]; then
+            echo "🚀 Starting ectlogger service..."
+            sudo systemctl start ectlogger.service
+            
+            # Wait a moment for service to start
+            sleep 2
+            
+            # Check if service started successfully
+            if systemctl is-active --quiet ectlogger.service; then
+                echo "✓ Service started successfully"
+                echo ""
+                echo "📊 Service status:"
+                sudo systemctl status ectlogger.service --no-pager -l
+            else
+                echo "✗ Service failed to start. Check logs with:"
+                echo "  sudo journalctl -u ectlogger.service -n 50"
+            fi
+        else
+            echo ""
+            echo "⚠️  Service not restarted. Start it manually with:"
+            echo "  sudo systemctl start ectlogger.service"
+        fi
+    else
+        echo ""
+        echo "⚠️  Please restart the application:"
+        echo "  1. Stop current servers (Ctrl+C if running)"
+        echo "  2. Run: ./start.sh"
+    fi
     
 else
     echo "✗ Update failed. Please resolve any conflicts manually."
