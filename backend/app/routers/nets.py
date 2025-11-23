@@ -237,8 +237,44 @@ async def close_net(
     
     await db.commit()
     
-    # Generate and send log
-    # TODO: Implement log generation
+    # Get owner/NCS information
+    result = await db.execute(
+        select(User).where(User.id == net.owner_id)
+    )
+    owner = result.scalar_one_or_none()
+    
+    # Prepare check-ins data for email
+    check_ins_data = []
+    for check_in in sorted(net.check_ins, key=lambda x: x.checked_in_at):
+        check_ins_data.append({
+            'time': check_in.checked_in_at.strftime("%Y-%m-%d %H:%M:%S") if check_in.checked_in_at else "",
+            'callsign': check_in.callsign,
+            'name': check_in.name,
+            'location': check_in.location,
+            'skywarn_number': check_in.skywarn_number or '',
+            'weather_observation': check_in.weather_observation or '',
+            'power_source': check_in.power_source or '',
+            'feedback': check_in.feedback or '',
+            'notes': check_in.notes or '',
+            'status': check_in.status.value if check_in.status else ''
+        })
+    
+    # Send log email to owner
+    if owner and owner.email:
+        try:
+            email_service = EmailService()
+            await email_service.send_net_log(
+                email=owner.email,
+                net_name=net.name,
+                net_description=net.description or "",
+                ncs_name=owner.callsign or owner.name or owner.email,
+                check_ins=check_ins_data,
+                started_at=net.started_at.strftime("%Y-%m-%d %H:%M:%S") if net.started_at else "N/A",
+                closed_at=net.closed_at.strftime("%Y-%m-%d %H:%M:%S") if net.closed_at else "N/A"
+            )
+        except Exception as e:
+            # Log error but don't fail the close operation
+            print(f"Failed to send net log email: {e}")
     
     return NetResponse.from_orm(net)
 

@@ -1,10 +1,14 @@
 import aiosmtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email import encoders
 from jinja2 import Template
-from typing import List
+from typing import List, Optional
 from app.config import settings
 from app.logger import logger
+import io
+import csv
 
 
 class EmailService:
@@ -225,36 +229,162 @@ This is an automated message, please do not reply.
         )
 
     @staticmethod
-    async def send_net_log(email: str, net_name: str, log_content: str):
-        """Send net log after net is closed"""
+    async def send_email_with_attachment(to_email: str, subject: str, html_content: str, attachment_data: str, attachment_filename: str, attachment_type: str = "text/csv"):
+        """Send an email with an attachment"""
+        logger.info("EMAIL", f"Sending email with attachment to {to_email}")
+        
+        message = MIMEMultipart("mixed")
+        message["Subject"] = subject
+        message["From"] = f"{settings.smtp_from_name} <{settings.smtp_from_email}>"
+        message["To"] = to_email
+        message["Reply-To"] = settings.smtp_from_email
+        message["Message-ID"] = f"<{hash(to_email + subject)}.ectlogger@{settings.smtp_host}>"
+        message["X-Mailer"] = "ECTLogger"
+
+        # Create the HTML part
+        html_part = MIMEText(html_content, "html")
+        message.attach(html_part)
+
+        # Create the attachment
+        attachment = MIMEBase("application", "octet-stream")
+        attachment.set_payload(attachment_data.encode())
+        encoders.encode_base64(attachment)
+        attachment.add_header("Content-Disposition", f"attachment; filename={attachment_filename}")
+        message.attach(attachment)
+
+        try:
+            use_tls = settings.smtp_port == 465
+            await aiosmtplib.send(
+                message,
+                hostname=settings.smtp_host,
+                port=settings.smtp_port,
+                username=settings.smtp_user,
+                password=settings.smtp_password,
+                use_tls=use_tls,
+                start_tls=(settings.smtp_port == 587),
+            )
+            logger.info("EMAIL", f"Email with attachment sent successfully to {to_email}")
+        except Exception as e:
+            logger.error("EMAIL", f"Failed to send email with attachment: {str(e)}")
+            raise
+
+    @staticmethod
+    async def send_net_log(email: str, net_name: str, net_description: str, ncs_name: str, check_ins: list, started_at: str, closed_at: str):
+        """Send net log after net is closed with check-ins table and CSV attachment"""
         html_template = Template("""
         <!DOCTYPE html>
         <html>
         <head>
             <style>
                 body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-                .container { max-width: 800px; margin: 0 auto; padding: 20px; }
-                .log { background-color: #f5f5f5; padding: 15px; border-radius: 4px; 
-                      font-family: monospace; white-space: pre-wrap; margin: 20px 0; }
+                .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+                .summary { background-color: #e3f2fd; padding: 15px; border-radius: 4px; margin: 20px 0; }
+                table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                th { background-color: #1976d2; color: white; }
+                tr:nth-child(even) { background-color: #f2f2f2; }
+                .footer { margin-top: 30px; font-size: 12px; color: #666; }
             </style>
         </head>
         <body>
             <div class="container">
-                <h2>Net Log: {{ net_name }}</h2>
-                <p>The net has been closed. Here is the complete log:</p>
-                <div class="log">{{ log_content }}</div>
+                <h2>📻 Net Log: {{ net_name }}</h2>
+                
+                <div class="summary">
+                    <h3>Net Summary</h3>
+                    <p><strong>Description:</strong> {{ net_description }}</p>
+                    <p><strong>NCS:</strong> {{ ncs_name }}</p>
+                    <p><strong>Started:</strong> {{ started_at }}</p>
+                    <p><strong>Closed:</strong> {{ closed_at }}</p>
+                    <p><strong>Total Check-ins:</strong> {{ check_in_count }}</p>
+                </div>
+
+                <h3>Check-ins</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Callsign</th>
+                            <th>Name</th>
+                            <th>Location</th>
+                            {% if has_skywarn %}<th>SKYWARN#</th>{% endif %}
+                            {% if has_weather %}<th>Weather</th>{% endif %}
+                            {% if has_power %}<th>Power</th>{% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for check_in in check_ins %}
+                        <tr>
+                            <td>{{ check_in.time }}</td>
+                            <td><strong>{{ check_in.callsign }}</strong></td>
+                            <td>{{ check_in.name }}</td>
+                            <td>{{ check_in.location }}</td>
+                            {% if has_skywarn %}<td>{{ check_in.skywarn_number }}</td>{% endif %}
+                            {% if has_weather %}<td>{{ check_in.weather_observation }}</td>{% endif %}
+                            {% if has_power %}<td>{{ check_in.power_source }}</td>{% endif %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <div class="footer">
+                    <p>A CSV file with the complete log is attached to this email.</p>
+                    <p>This is an automated message from {{ app_name }}.</p>
+                </div>
             </div>
         </body>
         </html>
         """)
         
+        # Check which optional fields have data
+        has_skywarn = any(c.get('skywarn_number') for c in check_ins)
+        has_weather = any(c.get('weather_observation') for c in check_ins)
+        has_power = any(c.get('power_source') for c in check_ins)
+        
         html_content = html_template.render(
+            app_name=settings.app_name,
             net_name=net_name,
-            log_content=log_content
+            net_description=net_description or "No description",
+            ncs_name=ncs_name,
+            started_at=started_at,
+            closed_at=closed_at,
+            check_in_count=len(check_ins),
+            check_ins=check_ins,
+            has_skywarn=has_skywarn,
+            has_weather=has_weather,
+            has_power=has_power
         )
         
-        await EmailService.send_email(
+        # Generate CSV
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow([
+            "Check-in Time", "Callsign", "Name", "Location", 
+            "SKYWARN Number", "Weather Observation", "Power Source", 
+            "Feedback", "Notes", "Status"
+        ])
+        
+        for check_in in check_ins:
+            writer.writerow([
+                check_in.get('time', ''),
+                check_in.get('callsign', ''),
+                check_in.get('name', ''),
+                check_in.get('location', ''),
+                check_in.get('skywarn_number', ''),
+                check_in.get('weather_observation', ''),
+                check_in.get('power_source', ''),
+                check_in.get('feedback', ''),
+                check_in.get('notes', ''),
+                check_in.get('status', '')
+            ])
+        
+        csv_data = output.getvalue()
+        filename = f"{net_name.replace(' ', '_')}_{closed_at.split()[0]}.csv"
+        
+        await EmailService.send_email_with_attachment(
             to_email=email,
-            subject=f"Net Log: {net_name}",
-            html_content=html_content
+            subject=f"📻 Net Log: {net_name}",
+            html_content=html_content,
+            attachment_data=csv_data,
+            attachment_filename=filename
         )
