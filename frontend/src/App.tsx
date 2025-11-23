@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { ThemeProvider, createTheme, PaletteMode } from '@mui/material/styles';
 import { CssBaseline, Box } from '@mui/material';
 import { SnackbarProvider } from 'notistack';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ThemeContext } from './contexts/ThemeContext';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import NetView from './pages/NetView';
@@ -12,15 +13,30 @@ import VerifyMagicLink from './pages/VerifyMagicLink';
 import AdminUsers from './pages/AdminUsers';
 import Navbar from './components/Navbar';
 
-const theme = createTheme({
+const getDesignTokens = (mode: PaletteMode) => ({
   palette: {
-    mode: 'light',
-    primary: {
-      main: '#1976d2',
-    },
-    secondary: {
-      main: '#dc004e',
-    },
+    mode,
+    ...(mode === 'light'
+      ? {
+          primary: {
+            main: '#1976d2',
+          },
+          secondary: {
+            main: '#dc004e',
+          },
+        }
+      : {
+          primary: {
+            main: '#90caf9',
+          },
+          secondary: {
+            main: '#f48fb1',
+          },
+          background: {
+            default: '#121212',
+            paper: '#1e1e1e',
+          },
+        }),
   },
 });
 
@@ -87,17 +103,34 @@ const AppRoutes: React.FC = () => {
 };
 
 const App: React.FC = () => {
+  const [mode, setMode] = useState<PaletteMode>(() => {
+    const savedMode = localStorage.getItem('themeMode');
+    return (savedMode as PaletteMode) || 'light';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('themeMode', mode);
+  }, [mode]);
+
+  const toggleColorMode = () => {
+    setMode((prevMode) => (prevMode === 'light' ? 'dark' : 'light'));
+  };
+
+  const theme = useMemo(() => createTheme(getDesignTokens(mode)), [mode]);
+
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <SnackbarProvider maxSnack={3}>
-        <Router>
-          <AuthProvider>
-            <AppRoutes />
-          </AuthProvider>
-        </Router>
-      </SnackbarProvider>
-    </ThemeProvider>
+    <ThemeContext.Provider value={{ mode, toggleColorMode }}>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <SnackbarProvider maxSnack={3}>
+          <Router>
+            <AuthProvider>
+              <AppRoutes />
+            </AuthProvider>
+          </Router>
+        </SnackbarProvider>
+      </ThemeProvider>
+    </ThemeContext.Provider>
   );
 };
 

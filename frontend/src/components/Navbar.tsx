@@ -1,12 +1,16 @@
 import React from 'react';
-import { AppBar, Toolbar, Typography, Button, Box } from '@mui/material';
+import { AppBar, Toolbar, Typography, Button, Box, IconButton } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useThemeMode } from '../contexts/ThemeContext';
 import LogoutIcon from '@mui/icons-material/Logout';
+import Brightness4Icon from '@mui/icons-material/Brightness4';
+import Brightness7Icon from '@mui/icons-material/Brightness7';
 
 const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { mode, toggleColorMode } = useThemeMode();
 
   const handleLogout = () => {
     logout();
@@ -33,6 +37,9 @@ const Navbar: React.FC = () => {
           <Typography variant="body2">
             {user?.callsign || user?.name || user?.email}
           </Typography>
+          <IconButton color="inherit" onClick={toggleColorMode} title={`Switch to ${mode === 'light' ? 'dark' : 'light'} mode`}>
+            {mode === 'light' ? <Brightness4Icon /> : <Brightness7Icon />}
+          </IconButton>
           <Button color="inherit" startIcon={<LogoutIcon />} onClick={handleLogout}>
             Logout
           </Button>
