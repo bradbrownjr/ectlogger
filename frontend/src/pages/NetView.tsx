@@ -32,6 +32,7 @@ import {
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import DownloadIcon from '@mui/icons-material/Download';
 import { netApi, checkInApi } from '../services/api';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -275,6 +276,26 @@ const NetView: React.FC = () => {
     }
   };
 
+  const handleExportCSV = async () => {
+    try {
+      const response = await api.get(`/nets/${netId}/export/csv`, {
+        responseType: 'blob',
+      });
+      
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${net?.name.replace(/ /g, '_')}_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Failed to export CSV:', error);
+    }
+  };
+
   const handleCheckIn = async () => {
     try {
       await checkInApi.create(Number(netId), checkInForm);
@@ -348,6 +369,16 @@ const NetView: React.FC = () => {
             {canManage && net.status === 'active' && (
               <Button variant="contained" color="error" onClick={handleCloseNet} sx={{ mr: 1 }}>
                 Close Net
+              </Button>
+            )}
+            {net.status === 'closed' && (
+              <Button 
+                variant="outlined" 
+                startIcon={<DownloadIcon />}
+                onClick={handleExportCSV} 
+                sx={{ mr: 1 }}
+              >
+                Export CSV
               </Button>
             )}
             <Button variant="outlined" onClick={() => navigate('/dashboard')}>

@@ -1,11 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, status, WebSocket, WebSocketDisconnect
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from typing import List
 from datetime import datetime
+import csv
+import io
 from app.database import get_db
-from app.models import Net, NetStatus, User, Frequency, NetRole, net_frequencies
+from app.models import Net, NetStatus, User, Frequency, NetRole, net_frequencies, CheckIn
 from app.schemas import NetCreate, NetUpdate, NetResponse, FrequencyResponse
 from app.dependencies import get_current_user
 from app.email_service import EmailService
@@ -230,6 +233,75 @@ async def close_net(
     # TODO: Implement log generation
     
     return NetResponse.from_orm(net)
+
+
+@router.get("/{net_id}/export/csv")
+async def export_net_csv(
+    net_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Export net check-ins as CSV"""
+    # Get net with check-ins
+    result = await db.execute(
+        select(Net).options(
+            selectinload(Net.check_ins).selectinload(CheckIn.frequency)
+        ).where(Net.id == net_id)
+    )
+    net = result.scalar_one_or_none()
+    
+    if not net:
+        raise HTTPException(status_code=404, detail="Net not found")
+    
+    # Check permissions - anyone can export a net they have access to
+    if not await check_net_permission(db, net, current_user):
+        raise HTTPException(status_code=403, detail="Not authorized to export this net")
+    
+    # Create CSV in memory
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    # Write header
+    headers = [
+        "Check-in Time", "Callsign", "Name", "Location", 
+        "Frequency", "SKYWARN Number", "Weather Observation",
+        "Power Source", "Feedback", "Notes", "Status"
+    ]
+    writer.writerow(headers)
+    
+    # Write check-ins
+    for check_in in sorted(net.check_ins, key=lambda x: x.checked_in_at):
+        frequency_str = ""
+        if check_in.frequency:
+            if check_in.frequency.frequency:
+                frequency_str = f"{check_in.frequency.frequency} {check_in.frequency.mode}"
+            else:
+                # Digital mode
+                frequency_str = f"{check_in.frequency.network} TG{check_in.frequency.talkgroup}"
+        
+        writer.writerow([
+            check_in.checked_in_at.strftime("%Y-%m-%d %H:%M:%S") if check_in.checked_in_at else "",
+            check_in.callsign,
+            check_in.name,
+            check_in.location,
+            frequency_str,
+            check_in.skywarn_number or "",
+            check_in.weather_observation or "",
+            check_in.power_source or "",
+            check_in.feedback or "",
+            check_in.notes or "",
+            check_in.status.value if check_in.status else ""
+        ])
+    
+    # Prepare response
+    output.seek(0)
+    filename = f"{net.name.replace(' ', '_')}_{net.started_at.strftime('%Y%m%d') if net.started_at else 'draft'}.csv"
+    
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
 
 
 @router.delete("/{net_id}", status_code=status.HTTP_204_NO_CONTENT)
