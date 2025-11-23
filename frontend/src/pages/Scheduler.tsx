@@ -138,24 +138,24 @@ const Scheduler: React.FC = () => {
                 <CardContent>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
                     <Typography variant="h6" component="h2">
-                      {Schedule.name}
+                      {schedule.name}
                     </Typography>
-                    {!Schedule.is_active && (
+                    {!schedule.is_active && (
                       <Chip label="Inactive" color="default" size="small" />
                     )}
                   </Box>
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                    {Schedule.description || 'No description'}
+                    {schedule.description || 'No description'}
                   </Typography>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                     <NotificationsActiveIcon fontSize="small" color="action" />
                     <Typography variant="caption" color="text.secondary">
-                      {Schedule.subscriber_count} subscriber{Schedule.subscriber_count !== 1 ? 's' : ''}
+                      {schedule.subscriber_count} subscriber{schedule.subscriber_count !== 1 ? 's' : ''}
                     </Typography>
                   </Box>
-                  {Schedule.frequencies.length > 0 && (
+                  {schedule.frequencies.length > 0 && (
                     <Typography variant="caption" color="text.secondary">
-                      Frequencies: {Schedule.frequencies.map((f: any) => {
+                      Frequencies: {schedule.frequencies.map((f: any) => {
                         if (f.frequency) {
                           return f.frequency;
                         } else if (f.network && f.talkgroup) {
@@ -173,17 +173,17 @@ const Scheduler: React.FC = () => {
                     <Button
                       size="small"
                       startIcon={<PlayArrowIcon />}
-                      onClick={() => handleCreateNetFromSchedule(Schedule.id)}
+                      onClick={() => handleCreateNetFromSchedule(schedule.id)}
                     >
                       Create Net
                     </Button>
                   </Box>
                   <Box>
-                    {Schedule.is_subscribed ? (
+                    {schedule.is_subscribed ? (
                       <IconButton
                         size="small"
                         color="primary"
-                        onClick={() => handleUnsubscribe(Schedule.id)}
+                        onClick={() => handleUnsubscribe(schedule.id)}
                         title="Unsubscribe from notifications"
                       >
                         <NotificationsActiveIcon />
@@ -191,24 +191,24 @@ const Scheduler: React.FC = () => {
                     ) : (
                       <IconButton
                         size="small"
-                        onClick={() => handleSubscribe(Schedule.id)}
+                        onClick={() => handleSubscribe(schedule.id)}
                         title="Subscribe to notifications"
                       >
                         <NotificationsOffIcon />
                       </IconButton>
                     )}
-                    {(isOwner(Schedule) || isAdmin) && (
+                    {(isOwner(schedule) || isAdmin) && (
                       <>
                         <IconButton
                           size="small"
-                          onClick={() => navigate(`/Scheduler/${Schedule.id}/edit`)}
+                          onClick={() => navigate(`/scheduler/${schedule.id}/edit`)}
                         >
                           <EditIcon />
                         </IconButton>
                         <IconButton
                           size="small"
                           color="error"
-                          onClick={() => handleDelete(Schedule.id)}
+                          onClick={() => handleDelete(schedule.id)}
                         >
                           <DeleteIcon />
                         </IconButton>
