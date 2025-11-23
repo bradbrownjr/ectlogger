@@ -101,7 +101,11 @@ const NetView: React.FC = () => {
       return;
     }
     
-    const websocket = new WebSocket(`ws://localhost:8000/ws/nets/${netId}?token=${token}`);
+    // Get WebSocket URL from environment (convert http:// to ws://, https:// to wss://)
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+    const wsUrl = apiUrl.replace(/^http/, 'ws');
+    
+    const websocket = new WebSocket(`${wsUrl}/ws/nets/${netId}?token=${token}`);
     
     websocket.onopen = () => {
       console.log('WebSocket connected');
