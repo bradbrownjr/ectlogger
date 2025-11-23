@@ -51,9 +51,11 @@ echo "----------------------------------------"
 echo ""
 
 # Check for local changes
+HAS_LOCAL_CHANGES=false
 if ! git diff-index --quiet HEAD --; then
+    HAS_LOCAL_CHANGES=true
     echo "⚠️  Warning: You have uncommitted local changes."
-    echo "These changes will be preserved, but conflicts may occur."
+    echo "Local configuration files (.env) will be preserved."
     echo ""
 fi
 
@@ -69,9 +71,26 @@ fi
 echo ""
 echo "Updating ECTLogger..."
 
+# Stash local changes if needed
+if [ "$HAS_LOCAL_CHANGES" = true ]; then
+    echo "Preserving local changes..."
+    git stash push -m "Auto-stash before update $(date)" --quiet
+fi
+
 # Pull changes
 if git pull origin $CURRENT_BRANCH; then
     echo "✓ Code updated successfully"
+    
+    # Restore local changes
+    if [ "$HAS_LOCAL_CHANGES" = true ]; then
+        echo "Restoring local changes..."
+        if git stash pop --quiet 2>/dev/null; then
+            echo "✓ Local changes restored"
+        else
+            echo "⚠️  Some local changes couldn't be restored automatically."
+            echo "   Run 'git stash list' to see stashed changes."
+        fi
+    fi
     
     # Make scripts executable
     echo "Setting script permissions..."
