@@ -92,7 +92,6 @@ const NetView: React.FC = () => {
   const { netId } = useParams<{ netId: string }>();
   const [net, setNet] = useState<Net | null>(null);
   const [checkIns, setCheckIns] = useState<CheckIn[]>([]);
-  const [checkInDialogOpen, setCheckInDialogOpen] = useState(false);
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
   const [netRoles, setNetRoles] = useState<NetRole[]>([]);
   const [allUsers, setAllUsers] = useState<any[]>([]);
@@ -102,7 +101,6 @@ const NetView: React.FC = () => {
   const [ws, setWs] = useState<WebSocket | null>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [useCustomCallsign, setUseCustomCallsign] = useState(false);
 
   // Check-in form state
   const [checkInForm, setCheckInForm] = useState({
@@ -327,21 +325,34 @@ const NetView: React.FC = () => {
   };
 
   const handleCheckIn = async () => {
+    // Validate required fields
+    if (!checkInForm.callsign) {
+      alert('Callsign is required');
+      return;
+    }
+
     try {
       await checkInApi.create(Number(netId), checkInForm);
-      setCheckInDialogOpen(false);
-      setUseCustomCallsign(false);
+      
+      // Clear form for next check-in
       setCheckInForm({
-        callsign: user?.callsign || '',
-        name: user?.name || '',
-        location: user?.location || '',
+        callsign: '',
+        name: '',
+        location: '',
         skywarn_number: '',
         weather_observation: '',
         power_source: '',
         feedback: '',
         notes: '',
       });
+      
       fetchCheckIns();
+      
+      // Focus back on callsign field
+      setTimeout(() => {
+        const callsignInput = document.querySelector('input[placeholder="Callsign"]') as HTMLInputElement;
+        if (callsignInput) callsignInput.focus();
+      }, 100);
       
       // Broadcast via WebSocket
       if (ws && ws.readyState === WebSocket.OPEN) {
@@ -353,6 +364,7 @@ const NetView: React.FC = () => {
       }
     } catch (error) {
       console.error('Failed to create check-in:', error);
+      alert('Failed to check in station');
     }
   };
 
@@ -523,28 +535,175 @@ const NetView: React.FC = () => {
           <>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <Typography variant="h6">Check-ins ({checkIns.length})</Typography>
-              <Button 
-                variant="contained" 
-                onClick={() => setCheckInDialogOpen(true)}
-              >
-                Check In Station
-              </Button>
             </Box>
 
             <TableContainer>
-              <Table>
+              <Table size="small">
                 <TableHead>
                   <TableRow>
                     <TableCell>#</TableCell>
                     <TableCell>Status</TableCell>
-                    <TableCell>Callsign</TableCell>
-                    <TableCell>Name</TableCell>
-                    <TableCell>Location</TableCell>
+                    <TableCell>Callsign *</TableCell>
+                    {net?.field_config?.name?.enabled && <TableCell>Name {net.field_config.name.required && '*'}</TableCell>}
+                    {net?.field_config?.location?.enabled && <TableCell>Location {net.field_config.location.required && '*'}</TableCell>}
+                    {net?.field_config?.skywarn_number?.enabled && <TableCell>SKYWARN # {net.field_config.skywarn_number.required && '*'}</TableCell>}
+                    {net?.field_config?.weather_observation?.enabled && <TableCell>Weather {net.field_config.weather_observation.required && '*'}</TableCell>}
+                    {net?.field_config?.power_source?.enabled && <TableCell>Power {net.field_config.power_source.required && '*'}</TableCell>}
+                    {net?.field_config?.notes?.enabled && <TableCell>Notes {net.field_config.notes.required && '*'}</TableCell>}
                     <TableCell>Time</TableCell>
                     <TableCell>Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
+                  {/* New check-in row */}
+                  <TableRow sx={{ backgroundColor: 'action.hover' }}>
+                    <TableCell>{checkIns.length + 1}</TableCell>
+                    <TableCell>➕</TableCell>
+                    <TableCell>
+                      <TextField
+                        size="small"
+                        value={checkInForm.callsign}
+                        onChange={(e) => setCheckInForm({ ...checkInForm, callsign: e.target.value.toUpperCase() })}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            const nextInput = (e.target as HTMLElement).parentElement?.parentElement?.nextElementSibling?.querySelector('input');
+                            if (nextInput) (nextInput as HTMLInputElement).focus();
+                          }
+                        }}
+                        placeholder="Callsign"
+                        inputProps={{ style: { textTransform: 'uppercase' } }}
+                        fullWidth
+                        required
+                      />
+                    </TableCell>
+                    {net?.field_config?.name?.enabled && (
+                      <TableCell>
+                        <TextField
+                          size="small"
+                          value={checkInForm.name}
+                          onChange={(e) => setCheckInForm({ ...checkInForm, name: e.target.value })}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              const nextInput = (e.target as HTMLElement).parentElement?.parentElement?.nextElementSibling?.querySelector('input');
+                              if (nextInput) (nextInput as HTMLInputElement).focus();
+                            }
+                          }}
+                          placeholder="Name"
+                          fullWidth
+                          required={net.field_config.name.required}
+                        />
+                      </TableCell>
+                    )}
+                    {net?.field_config?.location?.enabled && (
+                      <TableCell>
+                        <TextField
+                          size="small"
+                          value={checkInForm.location}
+                          onChange={(e) => setCheckInForm({ ...checkInForm, location: e.target.value })}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              const nextInput = (e.target as HTMLElement).parentElement?.parentElement?.nextElementSibling?.querySelector('input');
+                              if (nextInput) (nextInput as HTMLInputElement).focus();
+                            }
+                          }}
+                          placeholder="Location"
+                          fullWidth
+                          required={net.field_config.location.required}
+                        />
+                      </TableCell>
+                    )}
+                    {net?.field_config?.skywarn_number?.enabled && (
+                      <TableCell>
+                        <TextField
+                          size="small"
+                          value={checkInForm.skywarn_number}
+                          onChange={(e) => setCheckInForm({ ...checkInForm, skywarn_number: e.target.value })}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              const nextInput = (e.target as HTMLElement).parentElement?.parentElement?.nextElementSibling?.querySelector('input');
+                              if (nextInput) (nextInput as HTMLInputElement).focus();
+                            }
+                          }}
+                          placeholder="SKYWARN #"
+                          fullWidth
+                          required={net.field_config.skywarn_number.required}
+                        />
+                      </TableCell>
+                    )}
+                    {net?.field_config?.weather_observation?.enabled && (
+                      <TableCell>
+                        <TextField
+                          size="small"
+                          value={checkInForm.weather_observation}
+                          onChange={(e) => setCheckInForm({ ...checkInForm, weather_observation: e.target.value })}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              const nextInput = (e.target as HTMLElement).parentElement?.parentElement?.nextElementSibling?.querySelector('input');
+                              if (nextInput) (nextInput as HTMLInputElement).focus();
+                            }
+                          }}
+                          placeholder="Weather"
+                          fullWidth
+                          required={net.field_config.weather_observation.required}
+                        />
+                      </TableCell>
+                    )}
+                    {net?.field_config?.power_source?.enabled && (
+                      <TableCell>
+                        <TextField
+                          size="small"
+                          value={checkInForm.power_source}
+                          onChange={(e) => setCheckInForm({ ...checkInForm, power_source: e.target.value })}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              const nextInput = (e.target as HTMLElement).parentElement?.parentElement?.nextElementSibling?.querySelector('input');
+                              if (nextInput) (nextInput as HTMLInputElement).focus();
+                            }
+                          }}
+                          placeholder="Power"
+                          fullWidth
+                          required={net.field_config.power_source.required}
+                        />
+                      </TableCell>
+                    )}
+                    {net?.field_config?.notes?.enabled && (
+                      <TableCell>
+                        <TextField
+                          size="small"
+                          value={checkInForm.notes}
+                          onChange={(e) => setCheckInForm({ ...checkInForm, notes: e.target.value })}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleCheckIn();
+                            }
+                          }}
+                          placeholder="Notes"
+                          fullWidth
+                          required={net.field_config.notes.required}
+                        />
+                      </TableCell>
+                    )}
+                    <TableCell>-</TableCell>
+                    <TableCell>
+                      <Button
+                        size="small"
+                        variant="contained"
+                        onClick={handleCheckIn}
+                        disabled={!checkInForm.callsign}
+                      >
+                        Add
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+
+                  {/* Existing check-ins */}
                   {checkIns.map((checkIn, index) => (
                     <TableRow key={checkIn.id}>
                       <TableCell>{index + 1}</TableCell>
@@ -553,8 +712,12 @@ const NetView: React.FC = () => {
                         {checkIn.callsign}
                         {checkIn.is_recheck && ' 🔄'}
                       </TableCell>
-                      <TableCell>{checkIn.name}</TableCell>
-                      <TableCell>{checkIn.location}</TableCell>
+                      {net?.field_config?.name?.enabled && <TableCell>{checkIn.name}</TableCell>}
+                      {net?.field_config?.location?.enabled && <TableCell>{checkIn.location}</TableCell>}
+                      {net?.field_config?.skywarn_number?.enabled && <TableCell>{checkIn.skywarn_number}</TableCell>}
+                      {net?.field_config?.weather_observation?.enabled && <TableCell>{checkIn.weather_observation}</TableCell>}
+                      {net?.field_config?.power_source?.enabled && <TableCell>{checkIn.power_source}</TableCell>}
+                      {net?.field_config?.notes?.enabled && <TableCell>{checkIn.notes}</TableCell>}
                       <TableCell>
                         {new Date(checkIn.checked_in_at).toLocaleTimeString()}
                       </TableCell>
@@ -582,125 +745,6 @@ const NetView: React.FC = () => {
           </Alert>
         )}
       </Paper>
-
-      {/* Check-in Dialog */}
-      <Dialog open={checkInDialogOpen} onClose={() => setCheckInDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Check In Station</DialogTitle>
-        <DialogContent>
-          {!useCustomCallsign && user?.callsigns && user.callsigns.length > 0 ? (
-            <FormControl fullWidth margin="normal" required>
-              <InputLabel>Callsign *</InputLabel>
-              <Select
-                value={checkInForm.callsign}
-                label="Callsign *"
-                onChange={(e) => {
-                  if (e.target.value === '__custom__') {
-                    setUseCustomCallsign(true);
-                    setCheckInForm({ ...checkInForm, callsign: '' });
-                  } else {
-                    setCheckInForm({ ...checkInForm, callsign: e.target.value as string });
-                  }
-                }}
-              >
-                {user.callsign && (
-                  <MenuItem value={user.callsign}>{user.callsign} (Primary)</MenuItem>
-                )}
-                {user.callsigns.map((cs: string) => (
-                  <MenuItem key={cs} value={cs}>{cs}</MenuItem>
-                ))}
-                <MenuItem value="__custom__">
-                  <em>Custom / Tactical Callsign...</em>
-                </MenuItem>
-              </Select>
-            </FormControl>
-          ) : (
-            <TextField
-              fullWidth
-              label="Callsign *"
-              value={checkInForm.callsign}
-              onChange={(e) => setCheckInForm({ ...checkInForm, callsign: e.target.value.toUpperCase() })}
-              margin="normal"
-              required
-              helperText={useCustomCallsign ? "Enter tactical or building callsign (e.g., WS1EC, WX1GYX)" : undefined}
-              inputProps={{ style: { textTransform: 'uppercase' } }}
-            />
-          )}
-          {net?.field_config?.name?.enabled && (
-            <TextField
-              fullWidth
-              label={`Name ${net.field_config.name.required ? '*' : ''}`}
-              value={checkInForm.name}
-              onChange={(e) => setCheckInForm({ ...checkInForm, name: e.target.value })}
-              margin="normal"
-              required={net.field_config.name.required}
-            />
-          )}
-          {net?.field_config?.location?.enabled && (
-            <TextField
-              fullWidth
-              label={`Location ${net.field_config.location.required ? '*' : ''}`}
-              value={checkInForm.location}
-              onChange={(e) => setCheckInForm({ ...checkInForm, location: e.target.value })}
-              margin="normal"
-              required={net.field_config.location.required}
-            />
-          )}
-          {net?.field_config?.skywarn_number?.enabled && (
-            <TextField
-              fullWidth
-              label={`SKYWARN Number ${net.field_config.skywarn_number.required ? '*' : ''}`}
-              value={checkInForm.skywarn_number}
-              onChange={(e) => setCheckInForm({ ...checkInForm, skywarn_number: e.target.value })}
-              margin="normal"
-              required={net.field_config.skywarn_number.required}
-            />
-          )}
-          {net?.field_config?.weather_observation?.enabled && (
-            <TextField
-              fullWidth
-              label={`Weather Observation ${net.field_config.weather_observation.required ? '*' : ''}`}
-              value={checkInForm.weather_observation}
-              onChange={(e) => setCheckInForm({ ...checkInForm, weather_observation: e.target.value })}
-              margin="normal"
-              required={net.field_config.weather_observation.required}
-              multiline
-              rows={2}
-            />
-          )}
-          {net?.field_config?.power_source?.enabled && (
-            <TextField
-              fullWidth
-              label={`Power Source ${net.field_config.power_source.required ? '*' : ''}`}
-              value={checkInForm.power_source}
-              onChange={(e) => setCheckInForm({ ...checkInForm, power_source: e.target.value })}
-              margin="normal"
-              required={net.field_config.power_source.required}
-            />
-          )}
-          {net?.field_config?.notes?.enabled && (
-            <TextField
-              fullWidth
-              label={`Notes ${net.field_config.notes.required ? '*' : ''}`}
-              value={checkInForm.notes}
-              onChange={(e) => setCheckInForm({ ...checkInForm, notes: e.target.value })}
-              margin="normal"
-              required={net.field_config.notes.required}
-              multiline
-              rows={2}
-            />
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setCheckInDialogOpen(false)}>Cancel</Button>
-          <Button 
-            onClick={handleCheckIn}
-            variant="contained"
-            disabled={!checkInForm.callsign || !checkInForm.name || !checkInForm.location}
-          >
-            Check In
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       {/* Role Management Dialog */}
       <Dialog open={roleDialogOpen} onClose={() => setRoleDialogOpen(false)} maxWidth="sm" fullWidth>
