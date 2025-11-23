@@ -32,8 +32,8 @@ const Navbar: React.FC = () => {
           <Button color="inherit" onClick={() => navigate('/dashboard')}>
             Dashboard
           </Button>
-          <Button color="inherit" onClick={() => navigate('/templates')}>
-            Templates
+          <Button color="inherit" onClick={() => navigate('/scheduler')}>
+            Scheduler
           </Button>
           {user?.role === 'admin' && (
             <Button color="inherit" onClick={() => navigate('/admin/users')}>

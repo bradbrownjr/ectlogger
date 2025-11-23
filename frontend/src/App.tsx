@@ -9,8 +9,8 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import NetView from './pages/NetView';
 import CreateNet from './pages/CreateNet';
-import Templates from './pages/Templates';
-import CreateTemplate from './pages/CreateTemplate';
+import Scheduler from './pages/Scheduler';
+import CreateSchedule from './pages/CreateSchedule';
 import VerifyMagicLink from './pages/VerifyMagicLink';
 import AdminUsers from './pages/AdminUsers';
 import Profile from './pages/Profile';
@@ -109,26 +109,26 @@ const AppRoutes: React.FC = () => {
             }
           />
           <Route
-            path="/templates"
+            path="/scheduler"
             element={
               <PrivateRoute>
-                <Templates />
+                <Scheduler />
               </PrivateRoute>
             }
           />
           <Route
-            path="/templates/create"
+            path="/scheduler/create"
             element={
               <PrivateRoute>
-                <CreateTemplate />
+                <CreateSchedule />
               </PrivateRoute>
             }
           />
           <Route
-            path="/templates/:templateId/edit"
+            path="/scheduler/:scheduleId/edit"
             element={
               <PrivateRoute>
-                <CreateTemplate />
+                <CreateSchedule />
               </PrivateRoute>
             }
           />

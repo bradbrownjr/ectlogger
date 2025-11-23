@@ -29,7 +29,7 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import { templateApi, netApi } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
-interface Template {
+interface Schedule {
   id: number;
   name: string;
   description: string;
@@ -39,133 +39,142 @@ interface Template {
   frequencies: any[];
 }
 
-const Templates: React.FC = () => {
-  const [templates, setTemplates] = useState<Template[]>([]);
+const Scheduler: React.FC = () => {
+  const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [currentTemplate, setCurrentTemplate] = useState<Template | null>(null);
-  const [subscribedTemplates, setSubscribedTemplates] = useState<Set<number>>(new Set());
+  const [currentSchedule, setCurrentSchedule] = useState<Schedule | null>(null);
+  const [subscribedSchedules, setSubscribedSchedules] = useState<Set<number>>(new Set());
   const navigate = useNavigate();
   const { user } = useAuth();
 
   useEffect(() => {
-    fetchTemplates();
+    fetchSchedules();
   }, []);
 
-  const fetchTemplates = async () => {
+  const fetchSchedules = async () => {
     try {
       const response = await templateApi.list();
-      setTemplates(response.data);
+      setSchedules(response.data);
       
-      // Check which templates user is subscribed to (would need separate endpoint)
+      // Check which Scheduler user is subscribed to (would need separate endpoint)
       // For now, we'll track subscriptions locally
     } catch (error) {
-      console.error('Failed to fetch templates:', error);
+      console.error('Failed to fetch schedules:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSubscribe = async (templateId: number) => {
+  const handleSubscribe = async (scheduleId: number) => {
     try {
-      await templateApi.subscribe(templateId);
-      setSubscribedTemplates(prev => new Set(prev).add(templateId));
-      fetchTemplates(); // Refresh to update subscriber count
+      await templateApi.subscribe(scheduleId);
+      setsubscribedSchedules(prev => new Set(prev).add(scheduleId));
+      fetchSchedules(); // Refresh to update subscriber count
     } catch (error: any) {
       console.error('Failed to subscribe:', error);
-      alert(error.response?.data?.detail || 'Failed to subscribe');
+      console.error('Failed to subscribe:', error);
     }
   };
 
-  const handleUnsubscribe = async (templateId: number) => {
+  const handleUnsubscribe = async (scheduleId: number) => {
     try {
-      await templateApi.unsubscribe(templateId);
-      setSubscribedTemplates(prev => {
+      await templateApi.unsubscribe(scheduleId);
+      setSubscribedSchedules(prev => {
         const newSet = new Set(prev);
-        newSet.delete(templateId);
+        newSet.delete(scheduleId);
         return newSet;
       });
-      fetchTemplates(); // Refresh to update subscriber count
+      fetchSchedules(); // Refresh to update subscriber count
     } catch (error: any) {
       console.error('Failed to unsubscribe:', error);
       alert(error.response?.data?.detail || 'Failed to unsubscribe');
     }
   };
 
-  const handleCreateNetFromTemplate = async (templateId: number) => {
+  const handleCreateNetFromSchedule = async (scheduleId: number) => {
     try {
-      const response = await templateApi.createNetFromTemplate(templateId);
+      const response = await templateApi.createNetFromSchedule(scheduleId);
       const netId = response.data.id;
       navigate(`/nets/${netId}/edit`);
     } catch (error: any) {
-      console.error('Failed to create net from template:', error);
+      console.error('Failed to unsubscribe:', error);
+    }
+  };
+
+  const handleCreateNetFromSchedule = async (scheduleId: number) => {
+    try {
+      const response = await templateApi.createNetFromSchedule(scheduleId);
+      navigate(`/nets/${response.data.id}`);
+    } catch (error) {
+      console.error('Failed to create net from schedule:', error);
       alert(error.response?.data?.detail || 'Failed to create net');
     }
   };
 
-  const handleDelete = async (templateId: number) => {
-    if (!confirm('Are you sure you want to delete this template?')) return;
-    
+  const handleDelete = async (scheduleId: number) => {
+    if (!confirm('Are you sure you want to delete this schedule?')) return;
+
     try {
-      await templateApi.delete(templateId);
-      fetchTemplates();
+      await templateApi.delete(scheduleId);
+      fetchSchedules();
     } catch (error: any) {
-      console.error('Failed to delete template:', error);
-      alert(error.response?.data?.detail || 'Failed to delete template');
+      console.error('Failed to delete schedule:', error);
+      alert(error.response?.data?.detail || 'Failed to delete schedule');
     }
   };
 
-  const isOwner = (template: Template) => user?.id === template.owner_id;
+  const isOwner = (schedule: Schedule) => user?.id === schedule.owner_id;
   const isAdmin = user?.role === 'admin';
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" component="h1">
-          📋 Net Templates
+        <Typography variant="h4" component="h1" gutterBottom>
+          📅 Net Scheduler
         </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Create reusable templates for recurring nets
+        <Typography variant="body1" color="text.secondary">
+          Create recurring net schedules and subscribe to notifications
         </Typography>
       </Box>
 
       {loading ? (
-        <Typography>Loading templates...</Typography>
-      ) : templates.length === 0 ? (
+        <Typography>Loading Scheduler...</Typography>
+      ) : Scheduler.length === 0 ? (
         <Box sx={{ textAlign: 'center', mt: 8 }}>
           <Typography variant="h6" color="text.secondary" gutterBottom>
-            No templates yet
+            No Scheduler yet
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Create your first template to get started
+            Create your first Schedule to get started
           </Typography>
         </Box>
       ) : (
         <Grid container spacing={3}>
-          {templates.map((template: Template) => (
-            <Grid item xs={12} sm={6} md={4} key={template.id}>
+          {schedules.map((schedule: Schedule) => (
+            <Grid item xs={12} sm={6} md={4} key={schedule.id}>
               <Card>
                 <CardContent>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
                     <Typography variant="h6" component="h2">
-                      {template.name}
+                      {Schedule.name}
                     </Typography>
-                    {!template.is_active && (
+                    {!Schedule.is_active && (
                       <Chip label="Inactive" color="default" size="small" />
                     )}
                   </Box>
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                    {template.description || 'No description'}
+                    {Schedule.description || 'No description'}
                   </Typography>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                     <NotificationsActiveIcon fontSize="small" color="action" />
                     <Typography variant="caption" color="text.secondary">
-                      {template.subscriber_count} subscriber{template.subscriber_count !== 1 ? 's' : ''}
+                      {Schedule.subscriber_count} subscriber{Schedule.subscriber_count !== 1 ? 's' : ''}
                     </Typography>
                   </Box>
-                  {template.frequencies.length > 0 && (
+                  {Schedule.frequencies.length > 0 && (
                     <Typography variant="caption" color="text.secondary">
-                      Frequencies: {template.frequencies.map((f: any) => {
+                      Frequencies: {Schedule.frequencies.map((f: any) => {
                         if (f.frequency) {
                           return f.frequency;
                         } else if (f.network && f.talkgroup) {
@@ -183,17 +192,17 @@ const Templates: React.FC = () => {
                     <Button
                       size="small"
                       startIcon={<PlayArrowIcon />}
-                      onClick={() => handleCreateNetFromTemplate(template.id)}
+                      onClick={() => handleCreateNetFromSchedule(Schedule.id)}
                     >
                       Create Net
                     </Button>
                   </Box>
                   <Box>
-                    {subscribedTemplates.has(template.id) ? (
+                    {subscribedSchedules.has(Schedule.id) ? (
                       <IconButton
                         size="small"
                         color="primary"
-                        onClick={() => handleUnsubscribe(template.id)}
+                        onClick={() => handleUnsubscribe(Schedule.id)}
                         title="Unsubscribe from notifications"
                       >
                         <NotificationsActiveIcon />
@@ -201,24 +210,24 @@ const Templates: React.FC = () => {
                     ) : (
                       <IconButton
                         size="small"
-                        onClick={() => handleSubscribe(template.id)}
+                        onClick={() => handleSubscribe(Schedule.id)}
                         title="Subscribe to notifications"
                       >
                         <NotificationsOffIcon />
                       </IconButton>
                     )}
-                    {(isOwner(template) || isAdmin) && (
+                    {(isOwner(Schedule) || isAdmin) && (
                       <>
                         <IconButton
                           size="small"
-                          onClick={() => navigate(`/templates/${template.id}/edit`)}
+                          onClick={() => navigate(`/Scheduler/${Schedule.id}/edit`)}
                         >
                           <EditIcon />
                         </IconButton>
                         <IconButton
                           size="small"
                           color="error"
-                          onClick={() => handleDelete(template.id)}
+                          onClick={() => handleDelete(Schedule.id)}
                         >
                           <DeleteIcon />
                         </IconButton>
@@ -234,9 +243,9 @@ const Templates: React.FC = () => {
 
       <Fab
         color="primary"
-        aria-label="create template"
+        aria-label="create schedule"
         sx={{ position: 'fixed', bottom: 16, right: 16 }}
-        onClick={() => navigate('/templates/create')}
+        onClick={() => navigate('/scheduler/create')}
       >
         <AddIcon />
       </Fab>
@@ -244,4 +253,4 @@ const Templates: React.FC = () => {
   );
 };
 
-export default Templates;
+export default Scheduler;

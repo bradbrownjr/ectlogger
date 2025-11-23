@@ -36,10 +36,10 @@ interface Frequency {
   description?: string;
 }
 
-const CreateTemplate: React.FC = () => {
-  const { templateId } = useParams<{ templateId: string }>();
+const CreateSchedule: React.FC = () => {
+  const { scheduleId } = useParams<{ scheduleId: string }>();
   const navigate = useNavigate();
-  const isEdit = Boolean(templateId);
+  const isEdit = Boolean(scheduleId);
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -62,9 +62,9 @@ const CreateTemplate: React.FC = () => {
   useEffect(() => {
     fetchFrequencies();
     if (isEdit) {
-      fetchTemplateData();
+      fetchScheduleData();
     }
-  }, [templateId]);
+  }, [scheduleId]);
 
   const fetchFrequencies = async () => {
     try {
@@ -348,25 +348,25 @@ const CreateTemplate: React.FC = () => {
     );
   };
 
-  const fetchTemplateData = async () => {
-    if (!templateId) return;
+  const fetchScheduleData = async () => {
+    if (!scheduleId) return;
     try {
-      const response = await templateApi.get(Number(templateId));
-      const template = response.data;
-      setName(template.name);
-      setDescription(template.description || '');
-      setSelectedFrequencyIds(template.frequencies.map((f: any) => f.id));
-      setFieldConfig(template.field_config || fieldConfig);
-      setIsActive(template.is_active);
+      const response = await templateApi.get(Number(scheduleId));
+      const Schedule = response.data;
+      setName(Schedule.name);
+      setDescription(Schedule.description || '');
+      setSelectedFrequencyIds(Schedule.frequencies.map((f: any) => f.id));
+      setFieldConfig(Schedule.field_config || fieldConfig);
+      setIsActive(Schedule.is_active);
     } catch (error) {
-      console.error('Failed to fetch template:', error);
+      console.error('Failed to fetch Schedule:', error);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const templateData = {
+    const ScheduleData = {
       name,
       description,
       frequency_ids: selectedFrequencyIds,
@@ -376,14 +376,14 @@ const CreateTemplate: React.FC = () => {
 
     try {
       if (isEdit) {
-        await templateApi.update(Number(templateId), templateData);
+        await templateApi.update(Number(scheduleId), ScheduleData);
       } else {
-        await templateApi.create(templateData);
+        await templateApi.create(ScheduleData);
       }
-      navigate('/templates');
+      navigate('/Schedules');
     } catch (error: any) {
-      console.error('Failed to save template:', error);
-      alert(error.response?.data?.detail || 'Failed to save template');
+      console.error('Failed to save Schedule:', error);
+      alert(error.response?.data?.detail || 'Failed to save Schedule');
     }
   };
 
@@ -401,13 +401,13 @@ const CreateTemplate: React.FC = () => {
     <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
       <Paper sx={{ p: 3 }}>
         <Typography variant="h4" component="h1" gutterBottom>
-          {isEdit ? 'Edit Template' : 'Create Template'}
+          {isEdit ? 'Edit Schedule' : 'Create Schedule'}
         </Typography>
 
         <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3 }}>
           <TextField
             fullWidth
-            label="Template Name"
+            label="Schedule Name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             margin="normal"
@@ -423,7 +423,7 @@ const CreateTemplate: React.FC = () => {
             margin="normal"
             multiline
             rows={3}
-            helperText="Optional description of the net template"
+            helperText="Optional description of the net Schedule"
           />
 
           <Typography variant="h6" sx={{ mt: 4, mb: 2 }}>
@@ -431,7 +431,7 @@ const CreateTemplate: React.FC = () => {
           </Typography>
 
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Check the boxes to select frequencies for this template. Press Enter in any field to add a new frequency.
+            Check the boxes to select frequencies for this Schedule. Press Enter in any field to add a new frequency.
           </Typography>
 
           <TableContainer>
@@ -458,7 +458,7 @@ const CreateTemplate: React.FC = () => {
               Check-In Field Configuration
             </Typography>
             <Typography variant="body2" color="text.secondary" gutterBottom>
-              Configure which fields are available when stations check in to nets created from this template
+              Configure which fields are available when stations check in to nets created from this Schedule
             </Typography>
           </Box>
 
@@ -499,17 +499,17 @@ const CreateTemplate: React.FC = () => {
                   onChange={(e) => setIsActive(e.target.checked)}
                 />
               }
-              label="Template is active (can be used to create nets)"
+              label="Schedule is active (can be used to create nets)"
               sx={{ mt: 2 }}
             />
           )}
 
           <Box sx={{ display: 'flex', gap: 2, mt: 3 }}>
-            <Button variant="outlined" onClick={() => navigate('/templates')}>
+            <Button variant="outlined" onClick={() => navigate('/Schedules')}>
               Cancel
             </Button>
             <Button type="submit" variant="contained" color="primary">
-              {isEdit ? 'Save Changes' : 'Create Template'}
+              {isEdit ? 'Save Changes' : 'Create Schedule'}
             </Button>
           </Box>
         </Box>
@@ -518,4 +518,4 @@ const CreateTemplate: React.FC = () => {
   );
 };
 
-export default CreateTemplate;
+export default CreateSchedule;
