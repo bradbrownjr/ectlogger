@@ -51,7 +51,8 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String(255), unique=True, index=True, nullable=False)
     name = Column(String(255))
-    callsign = Column(String(50), unique=True, index=True)
+    callsign = Column(String(50), unique=True, index=True)  # Primary callsign for backward compatibility
+    callsigns = Column(Text, default='[]')  # JSON array of all callsigns
     role = Column(Enum(UserRole), default=UserRole.USER)
     oauth_provider = Column(String(50))  # google, microsoft, github, email
     oauth_id = Column(String(255), unique=True, index=True)

@@ -10,6 +10,7 @@ class UserBase(BaseModel):
     email: EmailStr
     name: Optional[str] = Field(None, max_length=100, min_length=1)
     callsign: Optional[str] = Field(None, max_length=20, min_length=3, pattern=r'^[A-Z0-9/]+$')
+    callsigns: Optional[List[str]] = Field(default_factory=list)
     role: UserRole = UserRole.USER
     
     @field_validator('callsign')
@@ -18,6 +19,15 @@ class UserBase(BaseModel):
         if v and not re.match(r'^[A-Z0-9/]+$', v):
             raise ValueError('Callsign must contain only uppercase letters, numbers, and forward slashes')
         return v
+    
+    @field_validator('callsigns')
+    @classmethod
+    def validate_callsigns(cls, v: Optional[List[str]]) -> List[str]:
+        if v:
+            for callsign in v:
+                if callsign and not re.match(r'^[A-Z0-9/]+$', callsign):
+                    raise ValueError(f'Callsign {callsign} must contain only uppercase letters, numbers, and forward slashes')
+        return v or []
 
 
 class UserCreate(UserBase):
@@ -28,6 +38,7 @@ class UserCreate(UserBase):
 class UserUpdate(BaseModel):
     name: Optional[str] = Field(None, max_length=100, min_length=1)
     callsign: Optional[str] = Field(None, max_length=20, min_length=3)
+    callsigns: Optional[List[str]] = None
     email_notifications: Optional[bool] = None
     sms_gateway: Optional[str] = Field(None, max_length=100)
     skywarn_number: Optional[str] = Field(None, max_length=50)
@@ -38,6 +49,15 @@ class UserUpdate(BaseModel):
     def validate_callsign(cls, v: Optional[str]) -> Optional[str]:
         if v and not re.match(r'^[A-Z0-9/]+$', v):
             raise ValueError('Callsign must contain only uppercase letters, numbers, and forward slashes')
+        return v
+    
+    @field_validator('callsigns')
+    @classmethod
+    def validate_callsigns(cls, v: Optional[List[str]]) -> Optional[List[str]]:
+        if v:
+            for callsign in v:
+                if callsign and not re.match(r'^[A-Z0-9/]+$', callsign):
+                    raise ValueError(f'Callsign {callsign} must contain only uppercase letters, numbers, and forward slashes')
         return v
 
 
@@ -51,6 +71,19 @@ class UserResponse(UserBase):
 
     class Config:
         from_attributes = True
+    
+    @classmethod
+    def from_orm(cls, obj):
+        import json
+        # Deserialize callsigns JSON field
+        if hasattr(obj, 'callsigns') and obj.callsigns:
+            try:
+                obj.callsigns = json.loads(obj.callsigns) if isinstance(obj.callsigns, str) else obj.callsigns
+            except (json.JSONDecodeError, TypeError):
+                obj.callsigns = []
+        else:
+            obj.callsigns = []
+        return super().from_orm(obj)
 
 
 # Frequency Schemas

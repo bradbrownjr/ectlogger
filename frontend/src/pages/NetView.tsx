@@ -92,6 +92,7 @@ const NetView: React.FC = () => {
   const [ws, setWs] = useState<WebSocket | null>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [useCustomCallsign, setUseCustomCallsign] = useState(false);
 
   // Check-in form state
   const [checkInForm, setCheckInForm] = useState({
@@ -125,6 +126,18 @@ const NetView: React.FC = () => {
       fetchOwner();
     }
   }, [net?.owner_id]);
+
+  useEffect(() => {
+    // Initialize form with user data
+    if (user) {
+      setCheckInForm(prev => ({
+        ...prev,
+        callsign: user.callsign || prev.callsign,
+        name: user.name || prev.name,
+        location: user.location || prev.location,
+      }));
+    }
+  }, [user]);
 
   const connectWebSocket = () => {
     // Get JWT token from localStorage
@@ -266,10 +279,11 @@ const NetView: React.FC = () => {
     try {
       await checkInApi.create(Number(netId), checkInForm);
       setCheckInDialogOpen(false);
+      setUseCustomCallsign(false);
       setCheckInForm({
-        callsign: '',
-        name: '',
-        location: '',
+        callsign: user?.callsign || '',
+        name: user?.name || '',
+        location: user?.location || '',
         skywarn_number: '',
         weather_observation: '',
         power_source: '',
@@ -474,14 +488,44 @@ const NetView: React.FC = () => {
       <Dialog open={checkInDialogOpen} onClose={() => setCheckInDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Check In Station</DialogTitle>
         <DialogContent>
-          <TextField
-            fullWidth
-            label="Callsign *"
-            value={checkInForm.callsign}
-            onChange={(e) => setCheckInForm({ ...checkInForm, callsign: e.target.value })}
-            margin="normal"
-            required
-          />
+          {!useCustomCallsign && user?.callsigns && user.callsigns.length > 0 ? (
+            <FormControl fullWidth margin="normal" required>
+              <InputLabel>Callsign *</InputLabel>
+              <Select
+                value={checkInForm.callsign}
+                label="Callsign *"
+                onChange={(e) => {
+                  if (e.target.value === '__custom__') {
+                    setUseCustomCallsign(true);
+                    setCheckInForm({ ...checkInForm, callsign: '' });
+                  } else {
+                    setCheckInForm({ ...checkInForm, callsign: e.target.value as string });
+                  }
+                }}
+              >
+                {user.callsign && (
+                  <MenuItem value={user.callsign}>{user.callsign} (Primary)</MenuItem>
+                )}
+                {user.callsigns.map((cs: string) => (
+                  <MenuItem key={cs} value={cs}>{cs}</MenuItem>
+                ))}
+                <MenuItem value="__custom__">
+                  <em>Custom / Tactical Callsign...</em>
+                </MenuItem>
+              </Select>
+            </FormControl>
+          ) : (
+            <TextField
+              fullWidth
+              label="Callsign *"
+              value={checkInForm.callsign}
+              onChange={(e) => setCheckInForm({ ...checkInForm, callsign: e.target.value.toUpperCase() })}
+              margin="normal"
+              required
+              helperText={useCustomCallsign ? "Enter tactical or building callsign (e.g., WS1EC, WX1GYX)" : undefined}
+              inputProps={{ style: { textTransform: 'uppercase' } }}
+            />
+          )}
           <TextField
             fullWidth
             label="Name *"

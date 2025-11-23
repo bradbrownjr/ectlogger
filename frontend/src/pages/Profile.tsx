@@ -8,7 +8,12 @@ import {
   Button,
   Box,
   Alert,
+  IconButton,
+  Chip,
+  Stack,
 } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 
@@ -18,10 +23,12 @@ const Profile: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [newCallsign, setNewCallsign] = useState('');
   
   const [formData, setFormData] = useState({
     name: user?.name || '',
     callsign: user?.callsign || '',
+    callsigns: user?.callsigns || [],
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -77,13 +84,72 @@ const Profile: React.FC = () => {
 
           <TextField
             fullWidth
-            label="Call Sign"
+            label="Primary Call Sign"
             value={formData.callsign}
             onChange={(e) => setFormData({ ...formData, callsign: e.target.value.toUpperCase() })}
             margin="normal"
-            helperText="Amateur radio (e.g., KC1JMH) or GMRS (e.g., WRAT256) call sign"
+            helperText="Your main callsign (Amateur Radio, GMRS, etc.)"
             inputProps={{ style: { textTransform: 'uppercase' } }}
           />
+
+          <Box sx={{ mt: 3, mb: 2 }}>
+            <Typography variant="subtitle1" gutterBottom>
+              Additional Callsigns
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Add other callsigns you use (Amateur Radio, GMRS, tactical, etc.)
+            </Typography>
+            
+            <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+              <TextField
+                size="small"
+                label="Add callsign"
+                value={newCallsign}
+                onChange={(e) => setNewCallsign(e.target.value.toUpperCase())}
+                inputProps={{ style: { textTransform: 'uppercase' } }}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (newCallsign && !formData.callsigns.includes(newCallsign)) {
+                      setFormData({ ...formData, callsigns: [...formData.callsigns, newCallsign] });
+                      setNewCallsign('');
+                    }
+                  }
+                }}
+              />
+              <Button
+                variant="outlined"
+                startIcon={<AddIcon />}
+                onClick={() => {
+                  if (newCallsign && !formData.callsigns.includes(newCallsign)) {
+                    setFormData({ ...formData, callsigns: [...formData.callsigns, newCallsign] });
+                    setNewCallsign('');
+                  }
+                }}
+                disabled={!newCallsign}
+              >
+                Add
+              </Button>
+            </Box>
+            
+            {formData.callsigns.length > 0 && (
+              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                {formData.callsigns.map((cs) => (
+                  <Chip
+                    key={cs}
+                    label={cs}
+                    onDelete={() => {
+                      setFormData({
+                        ...formData,
+                        callsigns: formData.callsigns.filter((c) => c !== cs)
+                      });
+                    }}
+                    deleteIcon={<DeleteIcon />}
+                  />
+                ))}
+              </Stack>
+            )}
+          </Box>
 
           <TextField
             fullWidth

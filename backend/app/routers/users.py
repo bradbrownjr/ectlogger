@@ -23,8 +23,14 @@ async def update_my_profile(
     db: AsyncSession = Depends(get_db)
 ):
     """Update current user's profile"""
+    import json
+    
     for field, value in user_update.dict(exclude_unset=True).items():
-        setattr(current_user, field, value)
+        # Handle callsigns JSON field
+        if field == 'callsigns' and value is not None:
+            setattr(current_user, field, json.dumps(value))
+        else:
+            setattr(current_user, field, value)
     
     await db.commit()
     await db.refresh(current_user)
