@@ -9,6 +9,7 @@ import Dashboard from './pages/Dashboard';
 import NetView from './pages/NetView';
 import CreateNet from './pages/CreateNet';
 import VerifyMagicLink from './pages/VerifyMagicLink';
+import AdminUsers from './pages/AdminUsers';
 import Navbar from './components/Navbar';
 
 const theme = createTheme({
@@ -67,6 +68,14 @@ const AppRoutes: React.FC = () => {
             element={
               <PrivateRoute>
                 <NetView />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <PrivateRoute>
+                <AdminUsers />
               </PrivateRoute>
             }
           />

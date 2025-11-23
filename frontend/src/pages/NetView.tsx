@@ -20,10 +20,20 @@ import {
   TextField,
   IconButton,
   Alert,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemSecondaryAction,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import { netApi, checkInApi } from '../services/api';
+import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
 interface Net {
@@ -58,11 +68,23 @@ interface CheckIn {
   frequency_id?: number;
 }
 
+interface NetRole {
+  id: number;
+  user_id: number;
+  email: string;
+  name?: string;
+  callsign?: string;
+  role: string;
+  assigned_at: string;
+}
+
 const NetView: React.FC = () => {
   const { netId } = useParams<{ netId: string }>();
   const [net, setNet] = useState<Net | null>(null);
   const [checkIns, setCheckIns] = useState<CheckIn[]>([]);
   const [checkInDialogOpen, setCheckInDialogOpen] = useState(false);
+  const [roleDialogOpen, setRoleDialogOpen] = useState(false);
+  const [netRoles, setNetRoles] = useState<NetRole[]>([]);
   const [ws, setWs] = useState<WebSocket | null>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -83,6 +105,7 @@ const NetView: React.FC = () => {
     if (netId) {
       fetchNet();
       fetchCheckIns();
+      fetchNetRoles();
       connectWebSocket();
     }
 
@@ -146,6 +169,15 @@ const NetView: React.FC = () => {
       setCheckIns(response.data);
     } catch (error) {
       console.error('Failed to fetch check-ins:', error);
+    }
+  };
+
+  const fetchNetRoles = async () => {
+    try {
+      const response = await api.get(`/nets/${netId}/roles`);
+      setNetRoles(response.data);
+    } catch (error) {
+      console.error('Failed to fetch net roles:', error);
     }
   };
 
@@ -262,6 +294,22 @@ const NetView: React.FC = () => {
                   key={freq.id}
                   label={`${freq.frequency || `${freq.network}${freq.talkgroup ? ` TG${freq.talkgroup}` : ''}`} ${freq.mode}`}
                   color={freq.id === net.active_frequency_id ? 'primary' : 'default'}
+                />
+              ))}
+            </Box>
+          </Box>
+        )}
+
+        {netRoles.length > 0 && (
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="h6" gutterBottom>Net Control Staff</Typography>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              {netRoles.map((role) => (
+                <Chip 
+                  key={role.id}
+                  label={`${role.callsign || role.name || role.email} (${role.role})`}
+                  color="secondary"
+                  size="small"
                 />
               ))}
             </Box>
