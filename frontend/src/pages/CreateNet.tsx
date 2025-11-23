@@ -103,7 +103,8 @@ const CreateNet: React.FC = () => {
     setEditForm(null);
   };
 
-  const saveEdit = async () => {
+  const saveEdit = async (e?: React.KeyboardEvent) => {
+    if (e && e.key !== 'Enter') return;
     if (!editForm || !editingId) return;
     
     try {
@@ -180,6 +181,7 @@ const CreateNet: React.FC = () => {
                 fullWidth
                 value={form.frequency || ''}
                 onChange={(e: any) => setEditForm({ ...form, frequency: e.target.value, network: '', talkgroup: '' })}
+                onKeyPress={saveEdit}
                 placeholder="146.520 MHz"
               />
             ) : (
@@ -188,6 +190,7 @@ const CreateNet: React.FC = () => {
                 fullWidth
                 value={form.network || ''}
                 onChange={(e: any) => setEditForm({ ...form, network: e.target.value, frequency: '' })}
+                onKeyPress={saveEdit}
                 placeholder={isYSF ? "Room (e.g., UFB)" : "Network"}
               />
             )
@@ -202,6 +205,7 @@ const CreateNet: React.FC = () => {
               fullWidth
               value={form.talkgroup || ''}
               onChange={(e: any) => setEditForm({ ...form, talkgroup: e.target.value })}
+              onKeyPress={saveEdit}
               placeholder="TG"
             />
           ) : !isAnalog && freq.talkgroup ? (
@@ -217,6 +221,7 @@ const CreateNet: React.FC = () => {
               fullWidth
               value={form.description || ''}
               onChange={(e: any) => setEditForm({ ...form, description: e.target.value })}
+              onKeyPress={saveEdit}
             />
           ) : (
             freq.description || '-'

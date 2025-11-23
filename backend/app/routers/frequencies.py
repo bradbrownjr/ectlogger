@@ -20,6 +20,8 @@ async def create_frequency(
     frequency = Frequency(
         frequency=frequency_data.frequency,
         mode=frequency_data.mode,
+        network=frequency_data.network,
+        talkgroup=frequency_data.talkgroup,
         description=frequency_data.description
     )
     
@@ -58,6 +60,35 @@ async def get_frequency(
     
     if not frequency:
         raise HTTPException(status_code=404, detail="Frequency not found")
+    
+    return FrequencyResponse.from_orm(frequency)
+
+
+@router.put("/{frequency_id}", response_model=FrequencyResponse)
+async def update_frequency(
+    frequency_id: int,
+    frequency_data: FrequencyCreate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Update a frequency"""
+    result = await db.execute(
+        select(Frequency).where(Frequency.id == frequency_id)
+    )
+    frequency = result.scalar_one_or_none()
+    
+    if not frequency:
+        raise HTTPException(status_code=404, detail="Frequency not found")
+    
+    # Update fields
+    frequency.frequency = frequency_data.frequency
+    frequency.mode = frequency_data.mode
+    frequency.network = frequency_data.network
+    frequency.talkgroup = frequency_data.talkgroup
+    frequency.description = frequency_data.description
+    
+    await db.commit()
+    await db.refresh(frequency)
     
     return FrequencyResponse.from_orm(frequency)
 
