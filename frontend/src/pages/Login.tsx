@@ -52,7 +52,7 @@ const Login: React.FC = () => {
 
     try {
       await authApi.requestMagicLink(email);
-      setMessage('Check your email for a magic link to sign in!');
+      setMessage('Check your email for a magic link to sign in! If you don\'t see it, check your spam folder.');
       setEmail('');
     } catch (err: any) {
       // Check if it's a connection error

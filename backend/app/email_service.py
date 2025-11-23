@@ -26,8 +26,28 @@ class EmailService:
         message["Subject"] = subject
         message["From"] = f"{settings.smtp_from_name} <{settings.smtp_from_email}>"
         message["To"] = to_email
+        message["Reply-To"] = settings.smtp_from_email
+        # Add headers to improve deliverability and reduce spam score
+        message["Message-ID"] = f"<{hash(to_email + subject)}.ectlogger@{settings.smtp_host}>"
+        message["X-Mailer"] = "ECTLogger"
+        message["List-Unsubscribe"] = f"<mailto:{settings.smtp_from_email}?subject=unsubscribe>"
 
+        # Add plain text version to reduce spam score
+        plain_text = f"""
+{subject}
+
+This is an automated email from {settings.app_name}.
+
+If you cannot view this email properly, please enable HTML in your email client.
+
+---
+{settings.app_name}
+This is an automated message, please do not reply.
+"""
+        text_part = MIMEText(plain_text, "plain")
         html_part = MIMEText(html_content, "html")
+        
+        message.attach(text_part)
         message.attach(html_part)
 
         try:
