@@ -62,7 +62,16 @@ const CreateNet: React.FC = () => {
     if (!newFrequency.frequency && !newFrequency.network) return;
     
     try {
-      const response = await frequencyApi.create(newFrequency);
+      // Clean up the data - convert empty strings to null
+      const cleanData = {
+        frequency: newFrequency.frequency || null,
+        mode: newFrequency.mode,
+        network: newFrequency.network || null,
+        talkgroup: newFrequency.talkgroup || null,
+        description: newFrequency.description || null,
+      };
+      
+      const response = await frequencyApi.create(cleanData);
       setFrequencies([...frequencies, response.data]);
       setSelectedFrequencies([...selectedFrequencies, response.data.id]);
       setNewFrequency({ frequency: '', mode: 'FM', network: '', talkgroup: '', description: '' });
@@ -98,7 +107,16 @@ const CreateNet: React.FC = () => {
     if (!editForm || !editingId) return;
     
     try {
-      const response = await frequencyApi.update(editingId, editForm);
+      // Clean up the data - convert empty strings to null
+      const cleanData = {
+        frequency: editForm.frequency || null,
+        mode: editForm.mode,
+        network: editForm.network || null,
+        talkgroup: editForm.talkgroup || null,
+        description: editForm.description || null,
+      };
+      
+      const response = await frequencyApi.update(editingId, cleanData);
       setFrequencies(frequencies.map((f: Frequency) => f.id === editingId ? response.data : f));
       setEditingId(null);
       setEditForm(null);
