@@ -121,13 +121,13 @@ const Scheduler: React.FC = () => {
 
       {loading ? (
         <Typography>Loading Scheduler...</Typography>
-      ) : Scheduler.length === 0 ? (
+      ) : schedules.length === 0 ? (
         <Box sx={{ textAlign: 'center', mt: 8 }}>
           <Typography variant="h6" color="text.secondary" gutterBottom>
-            No Scheduler yet
+            None scheduled yet
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Create your first Schedule to get started
+            Create your first schedule to get started
           </Typography>
         </Box>
       ) : (
