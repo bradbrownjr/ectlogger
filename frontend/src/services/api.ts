@@ -12,8 +12,11 @@ const api = axios.create({
 // Add token to requests
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
+  console.log('[API] Request to:', config.url);
+  console.log('[API] Token from localStorage:', token ? token.substring(0, 20) + '...' : 'none');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+    console.log('[API] Authorization header set');
   }
   return config;
 });
@@ -23,6 +26,9 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
+      console.error('[API] 401 Unauthorized - redirecting to login');
+      console.error('[API] Request URL:', error.config?.url);
+      console.error('[API] Error details:', error.response?.data);
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';

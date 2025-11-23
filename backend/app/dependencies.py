@@ -14,16 +14,23 @@ async def get_current_user(
     db: AsyncSession = Depends(get_db)
 ) -> User:
     token = credentials.credentials
+    print(f"[AUTH] get_current_user called")
+    print(f"[AUTH] Token received: {token[:20]}...{token[-10:]}")
+    
     payload = verify_token(token)
     
     if payload is None:
+        print(f"[AUTH] Token verification FAILED - invalid token")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials"
         )
     
+    print(f"[AUTH] Token verified, payload: {payload}")
+    
     user_id: int = payload.get("sub")
     if user_id is None:
+        print(f"[AUTH] No 'sub' claim in token payload")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials"

@@ -37,10 +37,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchUser = async (authToken: string) => {
     try {
+      console.log('[AUTH] Fetching user with token...');
+      console.log('[AUTH] Token from localStorage:', localStorage.getItem('token')?.substring(0, 20) + '...');
       const response = await authApi.getCurrentUser();
+      console.log('[AUTH] User fetched successfully:', response.data);
       setUser(response.data);
-    } catch (error) {
-      console.error('Failed to fetch user:', error);
+    } catch (error: any) {
+      console.error('[AUTH] Failed to fetch user:', error);
+      console.error('[AUTH] Error response:', error.response?.data);
+      console.error('[AUTH] Error status:', error.response?.status);
       logout();
     } finally {
       setLoading(false);
@@ -48,9 +53,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const login = async (authToken: string) => {
+    console.log('[AUTH] Login called with token:', authToken.substring(0, 20) + '...');
     localStorage.setItem('token', authToken);
+    console.log('[AUTH] Token saved to localStorage');
     setToken(authToken);
+    console.log('[AUTH] Token state updated');
     await fetchUser(authToken);
+    console.log('[AUTH] Login complete');
   };
 
   const logout = () => {

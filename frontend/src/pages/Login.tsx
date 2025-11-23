@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Container,
   Paper,
@@ -11,43 +10,15 @@ import {
   CircularProgress,
 } from '@mui/material';
 import { authApi } from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const { login } = useAuth();
 
-  // Check if there's a token in the URL (from magic link)
-  React.useEffect(() => {
-    const token = searchParams.get('token');
-    if (token) {
-      handleMagicLinkVerify(token);
-    }
-  }, [searchParams]);
-
-  const handleMagicLinkVerify = async (token: string) => {
-    setLoading(true);
-    setError('');
-    try {
-      console.log('[LOGIN] Verifying magic link token...');
-      const response = await authApi.verifyMagicLink(token);
-      console.log('[LOGIN] Verification successful, logging in...');
-      await login(response.data.access_token);
-      console.log('[LOGIN] Login complete, navigating to dashboard...');
-      navigate('/dashboard');
-    } catch (err: any) {
-      console.error('[LOGIN] Verification failed:', err);
-      console.error('[LOGIN] Error details:', err.response?.data);
-      setError('Invalid or expired magic link. Please request a new one.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // NOTE: Token verification is handled by VerifyMagicLink.tsx at /auth/verify route
+  // This component only handles the login form
 
   const handleRequestMagicLink = async (e: React.FormEvent) => {
     e.preventDefault();
