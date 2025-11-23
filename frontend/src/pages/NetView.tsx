@@ -85,6 +85,9 @@ const NetView: React.FC = () => {
   const [checkInDialogOpen, setCheckInDialogOpen] = useState(false);
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
   const [netRoles, setNetRoles] = useState<NetRole[]>([]);
+  const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<number | ''>('');
+  const [selectedRole, setSelectedRole] = useState<string>('NCS');
   const [ws, setWs] = useState<WebSocket | null>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -178,6 +181,49 @@ const NetView: React.FC = () => {
       setNetRoles(response.data);
     } catch (error) {
       console.error('Failed to fetch net roles:', error);
+    }
+  };
+
+  const fetchAllUsers = async () => {
+    try {
+      const response = await api.get('/users/');
+      setAllUsers(response.data);
+    } catch (error) {
+      console.error('Failed to fetch users:', error);
+    }
+  };
+
+  const handleAssignRole = async () => {
+    if (!selectedUserId) {
+      alert('Please select a user');
+      return;
+    }
+
+    try {
+      await api.post(`/nets/${netId}/roles`, null, {
+        params: {
+          user_id: selectedUserId,
+          role: selectedRole
+        }
+      });
+      setSelectedUserId('');
+      setSelectedRole('NCS');
+      fetchNetRoles();
+    } catch (error: any) {
+      console.error('Failed to assign role:', error);
+      alert(error.response?.data?.detail || 'Failed to assign role');
+    }
+  };
+
+  const handleRemoveRole = async (roleId: number) => {
+    if (!confirm('Remove this role assignment?')) return;
+
+    try {
+      await api.delete(`/nets/${netId}/roles/${roleId}`);
+      fetchNetRoles();
+    } catch (error) {
+      console.error('Failed to remove role:', error);
+      alert('Failed to remove role');
     }
   };
 
@@ -300,19 +346,40 @@ const NetView: React.FC = () => {
           </Box>
         )}
 
-        {netRoles.length > 0 && (
+        {(netRoles.length > 0 || canManage) && (
           <Box sx={{ mb: 3 }}>
-            <Typography variant="h6" gutterBottom>Net Control Staff</Typography>
-            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-              {netRoles.map((role) => (
-                <Chip 
-                  key={role.id}
-                  label={`${role.callsign || role.name || role.email} (${role.role})`}
-                  color="secondary"
-                  size="small"
-                />
-              ))}
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+              <Typography variant="h6">Net Control Staff</Typography>
+              {canManage && (
+                <Button 
+                  size="small" 
+                  variant="outlined" 
+                  onClick={() => {
+                    fetchAllUsers();
+                    setRoleDialogOpen(true);
+                  }}
+                >
+                  Manage Roles
+                </Button>
+              )}
             </Box>
+            {netRoles.length > 0 ? (
+              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                {netRoles.map((role) => (
+                  <Chip 
+                    key={role.id}
+                    label={`${role.callsign || role.name || role.email} (${role.role})`}
+                    color="secondary"
+                    size="small"
+                    onDelete={canManage ? () => handleRemoveRole(role.id) : undefined}
+                  />
+                ))}
+              </Box>
+            ) : (
+              <Typography variant="body2" color="text.secondary">
+                No staff roles assigned yet
+              </Typography>
+            )}
           </Box>
         )}
 
@@ -450,6 +517,86 @@ const NetView: React.FC = () => {
           >
             Check In
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Role Management Dialog */}
+      <Dialog open={roleDialogOpen} onClose={() => setRoleDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Manage Net Control Staff</DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Assign NCS (Net Control Station) or LOGGER roles to users. They will be able to edit and manage this net.
+            </Typography>
+            
+            <FormControl fullWidth sx={{ mb: 2 }}>
+              <InputLabel>Select User</InputLabel>
+              <Select
+                value={selectedUserId}
+                label="Select User"
+                onChange={(e) => setSelectedUserId(e.target.value as number)}
+              >
+                <MenuItem value="">
+                  <em>Choose a user...</em>
+                </MenuItem>
+                {allUsers.map((u: any) => (
+                  <MenuItem key={u.id} value={u.id}>
+                    {u.callsign || u.name || u.email} ({u.email})
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <FormControl fullWidth sx={{ mb: 2 }}>
+              <InputLabel>Role</InputLabel>
+              <Select
+                value={selectedRole}
+                label="Role"
+                onChange={(e) => setSelectedRole(e.target.value)}
+              >
+                <MenuItem value="NCS">NCS (Net Control Station)</MenuItem>
+                <MenuItem value="LOGGER">Logger</MenuItem>
+                <MenuItem value="RELAY">Relay Station</MenuItem>
+              </Select>
+            </FormControl>
+
+            <Button 
+              variant="contained" 
+              onClick={handleAssignRole}
+              disabled={!selectedUserId}
+              fullWidth
+            >
+              Assign Role
+            </Button>
+
+            {netRoles.length > 0 && (
+              <>
+                <Typography variant="subtitle2" sx={{ mt: 3, mb: 1 }}>
+                  Current Assignments:
+                </Typography>
+                <List>
+                  {netRoles.map((role) => (
+                    <ListItem 
+                      key={role.id}
+                      secondaryAction={
+                        <IconButton edge="end" onClick={() => handleRemoveRole(role.id)}>
+                          <DeleteIcon />
+                        </IconButton>
+                      }
+                    >
+                      <ListItemText
+                        primary={role.callsign || role.name || role.email}
+                        secondary={`${role.role} • ${new Date(role.assigned_at).toLocaleDateString()}`}
+                      />
+                    </ListItem>
+                  ))}
+                </List>
+              </>
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setRoleDialogOpen(false)}>Close</Button>
         </DialogActions>
       </Dialog>
     </Container>
