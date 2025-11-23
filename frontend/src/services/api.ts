@@ -83,5 +83,6 @@ export const checkInApi = {
 export const frequencyApi = {
   create: (data: any) => api.post('/frequencies/', data),
   list: () => api.get('/frequencies/'),
+  update: (id: number, data: any) => api.put(`/frequencies/${id}`, data),
   delete: (id: number) => api.delete(`/frequencies/${id}`),
 };
