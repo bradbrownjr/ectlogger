@@ -233,8 +233,8 @@ class NetTemplateSubscriptionResponse(BaseModel):
 # CheckIn Schemas
 class CheckInBase(BaseModel):
     callsign: str = Field(max_length=20, min_length=3, pattern=r'^[A-Z0-9/]+$')
-    name: str = Field(max_length=100, min_length=1)
-    location: str = Field(max_length=200, min_length=1)
+    name: Optional[str] = Field(default='', max_length=100)
+    location: Optional[str] = Field(default='', max_length=200)
     skywarn_number: Optional[str] = Field(None, max_length=50)
     weather_observation: Optional[str] = Field(None, max_length=2000)
     power_source: Optional[str] = Field(None, max_length=100)
