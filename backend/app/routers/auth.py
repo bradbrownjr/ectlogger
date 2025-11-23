@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from authlib.integrations.starlette_client import OAuth
 from app.database import get_db
+from app.dependencies import get_current_user
 from app.models import User, UserRole
 from app.schemas import Token, UserResponse, MagicLinkRequest, MagicLinkVerify
 from app.auth import create_access_token, create_magic_link_token, verify_magic_link_token
