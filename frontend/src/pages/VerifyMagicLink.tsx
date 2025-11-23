@@ -16,6 +16,7 @@ const VerifyMagicLink: React.FC = () => {
       const token = searchParams.get('token');
       
       if (!token) {
+        console.error('[VERIFY] No token in URL');
         setError('No verification token provided');
         setVerifying(false);
         return;
@@ -23,8 +24,11 @@ const VerifyMagicLink: React.FC = () => {
 
       try {
         console.log('[VERIFY] Starting magic link verification...');
+        console.log('[VERIFY] Token from URL:', token.substring(0, 20) + '...');
         const response = await authApi.verifyMagicLink(token);
-        console.log('[VERIFY] Verification successful, logging in...');
+        console.log('[VERIFY] Verification successful!');
+        console.log('[VERIFY] Access token received:', response.data.access_token.substring(0, 20) + '...');
+        console.log('[VERIFY] Calling login...');
         await login(response.data.access_token);
         console.log('[VERIFY] Login complete, navigating to dashboard...');
         navigate('/dashboard');
@@ -37,7 +41,8 @@ const VerifyMagicLink: React.FC = () => {
     };
 
     verifyToken();
-  }, [searchParams, navigate, login]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount, regardless of dependency changes
 
   return (
     <Container maxWidth="sm">
