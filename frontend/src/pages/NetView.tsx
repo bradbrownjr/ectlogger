@@ -44,6 +44,12 @@ interface Net {
   status: string;
   owner_id: number;
   active_frequency_id?: number;
+  field_config?: {
+    [key: string]: {
+      enabled: boolean;
+      required: boolean;
+    };
+  };
   frequencies: Frequency[];
   started_at?: string;
   closed_at?: string;
@@ -557,54 +563,70 @@ const NetView: React.FC = () => {
               inputProps={{ style: { textTransform: 'uppercase' } }}
             />
           )}
-          <TextField
-            fullWidth
-            label="Name *"
-            value={checkInForm.name}
-            onChange={(e) => setCheckInForm({ ...checkInForm, name: e.target.value })}
-            margin="normal"
-            required
-          />
-          <TextField
-            fullWidth
-            label="Location *"
-            value={checkInForm.location}
-            onChange={(e) => setCheckInForm({ ...checkInForm, location: e.target.value })}
-            margin="normal"
-            required
-          />
-          <TextField
-            fullWidth
-            label="SKYWARN Number"
-            value={checkInForm.skywarn_number}
-            onChange={(e) => setCheckInForm({ ...checkInForm, skywarn_number: e.target.value })}
-            margin="normal"
-          />
-          <TextField
-            fullWidth
-            label="Weather Observation"
-            value={checkInForm.weather_observation}
-            onChange={(e) => setCheckInForm({ ...checkInForm, weather_observation: e.target.value })}
-            margin="normal"
-            multiline
-            rows={2}
-          />
-          <TextField
-            fullWidth
-            label="Power Source"
-            value={checkInForm.power_source}
-            onChange={(e) => setCheckInForm({ ...checkInForm, power_source: e.target.value })}
-            margin="normal"
-          />
-          <TextField
-            fullWidth
-            label="Notes"
-            value={checkInForm.notes}
-            onChange={(e) => setCheckInForm({ ...checkInForm, notes: e.target.value })}
-            margin="normal"
-            multiline
-            rows={2}
-          />
+          {net?.field_config?.name?.enabled && (
+            <TextField
+              fullWidth
+              label={`Name ${net.field_config.name.required ? '*' : ''}`}
+              value={checkInForm.name}
+              onChange={(e) => setCheckInForm({ ...checkInForm, name: e.target.value })}
+              margin="normal"
+              required={net.field_config.name.required}
+            />
+          )}
+          {net?.field_config?.location?.enabled && (
+            <TextField
+              fullWidth
+              label={`Location ${net.field_config.location.required ? '*' : ''}`}
+              value={checkInForm.location}
+              onChange={(e) => setCheckInForm({ ...checkInForm, location: e.target.value })}
+              margin="normal"
+              required={net.field_config.location.required}
+            />
+          )}
+          {net?.field_config?.skywarn_number?.enabled && (
+            <TextField
+              fullWidth
+              label={`SKYWARN Number ${net.field_config.skywarn_number.required ? '*' : ''}`}
+              value={checkInForm.skywarn_number}
+              onChange={(e) => setCheckInForm({ ...checkInForm, skywarn_number: e.target.value })}
+              margin="normal"
+              required={net.field_config.skywarn_number.required}
+            />
+          )}
+          {net?.field_config?.weather_observation?.enabled && (
+            <TextField
+              fullWidth
+              label={`Weather Observation ${net.field_config.weather_observation.required ? '*' : ''}`}
+              value={checkInForm.weather_observation}
+              onChange={(e) => setCheckInForm({ ...checkInForm, weather_observation: e.target.value })}
+              margin="normal"
+              required={net.field_config.weather_observation.required}
+              multiline
+              rows={2}
+            />
+          )}
+          {net?.field_config?.power_source?.enabled && (
+            <TextField
+              fullWidth
+              label={`Power Source ${net.field_config.power_source.required ? '*' : ''}`}
+              value={checkInForm.power_source}
+              onChange={(e) => setCheckInForm({ ...checkInForm, power_source: e.target.value })}
+              margin="normal"
+              required={net.field_config.power_source.required}
+            />
+          )}
+          {net?.field_config?.notes?.enabled && (
+            <TextField
+              fullWidth
+              label={`Notes ${net.field_config.notes.required ? '*' : ''}`}
+              value={checkInForm.notes}
+              onChange={(e) => setCheckInForm({ ...checkInForm, notes: e.target.value })}
+              margin="normal"
+              required={net.field_config.notes.required}
+              multiline
+              rows={2}
+            />
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setCheckInDialogOpen(false)}>Cancel</Button>
