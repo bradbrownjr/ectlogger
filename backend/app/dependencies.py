@@ -28,9 +28,20 @@ async def get_current_user(
     
     print(f"[AUTH] Token verified, payload: {payload}")
     
-    user_id: int = payload.get("sub")
-    if user_id is None:
+    user_id_str = payload.get("sub")
+    if user_id_str is None:
         print(f"[AUTH] No 'sub' claim in token payload")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials"
+        )
+    
+    # Convert subject from string to int
+    try:
+        user_id = int(user_id_str)
+        print(f"[AUTH] User ID from token: {user_id}")
+    except (ValueError, TypeError):
+        print(f"[AUTH] Invalid user ID format: {user_id_str}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials"

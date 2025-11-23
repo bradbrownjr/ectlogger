@@ -144,9 +144,9 @@ async def verify_magic_link(
     user = await get_or_create_user(db, email, email, "email", email)
     print(f"[API] User retrieved/created: {user.email} (ID: {user.id})")
     
-    # Create access token
+    # Create access token (sub must be string per JWT spec)
     access_token = create_access_token(
-        data={"sub": user.id},
+        data={"sub": str(user.id)},
         expires_delta=timedelta(minutes=settings.access_token_expire_minutes)
     )
     
