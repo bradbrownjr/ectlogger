@@ -277,6 +277,12 @@ const NetView: React.FC = () => {
     }
 
     try {
+      // Remove any existing role for this user
+      const existingRole = netRoles.find((r: any) => r.user_id === selectedUserId);
+      if (existingRole) {
+        await api.delete(`/nets/${netId}/roles/${existingRole.id}`);
+      }
+      // Assign new role
       await api.post(`/nets/${netId}/roles`, null, {
         params: {
           user_id: selectedUserId,
@@ -285,7 +291,9 @@ const NetView: React.FC = () => {
       });
       setSelectedUserId('');
       setSelectedRole('NCS');
-      fetchNetRoles();
+      // Auto-refresh roles and check-ins for all users
+      await fetchNetRoles();
+      await fetchCheckIns();
     } catch (error: any) {
       console.error('Failed to assign role:', error);
       alert(error.response?.data?.detail || 'Failed to assign role');
@@ -496,7 +504,7 @@ const NetView: React.FC = () => {
         console.log('[handleStatusChange] fetchCheckIns called after role change');
       } else if (newStatus === 'ncs' || newStatus === 'logger') {
         console.log('[handleStatusChange] Cannot assign role to check-in without user_id');
-        alert('Cannot assign roles to stations without user accounts');
+        setSnackbar({ open: true, message: 'Cannot assign roles to stations without user accounts', severity: 'warning' });
         return;
       } else {
         console.log('[handleStatusChange] Status change branch for:', newStatus);
