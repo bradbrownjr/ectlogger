@@ -74,6 +74,10 @@ interface CheckIn {
   callsign: string;
   name: string;
   location: string;
+  skywarn_number?: string;
+  weather_observation?: string;
+  power_source?: string;
+  notes?: string;
   status: string;
   is_recheck: boolean;
   checked_in_at: string;
@@ -105,6 +109,8 @@ const NetView: React.FC = () => {
   const [activeSpeakerId, setActiveSpeakerId] = useState<number | null>(null);
   const [toastMessage, setToastMessage] = useState<string>('');
   const [ws, setWs] = useState<WebSocket | null>(null);
+  const [editCheckInDialogOpen, setEditCheckInDialogOpen] = useState(false);
+  const [editingCheckIn, setEditingCheckIn] = useState<CheckIn | null>(null);
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
@@ -436,6 +442,34 @@ const NetView: React.FC = () => {
     } catch (error) {
       console.error('Failed to delete check-in:', error);
       alert('Failed to delete check-in');
+    }
+  };
+
+  const handleEditCheckIn = (checkIn: CheckIn) => {
+    setEditingCheckIn(checkIn);
+    setEditCheckInDialogOpen(true);
+  };
+
+  const handleSaveEditCheckIn = async () => {
+    if (!editingCheckIn) return;
+    
+    try {
+      await checkInApi.update(editingCheckIn.id, {
+        callsign: editingCheckIn.callsign,
+        name: editingCheckIn.name,
+        location: editingCheckIn.location,
+        skywarn_number: editingCheckIn.skywarn_number,
+        weather_observation: editingCheckIn.weather_observation,
+        power_source: editingCheckIn.power_source,
+        notes: editingCheckIn.notes,
+        available_frequency_ids: editingCheckIn.available_frequencies || [],
+      });
+      setEditCheckInDialogOpen(false);
+      setEditingCheckIn(null);
+      fetchCheckIns();
+    } catch (error) {
+      console.error('Failed to update check-in:', error);
+      alert('Failed to update check-in');
     }
   };
 
@@ -843,6 +877,13 @@ const NetView: React.FC = () => {
                         )}
                         <IconButton
                           size="small"
+                          onClick={() => handleEditCheckIn(checkIn)}
+                          title="Edit check-in"
+                        >
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                          size="small"
                           onClick={() => handleDeleteCheckIn(checkIn.id)}
                           title="Delete check-in"
                         >
@@ -1140,6 +1181,110 @@ const NetView: React.FC = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setRoleDialogOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Edit Check-In Dialog */}
+      <Dialog open={editCheckInDialogOpen} onClose={() => setEditCheckInDialogOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle>Edit Check-In</DialogTitle>
+        <DialogContent>
+          {editingCheckIn && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+              <TextField
+                label="Callsign"
+                value={editingCheckIn.callsign}
+                onChange={(e) => setEditingCheckIn({ ...editingCheckIn, callsign: e.target.value.toUpperCase() })}
+                fullWidth
+                required
+              />
+              {net?.field_config?.name?.enabled && (
+                <TextField
+                  label="Name"
+                  value={editingCheckIn.name || ''}
+                  onChange={(e) => setEditingCheckIn({ ...editingCheckIn, name: e.target.value })}
+                  fullWidth
+                />
+              )}
+              {net?.field_config?.location?.enabled && (
+                <TextField
+                  label="Location"
+                  value={editingCheckIn.location || ''}
+                  onChange={(e) => setEditingCheckIn({ ...editingCheckIn, location: e.target.value })}
+                  fullWidth
+                />
+              )}
+              {net?.field_config?.skywarn_number?.enabled && (
+                <TextField
+                  label="SKYWARN #"
+                  value={editingCheckIn.skywarn_number || ''}
+                  onChange={(e) => setEditingCheckIn({ ...editingCheckIn, skywarn_number: e.target.value })}
+                  fullWidth
+                />
+              )}
+              {net?.field_config?.weather_observation?.enabled && (
+                <TextField
+                  label="Weather Observation"
+                  value={editingCheckIn.weather_observation || ''}
+                  onChange={(e) => setEditingCheckIn({ ...editingCheckIn, weather_observation: e.target.value })}
+                  fullWidth
+                />
+              )}
+              {net?.field_config?.power_source?.enabled && (
+                <TextField
+                  label="Power Source"
+                  value={editingCheckIn.power_source || ''}
+                  onChange={(e) => setEditingCheckIn({ ...editingCheckIn, power_source: e.target.value })}
+                  fullWidth
+                />
+              )}
+              {net?.field_config?.notes?.enabled && (
+                <TextField
+                  label="Notes"
+                  value={editingCheckIn.notes || ''}
+                  onChange={(e) => setEditingCheckIn({ ...editingCheckIn, notes: e.target.value })}
+                  fullWidth
+                  multiline
+                  rows={2}
+                />
+              )}
+              {net?.frequencies && net.frequencies.length > 1 && (
+                <Autocomplete
+                  multiple
+                  options={net.frequencies || []}
+                  getOptionLabel={(option: any) => formatFrequencyDisplay(option)}
+                  value={net.frequencies.filter((f: any) => (editingCheckIn.available_frequencies || []).includes(f.id))}
+                  onChange={(_, newValue: any[]) => {
+                    setEditingCheckIn({
+                      ...editingCheckIn,
+                      available_frequencies: newValue.map(f => f.id)
+                    });
+                  }}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Available Frequencies"
+                      helperText="Select all frequencies this station can monitor"
+                    />
+                  )}
+                  renderTags={(value: any[], getTagProps) =>
+                    value.map((option: any, index: number) => (
+                      <Chip
+                        {...getTagProps({ index })}
+                        label={formatFrequencyDisplay(option)}
+                        size="small"
+                      />
+                    ))
+                  }
+                />
+              )}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditCheckInDialogOpen(false)}>Cancel</Button>
+          <Button onClick={handleSaveEditCheckIn} variant="contained" color="primary">
+            Save
+          </Button>
         </DialogActions>
       </Dialog>
 

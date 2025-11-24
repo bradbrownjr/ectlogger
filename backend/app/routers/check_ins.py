@@ -71,11 +71,26 @@ async def create_check_in(
     if matching_user:
         linked_user_id = matching_user.id
     
-    # Serialize available frequencies to JSON
-    available_frequencies_json = json.dumps(available_freq_ids)
-    
-    # If there's an existing check-in, update it instead of creating a new one
+    # If there's an existing check-in, update it and accumulate frequencies
     if existing_check_in:
+        # Merge available frequencies - add new frequency_id to available_frequencies
+        existing_freqs = json.loads(existing_check_in.available_frequencies) if existing_check_in.available_frequencies else []
+        
+        # Add previous frequency_id to available frequencies if it exists and isn't already there
+        if existing_check_in.frequency_id and existing_check_in.frequency_id not in existing_freqs:
+            existing_freqs.append(existing_check_in.frequency_id)
+        
+        # Add new frequency_id to available frequencies if it exists and isn't already there
+        if check_in_data.frequency_id and check_in_data.frequency_id not in existing_freqs:
+            existing_freqs.append(check_in_data.frequency_id)
+        
+        # Merge with user-provided available frequencies
+        for freq_id in available_freq_ids:
+            if freq_id not in existing_freqs:
+                existing_freqs.append(freq_id)
+        
+        available_frequencies_json = json.dumps(existing_freqs)
+        
         existing_check_in.user_id = linked_user_id
         existing_check_in.name = check_in_data.name
         existing_check_in.location = check_in_data.location
@@ -92,6 +107,9 @@ async def create_check_in(
         existing_check_in.checked_out_at = None  # Clear checkout timestamp
         existing_check_in.checked_in_at = datetime.now(UTC)  # Update check-in time
         check_in = existing_check_in
+    else:
+        # Serialize available frequencies to JSON for new check-in
+        available_frequencies_json = json.dumps(available_freq_ids)
     else:
         # Create new check-in
         check_in = CheckIn(
