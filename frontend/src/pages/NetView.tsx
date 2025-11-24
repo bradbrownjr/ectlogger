@@ -593,7 +593,7 @@ const NetView: React.FC = () => {
   return (
     <Container maxWidth={false} sx={{ height: 'calc(100vh - 72px)', py: 0, px: 0, display: 'flex', flexDirection: 'column' }}>
       <Paper sx={{ p: 0.5, flexGrow: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <Box>
+        <Box sx={{ flexShrink: 0 }}>
           <Typography variant="h5" component="h1" sx={{ mb: 0 }}>
             {net.name}
           </Typography>
