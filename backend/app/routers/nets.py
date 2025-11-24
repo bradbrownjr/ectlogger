@@ -639,7 +639,21 @@ async def assign_net_role(
     net_role = NetRole(net_id=net_id, user_id=user_id, role=role)
     db.add(net_role)
     await db.commit()
-    
+
+    # Broadcast role change via WebSocket
+    from app.main import manager
+    import datetime
+    await manager.broadcast({
+        "type": "role_change",
+        "data": {
+            "net_id": net_id,
+            "user_id": user_id,
+            "role": role,
+            "assigned_at": net_role.assigned_at.isoformat() if hasattr(net_role.assigned_at, 'isoformat') else str(net_role.assigned_at)
+        },
+        "timestamp": datetime.datetime.utcnow().isoformat()
+    }, net_id)
+
     return {"message": f"Role {role} assigned to user {user_id}"}
 
 
@@ -669,6 +683,22 @@ async def remove_net_role(
     
     await db.delete(role)
     await db.commit()
+
+    # Broadcast role removal via WebSocket
+    from app.main import manager
+    import datetime
+    await manager.broadcast({
+        "type": "role_change",
+        "data": {
+            "net_id": net_id,
+            "user_id": role.user_id,
+            "role": role.role,
+            "removed": True,
+            "removed_at": datetime.datetime.utcnow().isoformat()
+        },
+        "timestamp": datetime.datetime.utcnow().isoformat()
+    }, net_id)
+
     return None
 
 
