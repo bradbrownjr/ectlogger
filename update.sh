@@ -75,13 +75,17 @@ if ! git diff-index --quiet HEAD --; then
     echo ""
 fi
 
-# Offer to update
-echo "Would you like to update now? (Y/n)"
-read -r response
+# Offer to update (check for -y flag)
+if [[ "$1" != "-y" ]]; then
+    echo "Would you like to update now? (Y/n)"
+    read -r response
 
-if [[ "$response" =~ ^[Nn]$ ]]; then
-    echo "Update cancelled. You can update later by running: ./update.sh"
-    exit 0
+    if [[ "$response" =~ ^[Nn]$ ]]; then
+        echo "Update cancelled. You can update later by running: ./update.sh"
+        exit 0
+    fi
+else
+    echo "Auto-updating (--yes flag provided)..."
 fi
 
 echo ""
