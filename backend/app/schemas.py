@@ -178,6 +178,8 @@ class NetTemplateBase(BaseModel):
     name: str = Field(max_length=200, min_length=1)
     description: Optional[str] = Field(None, max_length=2000)
     field_config: Optional[dict] = None
+    schedule_type: Optional[str] = Field(default='ad_hoc')  # ad_hoc, daily, weekly, monthly
+    schedule_config: Optional[dict] = Field(default_factory=dict)  # {day_of_week, week_of_month, time}
 
 
 class NetTemplateCreate(NetTemplateBase):
@@ -190,6 +192,8 @@ class NetTemplateUpdate(BaseModel):
     field_config: Optional[dict] = None
     frequency_ids: Optional[List[int]] = None
     is_active: Optional[bool] = None
+    schedule_type: Optional[str] = None
+    schedule_config: Optional[dict] = None
 
 
 class NetTemplateResponse(NetTemplateBase):
@@ -210,6 +214,8 @@ class NetTemplateResponse(NetTemplateBase):
             'description': template.description,
             'owner_id': template.owner_id,
             'field_config': json.loads(template.field_config) if template.field_config else None,
+            'schedule_type': template.schedule_type,
+            'schedule_config': json.loads(template.schedule_config) if template.schedule_config else {},
             'is_active': template.is_active,
             'created_at': template.created_at,
             'frequencies': [FrequencyResponse.model_validate(f) for f in template.frequencies],

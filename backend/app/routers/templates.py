@@ -19,14 +19,17 @@ async def create_template(
     db: AsyncSession = Depends(get_db)
 ):
     """Create a new net template"""
-    # Serialize field_config to JSON
+    # Serialize field_config and schedule_config to JSON
     field_config_json = json.dumps(template_data.field_config) if template_data.field_config else None
+    schedule_config_json = json.dumps(template_data.schedule_config) if template_data.schedule_config else '{}'
     
     template = NetTemplate(
         name=template_data.name,
         description=template_data.description,
         owner_id=current_user.id,
-        field_config=field_config_json
+        field_config=field_config_json,
+        schedule_type=template_data.schedule_type,
+        schedule_config=schedule_config_json
     )
     db.add(template)
     await db.flush()
@@ -174,6 +177,10 @@ async def update_template(
         template.field_config = json.dumps(template_data.field_config)
     if template_data.is_active is not None:
         template.is_active = template_data.is_active
+    if template_data.schedule_type is not None:
+        template.schedule_type = template_data.schedule_type
+    if template_data.schedule_config is not None:
+        template.schedule_config = json.dumps(template_data.schedule_config)
     
     # Update frequencies if provided
     if template_data.frequency_ids is not None:

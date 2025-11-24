@@ -58,6 +58,14 @@ const CreateSchedule: React.FC = () => {
     notes: { enabled: false, required: false },
   });
   const [isActive, setIsActive] = useState(true);
+  
+  // Schedule configuration
+  const [scheduleType, setScheduleType] = useState('ad_hoc');
+  const [scheduleConfig, setScheduleConfig] = useState({
+    day_of_week: 1, // Monday
+    week_of_month: [], // e.g., [1, 3] for 1st and 3rd week
+    time: '18:00'
+  });
 
   useEffect(() => {
     fetchFrequencies();
@@ -358,6 +366,8 @@ const CreateSchedule: React.FC = () => {
       setSelectedFrequencyIds(Schedule.frequencies.map((f: any) => f.id));
       setFieldConfig(Schedule.field_config || fieldConfig);
       setIsActive(Schedule.is_active);
+      setScheduleType(Schedule.schedule_type || 'ad_hoc');
+      setScheduleConfig(Schedule.schedule_config || { day_of_week: 1, week_of_month: [], time: '18:00' });
     } catch (error) {
       console.error('Failed to fetch Schedule:', error);
     }
@@ -372,6 +382,8 @@ const CreateSchedule: React.FC = () => {
       frequency_ids: selectedFrequencyIds,
       field_config: fieldConfig,
       is_active: isActive,
+      schedule_type: scheduleType,
+      schedule_config: scheduleConfig,
     };
 
     try {
@@ -425,6 +437,117 @@ const CreateSchedule: React.FC = () => {
             rows={3}
             helperText="Optional description of the net Schedule"
           />
+
+          <Typography variant="h6" sx={{ mt: 4, mb: 2 }}>
+            Schedule Configuration
+          </Typography>
+
+          <FormControl fullWidth margin="normal">
+            <Select
+              value={scheduleType}
+              onChange={(e) => {
+                setScheduleType(e.target.value);
+                // Reset config when changing type
+                if (e.target.value === 'ad_hoc') {
+                  setScheduleConfig({ day_of_week: 1, week_of_month: [], time: '18:00' });
+                }
+              }}
+            >
+              <MenuItem value="ad_hoc">Ad-Hoc (As Needed)</MenuItem>
+              <MenuItem value="daily">Daily</MenuItem>
+              <MenuItem value="weekly">Weekly</MenuItem>
+              <MenuItem value="monthly">Monthly</MenuItem>
+            </Select>
+          </FormControl>
+
+          {scheduleType === 'daily' && (
+            <TextField
+              fullWidth
+              type="time"
+              label="Time"
+              value={scheduleConfig.time}
+              onChange={(e) => setScheduleConfig({ ...scheduleConfig, time: e.target.value })}
+              margin="normal"
+              InputLabelProps={{ shrink: true }}
+            />
+          )}
+
+          {scheduleType === 'weekly' && (
+            <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+              <FormControl fullWidth>
+                <Select
+                  value={scheduleConfig.day_of_week}
+                  onChange={(e) => setScheduleConfig({ ...scheduleConfig, day_of_week: Number(e.target.value) })}
+                >
+                  <MenuItem value={1}>Monday</MenuItem>
+                  <MenuItem value={2}>Tuesday</MenuItem>
+                  <MenuItem value={3}>Wednesday</MenuItem>
+                  <MenuItem value={4}>Thursday</MenuItem>
+                  <MenuItem value={5}>Friday</MenuItem>
+                  <MenuItem value={6}>Saturday</MenuItem>
+                  <MenuItem value={0}>Sunday</MenuItem>
+                </Select>
+              </FormControl>
+              <TextField
+                type="time"
+                label="Time"
+                value={scheduleConfig.time}
+                onChange={(e) => setScheduleConfig({ ...scheduleConfig, time: e.target.value })}
+                InputLabelProps={{ shrink: true }}
+                sx={{ minWidth: 150 }}
+              />
+            </Box>
+          )}
+
+          {scheduleType === 'monthly' && (
+            <Box sx={{ mt: 2 }}>
+              <FormGroup sx={{ flexDirection: 'row', gap: 2, mb: 2 }}>
+                {[1, 2, 3, 4, 5].map(week => (
+                  <FormControlLabel
+                    key={week}
+                    control={
+                      <Checkbox
+                        checked={scheduleConfig.week_of_month?.includes(week) || false}
+                        onChange={(e) => {
+                          const weeks = scheduleConfig.week_of_month || [];
+                          if (e.target.checked) {
+                            setScheduleConfig({ ...scheduleConfig, week_of_month: [...weeks, week] });
+                          } else {
+                            setScheduleConfig({ ...scheduleConfig, week_of_month: weeks.filter(w => w !== week) });
+                          }
+                        }}
+                      />
+                    }
+                    label={week === 5 ? 'Last' : `${week}${week === 1 ? 'st' : week === 2 ? 'nd' : week === 3 ? 'rd' : 'th'}`}
+                  />
+                ))}
+              </FormGroup>
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <FormControl fullWidth>
+                  <Select
+                    value={scheduleConfig.day_of_week}
+                    onChange={(e) => setScheduleConfig({ ...scheduleConfig, day_of_week: Number(e.target.value) })}
+                  >
+                    <MenuItem value={1}>Monday</MenuItem>
+                    <MenuItem value={2}>Tuesday</MenuItem>
+                    <MenuItem value={3}>Wednesday</MenuItem>
+                    <MenuItem value={4}>Thursday</MenuItem>
+                    <MenuItem value={5}>Friday</MenuItem>
+                    <MenuItem value={6}>Saturday</MenuItem>
+                    <MenuItem value={0}>Sunday</MenuItem>
+                  </Select>
+                </FormControl>
+                <TextField
+                  type="time"
+                  label="Time"
+                  value={scheduleConfig.time}
+                  onChange={(e) => setScheduleConfig({ ...scheduleConfig, time: e.target.value })}
+                  InputLabelProps={{ shrink: true }}
+                  sx={{ minWidth: 150 }}
+                />
+              </Box>
+            </Box>
+          )}
 
           <Typography variant="h6" sx={{ mt: 4, mb: 2 }}>
             Communication Plan
