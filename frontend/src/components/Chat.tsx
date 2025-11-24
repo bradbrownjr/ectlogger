@@ -25,9 +25,12 @@ const Chat: React.FC<ChatProps> = ({ netId, onNewMessage }) => {
   const [sending, setSending] = useState(false);
   const { user } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
   };
 
   useEffect(() => {
@@ -117,6 +120,7 @@ const Chat: React.FC<ChatProps> = ({ netId, onNewMessage }) => {
       </Box>
 
       <List 
+        ref={messagesContainerRef}
         sx={{ 
           flexGrow: 1, 
           overflow: 'auto', 
