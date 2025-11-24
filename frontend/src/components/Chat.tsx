@@ -121,12 +121,12 @@ const Chat: React.FC<ChatProps> = ({ netId, onNewMessage }) => {
     >
       <Box sx={{ 
         px: 2, 
-        py: 1.75,
+        py: 2,
         borderBottom: 1, 
         borderColor: 'divider', 
         flexShrink: 0,
-        backgroundColor: (theme) => theme.palette.mode === 'dark' ? '#1e1e1e' : '#f5f5f5',
-        color: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.87)',
+        backgroundColor: 'background.paper',
+        color: 'text.primary',
         fontSize: '0.875rem',
         fontWeight: 500,
         lineHeight: 1.43
