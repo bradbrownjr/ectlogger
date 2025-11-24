@@ -862,16 +862,30 @@ const NetView: React.FC = () => {
                           }
                           console.log('Select value for', checkIn.callsign, ':', selectValue, '| user_id:', checkIn.user_id);
 
+                          // Local state to control dropdown open/close
+                          const [openSelect, setOpenSelect] = React.useState(false);
+
                           return (
                             <Select
                               size="small"
                               value={selectValue}
-                              onChange={(e) => {
-                                console.log('Select onChange triggered for', checkIn.callsign, '- new value:', e.target.value);
-                                handleStatusChange(checkIn.id, e.target.value);
+                              open={openSelect}
+                              onOpen={() => {
+                                setOpenSelect(true);
+                                console.log('Select OPENED for', checkIn.callsign);
                               }}
-                              onOpen={() => console.log('Select OPENED for', checkIn.callsign)}
-                              onClose={(event, reason) => console.log('Select CLOSED for', checkIn.callsign, '- reason:', reason)}
+                              onClose={(event, reason) => {
+                                setOpenSelect(false);
+                                console.log('Select CLOSED for', checkIn.callsign, '- reason:', reason);
+                              }}
+                              onChange={async (e) => {
+                                console.log('Select onChange triggered for', checkIn.callsign, '- new value:', e.target.value);
+                                await handleStatusChange(checkIn.id, e.target.value);
+                                setOpenSelect(false); // Force close after selection
+                                // Force refresh after role assignment
+                                await fetchNetRoles();
+                                await fetchCheckIns();
+                              }}
                               sx={{ minWidth: 50 }}
                               disabled={owner?.id === checkIn.user_id}
                               MenuProps={{
@@ -884,6 +898,7 @@ const NetView: React.FC = () => {
                                   },
                                 },
                                 onClose: (event, reason) => {
+                                  setOpenSelect(false);
                                   console.log('MenuProps onClose - reason:', reason);
                                 },
                               }}
