@@ -749,8 +749,8 @@ const NetView: React.FC = () => {
 
         {net.status === 'active' && (
           <Grid container spacing={0} sx={{ mt: 0.5 }}>
-            <Grid item xs={12} md={8} sx={{ pr: { md: 0.5 } }}>
-              <TableContainer sx={{ maxHeight: 'calc(100vh - 220px)', overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: 1 }}>
+            <Grid item xs={12} md={8} sx={{ pr: { md: 0.5 }, display: 'flex', flexDirection: 'column' }}>
+              <TableContainer sx={{ maxHeight: 'calc(100vh - 350px)', overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: '4px 4px 0 0', borderBottom: 0, flexShrink: 1 }}>
               <Table size="small" stickyHeader>
                 <TableHead>
                   <TableRow>
@@ -894,10 +894,16 @@ const NetView: React.FC = () => {
                       )}
                     </TableRow>
                   ))}
-
-                  {/* New check-in row - only show for NCS/Logger */}
-                  {canManageCheckIns && (
-                  <TableRow sx={{ backgroundColor: 'action.hover' }}>
+                </TableBody>
+              </Table>
+            </TableContainer>
+            
+            {/* New check-in form - fixed below table */}
+            {canManageCheckIns && (
+              <Paper sx={{ border: 1, borderColor: 'divider', borderRadius: '0 0 4px 4px', p: 1, flexShrink: 0 }}>
+                <Table size="small">
+                  <TableBody>
+                  <TableRow>
                     <TableCell>{checkIns.length + 1}</TableCell>
                     <TableCell>➕</TableCell>
                     <TableCell>
@@ -1037,10 +1043,9 @@ const NetView: React.FC = () => {
                       </Button>
                     </TableCell>
                   </TableRow>
-                  )}
                   
                   {/* Frequency selector row for check-in form */}
-                  {canManageCheckIns && net?.frequencies && net.frequencies.length > 1 && (
+                  {net?.frequencies && net.frequencies.length > 1 && (
                   <TableRow sx={{ backgroundColor: 'action.selected' }}>
                     <TableCell colSpan={99}>
                       <Box sx={{ p: 1 }}>
@@ -1078,9 +1083,10 @@ const NetView: React.FC = () => {
                     </TableCell>
                   </TableRow>
                   )}
-                </TableBody>
-              </Table>
-            </TableContainer>
+                  </TableBody>
+                </Table>
+              </Paper>
+            )}
             <Box sx={{ mt: 0.5, p: 0.5, backgroundColor: 'action.hover', borderRadius: 1, flexShrink: 0 }}>
               <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
                 <Typography variant="caption" sx={{ fontWeight: 'bold' }}>Legend:</Typography>
