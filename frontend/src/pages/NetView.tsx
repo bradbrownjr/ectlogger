@@ -204,9 +204,19 @@ const NetView: React.FC = () => {
         // Always refresh roles and check-ins for all clients
         fetchNetRoles();
         fetchCheckIns();
+        // If the event contains a user_id, and it matches the current user, force a refresh
+        if (message.data?.user_id && user?.id === message.data.user_id) {
+          console.log('Role change affects current user, forcing UI refresh');
+          fetchNetRoles();
+          fetchCheckIns();
+        }
       } else if (message.type === 'status_change') {
         console.log('WebSocket: status_change event received', message);
         fetchCheckIns();
+        if (message.data?.user_id && user?.id === message.data.user_id) {
+          console.log('Status change affects current user, forcing UI refresh');
+          fetchCheckIns();
+        }
       }
     };
 

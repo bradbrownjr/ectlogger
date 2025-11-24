@@ -36,11 +36,14 @@ const Chat: React.FC<ChatProps> = ({ netId, onNewMessage }) => {
     const handleNewChatMessage = (event: any) => {
       const chatMsg = event.detail;
       console.log('WebSocket: chat_message event received', chatMsg);
-      // Only add if not sent by this user (prevents duplication)
-      if (chatMsg.user_id !== user?.id) {
-        setMessages((prev) => [...prev, chatMsg]);
-        if (onNewMessage) onNewMessage(chatMsg);
-      }
+      setMessages((prev) => {
+        // Only add if not already present (deduplication by id)
+        if (prev.some((msg) => msg.id === chatMsg.id)) {
+          return prev;
+        }
+        return [...prev, chatMsg];
+      });
+      if (onNewMessage) onNewMessage(chatMsg);
     };
     window.addEventListener('newChatMessage', handleNewChatMessage);
     return () => {
