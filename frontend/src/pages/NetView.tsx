@@ -439,6 +439,11 @@ const NetView: React.FC = () => {
   const isAdmin = user?.role === 'admin';
   const canManage = isOwner || isAdmin;
 
+  // Check if user has NCS or Logger role
+  const userNetRole = netRoles.find((role: any) => role.user_id === user?.id);
+  const isNCSOrLogger = userNetRole && (userNetRole.role === 'NCS' || userNetRole.role === 'Logger');
+  const canManageCheckIns = canManage || isNCSOrLogger;
+
   // Find the user's active check-in (not checked out)
   const userActiveCheckIn = checkIns.find(
     (checkIn: any) => checkIn.user_id === user?.id && checkIn.status !== 'checked_out'
@@ -705,7 +710,7 @@ const NetView: React.FC = () => {
                     >
                       <TableCell>{index + 1}</TableCell>
                       <TableCell>
-                        {net.status === 'active' && checkIn.status !== 'checked_out' ? (
+                        {net.status === 'active' && checkIn.status !== 'checked_out' && (canManageCheckIns || checkIn.user_id === user?.id) ? (
                           <Select
                             size="small"
                             value={checkIn.status}
