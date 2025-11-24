@@ -144,6 +144,7 @@ const NetView: React.FC = () => {
       // Poll stats every 10 seconds to update online users
       const statsInterval = setInterval(fetchNetStats, 10000);
       
+
       return () => {
         if (ws) {
           ws.close();
@@ -151,12 +152,6 @@ const NetView: React.FC = () => {
         clearInterval(statsInterval);
       };
     }
-
-    return () => {
-      if (ws) {
-        ws.close();
-      }
-    };
   }, [netId]);
 
   useEffect(() => {
