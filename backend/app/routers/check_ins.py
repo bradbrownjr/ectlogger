@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from typing import List
+from datetime import datetime, UTC
 from app.database import get_db
 from app.models import CheckIn, Net, NetStatus, User, StationStatus
 from app.schemas import CheckInCreate, CheckInUpdate, CheckInResponse
@@ -29,15 +30,15 @@ async def create_check_in(
     if net.status != NetStatus.ACTIVE:
         raise HTTPException(status_code=400, detail="Net is not active")
     
-    # Check if this is a recheck (user previously checked in)
+    # Check if this is a recheck (user previously checked in to this net)
+    # Only consider the most recent check-in for this callsign
     result = await db.execute(
         select(CheckIn).where(
             CheckIn.net_id == net_id,
             CheckIn.callsign == check_in_data.callsign
-        )
+        ).order_by(CheckIn.checked_in_at.desc()).limit(1)
     )
     existing_check_in = result.scalar_one_or_none()
-    is_recheck = existing_check_in is not None
     
     # Try to automatically link to existing user by callsign
     linked_user_id = None
@@ -51,25 +52,43 @@ async def create_check_in(
     if matching_user:
         linked_user_id = matching_user.id
     
-    # Create check-in
-    check_in = CheckIn(
-        net_id=net_id,
-        user_id=linked_user_id,
-        callsign=check_in_data.callsign,
-        name=check_in_data.name,
-        location=check_in_data.location,
-        skywarn_number=check_in_data.skywarn_number,
-        weather_observation=check_in_data.weather_observation,
-        power_source=check_in_data.power_source,
-        feedback=check_in_data.feedback,
-        notes=check_in_data.notes,
-        frequency_id=check_in_data.frequency_id,
-        is_recheck=is_recheck,
-        checked_in_by_id=current_user.id,
-        status=StationStatus.CHECKED_IN
-    )
+    # If there's an existing check-in, update it instead of creating a new one
+    if existing_check_in:
+        existing_check_in.user_id = linked_user_id
+        existing_check_in.name = check_in_data.name
+        existing_check_in.location = check_in_data.location
+        existing_check_in.skywarn_number = check_in_data.skywarn_number
+        existing_check_in.weather_observation = check_in_data.weather_observation
+        existing_check_in.power_source = check_in_data.power_source
+        existing_check_in.feedback = check_in_data.feedback
+        existing_check_in.notes = check_in_data.notes
+        existing_check_in.frequency_id = check_in_data.frequency_id
+        existing_check_in.is_recheck = True
+        existing_check_in.checked_in_by_id = current_user.id
+        existing_check_in.status = StationStatus.CHECKED_IN
+        existing_check_in.checked_out_at = None  # Clear checkout timestamp
+        existing_check_in.checked_in_at = datetime.now(UTC)  # Update check-in time
+        check_in = existing_check_in
+    else:
+        # Create new check-in
+        check_in = CheckIn(
+            net_id=net_id,
+            user_id=linked_user_id,
+            callsign=check_in_data.callsign,
+            name=check_in_data.name,
+            location=check_in_data.location,
+            skywarn_number=check_in_data.skywarn_number,
+            weather_observation=check_in_data.weather_observation,
+            power_source=check_in_data.power_source,
+            feedback=check_in_data.feedback,
+            notes=check_in_data.notes,
+            frequency_id=check_in_data.frequency_id,
+            is_recheck=False,
+            checked_in_by_id=current_user.id,
+            status=StationStatus.CHECKED_IN
+        )
+        db.add(check_in)
     
-    db.add(check_in)
     await db.commit()
     await db.refresh(check_in)
     
