@@ -494,6 +494,7 @@ const NetView: React.FC = () => {
         
         await fetchNetRoles();
         await fetchCheckIns();
+        console.log('fetchCheckIns called after role change');
       } else if (newStatus === 'ncs' || newStatus === 'logger') {
         // Can't assign roles to check-ins without user accounts
         alert('Cannot assign roles to stations without user accounts');
@@ -514,6 +515,7 @@ const NetView: React.FC = () => {
         console.log('Updating check-in status');
         await checkInApi.update(checkInId, { status: newStatus });
         await fetchCheckIns();
+        console.log('fetchCheckIns called after status change');
       }
       console.log('Status change completed successfully');
     } catch (error) {
