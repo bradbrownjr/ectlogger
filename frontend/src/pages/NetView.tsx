@@ -418,6 +418,20 @@ const NetView: React.FC = () => {
                 variant="contained" 
                 color="primary" 
                 onClick={() => {
+                  // Pre-fill form with user's profile data
+                  if (user) {
+                    setCheckInForm({
+                      callsign: user.callsign || '',
+                      name: user.name || '',
+                      location: user.location || '',
+                      skywarn_number: '',
+                      weather_observation: '',
+                      power_source: '',
+                      feedback: '',
+                      notes: '',
+                    });
+                  }
+                  // Scroll to and focus the callsign field
                   const callsignField = document.querySelector('input[placeholder="Callsign"]') as HTMLInputElement;
                   if (callsignField) {
                     callsignField.scrollIntoView({ behavior: 'smooth', block: 'center' });
