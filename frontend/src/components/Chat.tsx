@@ -117,7 +117,7 @@ const Chat: React.FC<ChatProps> = ({ netId, onNewMessage }) => {
         height: '100%'
       }}
     >
-      <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider', flexShrink: 0 }}>
+      <Box sx={{ p: 1, borderBottom: 1, borderColor: 'divider', flexShrink: 0 }}>
         <Typography variant="h6">Chat</Typography>
       </Box>
 
@@ -128,12 +128,11 @@ const Chat: React.FC<ChatProps> = ({ netId, onNewMessage }) => {
           flexShrink: 1,
           overflow: 'auto',
           overflowY: 'scroll',
-          p: 2,
+          p: 1,
           display: 'flex',
           flexDirection: 'column',
           gap: 1,
-          minHeight: 0,
-          maxHeight: 'calc(100vh - 370px)'
+          minHeight: 0
         }}
       >
         {messages.length === 0 ? (
