@@ -117,8 +117,16 @@ const Chat: React.FC<ChatProps> = ({ netId, onNewMessage }) => {
         height: '100%'
       }}
     >
-      <Box sx={{ p: 1, borderBottom: 1, borderColor: 'divider', flexShrink: 0 }}>
-        <Typography variant="h6">Chat</Typography>
+      <Box sx={{ 
+        px: 2, 
+        py: 1.5,
+        borderBottom: 1, 
+        borderColor: 'divider', 
+        flexShrink: 0,
+        backgroundColor: 'action.hover',
+        fontWeight: 500
+      }}>
+        <Typography variant="body2" sx={{ fontWeight: 500 }}>Chat</Typography>
       </Box>
 
       <List 
