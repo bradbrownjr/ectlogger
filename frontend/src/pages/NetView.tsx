@@ -370,12 +370,33 @@ const NetView: React.FC = () => {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'checked_in': return '✅';
-      case 'listening': return '👂';
-      case 'available': return '📻';
-      case 'away': return '⏸️';
-      case 'checked_out': return '👋';
-      default: return '';
+      case 'checked_in': return '✅'; // Standard
+      case 'listening': return '👂'; // Just listening
+      case 'away': return '⏸️'; // Short term
+      case 'available': return '🚨'; // Has traffic
+      case 'checked_out': return '👋'; // Checked out
+      default: return '✅';
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'checked_in': return 'Standard';
+      case 'listening': return 'Just Listening';
+      case 'away': return 'Short Term';
+      case 'available': return 'Has Traffic';
+      case 'checked_out': return 'Checked Out';
+      default: return 'Standard';
+    }
+  };
+
+  const handleStatusChange = async (checkInId: number, newStatus: string) => {
+    try {
+      await checkInApi.update(checkInId, { status: newStatus });
+      fetchCheckIns();
+    } catch (error) {
+      console.error('Failed to update status:', error);
+      alert('Failed to update status');
     }
   };
 
@@ -628,7 +649,23 @@ const NetView: React.FC = () => {
                       }}
                     >
                       <TableCell>{index + 1}</TableCell>
-                      <TableCell>{getStatusIcon(checkIn.status)}</TableCell>
+                      <TableCell>
+                        {net.status === 'active' && checkIn.status !== 'checked_out' ? (
+                          <Select
+                            size="small"
+                            value={checkIn.status}
+                            onChange={(e) => handleStatusChange(checkIn.id, e.target.value)}
+                            sx={{ minWidth: 50 }}
+                          >
+                            <MenuItem value="checked_in">✅</MenuItem>
+                            <MenuItem value="listening">👂</MenuItem>
+                            <MenuItem value="away">⏸️</MenuItem>
+                            <MenuItem value="available">🚨</MenuItem>
+                          </Select>
+                        ) : (
+                          getStatusIcon(checkIn.status)
+                        )}
+                      </TableCell>
                       <TableCell>
                         {checkIn.callsign}
                         {checkIn.is_recheck && ' 🔄'}
@@ -792,6 +829,20 @@ const NetView: React.FC = () => {
                 </TableBody>
               </Table>
             </TableContainer>
+            
+            {/* Status Legend */}
+            <Box sx={{ mt: 2, p: 2, backgroundColor: 'action.hover', borderRadius: 1 }}>
+              <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold' }}>
+                Status Legend:
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+                <Typography variant="body2">✅ Standard</Typography>
+                <Typography variant="body2">👂 Just Listening</Typography>
+                <Typography variant="body2">⏸️ Short Term</Typography>
+                <Typography variant="body2">🚨 Has Traffic</Typography>
+                <Typography variant="body2">👋 Checked Out</Typography>
+              </Box>
+            </Box>
           </>
         )}
 
