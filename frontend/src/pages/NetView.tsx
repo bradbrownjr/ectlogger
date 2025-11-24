@@ -200,10 +200,12 @@ const NetView: React.FC = () => {
           window.dispatchEvent(new CustomEvent('newChatMessage', { detail: message.data }));
         }
       } else if (message.type === 'role_change') {
+        console.log('WebSocket: role_change event received', message);
         // Always refresh roles and check-ins for all clients
         fetchNetRoles();
         fetchCheckIns();
       } else if (message.type === 'status_change') {
+        console.log('WebSocket: status_change event received', message);
         fetchCheckIns();
       }
     };

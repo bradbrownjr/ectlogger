@@ -35,6 +35,7 @@ const Chat: React.FC<ChatProps> = ({ netId, onNewMessage }) => {
     // Listen for chat_message events dispatched from NetView WebSocket
     const handleNewChatMessage = (event: any) => {
       const chatMsg = event.detail;
+      console.log('WebSocket: chat_message event received', chatMsg);
       // Only add if not sent by this user (prevents duplication)
       if (chatMsg.user_id !== user?.id) {
         setMessages((prev) => [...prev, chatMsg]);
@@ -76,12 +77,9 @@ const Chat: React.FC<ChatProps> = ({ netId, onNewMessage }) => {
     setSending(true);
     try {
       const response = await chatApi.create(netId, { message: newMessage.trim() });
-      setMessages([...messages, response.data]);
       setNewMessage('');
-      
-      if (onNewMessage) {
-        onNewMessage(response.data);
-      }
+      // Do NOT add message here; rely on WebSocket event to update chat for all clients
+      // if (onNewMessage) onNewMessage(response.data);
     } catch (error) {
       console.error('Failed to send message:', error);
     } finally {
