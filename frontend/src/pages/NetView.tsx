@@ -913,10 +913,10 @@ const NetView: React.FC = () => {
             
             {/* New check-in form - fixed below table */}
             {canManageCheckIns && (
-              <Paper sx={{ border: 1, borderColor: 'divider', borderRadius: '0 0 4px 4px', p: 1, flexShrink: 0 }}>
+              <Paper sx={{ border: 1, borderColor: 'divider', borderTop: 0, borderRadius: '0 0 4px 4px', p: 1, flexShrink: 0 }}>
                 <Table size="small">
                   <TableBody>
-                  <TableRow>
+                  <TableRow sx={{ '& .MuiTableCell-root': { border: 0, py: 0.5 } }}>
                     <TableCell>{checkIns.length + 1}</TableCell>
                     <TableCell>➕</TableCell>
                     <TableCell>
@@ -931,7 +931,7 @@ const NetView: React.FC = () => {
                           }
                         }}
                         placeholder="Callsign"
-                        inputProps={{ style: { textTransform: 'uppercase' } }}
+                        inputProps={{ style: { textTransform: 'uppercase', fontSize: '0.875rem' } }}
                         fullWidth
                         required
                       />
@@ -949,6 +949,7 @@ const NetView: React.FC = () => {
                             }
                           }}
                           placeholder="Name"
+                          inputProps={{ style: { fontSize: '0.875rem' } }}
                           fullWidth
                           required={net.field_config.name.required}
                         />
@@ -967,6 +968,7 @@ const NetView: React.FC = () => {
                             }
                           }}
                           placeholder="Location"
+                          inputProps={{ style: { fontSize: '0.875rem' } }}
                           fullWidth
                           required={net.field_config.location.required}
                         />
@@ -985,6 +987,7 @@ const NetView: React.FC = () => {
                             }
                           }}
                           placeholder="SKYWARN #"
+                          inputProps={{ style: { fontSize: '0.875rem' } }}
                           fullWidth
                           required={net.field_config.skywarn_number.required}
                         />
@@ -1003,6 +1006,7 @@ const NetView: React.FC = () => {
                             }
                           }}
                           placeholder="Weather"
+                          inputProps={{ style: { fontSize: '0.875rem' } }}
                           fullWidth
                           required={net.field_config.weather_observation.required}
                         />
@@ -1021,6 +1025,7 @@ const NetView: React.FC = () => {
                             }
                           }}
                           placeholder="Power"
+                          inputProps={{ style: { fontSize: '0.875rem' } }}
                           fullWidth
                           required={net.field_config.power_source.required}
                         />
@@ -1039,6 +1044,7 @@ const NetView: React.FC = () => {
                             }
                           }}
                           placeholder="Notes"
+                          inputProps={{ style: { fontSize: '0.875rem' } }}
                           fullWidth
                           required={net.field_config.notes.required}
                         />
