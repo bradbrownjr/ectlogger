@@ -691,7 +691,7 @@ const NetView: React.FC = () => {
                       key={checkIn.id}
                       sx={{ 
                         backgroundColor: checkIn.id === activeSpeakerId 
-                          ? 'success.dark' 
+                          ? (theme) => theme.palette.mode === 'dark' ? theme.palette.success.dark : theme.palette.success.light
                           : checkIn.status === 'checked_out' 
                           ? 'action.disabledBackground' 
                           : 'inherit',
@@ -699,8 +699,7 @@ const NetView: React.FC = () => {
                         border: checkIn.id === activeSpeakerId ? 2 : 0,
                         borderColor: checkIn.id === activeSpeakerId ? 'success.main' : 'transparent',
                         '& .MuiTableCell-root': checkIn.id === activeSpeakerId ? {
-                          fontWeight: 'bold',
-                          color: 'success.contrastText'
+                          fontWeight: 'bold'
                         } : {}
                       }}
                     >
