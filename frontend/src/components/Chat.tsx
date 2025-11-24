@@ -125,7 +125,7 @@ const Chat: React.FC<ChatProps> = ({ netId, onNewMessage }) => {
         borderBottom: 1, 
         borderColor: 'divider', 
         flexShrink: 0,
-        backgroundColor: 'background.paper',
+        backgroundColor: (theme) => theme.palette.mode === 'dark' ? theme.palette.background.default : theme.palette.grey[50],
         color: 'text.primary',
         fontSize: '0.875rem',
         fontWeight: 500,
