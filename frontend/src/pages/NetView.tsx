@@ -590,14 +590,14 @@ const NetView: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="xl" sx={{ height: 'calc(100vh - 56px)', py: 0, px: { xs: 0.5, sm: 1 }, overflow: 'hidden' }}>
+    <Container maxWidth="xl" sx={{ height: 'calc(100vh - 72px)', py: 0, px: { xs: 0.5, sm: 1 }, overflow: 'hidden', display: 'flex' }}>
       <Paper sx={{ p: 0.5, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <Box sx={{ flexShrink: 0 }}>
-          <Typography variant="h5" component="h1" sx={{ mb: 0.25 }}>
+          <Typography variant="h5" component="h1" sx={{ mb: 0 }}>
             {net.name}
           </Typography>
           {net.description && (
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 0.25 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 0 }}>
               {net.description}
             </Typography>
           )}
