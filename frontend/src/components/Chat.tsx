@@ -9,6 +9,10 @@ import {
   ListItem,
   ListItemText,
   Divider,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import { chatApi, ChatMessage } from '../api/chat';
@@ -119,19 +123,14 @@ const Chat: React.FC<ChatProps> = ({ netId, onNewMessage }) => {
         overflow: 'hidden'
       }}
     >
-      <Box sx={{ 
-        px: 2, 
-        py: 2,
-        borderBottom: 1, 
-        borderColor: 'divider', 
-        flexShrink: 0,
-        backgroundColor: (theme) => theme.palette.mode === 'dark' ? theme.palette.background.default : theme.palette.grey[50],
-        color: 'text.primary',
-        fontSize: '0.875rem',
-        fontWeight: 500,
-        lineHeight: 1.43
-      }}>
-        Chat
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', flexShrink: 0 }}>
+        <Table size="small">
+          <TableHead>
+            <TableRow>
+              <TableCell>Chat</TableCell>
+            </TableRow>
+          </TableHead>
+        </Table>
       </Box>
 
       <List 
