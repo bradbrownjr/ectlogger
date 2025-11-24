@@ -590,66 +590,71 @@ const NetView: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="xl" sx={{ mt: 2, mb: 2, px: { xs: 1, sm: 2 } }}>
-      <Paper sx={{ p: { xs: 1, sm: 2 } }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Box>
-            <Typography variant="h4" component="h1" gutterBottom>
+    <Container maxWidth="xl" sx={{ height: 'calc(100vh - 80px)', py: 1, px: { xs: 1, sm: 2 }, overflow: 'hidden' }}>
+      <Paper sx={{ p: { xs: 1, sm: 2 }, height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5, gap: 2, flexWrap: { xs: 'wrap', lg: 'nowrap' } }}>
+          <Box sx={{ minWidth: 0, flex: { xs: '1 1 100%', lg: '0 0 auto' } }}>
+            <Typography variant="h5" component="h1" sx={{ mb: 0.5 }}>
               {net.name}
             </Typography>
-            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
-              <Chip label={net.status} color={net.status === 'active' ? 'success' : 'default'} />
+            {net.description && (
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                {net.description}
+              </Typography>
+            )}
+            <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexWrap: 'wrap' }}>
+              <Chip label={net.status} size="small" color={net.status === 'active' ? 'success' : 'default'} />
               {netStats && (
                 <>
-                  <Chip 
-                    label={`${netStats.total_check_ins} Check-ins`} 
-                    color="primary" 
-                    variant="outlined"
-                  />
-                  <Chip 
-                    label={`${netStats.online_count} Online`} 
-                    color="success" 
-                    variant="outlined"
-                  />
+                  <Chip label={`${netStats.total_check_ins} Check-ins`} size="small" color="primary" variant="outlined" />
+                  <Chip label={`${netStats.online_count} Online`} size="small" color="success" variant="outlined" />
                   {netStats.guest_count > 0 && (
-                    <Chip 
-                      label={`${netStats.guest_count} Guests`} 
-                      color="default" 
-                      variant="outlined"
-                    />
+                    <Chip label={`${netStats.guest_count} Guests`} size="small" color="default" variant="outlined" />
                   )}
                 </>
               )}
+              {net.frequencies.length > 0 && net.frequencies.map((freq) => (
+                <Chip 
+                  key={freq.id}
+                  label={`${freq.frequency || `${freq.network}${freq.talkgroup ? ` TG${freq.talkgroup}` : ''}`} ${freq.mode}`}
+                  size="small"
+                  color={freq.id === net.active_frequency_id ? 'primary' : 'default'}
+                  onClick={canManageCheckIns ? () => handleSetActiveFrequency(freq.id) : undefined}
+                  clickable={canManageCheckIns}
+                  sx={{ height: 20 }}
+                />
+              ))}
             </Box>
           </Box>
-          <Box>
+          <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', alignItems: 'flex-start' }}>
             {canManage && net.status === 'draft' && (
               <>
-                <Button variant="outlined" onClick={() => navigate(`/nets/${netId}/edit`)} sx={{ mr: 1 }}>
+                <Button size="small" variant="outlined" onClick={() => navigate(`/nets/${netId}/edit`)}>
                   Edit
                 </Button>
-                <Button variant="contained" onClick={handleStartNet} sx={{ mr: 1 }}>
+                <Button size="small" variant="contained" onClick={handleStartNet}>
                   Start Net
                 </Button>
               </>
             )}
             {canManage && net.status === 'active' && (
-              <Button variant="contained" color="error" onClick={handleCloseNet} sx={{ mr: 1 }}>
+              <Button size="small" variant="contained" color="error" onClick={handleCloseNet}>
                 Close Net
               </Button>
             )}
             {isAuthenticated && net.status === 'active' && (
               userActiveCheckIn ? (
                 <Button 
+                  size="small"
                   variant="outlined" 
                   color="error"
                   onClick={handleCheckOut}
-                  sx={{ mr: 1 }}
                 >
                   Check Out
                 </Button>
               ) : (
                 <Button 
+                  size="small"
                   variant="contained" 
                   color="primary" 
                   onClick={() => {
@@ -679,7 +684,6 @@ const NetView: React.FC = () => {
                       setCheckInDialogOpen(true);
                     }
                   }}
-                  sx={{ mr: 1 }}
                 >
                   Check In
                 </Button>
@@ -688,19 +692,19 @@ const NetView: React.FC = () => {
             {net.status === 'closed' && (
               <>
                 <Button 
+                  size="small"
                   variant="outlined" 
-                  startIcon={<DownloadIcon />}
-                  onClick={handleExportCSV} 
-                  sx={{ mr: 1 }}
+                  startIcon={<DownloadIcon fontSize="small" />}
+                  onClick={handleExportCSV}
                 >
-                  Export CSV
+                  CSV
                 </Button>
                 {canManage && (
                   <Button 
+                    size="small"
                     variant="outlined" 
-                    startIcon={<ArchiveIcon />}
-                    onClick={handleArchive} 
-                    sx={{ mr: 1 }}
+                    startIcon={<ArchiveIcon fontSize="small" />}
+                    onClick={handleArchive}
                   >
                     Archive
                   </Button>
@@ -709,72 +713,20 @@ const NetView: React.FC = () => {
             )}
             {canManage && (net.status === 'draft' || net.status === 'archived') && (
               <Button 
+                size="small"
                 variant="outlined" 
                 color="error"
-                startIcon={<DeleteIcon />}
-                onClick={handleDelete} 
-                sx={{ mr: 1 }}
+                startIcon={<DeleteIcon fontSize="small" />}
+                onClick={handleDelete}
               >
                 Delete
               </Button>
             )}
-            <Button variant="outlined" onClick={() => navigate('/dashboard')}>
+            <Button size="small" variant="outlined" onClick={() => navigate('/dashboard')}>
               Back
             </Button>
           </Box>
         </Box>
-
-        {net.description && (
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-            {net.description}
-          </Typography>
-        )}
-
-        <Box sx={{ mb: 2 }}>
-          {net.status === 'closed' && net.closed_at && (
-            <Typography variant="body2" color="text.secondary">
-              📅 Closed: {formatDateTime(net.closed_at, user?.prefer_utc || false)}
-            </Typography>
-          )}
-          {net.status === 'active' && net.started_at && (
-            <Typography variant="body2" color="text.secondary">
-              📅 Started: {formatDateTime(net.started_at, user?.prefer_utc || false)}
-            </Typography>
-          )}
-          {(net.status === 'draft' || net.status === 'scheduled') && net.created_at && (
-            <Typography variant="body2" color="text.secondary">
-              📅 Created: {formatDateTime(net.created_at, user?.prefer_utc || false)}
-            </Typography>
-          )}
-        </Box>
-
-        {net.frequencies.length > 0 && (
-          <Box sx={{ mb: 3 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-              <Typography variant="h6">Frequencies</Typography>
-              {canManage && (
-                <Button
-                  size="small"
-                  startIcon={<EditIcon />}
-                  onClick={() => navigate(`/nets/${netId}/edit`)}
-                >
-                  Edit
-                </Button>
-              )}
-            </Box>
-            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-              {net.frequencies.map((freq) => (
-                <Chip 
-                  key={freq.id}
-                  label={`${freq.frequency || `${freq.network}${freq.talkgroup ? ` TG${freq.talkgroup}` : ''}`} ${freq.mode}`}
-                  color={freq.id === net.active_frequency_id ? 'primary' : 'default'}
-                  onClick={canManageCheckIns ? () => handleSetActiveFrequency(freq.id) : undefined}
-                  clickable={canManageCheckIns}
-                />
-              ))}
-            </Box>
-          </Box>
-        )}
 
         {(netRoles.length > 0 || canManage) && (
           <Box sx={{ mb: 3 }}>
@@ -820,13 +772,9 @@ const NetView: React.FC = () => {
         )}
 
         {net.status === 'active' && (
-          <Grid container spacing={2}>
-            <Grid item xs={12} md={8}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Typography variant="h6">Check-ins ({checkIns.length})</Typography>
-              </Box>
-
-              <TableContainer>
+          <Grid container spacing={2} sx={{ flexGrow: 1, overflow: 'hidden', minHeight: 0 }}>
+            <Grid item xs={12} md={8} sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
+              <TableContainer sx={{ flexGrow: 1, overflow: 'auto' }}>
               <Table size="small">
                 <TableHead>
                   <TableRow>
@@ -1154,26 +1102,20 @@ const NetView: React.FC = () => {
                 </TableBody>
               </Table>
             </TableContainer>
-            
-            {/* Status Legend */}
-            <Box sx={{ mt: 2, p: 2, backgroundColor: 'action.hover', borderRadius: 1 }}>
-              <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                Status Legend:
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-                <Typography variant="body2">✅ Standard</Typography>
-                <Typography variant="body2">👂 Just Listening</Typography>
-                <Typography variant="body2">⏸️ Short Term</Typography>
-                <Typography variant="body2">🚨 Has Traffic</Typography>
-                <Typography variant="body2">👋 Checked Out</Typography>
+            <Box sx={{ mt: 0.5, p: 0.5, backgroundColor: 'action.hover', borderRadius: 1, flexShrink: 0 }}>
+              <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
+                <Typography variant="caption" sx={{ fontWeight: 'bold' }}>Legend:</Typography>
+                <Typography variant="caption">✅ Standard</Typography>
+                <Typography variant="caption">👂 Listening</Typography>
+                <Typography variant="caption">⏸️ Short Term</Typography>
+                <Typography variant="caption">🚨 Traffic</Typography>
+                <Typography variant="caption">👋 Out</Typography>
               </Box>
             </Box>
             </Grid>
             
-            <Grid item xs={12} md={4}>
-              <Box sx={{ position: { md: 'sticky' }, top: { md: 16 }, maxHeight: { md: 'calc(100vh - 32px)' } }}>
-                <Chat netId={Number(netId)} />
-              </Box>
+            <Grid item xs={12} md={4} sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
+              <Chat netId={Number(netId)} />
             </Grid>
           </Grid>
         )}
