@@ -590,10 +590,10 @@ const NetView: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="xl" sx={{ height: 'calc(100vh - 64px)', py: 0.5, px: { xs: 0.5, sm: 1 }, overflow: 'hidden' }}>
+    <Container maxWidth="xl" sx={{ height: 'calc(100vh - 56px)', py: 0.5, px: { xs: 0.5, sm: 1 }, overflow: 'hidden' }}>
       <Paper sx={{ p: { xs: 0.5, sm: 1 }, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <Box sx={{ mb: 1 }}>
-          <Typography variant="h5" component="h1" sx={{ mb: 0.5 }}>
+        <Box sx={{ mb: 0.5, flexShrink: 0 }}>
+          <Typography variant="h5" component="h1" sx={{ mb: 0.25 }}>
             {net.name}
           </Typography>
           {net.description && (
@@ -613,6 +613,17 @@ const NetView: React.FC = () => {
                   )}
                 </>
               )}
+              {net.status === 'active' && net.frequencies.length > 0 && net.frequencies.map((freq) => (
+                <Chip 
+                  key={freq.id}
+                  label={`${freq.frequency || `${freq.network}${freq.talkgroup ? ` TG${freq.talkgroup}` : ''}`} ${freq.mode}`}
+                  size="small"
+                  color={freq.id === net.active_frequency_id ? 'primary' : 'default'}
+                  onClick={canManageCheckIns ? () => handleSetActiveFrequency(freq.id) : undefined}
+                  clickable={canManageCheckIns}
+                  sx={{ height: 20 }}
+                />
+              ))}
             </Box>
             <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', alignItems: 'center' }}>
             {canManage && net.status === 'draft' && (
@@ -727,21 +738,8 @@ const NetView: React.FC = () => {
         </Box>
 
         {net.status === 'active' && (
-          <Grid container spacing={1} sx={{ flexGrow: 1, overflow: 'hidden', minHeight: 0 }}>
+          <Grid container spacing={0.5} sx={{ flexGrow: 1, overflow: 'hidden', minHeight: 0 }}>
             <Grid item xs={12} md={8} sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
-              <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', justifyContent: 'flex-end', mb: 0.5 }}>
-                {net.frequencies.length > 0 && net.frequencies.map((freq) => (
-                  <Chip 
-                    key={freq.id}
-                    label={`${freq.frequency || `${freq.network}${freq.talkgroup ? ` TG${freq.talkgroup}` : ''}`} ${freq.mode}`}
-                    size="small"
-                    color={freq.id === net.active_frequency_id ? 'primary' : 'default'}
-                    onClick={canManageCheckIns ? () => handleSetActiveFrequency(freq.id) : undefined}
-                    clickable={canManageCheckIns}
-                    sx={{ height: 20 }}
-                  />
-                ))}
-              </Box>
               <TableContainer sx={{ flexGrow: 1, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: 1 }}>
               <Table size="small" stickyHeader>
                 <TableHead>
