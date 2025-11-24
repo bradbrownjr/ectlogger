@@ -466,14 +466,14 @@ const NetView: React.FC = () => {
   const handleStatusChange = async (checkInId: number, newStatus: string) => {
     console.log('handleStatusChange called:', { checkInId, newStatus });
     const checkIn = checkIns.find((ci: CheckIn) => ci.id === checkInId);
-    if (!checkIn || !checkIn.user_id) {
-      console.log('Check-in not found or no user_id:', checkIn);
+    if (!checkIn) {
+      console.log('Check-in not found');
       return;
     }
 
     try {
-      // Handle role changes (NCS or Logger)
-      if (newStatus === 'ncs' || newStatus === 'logger') {
+      // Handle role changes (NCS or Logger) - only if check-in has a user_id
+      if ((newStatus === 'ncs' || newStatus === 'logger') && checkIn.user_id) {
         console.log('Handling role change to:', newStatus);
         // First remove any existing role for this user
         const existingRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
@@ -494,15 +494,21 @@ const NetView: React.FC = () => {
         
         await fetchNetRoles();
         await fetchCheckIns();
+      } else if (newStatus === 'ncs' || newStatus === 'logger') {
+        // Can't assign roles to check-ins without user accounts
+        alert('Cannot assign roles to stations without user accounts');
+        return;
       } else {
         console.log('Handling regular status change to:', newStatus);
         // Handle regular status change
         // If user had a role and is changing to regular status, remove the role
-        const existingRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
-        if (existingRole && owner?.id !== checkIn.user_id) {
-          console.log('Removing existing role:', existingRole);
-          await api.delete(`/nets/${netId}/roles/${existingRole.id}`);
-          await fetchNetRoles();
+        if (checkIn.user_id) {
+          const existingRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
+          if (existingRole && owner?.id !== checkIn.user_id) {
+            console.log('Removing existing role:', existingRole);
+            await api.delete(`/nets/${netId}/roles/${existingRole.id}`);
+            await fetchNetRoles();
+          }
         }
         
         console.log('Updating check-in status');
