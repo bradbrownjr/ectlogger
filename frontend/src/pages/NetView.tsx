@@ -695,7 +695,7 @@ const NetView: React.FC = () => {
                     {net?.field_config?.power_source?.enabled && <TableCell>Power {net.field_config.power_source.required && '*'}</TableCell>}
                     {net?.field_config?.notes?.enabled && <TableCell>Notes {net.field_config.notes.required && '*'}</TableCell>}
                     <TableCell>Time</TableCell>
-                    <TableCell>Actions</TableCell>
+                    {canManage && <TableCell>Actions</TableCell>}
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -748,8 +748,9 @@ const NetView: React.FC = () => {
                       <TableCell>
                         {new Date(checkIn.checked_in_at).toLocaleTimeString()}
                       </TableCell>
+                      {canManage && (
                       <TableCell>
-                        {canManage && net.status === 'active' && checkIn.status !== 'checked_out' && (
+                        {net.status === 'active' && checkIn.status !== 'checked_out' && (
                           <IconButton
                             size="small"
                             onClick={() => handleSetActiveSpeaker(checkIn.id)}
@@ -759,16 +760,15 @@ const NetView: React.FC = () => {
                             🎤
                           </IconButton>
                         )}
-                        {canManage && (
-                          <IconButton
-                            size="small"
-                            onClick={() => handleDeleteCheckIn(checkIn.id)}
-                            title="Delete check-in"
-                          >
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
-                        )}
+                        <IconButton
+                          size="small"
+                          onClick={() => handleDeleteCheckIn(checkIn.id)}
+                          title="Delete check-in"
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
                       </TableCell>
+                      )}
                     </TableRow>
                   ))}
 
