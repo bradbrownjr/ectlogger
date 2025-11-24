@@ -590,8 +590,8 @@ const NetView: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="xl" sx={{ height: 'calc(100vh - 56px)', py: 0.5, px: { xs: 0.5, sm: 1 }, overflow: 'hidden' }}>
-      <Paper sx={{ p: { xs: 0.5, sm: 1 }, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <Container maxWidth="xl" sx={{ height: 'calc(100vh - 56px)', py: 0, px: { xs: 0.5, sm: 1 }, overflow: 'hidden' }}>
+      <Paper sx={{ p: 0.5, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <Box sx={{ mb: 0.5, flexShrink: 0 }}>
           <Typography variant="h5" component="h1" sx={{ mb: 0.25 }}>
             {net.name}
@@ -601,8 +601,8 @@ const NetView: React.FC = () => {
               {net.description}
             </Typography>
           )}
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-            <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexWrap: 'wrap' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1 }}>
+            <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexWrap: 'wrap', flexShrink: 1 }}>
               <Chip label={net.status} size="small" color={net.status === 'active' ? 'success' : 'default'} />
               {netStats && (
                 <>
@@ -613,18 +613,22 @@ const NetView: React.FC = () => {
                   )}
                 </>
               )}
-              {net.status === 'active' && net.frequencies.length > 0 && net.frequencies.map((freq) => (
-                <Chip 
-                  key={freq.id}
-                  label={`${freq.frequency || `${freq.network}${freq.talkgroup ? ` TG${freq.talkgroup}` : ''}`} ${freq.mode}`}
-                  size="small"
-                  color={freq.id === net.active_frequency_id ? 'primary' : 'default'}
-                  onClick={canManageCheckIns ? () => handleSetActiveFrequency(freq.id) : undefined}
-                  clickable={canManageCheckIns}
-                  sx={{ height: 20 }}
-                />
-              ))}
             </Box>
+            {net.status === 'active' && net.frequencies.length > 0 && (
+              <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexWrap: 'wrap', flexShrink: 0 }}>
+                {net.frequencies.map((freq) => (
+                  <Chip 
+                    key={freq.id}
+                    label={`${freq.frequency || `${freq.network}${freq.talkgroup ? ` TG${freq.talkgroup}` : ''}`} ${freq.mode}`}
+                    size="small"
+                    color={freq.id === net.active_frequency_id ? 'primary' : 'default'}
+                    onClick={canManageCheckIns ? () => handleSetActiveFrequency(freq.id) : undefined}
+                    clickable={canManageCheckIns}
+                    sx={{ height: 20 }}
+                  />
+                ))}
+              </Box>
+            )}
             <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', alignItems: 'center' }}>
             {canManage && net.status === 'draft' && (
               <>
