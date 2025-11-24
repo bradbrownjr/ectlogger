@@ -4,6 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from typing import List
 from datetime import datetime, UTC
+import json
 from app.database import get_db
 from app.models import CheckIn, Net, NetStatus, User, StationStatus
 from app.schemas import CheckInCreate, CheckInUpdate, CheckInResponse
@@ -186,7 +187,14 @@ async def update_check_in(
         raise HTTPException(status_code=404, detail="Check-in not found")
     
     # Update fields
-    for field, value in check_in_update.dict(exclude_unset=True).items():
+    update_data = check_in_update.dict(exclude_unset=True)
+    
+    # Handle available_frequency_ids separately (needs JSON serialization)
+    if 'available_frequency_ids' in update_data:
+        check_in.available_frequencies = json.dumps(update_data.pop('available_frequency_ids'))
+    
+    # Update remaining fields
+    for field, value in update_data.items():
         setattr(check_in, field, value)
     
     await db.commit()

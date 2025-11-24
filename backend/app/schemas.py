@@ -280,12 +280,16 @@ class CheckInCreate(CheckInBase):
 
 
 class CheckInUpdate(BaseModel):
+    callsign: Optional[str] = Field(None, max_length=50)
+    name: Optional[str] = Field(None, max_length=200)
+    location: Optional[str] = Field(None, max_length=200)
     status: Optional[StationStatus] = None
     skywarn_number: Optional[str] = Field(None, max_length=50)
     weather_observation: Optional[str] = Field(None, max_length=2000)
     power_source: Optional[str] = Field(None, max_length=100)
     feedback: Optional[str] = Field(None, max_length=1000)
     notes: Optional[str] = Field(None, max_length=2000)
+    available_frequency_ids: Optional[List[int]] = None
 
 
 class CheckInResponse(CheckInBase):

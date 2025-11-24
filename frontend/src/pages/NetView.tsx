@@ -1270,13 +1270,17 @@ const NetView: React.FC = () => {
                     />
                   )}
                   renderTags={(value: any[], getTagProps) =>
-                    value.map((option: any, index: number) => (
-                      <Chip
-                        {...getTagProps({ index })}
-                        label={formatFrequencyDisplay(option)}
-                        size="small"
-                      />
-                    ))
+                    value.map((option: any, index: number) => {
+                      const { key, ...tagProps } = getTagProps({ index });
+                      return (
+                        <Chip
+                          key={key}
+                          {...tagProps}
+                          label={formatFrequencyDisplay(option)}
+                          size="small"
+                        />
+                      );
+                    })
                   }
                 />
               )}
