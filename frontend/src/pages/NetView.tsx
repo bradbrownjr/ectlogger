@@ -116,6 +116,7 @@ const NetView: React.FC = () => {
   const [checkInDialogOpen, setCheckInDialogOpen] = useState(false);
   const [onlineUserIds, setOnlineUserIds] = useState<number[]>([]);
   const [netStats, setNetStats] = useState<{total_check_ins: number, online_count: number, guest_count: number} | null>(null);
+  const [frequencyDialogOpen, setFrequencyDialogOpen] = useState(false);
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
@@ -1033,56 +1034,28 @@ const NetView: React.FC = () => {
                     )}
                     <TableCell>-</TableCell>
                     <TableCell>
-                      <Button
-                        size="small"
-                        variant="contained"
-                        onClick={handleCheckIn}
-                        disabled={!checkInForm.callsign}
-                      >
-                        Add
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                  
-                  {/* Frequency selector row for check-in form */}
-                  {net?.frequencies && net.frequencies.length > 1 && (
-                  <TableRow sx={{ backgroundColor: 'action.selected' }}>
-                    <TableCell colSpan={99}>
-                      <Box sx={{ p: 1 }}>
-                        <Autocomplete
-                          multiple
+                      <Box sx={{ display: 'flex', gap: 0.5 }}>
+                        {net?.frequencies && net.frequencies.length > 1 && (
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={() => setFrequencyDialogOpen(true)}
+                            title="Set available frequencies"
+                          >
+                            📡
+                          </Button>
+                        )}
+                        <Button
                           size="small"
-                          options={net.frequencies || []}
-                          getOptionLabel={(option: any) => formatFrequencyDisplay(option)}
-                          value={net.frequencies.filter((f: any) => checkInForm.available_frequency_ids.includes(f.id))}
-                          onChange={(_, newValue: any[]) => {
-                            setCheckInForm({
-                              ...checkInForm,
-                              available_frequency_ids: newValue.map(f => f.id)
-                            });
-                          }}
-                          renderInput={(params) => (
-                            <TextField
-                              {...params}
-                              label="Available Frequencies (optional)"
-                              placeholder="Select frequencies you can monitor"
-                              helperText="For SKYWARN nets: indicate which frequencies you can reach"
-                            />
-                          )}
-                          renderTags={(value: any[], getTagProps) =>
-                            value.map((option: any, index: number) => (
-                              <Chip
-                                {...getTagProps({ index })}
-                                label={formatFrequencyDisplay(option)}
-                                size="small"
-                              />
-                            ))
-                          }
-                        />
+                          variant="contained"
+                          onClick={handleCheckIn}
+                          disabled={!checkInForm.callsign}
+                        >
+                          Add
+                        </Button>
                       </Box>
                     </TableCell>
                   </TableRow>
-                  )}
                   </TableBody>
                 </Table>
               </Paper>
@@ -1191,6 +1164,54 @@ const NetView: React.FC = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setRoleDialogOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Available Frequencies Dialog */}
+      <Dialog 
+        open={frequencyDialogOpen} 
+        onClose={() => setFrequencyDialogOpen(false)} 
+        maxWidth="sm" 
+        fullWidth
+      >
+        <DialogTitle>Available Frequencies</DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              For SKYWARN nets: indicate which frequencies this station can monitor.
+            </Typography>
+            <Autocomplete
+              multiple
+              options={net?.frequencies || []}
+              getOptionLabel={(option: any) => formatFrequencyDisplay(option)}
+              value={net?.frequencies.filter((f: any) => checkInForm.available_frequency_ids.includes(f.id)) || []}
+              onChange={(_, newValue: any[]) => {
+                setCheckInForm({
+                  ...checkInForm,
+                  available_frequency_ids: newValue.map(f => f.id)
+                });
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Select Frequencies"
+                  placeholder="Choose frequencies..."
+                />
+              )}
+              renderTags={(value: any[], getTagProps) =>
+                value.map((option: any, index: number) => (
+                  <Chip
+                    {...getTagProps({ index })}
+                    label={formatFrequencyDisplay(option)}
+                    size="small"
+                  />
+                ))
+              }
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setFrequencyDialogOpen(false)}>Done</Button>
         </DialogActions>
       </Dialog>
 
