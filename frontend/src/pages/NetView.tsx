@@ -863,27 +863,16 @@ const NetView: React.FC = () => {
                           }
                           console.log('Select value for', checkIn.callsign, ':', selectValue, '| user_id:', checkIn.user_id);
 
-                          // Add local state to force close the dropdown after selection
-                          const [openSelect, setOpenSelect] = React.useState(false);
-
                           return (
                             <Select
                               size="small"
                               value={selectValue}
-                              open={openSelect}
-                              onOpen={() => {
-                                setOpenSelect(true);
-                                console.log('Select OPENED for', checkIn.callsign);
-                              }}
-                              onClose={(event, reason) => {
-                                setOpenSelect(false);
-                                console.log('Select CLOSED for', checkIn.callsign, '- reason:', reason);
-                              }}
                               onChange={(e) => {
                                 console.log('Select onChange triggered for', checkIn.callsign, '- new value:', e.target.value);
                                 handleStatusChange(checkIn.id, e.target.value);
-                                setOpenSelect(false); // Force close after selection
                               }}
+                              onOpen={() => console.log('Select OPENED for', checkIn.callsign)}
+                              onClose={(event, reason) => console.log('Select CLOSED for', checkIn.callsign, '- reason:', reason)}
                               sx={{ minWidth: 50 }}
                               disabled={owner?.id === checkIn.user_id}
                               MenuProps={{
@@ -896,7 +885,6 @@ const NetView: React.FC = () => {
                                   },
                                 },
                                 onClose: (event, reason) => {
-                                  setOpenSelect(false);
                                   console.log('MenuProps onClose - reason:', reason);
                                 },
                               }}
