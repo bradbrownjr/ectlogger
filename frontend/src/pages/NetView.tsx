@@ -650,118 +650,123 @@ const NetView: React.FC = () => {
     <Container maxWidth={false} sx={{ height: '100%', py: 0, px: 0, display: 'flex', flexDirection: 'column' }}>
       <Paper sx={{ p: 0.5, flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
         <Box sx={{ flexShrink: 0 }}>
-          <Typography variant="h5" component="h1" sx={{ mb: 0 }}>
-            {net.name}
-          </Typography>
+          <Grid container spacing={0} sx={{ mt: 0.5, flex: 1, minHeight: 0 }}>
+            <Grid item xs={12} md={8} sx={{ pr: { md: 0.5 }, display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography variant="h5" component="h1" sx={{ mb: 0 }}>
+                  {net.name}
+                </Typography>
+              </Box>
+            </Grid>
             <Grid item xs={12} md={4} sx={{ pl: { md: 0.5 } }}>
               <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', alignItems: 'center', justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
-            {canManage && net.status === 'draft' && (
-              <>
-                <Button size="small" variant="outlined" onClick={() => navigate(`/nets/${netId}/edit`)}>
-                  Edit
-                </Button>
-                <Button size="small" variant="contained" onClick={handleStartNet}>
-                  Start Net
-                </Button>
-              </>
-            )}
-            {canManage && net.status === 'active' && (
-              <Button 
-                size="small" 
-                variant="outlined" 
-                onClick={() => {
-                  fetchAllUsers();
-                  setRoleDialogOpen(true);
-                }}
-              >
-                Manage Roles
-              </Button>
-            )}
-            {isAuthenticated && net.status === 'active' && (
-              userActiveCheckIn ? (
-                <Button 
-                  size="small"
-                  variant="outlined" 
-                  color="error"
-                  onClick={handleCheckOut}
-                >
-                  Check Out
-                </Button>
-              ) : (
-                <Button 
-                  size="small"
-                  variant="contained" 
-                  color="primary" 
-                  onClick={() => {
-                    // Pre-fill form with user's profile data
-                    if (user) {
-                      setCheckInForm({
-                        callsign: user.callsign || '',
-                        name: user.name || '',
-                        location: user.location || '',
-                        skywarn_number: '',
-                        weather_observation: '',
-                        power_source: '',
-                        feedback: '',
-                        notes: '',
-                        available_frequency_ids: [],
-                      });
-                    }
-                    if (canManageCheckIns) {
-                      // NCS/Logger: Scroll to and focus the callsign field
-                      const callsignField = document.querySelector('input[placeholder="Callsign"]') as HTMLInputElement;
-                      if (callsignField) {
-                        callsignField.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        callsignField.focus();
-                      }
-                    } else {
-                      // Regular user: Open check-in dialog
-                      setCheckInDialogOpen(true);
-                    }
-                  }}
-                >
-                  Check In
-                </Button>
-              )
-            )}
-            {canManage && net.status === 'active' && (
-              <Button size="small" variant="contained" color="error" onClick={handleCloseNet}>
-                Close Net
-              </Button>
-            )}
-            {net.status === 'closed' && (
-              <>
-                <Button 
-                  size="small"
-                  variant="outlined" 
-                  startIcon={<DownloadIcon fontSize="small" />}
-                  onClick={handleExportCSV}
-                >
-                  CSV
-                </Button>
-                {canManage && (
+                {canManage && net.status === 'draft' && (
+                  <>
+                    <Button size="small" variant="outlined" onClick={() => navigate(`/nets/${netId}/edit`)}>
+                      Edit
+                    </Button>
+                    <Button size="small" variant="contained" onClick={handleStartNet}>
+                      Start Net
+                    </Button>
+                  </>
+                )}
+                {canManage && net.status === 'active' && (
+                  <Button 
+                    size="small" 
+                    variant="outlined" 
+                    onClick={() => {
+                      fetchAllUsers();
+                      setRoleDialogOpen(true);
+                    }}
+                  >
+                    Manage Roles
+                  </Button>
+                )}
+                {isAuthenticated && net.status === 'active' && (
+                  userActiveCheckIn ? (
+                    <Button 
+                      size="small"
+                      variant="outlined" 
+                      color="error"
+                      onClick={handleCheckOut}
+                    >
+                      Check Out
+                    </Button>
+                  ) : (
+                    <Button 
+                      size="small"
+                      variant="contained" 
+                      color="primary" 
+                      onClick={() => {
+                        // Pre-fill form with user's profile data
+                        if (user) {
+                          setCheckInForm({
+                            callsign: user.callsign || '',
+                            name: user.name || '',
+                            location: user.location || '',
+                            skywarn_number: '',
+                            weather_observation: '',
+                            power_source: '',
+                            feedback: '',
+                            notes: '',
+                            available_frequency_ids: [],
+                          });
+                        }
+                        if (canManageCheckIns) {
+                          // NCS/Logger: Scroll to and focus the callsign field
+                          const callsignField = document.querySelector('input[placeholder="Callsign"]') as HTMLInputElement;
+                          if (callsignField) {
+                            callsignField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            callsignField.focus();
+                          }
+                        } else {
+                          // Regular user: Open check-in dialog
+                          setCheckInDialogOpen(true);
+                        }
+                      }}
+                    >
+                      Check In
+                    </Button>
+                  )
+                )}
+                {canManage && net.status === 'active' && (
+                  <Button size="small" variant="contained" color="error" onClick={handleCloseNet}>
+                    Close Net
+                  </Button>
+                )}
+                {net.status === 'closed' && (
+                  <>
+                    <Button 
+                      size="small"
+                      variant="outlined" 
+                      startIcon={<DownloadIcon fontSize="small" />} 
+                      onClick={handleExportCSV}
+                    >
+                      CSV
+                    </Button>
+                    {canManage && (
+                      <Button 
+                        size="small"
+                        variant="outlined" 
+                        startIcon={<ArchiveIcon fontSize="small" />} 
+                        onClick={handleArchive}
+                      >
+                        Archive
+                      </Button>
+                    )}
+                  </>
+                )}
+                {canManage && (net.status === 'draft' || net.status === 'archived') && (
                   <Button 
                     size="small"
                     variant="outlined" 
-                    startIcon={<ArchiveIcon fontSize="small" />}
-                    onClick={handleArchive}
+                    color="error"
+                    startIcon={<DeleteIcon fontSize="small" />} 
+                    onClick={handleDelete}
                   >
-                    Archive
+                    Delete
                   </Button>
                 )}
-              </>
-            )}
-            {canManage && (net.status === 'draft' || net.status === 'archived') && (
-              <Button 
-                size="small"
-                variant="outlined" 
-                color="error"
-                startIcon={<DeleteIcon fontSize="small" />}
-                onClick={handleDelete}
-              >
-                Delete
-              </Button>
-            )}
               </Box>
             </Grid>
           </Grid>
