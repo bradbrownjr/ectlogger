@@ -134,18 +134,6 @@ const NetView: React.FC = () => {
     }
   }, [net?.owner_id]);
 
-  useEffect(() => {
-    // Initialize form with user data
-    if (user) {
-      setCheckInForm(prev => ({
-        ...prev,
-        callsign: user.callsign || prev.callsign,
-        name: user.name || prev.name,
-        location: user.location || prev.location,
-      }));
-    }
-  }, [user]);
-
   const connectWebSocket = () => {
     // Get JWT token from localStorage
     const token = localStorage.getItem('token');
@@ -570,6 +558,30 @@ const NetView: React.FC = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
+                  {/* Existing check-ins */}
+                  {checkIns.map((checkIn, index) => (
+                    <TableRow key={checkIn.id}>
+                      <TableCell>{index + 1}</TableCell>
+                      <TableCell>{getStatusIcon(checkIn.status)}</TableCell>
+                      <TableCell>
+                        {checkIn.callsign}
+                        {checkIn.is_recheck && ' 🔄'}
+                      </TableCell>
+                      {net?.field_config?.name?.enabled && <TableCell>{checkIn.name}</TableCell>}
+                      {net?.field_config?.location?.enabled && <TableCell>{checkIn.location}</TableCell>}
+                      {net?.field_config?.skywarn_number?.enabled && <TableCell>{checkIn.skywarn_number}</TableCell>}
+                      {net?.field_config?.weather_observation?.enabled && <TableCell>{checkIn.weather_observation}</TableCell>}
+                      {net?.field_config?.power_source?.enabled && <TableCell>{checkIn.power_source}</TableCell>}
+                      {net?.field_config?.notes?.enabled && <TableCell>{checkIn.notes}</TableCell>}
+                      <TableCell>
+                        {new Date(checkIn.checked_in_at).toLocaleTimeString()}
+                      </TableCell>
+                      <TableCell>
+                        {/* Edit/Delete actions - to be implemented */}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+
                   {/* New check-in row */}
                   <TableRow sx={{ backgroundColor: 'action.hover' }}>
                     <TableCell>{checkIns.length + 1}</TableCell>
@@ -711,35 +723,6 @@ const NetView: React.FC = () => {
                       </Button>
                     </TableCell>
                   </TableRow>
-
-                  {/* Existing check-ins */}
-                  {checkIns.map((checkIn, index) => (
-                    <TableRow key={checkIn.id}>
-                      <TableCell>{index + 1}</TableCell>
-                      <TableCell>{getStatusIcon(checkIn.status)}</TableCell>
-                      <TableCell>
-                        {checkIn.callsign}
-                        {checkIn.is_recheck && ' 🔄'}
-                      </TableCell>
-                      {net?.field_config?.name?.enabled && <TableCell>{checkIn.name}</TableCell>}
-                      {net?.field_config?.location?.enabled && <TableCell>{checkIn.location}</TableCell>}
-                      {net?.field_config?.skywarn_number?.enabled && <TableCell>{checkIn.skywarn_number}</TableCell>}
-                      {net?.field_config?.weather_observation?.enabled && <TableCell>{checkIn.weather_observation}</TableCell>}
-                      {net?.field_config?.power_source?.enabled && <TableCell>{checkIn.power_source}</TableCell>}
-                      {net?.field_config?.notes?.enabled && <TableCell>{checkIn.notes}</TableCell>}
-                      <TableCell>
-                        {new Date(checkIn.checked_in_at).toLocaleTimeString()}
-                      </TableCell>
-                      <TableCell>
-                        <IconButton size="small">
-                          <EditIcon />
-                        </IconButton>
-                        <IconButton size="small">
-                          <DeleteIcon />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  ))}
                 </TableBody>
               </Table>
             </TableContainer>
