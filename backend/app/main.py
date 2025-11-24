@@ -71,23 +71,31 @@ app.include_router(templates.router)
 # WebSocket connection manager
 class ConnectionManager:
     def __init__(self):
-        self.active_connections: Dict[int, List[WebSocket]] = {}
+        self.active_connections: Dict[int, List[tuple[WebSocket, int]]] = {}  # (websocket, user_id)
     
-    async def connect(self, websocket: WebSocket, net_id: int):
+    async def connect(self, websocket: WebSocket, net_id: int, user_id: int):
         await websocket.accept()
         if net_id not in self.active_connections:
             self.active_connections[net_id] = []
-        self.active_connections[net_id].append(websocket)
+        self.active_connections[net_id].append((websocket, user_id))
     
     def disconnect(self, websocket: WebSocket, net_id: int):
         if net_id in self.active_connections:
-            self.active_connections[net_id].remove(websocket)
+            self.active_connections[net_id] = [
+                (ws, uid) for ws, uid in self.active_connections[net_id] if ws != websocket
+            ]
             if not self.active_connections[net_id]:
                 del self.active_connections[net_id]
     
+    def get_online_users(self, net_id: int) -> set[int]:
+        """Get set of user IDs currently connected to this net"""
+        if net_id not in self.active_connections:
+            return set()
+        return set(user_id for _, user_id in self.active_connections[net_id])
+    
     async def broadcast(self, message: dict, net_id: int):
         if net_id in self.active_connections:
-            for connection in self.active_connections[net_id]:
+            for connection, _ in self.active_connections[net_id]:
                 try:
                     await connection.send_json(message)
                 except:
@@ -132,7 +140,7 @@ async def websocket_endpoint(websocket: WebSocket, net_id: int, token: str = Non
         await websocket.close(code=1008, reason="Authentication failed")
         return
     
-    await manager.connect(websocket, net_id)
+    await manager.connect(websocket, net_id, user_id)
     try:
         while True:
             data = await websocket.receive_text()

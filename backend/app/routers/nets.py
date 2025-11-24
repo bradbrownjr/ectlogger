@@ -119,6 +119,46 @@ async def get_net(
     return NetResponse.from_orm(net)
 
 
+@router.get("/{net_id}/stats")
+async def get_net_stats(
+    net_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    """Get net statistics including online users and check-in counts"""
+    from app.main import manager
+    from app.models import CheckIn
+    
+    # Verify net exists
+    result = await db.execute(select(Net).where(Net.id == net_id))
+    net = result.scalar_one_or_none()
+    if not net:
+        raise HTTPException(status_code=404, detail="Net not found")
+    
+    # Get online user IDs
+    online_user_ids = list(manager.get_online_users(net_id))
+    
+    # Get check-in counts
+    check_in_result = await db.execute(
+        select(CheckIn).where(
+            CheckIn.net_id == net_id,
+            CheckIn.status != 'checked_out'
+        )
+    )
+    check_ins = check_in_result.scalars().all()
+    total_check_ins = len(check_ins)
+    
+    # Count guests (check-ins without user_id or user not online)
+    guest_count = sum(1 for ci in check_ins if not ci.user_id or ci.user_id not in online_user_ids)
+    
+    return {
+        "net_id": net_id,
+        "online_user_ids": online_user_ids,
+        "total_check_ins": total_check_ins,
+        "online_count": len(online_user_ids),
+        "guest_count": guest_count
+    }
+
+
 @router.put("/{net_id}", response_model=NetResponse)
 async def update_net(
     net_id: int,

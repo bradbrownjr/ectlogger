@@ -112,6 +112,8 @@ const NetView: React.FC = () => {
   const [editCheckInDialogOpen, setEditCheckInDialogOpen] = useState(false);
   const [editingCheckIn, setEditingCheckIn] = useState<CheckIn | null>(null);
   const [checkInDialogOpen, setCheckInDialogOpen] = useState(false);
+  const [onlineUserIds, setOnlineUserIds] = useState<number[]>([]);
+  const [netStats, setNetStats] = useState<{total_check_ins: number, online_count: number, guest_count: number} | null>(null);
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
@@ -133,7 +135,18 @@ const NetView: React.FC = () => {
       fetchNet();
       fetchCheckIns();
       fetchNetRoles();
+      fetchNetStats();
       connectWebSocket();
+      
+      // Poll stats every 10 seconds to update online users
+      const statsInterval = setInterval(fetchNetStats, 10000);
+      
+      return () => {
+        if (ws) {
+          ws.close();
+        }
+        clearInterval(statsInterval);
+      };
     }
 
     return () => {
@@ -212,6 +225,16 @@ const NetView: React.FC = () => {
       setCheckIns(response.data);
     } catch (error) {
       console.error('Failed to fetch check-ins:', error);
+    }
+  };
+
+  const fetchNetStats = async () => {
+    try {
+      const response = await api.get(`/nets/${netId}/stats`);
+      setNetStats(response.data);
+      setOnlineUserIds(response.data.online_user_ids || []);
+    } catch (error) {
+      console.error('Failed to fetch net stats:', error);
     }
   };
 
@@ -572,7 +595,30 @@ const NetView: React.FC = () => {
             <Typography variant="h4" component="h1" gutterBottom>
               {net.name}
             </Typography>
-            <Chip label={net.status} color={net.status === 'active' ? 'success' : 'default'} />
+            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+              <Chip label={net.status} color={net.status === 'active' ? 'success' : 'default'} />
+              {netStats && (
+                <>
+                  <Chip 
+                    label={`${netStats.total_check_ins} Check-ins`} 
+                    color="primary" 
+                    variant="outlined"
+                  />
+                  <Chip 
+                    label={`${netStats.online_count} Online`} 
+                    color="success" 
+                    variant="outlined"
+                  />
+                  {netStats.guest_count > 0 && (
+                    <Chip 
+                      label={`${netStats.guest_count} Guests`} 
+                      color="default" 
+                      variant="outlined"
+                    />
+                  )}
+                </>
+              )}
+            </Box>
           </Box>
           <Box>
             {canManage && net.status === 'draft' && (
@@ -832,9 +878,25 @@ const NetView: React.FC = () => {
                         )}
                       </TableCell>
                       <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          {checkIn.user_id && onlineUserIds.includes(checkIn.user_id) && (
+                            <Box 
+                              sx={{ 
+                                width: 8, 
+                                height: 8, 
+                                borderRadius: '50%', 
+                                backgroundColor: 'success.main',
+                                flexShrink: 0
+                              }} 
+                              title="Online"
+                            />
+                          )}
+                          <Box>
+                            {checkIn.callsign}
+                            {checkIn.is_recheck && ' 🔄'}
+                          </Box>
+                        </Box>
                         <Box>
-                          {checkIn.callsign}
-                          {checkIn.is_recheck && ' 🔄'}
                           {checkIn.frequency_id && (() => {
                             const freq = net.frequencies.find((f: any) => f.id === checkIn.frequency_id);
                             return freq ? (
