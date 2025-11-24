@@ -413,6 +413,22 @@ const NetView: React.FC = () => {
                 Close Net
               </Button>
             )}
+            {net.status === 'active' && (
+              <Button 
+                variant="contained" 
+                color="primary" 
+                onClick={() => {
+                  const callsignField = document.querySelector('input[placeholder="Callsign"]') as HTMLInputElement;
+                  if (callsignField) {
+                    callsignField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    callsignField.focus();
+                  }
+                }}
+                sx={{ mr: 1 }}
+              >
+                Check In
+              </Button>
+            )}
             {net.status === 'closed' && (
               <>
                 <Button 

@@ -159,11 +159,6 @@ const Dashboard: React.FC = () => {
                   <Button size="small" onClick={() => navigate(`/nets/${net.id}`)}>
                     View
                   </Button>
-                  {net.status === 'active' && (
-                    <Button size="small" color="primary" onClick={() => navigate(`/nets/${net.id}`)}>
-                      Join
-                    </Button>
-                  )}
                 </CardActions>
               </Card>
             </Grid>
