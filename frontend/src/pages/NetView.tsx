@@ -859,14 +859,16 @@ const NetView: React.FC = () => {
                               if (owner?.id === checkIn.user_id) return 'ncs';
                               const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
                               const value = userRole ? userRole.role.toLowerCase() : checkIn.status;
-                              console.log('Select value for', checkIn.callsign, ':', value);
+                              console.log('Select value for', checkIn.callsign, ':', value, '| user_id:', checkIn.user_id, '| canManageCheckIns:', canManageCheckIns);
                               return value;
                             })()}
                             onChange={(e) => {
-                              console.log('Select onChange triggered:', e.target.value);
+                              console.log('Select onChange triggered for', checkIn.callsign, '- new value:', e.target.value);
                               handleStatusChange(checkIn.id, e.target.value);
                             }}
-                            onClick={() => console.log('Select clicked for', checkIn.callsign)}
+                            onClick={() => console.log('Select clicked for', checkIn.callsign, '| canManageCheckIns:', canManageCheckIns)}
+                            onOpen={() => console.log('Select OPENED for', checkIn.callsign)}
+                            onClose={() => console.log('Select CLOSED for', checkIn.callsign)}
                             sx={{ minWidth: 50 }}
                             disabled={owner?.id === checkIn.user_id} // Owner is always NCS
                           >
