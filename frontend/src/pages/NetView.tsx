@@ -464,9 +464,43 @@ const NetView: React.FC = () => {
   };
 
   const handleStatusChange = async (checkInId: number, newStatus: string) => {
+    const checkIn = checkIns.find((ci: CheckIn) => ci.id === checkInId);
+    if (!checkIn || !checkIn.user_id) return;
+
     try {
-      await checkInApi.update(checkInId, { status: newStatus });
-      fetchCheckIns();
+      // Handle role changes (NCS or Logger)
+      if (newStatus === 'ncs' || newStatus === 'logger') {
+        // First remove any existing role for this user
+        const existingRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
+        if (existingRole) {
+          await api.delete(`/nets/${netId}/roles/${existingRole.id}`);
+        }
+        
+        // Assign the new role
+        await api.post(`/nets/${netId}/roles`, null, {
+          params: {
+            user_id: checkIn.user_id,
+            role: newStatus.toUpperCase()
+          }
+        });
+        
+        // Update status to checked_in (users with roles are always checked in)
+        await checkInApi.update(checkInId, { status: 'checked_in' });
+        
+        await fetchNetRoles();
+        await fetchCheckIns();
+      } else {
+        // Handle regular status change
+        // If user had a role and is changing to regular status, remove the role
+        const existingRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
+        if (existingRole && owner?.id !== checkIn.user_id) {
+          await api.delete(`/nets/${netId}/roles/${existingRole.id}`);
+          await fetchNetRoles();
+        }
+        
+        await checkInApi.update(checkInId, { status: newStatus });
+        await fetchCheckIns();
+      }
     } catch (error) {
       console.error('Failed to update status:', error);
       alert('Failed to update status');
@@ -805,10 +839,23 @@ const NetView: React.FC = () => {
                         {net.status === 'active' && checkIn.status !== 'checked_out' && (canManageCheckIns || checkIn.user_id === user?.id) ? (
                           <Select
                             size="small"
-                            value={checkIn.status}
+                            value={(() => {
+                              // Show role if user has one
+                              if (owner?.id === checkIn.user_id) return 'ncs';
+                              const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
+                              if (userRole) return userRole.role.toLowerCase();
+                              return checkIn.status;
+                            })()}
                             onChange={(e) => handleStatusChange(checkIn.id, e.target.value)}
                             sx={{ minWidth: 50 }}
+                            disabled={owner?.id === checkIn.user_id} // Owner is always NCS
                           >
+                            {canManageCheckIns && (
+                              <>
+                                <MenuItem value="ncs">👑</MenuItem>
+                                <MenuItem value="logger">📋</MenuItem>
+                              </>
+                            )}
                             <MenuItem value="checked_in">✅</MenuItem>
                             <MenuItem value="listening">👂</MenuItem>
                             <MenuItem value="away">⏸️</MenuItem>
