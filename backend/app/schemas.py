@@ -253,6 +253,7 @@ class CheckInBase(BaseModel):
 
 class CheckInCreate(CheckInBase):
     frequency_id: Optional[int] = None
+    available_frequency_ids: Optional[List[int]] = Field(default_factory=list)
     custom_fields: Optional[dict] = Field(default_factory=dict, max_length=50)
     
     @field_validator('custom_fields')
@@ -287,6 +288,7 @@ class CheckInResponse(CheckInBase):
     user_id: Optional[int] = None
     status: StationStatus
     frequency_id: Optional[int] = None
+    available_frequencies: List[int] = Field(default_factory=list)
     is_recheck: bool
     checked_in_by_id: Optional[int] = None
     checked_in_at: datetime
@@ -294,6 +296,19 @@ class CheckInResponse(CheckInBase):
 
     class Config:
         from_attributes = True
+    
+    @classmethod
+    def from_orm(cls, obj):
+        import json
+        # Deserialize available_frequencies JSON field
+        if hasattr(obj, 'available_frequencies') and obj.available_frequencies:
+            try:
+                obj.available_frequencies = json.loads(obj.available_frequencies) if isinstance(obj.available_frequencies, str) else obj.available_frequencies
+            except (json.JSONDecodeError, TypeError):
+                obj.available_frequencies = []
+        else:
+            obj.available_frequencies = []
+        return super().from_orm(obj)
 
 
 # Custom Field Schemas

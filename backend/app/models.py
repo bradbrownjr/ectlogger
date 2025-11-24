@@ -190,7 +190,8 @@ class CheckIn(Base):
     
     # Status and tracking
     status = Column(Enum(StationStatus), default=StationStatus.CHECKED_IN)
-    frequency_id = Column(Integer, ForeignKey("frequencies.id"))
+    frequency_id = Column(Integer, ForeignKey("frequencies.id"))  # Frequency they checked in on
+    available_frequencies = Column(Text, default='[]')  # JSON array of frequency IDs they can reach
     is_recheck = Column(Boolean, default=False)
     checked_in_by_id = Column(Integer, ForeignKey("users.id"))  # Who logged this check-in
     

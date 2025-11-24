@@ -29,6 +29,7 @@ import {
   ListItemText,
   ListItemSecondaryAction,
   Snackbar,
+  Autocomplete,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -77,6 +78,8 @@ interface CheckIn {
   is_recheck: boolean;
   checked_in_at: string;
   frequency_id?: number;
+  available_frequencies?: number[];
+  user_id?: number;
 }
 
 interface NetRole {
@@ -115,6 +118,7 @@ const NetView: React.FC = () => {
     power_source: '',
     feedback: '',
     notes: '',
+    available_frequency_ids: [] as number[],
   });
 
   useEffect(() => {
@@ -358,6 +362,7 @@ const NetView: React.FC = () => {
         power_source: '',
         feedback: '',
         notes: '',
+        available_frequency_ids: [],
       });
       
       fetchCheckIns();
@@ -564,6 +569,7 @@ const NetView: React.FC = () => {
                         power_source: '',
                         feedback: '',
                         notes: '',
+                        available_frequency_ids: [],
                       });
                     }
                     // Scroll to and focus the callsign field
@@ -774,8 +780,33 @@ const NetView: React.FC = () => {
                         )}
                       </TableCell>
                       <TableCell>
-                        {checkIn.callsign}
-                        {checkIn.is_recheck && ' 🔄'}
+                        <Box>
+                          {checkIn.callsign}
+                          {checkIn.is_recheck && ' 🔄'}
+                          {checkIn.frequency_id && (
+                            <Chip 
+                              label={`📡 ${net.frequencies.find((f: any) => f.id === checkIn.frequency_id)?.frequency || ''} MHz`}
+                              size="small"
+                              sx={{ ml: 1, height: 20, fontSize: '0.75rem' }}
+                            />
+                          )}
+                          {checkIn.available_frequencies && checkIn.available_frequencies.length > 0 && (
+                            <Box sx={{ mt: 0.5 }}>
+                              {checkIn.available_frequencies.map((freqId: number) => {
+                                const freq = net.frequencies.find((f: any) => f.id === freqId);
+                                return freq ? (
+                                  <Chip 
+                                    key={freqId}
+                                    label={`${freq.frequency} MHz`}
+                                    size="small"
+                                    variant="outlined"
+                                    sx={{ mr: 0.5, height: 18, fontSize: '0.7rem' }}
+                                  />
+                                ) : null;
+                              })}
+                            </Box>
+                          )}
+                        </Box>
                       </TableCell>
                       {net?.field_config?.name?.enabled && <TableCell>{checkIn.name}</TableCell>}
                       {net?.field_config?.location?.enabled && <TableCell>{checkIn.location}</TableCell>}
@@ -950,6 +981,46 @@ const NetView: React.FC = () => {
                       >
                         Add
                       </Button>
+                    </TableCell>
+                  </TableRow>
+                  )}
+                  
+                  {/* Frequency selector row for check-in form */}
+                  {isAuthenticated && net?.frequencies && net.frequencies.length > 1 && (
+                  <TableRow sx={{ backgroundColor: 'action.selected' }}>
+                    <TableCell colSpan={99}>
+                      <Box sx={{ p: 1 }}>
+                        <Autocomplete
+                          multiple
+                          size="small"
+                          options={net.frequencies || []}
+                          getOptionLabel={(option: any) => `${option.frequency} MHz ${option.mode ? `(${option.mode})` : ''}`}
+                          value={net.frequencies.filter((f: any) => checkInForm.available_frequency_ids.includes(f.id))}
+                          onChange={(_, newValue: any[]) => {
+                            setCheckInForm({
+                              ...checkInForm,
+                              available_frequency_ids: newValue.map(f => f.id)
+                            });
+                          }}
+                          renderInput={(params) => (
+                            <TextField
+                              {...params}
+                              label="Available Frequencies (optional)"
+                              placeholder="Select frequencies you can monitor"
+                              helperText="For SKYWARN nets: indicate which frequencies you can reach"
+                            />
+                          )}
+                          renderTags={(value: any[], getTagProps) =>
+                            value.map((option: any, index: number) => (
+                              <Chip
+                                {...getTagProps({ index })}
+                                label={`${option.frequency} MHz`}
+                                size="small"
+                              />
+                            ))
+                          }
+                        />
+                      </Box>
                     </TableCell>
                   </TableRow>
                   )}

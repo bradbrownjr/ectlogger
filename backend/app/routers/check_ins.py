@@ -20,8 +20,12 @@ async def create_check_in(
     db: AsyncSession = Depends(get_db)
 ):
     """Create a check-in for a net"""
-    # Verify net exists and is active
-    result = await db.execute(select(Net).where(Net.id == net_id))
+    import json
+    
+    # Verify net exists and is active, load frequencies
+    result = await db.execute(
+        select(Net).options(selectinload(Net.frequencies)).where(Net.id == net_id)
+    )
     net = result.scalar_one_or_none()
     
     if not net:
@@ -29,6 +33,21 @@ async def create_check_in(
     
     if net.status != NetStatus.ACTIVE:
         raise HTTPException(status_code=400, detail="Net is not active")
+    
+    # Validate and process frequency_id
+    if check_in_data.frequency_id is None and net.active_frequency_id:
+        check_in_data.frequency_id = net.active_frequency_id
+    
+    # Validate available_frequency_ids against net's prescribed frequencies
+    available_freq_ids = check_in_data.available_frequency_ids or []
+    if available_freq_ids:
+        net_freq_ids = {f.id for f in net.frequencies}
+        invalid_freqs = [fid for fid in available_freq_ids if fid not in net_freq_ids]
+        if invalid_freqs:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Invalid frequency IDs: {invalid_freqs}. Must be from net's prescribed frequencies."
+            )
     
     # Check if this is a recheck (user previously checked in to this net)
     # Only consider the most recent check-in for this callsign
@@ -52,6 +71,9 @@ async def create_check_in(
     if matching_user:
         linked_user_id = matching_user.id
     
+    # Serialize available frequencies to JSON
+    available_frequencies_json = json.dumps(available_freq_ids)
+    
     # If there's an existing check-in, update it instead of creating a new one
     if existing_check_in:
         existing_check_in.user_id = linked_user_id
@@ -63,6 +85,7 @@ async def create_check_in(
         existing_check_in.feedback = check_in_data.feedback
         existing_check_in.notes = check_in_data.notes
         existing_check_in.frequency_id = check_in_data.frequency_id
+        existing_check_in.available_frequencies = available_frequencies_json
         existing_check_in.is_recheck = True
         existing_check_in.checked_in_by_id = current_user.id
         existing_check_in.status = StationStatus.CHECKED_IN
@@ -83,6 +106,7 @@ async def create_check_in(
             feedback=check_in_data.feedback,
             notes=check_in_data.notes,
             frequency_id=check_in_data.frequency_id,
+            available_frequencies=available_frequencies_json,
             is_recheck=False,
             checked_in_by_id=current_user.id,
             status=StationStatus.CHECKED_IN
