@@ -420,14 +420,14 @@ const NetView: React.FC = () => {
   };
 
   const handleSetActiveSpeaker = (checkInId: number | null) => {
-    // Check if the user is just listening
+    const newActiveSpeakerId = activeSpeakerId === checkInId ? null : checkInId;
+    
+    // Show toast if setting someone with "listening" status as active speaker
     const checkIn = checkIns.find(ci => ci.id === checkInId);
-    if (checkIn && checkIn.status === 'listening') {
+    if (checkIn && checkIn.status === 'listening' && newActiveSpeakerId !== null) {
       setToastMessage(`${checkIn.callsign} is set to "Just Listening"`);
-      return;
     }
     
-    const newActiveSpeakerId = activeSpeakerId === checkInId ? null : checkInId;
     setActiveSpeakerId(newActiveSpeakerId);
     
     // Broadcast active speaker change via WebSocket
