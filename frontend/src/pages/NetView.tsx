@@ -601,35 +601,40 @@ const NetView: React.FC = () => {
               {net.description}
             </Typography>
           )}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
-            <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexWrap: 'wrap', flex: '0 1 auto' }}>
-              <Chip label={net.status} size="small" color={net.status === 'active' ? 'success' : 'default'} />
-              {netStats && (
-                <>
-                  <Chip label={`${netStats.total_check_ins} Check-ins`} size="small" color="primary" variant="outlined" />
-                  <Chip label={`${netStats.online_count} Online`} size="small" color="success" variant="outlined" />
-                  {netStats.guest_count > 0 && (
-                    <Chip label={`${netStats.guest_count} Guests`} size="small" color="default" variant="outlined" />
+          <Grid container spacing={0}>
+            <Grid item xs={12} md={8} sx={{ pr: { md: 0.5 } }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 0.5 }}>
+                <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <Chip label={net.status} size="small" color={net.status === 'active' ? 'success' : 'default'} />
+                  {netStats && (
+                    <>
+                      <Chip label={`${netStats.total_check_ins} Check-ins`} size="small" color="primary" variant="outlined" />
+                      <Chip label={`${netStats.online_count} Online`} size="small" color="success" variant="outlined" />
+                      {netStats.guest_count > 0 && (
+                        <Chip label={`${netStats.guest_count} Guests`} size="small" color="default" variant="outlined" />
+                      )}
+                    </>
                   )}
-                </>
-              )}
-            </Box>
-            {net.status === 'active' && net.frequencies.length > 0 && (
-              <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexWrap: 'wrap', flex: '0 0 66.666%', justifyContent: 'flex-end' }}>
-                {net.frequencies.map((freq) => (
-                  <Chip 
-                    key={freq.id}
-                    label={`${freq.frequency || `${freq.network}${freq.talkgroup ? ` TG${freq.talkgroup}` : ''}`} ${freq.mode}`}
-                    size="small"
-                    color={freq.id === net.active_frequency_id ? 'primary' : 'default'}
-                    onClick={canManageCheckIns ? () => handleSetActiveFrequency(freq.id) : undefined}
-                    clickable={canManageCheckIns}
-                    sx={{ height: 20 }}
-                  />
-                ))}
+                </Box>
+                {net.status === 'active' && net.frequencies.length > 0 && (
+                  <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexWrap: 'wrap' }}>
+                    {net.frequencies.map((freq) => (
+                      <Chip 
+                        key={freq.id}
+                        label={`${freq.frequency || `${freq.network}${freq.talkgroup ? ` TG${freq.talkgroup}` : ''}`} ${freq.mode}`}
+                        size="small"
+                        color={freq.id === net.active_frequency_id ? 'primary' : 'default'}
+                        onClick={canManageCheckIns ? () => handleSetActiveFrequency(freq.id) : undefined}
+                        clickable={canManageCheckIns}
+                        sx={{ height: 20 }}
+                      />
+                    ))}
+                  </Box>
+                )}
               </Box>
-            )}
-            <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', alignItems: 'center' }}>
+            </Grid>
+            <Grid item xs={12} md={4} sx={{ pl: { md: 0.5 } }}>
+              <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', alignItems: 'center', justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
             {canManage && net.status === 'draft' && (
               <>
                 <Button size="small" variant="outlined" onClick={() => navigate(`/nets/${netId}/edit`)}>
@@ -737,8 +742,9 @@ const NetView: React.FC = () => {
                 Delete
               </Button>
             )}
-            </Box>
-          </Box>
+              </Box>
+            </Grid>
+          </Grid>
         </Box>
 
         {net.status === 'active' && (
