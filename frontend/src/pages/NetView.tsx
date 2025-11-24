@@ -749,9 +749,9 @@ const NetView: React.FC = () => {
         </Box>
 
         {net.status === 'active' && (
-          <Grid container spacing={0} sx={{ mt: 0.5, flexGrow: 1, overflow: 'hidden' }}>
-            <Grid item xs={12} md={8} sx={{ pr: { md: 0.5 }, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-              <TableContainer sx={{ flexGrow: 1, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: '4px 4px 0 0', borderBottom: 0, minHeight: 0 }}>
+          <Grid container spacing={0} sx={{ mt: 0.5, flexGrow: 1, overflow: 'hidden', minHeight: 0 }}>
+            <Grid item xs={12} md={8} sx={{ pr: { md: 0.5 }, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
+              <TableContainer sx={{ flexGrow: 1, flexShrink: 1, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: '4px 4px 0 0', borderBottom: 0, minHeight: 0 }}>
               <Table size="small" stickyHeader>
                 <TableHead>
                   <TableRow>
