@@ -132,7 +132,8 @@ const Chat: React.FC<ChatProps> = ({ netId, onNewMessage }) => {
           display: 'flex',
           flexDirection: 'column',
           gap: 1,
-          minHeight: 0
+          minHeight: 0,
+          maxHeight: '100%'
         }}
       >
         {messages.length === 0 ? (
