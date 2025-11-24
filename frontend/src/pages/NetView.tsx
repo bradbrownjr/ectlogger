@@ -857,6 +857,8 @@ const NetView: React.FC = () => {
                           let selectValue = checkIn.status.toLowerCase();
                           if (userRole && ['ncs', 'logger'].includes(userRole.role.toLowerCase())) {
                             selectValue = userRole.role.toLowerCase();
+                          } else if (userRole && ['NCS', 'LOGGER'].includes(userRole.role)) {
+                            selectValue = userRole.role.toLowerCase();
                           }
                           // Only allow lowercase values for Select and MenuItem
                           const validValues = ['ncs', 'logger', 'checked_in', 'listening', 'away', 'available'];
