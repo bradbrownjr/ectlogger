@@ -1188,7 +1188,13 @@ const NetView: React.FC = () => {
       </Dialog>
 
       {/* Edit Check-In Dialog */}
-      <Dialog open={editCheckInDialogOpen} onClose={() => setEditCheckInDialogOpen(false)} maxWidth="md" fullWidth>
+      <Dialog 
+        open={editCheckInDialogOpen} 
+        onClose={() => setEditCheckInDialogOpen(false)} 
+        maxWidth="md" 
+        fullWidth
+        disableRestoreFocus
+      >
         <DialogTitle>Edit Check-In</DialogTitle>
         <DialogContent>
           {editingCheckIn && (
