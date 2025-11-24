@@ -124,16 +124,13 @@ const Chat: React.FC<ChatProps> = ({ netId, onNewMessage }) => {
       <List 
         ref={messagesContainerRef}
         sx={{ 
-          flexGrow: 1,
-          flexShrink: 1,
+          flex: '1 1 auto',
           overflow: 'auto',
-          overflowY: 'scroll',
           p: 1,
           display: 'flex',
           flexDirection: 'column',
           gap: 1,
-          minHeight: 0,
-          maxHeight: '100%'
+          minHeight: 0
         }}
       >
         {messages.length === 0 ? (
