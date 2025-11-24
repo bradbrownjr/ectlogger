@@ -592,7 +592,7 @@ const NetView: React.FC = () => {
   return (
     <Container maxWidth="xl" sx={{ height: 'calc(100vh - 56px)', py: 0, px: { xs: 0.5, sm: 1 }, overflow: 'hidden' }}>
       <Paper sx={{ p: 0.5, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <Box sx={{ mb: 0.25, flexShrink: 0 }}>
+        <Box sx={{ flexShrink: 0 }}>
           <Typography variant="h5" component="h1" sx={{ mb: 0.25 }}>
             {net.name}
           </Typography>
@@ -601,7 +601,7 @@ const NetView: React.FC = () => {
               {net.description}
             </Typography>
           )}
-          <Grid container spacing={0}>
+          <Grid container spacing={0} sx={{ flexShrink: 0, mb: 0.25 }}>
             <Grid item xs={12} md={8} sx={{ pr: { md: 0.5 } }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 0.5 }}>
                 <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexWrap: 'wrap' }}>
