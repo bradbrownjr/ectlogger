@@ -847,6 +847,8 @@ const NetView: React.FC = () => {
                       <TableCell>
                         {net.status === 'active' && checkIn.status !== 'checked_out' && (canManageCheckIns || checkIn.user_id === user?.id) ? (() => {
                           // Calculate value once
+
+                          // Ensure selectValue matches MenuItem values exactly
                           let selectValue = checkIn.status.toLowerCase();
                           const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
                           if (owner?.id === checkIn.user_id) {
@@ -854,18 +856,34 @@ const NetView: React.FC = () => {
                           } else if (userRole) {
                             selectValue = userRole.role.toLowerCase();
                           }
+                          // Only allow lowercase values for Select and MenuItem
+                          const validValues = ['ncs', 'logger', 'checked_in', 'listening', 'away', 'available'];
+                          if (!validValues.includes(selectValue)) {
+                            selectValue = 'checked_in';
+                          }
                           console.log('Select value for', checkIn.callsign, ':', selectValue, '| user_id:', checkIn.user_id);
-                          
+
+                          // Add local state to force close the dropdown after selection
+                          const [openSelect, setOpenSelect] = React.useState(false);
+
                           return (
                             <Select
                               size="small"
                               value={selectValue}
+                              open={openSelect}
+                              onOpen={() => {
+                                setOpenSelect(true);
+                                console.log('Select OPENED for', checkIn.callsign);
+                              }}
+                              onClose={(event, reason) => {
+                                setOpenSelect(false);
+                                console.log('Select CLOSED for', checkIn.callsign, '- reason:', reason);
+                              }}
                               onChange={(e) => {
                                 console.log('Select onChange triggered for', checkIn.callsign, '- new value:', e.target.value);
                                 handleStatusChange(checkIn.id, e.target.value);
+                                setOpenSelect(false); // Force close after selection
                               }}
-                              onOpen={() => console.log('Select OPENED for', checkIn.callsign)}
-                              onClose={(event, reason) => console.log('Select CLOSED for', checkIn.callsign, '- reason:', reason)}
                               sx={{ minWidth: 50 }}
                               disabled={owner?.id === checkIn.user_id}
                               MenuProps={{
@@ -878,6 +896,7 @@ const NetView: React.FC = () => {
                                   },
                                 },
                                 onClose: (event, reason) => {
+                                  setOpenSelect(false);
                                   console.log('MenuProps onClose - reason:', reason);
                                 },
                               }}
