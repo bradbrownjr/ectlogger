@@ -69,6 +69,7 @@ class User(Base):
     sms_gateway = Column(String(255))  # email-to-sms gateway address
     skywarn_number = Column(String(50))
     location = Column(String(255))
+    prefer_utc = Column(Boolean, default=False)  # Display times in UTC instead of local time
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

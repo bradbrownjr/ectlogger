@@ -6,6 +6,9 @@ interface User {
   email: string;
   name?: string;
   callsign?: string;
+  callsigns?: string[];
+  location?: string;
+  prefer_utc?: boolean;
   role: string;
 }
 

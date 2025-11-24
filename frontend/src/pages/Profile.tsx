@@ -11,6 +11,8 @@ import {
   IconButton,
   Chip,
   Stack,
+  FormControlLabel,
+  Switch,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -29,6 +31,7 @@ const Profile: React.FC = () => {
     name: user?.name || '',
     callsign: user?.callsign || '',
     callsigns: user?.callsigns || [],
+    prefer_utc: user?.prefer_utc || false,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -149,6 +152,21 @@ const Profile: React.FC = () => {
                 ))}
               </Stack>
             )}
+          </Box>
+
+          <Box sx={{ mt: 3, mb: 2 }}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={formData.prefer_utc}
+                  onChange={(e) => setFormData({ ...formData, prefer_utc: e.target.checked })}
+                />
+              }
+              label="Display times in UTC"
+            />
+            <Typography variant="body2" color="text.secondary" sx={{ ml: 4 }}>
+              Show all timestamps in UTC instead of your local timezone
+            </Typography>
           </Box>
 
           <TextField

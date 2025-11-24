@@ -15,6 +15,7 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import { netApi } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { formatDateTime } from '../utils/dateUtils';
 
 interface Net {
   id: number;
@@ -115,17 +116,17 @@ const Dashboard: React.FC = () => {
                   </Typography>
                   {(net.status === 'closed' && net.closed_at) && (
                     <Typography variant="caption" display="block" color="text.secondary" sx={{ mb: 1 }}>
-                      Closed: {new Date(net.closed_at).toLocaleString()}
+                      Closed: {formatDateTime(net.closed_at, user?.prefer_utc || false)}
                     </Typography>
                   )}
                   {(net.status === 'active' && net.started_at) && (
                     <Typography variant="caption" display="block" color="text.secondary" sx={{ mb: 1 }}>
-                      Started: {new Date(net.started_at).toLocaleString()}
+                      Started: {formatDateTime(net.started_at, user?.prefer_utc || false)}
                     </Typography>
                   )}
                   {(net.status === 'draft' || net.status === 'scheduled') && (
                     <Typography variant="caption" display="block" color="text.secondary" sx={{ mb: 1 }}>
-                      Created: {new Date(net.created_at).toLocaleString()}
+                      Created: {formatDateTime(net.created_at, user?.prefer_utc || false)}
                     </Typography>
                   )}
                   {net.frequencies.length > 0 && (

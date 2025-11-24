@@ -43,6 +43,7 @@ class UserUpdate(BaseModel):
     sms_gateway: Optional[str] = Field(None, max_length=100)
     skywarn_number: Optional[str] = Field(None, max_length=50)
     location: Optional[str] = Field(None, max_length=200)
+    prefer_utc: Optional[bool] = None
     
     @field_validator('callsign')
     @classmethod
@@ -67,6 +68,7 @@ class UserResponse(UserBase):
     email_notifications: bool
     skywarn_number: Optional[str] = None
     location: Optional[str] = None
+    prefer_utc: bool = False
     created_at: datetime
 
     class Config:

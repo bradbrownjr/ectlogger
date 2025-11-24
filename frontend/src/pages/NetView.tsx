@@ -37,6 +37,7 @@ import DownloadIcon from '@mui/icons-material/Download';
 import ArchiveIcon from '@mui/icons-material/Archive';
 import { netApi, checkInApi } from '../services/api';
 import api from '../services/api';
+import { formatDateTime, formatTime } from '../utils/dateUtils';
 import { useAuth } from '../contexts/AuthContext';
 
 interface Net {
@@ -602,17 +603,17 @@ const NetView: React.FC = () => {
         <Box sx={{ mb: 2 }}>
           {net.status === 'closed' && net.closed_at && (
             <Typography variant="body2" color="text.secondary">
-              📅 Closed: {new Date(net.closed_at).toLocaleString()}
+              📅 Closed: {formatDateTime(net.closed_at, user?.prefer_utc || false)}
             </Typography>
           )}
           {net.status === 'active' && net.started_at && (
             <Typography variant="body2" color="text.secondary">
-              📅 Started: {new Date(net.started_at).toLocaleString()}
+              📅 Started: {formatDateTime(net.started_at, user?.prefer_utc || false)}
             </Typography>
           )}
           {(net.status === 'draft' || net.status === 'scheduled') && net.created_at && (
             <Typography variant="body2" color="text.secondary">
-              📅 Created: {new Date(net.created_at).toLocaleString()}
+              📅 Created: {formatDateTime(net.created_at, user?.prefer_utc || false)}
             </Typography>
           )}
         </Box>
@@ -746,7 +747,7 @@ const NetView: React.FC = () => {
                       {net?.field_config?.power_source?.enabled && <TableCell>{checkIn.power_source}</TableCell>}
                       {net?.field_config?.notes?.enabled && <TableCell>{checkIn.notes}</TableCell>}
                       <TableCell>
-                        {new Date(checkIn.checked_in_at).toLocaleTimeString()}
+                        {formatTime(checkIn.checked_in_at, user?.prefer_utc || false)}
                       </TableCell>
                       {canManage && (
                       <TableCell>
