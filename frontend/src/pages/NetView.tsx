@@ -652,42 +652,47 @@ const NetView: React.FC = () => {
         <Box sx={{ flexShrink: 0 }}>
           <Typography variant="h5" component="h1" sx={{ mb: 0 }}>
             {net.name}
-          </Typography>
-          {net.description && (
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 0 }}>
-              {net.description}
-            </Typography>
-          )}
-          <Grid container spacing={0} sx={{ mb: 0.25 }}>
-            <Grid item xs={12} md={8} sx={{ pr: { md: 0.5 } }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 0.5 }}>
-                <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <Chip label={net.status} size="small" color={net.status === 'active' ? 'success' : 'default'} />
-                  {netStats && (
-                    <>
-                      <Chip label={`${netStats.total_check_ins} Check-ins`} size="small" color="primary" variant="outlined" />
-                      <Chip label={`${netStats.online_count} Online`} size="small" color="success" variant="outlined" />
-                      {netStats.guest_count > 0 && (
-                        <Chip label={`${netStats.guest_count} Guests`} size="small" color="default" variant="outlined" />
-                      )}
-                    </>
-                  )}
-                </Box>
-                {net.status === 'active' && net.frequencies.length > 0 && (
-                  <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexWrap: 'wrap' }}>
-                    {net.frequencies.map((freq) => (
-                      <Chip 
-                        key={freq.id}
-                        label={`${freq.frequency || `${freq.network}${freq.talkgroup ? ` TG${freq.talkgroup}` : ''}`} ${freq.mode}`}
-                        size="small"
-                        color={freq.id === net.active_frequency_id ? 'primary' : 'default'}
-                        onClick={canManageCheckIns ? () => handleSetActiveFrequency(freq.id) : undefined}
-                        clickable={canManageCheckIns}
-                        sx={{ height: 20 }}
-                      />
-                    ))}
-                  </Box>
-                )}
+          try {
+            if ((newStatus === 'ncs' || newStatus === 'logger') && checkIn.user_id) {
+              console.log('[handleStatusChange] Role assignment branch for:', newStatus, '| checkIn:', checkIn);
+              // Remove any existing role
+              const existingRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
+              if (existingRole) {
+                console.log('[handleStatusChange] Removing existing role:', existingRole);
+                await api.delete(`/nets/${netId}/roles/${existingRole.id}`);
+              }
+              // Assign new role
+              console.log('[handleStatusChange] Assigning new role:', newStatus.toUpperCase(), '| user_id:', checkIn.user_id);
+              await api.post(`/nets/${netId}/roles`, null, {
+                params: {
+                  user_id: checkIn.user_id,
+                  role: newStatus.toUpperCase()
+                }
+              });
+              // Always set status to checked_in for roles
+              await checkInApi.update(checkInId, { status: 'checked_in' });
+              await fetchNetRoles();
+              await fetchCheckIns();
+              console.log('[handleStatusChange] fetchCheckIns called after role change');
+            } else if (newStatus === 'ncs' || newStatus === 'logger') {
+              console.log('[handleStatusChange] Cannot assign role to check-in without user_id');
+              alert('Cannot assign roles to stations without user accounts');
+              return;
+            } else {
+              // Standard status update
+              await checkInApi.update(checkInId, { status: newStatus });
+              await fetchCheckIns();
+              console.log('[handleStatusChange] fetchCheckIns called after status change');
+            }
+          } catch (error) {
+            if (error.response) {
+              console.error('Failed to update status:', error.response);
+              alert('Failed to update status: ' + (error.response.data?.detail || error.response.statusText));
+            } else {
+              console.error('Failed to update status:', error);
+              alert('Failed to update status: ' + error.message);
+            }
+          }
               </Box>
             </Grid>
             <Grid item xs={12} md={4} sx={{ pl: { md: 0.5 } }}>
@@ -897,12 +902,9 @@ const NetView: React.FC = () => {
                                 },
                               }}
                             >
-                              {canManageCheckIns && (
-                                <>
-                                  <MenuItem value="ncs">👑</MenuItem>
-                                  <MenuItem value="logger">📋</MenuItem>
-                                </>
-                              )}
+                              {/* Always render the current value as an option to prevent MUI errors */}
+                              {((canManageCheckIns || selectValue === 'ncs') && <MenuItem value="ncs">👑</MenuItem>)}
+                              {((canManageCheckIns || selectValue === 'logger') && <MenuItem value="logger">📋</MenuItem>)}
                               <MenuItem value="checked_in">✅</MenuItem>
                               <MenuItem value="listening">👂</MenuItem>
                               <MenuItem value="away">⏸️</MenuItem>
