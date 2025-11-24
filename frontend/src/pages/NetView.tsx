@@ -591,8 +591,8 @@ const NetView: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="xl" sx={{ py: 0, px: { xs: 0.5, sm: 1 } }}>
-      <Paper sx={{ p: 0.5 }}>
+    <Container maxWidth={false} sx={{ height: 'calc(100vh - 72px)', py: 0, px: 0, display: 'flex', flexDirection: 'column' }}>
+      <Paper sx={{ p: 0.5, flexGrow: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <Box>
           <Typography variant="h5" component="h1" sx={{ mb: 0 }}>
             {net.name}
@@ -749,9 +749,9 @@ const NetView: React.FC = () => {
         </Box>
 
         {net.status === 'active' && (
-          <Grid container spacing={0} sx={{ mt: 0.5 }}>
-            <Grid item xs={12} md={8} sx={{ pr: { md: 0.5 }, display: 'flex', flexDirection: 'column' }}>
-              <TableContainer sx={{ maxHeight: 'calc(100vh - 350px)', overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: '4px 4px 0 0', borderBottom: 0, flexShrink: 1 }}>
+          <Grid container spacing={0} sx={{ mt: 0.5, flexGrow: 1, overflow: 'hidden' }}>
+            <Grid item xs={12} md={8} sx={{ pr: { md: 0.5 }, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <TableContainer sx={{ flexGrow: 1, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: '4px 4px 0 0', borderBottom: 0, minHeight: 0 }}>
               <Table size="small" stickyHeader>
                 <TableHead>
                   <TableRow>
@@ -898,6 +898,18 @@ const NetView: React.FC = () => {
                 </TableBody>
               </Table>
             </TableContainer>
+            
+            {/* Legend */}
+            <Box sx={{ p: 0.5, backgroundColor: 'action.hover', border: 1, borderColor: 'divider', borderTop: 0, borderBottom: 0, flexShrink: 0 }}>
+              <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center' }}>
+                <Typography variant="caption" sx={{ fontWeight: 'bold' }}>Legend:</Typography>
+                <Typography variant="caption">✅ Standard</Typography>
+                <Typography variant="caption">👂 Listening</Typography>
+                <Typography variant="caption">⏸️ Short Term</Typography>
+                <Typography variant="caption">🚨 Traffic</Typography>
+                <Typography variant="caption">👋 Out</Typography>
+              </Box>
+            </Box>
             
             {/* New check-in form - fixed below table */}
             {canManageCheckIns && (
@@ -1060,20 +1072,10 @@ const NetView: React.FC = () => {
                 </Table>
               </Paper>
             )}
-            <Box sx={{ mt: 0.5, p: 0.5, backgroundColor: 'action.hover', borderRadius: 1, flexShrink: 0 }}>
-              <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
-                <Typography variant="caption" sx={{ fontWeight: 'bold' }}>Legend:</Typography>
-                <Typography variant="caption">✅ Standard</Typography>
-                <Typography variant="caption">👂 Listening</Typography>
-                <Typography variant="caption">⏸️ Short Term</Typography>
-                <Typography variant="caption">🚨 Traffic</Typography>
-                <Typography variant="caption">👋 Out</Typography>
-              </Box>
-            </Box>
             </Grid>
             
-            <Grid item xs={12} md={4} sx={{ pl: { md: 0.5 } }}>
-              <Box sx={{ maxHeight: 'calc(100vh - 220px)' }}>
+            <Grid item xs={12} md={4} sx={{ pl: { md: 0.5 }, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
                 <Chat netId={Number(netId)} />
               </Box>
             </Grid>
