@@ -652,7 +652,7 @@ const NetView: React.FC = () => {
         <Box sx={{ flexShrink: 0 }}>
           <Typography variant="h5" component="h1" sx={{ mb: 0 }}>
             {net.name}
-              </Box>
+          </Typography>
             </Grid>
             <Grid item xs={12} md={4} sx={{ pl: { md: 0.5 } }}>
               <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', alignItems: 'center', justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
