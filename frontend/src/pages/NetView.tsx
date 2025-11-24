@@ -849,11 +849,10 @@ const NetView: React.FC = () => {
                           // Calculate value once
 
                           // Ensure selectValue matches MenuItem values exactly
-                          let selectValue = checkIn.status.toLowerCase();
+                          // Determine selectValue: show role if present, else status
                           const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
-                          if (owner?.id === checkIn.user_id) {
-                            selectValue = 'ncs';
-                          } else if (userRole) {
+                          let selectValue = checkIn.status.toLowerCase();
+                          if (userRole) {
                             selectValue = userRole.role.toLowerCase();
                           }
                           // Only allow lowercase values for Select and MenuItem
@@ -863,43 +862,51 @@ const NetView: React.FC = () => {
                           }
                           console.log('Select value for', checkIn.callsign, ':', selectValue, '| user_id:', checkIn.user_id);
 
+                          // Show role icon in status column if user has a role
+                          const statusIcon = userRole
+                            ? (userRole.role.toLowerCase() === 'ncs' ? '👑' : '📋')
+                            : getStatusIcon(checkIn.status, checkIn);
+
                           return (
-                            <Select
-                              size="small"
-                              value={selectValue}
-                              onChange={(e) => {
-                                console.log('Select onChange triggered for', checkIn.callsign, '- new value:', e.target.value);
-                                handleStatusChange(checkIn.id, e.target.value);
-                              }}
-                              onOpen={() => console.log('Select OPENED for', checkIn.callsign)}
-                              onClose={(event, reason) => console.log('Select CLOSED for', checkIn.callsign, '- reason:', reason)}
-                              sx={{ minWidth: 50 }}
-                              disabled={owner?.id === checkIn.user_id}
-                              MenuProps={{
-                                disableScrollLock: true,
-                                disableAutoFocusItem: false,
-                                autoFocus: true,
-                                PaperProps: {
-                                  style: {
-                                    maxHeight: 300,
+                            <>
+                              <Select
+                                size="small"
+                                value={selectValue}
+                                onChange={(e) => {
+                                  console.log('Select onChange triggered for', checkIn.callsign, '- new value:', e.target.value);
+                                  handleStatusChange(checkIn.id, e.target.value);
+                                }}
+                                onOpen={() => console.log('Select OPENED for', checkIn.callsign)}
+                                onClose={(event, reason) => console.log('Select CLOSED for', checkIn.callsign, '- reason:', reason)}
+                                sx={{ minWidth: 50 }}
+                                disabled={owner?.id === checkIn.user_id}
+                                MenuProps={{
+                                  disableScrollLock: true,
+                                  disableAutoFocusItem: false,
+                                  autoFocus: true,
+                                  PaperProps: {
+                                    style: {
+                                      maxHeight: 300,
+                                    },
                                   },
-                                },
-                                onClose: (event, reason) => {
-                                  console.log('MenuProps onClose - reason:', reason);
-                                },
-                              }}
-                            >
-                              {canManageCheckIns && (
-                                <>
-                                  <MenuItem value="ncs">👑</MenuItem>
-                                  <MenuItem value="logger">📋</MenuItem>
-                                </>
-                              )}
-                              <MenuItem value="checked_in">✅</MenuItem>
-                              <MenuItem value="listening">👂</MenuItem>
-                              <MenuItem value="away">⏸️</MenuItem>
-                              <MenuItem value="available">🚨</MenuItem>
-                            </Select>
+                                  onClose: (event, reason) => {
+                                    console.log('MenuProps onClose - reason:', reason);
+                                  },
+                                }}
+                              >
+                                {canManageCheckIns && (
+                                  <>
+                                    <MenuItem value="ncs">👑</MenuItem>
+                                    <MenuItem value="logger">📋</MenuItem>
+                                  </>
+                                )}
+                                <MenuItem value="checked_in">✅</MenuItem>
+                                <MenuItem value="listening">👂</MenuItem>
+                                <MenuItem value="away">⏸️</MenuItem>
+                                <MenuItem value="available">🚨</MenuItem>
+                              </Select>
+                              <span style={{ marginLeft: 8 }}>{statusIcon}</span>
+                            </>
                           );
                         })() : (
                           getStatusIcon(checkIn.status, checkIn)
