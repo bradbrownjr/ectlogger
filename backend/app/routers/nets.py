@@ -618,7 +618,7 @@ async def remove_net_role(
 @router.get("/{net_id}/roles")
 async def list_net_roles(
     net_id: int,
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db)
 ):
     """List all roles for a net"""
