@@ -592,12 +592,12 @@ const NetView: React.FC = () => {
   return (
     <Container maxWidth="xl" sx={{ height: 'calc(100vh - 56px)', py: 0, px: { xs: 0.5, sm: 1 }, overflow: 'hidden' }}>
       <Paper sx={{ p: 0.5, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <Box sx={{ mb: 0.5, flexShrink: 0 }}>
+        <Box sx={{ mb: 0.25, flexShrink: 0 }}>
           <Typography variant="h5" component="h1" sx={{ mb: 0.25 }}>
             {net.name}
           </Typography>
           {net.description && (
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 0.25 }}>
               {net.description}
             </Typography>
           )}
@@ -615,7 +615,7 @@ const NetView: React.FC = () => {
               )}
             </Box>
             {net.status === 'active' && net.frequencies.length > 0 && (
-              <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexWrap: 'wrap', ml: 'auto', width: { md: 'calc(66.666% - 4px)' }, justifyContent: 'flex-end' }}>
+              <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexWrap: 'wrap', ml: 'auto', justifyContent: 'flex-end' }}>
                 {net.frequencies.map((freq) => (
                   <Chip 
                     key={freq.id}
