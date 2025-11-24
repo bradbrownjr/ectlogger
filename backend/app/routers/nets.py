@@ -3,7 +3,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
-from typing import List
+from typing import List, Optional
 from datetime import datetime
 import csv
 import io
@@ -83,7 +83,7 @@ async def list_nets(
     skip: int = 0,
     limit: int = 100,
     db: AsyncSession = Depends(get_db),
-    current_user: User = None
+    current_user: Optional[User] = Depends(get_current_user_optional)
 ):
     """List nets with optional status filter, excludes archived by default (no auth required for guest access)"""
     query = select(Net).options(selectinload(Net.frequencies))
