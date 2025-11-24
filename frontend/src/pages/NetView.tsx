@@ -28,6 +28,7 @@ import {
   ListItem,
   ListItemText,
   ListItemSecondaryAction,
+  Snackbar,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -98,6 +99,7 @@ const NetView: React.FC = () => {
   const [selectedUserId, setSelectedUserId] = useState<number | ''>('');
   const [selectedRole, setSelectedRole] = useState<string>('NCS');
   const [activeSpeakerId, setActiveSpeakerId] = useState<number | null>(null);
+  const [toastMessage, setToastMessage] = useState<string>('');
   const [ws, setWs] = useState<WebSocket | null>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -418,6 +420,13 @@ const NetView: React.FC = () => {
   };
 
   const handleSetActiveSpeaker = (checkInId: number | null) => {
+    // Check if the user is just listening
+    const checkIn = checkIns.find(ci => ci.id === checkInId);
+    if (checkIn && checkIn.status === 'listening') {
+      setToastMessage(`${checkIn.callsign} is set to "Just Listening"`);
+      return;
+    }
+    
     const newActiveSpeakerId = activeSpeakerId === checkInId ? null : checkInId;
     setActiveSpeakerId(newActiveSpeakerId);
     
@@ -1010,6 +1019,14 @@ const NetView: React.FC = () => {
           <Button onClick={() => setRoleDialogOpen(false)}>Close</Button>
         </DialogActions>
       </Dialog>
+
+      <Snackbar
+        open={toastMessage !== ''}
+        autoHideDuration={3000}
+        onClose={() => setToastMessage('')}
+        message={toastMessage}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      />
     </Container>
   );
 };
