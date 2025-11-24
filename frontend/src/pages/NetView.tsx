@@ -590,8 +590,8 @@ const NetView: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Paper sx={{ p: 3 }}>
+    <Container maxWidth="xl" sx={{ mt: 2, mb: 2, px: { xs: 1, sm: 2 } }}>
+      <Paper sx={{ p: { xs: 1, sm: 2 } }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
           <Box>
             <Typography variant="h4" component="h1" gutterBottom>
@@ -1171,7 +1171,9 @@ const NetView: React.FC = () => {
             </Grid>
             
             <Grid item xs={12} md={4}>
-              <Chat netId={Number(netId)} />
+              <Box sx={{ position: { md: 'sticky' }, top: { md: 16 }, maxHeight: { md: 'calc(100vh - 32px)' } }}>
+                <Chat netId={Number(netId)} />
+              </Box>
             </Grid>
           </Grid>
         )}

@@ -107,10 +107,9 @@ const Chat: React.FC<ChatProps> = ({ netId, onNewMessage }) => {
   return (
     <Paper 
       sx={{ 
-        height: '100%', 
+        height: { xs: '400px', md: '100%' },
         display: 'flex', 
-        flexDirection: 'column',
-        minHeight: { xs: '300px', md: '500px' }
+        flexDirection: 'column'
       }}
     >
       <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
