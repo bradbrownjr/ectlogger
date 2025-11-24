@@ -421,7 +421,10 @@ const NetView: React.FC = () => {
       return `${freq.frequency} MHz${freq.mode ? ` (${freq.mode})` : ''}`;
     }
     // Digital mode without frequency (DMR/YSF)
-    return `${freq.channel || freq.talkgroup || 'Digital'}${freq.mode ? ` (${freq.mode})` : ''}`;
+    // For YSF: show channel name (e.g., "UFB YSF")
+    // For DMR: show talkgroup (e.g., "NEDECON TG7123 DMR")
+    const label = freq.channel || freq.talkgroup || 'Digital';
+    return freq.mode ? `${label} ${freq.mode}` : label;
   };
 
   const handleStatusChange = async (checkInId: number, newStatus: string) => {
