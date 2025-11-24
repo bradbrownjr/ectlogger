@@ -350,11 +350,25 @@ class ChatMessageResponse(BaseModel):
     id: int
     net_id: int
     user_id: int
+    callsign: Optional[str] = None
     message: str
     created_at: datetime
 
     class Config:
         from_attributes = True
+    
+    @classmethod
+    def from_orm(cls, obj):
+        # Include callsign from user relationship
+        data = {
+            'id': obj.id,
+            'net_id': obj.net_id,
+            'user_id': obj.user_id,
+            'callsign': obj.user.callsign if obj.user and obj.user.callsign else 'Unknown',
+            'message': obj.message,
+            'created_at': obj.created_at
+        }
+        return cls(**data)
 
 
 # Authentication Schemas

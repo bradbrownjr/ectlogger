@@ -30,6 +30,7 @@ import {
   ListItemSecondaryAction,
   Snackbar,
   Autocomplete,
+  Grid,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -40,6 +41,7 @@ import { netApi, checkInApi } from '../services/api';
 import api from '../services/api';
 import { formatDateTime, formatTime } from '../utils/dateUtils';
 import { useAuth } from '../contexts/AuthContext';
+import Chat from '../components/Chat';
 
 interface Net {
   id: number;
@@ -818,12 +820,13 @@ const NetView: React.FC = () => {
         )}
 
         {net.status === 'active' && (
-          <>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h6">Check-ins ({checkIns.length})</Typography>
-            </Box>
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={8}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="h6">Check-ins ({checkIns.length})</Typography>
+              </Box>
 
-            <TableContainer>
+              <TableContainer>
               <Table size="small">
                 <TableHead>
                   <TableRow>
@@ -1165,7 +1168,12 @@ const NetView: React.FC = () => {
                 <Typography variant="body2">👋 Checked Out</Typography>
               </Box>
             </Box>
-          </>
+            </Grid>
+            
+            <Grid item xs={12} md={4}>
+              <Chat netId={Number(netId)} />
+            </Grid>
+          </Grid>
         )}
 
         {net.status === 'closed' && (

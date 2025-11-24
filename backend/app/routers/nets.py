@@ -401,6 +401,22 @@ async def close_net(
             'status': check_in.status.value if check_in.status else ''
         })
     
+    # Get chat messages
+    from app.models import ChatMessage
+    result = await db.execute(
+        select(ChatMessage)
+        .options(selectinload(ChatMessage.user))
+        .where(ChatMessage.net_id == net_id)
+        .order_by(ChatMessage.created_at.asc())
+    )
+    chat_messages_data = []
+    for msg in result.scalars().all():
+        chat_messages_data.append({
+            'timestamp': msg.created_at.strftime("%Y-%m-%d %H:%M:%S") if msg.created_at else "",
+            'callsign': msg.user.callsign if msg.user and msg.user.callsign else 'Unknown',
+            'message': msg.message
+        })
+    
     # Send log email to owner
     if owner and owner.email:
         try:
@@ -412,7 +428,8 @@ async def close_net(
                 ncs_name=owner.callsign or owner.name or owner.email,
                 check_ins=check_ins_data,
                 started_at=net.started_at.strftime("%Y-%m-%d %H:%M:%S") if net.started_at else "N/A",
-                closed_at=net.closed_at.strftime("%Y-%m-%d %H:%M:%S") if net.closed_at else "N/A"
+                closed_at=net.closed_at.strftime("%Y-%m-%d %H:%M:%S") if net.closed_at else "N/A",
+                chat_messages=chat_messages_data if chat_messages_data else None
             )
         except Exception as e:
             # Log error but don't fail the close operation

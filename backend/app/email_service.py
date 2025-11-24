@@ -269,8 +269,51 @@ This is an automated message, please do not reply.
             raise
 
     @staticmethod
-    async def send_net_log(email: str, net_name: str, net_description: str, ncs_name: str, check_ins: list, started_at: str, closed_at: str):
-        """Send net log after net is closed with check-ins table and CSV attachment"""
+    async def send_email_with_attachments(to_email: str, subject: str, html_content: str, attachments: list):
+        """Send an email with multiple attachments
+        attachments: list of tuples (data, filename, mime_type)
+        """
+        logger.info("EMAIL", f"Sending email with {len(attachments)} attachments to {to_email}")
+        
+        message = MIMEMultipart("mixed")
+        message["Subject"] = subject
+        message["From"] = f"{settings.smtp_from_name} <{settings.smtp_from_email}>"
+        message["To"] = to_email
+        message["Reply-To"] = settings.smtp_from_email
+        message["Message-ID"] = f"<{hash(to_email + subject)}.ectlogger@{settings.smtp_host}>"
+        message["X-Mailer"] = "ECTLogger"
+
+        # Create the HTML part
+        html_part = MIMEText(html_content, "html")
+        message.attach(html_part)
+
+        # Add attachments
+        for data, filename, mime_type in attachments:
+            attachment = MIMEBase("application", "octet-stream")
+            attachment.set_payload(data.encode())
+            encoders.encode_base64(attachment)
+            attachment.add_header("Content-Disposition", f"attachment; filename={filename}")
+            message.attach(attachment)
+
+        try:
+            use_tls = settings.smtp_port == 465
+            await aiosmtplib.send(
+                message,
+                hostname=settings.smtp_host,
+                port=settings.smtp_port,
+                username=settings.smtp_user,
+                password=settings.smtp_password,
+                use_tls=use_tls,
+                start_tls=(settings.smtp_port == 587),
+            )
+            logger.info("EMAIL", f"Email with attachments sent successfully to {to_email}")
+        except Exception as e:
+            logger.error("EMAIL", f"Failed to send email with attachments: {str(e)}")
+            raise
+
+    @staticmethod
+    async def send_net_log(email: str, net_name: str, net_description: str, ncs_name: str, check_ins: list, started_at: str, closed_at: str, chat_messages: list = None):
+        """Send net log after net is closed with check-ins table, CSV attachment, and chat log"""
         html_template = Template("""
         <!DOCTYPE html>
         <html>
@@ -379,12 +422,39 @@ This is an automated message, please do not reply.
             ])
         
         csv_data = output.getvalue()
-        filename = f"{net_name.replace(' ', '_')}_{closed_at.split()[0]}.csv"
+        csv_filename = f"{net_name.replace(' ', '_')}_{closed_at.split()[0]}.csv"
         
-        await EmailService.send_email_with_attachment(
-            to_email=email,
-            subject=f"📻 Net Log: {net_name}",
-            html_content=html_content,
-            attachment_data=csv_data,
-            attachment_filename=filename
-        )
+        # Generate chat log if provided
+        attachments = [(csv_data, csv_filename, "text/csv")]
+        
+        if chat_messages:
+            chat_output = io.StringIO()
+            chat_output.write(f"Chat Log for {net_name}\n")
+            chat_output.write(f"{'='*60}\n\n")
+            
+            for msg in chat_messages:
+                timestamp = msg.get('timestamp', '')
+                callsign = msg.get('callsign', 'Unknown')
+                message = msg.get('message', '')
+                chat_output.write(f"[{timestamp}] {callsign}: {message}\n")
+            
+            chat_data = chat_output.getvalue()
+            chat_filename = f"{net_name.replace(' ', '_')}_{closed_at.split()[0]}_chat.txt"
+            attachments.append((chat_data, chat_filename, "text/plain"))
+        
+        # Send email with attachment(s)
+        if len(attachments) > 1:
+            await EmailService.send_email_with_attachments(
+                to_email=email,
+                subject=f"📻 Net Log: {net_name}",
+                html_content=html_content,
+                attachments=attachments
+            )
+        else:
+            await EmailService.send_email_with_attachment(
+                to_email=email,
+                subject=f"📻 Net Log: {net_name}",
+                html_content=html_content,
+                attachment_data=csv_data,
+                attachment_filename=csv_filename
+            )
