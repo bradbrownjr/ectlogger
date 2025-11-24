@@ -873,15 +873,20 @@ const NetView: React.FC = () => {
                                 handleStatusChange(checkIn.id, e.target.value);
                               }}
                               onOpen={() => console.log('Select OPENED for', checkIn.callsign)}
-                              onClose={() => console.log('Select CLOSED for', checkIn.callsign)}
+                              onClose={(event, reason) => console.log('Select CLOSED for', checkIn.callsign, '- reason:', reason)}
                               sx={{ minWidth: 50 }}
                               disabled={owner?.id === checkIn.user_id}
                               MenuProps={{
                                 disableScrollLock: true,
+                                disableAutoFocusItem: false,
+                                autoFocus: true,
                                 PaperProps: {
                                   style: {
                                     maxHeight: 300,
                                   },
+                                },
+                                onClose: (event, reason) => {
+                                  console.log('MenuProps onClose - reason:', reason);
                                 },
                               }}
                             >
