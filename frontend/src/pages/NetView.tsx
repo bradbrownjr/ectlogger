@@ -855,7 +855,7 @@ const NetView: React.FC = () => {
                       <TableCell>
                         {net.status === 'active' && checkIn.status !== 'checked_out' && (canManageCheckIns || checkIn.user_id === user?.id) ? (() => {
                           // Calculate value once
-                          let selectValue = checkIn.status;
+                          let selectValue = checkIn.status.toLowerCase();
                           if (owner?.id === checkIn.user_id) {
                             selectValue = 'ncs';
                           } else {
