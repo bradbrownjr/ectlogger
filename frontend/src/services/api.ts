@@ -65,6 +65,10 @@ export const netApi = {
   start: (id: number) => api.post(`/nets/${id}/start`),
   close: (id: number) => api.post(`/nets/${id}/close`),
   delete: (id: number) => api.delete(`/nets/${id}`),
+  setActiveFrequency: (netId: number, frequencyId: number) => 
+    api.put(`/nets/${netId}/active-frequency/${frequencyId}`),
+  clearActiveFrequency: (netId: number) => 
+    api.delete(`/nets/${netId}/active-frequency`),
 };
 
 // Check-in API

@@ -238,6 +238,63 @@ async def start_net(
     return NetResponse.from_orm(net)
 
 
+@router.put("/{net_id}/active-frequency/{frequency_id}", response_model=NetResponse)
+async def set_active_frequency(
+    net_id: int,
+    frequency_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Set the active frequency for a net (NCS/Logger only)"""
+    result = await db.execute(
+        select(Net).options(selectinload(Net.frequencies)).where(Net.id == net_id)
+    )
+    net = result.scalar_one_or_none()
+    
+    if not net:
+        raise HTTPException(status_code=404, detail="Net not found")
+    
+    # Check permissions - NCS, Logger, or admin
+    if not await check_net_permission(db, net, current_user, ["NCS", "Logger"]):
+        raise HTTPException(status_code=403, detail="Not authorized to change frequency")
+    
+    # Verify the frequency belongs to this net
+    if frequency_id not in [f.id for f in net.frequencies]:
+        raise HTTPException(status_code=400, detail="Frequency not associated with this net")
+    
+    net.active_frequency_id = frequency_id
+    await db.commit()
+    await db.refresh(net, ['frequencies'])
+    
+    return NetResponse.from_orm(net)
+
+
+@router.delete("/{net_id}/active-frequency", response_model=NetResponse)
+async def clear_active_frequency(
+    net_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Clear the active frequency for a net (NCS/Logger only)"""
+    result = await db.execute(
+        select(Net).options(selectinload(Net.frequencies)).where(Net.id == net_id)
+    )
+    net = result.scalar_one_or_none()
+    
+    if not net:
+        raise HTTPException(status_code=404, detail="Net not found")
+    
+    # Check permissions - NCS, Logger, or admin
+    if not await check_net_permission(db, net, current_user, ["NCS", "Logger"]):
+        raise HTTPException(status_code=403, detail="Not authorized to change frequency")
+    
+    net.active_frequency_id = None
+    await db.commit()
+    await db.refresh(net, ['frequencies'])
+    
+    return NetResponse.from_orm(net)
+
+
 @router.post("/{net_id}/close", response_model=NetResponse)
 async def close_net(
     net_id: int,

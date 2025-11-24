@@ -165,6 +165,11 @@ const NetView: React.FC = () => {
         if (message.data?.checkInId !== undefined) {
           setActiveSpeakerId(message.data.checkInId);
         }
+      } else if (message.type === 'active_frequency') {
+        // Update active frequency when NCS changes it
+        if (message.data?.frequencyId !== undefined) {
+          fetchNet(); // Refresh net to get updated active frequency
+        }
       }
     };
 
@@ -441,6 +446,25 @@ const NetView: React.FC = () => {
     }
   };
 
+  const handleSetActiveFrequency = async (frequencyId: number) => {
+    try {
+      const response = await netApi.setActiveFrequency(netId!, frequencyId);
+      setNet(response.data);
+      
+      // Broadcast frequency change via WebSocket
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: 'active_frequency',
+          data: { frequencyId },
+          timestamp: new Date().toISOString()
+        }));
+      }
+    } catch (error) {
+      console.error('Failed to set active frequency:', error);
+      alert('Failed to change frequency');
+    }
+  };
+
   if (!net) {
     return <Container><Typography>Loading...</Typography></Container>;
   }
@@ -620,13 +644,26 @@ const NetView: React.FC = () => {
 
         {net.frequencies.length > 0 && (
           <Box sx={{ mb: 3 }}>
-            <Typography variant="h6" gutterBottom>Frequencies</Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+              <Typography variant="h6">Frequencies</Typography>
+              {canManage && (
+                <Button
+                  size="small"
+                  startIcon={<EditIcon />}
+                  onClick={() => navigate(`/nets/${netId}/edit`)}
+                >
+                  Edit
+                </Button>
+              )}
+            </Box>
             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
               {net.frequencies.map((freq) => (
                 <Chip 
                   key={freq.id}
                   label={`${freq.frequency || `${freq.network}${freq.talkgroup ? ` TG${freq.talkgroup}` : ''}`} ${freq.mode}`}
                   color={freq.id === net.active_frequency_id ? 'primary' : 'default'}
+                  onClick={canManageCheckIns ? () => handleSetActiveFrequency(freq.id) : undefined}
+                  clickable={canManageCheckIns}
                 />
               ))}
             </Box>
