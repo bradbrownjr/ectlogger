@@ -626,8 +626,15 @@ const NetView: React.FC = () => {
               </>
             )}
             {canManage && net.status === 'active' && (
-              <Button size="small" variant="contained" color="error" onClick={handleCloseNet}>
-                Close Net
+              <Button 
+                size="small" 
+                variant="outlined" 
+                onClick={() => {
+                  fetchAllUsers();
+                  setRoleDialogOpen(true);
+                }}
+              >
+                Manage Roles
               </Button>
             )}
             {isAuthenticated && net.status === 'active' && (
@@ -677,6 +684,11 @@ const NetView: React.FC = () => {
                 </Button>
               )
             )}
+            {canManage && net.status === 'active' && (
+              <Button size="small" variant="contained" color="error" onClick={handleCloseNet}>
+                Close Net
+              </Button>
+            )}
             {net.status === 'closed' && (
               <>
                 <Button 
@@ -710,9 +722,6 @@ const NetView: React.FC = () => {
                 Delete
               </Button>
             )}
-            <Button size="small" variant="outlined" onClick={() => navigate('/dashboard')}>
-              Back
-            </Button>
             </Box>
           </Box>
         </Box>
@@ -720,32 +729,18 @@ const NetView: React.FC = () => {
         {net.status === 'active' && (
           <Grid container spacing={1} sx={{ flexGrow: 1, overflow: 'hidden', minHeight: 0 }}>
             <Grid item xs={12} md={8} sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-                {canManage && (
-                  <Button 
-                    size="small" 
-                    variant="outlined" 
-                    onClick={() => {
-                      fetchAllUsers();
-                      setRoleDialogOpen(true);
-                    }}
-                  >
-                    Manage Roles
-                  </Button>
-                )}
-                <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', ml: 'auto' }}>
-                  {net.frequencies.length > 0 && net.frequencies.map((freq) => (
-                    <Chip 
-                      key={freq.id}
-                      label={`${freq.frequency || `${freq.network}${freq.talkgroup ? ` TG${freq.talkgroup}` : ''}`} ${freq.mode}`}
-                      size="small"
-                      color={freq.id === net.active_frequency_id ? 'primary' : 'default'}
-                      onClick={canManageCheckIns ? () => handleSetActiveFrequency(freq.id) : undefined}
-                      clickable={canManageCheckIns}
-                      sx={{ height: 20 }}
-                    />
-                  ))}
-                </Box>
+              <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', justifyContent: 'flex-end', mb: 0.5 }}>
+                {net.frequencies.length > 0 && net.frequencies.map((freq) => (
+                  <Chip 
+                    key={freq.id}
+                    label={`${freq.frequency || `${freq.network}${freq.talkgroup ? ` TG${freq.talkgroup}` : ''}`} ${freq.mode}`}
+                    size="small"
+                    color={freq.id === net.active_frequency_id ? 'primary' : 'default'}
+                    onClick={canManageCheckIns ? () => handleSetActiveFrequency(freq.id) : undefined}
+                    clickable={canManageCheckIns}
+                    sx={{ height: 20 }}
+                  />
+                ))}
               </Box>
               <TableContainer sx={{ flexGrow: 1, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: 1 }}>
               <Table size="small" stickyHeader>
