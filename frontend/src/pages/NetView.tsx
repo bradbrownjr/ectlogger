@@ -111,6 +111,7 @@ const NetView: React.FC = () => {
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [editCheckInDialogOpen, setEditCheckInDialogOpen] = useState(false);
   const [editingCheckIn, setEditingCheckIn] = useState<CheckIn | null>(null);
+  const [checkInDialogOpen, setCheckInDialogOpen] = useState(false);
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
@@ -618,11 +619,16 @@ const NetView: React.FC = () => {
                         available_frequency_ids: [],
                       });
                     }
-                    // Scroll to and focus the callsign field
-                    const callsignField = document.querySelector('input[placeholder="Callsign"]') as HTMLInputElement;
-                    if (callsignField) {
-                      callsignField.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                      callsignField.focus();
+                    if (canManageCheckIns) {
+                      // NCS/Logger: Scroll to and focus the callsign field
+                      const callsignField = document.querySelector('input[placeholder="Callsign"]') as HTMLInputElement;
+                      if (callsignField) {
+                        callsignField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        callsignField.focus();
+                      }
+                    } else {
+                      // Regular user: Open check-in dialog
+                      setCheckInDialogOpen(true);
                     }
                   }}
                   sx={{ mr: 1 }}
@@ -897,8 +903,8 @@ const NetView: React.FC = () => {
                     </TableRow>
                   ))}
 
-                  {/* New check-in row - only show for authenticated users */}
-                  {isAuthenticated && (
+                  {/* New check-in row - only show for NCS/Logger */}
+                  {canManageCheckIns && (
                   <TableRow sx={{ backgroundColor: 'action.hover' }}>
                     <TableCell>{checkIns.length + 1}</TableCell>
                     <TableCell>➕</TableCell>
@@ -1042,7 +1048,7 @@ const NetView: React.FC = () => {
                   )}
                   
                   {/* Frequency selector row for check-in form */}
-                  {isAuthenticated && net?.frequencies && net.frequencies.length > 1 && (
+                  {canManageCheckIns && net?.frequencies && net.frequencies.length > 1 && (
                   <TableRow sx={{ backgroundColor: 'action.selected' }}>
                     <TableCell colSpan={99}>
                       <Box sx={{ p: 1 }}>
@@ -1297,6 +1303,142 @@ const NetView: React.FC = () => {
           <Button onClick={() => setEditCheckInDialogOpen(false)}>Cancel</Button>
           <Button onClick={handleSaveEditCheckIn} variant="contained" color="primary">
             Save
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Check-In Dialog for Regular Users */}
+      <Dialog 
+        open={checkInDialogOpen} 
+        onClose={() => setCheckInDialogOpen(false)} 
+        maxWidth="md" 
+        fullWidth
+        disableRestoreFocus
+      >
+        <DialogTitle>Check In to {net?.name}</DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+            <TextField
+              label="Callsign"
+              value={checkInForm.callsign}
+              onChange={(e) => setCheckInForm({ ...checkInForm, callsign: e.target.value.toUpperCase() })}
+              fullWidth
+              required
+              inputProps={{ style: { textTransform: 'uppercase' } }}
+            />
+            
+            {net?.field_config?.name?.enabled && (
+              <TextField
+                label="Name"
+                value={checkInForm.name}
+                onChange={(e) => setCheckInForm({ ...checkInForm, name: e.target.value })}
+                fullWidth
+                required={net.field_config.name.required}
+              />
+            )}
+            
+            {net?.field_config?.location?.enabled && (
+              <TextField
+                label="Location"
+                value={checkInForm.location}
+                onChange={(e) => setCheckInForm({ ...checkInForm, location: e.target.value })}
+                fullWidth
+                required={net.field_config.location.required}
+              />
+            )}
+            
+            {net?.field_config?.skywarn_number?.enabled && (
+              <TextField
+                label="SKYWARN Number"
+                value={checkInForm.skywarn_number}
+                onChange={(e) => setCheckInForm({ ...checkInForm, skywarn_number: e.target.value })}
+                fullWidth
+                required={net.field_config.skywarn_number.required}
+              />
+            )}
+            
+            {net?.field_config?.weather_observation?.enabled && (
+              <TextField
+                label="Weather Observation"
+                value={checkInForm.weather_observation}
+                onChange={(e) => setCheckInForm({ ...checkInForm, weather_observation: e.target.value })}
+                fullWidth
+                multiline
+                rows={2}
+                required={net.field_config.weather_observation.required}
+              />
+            )}
+            
+            {net?.field_config?.power_source?.enabled && (
+              <TextField
+                label="Power Source"
+                value={checkInForm.power_source}
+                onChange={(e) => setCheckInForm({ ...checkInForm, power_source: e.target.value })}
+                fullWidth
+                required={net.field_config.power_source.required}
+              />
+            )}
+            
+            {net?.field_config?.notes?.enabled && (
+              <TextField
+                label="Notes"
+                value={checkInForm.notes}
+                onChange={(e) => setCheckInForm({ ...checkInForm, notes: e.target.value })}
+                fullWidth
+                multiline
+                rows={2}
+                required={net.field_config.notes.required}
+              />
+            )}
+            
+            {net?.frequencies && net.frequencies.length > 1 && (
+              <Autocomplete
+                multiple
+                options={net.frequencies || []}
+                getOptionLabel={(option: any) => formatFrequencyDisplay(option)}
+                value={net.frequencies.filter((f: any) => checkInForm.available_frequency_ids.includes(f.id))}
+                onChange={(_, newValue: any[]) => {
+                  setCheckInForm({
+                    ...checkInForm,
+                    available_frequency_ids: newValue.map(f => f.id)
+                  });
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Available Frequencies (optional)"
+                    helperText="For SKYWARN nets: indicate which frequencies you can reach"
+                  />
+                )}
+                renderTags={(value: any[], getTagProps) =>
+                  value.map((option: any, index: number) => {
+                    const { key, ...tagProps } = getTagProps({ index });
+                    return (
+                      <Chip
+                        key={key}
+                        {...tagProps}
+                        label={formatFrequencyDisplay(option)}
+                        size="small"
+                      />
+                    );
+                  })
+                }
+              />
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCheckInDialogOpen(false)}>Cancel</Button>
+          <Button 
+            onClick={() => {
+              handleCheckIn();
+              setCheckInDialogOpen(false);
+            }} 
+            variant="contained" 
+            color="primary"
+            disabled={!checkInForm.callsign}
+          >
+            Check In
           </Button>
         </DialogActions>
       </Dialog>
