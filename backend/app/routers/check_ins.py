@@ -110,7 +110,6 @@ async def create_check_in(
     else:
         # Serialize available frequencies to JSON for new check-in
         available_frequencies_json = json.dumps(available_freq_ids)
-    else:
         # Create new check-in
         check_in = CheckIn(
             net_id=net_id,
