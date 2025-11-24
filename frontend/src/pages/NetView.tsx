@@ -601,8 +601,8 @@ const NetView: React.FC = () => {
               {net.description}
             </Typography>
           )}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexWrap: 'wrap' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+            <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexWrap: 'wrap', flex: '0 1 auto' }}>
               <Chip label={net.status} size="small" color={net.status === 'active' ? 'success' : 'default'} />
               {netStats && (
                 <>
@@ -615,7 +615,7 @@ const NetView: React.FC = () => {
               )}
             </Box>
             {net.status === 'active' && net.frequencies.length > 0 && (
-              <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexWrap: 'wrap', ml: 'auto', justifyContent: 'flex-end' }}>
+              <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexWrap: 'wrap', flex: '0 0 66.666%', justifyContent: 'flex-end' }}>
                 {net.frequencies.map((freq) => (
                   <Chip 
                     key={freq.id}
