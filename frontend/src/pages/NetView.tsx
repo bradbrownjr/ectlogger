@@ -851,39 +851,53 @@ const NetView: React.FC = () => {
                     >
                       <TableCell>{index + 1}</TableCell>
                       <TableCell>
-                        {net.status === 'active' && checkIn.status !== 'checked_out' && (canManageCheckIns || checkIn.user_id === user?.id) ? (
-                          <Select
-                            size="small"
-                            value={(() => {
-                              // Show role if user has one
-                              if (owner?.id === checkIn.user_id) return 'ncs';
-                              const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
-                              const value = userRole ? userRole.role.toLowerCase() : checkIn.status;
-                              console.log('Select value for', checkIn.callsign, ':', value, '| user_id:', checkIn.user_id, '| canManageCheckIns:', canManageCheckIns);
-                              return value;
-                            })()}
-                            onChange={(e) => {
-                              console.log('Select onChange triggered for', checkIn.callsign, '- new value:', e.target.value);
-                              handleStatusChange(checkIn.id, e.target.value);
-                            }}
-                            onClick={() => console.log('Select clicked for', checkIn.callsign, '| canManageCheckIns:', canManageCheckIns)}
-                            onOpen={() => console.log('Select OPENED for', checkIn.callsign)}
-                            onClose={() => console.log('Select CLOSED for', checkIn.callsign)}
-                            sx={{ minWidth: 50 }}
-                            disabled={owner?.id === checkIn.user_id} // Owner is always NCS
-                          >
-                            {canManageCheckIns && (
-                              <>
-                                <MenuItem value="ncs">👑</MenuItem>
-                                <MenuItem value="logger">📋</MenuItem>
-                              </>
-                            )}
-                            <MenuItem value="checked_in">✅</MenuItem>
-                            <MenuItem value="listening">👂</MenuItem>
-                            <MenuItem value="away">⏸️</MenuItem>
-                            <MenuItem value="available">🚨</MenuItem>
-                          </Select>
-                        ) : (
+                        {net.status === 'active' && checkIn.status !== 'checked_out' && (canManageCheckIns || checkIn.user_id === user?.id) ? (() => {
+                          // Calculate value once
+                          let selectValue = checkIn.status;
+                          if (owner?.id === checkIn.user_id) {
+                            selectValue = 'ncs';
+                          } else {
+                            const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
+                            if (userRole) {
+                              selectValue = userRole.role.toLowerCase();
+                            }
+                          }
+                          console.log('Select value for', checkIn.callsign, ':', selectValue, '| user_id:', checkIn.user_id);
+                          
+                          return (
+                            <Select
+                              size="small"
+                              value={selectValue}
+                              onChange={(e) => {
+                                console.log('Select onChange triggered for', checkIn.callsign, '- new value:', e.target.value);
+                                handleStatusChange(checkIn.id, e.target.value);
+                              }}
+                              onOpen={() => console.log('Select OPENED for', checkIn.callsign)}
+                              onClose={() => console.log('Select CLOSED for', checkIn.callsign)}
+                              sx={{ minWidth: 50 }}
+                              disabled={owner?.id === checkIn.user_id}
+                              MenuProps={{
+                                disableScrollLock: true,
+                                PaperProps: {
+                                  style: {
+                                    maxHeight: 300,
+                                  },
+                                },
+                              }}
+                            >
+                              {canManageCheckIns && (
+                                <>
+                                  <MenuItem value="ncs">👑</MenuItem>
+                                  <MenuItem value="logger">📋</MenuItem>
+                                </>
+                              )}
+                              <MenuItem value="checked_in">✅</MenuItem>
+                              <MenuItem value="listening">👂</MenuItem>
+                              <MenuItem value="away">⏸️</MenuItem>
+                              <MenuItem value="available">🚨</MenuItem>
+                            </Select>
+                          );
+                        })() : (
                           getStatusIcon(checkIn.status, checkIn)
                         )}
                       </TableCell>
