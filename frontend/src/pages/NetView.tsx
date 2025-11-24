@@ -848,13 +848,11 @@ const NetView: React.FC = () => {
                         {net.status === 'active' && checkIn.status !== 'checked_out' && (canManageCheckIns || checkIn.user_id === user?.id) ? (() => {
                           // Calculate value once
                           let selectValue = checkIn.status.toLowerCase();
+                          const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
                           if (owner?.id === checkIn.user_id) {
                             selectValue = 'ncs';
-                          } else {
-                            const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
-                            if (userRole) {
-                              selectValue = userRole.role.toLowerCase();
-                            }
+                          } else if (userRole) {
+                            selectValue = userRole.role.toLowerCase();
                           }
                           console.log('Select value for', checkIn.callsign, ':', selectValue, '| user_id:', checkIn.user_id);
                           
