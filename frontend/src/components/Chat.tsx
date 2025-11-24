@@ -112,7 +112,9 @@ const Chat: React.FC<ChatProps> = ({ netId, onNewMessage }) => {
       sx={{ 
         height: '100%',
         display: 'flex', 
-        flexDirection: 'column'
+        flexDirection: 'column',
+        border: 1,
+        borderColor: 'divider'
       }}
     >
       <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
@@ -123,11 +125,13 @@ const Chat: React.FC<ChatProps> = ({ netId, onNewMessage }) => {
         ref={messagesContainerRef}
         sx={{ 
           flexGrow: 1, 
-          overflow: 'auto', 
+          overflow: 'auto',
+          overflowY: 'scroll',
           p: 2,
           display: 'flex',
           flexDirection: 'column',
-          gap: 1
+          gap: 1,
+          minHeight: 0
         }}
       >
         {messages.length === 0 ? (

@@ -613,17 +613,6 @@ const NetView: React.FC = () => {
                   )}
                 </>
               )}
-              {net.frequencies.length > 0 && net.frequencies.map((freq) => (
-                <Chip 
-                  key={freq.id}
-                  label={`${freq.frequency || `${freq.network}${freq.talkgroup ? ` TG${freq.talkgroup}` : ''}`} ${freq.mode}`}
-                  size="small"
-                  color={freq.id === net.active_frequency_id ? 'primary' : 'default'}
-                  onClick={canManageCheckIns ? () => handleSetActiveFrequency(freq.id) : undefined}
-                  clickable={canManageCheckIns}
-                  sx={{ height: 20 }}
-                />
-              ))}
             </Box>
           </Box>
           <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', alignItems: 'flex-start' }}>
@@ -774,8 +763,23 @@ const NetView: React.FC = () => {
         {net.status === 'active' && (
           <Grid container spacing={2} sx={{ flexGrow: 1, overflow: 'hidden', minHeight: 0 }}>
             <Grid item xs={12} md={8} sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
-              <TableContainer sx={{ flexGrow: 1, overflow: 'auto' }}>
-              <Table size="small">
+              {net.frequencies.length > 0 && (
+                <Box sx={{ display: 'flex', gap: 0.5, mb: 0.5, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                  {net.frequencies.map((freq) => (
+                    <Chip 
+                      key={freq.id}
+                      label={`${freq.frequency || `${freq.network}${freq.talkgroup ? ` TG${freq.talkgroup}` : ''}`} ${freq.mode}`}
+                      size="small"
+                      color={freq.id === net.active_frequency_id ? 'primary' : 'default'}
+                      onClick={canManageCheckIns ? () => handleSetActiveFrequency(freq.id) : undefined}
+                      clickable={canManageCheckIns}
+                      sx={{ height: 20 }}
+                    />
+                  ))}
+                </Box>
+              )}
+              <TableContainer sx={{ flexGrow: 1, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: 1 }}>
+              <Table size="small" stickyHeader>
                 <TableHead>
                   <TableRow>
                     <TableCell>#</TableCell>
