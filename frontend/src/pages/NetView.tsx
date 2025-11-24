@@ -97,6 +97,7 @@ const NetView: React.FC = () => {
   const [owner, setOwner] = useState<any>(null);
   const [selectedUserId, setSelectedUserId] = useState<number | ''>('');
   const [selectedRole, setSelectedRole] = useState<string>('NCS');
+  const [activeSpeakerId, setActiveSpeakerId] = useState<number | null>(null);
   const [ws, setWs] = useState<WebSocket | null>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -400,6 +401,21 @@ const NetView: React.FC = () => {
     }
   };
 
+  const handleDeleteCheckIn = async (checkInId: number) => {
+    if (!confirm('Delete this check-in entry?')) return;
+    try {
+      await checkInApi.delete(checkInId);
+      fetchCheckIns();
+    } catch (error) {
+      console.error('Failed to delete check-in:', error);
+      alert('Failed to delete check-in');
+    }
+  };
+
+  const handleSetActiveSpeaker = (checkInId: number | null) => {
+    setActiveSpeakerId(activeSpeakerId === checkInId ? null : checkInId);
+  };
+
   if (!net) {
     return <Container><Typography>Loading...</Typography></Container>;
   }
@@ -644,8 +660,14 @@ const NetView: React.FC = () => {
                     <TableRow 
                       key={checkIn.id}
                       sx={{ 
-                        backgroundColor: checkIn.status === 'checked_out' ? 'action.disabledBackground' : 'inherit',
-                        opacity: checkIn.status === 'checked_out' ? 0.6 : 1
+                        backgroundColor: checkIn.id === activeSpeakerId 
+                          ? 'primary.light' 
+                          : checkIn.status === 'checked_out' 
+                          ? 'action.disabledBackground' 
+                          : 'inherit',
+                        opacity: checkIn.status === 'checked_out' ? 0.6 : 1,
+                        border: checkIn.id === activeSpeakerId ? 2 : 0,
+                        borderColor: checkIn.id === activeSpeakerId ? 'primary.main' : 'transparent'
                       }}
                     >
                       <TableCell>{index + 1}</TableCell>
@@ -680,7 +702,25 @@ const NetView: React.FC = () => {
                         {new Date(checkIn.checked_in_at).toLocaleTimeString()}
                       </TableCell>
                       <TableCell>
-                        {/* Edit/Delete actions - to be implemented */}
+                        {canManage && net.status === 'active' && checkIn.status !== 'checked_out' && (
+                          <IconButton
+                            size="small"
+                            onClick={() => handleSetActiveSpeaker(checkIn.id)}
+                            color={checkIn.id === activeSpeakerId ? 'primary' : 'default'}
+                            title="Mark as active speaker"
+                          >
+                            🎤
+                          </IconButton>
+                        )}
+                        {canManage && (
+                          <IconButton
+                            size="small"
+                            onClick={() => handleDeleteCheckIn(checkIn.id)}
+                            title="Delete check-in"
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
