@@ -157,6 +157,11 @@ const NetView: React.FC = () => {
       const message = JSON.parse(event.data);
       if (message.type === 'check_in') {
         fetchCheckIns(); // Refresh check-ins on new check-in
+      } else if (message.type === 'active_speaker') {
+        // Update active speaker when NCS changes it
+        if (message.data?.checkInId !== undefined) {
+          setActiveSpeakerId(message.data.checkInId);
+        }
       }
     };
 
@@ -413,7 +418,17 @@ const NetView: React.FC = () => {
   };
 
   const handleSetActiveSpeaker = (checkInId: number | null) => {
-    setActiveSpeakerId(activeSpeakerId === checkInId ? null : checkInId);
+    const newActiveSpeakerId = activeSpeakerId === checkInId ? null : checkInId;
+    setActiveSpeakerId(newActiveSpeakerId);
+    
+    // Broadcast active speaker change via WebSocket
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({
+        type: 'active_speaker',
+        data: { checkInId: newActiveSpeakerId },
+        timestamp: new Date().toISOString()
+      }));
+    }
   };
 
   if (!net) {
@@ -431,6 +446,21 @@ const NetView: React.FC = () => {
 
   const handleCheckOut = async () => {
     if (!userActiveCheckIn) return;
+    
+    // Check if user is NCS and if there are other NCS members
+    const isUserNCS = netRoles.some((role: any) => role.user_id === user?.id && role.role === 'NCS');
+    if (isUserNCS) {
+      const otherNCS = netRoles.filter((role: any) => 
+        role.role === 'NCS' && 
+        role.user_id !== user?.id &&
+        checkIns.some((ci: any) => ci.user_id === role.user_id && ci.status !== 'checked_out')
+      );
+      if (otherNCS.length === 0) {
+        alert('Cannot check out: You are the only active NCS. Please assign another NCS first.');
+        return;
+      }
+    }
+    
     try {
       await checkInApi.update(userActiveCheckIn.id, {
         status: 'checked_out',
@@ -661,13 +691,16 @@ const NetView: React.FC = () => {
                       key={checkIn.id}
                       sx={{ 
                         backgroundColor: checkIn.id === activeSpeakerId 
-                          ? 'primary.light' 
+                          ? 'action.selected' 
                           : checkIn.status === 'checked_out' 
                           ? 'action.disabledBackground' 
                           : 'inherit',
                         opacity: checkIn.status === 'checked_out' ? 0.6 : 1,
                         border: checkIn.id === activeSpeakerId ? 2 : 0,
-                        borderColor: checkIn.id === activeSpeakerId ? 'primary.main' : 'transparent'
+                        borderColor: checkIn.id === activeSpeakerId ? 'primary.main' : 'transparent',
+                        '& .MuiTableCell-root': checkIn.id === activeSpeakerId ? {
+                          fontWeight: 'bold'
+                        } : {}
                       }}
                     >
                       <TableCell>{index + 1}</TableCell>
