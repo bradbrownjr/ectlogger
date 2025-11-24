@@ -464,12 +464,17 @@ const NetView: React.FC = () => {
   };
 
   const handleStatusChange = async (checkInId: number, newStatus: string) => {
+    console.log('handleStatusChange called:', { checkInId, newStatus });
     const checkIn = checkIns.find((ci: CheckIn) => ci.id === checkInId);
-    if (!checkIn || !checkIn.user_id) return;
+    if (!checkIn || !checkIn.user_id) {
+      console.log('Check-in not found or no user_id:', checkIn);
+      return;
+    }
 
     try {
       // Handle role changes (NCS or Logger)
       if (newStatus === 'ncs' || newStatus === 'logger') {
+        console.log('Handling role change to:', newStatus);
         // First remove any existing role for this user
         const existingRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
         if (existingRole) {
@@ -490,17 +495,21 @@ const NetView: React.FC = () => {
         await fetchNetRoles();
         await fetchCheckIns();
       } else {
+        console.log('Handling regular status change to:', newStatus);
         // Handle regular status change
         // If user had a role and is changing to regular status, remove the role
         const existingRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
         if (existingRole && owner?.id !== checkIn.user_id) {
+          console.log('Removing existing role:', existingRole);
           await api.delete(`/nets/${netId}/roles/${existingRole.id}`);
           await fetchNetRoles();
         }
         
+        console.log('Updating check-in status');
         await checkInApi.update(checkInId, { status: newStatus });
         await fetchCheckIns();
       }
+      console.log('Status change completed successfully');
     } catch (error) {
       console.error('Failed to update status:', error);
       alert('Failed to update status');
@@ -843,10 +852,15 @@ const NetView: React.FC = () => {
                               // Show role if user has one
                               if (owner?.id === checkIn.user_id) return 'ncs';
                               const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
-                              if (userRole) return userRole.role.toLowerCase();
-                              return checkIn.status;
+                              const value = userRole ? userRole.role.toLowerCase() : checkIn.status;
+                              console.log('Select value for', checkIn.callsign, ':', value);
+                              return value;
                             })()}
-                            onChange={(e) => handleStatusChange(checkIn.id, e.target.value)}
+                            onChange={(e) => {
+                              console.log('Select onChange triggered:', e.target.value);
+                              handleStatusChange(checkIn.id, e.target.value);
+                            }}
+                            onClick={() => console.log('Select clicked for', checkIn.callsign)}
                             sx={{ minWidth: 50 }}
                             disabled={owner?.id === checkIn.user_id} // Owner is always NCS
                           >
