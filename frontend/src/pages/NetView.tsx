@@ -615,7 +615,7 @@ const NetView: React.FC = () => {
               )}
             </Box>
             {net.status === 'active' && net.frequencies.length > 0 && (
-              <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexWrap: 'wrap', ml: 'auto', maxWidth: '66.666%', justifyContent: 'flex-end' }}>
+              <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexWrap: 'wrap', ml: 'auto', width: { md: 'calc(66.666% - 4px)' }, justifyContent: 'flex-end' }}>
                 {net.frequencies.map((freq) => (
                   <Chip 
                     key={freq.id}
