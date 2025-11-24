@@ -652,47 +652,6 @@ const NetView: React.FC = () => {
         <Box sx={{ flexShrink: 0 }}>
           <Typography variant="h5" component="h1" sx={{ mb: 0 }}>
             {net.name}
-          try {
-            if ((newStatus === 'ncs' || newStatus === 'logger') && checkIn.user_id) {
-              console.log('[handleStatusChange] Role assignment branch for:', newStatus, '| checkIn:', checkIn);
-              // Remove any existing role
-              const existingRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
-              if (existingRole) {
-                console.log('[handleStatusChange] Removing existing role:', existingRole);
-                await api.delete(`/nets/${netId}/roles/${existingRole.id}`);
-              }
-              // Assign new role
-              console.log('[handleStatusChange] Assigning new role:', newStatus.toUpperCase(), '| user_id:', checkIn.user_id);
-              await api.post(`/nets/${netId}/roles`, null, {
-                params: {
-                  user_id: checkIn.user_id,
-                  role: newStatus.toUpperCase()
-                }
-              });
-              // Always set status to checked_in for roles
-              await checkInApi.update(checkInId, { status: 'checked_in' });
-              await fetchNetRoles();
-              await fetchCheckIns();
-              console.log('[handleStatusChange] fetchCheckIns called after role change');
-            } else if (newStatus === 'ncs' || newStatus === 'logger') {
-              console.log('[handleStatusChange] Cannot assign role to check-in without user_id');
-              alert('Cannot assign roles to stations without user accounts');
-              return;
-            } else {
-              // Standard status update
-              await checkInApi.update(checkInId, { status: newStatus });
-              await fetchCheckIns();
-              console.log('[handleStatusChange] fetchCheckIns called after status change');
-            }
-          } catch (error) {
-            if (error.response) {
-              console.error('Failed to update status:', error.response);
-              alert('Failed to update status: ' + (error.response.data?.detail || error.response.statusText));
-            } else {
-              console.error('Failed to update status:', error);
-              alert('Failed to update status: ' + error.message);
-            }
-          }
               </Box>
             </Grid>
             <Grid item xs={12} md={4} sx={{ pl: { md: 0.5 } }}>
