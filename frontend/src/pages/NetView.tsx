@@ -420,7 +420,16 @@ const NetView: React.FC = () => {
     }
   };
 
-  const getStatusIcon = (status: string) => {
+  const getStatusIcon = (status: string, checkIn?: CheckIn) => {
+    // Show role icons for users with active roles
+    if (checkIn) {
+      if (owner?.id === checkIn.user_id) return '👑';
+      const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
+      if (userRole?.role === 'ncs') return '👑';
+      if (userRole?.role === 'logger') return '📋';
+    }
+    
+    // Show standard status icons
     switch (status) {
       case 'checked_in': return '✅'; // Standard
       case 'listening': return '👂'; // Just listening
@@ -806,7 +815,7 @@ const NetView: React.FC = () => {
                             <MenuItem value="available">🚨</MenuItem>
                           </Select>
                         ) : (
-                          getStatusIcon(checkIn.status)
+                          getStatusIcon(checkIn.status, checkIn)
                         )}
                       </TableCell>
                       <TableCell>
@@ -824,9 +833,6 @@ const NetView: React.FC = () => {
                             />
                           )}
                           <Box>
-                            {owner?.id === checkIn.user_id && '👑 '}
-                            {netRoles.find((r: any) => r.user_id === checkIn.user_id && r.role === 'ncs') && '👑 '}
-                            {netRoles.find((r: any) => r.user_id === checkIn.user_id && r.role === 'logger') && '📋 '}
                             {checkIn.callsign}
                             {checkIn.is_recheck && ' 🔄'}
                           </Box>
