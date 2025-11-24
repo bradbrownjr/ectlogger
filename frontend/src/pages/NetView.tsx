@@ -188,15 +188,22 @@ const NetView: React.FC = () => {
       if (message.type === 'check_in') {
         fetchCheckIns(); // Refresh check-ins on new check-in
       } else if (message.type === 'active_speaker') {
-        // Update active speaker when NCS changes it
         if (message.data?.checkInId !== undefined) {
           setActiveSpeakerId(message.data.checkInId);
         }
       } else if (message.type === 'active_frequency') {
-        // Update active frequency when NCS changes it
         if (message.data?.frequencyId !== undefined) {
-          fetchNet(); // Refresh net to get updated active frequency
+          fetchNet();
         }
+      } else if (message.type === 'chat_message') {
+        if (typeof window !== 'undefined' && window.dispatchEvent) {
+          window.dispatchEvent(new CustomEvent('newChatMessage', { detail: message.data }));
+        }
+      } else if (message.type === 'role_change') {
+        fetchNetRoles();
+        fetchCheckIns();
+      } else if (message.type === 'status_change') {
+        fetchCheckIns();
       }
     };
 

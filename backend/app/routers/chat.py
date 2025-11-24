@@ -44,6 +44,21 @@ async def create_message(
     )
     chat_message = result.scalar_one()
     
+    # Broadcast chat message via WebSocket
+    from app.main import manager
+    import datetime
+    await manager.broadcast({
+        "type": "chat_message",
+        "data": {
+            "id": chat_message.id,
+            "net_id": chat_message.net_id,
+            "user_id": chat_message.user_id,
+            "callsign": chat_message.user.callsign if chat_message.user else "",
+            "message": chat_message.message,
+            "created_at": chat_message.created_at.isoformat() if hasattr(chat_message.created_at, 'isoformat') else str(chat_message.created_at)
+        },
+        "timestamp": datetime.datetime.utcnow().isoformat()
+    }, net_id)
     return ChatMessageResponse.from_orm(chat_message)
 
 

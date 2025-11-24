@@ -24,6 +24,18 @@ interface ChatProps {
 }
 
 const Chat: React.FC<ChatProps> = ({ netId, onNewMessage }) => {
+    useEffect(() => {
+      // Listen for chat_message events dispatched from NetView WebSocket
+      const handleNewChatMessage = (event: any) => {
+        const chatMsg = event.detail;
+        setMessages((prev) => [...prev, chatMsg]);
+        if (onNewMessage) onNewMessage(chatMsg);
+      };
+      window.addEventListener('newChatMessage', handleNewChatMessage);
+      return () => {
+        window.removeEventListener('newChatMessage', handleNewChatMessage);
+      };
+    }, []);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
