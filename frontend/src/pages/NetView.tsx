@@ -751,24 +751,28 @@ const NetView: React.FC = () => {
         {net.status === 'active' && (
           <Grid container spacing={0} sx={{ mt: 0.5, flex: 1, minHeight: 0 }}>
             <Grid item xs={12} md={8} sx={{ pr: { md: 0.5 }, display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%' }}>
-              <TableContainer sx={{ flex: 1, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: '4px 4px 0 0', borderBottom: 0, minHeight: 0 }}>
-              <Table size="small" stickyHeader>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>#</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Callsign *</TableCell>
-                    {net?.field_config?.name?.enabled && <TableCell>Name {net.field_config.name.required && '*'}</TableCell>}
-                    {net?.field_config?.location?.enabled && <TableCell>Location {net.field_config.location.required && '*'}</TableCell>}
-                    {net?.field_config?.skywarn_number?.enabled && <TableCell>SKYWARN # {net.field_config.skywarn_number.required && '*'}</TableCell>}
-                    {net?.field_config?.weather_observation?.enabled && <TableCell>Weather {net.field_config.weather_observation.required && '*'}</TableCell>}
-                    {net?.field_config?.power_source?.enabled && <TableCell>Power {net.field_config.power_source.required && '*'}</TableCell>}
-                    {net?.field_config?.notes?.enabled && <TableCell>Notes {net.field_config.notes.required && '*'}</TableCell>}
-                    <TableCell>Time</TableCell>
-                    {canManage && <TableCell>Actions</TableCell>}
-                  </TableRow>
-                </TableHead>
-                <TableBody>
+              <Box sx={{ border: 1, borderColor: 'divider', borderRadius: '4px 4px 0 0', borderBottom: 0, flexShrink: 0 }}>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>#</TableCell>
+                      <TableCell>Status</TableCell>
+                      <TableCell>Callsign *</TableCell>
+                      {net?.field_config?.name?.enabled && <TableCell>Name {net.field_config.name.required && '*'}</TableCell>}
+                      {net?.field_config?.location?.enabled && <TableCell>Location {net.field_config.location.required && '*'}</TableCell>}
+                      {net?.field_config?.skywarn_number?.enabled && <TableCell>SKYWARN # {net.field_config.skywarn_number.required && '*'}</TableCell>}
+                      {net?.field_config?.weather_observation?.enabled && <TableCell>Weather {net.field_config.weather_observation.required && '*'}</TableCell>}
+                      {net?.field_config?.power_source?.enabled && <TableCell>Power {net.field_config.power_source.required && '*'}</TableCell>}
+                      {net?.field_config?.notes?.enabled && <TableCell>Notes {net.field_config.notes.required && '*'}</TableCell>}
+                      <TableCell>Time</TableCell>
+                      {canManage && <TableCell>Actions</TableCell>}
+                    </TableRow>
+                  </TableHead>
+                </Table>
+              </Box>
+              <TableContainer sx={{ flex: 1, overflow: 'auto', border: 1, borderColor: 'divider', borderTop: 0, minHeight: 0 }}>
+                <Table size="small">
+                  <TableBody>
                   {/* Existing check-ins */}
                   {checkIns.map((checkIn, index) => (
                     <TableRow 
