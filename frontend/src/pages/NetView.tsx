@@ -590,8 +590,8 @@ const NetView: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="xl" sx={{ height: 'calc(100vh - 64px)', py: 1, px: { xs: 1, sm: 2 }, overflow: 'hidden' }}>
-      <Paper sx={{ p: { xs: 1, sm: 2 }, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <Container maxWidth="xl" sx={{ height: 'calc(100vh - 64px)', py: 0.5, px: { xs: 0.5, sm: 1 }, overflow: 'hidden' }}>
+      <Paper sx={{ p: { xs: 0.5, sm: 1 }, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <Box sx={{ mb: 1 }}>
           <Typography variant="h5" component="h1" sx={{ mb: 0.5 }}>
             {net.name}
@@ -613,17 +613,6 @@ const NetView: React.FC = () => {
                   )}
                 </>
               )}
-              {net.frequencies.length > 0 && net.frequencies.map((freq) => (
-                <Chip 
-                  key={freq.id}
-                  label={`${freq.frequency || `${freq.network}${freq.talkgroup ? ` TG${freq.talkgroup}` : ''}`} ${freq.mode}`}
-                  size="small"
-                  color={freq.id === net.active_frequency_id ? 'primary' : 'default'}
-                  onClick={canManageCheckIns ? () => handleSetActiveFrequency(freq.id) : undefined}
-                  clickable={canManageCheckIns}
-                  sx={{ height: 20 }}
-                />
-              ))}
             </Box>
             <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', alignItems: 'center' }}>
             {canManage && net.status === 'draft' && (
@@ -728,52 +717,36 @@ const NetView: React.FC = () => {
           </Box>
         </Box>
 
-        {(netRoles.length > 0 || canManage) && (
-          <Box sx={{ mb: 1 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-              <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>Net Control Staff</Typography>
-              {canManage && (
-                <Button 
-                  size="small" 
-                  variant="outlined" 
-                  onClick={() => {
-                    fetchAllUsers();
-                    setRoleDialogOpen(true);
-                  }}
-                >
-                  Manage Roles
-                </Button>
-              )}
-            </Box>
-            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-              {owner && (
-                <Chip 
-                  label={`${owner.callsign || owner.name || owner.email} (OWNER)`}
-                  color="primary"
-                  size="small"
-                />
-              )}
-              {netRoles.map((role) => (
-                <Chip 
-                  key={role.id}
-                  label={`${role.callsign || role.name || role.email} (${role.role})`}
-                  color="secondary"
-                  size="small"
-                  onDelete={canManage ? () => handleRemoveRole(role.id) : undefined}
-                />
-              ))}
-              {!owner && netRoles.length === 0 && (
-                <Typography variant="body2" color="text.secondary">
-                  No staff roles assigned yet
-                </Typography>
-              )}
-            </Box>
-          </Box>
-        )}
-
         {net.status === 'active' && (
-          <Grid container spacing={2} sx={{ flexGrow: 1, overflow: 'hidden', minHeight: 0 }}>
+          <Grid container spacing={1} sx={{ flexGrow: 1, overflow: 'hidden', minHeight: 0 }}>
             <Grid item xs={12} md={8} sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                {canManage && (
+                  <Button 
+                    size="small" 
+                    variant="outlined" 
+                    onClick={() => {
+                      fetchAllUsers();
+                      setRoleDialogOpen(true);
+                    }}
+                  >
+                    Manage Roles
+                  </Button>
+                )}
+                <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', ml: 'auto' }}>
+                  {net.frequencies.length > 0 && net.frequencies.map((freq) => (
+                    <Chip 
+                      key={freq.id}
+                      label={`${freq.frequency || `${freq.network}${freq.talkgroup ? ` TG${freq.talkgroup}` : ''}`} ${freq.mode}`}
+                      size="small"
+                      color={freq.id === net.active_frequency_id ? 'primary' : 'default'}
+                      onClick={canManageCheckIns ? () => handleSetActiveFrequency(freq.id) : undefined}
+                      clickable={canManageCheckIns}
+                      sx={{ height: 20 }}
+                    />
+                  ))}
+                </Box>
+              </Box>
               <TableContainer sx={{ flexGrow: 1, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: 1 }}>
               <Table size="small" stickyHeader>
                 <TableHead>
@@ -843,6 +816,9 @@ const NetView: React.FC = () => {
                             />
                           )}
                           <Box>
+                            {owner?.id === checkIn.user_id && '👑 '}
+                            {netRoles.find((r: any) => r.user_id === checkIn.user_id && r.role === 'ncs') && '👑 '}
+                            {netRoles.find((r: any) => r.user_id === checkIn.user_id && r.role === 'logger') && '📋 '}
                             {checkIn.callsign}
                             {checkIn.is_recheck && ' 🔄'}
                           </Box>
