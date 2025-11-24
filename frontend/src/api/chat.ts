@@ -1,4 +1,4 @@
-import api from './config';
+import api from '../services/api';
 
 export interface ChatMessage {
   id: number;
