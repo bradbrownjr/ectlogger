@@ -114,7 +114,9 @@ const Chat: React.FC<ChatProps> = ({ netId, onNewMessage }) => {
         flexDirection: 'column',
         border: 1,
         borderColor: 'divider',
-        height: '100%'
+        borderRadius: '4px',
+        height: '100%',
+        overflow: 'hidden'
       }}
     >
       <Box sx={{ 
