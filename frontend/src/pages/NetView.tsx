@@ -101,7 +101,7 @@ const NetView: React.FC = () => {
   const [activeSpeakerId, setActiveSpeakerId] = useState<number | null>(null);
   const [toastMessage, setToastMessage] = useState<string>('');
   const [ws, setWs] = useState<WebSocket | null>(null);
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   // Check-in form state
@@ -513,7 +513,7 @@ const NetView: React.FC = () => {
                 Close Net
               </Button>
             )}
-            {net.status === 'active' && (
+            {isAuthenticated && net.status === 'active' && (
               userActiveCheckIn ? (
                 <Button 
                   variant="outlined" 
@@ -772,7 +772,8 @@ const NetView: React.FC = () => {
                     </TableRow>
                   ))}
 
-                  {/* New check-in row */}
+                  {/* New check-in row - only show for authenticated users */}
+                  {isAuthenticated && (
                   <TableRow sx={{ backgroundColor: 'action.hover' }}>
                     <TableCell>{checkIns.length + 1}</TableCell>
                     <TableCell>➕</TableCell>
@@ -913,6 +914,7 @@ const NetView: React.FC = () => {
                       </Button>
                     </TableCell>
                   </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </TableContainer>

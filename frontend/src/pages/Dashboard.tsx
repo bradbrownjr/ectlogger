@@ -32,7 +32,7 @@ const Dashboard: React.FC = () => {
   const [nets, setNets] = useState<Net[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
 
   useEffect(() => {
     fetchNets();
@@ -166,14 +166,16 @@ const Dashboard: React.FC = () => {
         </Grid>
       )}
 
-      <Fab
-        color="primary"
-        aria-label="create net"
-        sx={{ position: 'fixed', bottom: 16, right: 16 }}
-        onClick={() => navigate('/nets/create')}
-      >
-        <AddIcon />
-      </Fab>
+      {isAuthenticated && (
+        <Fab
+          color="primary"
+          aria-label="create net"
+          sx={{ position: 'fixed', bottom: 16, right: 16 }}
+          onClick={() => navigate('/nets/create')}
+        >
+          <AddIcon />
+        </Fab>
+      )}
     </Container>
   );
 };

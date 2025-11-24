@@ -9,7 +9,7 @@ import Brightness7Icon from '@mui/icons-material/Brightness7';
 
 const Navbar: React.FC = () => {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
   const { mode, toggleColorMode } = useThemeMode();
 
   const handleLogout = () => {
@@ -35,24 +35,32 @@ const Navbar: React.FC = () => {
           <Button color="inherit" onClick={() => navigate('/scheduler')}>
             Nets
           </Button>
-          {user?.role === 'admin' && (
+          {isAuthenticated && user?.role === 'admin' && (
             <Button color="inherit" onClick={() => navigate('/admin/users')}>
               Admin
             </Button>
           )}
-          <Button 
-            color="inherit" 
-            onClick={() => navigate('/profile')}
-            sx={{ textTransform: 'none' }}
-          >
-            {user?.callsign || user?.name || user?.email}
-          </Button>
+          {isAuthenticated && (
+            <Button 
+              color="inherit" 
+              onClick={() => navigate('/profile')}
+              sx={{ textTransform: 'none' }}
+            >
+              {user?.callsign || user?.name || user?.email}
+            </Button>
+          )}
           <IconButton color="inherit" onClick={toggleColorMode} title={`Switch to ${mode === 'light' ? 'dark' : 'light'} mode`}>
             {mode === 'light' ? <Brightness4Icon /> : <Brightness7Icon />}
           </IconButton>
-          <Button color="inherit" startIcon={<LogoutIcon />} onClick={handleLogout}>
-            Logout
-          </Button>
+          {isAuthenticated ? (
+            <Button color="inherit" startIcon={<LogoutIcon />} onClick={handleLogout}>
+              Logout
+            </Button>
+          ) : (
+            <Button color="inherit" onClick={() => navigate('/login')}>
+              Login
+            </Button>
+          )}
         </Box>
       </Toolbar>
     </AppBar>

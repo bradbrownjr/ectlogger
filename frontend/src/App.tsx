@@ -54,20 +54,13 @@ const AppRoutes: React.FC = () => {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      {isAuthenticated && <Navbar />}
+      <Navbar />
       {isAuthenticated && <ProfileSetupDialog />}
       <Box component="main" sx={{ flexGrow: 1, bgcolor: 'background.default' }}>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/auth/verify" element={<VerifyMagicLink />} />
-          <Route
-            path="/dashboard"
-            element={
-              <PrivateRoute>
-                <Dashboard />
-              </PrivateRoute>
-            }
-          />
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route
             path="/nets/create"
             element={
@@ -84,14 +77,7 @@ const AppRoutes: React.FC = () => {
               </PrivateRoute>
             }
           />
-          <Route
-            path="/nets/:netId"
-            element={
-              <PrivateRoute>
-                <NetView />
-              </PrivateRoute>
-            }
-          />
+          <Route path="/nets/:netId" element={<NetView />} />
           <Route
             path="/admin/users"
             element={
@@ -132,7 +118,7 @@ const AppRoutes: React.FC = () => {
               </PrivateRoute>
             }
           />
-          <Route path="/" element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} />} />
+          <Route path="/" element={<Navigate to="/dashboard" />} />
         </Routes>
       </Box>
     </Box>
