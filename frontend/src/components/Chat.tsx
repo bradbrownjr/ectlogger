@@ -119,14 +119,17 @@ const Chat: React.FC<ChatProps> = ({ netId, onNewMessage }) => {
     >
       <Box sx={{ 
         px: 2, 
-        py: 1.5,
+        py: 2,
         borderBottom: 1, 
         borderColor: 'divider', 
         flexShrink: 0,
-        backgroundColor: 'action.hover',
-        fontWeight: 500
+        backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)',
+        color: 'text.secondary',
+        fontSize: '0.875rem',
+        fontWeight: 500,
+        lineHeight: 1.5
       }}>
-        <Typography variant="body2" sx={{ fontWeight: 500 }}>Chat</Typography>
+        Chat
       </Box>
 
       <List 

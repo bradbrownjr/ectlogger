@@ -916,7 +916,7 @@ const NetView: React.FC = () => {
               <Paper sx={{ border: 1, borderColor: 'divider', borderTop: 0, borderRadius: '0 0 4px 4px', p: 1, flexShrink: 0 }}>
                 <Table size="small">
                   <TableBody>
-                  <TableRow sx={{ '& .MuiTableCell-root': { border: 0, py: 0.5 } }}>
+                  <TableRow sx={{ '& .MuiTableCell-root': { border: 0, py: 0.25 } }}>
                     <TableCell>{checkIns.length + 1}</TableCell>
                     <TableCell>➕</TableCell>
                     <TableCell>
