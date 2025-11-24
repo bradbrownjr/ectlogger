@@ -387,6 +387,25 @@ const NetView: React.FC = () => {
   const isAdmin = user?.role === 'admin';
   const canManage = isOwner || isAdmin;
 
+  // Find the user's active check-in (not checked out)
+  const userActiveCheckIn = checkIns.find(
+    (checkIn: any) => checkIn.user_id === user?.id && checkIn.status !== 'checked_out'
+  );
+
+  const handleCheckOut = async () => {
+    if (!userActiveCheckIn) return;
+    try {
+      await checkInApi.update(userActiveCheckIn.id, {
+        status: 'checked_out',
+        checked_out_at: new Date().toISOString(),
+      });
+      fetchCheckIns();
+    } catch (error) {
+      console.error('Failed to check out:', error);
+      alert('Failed to check out');
+    }
+  };
+
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       <Paper sx={{ p: 3 }}>
@@ -414,34 +433,45 @@ const NetView: React.FC = () => {
               </Button>
             )}
             {net.status === 'active' && (
-              <Button 
-                variant="contained" 
-                color="primary" 
-                onClick={() => {
-                  // Pre-fill form with user's profile data
-                  if (user) {
-                    setCheckInForm({
-                      callsign: user.callsign || '',
-                      name: user.name || '',
-                      location: user.location || '',
-                      skywarn_number: '',
-                      weather_observation: '',
-                      power_source: '',
-                      feedback: '',
-                      notes: '',
-                    });
-                  }
-                  // Scroll to and focus the callsign field
-                  const callsignField = document.querySelector('input[placeholder="Callsign"]') as HTMLInputElement;
-                  if (callsignField) {
-                    callsignField.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    callsignField.focus();
-                  }
-                }}
-                sx={{ mr: 1 }}
-              >
-                Check In
-              </Button>
+              userActiveCheckIn ? (
+                <Button 
+                  variant="outlined" 
+                  color="error"
+                  onClick={handleCheckOut}
+                  sx={{ mr: 1 }}
+                >
+                  Check Out
+                </Button>
+              ) : (
+                <Button 
+                  variant="contained" 
+                  color="primary" 
+                  onClick={() => {
+                    // Pre-fill form with user's profile data
+                    if (user) {
+                      setCheckInForm({
+                        callsign: user.callsign || '',
+                        name: user.name || '',
+                        location: user.location || '',
+                        skywarn_number: '',
+                        weather_observation: '',
+                        power_source: '',
+                        feedback: '',
+                        notes: '',
+                      });
+                    }
+                    // Scroll to and focus the callsign field
+                    const callsignField = document.querySelector('input[placeholder="Callsign"]') as HTMLInputElement;
+                    if (callsignField) {
+                      callsignField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      callsignField.focus();
+                    }
+                  }}
+                  sx={{ mr: 1 }}
+                >
+                  Check In
+                </Button>
+              )
             )}
             {net.status === 'closed' && (
               <>
@@ -590,7 +620,13 @@ const NetView: React.FC = () => {
                 <TableBody>
                   {/* Existing check-ins */}
                   {checkIns.map((checkIn, index) => (
-                    <TableRow key={checkIn.id}>
+                    <TableRow 
+                      key={checkIn.id}
+                      sx={{ 
+                        backgroundColor: checkIn.status === 'checked_out' ? 'action.disabledBackground' : 'inherit',
+                        opacity: checkIn.status === 'checked_out' ? 0.6 : 1
+                      }}
+                    >
                       <TableCell>{index + 1}</TableCell>
                       <TableCell>{getStatusIcon(checkIn.status)}</TableCell>
                       <TableCell>
