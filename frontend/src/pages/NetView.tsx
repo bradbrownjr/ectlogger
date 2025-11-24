@@ -409,6 +409,15 @@ const NetView: React.FC = () => {
     }
   };
 
+  const formatFrequencyDisplay = (freq: any) => {
+    if (!freq) return '';
+    if (freq.frequency) {
+      return `${freq.frequency} MHz${freq.mode ? ` (${freq.mode})` : ''}`;
+    }
+    // Digital mode without frequency (DMR/YSF)
+    return `${freq.channel || freq.talkgroup || 'Digital'}${freq.mode ? ` (${freq.mode})` : ''}`;
+  };
+
   const handleStatusChange = async (checkInId: number, newStatus: string) => {
     try {
       await checkInApi.update(checkInId, { status: newStatus });
@@ -783,13 +792,16 @@ const NetView: React.FC = () => {
                         <Box>
                           {checkIn.callsign}
                           {checkIn.is_recheck && ' 🔄'}
-                          {checkIn.frequency_id && (
-                            <Chip 
-                              label={`📡 ${net.frequencies.find((f: any) => f.id === checkIn.frequency_id)?.frequency || ''} MHz`}
-                              size="small"
-                              sx={{ ml: 1, height: 20, fontSize: '0.75rem' }}
-                            />
-                          )}
+                          {checkIn.frequency_id && (() => {
+                            const freq = net.frequencies.find((f: any) => f.id === checkIn.frequency_id);
+                            return freq ? (
+                              <Chip 
+                                label={`📡 ${formatFrequencyDisplay(freq)}`}
+                                size="small"
+                                sx={{ ml: 1, height: 20, fontSize: '0.75rem' }}
+                              />
+                            ) : null;
+                          })()}
                           {checkIn.available_frequencies && checkIn.available_frequencies.length > 0 && (
                             <Box sx={{ mt: 0.5 }}>
                               {checkIn.available_frequencies.map((freqId: number) => {
@@ -797,7 +809,7 @@ const NetView: React.FC = () => {
                                 return freq ? (
                                   <Chip 
                                     key={freqId}
-                                    label={`${freq.frequency} MHz`}
+                                    label={formatFrequencyDisplay(freq)}
                                     size="small"
                                     variant="outlined"
                                     sx={{ mr: 0.5, height: 18, fontSize: '0.7rem' }}
@@ -994,7 +1006,7 @@ const NetView: React.FC = () => {
                           multiple
                           size="small"
                           options={net.frequencies || []}
-                          getOptionLabel={(option: any) => `${option.frequency} MHz ${option.mode ? `(${option.mode})` : ''}`}
+                          getOptionLabel={(option: any) => formatFrequencyDisplay(option)}
                           value={net.frequencies.filter((f: any) => checkInForm.available_frequency_ids.includes(f.id))}
                           onChange={(_, newValue: any[]) => {
                             setCheckInForm({
@@ -1014,7 +1026,7 @@ const NetView: React.FC = () => {
                             value.map((option: any, index: number) => (
                               <Chip
                                 {...getTagProps({ index })}
-                                label={`${option.frequency} MHz`}
+                                label={formatFrequencyDisplay(option)}
                                 size="small"
                               />
                             ))
