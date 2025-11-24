@@ -464,22 +464,24 @@ const NetView: React.FC = () => {
   };
 
   const handleStatusChange = async (checkInId: number, newStatus: string) => {
-    console.log('handleStatusChange called:', { checkInId, newStatus });
+    console.log('[handleStatusChange] called:', { checkInId, newStatus });
     const checkIn = checkIns.find((ci: any) => ci.id === checkInId);
     if (!checkIn) {
-      console.log('Check-in not found');
+      console.log('[handleStatusChange] Check-in not found');
       return;
     }
 
     try {
       if ((newStatus === 'ncs' || newStatus === 'logger') && checkIn.user_id) {
-        console.log('Role assignment branch for:', newStatus);
+        console.log('[handleStatusChange] Role assignment branch for:', newStatus, '| checkIn:', checkIn);
         // Remove any existing role
         const existingRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
         if (existingRole) {
+          console.log('[handleStatusChange] Removing existing role:', existingRole);
           await api.delete(`/nets/${netId}/roles/${existingRole.id}`);
         }
         // Assign new role
+        console.log('[handleStatusChange] Assigning new role:', newStatus.toUpperCase(), '| user_id:', checkIn.user_id);
         await api.post(`/nets/${netId}/roles`, null, {
           params: {
             user_id: checkIn.user_id,
@@ -490,28 +492,29 @@ const NetView: React.FC = () => {
         await checkInApi.update(checkInId, { status: 'checked_in' });
         await fetchNetRoles();
         await fetchCheckIns();
-        console.log('fetchCheckIns called after role change');
+        console.log('[handleStatusChange] fetchCheckIns called after role change');
       } else if (newStatus === 'ncs' || newStatus === 'logger') {
-        console.log('Cannot assign role to check-in without user_id');
+        console.log('[handleStatusChange] Cannot assign role to check-in without user_id');
         alert('Cannot assign roles to stations without user accounts');
         return;
       } else {
-        console.log('Status change branch for:', newStatus);
+        console.log('[handleStatusChange] Status change branch for:', newStatus);
         // Remove role if switching to a regular status
         if (checkIn.user_id) {
           const existingRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
           if (existingRole && owner?.id !== checkIn.user_id) {
+            console.log('[handleStatusChange] Removing role because switching to status:', existingRole);
             await api.delete(`/nets/${netId}/roles/${existingRole.id}`);
             await fetchNetRoles();
           }
         }
         await checkInApi.update(checkInId, { status: newStatus });
         await fetchCheckIns();
-        console.log('fetchCheckIns called after status change');
+        console.log('[handleStatusChange] fetchCheckIns called after status change');
       }
-      console.log('Status change completed successfully');
+      console.log('[handleStatusChange] Status change completed successfully');
     } catch (error) {
-      console.error('Failed to update status:', error);
+      console.error('[handleStatusChange] Failed to update status:', error);
       alert('Failed to update status');
     }
   };
@@ -860,14 +863,14 @@ const NetView: React.FC = () => {
                           if (!validValues.includes(selectValue)) {
                             selectValue = 'checked_in';
                           }
-                          console.log('Select value for', checkIn.callsign, ':', selectValue, '| user_id:', checkIn.user_id);
+                          console.log('[Select value logic] callsign:', checkIn.callsign, '| selectValue:', selectValue, '| user_id:', checkIn.user_id, '| userRole:', userRole);
 
                           return (
                             <Select
                               size="small"
                               value={selectValue}
                               onChange={async (e) => {
-                                console.log('Select onChange triggered for', checkIn.callsign, '- new value:', e.target.value);
+                                console.log('[Select onChange] callsign:', checkIn.callsign, '| new value:', e.target.value, '| checkInId:', checkIn.id);
                                 await handleStatusChange(checkIn.id, e.target.value);
                                 // Force refresh after role assignment
                                 await fetchNetRoles();
