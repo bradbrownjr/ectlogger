@@ -590,9 +590,9 @@ const NetView: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="xl" sx={{ height: 'calc(100vh - 72px)', py: 0, px: { xs: 0.5, sm: 1 }, overflow: 'hidden', display: 'flex' }}>
-      <Paper sx={{ p: 0.5, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <Box sx={{ flexShrink: 0 }}>
+    <Container maxWidth="xl" sx={{ py: 0, px: { xs: 0.5, sm: 1 } }}>
+      <Paper sx={{ p: 0.5 }}>
+        <Box>
           <Typography variant="h5" component="h1" sx={{ mb: 0 }}>
             {net.name}
           </Typography>
@@ -601,7 +601,7 @@ const NetView: React.FC = () => {
               {net.description}
             </Typography>
           )}
-          <Grid container spacing={0} sx={{ flexShrink: 0, mb: 0.25 }}>
+          <Grid container spacing={0} sx={{ mb: 0.25 }}>
             <Grid item xs={12} md={8} sx={{ pr: { md: 0.5 } }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 0.5 }}>
                 <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -748,9 +748,9 @@ const NetView: React.FC = () => {
         </Box>
 
         {net.status === 'active' && (
-          <Grid container spacing={0} sx={{ flexGrow: 1, overflow: 'hidden', minHeight: 0 }}>
-            <Grid item xs={12} md={8} sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden', pr: { md: 0.5 } }}>
-              <TableContainer sx={{ flexGrow: 1, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: 1 }}>
+          <Grid container spacing={0} sx={{ mt: 0.5 }}>
+            <Grid item xs={12} md={8} sx={{ pr: { md: 0.5 } }}>
+              <TableContainer sx={{ maxHeight: 'calc(100vh - 220px)', overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: 1 }}>
               <Table size="small" stickyHeader>
                 <TableHead>
                   <TableRow>
@@ -1093,8 +1093,10 @@ const NetView: React.FC = () => {
             </Box>
             </Grid>
             
-            <Grid item xs={12} md={4} sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden', pl: { md: 0.5 } }}>
-              <Chat netId={Number(netId)} />
+            <Grid item xs={12} md={4} sx={{ pl: { md: 0.5 } }}>
+              <Box sx={{ maxHeight: 'calc(100vh - 220px)' }}>
+                <Chat netId={Number(netId)} />
+              </Box>
             </Grid>
           </Grid>
         )}

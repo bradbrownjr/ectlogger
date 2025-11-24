@@ -110,28 +110,30 @@ const Chat: React.FC<ChatProps> = ({ netId, onNewMessage }) => {
   return (
     <Paper 
       sx={{ 
-        height: '100%',
         display: 'flex', 
         flexDirection: 'column',
         border: 1,
-        borderColor: 'divider'
+        borderColor: 'divider',
+        height: '100%'
       }}
     >
-      <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+      <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider', flexShrink: 0 }}>
         <Typography variant="h6">Chat</Typography>
       </Box>
 
       <List 
         ref={messagesContainerRef}
         sx={{ 
-          flexGrow: 1, 
+          flexGrow: 1,
+          flexShrink: 1,
           overflow: 'auto',
           overflowY: 'scroll',
           p: 2,
           display: 'flex',
           flexDirection: 'column',
           gap: 1,
-          minHeight: 0
+          minHeight: 0,
+          maxHeight: 'calc(100vh - 370px)'
         }}
       >
         {messages.length === 0 ? (
@@ -191,7 +193,7 @@ const Chat: React.FC<ChatProps> = ({ netId, onNewMessage }) => {
         <div ref={messagesEndRef} />
       </List>
 
-      <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
+      <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider', flexShrink: 0 }}>
         <Box sx={{ display: 'flex', gap: 1 }}>
           <TextField
             fullWidth
