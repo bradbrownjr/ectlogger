@@ -24,27 +24,28 @@ interface ChatProps {
 }
 
 const Chat: React.FC<ChatProps> = ({ netId, onNewMessage }) => {
-    useEffect(() => {
-      // Listen for chat_message events dispatched from NetView WebSocket
-      const handleNewChatMessage = (event: any) => {
-        const chatMsg = event.detail;
-        // Only add if not sent by this user (prevents duplication)
-        if (chatMsg.user_id !== user?.id) {
-          setMessages((prev) => [...prev, chatMsg]);
-          if (onNewMessage) onNewMessage(chatMsg);
-        }
-      };
-      window.addEventListener('newChatMessage', handleNewChatMessage);
-      return () => {
-        window.removeEventListener('newChatMessage', handleNewChatMessage);
-      };
-    }, [user?.id]);
+  const { user } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
-  const { user } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Listen for chat_message events dispatched from NetView WebSocket
+    const handleNewChatMessage = (event: any) => {
+      const chatMsg = event.detail;
+      // Only add if not sent by this user (prevents duplication)
+      if (chatMsg.user_id !== user?.id) {
+        setMessages((prev) => [...prev, chatMsg]);
+        if (onNewMessage) onNewMessage(chatMsg);
+      }
+    };
+    window.addEventListener('newChatMessage', handleNewChatMessage);
+    return () => {
+      window.removeEventListener('newChatMessage', handleNewChatMessage);
+    };
+  }, [user?.id]);
 
   const scrollToBottom = () => {
     if (messagesContainerRef.current) {
