@@ -153,8 +153,13 @@ if git pull origin $CURRENT_BRANCH; then
     # Offer to restart service if it was running
     if [ "$SERVICE_WAS_RUNNING" = true ]; then
         echo ""
-        echo "Would you like to restart the service now? (Y/n)"
-        read -r restart_response
+        if [[ "$1" != "-y" ]]; then
+            echo "Would you like to restart the service now? (Y/n)"
+            read -r restart_response
+        else
+            restart_response="y"
+            echo "Auto-restarting service (--yes flag provided)..."
+        fi
         
         if [[ ! "$restart_response" =~ ^[Nn]$ ]]; then
             echo "🚀 Starting ectlogger service..."
