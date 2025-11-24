@@ -10,7 +10,7 @@ import io
 from app.database import get_db
 from app.models import Net, NetStatus, User, Frequency, NetRole, net_frequencies, CheckIn
 from app.schemas import NetCreate, NetUpdate, NetResponse, FrequencyResponse
-from app.dependencies import get_current_user
+from app.dependencies import get_current_user, get_current_user_optional
 from app.email_service import EmailService
 
 router = APIRouter(prefix="/nets", tags=["nets"])
@@ -83,9 +83,9 @@ async def list_nets(
     skip: int = 0,
     limit: int = 100,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = None
 ):
-    """List nets with optional status filter, excludes archived by default"""
+    """List nets with optional status filter, excludes archived by default (no auth required for guest access)"""
     query = select(Net).options(selectinload(Net.frequencies))
     
     if status:

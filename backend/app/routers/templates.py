@@ -6,7 +6,7 @@ from typing import List
 from app.database import get_db
 from app.models import NetTemplate, NetTemplateSubscription, User, net_template_frequencies, Frequency, Net, NetStatus
 from app.schemas import NetTemplateCreate, NetTemplateUpdate, NetTemplateResponse, NetTemplateSubscriptionResponse, NetResponse
-from app.dependencies import get_current_user
+from app.dependencies import get_current_user, get_current_user_optional
 import json
 
 router = APIRouter(prefix="/templates", tags=["templates"])
@@ -61,16 +61,16 @@ async def list_templates(
     limit: int = 100,
     include_inactive: bool = False,
     my_templates: bool = False,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db)
 ):
-    """List net templates"""
+    """List net templates (no auth required for guest access)"""
     query = select(NetTemplate).options(selectinload(NetTemplate.frequencies))
     
     if not include_inactive:
         query = query.where(NetTemplate.is_active == True)
     
-    if my_templates:
+    if my_templates and current_user:
         query = query.where(NetTemplate.owner_id == current_user.id)
     
     query = query.offset(skip).limit(limit).order_by(NetTemplate.name)
@@ -87,15 +87,17 @@ async def list_templates(
         )
         subscriber_count = count_result.scalar() or 0
         
-        # Check if current user is subscribed
-        subscription_result = await db.execute(
-            select(NetTemplateSubscription)
-            .where(
-                NetTemplateSubscription.template_id == template.id,
-                NetTemplateSubscription.user_id == current_user.id
+        # Check if current user is subscribed (guests are never subscribed)
+        is_subscribed = False
+        if current_user:
+            subscription_result = await db.execute(
+                select(NetTemplateSubscription)
+                .where(
+                    NetTemplateSubscription.template_id == template.id,
+                    NetTemplateSubscription.user_id == current_user.id
+                )
             )
-        )
-        is_subscribed = subscription_result.scalar_one_or_none() is not None
+            is_subscribed = subscription_result.scalar_one_or_none() is not None
         
         template_responses.append(NetTemplateResponse.from_orm(
             template, 

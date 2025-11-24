@@ -46,7 +46,7 @@ const Scheduler: React.FC = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [currentSchedule, setCurrentSchedule] = useState<Schedule | null>(null);
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
 
   useEffect(() => {
     fetchSchedules();
@@ -168,6 +168,7 @@ const Scheduler: React.FC = () => {
                     </Typography>
                   )}
                 </CardContent>
+                {isAuthenticated && (
                 <CardActions sx={{ justifyContent: 'space-between', flexWrap: 'wrap' }}>
                   <Box>
                     <Button
@@ -216,20 +217,23 @@ const Scheduler: React.FC = () => {
                     )}
                   </Box>
                 </CardActions>
+                )}
               </Card>
             </Grid>
           ))}
         </Grid>
       )}
 
-      <Fab
-        color="primary"
-        aria-label="create schedule"
-        sx={{ position: 'fixed', bottom: 16, right: 16 }}
-        onClick={() => navigate('/scheduler/create')}
-      >
-        <AddIcon />
-      </Fab>
+      {isAuthenticated && (
+        <Fab
+          color="primary"
+          aria-label="create schedule"
+          sx={{ position: 'fixed', bottom: 16, right: 16 }}
+          onClick={() => navigate('/scheduler/create')}
+        >
+          <AddIcon />
+        </Fab>
+      )}
     </Container>
   );
 };

@@ -75,7 +75,11 @@ const Dashboard: React.FC = () => {
           📻 Net Dashboard
         </Typography>
         <Typography variant="body1" color="text.secondary">
-          Welcome, {user?.callsign || user?.name || user?.email}
+          {isAuthenticated ? (
+            `Welcome, ${user?.callsign || user?.name || user?.email}`
+          ) : (
+            "Welcome! Feel free to look around, and set up an account if you'd like to participate."
+          )}
         </Typography>
       </Box>
 

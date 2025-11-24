@@ -94,14 +94,7 @@ const AppRoutes: React.FC = () => {
               </PrivateRoute>
             }
           />
-          <Route
-            path="/scheduler"
-            element={
-              <PrivateRoute>
-                <Scheduler />
-              </PrivateRoute>
-            }
-          />
+          <Route path="/scheduler" element={<Scheduler />} />
           <Route
             path="/scheduler/create"
             element={
