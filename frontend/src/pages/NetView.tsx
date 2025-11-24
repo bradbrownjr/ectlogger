@@ -504,7 +504,7 @@ const NetView: React.FC = () => {
             console.log('[handleStatusChange] fetchCheckIns called after role change');
           } else if (newStatus === 'ncs' || newStatus === 'logger') {
             console.log('[handleStatusChange] Cannot assign role to check-in without user_id');
-            setSnackbar({ open: true, message: 'Cannot assign roles to stations without user accounts', severity: 'warning' });
+            setToastMessage('Cannot assign roles to stations without user accounts');
             return;
           } else {
             console.log('[handleStatusChange] Status change branch for:', newStatus);
@@ -522,9 +522,9 @@ const NetView: React.FC = () => {
             console.log('[handleStatusChange] fetchCheckIns called after status change');
       }
       console.log('[handleStatusChange] Status change completed successfully');
-    } catch (error) {
-      console.error('[handleStatusChange] Failed to update status:', error);
-      alert('Failed to update status');
+      } catch (error) {
+        console.error('[handleStatusChange] Failed to update status:', error);
+        setToastMessage('Failed to update status');
     }
   };
 
