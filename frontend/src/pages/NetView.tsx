@@ -481,45 +481,45 @@ const NetView: React.FC = () => {
     }
 
     try {
-      if ((newStatus === 'ncs' || newStatus === 'logger') && checkIn.user_id) {
-        console.log('[handleStatusChange] Role assignment branch for:', newStatus, '| checkIn:', checkIn);
-        // Remove any existing role
-        const existingRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
-        if (existingRole) {
-          console.log('[handleStatusChange] Removing existing role:', existingRole);
-          await api.delete(`/nets/${netId}/roles/${existingRole.id}`);
-        }
-        // Assign new role
-        console.log('[handleStatusChange] Assigning new role:', newStatus.toUpperCase(), '| user_id:', checkIn.user_id);
-        await api.post(`/nets/${netId}/roles`, null, {
-          params: {
-            user_id: checkIn.user_id,
-            role: newStatus.toUpperCase()
-          }
-        });
-        // Always set status to checked_in for roles
-        await checkInApi.update(checkInId, { status: 'checked_in' });
-        await fetchNetRoles();
-        await fetchCheckIns();
-        console.log('[handleStatusChange] fetchCheckIns called after role change');
-      } else if (newStatus === 'ncs' || newStatus === 'logger') {
-        console.log('[handleStatusChange] Cannot assign role to check-in without user_id');
-        setSnackbar({ open: true, message: 'Cannot assign roles to stations without user accounts', severity: 'warning' });
-        return;
-      } else {
-        console.log('[handleStatusChange] Status change branch for:', newStatus);
-        // Remove role if switching to a regular status
-        if (checkIn.user_id) {
-          const existingRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
-          if (existingRole && owner?.id !== checkIn.user_id) {
-            console.log('[handleStatusChange] Removing role because switching to status:', existingRole);
-            await api.delete(`/nets/${netId}/roles/${existingRole.id}`);
+          if ((newStatus === 'ncs' || newStatus === 'logger') && checkIn.user_id) {
+            console.log('[handleStatusChange] Role assignment branch for:', newStatus, '| checkIn:', checkIn);
+            // Remove any existing role
+            const existingRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
+            if (existingRole) {
+              console.log('[handleStatusChange] Removing existing role:', existingRole);
+              await api.delete(`/nets/${netId}/roles/${existingRole.id}`);
+            }
+            // Assign new role
+            console.log('[handleStatusChange] Assigning new role:', newStatus.toUpperCase(), '| user_id:', checkIn.user_id);
+            await api.post(`/nets/${netId}/roles`, null, {
+              params: {
+                user_id: checkIn.user_id,
+                role: newStatus.toUpperCase()
+              }
+            });
+            // Always set status to checked_in for roles
+            await checkInApi.update(checkInId, { status: 'checked_in' });
             await fetchNetRoles();
-          }
-        }
-        await checkInApi.update(checkInId, { status: newStatus });
-        await fetchCheckIns();
-        console.log('[handleStatusChange] fetchCheckIns called after status change');
+            await fetchCheckIns();
+            console.log('[handleStatusChange] fetchCheckIns called after role change');
+          } else if (newStatus === 'ncs' || newStatus === 'logger') {
+            console.log('[handleStatusChange] Cannot assign role to check-in without user_id');
+            setSnackbar({ open: true, message: 'Cannot assign roles to stations without user accounts', severity: 'warning' });
+            return;
+          } else {
+            console.log('[handleStatusChange] Status change branch for:', newStatus);
+            // Remove role if switching to a regular status
+            if (checkIn.user_id) {
+              const existingRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
+              if (existingRole && owner?.id !== checkIn.user_id) {
+                console.log('[handleStatusChange] Removing role because switching to status:', existingRole);
+                await api.delete(`/nets/${netId}/roles/${existingRole.id}`);
+                await fetchNetRoles();
+              }
+            }
+            await checkInApi.update(checkInId, { status: newStatus });
+            await fetchCheckIns();
+            console.log('[handleStatusChange] fetchCheckIns called after status change');
       }
       console.log('[handleStatusChange] Status change completed successfully');
     } catch (error) {
