@@ -244,6 +244,7 @@ const NetView: React.FC = () => {
   const fetchNetRoles = async () => {
     try {
       const response = await api.get(`/nets/${netId}/roles`);
+      console.log('[fetchNetRoles] Raw response:', response.data);
       setNetRoles(response.data);
     } catch (error) {
       console.error('Failed to fetch net roles:', error);
