@@ -193,12 +193,12 @@ const Chat: React.FC<ChatProps> = ({ netId, onNewMessage }) => {
         <div ref={messagesEndRef} />
       </List>
 
-      <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider', flexShrink: 0 }}>
+      <Box sx={{ p: 1, borderTop: 1, borderColor: 'divider', flexShrink: 0 }}>
         <Box sx={{ display: 'flex', gap: 1 }}>
           <TextField
             fullWidth
             size="small"
-            placeholder="Type a message..."
+            placeholder={user ? "Type a message..." : "Sign in to send messages"}
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyPress={handleKeyPress}
@@ -214,11 +214,6 @@ const Chat: React.FC<ChatProps> = ({ netId, onNewMessage }) => {
             <SendIcon />
           </IconButton>
         </Box>
-        {!user && (
-          <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-            Sign in to send messages
-          </Typography>
-        )}
       </Box>
     </Paper>
   );
