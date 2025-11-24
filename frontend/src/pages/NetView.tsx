@@ -200,6 +200,7 @@ const NetView: React.FC = () => {
           window.dispatchEvent(new CustomEvent('newChatMessage', { detail: message.data }));
         }
       } else if (message.type === 'role_change') {
+        // Always refresh roles and check-ins for all clients
         fetchNetRoles();
         fetchCheckIns();
       } else if (message.type === 'status_change') {

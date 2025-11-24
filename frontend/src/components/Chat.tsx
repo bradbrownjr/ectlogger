@@ -28,14 +28,17 @@ const Chat: React.FC<ChatProps> = ({ netId, onNewMessage }) => {
       // Listen for chat_message events dispatched from NetView WebSocket
       const handleNewChatMessage = (event: any) => {
         const chatMsg = event.detail;
-        setMessages((prev) => [...prev, chatMsg]);
-        if (onNewMessage) onNewMessage(chatMsg);
+        // Only add if not sent by this user (prevents duplication)
+        if (chatMsg.user_id !== user?.id) {
+          setMessages((prev) => [...prev, chatMsg]);
+          if (onNewMessage) onNewMessage(chatMsg);
+        }
       };
       window.addEventListener('newChatMessage', handleNewChatMessage);
       return () => {
         window.removeEventListener('newChatMessage', handleNewChatMessage);
       };
-    }, []);
+    }, [user?.id]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
