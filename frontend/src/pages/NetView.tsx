@@ -269,6 +269,17 @@ const NetView: React.FC = () => {
       await netApi.start(Number(netId));
       fetchNet();
       fetchCheckIns();
+      // Clear the form so it's ready for the next check-in
+      setCheckInForm({
+        callsign: '',
+        name: '',
+        location: '',
+        skywarn_number: '',
+        weather_observation: '',
+        power_source: '',
+        feedback: '',
+        notes: '',
+      });
     } catch (error) {
       console.error('Failed to start net:', error);
     }
