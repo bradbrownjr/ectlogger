@@ -691,15 +691,16 @@ const NetView: React.FC = () => {
                       key={checkIn.id}
                       sx={{ 
                         backgroundColor: checkIn.id === activeSpeakerId 
-                          ? 'action.selected' 
+                          ? 'success.dark' 
                           : checkIn.status === 'checked_out' 
                           ? 'action.disabledBackground' 
                           : 'inherit',
                         opacity: checkIn.status === 'checked_out' ? 0.6 : 1,
                         border: checkIn.id === activeSpeakerId ? 2 : 0,
-                        borderColor: checkIn.id === activeSpeakerId ? 'primary.main' : 'transparent',
+                        borderColor: checkIn.id === activeSpeakerId ? 'success.main' : 'transparent',
                         '& .MuiTableCell-root': checkIn.id === activeSpeakerId ? {
-                          fontWeight: 'bold'
+                          fontWeight: 'bold',
+                          color: 'success.contrastText'
                         } : {}
                       }}
                     >
