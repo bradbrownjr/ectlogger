@@ -749,9 +749,9 @@ const NetView: React.FC = () => {
         </Box>
 
         {net.status === 'active' && (
-          <Grid container spacing={0} sx={{ mt: 0.5, flexGrow: 1, overflow: 'hidden', minHeight: 0, maxHeight: '100%' }}>
-            <Grid item xs={12} md={8} sx={{ pr: { md: 0.5 }, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0, height: '100%' }}>
-              <TableContainer sx={{ flexGrow: 1, flexShrink: 1, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: '4px 4px 0 0', borderBottom: 0, minHeight: 0, maxHeight: '100%' }}>
+          <Grid container spacing={0} sx={{ mt: 0.5, flex: 1, minHeight: 0 }}>
+            <Grid item xs={12} md={8} sx={{ pr: { md: 0.5 }, display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%' }}>
+              <TableContainer sx={{ flex: 1, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: '4px 4px 0 0', borderBottom: 0, minHeight: 0 }}>
               <Table size="small" stickyHeader>
                 <TableHead>
                   <TableRow>
@@ -1074,10 +1074,8 @@ const NetView: React.FC = () => {
             )}
             </Grid>
             
-            <Grid item xs={12} md={4} sx={{ pl: { md: 0.5 }, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
-              <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                <Chat netId={Number(netId)} />
-              </Box>
+            <Grid item xs={12} md={4} sx={{ pl: { md: 0.5 }, display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%' }}>
+              <Chat netId={Number(netId)} />
             </Grid>
           </Grid>
         )}
