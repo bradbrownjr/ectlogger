@@ -516,8 +516,8 @@ const NetView: React.FC = () => {
     if (checkIn) {
       if (owner?.id === checkIn.user_id) return '👑';
       const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
-      if (userRole?.role === 'ncs') return '👑';
-      if (userRole?.role === 'logger') return '📋';
+      if (userRole?.role?.toUpperCase() === 'NCS') return '👑';
+      if (userRole?.role?.toUpperCase() === 'LOGGER') return '📋';
       
       // Show recheck icon for rechecked stations (replaces standard check-in)
       if (checkIn.is_recheck && status === 'checked_in') return '🔄';
@@ -552,8 +552,8 @@ const NetView: React.FC = () => {
     if (checkIn) {
       if (owner?.id === checkIn.user_id) return 'Net Control Station - manages the net';
       const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
-      if (userRole?.role === 'ncs') return 'Net Control Station - manages the net';
-      if (userRole?.role === 'logger') return 'Logger - assists NCS with logging';
+      if (userRole?.role?.toUpperCase() === 'NCS') return 'Net Control Station - manages the net';
+      if (userRole?.role?.toUpperCase() === 'LOGGER') return 'Logger - assists NCS with logging';
       if (checkIn.is_recheck && status === 'checked_in') return 'Re-checked into the net';
     }
     
