@@ -205,7 +205,7 @@ const CreateSchedule: React.FC = () => {
   const renderEditableRow = (freq: Frequency) => {
     const isEditing = editingId === freq.id;
     const form = isEditing ? editForm! : freq;
-    const isAnalog = ['FM', 'SSB'].includes(form.mode);
+    const isAnalog = ['FM', 'SSB', 'GMRS'].includes(form.mode);
     const isYSF = form.mode === 'YSF';
 
     return (
@@ -224,6 +224,7 @@ const CreateSchedule: React.FC = () => {
                 onChange={(e: any) => setEditForm({ ...form, mode: e.target.value })}
               >
                 <MenuItem value="FM">FM</MenuItem>
+                <MenuItem value="GMRS">GMRS</MenuItem>
                 <MenuItem value="SSB">SSB</MenuItem>
                 <MenuItem value="DMR">DMR</MenuItem>
                 <MenuItem value="D-STAR">D-STAR</MenuItem>
@@ -315,7 +316,7 @@ const CreateSchedule: React.FC = () => {
   };
 
   const renderNewRow = () => {
-    const isAnalog = ['FM', 'SSB'].includes(newFrequency.mode);
+    const isAnalog = ['FM', 'SSB', 'GMRS'].includes(newFrequency.mode);
     const isYSF = newFrequency.mode === 'YSF';
 
     return (
@@ -328,6 +329,7 @@ const CreateSchedule: React.FC = () => {
               onChange={(e: any) => setNewFrequency({ ...newFrequency, mode: e.target.value })}
             >
               <MenuItem value="FM">FM</MenuItem>
+              <MenuItem value="GMRS">GMRS</MenuItem>
               <MenuItem value="SSB">SSB</MenuItem>
               <MenuItem value="DMR">DMR</MenuItem>
               <MenuItem value="D-STAR">D-STAR</MenuItem>
