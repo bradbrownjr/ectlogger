@@ -485,7 +485,7 @@ const CreateNet: React.FC = () => {
           </TableContainer>
 
           <Box sx={{ mt: 4, display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-            <Button variant="outlined" onClick={() => navigate('/dashboard')}>
+            <Button variant="outlined" onClick={() => navigate(isEditMode ? `/nets/${netId}` : '/dashboard')}>
               Cancel
             </Button>
             <Button

@@ -745,16 +745,25 @@ const NetView: React.FC = () => {
                   </>
                 )}
                 {canManage && net.status === 'active' && (
-                  <Button 
-                    size="small" 
-                    variant="outlined" 
-                    onClick={() => {
-                      fetchAllUsers();
-                      setRoleDialogOpen(true);
-                    }}
-                  >
-                    Manage Roles
-                  </Button>
+                  <>
+                    <Button 
+                      size="small" 
+                      variant="outlined" 
+                      onClick={() => navigate(`/nets/${netId}/edit`)}
+                    >
+                      Manage Net
+                    </Button>
+                    <Button 
+                      size="small" 
+                      variant="outlined" 
+                      onClick={() => {
+                        fetchAllUsers();
+                        setRoleDialogOpen(true);
+                      }}
+                    >
+                      Manage Roles
+                    </Button>
+                  </>
                 )}
                 {isAuthenticated && net.status === 'active' && (
                   userActiveCheckIn ? (
