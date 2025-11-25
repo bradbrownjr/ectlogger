@@ -96,11 +96,11 @@ const Dashboard: React.FC = () => {
           </Typography>
         </Box>
       ) : (
-        <Grid container spacing={3}>
+        <Grid container spacing={3} sx={{ alignItems: 'stretch' }}>
           {nets.map((net: Net) => (
-            <Grid item xs={12} sm={6} md={4} key={net.id}>
-              <Card>
-                <CardContent>
+            <Grid item xs={12} sm={6} md={4} key={net.id} sx={{ display: 'flex' }}>
+              <Card sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+                <CardContent sx={{ flex: 1 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                     <Typography variant="h6" component="h2">
                       {net.name}
