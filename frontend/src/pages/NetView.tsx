@@ -686,10 +686,19 @@ const NetView: React.FC = () => {
         <Box sx={{ flexShrink: 0 }}>
           <Grid container spacing={0} sx={{ mt: 0.5, flex: 1, minHeight: 0 }}>
             <Grid item xs={12} md={8} sx={{ pr: { md: 0.5 }, display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.5, mb: 0.5, flexWrap: 'wrap' }}>
                 <Typography variant="h5" component="h1" sx={{ mb: 0 }}>
                   {net.name}
                 </Typography>
+                {net.description && (
+                  <Typography 
+                    variant="body2" 
+                    color="text.secondary" 
+                    sx={{ fontStyle: 'italic' }}
+                  >
+                    — {net.description}
+                  </Typography>
+                )}
               </Box>
               {/* Stats and Frequency chips row */}
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', mb: 0.5, gap: 0.5 }}>
