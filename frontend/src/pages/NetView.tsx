@@ -476,6 +476,27 @@ const NetView: React.FC = () => {
     }
   };
 
+  const getStatusTooltip = (status: string, checkIn?: CheckIn) => {
+    // Check for role-based tooltips first
+    if (checkIn) {
+      if (owner?.id === checkIn.user_id) return 'Net Control Station - manages the net';
+      const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
+      if (userRole?.role === 'ncs') return 'Net Control Station - manages the net';
+      if (userRole?.role === 'logger') return 'Logger - assists NCS with logging';
+      if (checkIn.is_recheck && status === 'checked_in') return 'Re-checked into the net';
+    }
+    
+    switch (status) {
+      case 'checked_in': return 'Checked in and available';
+      case 'listening': return 'Monitoring only, not transmitting';
+      case 'away': return 'Temporarily away, will return';
+      case 'available': return 'Has traffic or emergency to report';
+      case 'announcements': return 'Has announcements to share';
+      case 'checked_out': return 'Checked out of net';
+      default: return 'Checked in and available';
+    }
+  };
+
   const formatFrequencyDisplay = (freq: any) => {
     if (!freq) return '';
     if (freq.frequency) {
@@ -912,17 +933,19 @@ const NetView: React.FC = () => {
                               }}
                             >
                               {/* Always render the current value as an option to prevent MUI errors */}
-                              {((canManageCheckIns || selectValue === 'ncs') && <MenuItem value="ncs">👑</MenuItem>)}
-                              {((canManageCheckIns || selectValue === 'logger') && <MenuItem value="logger">📋</MenuItem>)}
-                              <MenuItem value="checked_in">{checkIn.is_recheck ? '🔄' : '✅'}</MenuItem>
-                              <MenuItem value="listening">👂</MenuItem>
-                              <MenuItem value="away">⏸️</MenuItem>
-                              <MenuItem value="available">🚨</MenuItem>
-                              <MenuItem value="announcements">📢</MenuItem>
+                              {((canManageCheckIns || selectValue === 'ncs') && <Tooltip title="Net Control Station" arrow><MenuItem value="ncs">👑</MenuItem></Tooltip>)}
+                              {((canManageCheckIns || selectValue === 'logger') && <Tooltip title="Logger" arrow><MenuItem value="logger">📋</MenuItem></Tooltip>)}
+                              <Tooltip title={checkIn.is_recheck ? 'Rechecked' : 'Standard'} arrow><MenuItem value="checked_in">{checkIn.is_recheck ? '🔄' : '✅'}</MenuItem></Tooltip>
+                              <Tooltip title="Listening only" arrow><MenuItem value="listening">👂</MenuItem></Tooltip>
+                              <Tooltip title="Away" arrow><MenuItem value="away">⏸️</MenuItem></Tooltip>
+                              <Tooltip title="Has traffic" arrow><MenuItem value="available">🚨</MenuItem></Tooltip>
+                              <Tooltip title="Announcements" arrow><MenuItem value="announcements">📢</MenuItem></Tooltip>
                             </Select>
                           );
                         })() : (
-                          getStatusIcon(checkIn.status, checkIn)
+                          <Tooltip title={getStatusTooltip(checkIn.status, checkIn)} arrow>
+                            <span style={{ cursor: 'help' }}>{getStatusIcon(checkIn.status, checkIn)}</span>
+                          </Tooltip>
                         )}
                       </TableCell>
                       <TableCell>
