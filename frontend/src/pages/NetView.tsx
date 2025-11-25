@@ -1178,11 +1178,7 @@ const NetView: React.FC = () => {
                             gap: 0.5, 
                             flexWrap: 'nowrap', 
                             mt: 0.25,
-                            position: 'absolute',
-                            left: 0,
                             whiteSpace: 'nowrap',
-                            zIndex: 1,
-                            pl: 1,
                           }}>
                             {checkIn.available_frequencies.map((freqId: number) => {
                               const freq = net.frequencies.find((f: any) => f.id === freqId);
@@ -1217,31 +1213,36 @@ const NetView: React.FC = () => {
                         {formatTime(checkIn.checked_in_at, user?.prefer_utc || false)}
                       </TableCell>
                       {canManage && (
-                      <TableCell sx={{ width: 100 }}>
-                        {net.status === 'active' && checkIn.status !== 'checked_out' && (
+                      <TableCell sx={{ width: 100, whiteSpace: 'nowrap' }}>
+                        <Box sx={{ display: 'flex', gap: 0 }}>
+                          {net.status === 'active' && checkIn.status !== 'checked_out' && (
+                            <IconButton
+                              size="small"
+                              onClick={() => handleSetActiveSpeaker(checkIn.id)}
+                              color={checkIn.id === activeSpeakerId ? 'primary' : 'default'}
+                              title="Mark as active speaker"
+                              sx={{ p: 0.5 }}
+                            >
+                              🎤
+                            </IconButton>
+                          )}
                           <IconButton
                             size="small"
-                            onClick={() => handleSetActiveSpeaker(checkIn.id)}
-                            color={checkIn.id === activeSpeakerId ? 'primary' : 'default'}
-                            title="Mark as active speaker"
+                            onClick={() => handleEditCheckIn(checkIn)}
+                            title="Edit check-in"
+                            sx={{ p: 0.5 }}
                           >
-                            🎤
+                            <EditIcon fontSize="small" />
                           </IconButton>
-                        )}
-                        <IconButton
-                          size="small"
-                          onClick={() => handleEditCheckIn(checkIn)}
-                          title="Edit check-in"
-                        >
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleDeleteCheckIn(checkIn.id)}
-                          title="Delete check-in"
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleDeleteCheckIn(checkIn.id)}
+                            title="Delete check-in"
+                            sx={{ p: 0.5 }}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
                       </TableCell>
                       )}
                     </TableRow>
