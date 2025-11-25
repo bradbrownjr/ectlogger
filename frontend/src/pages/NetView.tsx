@@ -965,19 +965,19 @@ const NetView: React.FC = () => {
         {net.status === 'active' && (
           <Grid container spacing={0} sx={{ mt: 0.5, flex: { xs: 'none', md: 1 }, minHeight: 0 }}>
             <Grid item xs={12} md={8} sx={{ pr: { md: 0.5 }, display: 'flex', flexDirection: 'column', minHeight: { xs: 'auto', md: 0 }, height: { xs: 'auto', md: '100%' }, mb: { xs: 2, md: 0 } }}>
-              {/* Desktop: Separate sticky header */}
-              <Box sx={{ border: 1, borderColor: 'divider', borderRadius: '4px 4px 0 0', borderBottom: 0, flexShrink: 0, overflowX: 'hidden', display: { xs: 'none', md: 'block' } }}>
+              {/* Desktop: Combined table with sticky header */}
+              <TableContainer sx={{ flex: { xs: 'none', md: 1 }, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: '4px', minHeight: 0, display: { xs: 'none', md: 'block' } }}>
                 <Table size="small">
-                  <TableHead>
+                  <TableHead sx={{ position: 'sticky', top: 0, backgroundColor: 'background.paper', zIndex: 1 }}>
                     <TableRow>
-                      <TableCell sx={{ width: 35, whiteSpace: 'nowrap' }}>#</TableCell>
-                      <TableCell sx={{ width: 75, whiteSpace: 'nowrap' }}>Status</TableCell>
-                      <TableCell sx={{ width: 140, whiteSpace: 'nowrap' }}>Callsign *</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>#</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>Status</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>Callsign *</TableCell>
                       {net?.field_config?.name?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Name {net.field_config.name.required && '*'}</TableCell>}
                       {net?.field_config?.location?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Location {net.field_config.location.required && '*'}</TableCell>}
-                      {net?.field_config?.skywarn_number?.enabled && <TableCell sx={{ width: 70, whiteSpace: 'nowrap' }}>Spotter {net.field_config.skywarn_number.required && '*'}</TableCell>}
+                      {net?.field_config?.skywarn_number?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Spotter {net.field_config.skywarn_number.required && '*'}</TableCell>}
                       {net?.field_config?.weather_observation?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Weather {net.field_config.weather_observation.required && '*'}</TableCell>}
-                      {net?.field_config?.power_source?.enabled && <TableCell sx={{ width: 70, whiteSpace: 'nowrap' }}>Power {net.field_config.power_source.required && '*'}</TableCell>}
+                      {net?.field_config?.power_source?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Power {net.field_config.power_source.required && '*'}</TableCell>}
                       {net?.field_config?.notes?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Notes {net.field_config.notes.required && '*'}</TableCell>}
                       {/* Custom fields */}
                       {getEnabledCustomFields().map((field) => (
@@ -985,82 +985,10 @@ const NetView: React.FC = () => {
                           {field.label} {isFieldRequired(field.name) && '*'}
                         </TableCell>
                       ))}
-                      <TableCell sx={{ width: 95, whiteSpace: 'nowrap' }}>Time</TableCell>
-                      {canManage && <TableCell sx={{ width: 100, whiteSpace: 'nowrap' }}>Actions</TableCell>}
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>Time</TableCell>
+                      {canManage && <TableCell sx={{ whiteSpace: 'nowrap' }}>Actions</TableCell>}
                     </TableRow>
                   </TableHead>
-                </Table>
-              </Box>
-              {/* Mobile: Combined scrollable table with header */}
-              <TableContainer sx={{ display: { xs: 'block', md: 'none' }, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: '4px', maxHeight: 400 }}>
-                <Table size="small" sx={{ minWidth: 700 }}>
-                  <TableHead sx={{ position: 'sticky', top: 0, backgroundColor: 'background.paper', zIndex: 1 }}>
-                    <TableRow>
-                      <TableCell sx={{ width: 35, whiteSpace: 'nowrap' }}>#</TableCell>
-                      <TableCell sx={{ width: 75, whiteSpace: 'nowrap' }}>Status</TableCell>
-                      <TableCell sx={{ width: 140, whiteSpace: 'nowrap' }}>Callsign *</TableCell>
-                      {net?.field_config?.name?.enabled && <TableCell sx={{ width: 100, whiteSpace: 'nowrap' }}>Name {net.field_config.name.required && '*'}</TableCell>}
-                      {net?.field_config?.location?.enabled && <TableCell sx={{ width: 100, whiteSpace: 'nowrap' }}>Location {net.field_config.location.required && '*'}</TableCell>}
-                      {net?.field_config?.skywarn_number?.enabled && <TableCell sx={{ width: 70, whiteSpace: 'nowrap' }}>Spotter {net.field_config.skywarn_number.required && '*'}</TableCell>}
-                      {net?.field_config?.weather_observation?.enabled && <TableCell sx={{ width: 100, whiteSpace: 'nowrap' }}>Weather {net.field_config.weather_observation.required && '*'}</TableCell>}
-                      {net?.field_config?.power_source?.enabled && <TableCell sx={{ width: 70, whiteSpace: 'nowrap' }}>Power {net.field_config.power_source.required && '*'}</TableCell>}
-                      {net?.field_config?.notes?.enabled && <TableCell sx={{ width: 100, whiteSpace: 'nowrap' }}>Notes {net.field_config.notes.required && '*'}</TableCell>}
-                      {getEnabledCustomFields().map((field) => (
-                        <TableCell key={field.name} sx={{ width: 100, whiteSpace: 'nowrap' }}>
-                          {field.label} {isFieldRequired(field.name) && '*'}
-                        </TableCell>
-                      ))}
-                      <TableCell sx={{ width: 95, whiteSpace: 'nowrap' }}>Time</TableCell>
-                      {canManage && <TableCell sx={{ width: 100, whiteSpace: 'nowrap' }}>Actions</TableCell>}
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {checkIns.map((checkIn, index) => {
-                      const isOnActiveFrequency = net.active_frequency_id && checkIn.available_frequencies?.includes(net.active_frequency_id);
-                      const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
-                      return (
-                        <TableRow key={checkIn.id} sx={{ 
-                          backgroundColor: checkIn.id === activeSpeakerId 
-                            ? (theme) => theme.palette.mode === 'dark' ? theme.palette.success.dark : theme.palette.success.light
-                            : checkIn.status === 'checked_out' ? 'action.disabledBackground' 
-                            : isOnActiveFrequency ? (theme) => theme.palette.mode === 'dark' ? 'rgba(25, 118, 210, 0.15)' : 'rgba(25, 118, 210, 0.08)' : 'inherit',
-                          opacity: checkIn.status === 'checked_out' ? 0.6 : 1,
-                        }}>
-                          <TableCell sx={{ whiteSpace: 'nowrap' }}>{index + 1}</TableCell>
-                          <TableCell sx={{ whiteSpace: 'nowrap' }}>{getStatusIcon(checkIn.status, checkIn)}</TableCell>
-                          <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                              {checkIn.user_id && onlineUserIds.includes(checkIn.user_id) && (
-                                <Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: 'success.main', flexShrink: 0 }} />
-                              )}
-                              {checkIn.callsign}
-                            </Box>
-                          </TableCell>
-                          {net?.field_config?.name?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.name}</TableCell>}
-                          {net?.field_config?.location?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.location}</TableCell>}
-                          {net?.field_config?.skywarn_number?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.skywarn_number}</TableCell>}
-                          {net?.field_config?.weather_observation?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.weather_observation}</TableCell>}
-                          {net?.field_config?.power_source?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.power_source}</TableCell>}
-                          {net?.field_config?.notes?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.notes}</TableCell>}
-                          {getEnabledCustomFields().map((field) => (
-                            <TableCell key={field.name} sx={{ whiteSpace: 'nowrap' }}>{checkIn.custom_fields?.[field.name] || ''}</TableCell>
-                          ))}
-                          <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatTime(checkIn.checked_in_at, user?.prefer_utc || false)}</TableCell>
-                          {canManage && (
-                            <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                              <IconButton size="small" onClick={() => handleEditCheckIn(checkIn)}><EditIcon fontSize="small" /></IconButton>
-                              <IconButton size="small" onClick={() => handleDeleteCheckIn(checkIn.id)}><DeleteIcon fontSize="small" /></IconButton>
-                            </TableCell>
-                          )}
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-              {/* Desktop: Scrolling body */}
-              <TableContainer sx={{ flex: { xs: 'none', md: 1 }, overflow: 'auto', border: 1, borderColor: 'divider', borderTop: 0, borderRadius: '0 0 4px 4px', minHeight: 0, display: { xs: 'none', md: 'block' } }}>
-                <Table size="small">
                   <TableBody>
                   {/* Existing check-ins */}
                   {checkIns.map((checkIn, index) => {
