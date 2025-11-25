@@ -350,6 +350,7 @@ This is an automated message, please do not reply.
                             <th>Callsign</th>
                             <th>Name</th>
                             <th>Location</th>
+                            {% if has_frequencies %}<th>Frequencies</th>{% endif %}
                             {% if has_skywarn %}<th>SKYWARN#</th>{% endif %}
                             {% if has_weather %}<th>Weather</th>{% endif %}
                             {% if has_power %}<th>Power</th>{% endif %}
@@ -362,6 +363,7 @@ This is an automated message, please do not reply.
                             <td><strong>{{ check_in.callsign }}</strong></td>
                             <td>{{ check_in.name }}</td>
                             <td>{{ check_in.location }}</td>
+                            {% if has_frequencies %}<td>{{ check_in.frequencies }}</td>{% endif %}
                             {% if has_skywarn %}<td>{{ check_in.skywarn_number }}</td>{% endif %}
                             {% if has_weather %}<td>{{ check_in.weather_observation }}</td>{% endif %}
                             {% if has_power %}<td>{{ check_in.power_source }}</td>{% endif %}
@@ -380,6 +382,7 @@ This is an automated message, please do not reply.
         """)
         
         # Check which optional fields have data
+        has_frequencies = any(c.get('frequencies') for c in check_ins)
         has_skywarn = any(c.get('skywarn_number') for c in check_ins)
         has_weather = any(c.get('weather_observation') for c in check_ins)
         has_power = any(c.get('power_source') for c in check_ins)
@@ -393,6 +396,7 @@ This is an automated message, please do not reply.
             closed_at=closed_at,
             check_in_count=len(check_ins),
             check_ins=check_ins,
+            has_frequencies=has_frequencies,
             has_skywarn=has_skywarn,
             has_weather=has_weather,
             has_power=has_power

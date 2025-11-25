@@ -7,6 +7,7 @@ from typing import List, Optional
 from datetime import datetime
 import csv
 import io
+import json
 from app.database import get_db
 from app.models import Net, NetStatus, User, Frequency, NetRole, net_frequencies, CheckIn
 from app.schemas import NetCreate, NetUpdate, NetResponse, FrequencyResponse
@@ -345,7 +346,7 @@ async def close_net(
     result = await db.execute(
         select(Net).options(
             selectinload(Net.frequencies),
-            selectinload(Net.check_ins)
+            selectinload(Net.check_ins).selectinload(CheckIn.frequency)
         ).where(Net.id == net_id)
     )
     net = result.scalar_one_or_none()
@@ -385,14 +386,37 @@ async def close_net(
     )
     owner = result.scalar_one_or_none()
     
+    # Build frequency lookup map
+    freq_map = {f.id: f for f in net.frequencies}
+    
+    # Helper to format frequency
+    def format_freq(freq):
+        if freq.frequency:
+            return f"{freq.frequency} {freq.mode or ''}".strip()
+        elif freq.network:
+            return f"{freq.network} TG{freq.talkgroup or ''}"
+        return ""
+    
     # Prepare check-ins data for email
     check_ins_data = []
     for check_in in sorted(net.check_ins, key=lambda x: x.checked_in_at):
+        # Get available frequencies list
+        available_freqs = []
+        if check_in.available_frequencies:
+            try:
+                freq_ids = json.loads(check_in.available_frequencies)
+                for fid in freq_ids:
+                    if fid in freq_map:
+                        available_freqs.append(format_freq(freq_map[fid]))
+            except (json.JSONDecodeError, TypeError):
+                pass
+        
         check_ins_data.append({
             'time': check_in.checked_in_at.strftime("%Y-%m-%d %H:%M:%S") if check_in.checked_in_at else "",
             'callsign': check_in.callsign,
             'name': check_in.name,
             'location': check_in.location,
+            'frequencies': ', '.join(available_freqs) if available_freqs else '',
             'skywarn_number': check_in.skywarn_number or '',
             'weather_observation': check_in.weather_observation or '',
             'power_source': check_in.power_source or '',
@@ -445,9 +469,10 @@ async def export_net_csv(
     db: AsyncSession = Depends(get_db)
 ):
     """Export net check-ins as CSV"""
-    # Get net with check-ins
+    # Get net with check-ins and frequencies
     result = await db.execute(
         select(Net).options(
+            selectinload(Net.frequencies),
             selectinload(Net.check_ins).selectinload(CheckIn.frequency)
         ).where(Net.id == net_id)
     )
@@ -460,6 +485,17 @@ async def export_net_csv(
     if not await check_net_permission(db, net, current_user):
         raise HTTPException(status_code=403, detail="Not authorized to export this net")
     
+    # Build frequency lookup map
+    freq_map = {f.id: f for f in net.frequencies}
+    
+    # Helper to format frequency
+    def format_freq(freq):
+        if freq.frequency:
+            return f"{freq.frequency} {freq.mode or ''}".strip()
+        elif freq.network:
+            return f"{freq.network} TG{freq.talkgroup or ''}"
+        return ""
+    
     # Create CSV in memory
     output = io.StringIO()
     writer = csv.writer(output)
@@ -467,27 +503,30 @@ async def export_net_csv(
     # Write header
     headers = [
         "Check-in Time", "Callsign", "Name", "Location", 
-        "Frequency", "SKYWARN Number", "Weather Observation",
+        "Available Frequencies", "SKYWARN Number", "Weather Observation",
         "Power Source", "Feedback", "Notes", "Status"
     ]
     writer.writerow(headers)
     
     # Write check-ins
     for check_in in sorted(net.check_ins, key=lambda x: x.checked_in_at):
-        frequency_str = ""
-        if check_in.frequency:
-            if check_in.frequency.frequency:
-                frequency_str = f"{check_in.frequency.frequency} {check_in.frequency.mode}"
-            else:
-                # Digital mode
-                frequency_str = f"{check_in.frequency.network} TG{check_in.frequency.talkgroup}"
+        # Get available frequencies list
+        available_freqs = []
+        if check_in.available_frequencies:
+            try:
+                freq_ids = json.loads(check_in.available_frequencies)
+                for fid in freq_ids:
+                    if fid in freq_map:
+                        available_freqs.append(format_freq(freq_map[fid]))
+            except (json.JSONDecodeError, TypeError):
+                pass
         
         writer.writerow([
             check_in.checked_in_at.strftime("%Y-%m-%d %H:%M:%S") if check_in.checked_in_at else "",
             check_in.callsign,
             check_in.name,
             check_in.location,
-            frequency_str,
+            ', '.join(available_freqs) if available_freqs else "",
             check_in.skywarn_number or "",
             check_in.weather_observation or "",
             check_in.power_source or "",
