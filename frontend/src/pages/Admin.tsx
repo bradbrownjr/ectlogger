@@ -112,6 +112,7 @@ const Admin: React.FC = () => {
     name: '',
     label: '',
     field_type: 'text',
+    options: [] as string[],
     placeholder: '',
     default_enabled: false,
     default_required: false,
@@ -168,6 +169,7 @@ const Admin: React.FC = () => {
         name: field.name,
         label: field.label,
         field_type: field.field_type,
+        options: field.options || [],
         placeholder: field.placeholder || '',
         default_enabled: field.default_enabled,
         default_required: field.default_required,
@@ -179,6 +181,7 @@ const Admin: React.FC = () => {
         name: '',
         label: '',
         field_type: 'text',
+        options: [],
         placeholder: '',
         default_enabled: false,
         default_required: false,
@@ -191,20 +194,23 @@ const Admin: React.FC = () => {
   const handleSaveField = async () => {
     setFieldSaving(true);
     try {
+      const payload = {
+        label: fieldForm.label,
+        field_type: fieldForm.field_type,
+        options: fieldForm.field_type === 'select' ? fieldForm.options.filter(o => o.trim()) : null,
+        placeholder: fieldForm.placeholder || null,
+        default_enabled: fieldForm.default_enabled,
+        default_required: fieldForm.default_required,
+        sort_order: fieldForm.sort_order,
+      };
+      
       if (editingField) {
         // Update existing field
-        await api.put(`/settings/fields/${editingField.id}`, {
-          label: fieldForm.label,
-          field_type: fieldForm.field_type,
-          placeholder: fieldForm.placeholder || null,
-          default_enabled: fieldForm.default_enabled,
-          default_required: fieldForm.default_required,
-          sort_order: fieldForm.sort_order,
-        });
+        await api.put(`/settings/fields/${editingField.id}`, payload);
         setSnackbar({ open: true, message: 'Field updated successfully', severity: 'success' });
       } else {
         // Create new field
-        await api.post('/settings/fields', fieldForm);
+        await api.post('/settings/fields', { ...payload, name: fieldForm.name });
         setSnackbar({ open: true, message: 'Field created successfully', severity: 'success' });
       }
       setFieldDialogOpen(false);
@@ -608,6 +614,17 @@ const Admin: React.FC = () => {
               </Select>
               <FormHelperText>The type of input control</FormHelperText>
             </FormControl>
+            {fieldForm.field_type === 'select' && (
+              <TextField
+                label="Dropdown Options"
+                value={fieldForm.options.join('\n')}
+                onChange={(e) => setFieldForm({ ...fieldForm, options: e.target.value.split('\n') })}
+                multiline
+                rows={4}
+                helperText="Enter each option on a new line"
+                fullWidth
+              />
+            )}
             <TextField
               label="Placeholder Text"
               value={fieldForm.placeholder}
