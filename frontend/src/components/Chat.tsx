@@ -154,10 +154,10 @@ const Chat: React.FC<ChatProps> = ({ netId, onNewMessage }) => {
         sx={{ 
           flex: '1 1 auto',
           overflow: 'auto',
-          p: 1,
+          p: 0.5,
           display: 'flex',
           flexDirection: 'column',
-          gap: 1,
+          gap: 0,
           minHeight: 0
         }}
       >
@@ -171,8 +171,8 @@ const Chat: React.FC<ChatProps> = ({ netId, onNewMessage }) => {
               <ListItem 
                 alignItems="flex-start" 
                 sx={{ 
-                  px: 0,
-                  py: 1,
+                  px: 0.5,
+                  py: 0.25,
                   backgroundColor: message.user_id === user?.id ? 'action.selected' : 'transparent',
                   borderRadius: 1
                 }}
