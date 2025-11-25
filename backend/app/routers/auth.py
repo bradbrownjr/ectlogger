@@ -102,6 +102,16 @@ async def request_magic_link(
     """Request a magic link to sign in via email"""
     logger.info("API", f"Magic link request received for {request.email}")
     
+    # Check if user exists and is banned
+    result = await db.execute(select(User).where(User.email == request.email))
+    existing_user = result.scalar_one_or_none()
+    if existing_user and not existing_user.is_active:
+        logger.warning("API", f"Magic link request denied - user is banned: {request.email}")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Your account has been deactivated. Please contact an administrator."
+        )
+    
     try:
         token = create_magic_link_token(request.email)
         logger.debug("API", "Token generated successfully")

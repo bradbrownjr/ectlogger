@@ -34,6 +34,9 @@ const Login: React.FC = () => {
       // Check if it's a connection error
       if (err?.message?.includes('ERR_CONNECTION_REFUSED') || err?.message?.includes('Network Error') || err?.code === 'ERR_NETWORK') {
         setError('Cannot connect to server. Please ensure the backend is running and check your firewall/ad blocker settings.');
+      } else if (err?.response?.status === 403) {
+        // User is banned/deactivated
+        setError(err?.response?.data?.detail || 'Your account has been deactivated. Please contact an administrator.');
       } else {
         setError('Failed to send magic link. Please check your ad blocker settings and try again.');
       }
