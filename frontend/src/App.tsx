@@ -12,7 +12,7 @@ import CreateNet from './pages/CreateNet';
 import Scheduler from './pages/Scheduler';
 import CreateSchedule from './pages/CreateSchedule';
 import VerifyMagicLink from './pages/VerifyMagicLink';
-import AdminUsers from './pages/AdminUsers';
+import Admin from './pages/Admin';
 import Profile from './pages/Profile';
 import Navbar from './components/Navbar';
 import ProfileSetupDialog from './components/ProfileSetupDialog';
@@ -86,7 +86,7 @@ const AppRoutes: React.FC = () => {
             path="/admin/users"
             element={
               <PrivateRoute>
-                <AdminUsers />
+                <Admin />
               </PrivateRoute>
             }
           />

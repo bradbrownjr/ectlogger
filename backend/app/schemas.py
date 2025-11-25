@@ -384,3 +384,23 @@ class MagicLinkRequest(BaseModel):
 
 class MagicLinkVerify(BaseModel):
     token: str
+
+
+# App Settings Schemas
+class FieldConfigItem(BaseModel):
+    enabled: bool = True
+    required: bool = False
+    label: Optional[str] = None
+
+
+class AppSettingsResponse(BaseModel):
+    default_field_config: dict
+    field_labels: dict
+
+    class Config:
+        from_attributes = True
+
+
+class AppSettingsUpdate(BaseModel):
+    default_field_config: Optional[dict] = None
+    field_labels: Optional[dict] = None

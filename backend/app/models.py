@@ -255,3 +255,15 @@ class ChatMessage(Base):
     # Relationships
     net = relationship("Net", back_populates="chat_messages")
     user = relationship("User", back_populates="chat_messages")
+
+
+class AppSettings(Base):
+    """Global application settings - singleton table with one row"""
+    __tablename__ = "app_settings"
+
+    id = Column(Integer, primary_key=True, default=1)
+    # Default field configuration for new nets
+    default_field_config = Column(Text, default='{"name": {"enabled": true, "required": false, "label": "Name"}, "location": {"enabled": true, "required": false, "label": "Location"}, "skywarn_number": {"enabled": false, "required": false, "label": "Spotter #"}, "weather_observation": {"enabled": false, "required": false, "label": "Weather"}, "power_source": {"enabled": false, "required": false, "label": "Power Source"}, "feedback": {"enabled": false, "required": false, "label": "Feedback"}, "notes": {"enabled": false, "required": false, "label": "Notes"}}')
+    # Field labels (for display across the app)
+    field_labels = Column(Text, default='{"name": "Name", "location": "Location", "skywarn_number": "Spotter #", "weather_observation": "Weather", "power_source": "Power Source", "feedback": "Feedback", "notes": "Notes"}')
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
