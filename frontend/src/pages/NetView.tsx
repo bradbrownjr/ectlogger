@@ -869,26 +869,26 @@ const NetView: React.FC = () => {
           <Grid container spacing={0} sx={{ mt: 0.5, flex: 1, minHeight: 0 }}>
             <Grid item xs={12} md={8} sx={{ pr: { md: 0.5 }, display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%' }}>
               <Box sx={{ border: 1, borderColor: 'divider', borderRadius: '4px 4px 0 0', borderBottom: 0, flexShrink: 0 }}>
-                <Table size="small">
+                <Table size="small" sx={{ tableLayout: 'fixed' }}>
                   <TableHead>
                     <TableRow>
-                      <TableCell>#</TableCell>
-                      <TableCell>Status</TableCell>
-                      <TableCell>Callsign *</TableCell>
+                      <TableCell sx={{ width: 35 }}>#</TableCell>
+                      <TableCell sx={{ width: 75 }}>Status</TableCell>
+                      <TableCell sx={{ width: 140 }}>Callsign *</TableCell>
                       {net?.field_config?.name?.enabled && <TableCell>Name {net.field_config.name.required && '*'}</TableCell>}
                       {net?.field_config?.location?.enabled && <TableCell>Location {net.field_config.location.required && '*'}</TableCell>}
-                      {net?.field_config?.skywarn_number?.enabled && <TableCell>SKYWARN # {net.field_config.skywarn_number.required && '*'}</TableCell>}
+                      {net?.field_config?.skywarn_number?.enabled && <TableCell sx={{ width: 90 }}>SKYWARN # {net.field_config.skywarn_number.required && '*'}</TableCell>}
                       {net?.field_config?.weather_observation?.enabled && <TableCell>Weather {net.field_config.weather_observation.required && '*'}</TableCell>}
-                      {net?.field_config?.power_source?.enabled && <TableCell>Power {net.field_config.power_source.required && '*'}</TableCell>}
+                      {net?.field_config?.power_source?.enabled && <TableCell sx={{ width: 70 }}>Power {net.field_config.power_source.required && '*'}</TableCell>}
                       {net?.field_config?.notes?.enabled && <TableCell>Notes {net.field_config.notes.required && '*'}</TableCell>}
-                      <TableCell>Time</TableCell>
-                      {canManage && <TableCell>Actions</TableCell>}
+                      <TableCell sx={{ width: 95 }}>Time</TableCell>
+                      {canManage && <TableCell sx={{ width: 100 }}>Actions</TableCell>}
                     </TableRow>
                   </TableHead>
                 </Table>
               </Box>
               <TableContainer sx={{ flex: 1, overflow: 'auto', border: 1, borderColor: 'divider', borderTop: 0, minHeight: 0 }}>
-                <Table size="small">
+                <Table size="small" sx={{ tableLayout: 'fixed' }}>
                   <TableBody>
                   {/* Existing check-ins */}
                   {checkIns.map((checkIn, index) => (
@@ -912,8 +912,8 @@ const NetView: React.FC = () => {
                         }
                       }}
                     >
-                      <TableCell>{index + 1}</TableCell>
-                      <TableCell>
+                      <TableCell sx={{ width: 35 }}>{index + 1}</TableCell>
+                      <TableCell sx={{ width: 75 }}>
                         {net.status === 'active' && checkIn.status !== 'checked_out' && (canManageCheckIns || checkIn.user_id === user?.id) ? (() => {
                           // Calculate value once
 
@@ -973,7 +973,7 @@ const NetView: React.FC = () => {
                           </Tooltip>
                         )}
                       </TableCell>
-                      <TableCell sx={{ position: 'relative' }}>
+                      <TableCell sx={{ position: 'relative', width: 140 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                           {checkIn.user_id && onlineUserIds.includes(checkIn.user_id) && (
                             <Box 
@@ -1023,15 +1023,15 @@ const NetView: React.FC = () => {
                       </TableCell>
                       {net?.field_config?.name?.enabled && <TableCell>{checkIn.name}</TableCell>}
                       {net?.field_config?.location?.enabled && <TableCell>{checkIn.location}</TableCell>}
-                      {net?.field_config?.skywarn_number?.enabled && <TableCell>{checkIn.skywarn_number}</TableCell>}
+                      {net?.field_config?.skywarn_number?.enabled && <TableCell sx={{ width: 90 }}>{checkIn.skywarn_number}</TableCell>}
                       {net?.field_config?.weather_observation?.enabled && <TableCell>{checkIn.weather_observation}</TableCell>}
-                      {net?.field_config?.power_source?.enabled && <TableCell>{checkIn.power_source}</TableCell>}
+                      {net?.field_config?.power_source?.enabled && <TableCell sx={{ width: 70 }}>{checkIn.power_source}</TableCell>}
                       {net?.field_config?.notes?.enabled && <TableCell>{checkIn.notes}</TableCell>}
-                      <TableCell>
+                      <TableCell sx={{ width: 95 }}>
                         {formatTime(checkIn.checked_in_at, user?.prefer_utc || false)}
                       </TableCell>
                       {canManage && (
-                      <TableCell>
+                      <TableCell sx={{ width: 100 }}>
                         {net.status === 'active' && checkIn.status !== 'checked_out' && (
                           <IconButton
                             size="small"
