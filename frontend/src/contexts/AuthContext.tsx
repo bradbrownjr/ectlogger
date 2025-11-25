@@ -10,6 +10,7 @@ interface User {
   callsigns?: string[];
   location?: string;
   prefer_utc?: boolean;
+  show_activity_in_chat?: boolean;
   email_notifications?: boolean;
   notify_net_start?: boolean;
   notify_net_close?: boolean;

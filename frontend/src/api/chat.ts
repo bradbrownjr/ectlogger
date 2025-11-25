@@ -3,10 +3,11 @@ import api from '../services/api';
 export interface ChatMessage {
   id: number;
   net_id: number;
-  user_id: number;
+  user_id: number | null;
   callsign: string;
   message: string;
   created_at: string;
+  is_system: boolean;
 }
 
 export interface ChatMessageCreate {

@@ -262,6 +262,10 @@ async def start_net(
     db.add(ncs_check_in)
     await db.commit()
     
+    # Post system message for net start
+    from app.main import post_system_message
+    await post_system_message(net_id, f"Net has been started by {current_user.callsign or current_user.email}", db)
+    
     # Send email notification to net owner and template subscribers
     try:
         emails_to_notify = []
@@ -323,6 +327,13 @@ async def set_active_frequency(
     net.active_frequency_id = frequency_id
     await db.commit()
     await db.refresh(net, ['frequencies'])
+    
+    # Post system message for frequency change
+    from app.main import post_system_message
+    active_freq = next((f for f in net.frequencies if f.id == frequency_id), None)
+    if active_freq:
+        freq_display = f"{active_freq.frequency} {active_freq.mode or ''}" if active_freq.frequency else f"{active_freq.network} TG{active_freq.talkgroup or ''}"
+        await post_system_message(net_id, f"Active frequency changed to {freq_display.strip()}", db)
     
     return NetResponse.from_orm(net)
 
@@ -396,6 +407,10 @@ async def close_net(
     net.closed_at = datetime.utcnow()
     
     await db.commit()
+    
+    # Post system message for net close
+    from app.main import post_system_message
+    await post_system_message(net_id, f"Net has been closed by {current_user.callsign or current_user.email}", db)
     
     # Get owner/NCS information
     result = await db.execute(

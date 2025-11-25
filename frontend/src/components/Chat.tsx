@@ -64,6 +64,11 @@ const Chat: React.FC<ChatProps> = ({ netId, onNewMessage }) => {
     scrollToBottom();
   }, [messages]);
 
+  // Filter messages based on user preference for system messages
+  const filteredMessages = user?.show_activity_in_chat !== false 
+    ? messages 
+    : messages.filter(m => !m.is_system);
+
   const fetchMessages = async () => {
     try {
       const response = await chatApi.list(netId);
@@ -161,57 +166,87 @@ const Chat: React.FC<ChatProps> = ({ netId, onNewMessage }) => {
           minHeight: 0
         }}
       >
-        {messages.length === 0 ? (
+        {filteredMessages.length === 0 ? (
           <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', mt: 4 }}>
             No messages yet. Start the conversation!
           </Typography>
         ) : (
-          messages.map((message, index) => (
+          filteredMessages.map((message, index) => (
             <Box key={message.id}>
-              <ListItem 
-                alignItems="flex-start" 
-                sx={{ 
-                  px: 0.5,
-                  py: 0.25,
-                  backgroundColor: message.user_id === user?.id ? 'action.selected' : 'transparent',
-                  borderRadius: 1
-                }}
-              >
-                <ListItemText
-                  primary={
-                    <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
-                      <Typography 
-                        component="span" 
-                        variant="subtitle2" 
-                        color="primary"
-                        sx={{ fontWeight: 'bold' }}
+              {message.is_system ? (
+                // System message - IRC-style activity log
+                <ListItem sx={{ px: 0.5, py: 0.25 }}>
+                  <ListItemText
+                    primary={
+                      <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
+                        <Typography 
+                          component="span" 
+                          variant="caption" 
+                          color="text.secondary"
+                        >
+                          {formatTime(message.created_at)}
+                        </Typography>
+                        <Typography
+                          component="span"
+                          variant="body2"
+                          sx={{ 
+                            color: 'text.secondary',
+                            fontStyle: 'italic'
+                          }}
+                        >
+                          *** {message.message} ***
+                        </Typography>
+                      </Box>
+                    }
+                  />
+                </ListItem>
+              ) : (
+                // Regular user message
+                <ListItem 
+                  alignItems="flex-start" 
+                  sx={{ 
+                    px: 0.5,
+                    py: 0.25,
+                    backgroundColor: message.user_id === user?.id ? 'action.selected' : 'transparent',
+                    borderRadius: 1
+                  }}
+                >
+                  <ListItemText
+                    primary={
+                      <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
+                        <Typography 
+                          component="span" 
+                          variant="subtitle2" 
+                          color="primary"
+                          sx={{ fontWeight: 'bold' }}
+                        >
+                          {message.callsign}
+                        </Typography>
+                        <Typography 
+                          component="span" 
+                          variant="caption" 
+                          color="text.secondary"
+                        >
+                          {formatTime(message.created_at)}
+                        </Typography>
+                      </Box>
+                    }
+                    secondary={
+                      <Typography
+                        component="span"
+                        variant="body2"
+                        sx={{ 
+                          wordBreak: 'break-word',
+                          whiteSpace: 'pre-wrap'
+                        }}
                       >
-                        {message.callsign}
+                        {linkify(message.message)}
                       </Typography>
-                      <Typography 
-                        component="span" 
-                        variant="caption" 
-                        color="text.secondary"
-                      >
-                        {formatTime(message.created_at)}
-                      </Typography>
-                    </Box>
-                  }
-                  secondary={
-                    <Typography
-                      component="span"
-                      variant="body2"
-                      sx={{ 
-                        wordBreak: 'break-word',
-                        whiteSpace: 'pre-wrap'
-                      }}
-                    >
-                      {linkify(message.message)}
-                    </Typography>
-                  }
-                />
-              </ListItem>
-              {index < messages.length - 1 && <Divider component="li" />}
+                    }
+                  />
+                </ListItem>
+              )}
+              {index < filteredMessages.length - 1 && <Divider component="li" />}
             </Box>
           ))
         )}

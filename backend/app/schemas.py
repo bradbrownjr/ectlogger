@@ -44,6 +44,7 @@ class UserUpdate(BaseModel):
     notify_net_start: Optional[bool] = None
     notify_net_close: Optional[bool] = None
     notify_net_reminder: Optional[bool] = None
+    show_activity_in_chat: Optional[bool] = None
     sms_gateway: Optional[str] = Field(None, max_length=100)
     skywarn_number: Optional[str] = Field(None, max_length=50)
     location: Optional[str] = Field(None, max_length=200)
@@ -73,6 +74,7 @@ class UserResponse(UserBase):
     notify_net_start: bool = True
     notify_net_close: bool = True
     notify_net_reminder: bool = False
+    show_activity_in_chat: bool = True
     gmrs_callsign: Optional[str] = None
     skywarn_number: Optional[str] = None
     location: Optional[str] = None
@@ -376,9 +378,10 @@ class ChatMessageCreate(BaseModel):
 class ChatMessageResponse(BaseModel):
     id: int
     net_id: int
-    user_id: int
+    user_id: Optional[int] = None
     callsign: Optional[str] = None
     message: str
+    is_system: bool = False
     created_at: datetime
 
     class Config:
@@ -391,8 +394,9 @@ class ChatMessageResponse(BaseModel):
             'id': obj.id,
             'net_id': obj.net_id,
             'user_id': obj.user_id,
-            'callsign': obj.user.callsign if obj.user and obj.user.callsign else 'Unknown',
+            'callsign': obj.user.callsign if obj.user and obj.user.callsign else ('System' if obj.is_system else 'Unknown'),
             'message': obj.message,
+            'is_system': obj.is_system if hasattr(obj, 'is_system') else False,
             'created_at': obj.created_at
         }
         return cls(**data)

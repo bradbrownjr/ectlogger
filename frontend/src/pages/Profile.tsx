@@ -34,6 +34,7 @@ const Profile: React.FC = () => {
     gmrs_callsign: user?.gmrs_callsign || '',
     callsigns: user?.callsigns || [],
     prefer_utc: user?.prefer_utc || false,
+    show_activity_in_chat: user?.show_activity_in_chat ?? true,
     email_notifications: user?.email_notifications ?? true,
     notify_net_start: user?.notify_net_start ?? true,
     notify_net_close: user?.notify_net_close ?? true,
@@ -182,6 +183,21 @@ const Profile: React.FC = () => {
             />
             <Typography variant="body2" color="text.secondary" sx={{ ml: 4 }}>
               Show all timestamps in UTC instead of your local timezone
+            </Typography>
+          </Box>
+
+          <Box sx={{ mb: 2 }}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={formData.show_activity_in_chat}
+                  onChange={(e) => setFormData({ ...formData, show_activity_in_chat: e.target.checked })}
+                />
+              }
+              label="Show activity in chat"
+            />
+            <Typography variant="body2" color="text.secondary" sx={{ ml: 4 }}>
+              Display check-in/out and net events as system messages in chat (IRC-style)
             </Typography>
           </Box>
 

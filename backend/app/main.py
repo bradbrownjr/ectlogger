@@ -110,6 +110,50 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 
+async def post_system_message(net_id: int, message: str, db_session=None):
+    """Post a system message to chat and broadcast via WebSocket"""
+    from app.database import AsyncSessionLocal
+    from app.models import ChatMessage
+    import datetime
+    
+    should_close = False
+    if db_session is None:
+        db_session = AsyncSessionLocal()
+        should_close = True
+    
+    try:
+        # Create system message
+        chat_message = ChatMessage(
+            net_id=net_id,
+            user_id=None,  # System messages have no user
+            message=message,
+            is_system=True
+        )
+        db_session.add(chat_message)
+        await db_session.commit()
+        await db_session.refresh(chat_message)
+        
+        # Broadcast via WebSocket
+        await manager.broadcast({
+            "type": "chat_message",
+            "data": {
+                "id": chat_message.id,
+                "net_id": chat_message.net_id,
+                "user_id": None,
+                "callsign": None,
+                "message": chat_message.message,
+                "is_system": True,
+                "created_at": chat_message.created_at.isoformat() if hasattr(chat_message.created_at, 'isoformat') else str(chat_message.created_at)
+            },
+            "timestamp": datetime.datetime.utcnow().isoformat()
+        }, net_id)
+        
+        return chat_message
+    finally:
+        if should_close:
+            await db_session.close()
+
+
 @app.websocket("/ws/nets/{net_id}")
 async def websocket_endpoint(websocket: WebSocket, net_id: int, token: str = None):
     """WebSocket endpoint for real-time net updates - requires authentication"""

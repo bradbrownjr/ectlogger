@@ -151,6 +151,13 @@ async def create_check_in(
     await db.commit()
     await db.refresh(check_in)
     
+    # Post system message for check-in activity
+    from app.main import post_system_message
+    if existing_check_in:
+        await post_system_message(net_id, f"{check_in_data.callsign} has rechecked", db)
+    else:
+        await post_system_message(net_id, f"{check_in_data.callsign} has checked in", db)
+    
     return CheckInResponse.from_orm(check_in)
 
 
@@ -222,6 +229,12 @@ async def update_check_in(
     
     await db.commit()
     await db.refresh(check_in)
+    
+    # Post system message for status changes
+    from app.main import post_system_message
+    if 'status' in check_in_update.dict(exclude_unset=True):
+        status_text = check_in.status.replace('_', ' ').lower() if check_in.status else 'updated'
+        await post_system_message(check_in.net_id, f"{check_in.callsign} is now {status_text}", db)
     
     # Broadcast status change via WebSocket
     from app.main import manager
