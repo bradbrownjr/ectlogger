@@ -266,13 +266,13 @@ async def start_net(
     try:
         emails_to_notify = []
         
-        # Add net owner
+        # Add net owner (if they have notifications enabled)
         result = await db.execute(select(User).where(User.id == net.owner_id))
         owner = result.scalar_one_or_none()
-        if owner and owner.email:
+        if owner and owner.email and owner.email_notifications and owner.notify_net_start:
             emails_to_notify.append(owner.email)
         
-        # If net was created from template, add all subscribers
+        # If net was created from template, add all subscribers who want start notifications
         if net.template_id:
             from app.models import NetTemplateSubscription
             result = await db.execute(
@@ -280,6 +280,7 @@ async def start_net(
                 .join(NetTemplateSubscription, NetTemplateSubscription.user_id == User.id)
                 .where(NetTemplateSubscription.template_id == net.template_id)
                 .where(User.email_notifications == True)
+                .where(User.notify_net_start == True)
             )
             subscribers = result.scalars().all()
             for subscriber in subscribers:
@@ -457,15 +458,38 @@ async def close_net(
             'message': msg.message
         })
     
-    # Send log email to owner
-    if owner and owner.email:
+    # Build list of email recipients (owner + subscribers who want close notifications)
+    emails_to_send = []
+    
+    # Add owner if they have notifications enabled
+    if owner and owner.email and owner.email_notifications and owner.notify_net_close:
+        emails_to_send.append(owner.email)
+    
+    # Add subscribers who want close notifications
+    if net.template_id:
+        from app.models import NetTemplateSubscription
+        result = await db.execute(
+            select(User)
+            .join(NetTemplateSubscription, NetTemplateSubscription.user_id == User.id)
+            .where(NetTemplateSubscription.template_id == net.template_id)
+            .where(User.email_notifications == True)
+            .where(User.notify_net_close == True)
+        )
+        subscribers = result.scalars().all()
+        for subscriber in subscribers:
+            if subscriber.email and subscriber.email not in emails_to_send:
+                emails_to_send.append(subscriber.email)
+    
+    # Send log email to all recipients
+    ncs_name = owner.callsign or owner.name or owner.email if owner else "Unknown"
+    for email in emails_to_send:
         try:
             email_service = EmailService()
             await email_service.send_net_log(
-                email=owner.email,
+                email=email,
                 net_name=net.name,
                 net_description=net.description or "",
-                ncs_name=owner.callsign or owner.name or owner.email,
+                ncs_name=ncs_name,
                 check_ins=check_ins_data,
                 started_at=net.started_at.strftime("%Y-%m-%d %H:%M:%S") if net.started_at else "N/A",
                 closed_at=net.closed_at.strftime("%Y-%m-%d %H:%M:%S") if net.closed_at else "N/A",
@@ -473,7 +497,7 @@ async def close_net(
             )
         except Exception as e:
             # Log error but don't fail the close operation
-            print(f"Failed to send net log email: {e}")
+            print(f"Failed to send net log email to {email}: {e}")
     
     return NetResponse.from_orm(net)
 

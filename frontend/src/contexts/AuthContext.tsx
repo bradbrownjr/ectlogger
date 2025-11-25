@@ -9,6 +9,10 @@ interface User {
   callsigns?: string[];
   location?: string;
   prefer_utc?: boolean;
+  email_notifications?: boolean;
+  notify_net_start?: boolean;
+  notify_net_close?: boolean;
+  notify_net_reminder?: boolean;
   role: string;
 }
 

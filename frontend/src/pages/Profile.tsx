@@ -13,6 +13,7 @@ import {
   Stack,
   FormControlLabel,
   Switch,
+  Divider,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -32,6 +33,10 @@ const Profile: React.FC = () => {
     callsign: user?.callsign || '',
     callsigns: user?.callsigns || [],
     prefer_utc: user?.prefer_utc || false,
+    email_notifications: user?.email_notifications ?? true,
+    notify_net_start: user?.notify_net_start ?? true,
+    notify_net_close: user?.notify_net_close ?? true,
+    notify_net_reminder: user?.notify_net_reminder ?? false,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -167,6 +172,74 @@ const Profile: React.FC = () => {
             <Typography variant="body2" color="text.secondary" sx={{ ml: 4 }}>
               Show all timestamps in UTC instead of your local timezone
             </Typography>
+          </Box>
+
+          <Divider sx={{ my: 3 }} />
+
+          <Typography variant="h6" gutterBottom>
+            Email Notifications
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Control which email notifications you receive for nets you're subscribed to.
+          </Typography>
+
+          <Box sx={{ ml: 1 }}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={formData.email_notifications}
+                  onChange={(e) => setFormData({ ...formData, email_notifications: e.target.checked })}
+                />
+              }
+              label="Enable email notifications"
+            />
+            <Typography variant="body2" color="text.secondary" sx={{ ml: 4, mb: 2 }}>
+              Master switch for all email notifications (except login links)
+            </Typography>
+
+            <Box sx={{ ml: 2, opacity: formData.email_notifications ? 1 : 0.5 }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.notify_net_start}
+                    onChange={(e) => setFormData({ ...formData, notify_net_start: e.target.checked })}
+                    disabled={!formData.email_notifications}
+                  />
+                }
+                label="Net start notifications"
+              />
+              <Typography variant="body2" color="text.secondary" sx={{ ml: 4, mb: 1 }}>
+                Receive an email when a subscribed net goes active
+              </Typography>
+
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.notify_net_close}
+                    onChange={(e) => setFormData({ ...formData, notify_net_close: e.target.checked })}
+                    disabled={!formData.email_notifications}
+                  />
+                }
+                label="Net close notifications (with log)"
+              />
+              <Typography variant="body2" color="text.secondary" sx={{ ml: 4, mb: 1 }}>
+                Receive the net log when a subscribed net closes
+              </Typography>
+
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.notify_net_reminder}
+                    onChange={(e) => setFormData({ ...formData, notify_net_reminder: e.target.checked })}
+                    disabled={!formData.email_notifications}
+                  />
+                }
+                label="Net reminder (1 hour before)"
+              />
+              <Typography variant="body2" color="text.secondary" sx={{ ml: 4, mb: 1 }}>
+                Receive a reminder email 1 hour before scheduled nets start
+              </Typography>
+            </Box>
           </Box>
 
           <TextField

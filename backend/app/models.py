@@ -65,7 +65,10 @@ class User(Base):
     oauth_provider = Column(String(50))  # google, microsoft, github, email
     oauth_id = Column(String(255), unique=True, index=True)
     is_active = Column(Boolean, default=True)
-    email_notifications = Column(Boolean, default=True)
+    email_notifications = Column(Boolean, default=True)  # Master switch for all emails
+    notify_net_start = Column(Boolean, default=True)  # Notify when subscribed net starts
+    notify_net_close = Column(Boolean, default=True)  # Notify when subscribed net closes (with log)
+    notify_net_reminder = Column(Boolean, default=False)  # Reminder 1 hour before subscribed net
     sms_gateway = Column(String(255))  # email-to-sms gateway address
     skywarn_number = Column(String(50))
     location = Column(String(255))

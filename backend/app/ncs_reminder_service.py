@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import select, and_
 from sqlalchemy.orm import selectinload
 from app.database import AsyncSessionLocal
-from app.models import NetTemplate, NCSRotationMember, NCSReminderLog, User
+from app.models import NetTemplate, NCSRotationMember, NCSReminderLog, User, NetTemplateSubscription
 from app.email_service import EmailService
 from app.config import settings
 from app.logger import logger
@@ -54,14 +54,15 @@ class NCSReminderService:
         """Main loop that periodically checks for reminders to send"""
         while self.running:
             try:
-                await self._check_and_send_reminders()
+                await self._check_and_send_ncs_reminders()
+                await self._check_and_send_subscriber_reminders()
             except Exception as e:
                 logger.error("NCS_REMINDER", f"Error in reminder loop: {str(e)}")
             
             # Wait before next check
             await asyncio.sleep(self.CHECK_INTERVAL_MINUTES * 60)
     
-    async def _check_and_send_reminders(self):
+    async def _check_and_send_ncs_reminders(self):
         """Check for upcoming nets and send reminders if needed"""
         logger.debug("NCS_REMINDER", "Checking for NCS reminders to send...")
         
@@ -229,6 +230,141 @@ class NCSReminderService:
                 "NCS_REMINDER", 
                 f"Failed to send reminder to {user.email}: {str(e)}"
             )
+
+    async def _check_and_send_subscriber_reminders(self):
+        """Check for upcoming nets and send reminders to subscribers who want them"""
+        logger.debug("SUBSCRIBER_REMINDER", "Checking for subscriber reminders to send...")
+        
+        async with AsyncSessionLocal() as db:
+            from app.routers.ncs_rotation import calculate_schedule_dates
+            import json
+            
+            # Get all active templates
+            result = await db.execute(
+                select(NetTemplate)
+                .options(
+                    selectinload(NetTemplate.frequencies),
+                    selectinload(NetTemplate.subscriptions).selectinload(NetTemplateSubscription.user)
+                )
+                .where(NetTemplate.is_active == True)
+            )
+            templates = result.scalars().all()
+            
+            now = datetime.now()
+            reminders_sent = 0
+            
+            for template in templates:
+                # Skip templates with no subscribers
+                if not template.subscriptions:
+                    continue
+                
+                # Calculate the next scheduled date for this template
+                try:
+                    dates = calculate_schedule_dates(template, now, months_ahead=1)
+                    if not dates:
+                        continue
+                    
+                    next_date = dates[0]  # Get the next scheduled date
+                except Exception as e:
+                    logger.error("SUBSCRIBER_REMINDER", f"Error calculating dates for template {template.id}: {str(e)}")
+                    continue
+                
+                # Calculate hours until the net
+                time_until = next_date - now
+                hours_until = time_until.total_seconds() / 3600
+                
+                # Only send reminders ~1 hour before (within ±30 minutes window)
+                if not (0.5 <= hours_until <= 1.5):
+                    continue
+                
+                # Get subscribers who want reminders
+                for sub in template.subscriptions:
+                    user = sub.user
+                    if not user or not user.email:
+                        continue
+                    
+                    # Check user preferences
+                    if not user.email_notifications or not user.notify_net_reminder:
+                        continue
+                    
+                    # Check if we already sent this reminder
+                    reminder_type = "subscriber_1h"
+                    already_sent = await self._check_reminder_sent(
+                        db,
+                        template.id,
+                        user.id,
+                        next_date.date(),
+                        reminder_type
+                    )
+                    
+                    if already_sent:
+                        continue
+                    
+                    # Send the reminder
+                    try:
+                        await self._send_subscriber_reminder(db, template, user, next_date)
+                        reminders_sent += 1
+                    except Exception as e:
+                        logger.error("SUBSCRIBER_REMINDER", f"Failed to send reminder to {user.email}: {str(e)}")
+            
+            if reminders_sent > 0:
+                logger.info("SUBSCRIBER_REMINDER", f"Sent {reminders_sent} subscriber reminder(s)")
+
+    async def _send_subscriber_reminder(
+        self,
+        db,
+        template: NetTemplate,
+        user: User,
+        scheduled_dt: datetime
+    ):
+        """Send a subscriber reminder email and log it"""
+        # Format frequencies for the email
+        frequencies = []
+        for freq in template.frequencies:
+            if freq.frequency:
+                frequencies.append({
+                    'frequency': str(freq.frequency),
+                    'mode': freq.mode
+                })
+            elif freq.talkgroup_name:
+                frequencies.append({
+                    'talkgroup_name': freq.talkgroup_name,
+                    'talkgroup_id': freq.talkgroup_id
+                })
+        
+        # Get user name and callsign
+        recipient_name = user.name or user.callsign or "Operator"
+        recipient_callsign = user.callsign or "N/A"
+        
+        # Build net URL (dashboard where they can see active nets)
+        net_url = f"{settings.frontend_url}/dashboard"
+        
+        await EmailService.send_subscriber_reminder(
+            to_email=user.email,
+            recipient_name=recipient_name,
+            recipient_callsign=recipient_callsign,
+            net_name=template.name,
+            net_date=scheduled_dt.strftime("%A, %B %d, %Y"),
+            net_time=scheduled_dt.strftime("%I:%M %p"),
+            frequencies=frequencies,
+            net_url=net_url
+        )
+        
+        # Log that we sent this reminder
+        reminder_log = NCSReminderLog(
+            template_id=template.id,
+            user_id=user.id,
+            net_date=scheduled_dt.date(),
+            reminder_type="subscriber_1h",
+            sent_at=datetime.utcnow()
+        )
+        db.add(reminder_log)
+        await db.commit()
+        
+        logger.info(
+            "SUBSCRIBER_REMINDER",
+            f"Sent 1h reminder to {user.email} for {template.name} on {scheduled_dt.date()}"
+        )
 
 
 # Global instance

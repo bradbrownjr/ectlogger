@@ -528,6 +528,107 @@ This is an automated message, please do not reply.
         )
 
     @staticmethod
+    async def send_subscriber_reminder(
+        to_email: str,
+        recipient_name: str,
+        recipient_callsign: str,
+        net_name: str,
+        net_date: str,
+        net_time: str,
+        frequencies: list,
+        net_url: str
+    ):
+        """Send net reminder to subscriber 1 hour before net starts"""
+        logger.info("EMAIL", f"Sending subscriber reminder to {to_email} for {net_name}")
+        
+        # Format frequencies for display
+        freq_list = ""
+        for freq in frequencies:
+            if freq.get('frequency'):
+                freq_list += f"<li>{freq['frequency']} MHz - {freq.get('mode', 'N/A')}</li>"
+            elif freq.get('talkgroup_name'):
+                freq_list += f"<li>{freq['talkgroup_name']} (TG: {freq.get('talkgroup_id', 'N/A')})</li>"
+        
+        if not freq_list:
+            freq_list = "<li>No frequencies configured</li>"
+        
+        html_template = Template("""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .alert { background-color: #e3f2fd; border-left: 4px solid #1976d2; padding: 15px; margin: 20px 0; border-radius: 4px; }
+                .details { background-color: #f5f5f5; padding: 15px; border-radius: 4px; margin: 20px 0; }
+                .button { 
+                    display: inline-block; 
+                    padding: 12px 24px; 
+                    background-color: #1976d2; 
+                    color: #ffffff !important; 
+                    text-decoration: none; 
+                    border-radius: 4px; 
+                    margin: 20px 0;
+                    font-weight: bold;
+                }
+                .footer { margin-top: 30px; font-size: 12px; color: #666; }
+                ul { margin: 10px 0; padding-left: 20px; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h2>📻 Net Starting Soon!</h2>
+                
+                <div class="alert">
+                    <strong>A net you're subscribed to starts in about 1 hour.</strong>
+                </div>
+                
+                <p>Hello {{ recipient_name }} ({{ recipient_callsign }}),</p>
+                
+                <p>This is a reminder that a net you've subscribed to is starting soon.</p>
+                
+                <div class="details">
+                    <h3>Net Details</h3>
+                    <p><strong>Net:</strong> {{ net_name }}</p>
+                    <p><strong>Date:</strong> {{ net_date }}</p>
+                    <p><strong>Time:</strong> {{ net_time }}</p>
+                    <p><strong>Frequencies:</strong></p>
+                    <ul>
+                        {{ freq_list }}
+                    </ul>
+                </div>
+                
+                <p>Once the net goes active, you can join and check in using the link below.</p>
+                
+                <a href="{{ net_url }}" class="button" style="color: #ffffff;">View Net</a>
+                
+                <div class="footer">
+                    <p>This is an automated reminder from {{ app_name }}.</p>
+                    <p>You can disable these reminders in your profile settings.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """)
+        
+        html_content = html_template.render(
+            recipient_name=recipient_name,
+            recipient_callsign=recipient_callsign,
+            net_name=net_name,
+            net_date=net_date,
+            net_time=net_time,
+            freq_list=freq_list,
+            net_url=net_url,
+            app_name=settings.app_name
+        )
+        
+        await EmailService.send_email(
+            to_email=to_email,
+            subject=f"📻 Reminder: {net_name} starting soon - {net_time}",
+            html_content=html_content
+        )
+
+    @staticmethod
     async def send_net_log(email: str, net_name: str, net_description: str, ncs_name: str, check_ins: list, started_at: str, closed_at: str, chat_messages: list = None):
         """Send net log after net is closed with check-ins table, CSV attachment, and chat log"""
         html_template = Template("""

@@ -40,6 +40,9 @@ class UserUpdate(BaseModel):
     callsign: Optional[str] = Field(None, max_length=20, min_length=3)
     callsigns: Optional[List[str]] = None
     email_notifications: Optional[bool] = None
+    notify_net_start: Optional[bool] = None
+    notify_net_close: Optional[bool] = None
+    notify_net_reminder: Optional[bool] = None
     sms_gateway: Optional[str] = Field(None, max_length=100)
     skywarn_number: Optional[str] = Field(None, max_length=50)
     location: Optional[str] = Field(None, max_length=200)
@@ -66,6 +69,9 @@ class UserResponse(UserBase):
     id: int
     is_active: bool
     email_notifications: bool
+    notify_net_start: bool = True
+    notify_net_close: bool = True
+    notify_net_reminder: bool = False
     skywarn_number: Optional[str] = None
     location: Optional[str] = None
     prefer_utc: bool = False
