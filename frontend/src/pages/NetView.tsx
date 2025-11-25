@@ -31,6 +31,7 @@ import {
   Snackbar,
   Autocomplete,
   Grid,
+  Tooltip,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -1015,11 +1016,14 @@ const NetView: React.FC = () => {
             <Box sx={{ p: 0.5, backgroundColor: 'action.hover', border: 1, borderColor: 'divider', borderTop: 0, borderBottom: 0, flexShrink: 0 }}>
               <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center' }}>
                 <Typography variant="caption" sx={{ fontWeight: 'bold' }}>Legend:</Typography>
-                <Typography variant="caption">✅ Standard</Typography>
-                <Typography variant="caption">👂 Listening</Typography>
-                <Typography variant="caption">⏸️ Short Term</Typography>
-                <Typography variant="caption">🚨 Traffic</Typography>
-                <Typography variant="caption">👋 Out</Typography>
+                <Tooltip title="Net Control Station - manages the net" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>👑 NCS</Typography></Tooltip>
+                <Tooltip title="Logger - assists NCS with logging" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>📋 Logger</Typography></Tooltip>
+                <Tooltip title="Checked in and available" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>✅ Standard</Typography></Tooltip>
+                <Tooltip title="Re-checked into the net" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>🔄 Recheck</Typography></Tooltip>
+                <Tooltip title="Monitoring only, not transmitting" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>👂 Listening</Typography></Tooltip>
+                <Tooltip title="Temporarily away, will return" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>⏸️ Away</Typography></Tooltip>
+                <Tooltip title="Has traffic or emergency to report" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>🚨 Traffic</Typography></Tooltip>
+                <Tooltip title="Checked out of net" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>👋 Out</Typography></Tooltip>
               </Box>
             </Box>
             
