@@ -968,34 +968,25 @@ const NetView: React.FC = () => {
                             {checkIn.callsign}
                           </Box>
                         </Box>
-                        <Box>
-                          {checkIn.frequency_id && (() => {
-                            const freq = net.frequencies.find((f: any) => f.id === checkIn.frequency_id);
-                            return freq ? (
-                              <Chip 
-                                label={`📡 ${formatFrequencyDisplay(freq)}`}
-                                size="small"
-                                sx={{ ml: 1, height: 20, fontSize: '0.75rem' }}
-                              />
-                            ) : null;
-                          })()}
-                          {checkIn.available_frequencies && checkIn.available_frequencies.length > 0 && (
-                            <Box sx={{ mt: 0.5 }}>
-                              {checkIn.available_frequencies.map((freqId: number) => {
-                                const freq = net.frequencies.find((f: any) => f.id === freqId);
-                                return freq ? (
-                                  <Chip 
-                                    key={freqId}
-                                    label={formatFrequencyDisplay(freq)}
-                                    size="small"
-                                    variant="outlined"
-                                    sx={{ mr: 0.5, height: 18, fontSize: '0.7rem' }}
-                                  />
-                                ) : null;
-                              })}
-                            </Box>
-                          )}
-                        </Box>
+                        {/* Available frequencies - highlight active frequency */}
+                        {checkIn.available_frequencies && checkIn.available_frequencies.length > 0 && (
+                          <Box sx={{ mt: 0.5 }}>
+                            {checkIn.available_frequencies.map((freqId: number) => {
+                              const freq = net.frequencies.find((f: any) => f.id === freqId);
+                              const isActive = freqId === checkIn.frequency_id;
+                              return freq ? (
+                                <Chip 
+                                  key={freqId}
+                                  label={isActive ? `📡 ${formatFrequencyDisplay(freq)}` : formatFrequencyDisplay(freq)}
+                                  size="small"
+                                  variant={isActive ? "filled" : "outlined"}
+                                  color={isActive ? "primary" : "default"}
+                                  sx={{ mr: 0.5, height: 18, fontSize: '0.7rem' }}
+                                />
+                              ) : null;
+                            })}
+                          </Box>
+                        )}
                       </TableCell>
                       {net?.field_config?.name?.enabled && <TableCell>{checkIn.name}</TableCell>}
                       {net?.field_config?.location?.enabled && <TableCell>{checkIn.location}</TableCell>}
