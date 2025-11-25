@@ -706,8 +706,8 @@ const NetView: React.FC = () => {
                     </>
                   )}
                 </Box>
-                {/* Right side: Frequency chips */}
-                {net.frequencies && net.frequencies.length > 0 && (
+                {/* Right side: Frequency chips - only show if multiple frequencies */}
+                {net.frequencies && net.frequencies.length > 1 && (
                   <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexWrap: 'wrap' }}>
                     {net.frequencies.map((freq) => (
                       <Chip
@@ -887,7 +887,7 @@ const NetView: React.FC = () => {
                         '& .MuiTableCell-root': {
                           ...(checkIn.id === activeSpeakerId ? { fontWeight: 'bold' } : {}),
                           // Add padding and top-align for frequency chips that overflow, center-align otherwise
-                          ...(checkIn.available_frequencies && checkIn.available_frequencies.length > 0 
+                          ...(net.frequencies && net.frequencies.length > 1 && checkIn.available_frequencies && checkIn.available_frequencies.length > 0 
                             ? { pb: 2, verticalAlign: 'top' } 
                             : { verticalAlign: 'middle' }),
                         }
@@ -972,8 +972,8 @@ const NetView: React.FC = () => {
                             {checkIn.callsign}
                           </Box>
                         </Box>
-                        {/* Available frequencies - positioned to overflow into adjacent columns */}
-                        {checkIn.available_frequencies && checkIn.available_frequencies.length > 0 && (
+                        {/* Available frequencies - only show if net has multiple frequencies */}
+                        {net.frequencies && net.frequencies.length > 1 && checkIn.available_frequencies && checkIn.available_frequencies.length > 0 && (
                           <Box sx={{ 
                             display: 'flex', 
                             gap: 0.5, 
