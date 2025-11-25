@@ -440,23 +440,36 @@ const NetView: React.FC = () => {
   };
 
   const getStatusIcon = (status: string, checkIn?: CheckIn) => {
+    let icon = '';
+    
     // Show role icons for users with active roles
     if (checkIn) {
-      if (owner?.id === checkIn.user_id) return '👑';
-      const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
-      if (userRole?.role === 'ncs') return '👑';
-      if (userRole?.role === 'logger') return '📋';
+      if (owner?.id === checkIn.user_id) icon = '👑';
+      else {
+        const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
+        if (userRole?.role === 'ncs') icon = '👑';
+        else if (userRole?.role === 'logger') icon = '📋';
+      }
     }
     
-    // Show standard status icons
-    switch (status) {
-      case 'checked_in': return '✅'; // Standard
-      case 'listening': return '👂'; // Just listening
-      case 'away': return '⏸️'; // Short term
-      case 'available': return '🚨'; // Has traffic
-      case 'checked_out': return '👋'; // Checked out
-      default: return '✅';
+    // Show standard status icons if no role icon
+    if (!icon) {
+      switch (status) {
+        case 'checked_in': icon = '✅'; break; // Standard
+        case 'listening': icon = '👂'; break; // Just listening
+        case 'away': icon = '⏸️'; break; // Short term
+        case 'available': icon = '🚨'; break; // Has traffic
+        case 'checked_out': icon = '👋'; break; // Checked out
+        default: icon = '✅';
+      }
     }
+    
+    // Add recheck indicator if applicable
+    if (checkIn?.is_recheck) {
+      icon += ' 🔄';
+    }
+    
+    return icon;
   };
 
   const getStatusLabel = (status: string) => {
@@ -934,7 +947,6 @@ const NetView: React.FC = () => {
                           )}
                           <Box>
                             {checkIn.callsign}
-                            {checkIn.is_recheck && ' 🔄'}
                           </Box>
                         </Box>
                         <Box>
