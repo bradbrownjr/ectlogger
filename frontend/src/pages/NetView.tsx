@@ -1085,10 +1085,7 @@ const NetView: React.FC = () => {
                         borderColor: checkIn.id === activeSpeakerId ? 'success.main' : 'transparent',
                         '& .MuiTableCell-root': {
                           ...(checkIn.id === activeSpeakerId ? { fontWeight: 'bold' } : {}),
-                          // Add padding and top-align for frequency chips that overflow, center-align otherwise
-                          ...(net.frequencies && net.frequencies.length > 1 && checkIn.available_frequencies && checkIn.available_frequencies.length > 0 
-                            ? { pb: 2, verticalAlign: 'top' } 
-                            : { verticalAlign: 'middle' }),
+                          verticalAlign: 'middle',
                         }
                       }}
                     >
@@ -1176,13 +1173,8 @@ const NetView: React.FC = () => {
                           <Box sx={{ 
                             display: 'flex', 
                             gap: 0.5, 
-                            flexWrap: 'nowrap', 
+                            flexWrap: 'wrap', 
                             mt: 0.25,
-                            position: 'absolute',
-                            left: 0,
-                            whiteSpace: 'nowrap',
-                            zIndex: 1,
-                            pl: 1,
                           }}>
                             {checkIn.available_frequencies.map((freqId: number) => {
                               const freq = net.frequencies.find((f: any) => f.id === freqId);
