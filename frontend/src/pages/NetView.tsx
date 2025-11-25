@@ -877,7 +877,7 @@ const NetView: React.FC = () => {
                       <TableCell sx={{ width: 140 }}>Callsign *</TableCell>
                       {net?.field_config?.name?.enabled && <TableCell>Name {net.field_config.name.required && '*'}</TableCell>}
                       {net?.field_config?.location?.enabled && <TableCell>Location {net.field_config.location.required && '*'}</TableCell>}
-                      {net?.field_config?.skywarn_number?.enabled && <TableCell sx={{ width: 90 }}>Spotter # {net.field_config.skywarn_number.required && '*'}</TableCell>}
+                      {net?.field_config?.skywarn_number?.enabled && <TableCell sx={{ width: 70 }}>Spotter {net.field_config.skywarn_number.required && '*'}</TableCell>}
                       {net?.field_config?.weather_observation?.enabled && <TableCell>Weather {net.field_config.weather_observation.required && '*'}</TableCell>}
                       {net?.field_config?.power_source?.enabled && <TableCell sx={{ width: 70 }}>Power {net.field_config.power_source.required && '*'}</TableCell>}
                       {net?.field_config?.notes?.enabled && <TableCell>Notes {net.field_config.notes.required && '*'}</TableCell>}
@@ -1031,7 +1031,7 @@ const NetView: React.FC = () => {
                       </TableCell>
                       {net?.field_config?.name?.enabled && <TableCell>{checkIn.name}</TableCell>}
                       {net?.field_config?.location?.enabled && <TableCell>{checkIn.location}</TableCell>}
-                      {net?.field_config?.skywarn_number?.enabled && <TableCell sx={{ width: 90 }}>{checkIn.skywarn_number}</TableCell>}
+                      {net?.field_config?.skywarn_number?.enabled && <TableCell sx={{ width: 70 }}>{checkIn.skywarn_number}</TableCell>}
                       {net?.field_config?.weather_observation?.enabled && <TableCell>{checkIn.weather_observation}</TableCell>}
                       {net?.field_config?.power_source?.enabled && <TableCell sx={{ width: 70 }}>{checkIn.power_source}</TableCell>}
                       {net?.field_config?.notes?.enabled && <TableCell>{checkIn.notes}</TableCell>}
