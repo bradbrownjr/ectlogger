@@ -458,6 +458,7 @@ const NetView: React.FC = () => {
       case 'listening': return '👂'; // Just listening
       case 'away': return '⏸️'; // Short term
       case 'available': return '🚨'; // Has traffic
+      case 'announcements': return '📢'; // Has announcements
       case 'checked_out': return '👋'; // Checked out
       default: return '✅';
     }
@@ -469,6 +470,7 @@ const NetView: React.FC = () => {
       case 'listening': return 'Just Listening';
       case 'away': return 'Short Term';
       case 'available': return 'Has Traffic';
+      case 'announcements': return 'Announcements';
       case 'checked_out': return 'Checked Out';
       default: return 'Standard';
     }
@@ -881,7 +883,7 @@ const NetView: React.FC = () => {
                             selectValue = userRole.role.toLowerCase();
                           }
                           // Only allow lowercase values for Select and MenuItem
-                          const validValues = ['ncs', 'logger', 'checked_in', 'listening', 'away', 'available'];
+                          const validValues = ['ncs', 'logger', 'checked_in', 'listening', 'away', 'available', 'announcements'];
                           if (!validValues.includes(selectValue)) {
                             selectValue = 'checked_in';
                           }
@@ -916,6 +918,7 @@ const NetView: React.FC = () => {
                               <MenuItem value="listening">👂</MenuItem>
                               <MenuItem value="away">⏸️</MenuItem>
                               <MenuItem value="available">🚨</MenuItem>
+                              <MenuItem value="announcements">📢</MenuItem>
                             </Select>
                           );
                         })() : (
@@ -1023,6 +1026,7 @@ const NetView: React.FC = () => {
                 <Tooltip title="Monitoring only, not transmitting" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>👂 Listening</Typography></Tooltip>
                 <Tooltip title="Temporarily away, will return" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>⏸️ Away</Typography></Tooltip>
                 <Tooltip title="Has traffic or emergency to report" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>🚨 Traffic</Typography></Tooltip>
+                <Tooltip title="Has announcements to share" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>📢 Announce</Typography></Tooltip>
                 <Tooltip title="Checked out of net" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>👋 Out</Typography></Tooltip>
               </Box>
             </Box>
