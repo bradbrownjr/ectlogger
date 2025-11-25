@@ -1451,32 +1451,169 @@ const NetView: React.FC = () => {
               </Paper>
             )}
             
-            {/* Mobile check-in form - simple version */}
+            {/* Mobile check-in form - full version */}
             {canManageCheckIns && (
               <Paper sx={{ p: 1.5, mt: 1, display: { xs: 'block', md: 'none' } }}>
-                <Typography variant="subtitle2" sx={{ mb: 1 }}>Quick Check-in</Typography>
-                <Box sx={{ display: 'flex', gap: 1 }}>
+                <Typography variant="subtitle2" sx={{ mb: 1.5 }}>New Check-in</Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                  {/* Callsign - always required */}
                   <TextField
                     size="small"
+                    label="Callsign *"
                     value={checkInForm.callsign}
                     onChange={(e) => setCheckInForm({ ...checkInForm, callsign: e.target.value.toUpperCase() })}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleCheckIn();
-                      }
-                    }}
                     placeholder="Callsign"
                     inputProps={{ style: { textTransform: 'uppercase' } }}
-                    sx={{ flex: 1 }}
+                    fullWidth
                     required
                   />
+                  
+                  {/* Built-in fields based on net config */}
+                  {net?.field_config?.name?.enabled && (
+                    <TextField
+                      size="small"
+                      label={`Name${net.field_config.name.required ? ' *' : ''}`}
+                      value={checkInForm.name}
+                      onChange={(e) => setCheckInForm({ ...checkInForm, name: e.target.value })}
+                      placeholder="Name"
+                      fullWidth
+                      required={net.field_config.name.required}
+                    />
+                  )}
+                  
+                  {net?.field_config?.location?.enabled && (
+                    <TextField
+                      size="small"
+                      label={`Location${net.field_config.location.required ? ' *' : ''}`}
+                      value={checkInForm.location}
+                      onChange={(e) => setCheckInForm({ ...checkInForm, location: e.target.value })}
+                      placeholder="Location"
+                      fullWidth
+                      required={net.field_config.location.required}
+                    />
+                  )}
+                  
+                  {net?.field_config?.skywarn_number?.enabled && (
+                    <TextField
+                      size="small"
+                      label={`Spotter #${net.field_config.skywarn_number.required ? ' *' : ''}`}
+                      value={checkInForm.skywarn_number}
+                      onChange={(e) => setCheckInForm({ ...checkInForm, skywarn_number: e.target.value })}
+                      placeholder="Spotter #"
+                      fullWidth
+                      required={net.field_config.skywarn_number.required}
+                    />
+                  )}
+                  
+                  {net?.field_config?.weather_observation?.enabled && (
+                    <TextField
+                      size="small"
+                      label={`Weather${net.field_config.weather_observation.required ? ' *' : ''}`}
+                      value={checkInForm.weather_observation}
+                      onChange={(e) => setCheckInForm({ ...checkInForm, weather_observation: e.target.value })}
+                      placeholder="Weather observation"
+                      fullWidth
+                      multiline
+                      rows={2}
+                      required={net.field_config.weather_observation.required}
+                    />
+                  )}
+                  
+                  {net?.field_config?.power_source?.enabled && (
+                    <TextField
+                      size="small"
+                      label={`Power${net.field_config.power_source.required ? ' *' : ''}`}
+                      value={checkInForm.power_source}
+                      onChange={(e) => setCheckInForm({ ...checkInForm, power_source: e.target.value })}
+                      placeholder="Power source"
+                      fullWidth
+                      required={net.field_config.power_source.required}
+                    />
+                  )}
+                  
+                  {net?.field_config?.notes?.enabled && (
+                    <TextField
+                      size="small"
+                      label={`Notes${net.field_config.notes.required ? ' *' : ''}`}
+                      value={checkInForm.notes}
+                      onChange={(e) => setCheckInForm({ ...checkInForm, notes: e.target.value })}
+                      placeholder="Notes"
+                      fullWidth
+                      multiline
+                      rows={2}
+                      required={net.field_config.notes.required}
+                    />
+                  )}
+                  
+                  {/* Custom fields */}
+                  {getEnabledCustomFields().map((field) => (
+                    field.field_type === 'select' && field.options ? (
+                      <FormControl key={field.name} size="small" fullWidth>
+                        <InputLabel>{field.label}{isFieldRequired(field.name) ? ' *' : ''}</InputLabel>
+                        <Select
+                          value={checkInForm.custom_fields[field.name] || ''}
+                          label={`${field.label}${isFieldRequired(field.name) ? ' *' : ''}`}
+                          onChange={(e) => setCheckInForm({ 
+                            ...checkInForm, 
+                            custom_fields: { 
+                              ...checkInForm.custom_fields, 
+                              [field.name]: e.target.value as string 
+                            } 
+                          })}
+                        >
+                          <MenuItem value="">
+                            <em>Select {field.label}</em>
+                          </MenuItem>
+                          {field.options.map((option) => (
+                            <MenuItem key={option} value={option}>{option}</MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    ) : (
+                      <TextField
+                        key={field.name}
+                        size="small"
+                        label={`${field.label}${isFieldRequired(field.name) ? ' *' : ''}`}
+                        value={checkInForm.custom_fields[field.name] || ''}
+                        onChange={(e) => setCheckInForm({ 
+                          ...checkInForm, 
+                          custom_fields: { 
+                            ...checkInForm.custom_fields, 
+                            [field.name]: e.target.value 
+                          } 
+                        })}
+                        placeholder={field.placeholder || field.label}
+                        fullWidth
+                        required={isFieldRequired(field.name)}
+                        type={field.field_type === 'number' ? 'number' : 'text'}
+                        multiline={field.field_type === 'textarea'}
+                        rows={field.field_type === 'textarea' ? 2 : 1}
+                      />
+                    )
+                  ))}
+                  
+                  {/* Frequency selector if multiple frequencies */}
+                  {net?.frequencies && net.frequencies.length > 1 && (
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={() => setFrequencyDialogOpen(true)}
+                      startIcon={<span>📡</span>}
+                      fullWidth
+                    >
+                      Set Available Frequencies
+                    </Button>
+                  )}
+                  
+                  {/* Add button */}
                   <Button
                     variant="contained"
                     onClick={handleCheckIn}
                     disabled={!checkInForm.callsign}
+                    size="large"
+                    fullWidth
                   >
-                    Add
+                    Add Check-in
                   </Button>
                 </Box>
               </Paper>
