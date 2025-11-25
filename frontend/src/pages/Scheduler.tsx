@@ -38,7 +38,49 @@ interface Schedule {
   subscriber_count: number;
   frequencies: any[];
   is_subscribed: boolean;
+  schedule_type?: string;
+  schedule_config?: {
+    day_of_week?: number;
+    week_of_month?: number[];
+    time?: string;
+  };
 }
+
+// Format schedule for display
+const formatSchedule = (schedule: Schedule): string => {
+  if (!schedule.schedule_type || schedule.schedule_type === 'ad_hoc') {
+    return 'Ad-hoc (no recurring schedule)';
+  }
+  
+  const config = schedule.schedule_config;
+  if (!config) return schedule.schedule_type;
+  
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const dayName = config.day_of_week !== undefined ? days[config.day_of_week] : '';
+  const time = config.time || '';
+  
+  // Format time to 12-hour
+  let timeStr = '';
+  if (time) {
+    const [hours, minutes] = time.split(':').map(Number);
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const hour12 = hours % 12 || 12;
+    timeStr = `${hour12}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+  }
+  
+  switch (schedule.schedule_type) {
+    case 'daily':
+      return `Daily at ${timeStr}`;
+    case 'weekly':
+      return `${dayName}s at ${timeStr}`;
+    case 'monthly':
+      const weeks = config.week_of_month || [];
+      const weekNames = weeks.map(w => w === 5 ? 'Last' : `${w}${w === 1 ? 'st' : w === 2 ? 'nd' : w === 3 ? 'rd' : 'th'}`).join(', ');
+      return `${weekNames} ${dayName} at ${timeStr}`;
+    default:
+      return schedule.schedule_type;
+  }
+};
 
 const Scheduler: React.FC = () => {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
@@ -136,11 +178,11 @@ const Scheduler: React.FC = () => {
           </Typography>
         </Box>
       ) : (
-        <Grid container spacing={3}>
+        <Grid container spacing={3} sx={{ alignItems: 'stretch' }}>
           {schedules.map((schedule: Schedule) => (
-            <Grid item xs={12} sm={6} md={4} key={schedule.id}>
-              <Card>
-                <CardContent>
+            <Grid item xs={12} sm={6} md={4} key={schedule.id} sx={{ display: 'flex' }}>
+              <Card sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+                <CardContent sx={{ flex: 1 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
                     <Typography variant="h6" component="h2">
                       {schedule.name}
@@ -149,8 +191,11 @@ const Scheduler: React.FC = () => {
                       <Chip label="Inactive" color="default" size="small" />
                     )}
                   </Box>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                     {schedule.description || 'No description'}
+                  </Typography>
+                  <Typography variant="body2" color="primary" sx={{ mb: 1 }}>
+                    📆 {formatSchedule(schedule)}
                   </Typography>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                     <NotificationsActiveIcon fontSize="small" color="action" />
@@ -159,7 +204,7 @@ const Scheduler: React.FC = () => {
                     </Typography>
                   </Box>
                   {schedule.frequencies.length > 0 && (
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" color="text.secondary" component="div">
                       Frequencies: {schedule.frequencies.map((f: any) => {
                         if (f.frequency) {
                           return f.frequency;
