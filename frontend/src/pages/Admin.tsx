@@ -324,14 +324,9 @@ const Admin: React.FC = () => {
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       <Paper sx={{ p: 3 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h4" component="h1">
-            Admin
-          </Typography>
-          <Button variant="outlined" onClick={() => navigate('/dashboard')}>
-            Back to Nets
-          </Button>
-        </Box>
+        <Typography variant="h4" component="h1" sx={{ mb: 2 }}>
+          Admin
+        </Typography>
 
         <Tabs value={tabValue} onChange={(_, newValue) => setTabValue(newValue)} sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <Tab label="Users" id="admin-tab-0" aria-controls="admin-tabpanel-0" />
