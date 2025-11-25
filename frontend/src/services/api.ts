@@ -103,27 +103,27 @@ export const frequencyApi = {
 export const ncsRotationApi = {
   // Rotation members
   listMembers: (templateId: number) => 
-    api.get(`/ncs-rotation/templates/${templateId}/ncs-rotation/members`),
+    api.get(`/templates/${templateId}/ncs-rotation/members`),
   addMember: (templateId: number, data: { user_id: number; position?: number }) => 
-    api.post(`/ncs-rotation/templates/${templateId}/ncs-rotation/members`, data),
+    api.post(`/templates/${templateId}/ncs-rotation/members`, data),
   removeMember: (templateId: number, memberId: number) => 
-    api.delete(`/ncs-rotation/templates/${templateId}/ncs-rotation/members/${memberId}`),
+    api.delete(`/templates/${templateId}/ncs-rotation/members/${memberId}`),
   reorderMembers: (templateId: number, memberIds: number[]) => 
-    api.put(`/ncs-rotation/templates/${templateId}/ncs-rotation/members/reorder`, { member_ids: memberIds }),
+    api.put(`/templates/${templateId}/ncs-rotation/members/reorder`, { member_ids: memberIds }),
   updateMember: (templateId: number, memberId: number, data: { is_active?: boolean; position?: number }) =>
-    api.put(`/ncs-rotation/templates/${templateId}/ncs-rotation/members/${memberId}`, data),
+    api.put(`/templates/${templateId}/ncs-rotation/members/${memberId}`, data),
   
   // Schedule
   getSchedule: (templateId: number, weeks?: number) => 
-    api.get(`/ncs-rotation/templates/${templateId}/ncs-rotation/schedule`, { params: { weeks } }),
+    api.get(`/templates/${templateId}/ncs-rotation/schedule`, { params: { weeks } }),
   getNextNCS: (templateId: number) => 
-    api.get(`/ncs-rotation/templates/${templateId}/ncs-rotation/next`),
+    api.get(`/templates/${templateId}/ncs-rotation/next`),
   
   // Overrides
   listOverrides: (templateId: number) => 
-    api.get(`/ncs-rotation/templates/${templateId}/ncs-rotation/overrides`),
+    api.get(`/templates/${templateId}/ncs-rotation/overrides`),
   createOverride: (templateId: number, data: { net_date: string; original_user_id: number | null; replacement_user_id: number | null; reason?: string; is_cancelled?: boolean }) => 
-    api.post(`/ncs-rotation/templates/${templateId}/ncs-rotation/overrides`, data),
+    api.post(`/templates/${templateId}/ncs-rotation/overrides`, data),
   deleteOverride: (templateId: number, overrideId: number) => 
-    api.delete(`/ncs-rotation/templates/${templateId}/ncs-rotation/overrides/${overrideId}`),
+    api.delete(`/templates/${templateId}/ncs-rotation/overrides/${overrideId}`),
 };
