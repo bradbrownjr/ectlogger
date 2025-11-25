@@ -48,6 +48,8 @@ interface Schedule {
   name: string;
   description: string;
   owner_id: number;
+  owner_callsign?: string | null;
+  owner_name?: string | null;
   is_active: boolean;
   subscriber_count: number;
   frequencies: any[];
@@ -264,7 +266,7 @@ const Scheduler: React.FC = () => {
                     </Typography>
                   )}
                   {/* Next NCS Display */}
-                  {schedule.nextNCS && (
+                  {schedule.nextNCS ? (
                     <Box 
                       sx={{ 
                         mt: 1.5, 
@@ -302,9 +304,43 @@ const Scheduler: React.FC = () => {
                         </IconButton>
                       </Tooltip>
                     </Box>
-                  )}
+                  ) : schedule.owner_callsign ? (
+                    /* Show owner as default NCS when no rotation configured */
+                    <Box 
+                      sx={{ 
+                        mt: 1.5, 
+                        p: 1, 
+                        bgcolor: 'action.hover', 
+                        borderRadius: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1
+                      }}
+                    >
+                      <PersonIcon fontSize="small" color="action" />
+                      <Box sx={{ flex: 1 }}>
+                        <Typography variant="caption" color="text.secondary" display="block">
+                          Host
+                        </Typography>
+                        <Typography variant="body2" fontWeight="medium">
+                          {schedule.owner_callsign}
+                          {schedule.owner_name && ` (${schedule.owner_name})`}
+                        </Typography>
+                      </Box>
+                      {(isOwner(schedule) || isAdmin) && (
+                        <Tooltip title="Set up NCS rotation">
+                          <IconButton 
+                            size="small" 
+                            onClick={() => handleOpenRotationModal(schedule)}
+                          >
+                            <GroupsIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                    </Box>
+                  ) : null}
                   {/* Show rotation setup button for owners without rotation */}
-                  {!schedule.nextNCS && (isOwner(schedule) || isAdmin) && (
+                  {!schedule.nextNCS && !schedule.owner_callsign && (isOwner(schedule) || isAdmin) && (
                     <Box sx={{ mt: 1.5 }}>
                       <Button
                         size="small"

@@ -200,6 +200,8 @@ class NetTemplateUpdate(BaseModel):
 class NetTemplateResponse(NetTemplateBase):
     id: int
     owner_id: int
+    owner_callsign: Optional[str] = None
+    owner_name: Optional[str] = None
     is_active: bool
     created_at: datetime
     frequencies: List[FrequencyResponse] = []
@@ -207,13 +209,15 @@ class NetTemplateResponse(NetTemplateBase):
     is_subscribed: bool = False
 
     @classmethod
-    def from_orm(cls, template, subscriber_count: int = 0, is_subscribed: bool = False):
+    def from_orm(cls, template, subscriber_count: int = 0, is_subscribed: bool = False, owner_callsign: str = None, owner_name: str = None):
         import json
         data = {
             'id': template.id,
             'name': template.name,
             'description': template.description,
             'owner_id': template.owner_id,
+            'owner_callsign': owner_callsign,
+            'owner_name': owner_name,
             'field_config': json.loads(template.field_config) if template.field_config else None,
             'schedule_type': template.schedule_type,
             'schedule_config': json.loads(template.schedule_config) if template.schedule_config else {},

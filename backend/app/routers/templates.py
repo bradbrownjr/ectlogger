@@ -68,7 +68,10 @@ async def list_templates(
     db: AsyncSession = Depends(get_db)
 ):
     """List net templates (no auth required for guest access)"""
-    query = select(NetTemplate).options(selectinload(NetTemplate.frequencies))
+    query = select(NetTemplate).options(
+        selectinload(NetTemplate.frequencies),
+        selectinload(NetTemplate.owner)
+    )
     
     if not include_inactive:
         query = query.where(NetTemplate.is_active == True)
@@ -105,7 +108,9 @@ async def list_templates(
         template_responses.append(NetTemplateResponse.from_orm(
             template, 
             subscriber_count=subscriber_count,
-            is_subscribed=is_subscribed
+            is_subscribed=is_subscribed,
+            owner_callsign=template.owner.callsign if template.owner else None,
+            owner_name=template.owner.name if template.owner else None
         ))
     
     return template_responses
