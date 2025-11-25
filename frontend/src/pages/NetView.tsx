@@ -950,8 +950,8 @@ const NetView: React.FC = () => {
                           </Tooltip>
                         )}
                       </TableCell>
-                      <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
+                      <TableCell sx={{ verticalAlign: 'top' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                           {checkIn.user_id && onlineUserIds.includes(checkIn.user_id) && (
                             <Box 
                               sx={{ 
@@ -967,9 +967,11 @@ const NetView: React.FC = () => {
                           <Box sx={{ fontWeight: 500 }}>
                             {checkIn.callsign}
                           </Box>
-                          {/* Available frequencies inline - highlight active frequency */}
-                          {checkIn.available_frequencies && checkIn.available_frequencies.length > 0 && 
-                            checkIn.available_frequencies.map((freqId: number) => {
+                        </Box>
+                        {/* Available frequencies on second line - highlight active frequency */}
+                        {checkIn.available_frequencies && checkIn.available_frequencies.length > 0 && (
+                          <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mt: 0.25 }}>
+                            {checkIn.available_frequencies.map((freqId: number) => {
                               const freq = net.frequencies.find((f: any) => f.id === freqId);
                               const isActive = freqId === checkIn.frequency_id;
                               return freq ? (
@@ -982,17 +984,17 @@ const NetView: React.FC = () => {
                                   sx={{ height: 18, fontSize: '0.7rem' }}
                                 />
                               ) : null;
-                            })
-                          }
-                        </Box>
+                            })}
+                          </Box>
+                        )}
                       </TableCell>
-                      {net?.field_config?.name?.enabled && <TableCell>{checkIn.name}</TableCell>}
-                      {net?.field_config?.location?.enabled && <TableCell>{checkIn.location}</TableCell>}
-                      {net?.field_config?.skywarn_number?.enabled && <TableCell>{checkIn.skywarn_number}</TableCell>}
-                      {net?.field_config?.weather_observation?.enabled && <TableCell>{checkIn.weather_observation}</TableCell>}
-                      {net?.field_config?.power_source?.enabled && <TableCell>{checkIn.power_source}</TableCell>}
-                      {net?.field_config?.notes?.enabled && <TableCell>{checkIn.notes}</TableCell>}
-                      <TableCell>
+                      {net?.field_config?.name?.enabled && <TableCell sx={{ verticalAlign: 'top' }}>{checkIn.name}</TableCell>}
+                      {net?.field_config?.location?.enabled && <TableCell sx={{ verticalAlign: 'top' }}>{checkIn.location}</TableCell>}
+                      {net?.field_config?.skywarn_number?.enabled && <TableCell sx={{ verticalAlign: 'top' }}>{checkIn.skywarn_number}</TableCell>}
+                      {net?.field_config?.weather_observation?.enabled && <TableCell sx={{ verticalAlign: 'top' }}>{checkIn.weather_observation}</TableCell>}
+                      {net?.field_config?.power_source?.enabled && <TableCell sx={{ verticalAlign: 'top' }}>{checkIn.power_source}</TableCell>}
+                      {net?.field_config?.notes?.enabled && <TableCell sx={{ verticalAlign: 'top' }}>{checkIn.notes}</TableCell>}
+                      <TableCell sx={{ verticalAlign: 'top' }}>
                         {formatTime(checkIn.checked_in_at, user?.prefer_utc || false)}
                       </TableCell>
                       {canManage && (
