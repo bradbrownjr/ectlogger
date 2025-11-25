@@ -93,13 +93,21 @@ async def create_check_in(
         available_frequencies_json = json.dumps(existing_freqs)
         
         existing_check_in.user_id = linked_user_id
-        existing_check_in.name = check_in_data.name
-        existing_check_in.location = check_in_data.location
-        existing_check_in.skywarn_number = check_in_data.skywarn_number
-        existing_check_in.weather_observation = check_in_data.weather_observation
-        existing_check_in.power_source = check_in_data.power_source
-        existing_check_in.feedback = check_in_data.feedback
-        existing_check_in.notes = check_in_data.notes
+        # Only update fields if new value is provided (not empty), otherwise keep existing
+        if check_in_data.name:
+            existing_check_in.name = check_in_data.name
+        if check_in_data.location:
+            existing_check_in.location = check_in_data.location
+        if check_in_data.skywarn_number:
+            existing_check_in.skywarn_number = check_in_data.skywarn_number
+        if check_in_data.weather_observation:
+            existing_check_in.weather_observation = check_in_data.weather_observation
+        if check_in_data.power_source:
+            existing_check_in.power_source = check_in_data.power_source
+        if check_in_data.feedback:
+            existing_check_in.feedback = check_in_data.feedback
+        if check_in_data.notes:
+            existing_check_in.notes = check_in_data.notes
         existing_check_in.frequency_id = check_in_data.frequency_id
         existing_check_in.available_frequencies = available_frequencies_json
         existing_check_in.is_recheck = True
