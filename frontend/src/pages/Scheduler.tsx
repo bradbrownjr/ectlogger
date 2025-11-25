@@ -344,15 +344,17 @@ const Scheduler: React.FC = () => {
                       </Tooltip>
                     )}
                     
-                    {/* Rotation */}
-                    <Tooltip title={schedule.nextNCS ? "View rotation schedule" : "Set up NCS rotation"}>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleOpenRotationModal(schedule)}
-                      >
-                        <GroupsIcon />
-                      </IconButton>
-                    </Tooltip>
+                    {/* Rotation - visible to all if exists, only owner/admin to set up */}
+                    {(schedule.nextNCS || isOwner(schedule) || isAdmin) && (
+                      <Tooltip title={schedule.nextNCS ? "View rotation schedule" : "Set up NCS rotation"}>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleOpenRotationModal(schedule)}
+                        >
+                          <GroupsIcon />
+                        </IconButton>
+                      </Tooltip>
+                    )}
                     
                     {/* Edit & Delete for owners/admins */}
                     {(isOwner(schedule) || isAdmin) && (
