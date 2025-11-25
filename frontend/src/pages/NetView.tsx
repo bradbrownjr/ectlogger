@@ -1073,6 +1073,7 @@ const NetView: React.FC = () => {
                     <TableRow 
                       key={checkIn.id}
                       sx={{ 
+                        height: 52,
                         backgroundColor: checkIn.id === activeSpeakerId 
                           ? (theme) => theme.palette.mode === 'dark' ? theme.palette.success.dark : theme.palette.success.light
                           : checkIn.status === 'checked_out' 
@@ -1085,10 +1086,7 @@ const NetView: React.FC = () => {
                         borderColor: checkIn.id === activeSpeakerId ? 'success.main' : 'transparent',
                         '& .MuiTableCell-root': {
                           ...(checkIn.id === activeSpeakerId ? { fontWeight: 'bold' } : {}),
-                          // Add padding and top-align for frequency chips that overflow, center-align otherwise
-                          ...(net.frequencies && net.frequencies.length > 1 && checkIn.available_frequencies && checkIn.available_frequencies.length > 0 
-                            ? { pb: 2, verticalAlign: 'top' } 
-                            : { verticalAlign: 'middle' }),
+                          verticalAlign: 'middle',
                         }
                       }}
                     >
