@@ -449,13 +449,9 @@ const NetView: React.FC = () => {
   const getAppropriateCallsign = (): string => {
     if (!user) return '';
     
-    // Check if active frequency is GMRS
+    // Check if active frequency is GMRS mode
     const activeFreq = net?.frequencies?.find((f: Frequency) => f.id === net?.active_frequency_id);
-    const isGmrsFrequency = activeFreq?.mode === 'FM' && (
-      activeFreq?.description?.toLowerCase().includes('gmrs') ||
-      activeFreq?.frequency?.includes('462.') ||  // GMRS frequencies are in 462 MHz range
-      activeFreq?.frequency?.includes('467.')     // GMRS frequencies also in 467 MHz range
-    );
+    const isGmrsFrequency = activeFreq?.mode === 'GMRS';
     
     // If GMRS frequency and user has a GMRS callsign, use it
     if (isGmrsFrequency && user.gmrs_callsign) {
