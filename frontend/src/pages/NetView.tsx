@@ -830,7 +830,7 @@ const NetView: React.FC = () => {
               </Box>
             </Grid>
             <Grid item xs={12} md={4} sx={{ pl: { md: 0.5 } }}>
-              <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', alignItems: 'center', justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
+              <Box sx={{ display: 'flex', gap: 0.5, flexWrap: { xs: 'wrap', md: 'nowrap' }, alignItems: 'center', justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
                 {canManage && net.status === 'draft' && (
                   <>
                     <Button size="small" variant="outlined" onClick={() => navigate(`/nets/${netId}/edit`)}>
