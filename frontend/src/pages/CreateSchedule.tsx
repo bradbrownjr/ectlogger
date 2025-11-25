@@ -412,9 +412,14 @@ const CreateSchedule: React.FC = () => {
   return (
     <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
       <Paper sx={{ p: 3 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          {isEdit ? 'Edit Schedule' : 'Create Schedule'}
-        </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: 1 }}>
+          <Typography variant="h4" component="h1">
+            {isEdit ? 'Edit Schedule' : 'Create Schedule'}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            Times in {Intl.DateTimeFormat().resolvedOptions().timeZone}
+          </Typography>
+        </Box>
 
         <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3 }}>
           <TextField

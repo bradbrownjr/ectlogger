@@ -114,9 +114,14 @@ const Scheduler: React.FC = () => {
         <Typography variant="h4" component="h1" gutterBottom>
           📅 Nets
         </Typography>
-        <Typography variant="body1" color="text.secondary">
-          Create recurring net schedules and subscribe to notifications
-        </Typography>
+        <Box sx={{ textAlign: 'right' }}>
+          <Typography variant="body1" color="text.secondary">
+            Create recurring net schedules and subscribe to notifications
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            Times shown in {Intl.DateTimeFormat().resolvedOptions().timeZone}
+          </Typography>
+        </Box>
       </Box>
 
       {loading ? (
