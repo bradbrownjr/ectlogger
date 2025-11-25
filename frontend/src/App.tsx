@@ -28,6 +28,10 @@ const getDesignTokens = (mode: PaletteMode) => ({
           secondary: {
             main: '#dc004e',
           },
+          background: {
+            default: '#e8eef4',  // Light blue-gray background
+            paper: '#ffffff',
+          },
         }
       : {
           primary: {
