@@ -32,6 +32,7 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PersonIcon from '@mui/icons-material/Person';
 import GroupsIcon from '@mui/icons-material/Groups';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import RadioIcon from '@mui/icons-material/Radio';
 import { templateApi, netApi, ncsRotationApi } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import NCSRotationModal from '../components/NCSRotationModal';
@@ -231,7 +232,8 @@ const Scheduler: React.FC = () => {
             <Grid item xs={12} sm={6} md={4} key={schedule.id} sx={{ display: 'flex' }}>
               <Card sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
                 <CardContent sx={{ flex: 1 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                  {/* Title */}
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
                     <Typography variant="h6" component="h2">
                       {schedule.name}
                     </Typography>
@@ -239,121 +241,75 @@ const Scheduler: React.FC = () => {
                       <Chip label="Inactive" color="default" size="small" />
                     )}
                   </Box>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  
+                  {/* Description */}
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
                     {schedule.description || 'No description'}
                   </Typography>
-                  <Typography variant="body2" color="primary" sx={{ mb: 1 }}>
-                    📆 {formatSchedule(schedule)}
-                  </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                    <NotificationsActiveIcon fontSize="small" color="action" />
-                    <Typography variant="caption" color="text.secondary">
-                      {schedule.subscriber_count} subscriber{schedule.subscriber_count !== 1 ? 's' : ''}
-                    </Typography>
-                  </Box>
-                  {schedule.frequencies.length > 0 && (
-                    <Typography variant="caption" color="text.secondary" component="div">
-                      Frequencies: {schedule.frequencies.map((f: any) => {
-                        if (f.frequency) {
-                          return f.frequency;
-                        } else if (f.network && f.talkgroup) {
-                          return `${f.network} TG${f.talkgroup}`;
-                        } else if (f.network) {
-                          return f.network;
-                        }
-                        return '';
-                      }).filter((s: string) => s).join(', ')}
-                    </Typography>
-                  )}
-                  {/* Next NCS Display */}
-                  {schedule.nextNCS ? (
-                    <Box 
-                      sx={{ 
-                        mt: 1.5, 
-                        p: 1, 
-                        bgcolor: 'action.hover', 
-                        borderRadius: 1,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1
-                      }}
-                    >
-                      <PersonIcon fontSize="small" color="primary" />
-                      <Box sx={{ flex: 1 }}>
-                        <Typography variant="caption" color="text.secondary" display="block">
-                          Next NCS
-                        </Typography>
-                        <Typography variant="body2" fontWeight="medium">
-                          {schedule.nextNCS.callsign}
-                          {schedule.nextNCS.name && ` (${schedule.nextNCS.name})`}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {new Date(schedule.nextNCS.date).toLocaleDateString(undefined, { 
-                            weekday: 'short', 
-                            month: 'short', 
-                            day: 'numeric' 
-                          })}
+                  
+                  {/* Info List */}
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                    {/* Schedule */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <CalendarMonthIcon fontSize="small" color="action" />
+                      <Typography variant="body2" color="text.secondary">
+                        {formatSchedule(schedule)}
+                      </Typography>
+                    </Box>
+                    
+                    {/* Frequencies */}
+                    {schedule.frequencies.length > 0 && (
+                      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                        <RadioIcon fontSize="small" color="action" sx={{ mt: 0.25 }} />
+                        <Typography variant="body2" color="text.secondary">
+                          {schedule.frequencies.map((f: any) => {
+                            if (f.frequency) {
+                              return f.frequency;
+                            } else if (f.network && f.talkgroup) {
+                              return `${f.network} TG${f.talkgroup}`;
+                            } else if (f.network) {
+                              return f.network;
+                            }
+                            return '';
+                          }).filter((s: string) => s).join(', ')}
                         </Typography>
                       </Box>
-                      <Tooltip title="View rotation schedule">
-                        <IconButton 
-                          size="small" 
-                          onClick={() => handleOpenRotationModal(schedule)}
-                        >
-                          <CalendarMonthIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </Box>
-                  ) : schedule.owner_callsign ? (
-                    /* Show owner as default NCS when no rotation configured */
-                    <Box 
-                      sx={{ 
-                        mt: 1.5, 
-                        p: 1, 
-                        bgcolor: 'action.hover', 
-                        borderRadius: 1,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1
-                      }}
-                    >
+                    )}
+                    
+                    {/* Host / Next NCS */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <PersonIcon fontSize="small" color="action" />
-                      <Box sx={{ flex: 1 }}>
-                        <Typography variant="caption" color="text.secondary" display="block">
-                          Host
-                        </Typography>
-                        <Typography variant="body2" fontWeight="medium">
-                          {schedule.owner_callsign}
-                          {schedule.owner_name && ` (${schedule.owner_name})`}
-                        </Typography>
-                      </Box>
-                      {(isOwner(schedule) || isAdmin) && (
-                        <Tooltip title="Set up NCS rotation">
-                          <IconButton 
-                            size="small" 
-                            onClick={() => handleOpenRotationModal(schedule)}
-                          >
-                            <GroupsIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      )}
+                      <Typography variant="body2" color="text.secondary">
+                        {schedule.nextNCS ? (
+                          <>
+                            <strong>Next NCS:</strong> {schedule.nextNCS.callsign}
+                            {schedule.nextNCS.name && ` (${schedule.nextNCS.name})`}
+                            {' - '}
+                            {new Date(schedule.nextNCS.date).toLocaleDateString(undefined, { 
+                              weekday: 'short', 
+                              month: 'short', 
+                              day: 'numeric' 
+                            })}
+                          </>
+                        ) : (
+                          <>
+                            <strong>Host:</strong> {schedule.owner_callsign || 'Unknown'}
+                            {schedule.owner_name && ` (${schedule.owner_name})`}
+                          </>
+                        )}
+                      </Typography>
                     </Box>
-                  ) : null}
-                  {/* Show rotation setup button for owners without rotation */}
-                  {!schedule.nextNCS && !schedule.owner_callsign && (isOwner(schedule) || isAdmin) && (
-                    <Box sx={{ mt: 1.5 }}>
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        startIcon={<GroupsIcon />}
-                        onClick={() => handleOpenRotationModal(schedule)}
-                        sx={{ fontSize: '0.75rem' }}
-                      >
-                        Set Up NCS Rotation
-                      </Button>
+                    
+                    {/* Subscribers */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <NotificationsActiveIcon fontSize="small" color="action" />
+                      <Typography variant="body2" color="text.secondary">
+                        {schedule.subscriber_count} subscriber{schedule.subscriber_count !== 1 ? 's' : ''}
+                      </Typography>
                     </Box>
-                  )}
+                  </Box>
                 </CardContent>
+                
                 {isAuthenticated && (
                 <CardActions sx={{ justifyContent: 'space-between', flexWrap: 'wrap' }}>
                   <Box>
@@ -366,39 +322,58 @@ const Scheduler: React.FC = () => {
                     </Button>
                   </Box>
                   <Box>
+                    {/* Notifications */}
                     {schedule.is_subscribed ? (
-                      <IconButton
-                        size="small"
-                        color="primary"
-                        onClick={() => handleUnsubscribe(schedule.id)}
-                        title="Unsubscribe from notifications"
-                      >
-                        <NotificationsActiveIcon />
-                      </IconButton>
+                      <Tooltip title="Unsubscribe from notifications">
+                        <IconButton
+                          size="small"
+                          color="primary"
+                          onClick={() => handleUnsubscribe(schedule.id)}
+                        >
+                          <NotificationsActiveIcon />
+                        </IconButton>
+                      </Tooltip>
                     ) : (
+                      <Tooltip title="Subscribe to notifications">
+                        <IconButton
+                          size="small"
+                          onClick={() => handleSubscribe(schedule.id)}
+                        >
+                          <NotificationsOffIcon />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                    
+                    {/* Rotation */}
+                    <Tooltip title={schedule.nextNCS ? "View rotation schedule" : "Set up NCS rotation"}>
                       <IconButton
                         size="small"
-                        onClick={() => handleSubscribe(schedule.id)}
-                        title="Subscribe to notifications"
+                        onClick={() => handleOpenRotationModal(schedule)}
                       >
-                        <NotificationsOffIcon />
+                        <GroupsIcon />
                       </IconButton>
-                    )}
+                    </Tooltip>
+                    
+                    {/* Edit & Delete for owners/admins */}
                     {(isOwner(schedule) || isAdmin) && (
                       <>
-                        <IconButton
-                          size="small"
-                          onClick={() => navigate(`/scheduler/${schedule.id}/edit`)}
-                        >
-                          <EditIcon />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => handleDelete(schedule.id)}
-                        >
-                          <DeleteIcon />
-                        </IconButton>
+                        <Tooltip title="Edit schedule">
+                          <IconButton
+                            size="small"
+                            onClick={() => navigate(`/scheduler/${schedule.id}/edit`)}
+                          >
+                            <EditIcon />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Delete schedule">
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => handleDelete(schedule.id)}
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </Tooltip>
                       </>
                     )}
                   </Box>

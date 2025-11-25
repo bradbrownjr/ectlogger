@@ -145,6 +145,8 @@ class NetResponse(NetBase):
     id: int
     status: NetStatus
     owner_id: int
+    owner_callsign: Optional[str] = None
+    owner_name: Optional[str] = None
     active_frequency_id: Optional[int] = None
     field_config: Optional[dict] = None
     started_at: Optional[datetime] = None
@@ -153,7 +155,7 @@ class NetResponse(NetBase):
     frequencies: List[FrequencyResponse] = []
 
     @classmethod
-    def from_orm(cls, net):
+    def from_orm(cls, net, owner_callsign: str = None, owner_name: str = None):
         import json
         data = {
             'id': net.id,
@@ -161,6 +163,8 @@ class NetResponse(NetBase):
             'description': net.description,
             'status': net.status,
             'owner_id': net.owner_id,
+            'owner_callsign': owner_callsign,
+            'owner_name': owner_name,
             'active_frequency_id': net.active_frequency_id,
             'field_config': json.loads(net.field_config) if net.field_config else None,
             'started_at': net.started_at,

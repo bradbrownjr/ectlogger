@@ -87,7 +87,10 @@ async def list_nets(
     current_user: Optional[User] = Depends(get_current_user_optional)
 ):
     """List nets with optional status filter, excludes archived by default (no auth required for guest access)"""
-    query = select(Net).options(selectinload(Net.frequencies))
+    query = select(Net).options(
+        selectinload(Net.frequencies),
+        selectinload(Net.owner)
+    )
     
     if status:
         query = query.where(Net.status == status)
@@ -100,7 +103,13 @@ async def list_nets(
     result = await db.execute(query)
     nets = result.scalars().all()
     
-    return [NetResponse.from_orm(net) for net in nets]
+    return [
+        NetResponse.from_orm(
+            net,
+            owner_callsign=net.owner.callsign if net.owner else None,
+            owner_name=net.owner.name if net.owner else None
+        ) for net in nets
+    ]
 
 
 @router.get("/{net_id}", response_model=NetResponse)
@@ -110,14 +119,21 @@ async def get_net(
 ):
     """Get net by ID"""
     result = await db.execute(
-        select(Net).options(selectinload(Net.frequencies)).where(Net.id == net_id)
+        select(Net).options(
+            selectinload(Net.frequencies),
+            selectinload(Net.owner)
+        ).where(Net.id == net_id)
     )
     net = result.scalar_one_or_none()
     
     if not net:
         raise HTTPException(status_code=404, detail="Net not found")
     
-    return NetResponse.from_orm(net)
+    return NetResponse.from_orm(
+        net,
+        owner_callsign=net.owner.callsign if net.owner else None,
+        owner_name=net.owner.name if net.owner else None
+    )
 
 
 @router.get("/{net_id}/stats")

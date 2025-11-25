@@ -15,6 +15,9 @@ import {
   useTheme,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import RadioIcon from '@mui/icons-material/Radio';
+import PersonIcon from '@mui/icons-material/Person';
 import { netApi } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { formatDateTime } from '../utils/dateUtils';
@@ -25,6 +28,8 @@ interface Net {
   description: string;
   status: string;
   owner_id: number;
+  owner_callsign?: string | null;
+  owner_name?: string | null;
   started_at?: string;
   closed_at?: string;
   created_at: string;
@@ -107,7 +112,8 @@ const Dashboard: React.FC = () => {
             <Grid item xs={12} sm={6} md={4} key={net.id} sx={{ display: 'flex' }}>
               <Card sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
                 <CardContent sx={{ flex: 1 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                  {/* Title with Status */}
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
                     <Typography variant="h6" component="h2">
                       {net.name}
                     </Typography>
@@ -117,38 +123,60 @@ const Dashboard: React.FC = () => {
                       size="small"
                     />
                   </Box>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  
+                  {/* Description */}
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
                     {net.description || 'No description'}
                   </Typography>
-                  {(net.status === 'closed' && net.closed_at) && (
-                    <Typography variant="caption" display="block" color="text.secondary" sx={{ mb: 1 }}>
-                      Closed: {formatDateTime(net.closed_at, user?.prefer_utc || false)}
-                    </Typography>
-                  )}
-                  {(net.status === 'active' && net.started_at) && (
-                    <Typography variant="caption" display="block" color="text.secondary" sx={{ mb: 1 }}>
-                      Started: {formatDateTime(net.started_at, user?.prefer_utc || false)}
-                    </Typography>
-                  )}
-                  {(net.status === 'draft' || net.status === 'scheduled') && (
-                    <Typography variant="caption" display="block" color="text.secondary" sx={{ mb: 1 }}>
-                      Created: {formatDateTime(net.created_at, user?.prefer_utc || false)}
-                    </Typography>
-                  )}
-                  {net.frequencies.length > 0 && (
-                    <Typography variant="caption" color="text.secondary">
-                      Frequencies: {net.frequencies.map((f: any) => {
-                        if (f.frequency) {
-                          return f.frequency;
-                        } else if (f.network && f.talkgroup) {
-                          return `${f.network} TG${f.talkgroup}`;
-                        } else if (f.network) {
-                          return f.network;
-                        }
-                        return '';
-                      }).filter((s: string) => s).join(', ')}
-                    </Typography>
-                  )}
+                  
+                  {/* Info List */}
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                    {/* Time info based on status */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <AccessTimeIcon fontSize="small" color="action" />
+                      <Typography variant="body2" color="text.secondary">
+                        {net.status === 'closed' && net.closed_at && (
+                          <>Closed: {formatDateTime(net.closed_at, user?.prefer_utc || false)}</>
+                        )}
+                        {net.status === 'active' && net.started_at && (
+                          <>Started: {formatDateTime(net.started_at, user?.prefer_utc || false)}</>
+                        )}
+                        {(net.status === 'draft' || net.status === 'scheduled') && (
+                          <>Created: {formatDateTime(net.created_at, user?.prefer_utc || false)}</>
+                        )}
+                      </Typography>
+                    </Box>
+                    
+                    {/* Frequencies */}
+                    {net.frequencies.length > 0 && (
+                      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                        <RadioIcon fontSize="small" color="action" sx={{ mt: 0.25 }} />
+                        <Typography variant="body2" color="text.secondary">
+                          {net.frequencies.map((f: any) => {
+                            if (f.frequency) {
+                              return f.frequency;
+                            } else if (f.network && f.talkgroup) {
+                              return `${f.network} TG${f.talkgroup}`;
+                            } else if (f.network) {
+                              return f.network;
+                            }
+                            return '';
+                          }).filter((s: string) => s).join(', ')}
+                        </Typography>
+                      </Box>
+                    )}
+                    
+                    {/* Host/NCS */}
+                    {net.owner_callsign && (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <PersonIcon fontSize="small" color="action" />
+                        <Typography variant="body2" color="text.secondary">
+                          <strong>NCS:</strong> {net.owner_callsign}
+                          {net.owner_name && ` (${net.owner_name})`}
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
                 </CardContent>
                 <CardActions>
                   {net.status === 'draft' && (user?.id === net.owner_id || user?.role === 'admin') && (
