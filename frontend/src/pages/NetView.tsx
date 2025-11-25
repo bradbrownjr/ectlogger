@@ -967,7 +967,7 @@ const NetView: React.FC = () => {
             <Grid item xs={12} md={8} sx={{ pr: { md: 0.5 }, display: 'flex', flexDirection: 'column', minHeight: { xs: 'auto', md: 0 }, height: { xs: 'auto', md: '100%' }, mb: { xs: 2, md: 0 } }}>
               {/* Desktop: Separate sticky header */}
               <Box sx={{ border: 1, borderColor: 'divider', borderRadius: '4px 4px 0 0', borderBottom: 0, flexShrink: 0, overflowX: 'hidden', display: { xs: 'none', md: 'block' } }}>
-                <Table size="small" sx={{ tableLayout: 'fixed', minWidth: 600 }}>
+                <Table size="small">
                   <TableHead>
                     <TableRow>
                       <TableCell sx={{ width: 35, whiteSpace: 'nowrap' }}>#</TableCell>
@@ -1060,7 +1060,7 @@ const NetView: React.FC = () => {
               </TableContainer>
               {/* Desktop: Scrolling body */}
               <TableContainer sx={{ flex: { xs: 'none', md: 1 }, overflow: 'auto', border: 1, borderColor: 'divider', borderTop: 0, borderRadius: '0 0 4px 4px', minHeight: 0, display: { xs: 'none', md: 'block' } }}>
-                <Table size="small" sx={{ tableLayout: 'fixed', minWidth: 600 }}>
+                <Table size="small">
                   <TableBody>
                   {/* Existing check-ins */}
                   {checkIns.map((checkIn, index) => {
