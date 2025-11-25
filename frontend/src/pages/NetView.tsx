@@ -40,11 +40,13 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import DownloadIcon from '@mui/icons-material/Download';
 import ArchiveIcon from '@mui/icons-material/Archive';
+import MapIcon from '@mui/icons-material/Map';
 import { netApi, checkInApi } from '../services/api';
 import api from '../services/api';
 import { formatDateTime, formatTime } from '../utils/dateUtils';
 import { useAuth } from '../contexts/AuthContext';
 import Chat from '../components/Chat';
+import CheckInMap from '../components/CheckInMap';
 
 interface Net {
   id: number;
@@ -138,6 +140,7 @@ const NetView: React.FC = () => {
   const [netStats, setNetStats] = useState<{total_check_ins: number, online_count: number, guest_count: number} | null>(null);
   const [frequencyDialogOpen, setFrequencyDialogOpen] = useState(false);
   const [fieldDefinitions, setFieldDefinitions] = useState<FieldDefinition[]>([]);
+  const [mapOpen, setMapOpen] = useState(false);
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
@@ -921,6 +924,18 @@ const NetView: React.FC = () => {
                   <Button size="small" variant="contained" color="error" onClick={handleCloseNet}>
                     Close Net
                   </Button>
+                )}
+                {net.status === 'active' && checkIns.length > 0 && (
+                  <Tooltip title="View check-in locations on map">
+                    <Button 
+                      size="small" 
+                      variant="outlined" 
+                      onClick={() => setMapOpen(true)}
+                      sx={{ minWidth: 'auto', px: 1 }}
+                    >
+                      <MapIcon fontSize="small" />
+                    </Button>
+                  </Tooltip>
                 )}
                 {net.status === 'closed' && (
                   <>
@@ -2104,6 +2119,14 @@ const NetView: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Check-in Location Map */}
+      <CheckInMap
+        open={mapOpen}
+        onClose={() => setMapOpen(false)}
+        checkIns={checkIns}
+        netName={net?.name || 'Net'}
+      />
 
       <Snackbar
         open={toastMessage !== ''}
