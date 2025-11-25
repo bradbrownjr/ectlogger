@@ -706,8 +706,8 @@ const NetView: React.FC = () => {
                     </>
                   )}
                 </Box>
-                {/* Right side: Frequency chips - only show if multiple frequencies */}
-                {net.frequencies && net.frequencies.length > 1 && (
+                {/* Right side: Frequency chips - always show so attendees know where to tune */}
+                {net.frequencies && net.frequencies.length > 0 && (
                   <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexWrap: 'wrap' }}>
                     {net.frequencies.map((freq) => (
                       <Chip
