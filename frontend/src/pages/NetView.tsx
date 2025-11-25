@@ -910,40 +910,42 @@ const NetView: React.FC = () => {
                           }
 
                           return (
-                            <Select
-                              size="small"
-                              value={selectValue}
-                              onChange={async (e) => {
-                                await handleStatusChange(checkIn.id, e.target.value);
-                                // Force refresh after role assignment
-                                await fetchNetRoles();
-                                await fetchCheckIns();
-                              }}
-                              sx={{ minWidth: 50 }}
-                              disabled={owner?.id === checkIn.user_id}
-                              MenuProps={{
-                                disableScrollLock: true,
-                                disableAutoFocusItem: false,
-                                autoFocus: true,
-                                PaperProps: {
-                                  style: {
-                                    maxHeight: 300,
+                            <Tooltip title={getStatusTooltip(checkIn.status, checkIn)} placement="right" arrow>
+                              <Select
+                                size="small"
+                                value={selectValue}
+                                onChange={async (e) => {
+                                  await handleStatusChange(checkIn.id, e.target.value);
+                                  // Force refresh after role assignment
+                                  await fetchNetRoles();
+                                  await fetchCheckIns();
+                                }}
+                                sx={{ minWidth: 50 }}
+                                disabled={owner?.id === checkIn.user_id}
+                                MenuProps={{
+                                  disableScrollLock: true,
+                                  disableAutoFocusItem: false,
+                                  autoFocus: true,
+                                  PaperProps: {
+                                    style: {
+                                      maxHeight: 300,
+                                    },
                                   },
-                                },
-                              }}
-                            >
-                              {/* Always render the current value as an option to prevent MUI errors */}
-                              {((canManageCheckIns || selectValue === 'ncs') && <Tooltip title="Net Control Station" arrow><MenuItem value="ncs">👑</MenuItem></Tooltip>)}
-                              {((canManageCheckIns || selectValue === 'logger') && <Tooltip title="Logger" arrow><MenuItem value="logger">📋</MenuItem></Tooltip>)}
-                              <Tooltip title={checkIn.is_recheck ? 'Rechecked' : 'Standard'} arrow><MenuItem value="checked_in">{checkIn.is_recheck ? '🔄' : '✅'}</MenuItem></Tooltip>
-                              <Tooltip title="Listening only" arrow><MenuItem value="listening">👂</MenuItem></Tooltip>
-                              <Tooltip title="Away" arrow><MenuItem value="away">⏸️</MenuItem></Tooltip>
-                              <Tooltip title="Has traffic" arrow><MenuItem value="available">🚨</MenuItem></Tooltip>
-                              <Tooltip title="Announcements" arrow><MenuItem value="announcements">📢</MenuItem></Tooltip>
-                            </Select>
+                                }}
+                              >
+                                {/* Always render the current value as an option to prevent MUI errors */}
+                                {((canManageCheckIns || selectValue === 'ncs') && <MenuItem value="ncs">👑</MenuItem>)}
+                                {((canManageCheckIns || selectValue === 'logger') && <MenuItem value="logger">📋</MenuItem>)}
+                                <MenuItem value="checked_in">{checkIn.is_recheck ? '🔄' : '✅'}</MenuItem>
+                                <MenuItem value="listening">👂</MenuItem>
+                                <MenuItem value="away">⏸️</MenuItem>
+                                <MenuItem value="available">🚨</MenuItem>
+                                <MenuItem value="announcements">📢</MenuItem>
+                              </Select>
+                            </Tooltip>
                           );
                         })() : (
-                          <Tooltip title={getStatusTooltip(checkIn.status, checkIn)} arrow>
+                          <Tooltip title={getStatusTooltip(checkIn.status, checkIn)} placement="right" arrow>
                             <span style={{ cursor: 'help' }}>{getStatusIcon(checkIn.status, checkIn)}</span>
                           </Tooltip>
                         )}
