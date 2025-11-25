@@ -1098,6 +1098,8 @@ const NetView: React.FC = () => {
                         '& .MuiTableCell-root': {
                           ...(checkIn.id === activeSpeakerId ? { fontWeight: 'bold' } : {}),
                           verticalAlign: 'middle',
+                          // Remove bottom border if frequency chips row follows
+                          ...(hasFrequencyChips ? { borderBottom: 'none' } : {}),
                         }
                       }}
                     >
