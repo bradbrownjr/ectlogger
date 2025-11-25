@@ -122,7 +122,7 @@ export const ncsRotationApi = {
   // Overrides
   listOverrides: (templateId: number) => 
     api.get(`/templates/${templateId}/ncs-rotation/overrides`),
-  createOverride: (templateId: number, data: { net_date: string; original_user_id: number | null; replacement_user_id: number | null; reason?: string; is_cancelled?: boolean }) => 
+  createOverride: (templateId: number, data: { scheduled_date: string; replacement_user_id: number | null; reason?: string }) => 
     api.post(`/templates/${templateId}/ncs-rotation/overrides`, data),
   deleteOverride: (templateId: number, overrideId: number) => 
     api.delete(`/templates/${templateId}/ncs-rotation/overrides/${overrideId}`),

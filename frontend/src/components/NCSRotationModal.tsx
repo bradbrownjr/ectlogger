@@ -108,6 +108,19 @@ const NCSRotationModal: React.FC<NCSRotationModalProps> = ({
   // Check if user is in the rotation
   const isRotationMember = members.some((m: RotationMember) => m.user_id === user?.id);
 
+  // Helper to extract error message from API response
+  const getErrorMessage = (err: any, fallback: string): string => {
+    const detail = err.response?.data?.detail;
+    if (typeof detail === 'string') {
+      return detail;
+    }
+    if (Array.isArray(detail) && detail.length > 0) {
+      // Pydantic validation error format
+      return detail.map((e: any) => e.msg || String(e)).join(', ');
+    }
+    return fallback;
+  };
+
   useEffect(() => {
     if (open && schedule) {
       fetchData();
@@ -141,7 +154,7 @@ const NCSRotationModal: React.FC<NCSRotationModalProps> = ({
         setTabValue(loadedMembers.length === 0 && canManageNow ? 1 : 0);
       }
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to load rotation data');
+      setError(getErrorMessage(err, 'Failed to load rotation data'));
     } finally {
       setLoading(false);
     }
@@ -156,7 +169,7 @@ const NCSRotationModal: React.FC<NCSRotationModalProps> = ({
       await fetchData();
       onUpdate?.();
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to add member');
+      setError(getErrorMessage(err, 'Failed to add member'));
     }
   };
 
@@ -168,7 +181,7 @@ const NCSRotationModal: React.FC<NCSRotationModalProps> = ({
       await fetchData();
       onUpdate?.();
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to remove member');
+      setError(getErrorMessage(err, 'Failed to remove member'));
     }
   };
 
@@ -191,7 +204,7 @@ const NCSRotationModal: React.FC<NCSRotationModalProps> = ({
       await fetchData();
       onUpdate?.();
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to reorder members');
+      setError(getErrorMessage(err, 'Failed to reorder members'));
     }
   };
 
@@ -203,7 +216,7 @@ const NCSRotationModal: React.FC<NCSRotationModalProps> = ({
       await fetchData();
       onUpdate?.();
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to update member');
+      setError(getErrorMessage(err, 'Failed to update member'));
     }
   };
 
@@ -220,18 +233,16 @@ const NCSRotationModal: React.FC<NCSRotationModalProps> = ({
     
     try {
       await ncsRotationApi.createOverride(schedule.id, {
-        net_date: selectedEntry.date.split('T')[0],
-        original_user_id: selectedEntry.user_id,
+        scheduled_date: selectedEntry.date,
         replacement_user_id: isCancellation ? null : swapUser?.id || null,
         reason: swapReason || undefined,
-        is_cancelled: isCancellation,
       });
       
       setSwapDialogOpen(false);
       await fetchData();
       onUpdate?.();
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to create override');
+      setError(getErrorMessage(err, 'Failed to create override'));
     }
   };
 
