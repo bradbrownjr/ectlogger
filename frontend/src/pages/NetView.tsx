@@ -440,36 +440,26 @@ const NetView: React.FC = () => {
   };
 
   const getStatusIcon = (status: string, checkIn?: CheckIn) => {
-    let icon = '';
-    
     // Show role icons for users with active roles
     if (checkIn) {
-      if (owner?.id === checkIn.user_id) icon = '👑';
-      else {
-        const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
-        if (userRole?.role === 'ncs') icon = '👑';
-        else if (userRole?.role === 'logger') icon = '📋';
-      }
+      if (owner?.id === checkIn.user_id) return '👑';
+      const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
+      if (userRole?.role === 'ncs') return '👑';
+      if (userRole?.role === 'logger') return '📋';
+      
+      // Show recheck icon for rechecked stations (replaces standard check-in)
+      if (checkIn.is_recheck && status === 'checked_in') return '🔄';
     }
     
-    // Show standard status icons if no role icon
-    if (!icon) {
-      switch (status) {
-        case 'checked_in': icon = '✅'; break; // Standard
-        case 'listening': icon = '👂'; break; // Just listening
-        case 'away': icon = '⏸️'; break; // Short term
-        case 'available': icon = '🚨'; break; // Has traffic
-        case 'checked_out': icon = '👋'; break; // Checked out
-        default: icon = '✅';
-      }
+    // Show standard status icons
+    switch (status) {
+      case 'checked_in': return '✅'; // Standard
+      case 'listening': return '👂'; // Just listening
+      case 'away': return '⏸️'; // Short term
+      case 'available': return '🚨'; // Has traffic
+      case 'checked_out': return '👋'; // Checked out
+      default: return '✅';
     }
-    
-    // Add recheck indicator if applicable
-    if (checkIn?.is_recheck) {
-      icon += ' 🔄';
-    }
-    
-    return icon;
   };
 
   const getStatusLabel = (status: string) => {
@@ -921,7 +911,7 @@ const NetView: React.FC = () => {
                               {/* Always render the current value as an option to prevent MUI errors */}
                               {((canManageCheckIns || selectValue === 'ncs') && <MenuItem value="ncs">👑</MenuItem>)}
                               {((canManageCheckIns || selectValue === 'logger') && <MenuItem value="logger">📋</MenuItem>)}
-                              <MenuItem value="checked_in">✅</MenuItem>
+                              <MenuItem value="checked_in">{checkIn.is_recheck ? '🔄' : '✅'}</MenuItem>
                               <MenuItem value="listening">👂</MenuItem>
                               <MenuItem value="away">⏸️</MenuItem>
                               <MenuItem value="available">🚨</MenuItem>
