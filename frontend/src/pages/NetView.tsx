@@ -966,7 +966,29 @@ const NetView: React.FC = () => {
           <Grid container spacing={0} sx={{ mt: 0.5, flex: { xs: 'none', md: 1 }, minHeight: 0 }}>
             <Grid item xs={12} md={8} sx={{ pr: { md: 0.5 }, display: 'flex', flexDirection: 'column', minHeight: { xs: 'auto', md: 0 }, height: { xs: 'auto', md: '100%' }, mb: { xs: 2, md: 0 } }}>
               {/* Desktop: Combined table with sticky header */}
-              <TableContainer sx={{ flex: { xs: 'none', md: 1 }, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: '4px', minHeight: 0, display: { xs: 'none', md: 'block' } }}>
+              <TableContainer sx={{ 
+                flex: { xs: 'none', md: 1 }, 
+                overflow: 'auto', 
+                border: 1, 
+                borderColor: 'divider', 
+                borderRadius: '4px', 
+                minHeight: 0, 
+                display: { xs: 'none', md: 'block' },
+                '&::-webkit-scrollbar': {
+                  width: 8,
+                  height: 8,
+                },
+                '&::-webkit-scrollbar-track': {
+                  backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                },
+                '&::-webkit-scrollbar-thumb': {
+                  backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)',
+                  borderRadius: 4,
+                  '&:hover': {
+                    backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)',
+                  },
+                },
+              }}>
                 <Table size="small">
                   <TableHead sx={{ position: 'sticky', top: 0, backgroundColor: 'background.paper', zIndex: 1 }}>
                     <TableRow>
@@ -1195,7 +1217,28 @@ const NetView: React.FC = () => {
             </TableContainer>
             
             {/* Mobile: Scrollable table */}
-            <TableContainer sx={{ display: { xs: 'block', md: 'none' }, overflow: 'auto', border: 1, borderColor: 'divider', borderRadius: '4px', maxHeight: 400 }}>
+            <TableContainer sx={{ 
+              display: { xs: 'block', md: 'none' }, 
+              overflow: 'auto', 
+              border: 1, 
+              borderColor: 'divider', 
+              borderRadius: '4px', 
+              maxHeight: 400,
+              '&::-webkit-scrollbar': {
+                width: 8,
+                height: 8,
+              },
+              '&::-webkit-scrollbar-track': {
+                backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+              },
+              '&::-webkit-scrollbar-thumb': {
+                backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)',
+                borderRadius: 4,
+                '&:hover': {
+                  backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)',
+                },
+              },
+            }}>
               <Table size="small">
                 <TableHead sx={{ position: 'sticky', top: 0, backgroundColor: 'background.paper', zIndex: 1 }}>
                   <TableRow>
