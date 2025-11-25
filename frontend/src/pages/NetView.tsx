@@ -1069,9 +1069,21 @@ const NetView: React.FC = () => {
                       checkIn.available_frequencies && 
                       checkIn.available_frequencies.includes(net.active_frequency_id);
                     
+                    // Calculate column count for frequency chip row colspan
+                    const hasFrequencyChips = net.frequencies && net.frequencies.length > 1 && checkIn.available_frequencies && checkIn.available_frequencies.length > 0;
+                    let columnCount = 4; // #, Status, Callsign, Time
+                    if (net?.field_config?.name?.enabled) columnCount++;
+                    if (net?.field_config?.location?.enabled) columnCount++;
+                    if (net?.field_config?.skywarn_number?.enabled) columnCount++;
+                    if (net?.field_config?.weather_observation?.enabled) columnCount++;
+                    if (net?.field_config?.power_source?.enabled) columnCount++;
+                    if (net?.field_config?.notes?.enabled) columnCount++;
+                    columnCount += getEnabledCustomFields().length;
+                    if (canManage) columnCount++;
+                    
                     return (
-                    <TableRow 
-                      key={checkIn.id}
+                    <React.Fragment key={checkIn.id}>
+                    <TableRow
                       sx={{ 
                         backgroundColor: checkIn.id === activeSpeakerId 
                           ? (theme) => theme.palette.mode === 'dark' ? theme.palette.success.dark : theme.palette.success.light
@@ -1150,7 +1162,7 @@ const NetView: React.FC = () => {
                           </Tooltip>
                         )}
                       </TableCell>
-                      <TableCell sx={{ position: 'relative', width: 140 }}>
+                      <TableCell sx={{ width: 140 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                           {checkIn.user_id && onlineUserIds.includes(checkIn.user_id) && (
                             <Box 
@@ -1168,30 +1180,6 @@ const NetView: React.FC = () => {
                             {checkIn.callsign}
                           </Box>
                         </Box>
-                        {/* Available frequencies - only show if net has multiple frequencies */}
-                        {net.frequencies && net.frequencies.length > 1 && checkIn.available_frequencies && checkIn.available_frequencies.length > 0 && (
-                          <Box sx={{ 
-                            display: 'flex', 
-                            gap: 0.5, 
-                            flexWrap: 'wrap', 
-                            mt: 0.25,
-                          }}>
-                            {checkIn.available_frequencies.map((freqId: number) => {
-                              const freq = net.frequencies.find((f: any) => f.id === freqId);
-                              const isActive = freqId === checkIn.frequency_id;
-                              return freq ? (
-                                <Chip 
-                                  key={freqId}
-                                  label={isActive ? `📡 ${formatFrequencyDisplay(freq)}` : formatFrequencyDisplay(freq)}
-                                  size="small"
-                                  variant={isActive ? "filled" : "outlined"}
-                                  color={isActive ? "primary" : "default"}
-                                  sx={{ height: 18, fontSize: '0.7rem' }}
-                                />
-                              ) : null;
-                            })}
-                          </Box>
-                        )}
                       </TableCell>
                       {net?.field_config?.name?.enabled && <TableCell>{checkIn.name}</TableCell>}
                       {net?.field_config?.location?.enabled && <TableCell>{checkIn.location}</TableCell>}
@@ -1237,6 +1225,39 @@ const NetView: React.FC = () => {
                       </TableCell>
                       )}
                     </TableRow>
+                    {/* Frequency chips row - only show if net has multiple frequencies */}
+                    {hasFrequencyChips && (
+                      <TableRow sx={{ 
+                        backgroundColor: checkIn.id === activeSpeakerId 
+                          ? (theme) => theme.palette.mode === 'dark' ? theme.palette.success.dark : theme.palette.success.light
+                          : checkIn.status === 'checked_out' 
+                          ? 'action.disabledBackground' 
+                          : isOnActiveFrequency
+                          ? (theme) => theme.palette.mode === 'dark' ? 'rgba(25, 118, 210, 0.15)' : 'rgba(25, 118, 210, 0.08)'
+                          : 'inherit',
+                        opacity: checkIn.status === 'checked_out' ? 0.6 : 1,
+                      }}>
+                        <TableCell colSpan={columnCount} sx={{ py: 0.25, borderBottom: 1, borderColor: 'divider' }}>
+                          <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', pl: 4 }}>
+                            {checkIn.available_frequencies!.map((freqId: number) => {
+                              const freq = net.frequencies.find((f: any) => f.id === freqId);
+                              const isActive = freqId === checkIn.frequency_id;
+                              return freq ? (
+                                <Chip 
+                                  key={freqId}
+                                  label={isActive ? `📡 ${formatFrequencyDisplay(freq)}` : formatFrequencyDisplay(freq)}
+                                  size="small"
+                                  variant={isActive ? "filled" : "outlined"}
+                                  color={isActive ? "primary" : "default"}
+                                  sx={{ height: 18, fontSize: '0.7rem' }}
+                                />
+                              ) : null;
+                            })}
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                    </React.Fragment>
                   )})}
                 </TableBody>
               </Table>
