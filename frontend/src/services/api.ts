@@ -98,3 +98,32 @@ export const frequencyApi = {
   update: (id: number, data: any) => api.put(`/frequencies/${id}`, data),
   delete: (id: number) => api.delete(`/frequencies/${id}`),
 };
+
+// NCS Rotation API
+export const ncsRotationApi = {
+  // Rotation members
+  listMembers: (templateId: number) => 
+    api.get(`/ncs-rotation/templates/${templateId}/ncs-rotation/members`),
+  addMember: (templateId: number, data: { user_id: number; position?: number }) => 
+    api.post(`/ncs-rotation/templates/${templateId}/ncs-rotation/members`, data),
+  removeMember: (templateId: number, memberId: number) => 
+    api.delete(`/ncs-rotation/templates/${templateId}/ncs-rotation/members/${memberId}`),
+  reorderMembers: (templateId: number, memberIds: number[]) => 
+    api.put(`/ncs-rotation/templates/${templateId}/ncs-rotation/members/reorder`, { member_ids: memberIds }),
+  updateMember: (templateId: number, memberId: number, data: { is_active?: boolean; position?: number }) =>
+    api.put(`/ncs-rotation/templates/${templateId}/ncs-rotation/members/${memberId}`, data),
+  
+  // Schedule
+  getSchedule: (templateId: number, weeks?: number) => 
+    api.get(`/ncs-rotation/templates/${templateId}/ncs-rotation/schedule`, { params: { weeks } }),
+  getNextNCS: (templateId: number) => 
+    api.get(`/ncs-rotation/templates/${templateId}/ncs-rotation/next`),
+  
+  // Overrides
+  listOverrides: (templateId: number) => 
+    api.get(`/ncs-rotation/templates/${templateId}/ncs-rotation/overrides`),
+  createOverride: (templateId: number, data: { net_date: string; original_user_id: number | null; replacement_user_id: number | null; reason?: string; is_cancelled?: boolean }) => 
+    api.post(`/ncs-rotation/templates/${templateId}/ncs-rotation/overrides`, data),
+  deleteOverride: (templateId: number, overrideId: number) => 
+    api.delete(`/ncs-rotation/templates/${templateId}/ncs-rotation/overrides/${overrideId}`),
+};

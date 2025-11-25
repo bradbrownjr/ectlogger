@@ -5,9 +5,10 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from app.config import settings
 from app.database import init_db
-from app.routers import auth, users, nets, check_ins, frequencies, templates, chat
+from app.routers import auth, users, nets, check_ins, frequencies, templates, chat, ncs_rotation
 from app.routers import settings as app_settings_router
 from app.security import sanitize_html
+from app.ncs_reminder_service import ncs_reminder_service
 from typing import Dict, List
 import json
 
@@ -69,6 +70,7 @@ app.include_router(frequencies.router)
 app.include_router(templates.router)
 app.include_router(chat.router)
 app.include_router(app_settings_router.router)
+app.include_router(ncs_rotation.router)
 
 
 # WebSocket connection manager
@@ -170,8 +172,16 @@ async def websocket_endpoint(websocket: WebSocket, net_id: int, token: str = Non
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize database on startup"""
+    """Initialize database and background services on startup"""
     await init_db()
+    # Start NCS reminder service
+    await ncs_reminder_service.start()
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Cleanup background services on shutdown"""
+    await ncs_reminder_service.stop()
 
 
 @app.get("/")

@@ -458,6 +458,7 @@ class FieldDefinitionResponse(BaseModel):
     sort_order: int
     created_at: datetime
 
+
     class Config:
         from_attributes = True
 
@@ -478,3 +479,103 @@ class FieldDefinitionResponse(BaseModel):
             sort_order=field.sort_order,
             created_at=field.created_at,
         )
+
+
+# NCS Rotation Schemas
+class NCSRotationMemberBase(BaseModel):
+    user_id: int
+    position: int
+    is_active: bool = True
+
+
+class NCSRotationMemberCreate(BaseModel):
+    user_id: int
+
+
+class NCSRotationMemberResponse(NCSRotationMemberBase):
+    id: int
+    template_id: int
+    created_at: datetime
+    # User info for display
+    user_email: Optional[str] = None
+    user_name: Optional[str] = None
+    user_callsign: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+    @classmethod
+    def from_orm_with_user(cls, member):
+        return cls(
+            id=member.id,
+            template_id=member.template_id,
+            user_id=member.user_id,
+            position=member.position,
+            is_active=member.is_active,
+            created_at=member.created_at,
+            user_email=member.user.email if member.user else None,
+            user_name=member.user.name if member.user else None,
+            user_callsign=member.user.callsign if member.user else None,
+        )
+
+
+class NCSScheduleOverrideCreate(BaseModel):
+    scheduled_date: datetime
+    replacement_user_id: Optional[int] = None  # None = cancel the net
+    reason: Optional[str] = Field(None, max_length=500)
+
+
+class NCSScheduleOverrideResponse(BaseModel):
+    id: int
+    template_id: int
+    scheduled_date: datetime
+    original_user_id: Optional[int]
+    replacement_user_id: Optional[int]
+    reason: Optional[str]
+    created_by_id: Optional[int]
+    created_at: datetime
+    # User info for display
+    original_user_name: Optional[str] = None
+    original_user_callsign: Optional[str] = None
+    replacement_user_name: Optional[str] = None
+    replacement_user_callsign: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+    @classmethod
+    def from_orm_with_users(cls, override):
+        return cls(
+            id=override.id,
+            template_id=override.template_id,
+            scheduled_date=override.scheduled_date,
+            original_user_id=override.original_user_id,
+            replacement_user_id=override.replacement_user_id,
+            reason=override.reason,
+            created_by_id=override.created_by_id,
+            created_at=override.created_at,
+            original_user_name=override.original_user.name if override.original_user else None,
+            original_user_callsign=override.original_user.callsign if override.original_user else None,
+            replacement_user_name=override.replacement_user.name if override.replacement_user else None,
+            replacement_user_callsign=override.replacement_user.callsign if override.replacement_user else None,
+        )
+
+
+class NCSScheduleEntry(BaseModel):
+    """A single entry in the computed NCS schedule"""
+    date: datetime
+    user_id: Optional[int]
+    user_name: Optional[str]
+    user_callsign: Optional[str]
+    user_email: Optional[str]
+    is_override: bool = False
+    is_cancelled: bool = False
+    override_reason: Optional[str] = None
+
+
+class NCSScheduleResponse(BaseModel):
+    """Response containing the computed NCS schedule for multiple dates"""
+    template_id: int
+    schedule: List[NCSScheduleEntry]
+    rotation_members: List[NCSRotationMemberResponse]
+

@@ -130,6 +130,8 @@ class NetTemplate(Base):
     frequencies = relationship("Frequency", secondary=net_template_frequencies)
     subscriptions = relationship("NetTemplateSubscription", back_populates="template", cascade="all, delete-orphan")
     nets = relationship("Net", back_populates="template")
+    rotation_members = relationship("NCSRotationMember", back_populates="template", cascade="all, delete-orphan", order_by="NCSRotationMember.position")
+    schedule_overrides = relationship("NCSScheduleOverride", back_populates="template", cascade="all, delete-orphan")
 
 
 class NetTemplateSubscription(Base):
@@ -277,6 +279,58 @@ class FieldDefinition(Base):
     sort_order = Column(Integer, default=100)  # Display order
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+class NCSRotationMember(Base):
+    """Members in an NCS rotation for a net template"""
+    __tablename__ = "ncs_rotation_members"
+
+    id = Column(Integer, primary_key=True, index=True)
+    template_id = Column(Integer, ForeignKey("net_templates.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    position = Column(Integer, nullable=False)  # Order in rotation (1, 2, 3, etc.)
+    is_active = Column(Boolean, default=True)  # Can be temporarily disabled
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    template = relationship("NetTemplate", back_populates="rotation_members")
+    user = relationship("User")
+
+
+class NCSScheduleOverride(Base):
+    """Override/swap for a specific date in the NCS rotation"""
+    __tablename__ = "ncs_schedule_overrides"
+
+    id = Column(Integer, primary_key=True, index=True)
+    template_id = Column(Integer, ForeignKey("net_templates.id", ondelete="CASCADE"), nullable=False)
+    scheduled_date = Column(DateTime(timezone=True), nullable=False)  # The date being overridden
+    original_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)  # Who was originally scheduled
+    replacement_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)  # Who is taking over (NULL = cancelled)
+    reason = Column(String(500))  # Optional reason for the swap
+    created_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    template = relationship("NetTemplate", back_populates="schedule_overrides")
+    original_user = relationship("User", foreign_keys=[original_user_id])
+    replacement_user = relationship("User", foreign_keys=[replacement_user_id])
+    created_by = relationship("User", foreign_keys=[created_by_id])
+
+
+class NCSReminderLog(Base):
+    """Track sent NCS reminders to prevent duplicates"""
+    __tablename__ = "ncs_reminder_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    template_id = Column(Integer, ForeignKey("net_templates.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    scheduled_date = Column(DateTime(timezone=True), nullable=False)
+    reminder_type = Column(String(20), nullable=False)  # '24_hour' or '1_hour'
+    sent_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    template = relationship("NetTemplate")
+    user = relationship("User")
 
 
 class AppSettings(Base):

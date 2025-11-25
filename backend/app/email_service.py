@@ -312,6 +312,120 @@ This is an automated message, please do not reply.
             raise
 
     @staticmethod
+    async def send_ncs_reminder(
+        to_email: str, 
+        operator_name: str,
+        operator_callsign: str,
+        net_name: str, 
+        net_date: str,
+        net_time: str,
+        frequencies: list,
+        hours_until: int,
+        scheduler_url: str
+    ):
+        """Send NCS duty reminder email"""
+        logger.info("EMAIL", f"Sending NCS reminder to {to_email} for {net_name} on {net_date}")
+        
+        # Format frequencies for display
+        freq_list = ""
+        for freq in frequencies:
+            if freq.get('frequency'):
+                freq_list += f"<li>{freq['frequency']} MHz - {freq.get('mode', 'N/A')}</li>"
+            elif freq.get('talkgroup_name'):
+                freq_list += f"<li>{freq['talkgroup_name']} (TG: {freq.get('talkgroup_id', 'N/A')})</li>"
+        
+        if not freq_list:
+            freq_list = "<li>No frequencies configured</li>"
+        
+        # Different messaging based on reminder timing
+        if hours_until <= 1:
+            urgency = "starting soon"
+            urgency_style = "background-color: #ffebee; border-left: 4px solid #f44336;"
+        else:
+            urgency = f"in {hours_until} hours"
+            urgency_style = "background-color: #fff3e0; border-left: 4px solid #ff9800;"
+        
+        html_template = Template("""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .alert { {{ urgency_style }} padding: 15px; margin: 20px 0; border-radius: 4px; }
+                .details { background-color: #e3f2fd; padding: 15px; border-radius: 4px; margin: 20px 0; }
+                .button { 
+                    display: inline-block; 
+                    padding: 12px 24px; 
+                    background-color: #1976d2; 
+                    color: #ffffff !important; 
+                    text-decoration: none; 
+                    border-radius: 4px; 
+                    margin: 20px 0;
+                    font-weight: bold;
+                }
+                .footer { margin-top: 30px; font-size: 12px; color: #666; }
+                ul { margin: 10px 0; padding-left: 20px; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h2>📻 NCS Duty Reminder</h2>
+                
+                <div class="alert">
+                    <strong>You are scheduled as Net Control Station {{ urgency }}!</strong>
+                </div>
+                
+                <p>Hello {{ operator_name }} ({{ operator_callsign }}),</p>
+                
+                <p>This is a reminder that you are scheduled to serve as <strong>Net Control Station (NCS)</strong> 
+                for the upcoming net session.</p>
+                
+                <div class="details">
+                    <h3>Net Details</h3>
+                    <p><strong>Net:</strong> {{ net_name }}</p>
+                    <p><strong>Date:</strong> {{ net_date }}</p>
+                    <p><strong>Time:</strong> {{ net_time }}</p>
+                    <p><strong>Frequencies:</strong></p>
+                    <ul>
+                        {{ freq_list }}
+                    </ul>
+                </div>
+                
+                <p>Please ensure you are ready to run the net at the scheduled time. 
+                If you are unable to fulfill your NCS duty, please arrange a swap with another operator as soon as possible.</p>
+                
+                <a href="{{ scheduler_url }}" class="button" style="color: #ffffff;">View Schedule</a>
+                
+                <div class="footer">
+                    <p>This is an automated reminder from {{ app_name }}.</p>
+                    <p>If you need to swap your NCS duty, please use the scheduler to arrange a swap.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """)
+        
+        html_content = html_template.render(
+            operator_name=operator_name,
+            operator_callsign=operator_callsign,
+            net_name=net_name,
+            net_date=net_date,
+            net_time=net_time,
+            freq_list=freq_list,
+            urgency=urgency,
+            urgency_style=urgency_style,
+            scheduler_url=scheduler_url,
+            app_name=settings.app_name
+        )
+        
+        await EmailService.send_email(
+            to_email=to_email,
+            subject=f"📻 NCS Reminder: {net_name} - {net_date}",
+            html_content=html_content
+        )
+
+    @staticmethod
     async def send_net_log(email: str, net_name: str, net_description: str, ncs_name: str, check_ins: list, started_at: str, closed_at: str, chat_messages: list = None):
         """Send net log after net is closed with check-ins table, CSV attachment, and chat log"""
         html_template = Template("""

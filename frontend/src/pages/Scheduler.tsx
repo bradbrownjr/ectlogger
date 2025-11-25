@@ -21,6 +21,7 @@ import {
   FormControlLabel,
   useMediaQuery,
   useTheme,
+  Tooltip,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -28,8 +29,19 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import NotificationsOffIcon from '@mui/icons-material/NotificationsOff';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import { templateApi, netApi } from '../services/api';
+import PersonIcon from '@mui/icons-material/Person';
+import GroupsIcon from '@mui/icons-material/Groups';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import { templateApi, netApi, ncsRotationApi } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import NCSRotationModal from '../components/NCSRotationModal';
+
+interface NextNCS {
+  date: string;
+  user_id: number;
+  callsign: string;
+  name: string | null;
+}
 
 interface Schedule {
   id: number;
@@ -46,6 +58,7 @@ interface Schedule {
     week_of_month?: number[];
     time?: string;
   };
+  nextNCS?: NextNCS | null;
 }
 
 // Format schedule for display
@@ -89,6 +102,8 @@ const Scheduler: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [currentSchedule, setCurrentSchedule] = useState<Schedule | null>(null);
+  const [rotationModalOpen, setRotationModalOpen] = useState(false);
+  const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null);
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const theme = useTheme();
@@ -98,10 +113,35 @@ const Scheduler: React.FC = () => {
     fetchSchedules();
   }, []);
 
+  const handleOpenRotationModal = (schedule: Schedule) => {
+    setSelectedSchedule(schedule);
+    setRotationModalOpen(true);
+  };
+
+  const handleCloseRotationModal = () => {
+    setRotationModalOpen(false);
+    setSelectedSchedule(null);
+  };
+
   const fetchSchedules = async () => {
     try {
       const response = await templateApi.list();
-      setSchedules(response.data);
+      const schedulesData = response.data;
+      
+      // Fetch next NCS for each schedule (in parallel)
+      const schedulesWithNCS = await Promise.all(
+        schedulesData.map(async (schedule: Schedule) => {
+          try {
+            const ncsResponse = await ncsRotationApi.getNextNCS(schedule.id);
+            return { ...schedule, nextNCS: ncsResponse.data };
+          } catch {
+            // No NCS rotation configured for this schedule
+            return { ...schedule, nextNCS: null };
+          }
+        })
+      );
+      
+      setSchedules(schedulesWithNCS);
     } catch (error) {
       console.error('Failed to fetch schedules:', error);
     } finally {
@@ -223,6 +263,60 @@ const Scheduler: React.FC = () => {
                       }).filter((s: string) => s).join(', ')}
                     </Typography>
                   )}
+                  {/* Next NCS Display */}
+                  {schedule.nextNCS && (
+                    <Box 
+                      sx={{ 
+                        mt: 1.5, 
+                        p: 1, 
+                        bgcolor: 'action.hover', 
+                        borderRadius: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1
+                      }}
+                    >
+                      <PersonIcon fontSize="small" color="primary" />
+                      <Box sx={{ flex: 1 }}>
+                        <Typography variant="caption" color="text.secondary" display="block">
+                          Next NCS
+                        </Typography>
+                        <Typography variant="body2" fontWeight="medium">
+                          {schedule.nextNCS.callsign}
+                          {schedule.nextNCS.name && ` (${schedule.nextNCS.name})`}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {new Date(schedule.nextNCS.date).toLocaleDateString(undefined, { 
+                            weekday: 'short', 
+                            month: 'short', 
+                            day: 'numeric' 
+                          })}
+                        </Typography>
+                      </Box>
+                      <Tooltip title="View rotation schedule">
+                        <IconButton 
+                          size="small" 
+                          onClick={() => handleOpenRotationModal(schedule)}
+                        >
+                          <CalendarMonthIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+                  )}
+                  {/* Show rotation setup button for owners without rotation */}
+                  {!schedule.nextNCS && (isOwner(schedule) || isAdmin) && (
+                    <Box sx={{ mt: 1.5 }}>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<GroupsIcon />}
+                        onClick={() => handleOpenRotationModal(schedule)}
+                        sx={{ fontSize: '0.75rem' }}
+                      >
+                        Set Up NCS Rotation
+                      </Button>
+                    </Box>
+                  )}
                 </CardContent>
                 {isAuthenticated && (
                 <CardActions sx={{ justifyContent: 'space-between', flexWrap: 'wrap' }}>
@@ -290,6 +384,14 @@ const Scheduler: React.FC = () => {
           <AddIcon />
         </Fab>
       )}
+
+      {/* NCS Rotation Modal */}
+      <NCSRotationModal
+        open={rotationModalOpen}
+        onClose={handleCloseRotationModal}
+        schedule={selectedSchedule}
+        onUpdate={fetchSchedules}
+      />
     </Container>
   );
 };
