@@ -1073,7 +1073,6 @@ const NetView: React.FC = () => {
                     <TableRow 
                       key={checkIn.id}
                       sx={{ 
-                        height: 52,
                         backgroundColor: checkIn.id === activeSpeakerId 
                           ? (theme) => theme.palette.mode === 'dark' ? theme.palette.success.dark : theme.palette.success.light
                           : checkIn.status === 'checked_out' 
@@ -1151,7 +1150,7 @@ const NetView: React.FC = () => {
                           </Tooltip>
                         )}
                       </TableCell>
-                      <TableCell sx={{ position: 'relative', width: 140 }}>
+                      <TableCell sx={{ width: 140, overflow: 'hidden' }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                           {checkIn.user_id && onlineUserIds.includes(checkIn.user_id) && (
                             <Box 
@@ -1173,10 +1172,9 @@ const NetView: React.FC = () => {
                         {net.frequencies && net.frequencies.length > 1 && checkIn.available_frequencies && checkIn.available_frequencies.length > 0 && (
                           <Box sx={{ 
                             display: 'flex', 
-                            gap: 0.5, 
-                            flexWrap: 'nowrap', 
+                            gap: 0.25, 
+                            flexWrap: 'wrap', 
                             mt: 0.25,
-                            whiteSpace: 'nowrap',
                           }}>
                             {checkIn.available_frequencies.map((freqId: number) => {
                               const freq = net.frequencies.find((f: any) => f.id === freqId);
