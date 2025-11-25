@@ -81,12 +81,27 @@ interface CheckIn {
   weather_observation?: string;
   power_source?: string;
   notes?: string;
+  custom_fields?: Record<string, string>;
   status: string;
   is_recheck: boolean;
   checked_in_at: string;
   frequency_id?: number;
   available_frequencies?: number[];
   user_id?: number;
+}
+
+interface FieldDefinition {
+  id: number;
+  name: string;
+  label: string;
+  field_type: string;
+  options?: string[];
+  placeholder?: string;
+  default_enabled: boolean;
+  default_required: boolean;
+  is_builtin: boolean;
+  is_archived: boolean;
+  sort_order: number;
 }
 
 interface NetRole {
@@ -118,10 +133,11 @@ const NetView: React.FC = () => {
   const [onlineUserIds, setOnlineUserIds] = useState<number[]>([]);
   const [netStats, setNetStats] = useState<{total_check_ins: number, online_count: number, guest_count: number} | null>(null);
   const [frequencyDialogOpen, setFrequencyDialogOpen] = useState(false);
+  const [fieldDefinitions, setFieldDefinitions] = useState<FieldDefinition[]>([]);
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
-  // Check-in form state
+  // Check-in form state - includes custom_fields for dynamic fields
   const [checkInForm, setCheckInForm] = useState({
     callsign: '',
     name: '',
@@ -132,6 +148,7 @@ const NetView: React.FC = () => {
     feedback: '',
     notes: '',
     available_frequency_ids: [] as number[],
+    custom_fields: {} as Record<string, string>,
   });
 
   useEffect(() => {
@@ -140,6 +157,7 @@ const NetView: React.FC = () => {
       fetchCheckIns();
       fetchNetRoles();
       fetchNetStats();
+      fetchFieldDefinitions();
       connectWebSocket();
       
       // Poll stats every 10 seconds to update online users
@@ -231,6 +249,15 @@ const NetView: React.FC = () => {
       setNet(response.data);
     } catch (error) {
       console.error('Failed to fetch net:', error);
+    }
+  };
+
+  const fetchFieldDefinitions = async () => {
+    try {
+      const response = await api.get('/settings/fields');
+      setFieldDefinitions(response.data);
+    } catch (error) {
+      console.error('Failed to fetch field definitions:', error);
     }
   };
 
@@ -396,6 +423,24 @@ const NetView: React.FC = () => {
     }
   };
 
+  // Get custom fields (non-builtin) that are enabled for this net
+  const getEnabledCustomFields = () => {
+    return fieldDefinitions.filter(field => 
+      !field.is_builtin && 
+      net?.field_config?.[field.name]?.enabled
+    );
+  };
+
+  // Check if a builtin field is enabled
+  const isFieldEnabled = (fieldName: string) => {
+    return net?.field_config?.[fieldName]?.enabled ?? false;
+  };
+
+  // Check if a field is required
+  const isFieldRequired = (fieldName: string) => {
+    return net?.field_config?.[fieldName]?.required ?? false;
+  };
+
   const handleCheckIn = async () => {
     // Validate required fields
     if (!checkInForm.callsign) {
@@ -404,7 +449,12 @@ const NetView: React.FC = () => {
     }
 
     try {
-      await checkInApi.create(Number(netId), checkInForm);
+      // Prepare check-in data with custom fields
+      const checkInData = {
+        ...checkInForm,
+        custom_fields: checkInForm.custom_fields,
+      };
+      await checkInApi.create(Number(netId), checkInData);
       
       // Clear form for next check-in
       setCheckInForm({
@@ -417,6 +467,7 @@ const NetView: React.FC = () => {
         feedback: '',
         notes: '',
         available_frequency_ids: [],
+        custom_fields: {},
       });
       
       fetchCheckIns();
@@ -881,6 +932,12 @@ const NetView: React.FC = () => {
                       {net?.field_config?.weather_observation?.enabled && <TableCell>Weather {net.field_config.weather_observation.required && '*'}</TableCell>}
                       {net?.field_config?.power_source?.enabled && <TableCell sx={{ width: 70 }}>Power {net.field_config.power_source.required && '*'}</TableCell>}
                       {net?.field_config?.notes?.enabled && <TableCell>Notes {net.field_config.notes.required && '*'}</TableCell>}
+                      {/* Custom fields */}
+                      {getEnabledCustomFields().map((field) => (
+                        <TableCell key={field.name}>
+                          {field.label} {isFieldRequired(field.name) && '*'}
+                        </TableCell>
+                      ))}
                       <TableCell sx={{ width: 95 }}>Time</TableCell>
                       {canManage && <TableCell sx={{ width: 100 }}>Actions</TableCell>}
                     </TableRow>
@@ -1035,6 +1092,12 @@ const NetView: React.FC = () => {
                       {net?.field_config?.weather_observation?.enabled && <TableCell>{checkIn.weather_observation}</TableCell>}
                       {net?.field_config?.power_source?.enabled && <TableCell sx={{ width: 70 }}>{checkIn.power_source}</TableCell>}
                       {net?.field_config?.notes?.enabled && <TableCell>{checkIn.notes}</TableCell>}
+                      {/* Custom field values */}
+                      {getEnabledCustomFields().map((field) => (
+                        <TableCell key={field.name}>
+                          {checkIn.custom_fields?.[field.name] || ''}
+                        </TableCell>
+                      ))}
                       <TableCell sx={{ width: 95 }}>
                         {formatTime(checkIn.checked_in_at, user?.prefer_utc || false)}
                       </TableCell>
@@ -1234,6 +1297,58 @@ const NetView: React.FC = () => {
                         />
                       </TableCell>
                     )}
+                    {/* Custom field inputs */}
+                    {getEnabledCustomFields().map((field) => (
+                      <TableCell key={field.name}>
+                        {field.field_type === 'select' && field.options ? (
+                          <FormControl size="small" fullWidth>
+                            <Select
+                              value={checkInForm.custom_fields[field.name] || ''}
+                              onChange={(e) => setCheckInForm({ 
+                                ...checkInForm, 
+                                custom_fields: { 
+                                  ...checkInForm.custom_fields, 
+                                  [field.name]: e.target.value as string 
+                                } 
+                              })}
+                              displayEmpty
+                            >
+                              <MenuItem value="">
+                                <em>{field.placeholder || field.label}</em>
+                              </MenuItem>
+                              {field.options.map((option) => (
+                                <MenuItem key={option} value={option}>{option}</MenuItem>
+                              ))}
+                            </Select>
+                          </FormControl>
+                        ) : (
+                          <TextField
+                            size="small"
+                            value={checkInForm.custom_fields[field.name] || ''}
+                            onChange={(e) => setCheckInForm({ 
+                              ...checkInForm, 
+                              custom_fields: { 
+                                ...checkInForm.custom_fields, 
+                                [field.name]: e.target.value 
+                              } 
+                            })}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleCheckIn();
+                              }
+                            }}
+                            placeholder={field.placeholder || field.label}
+                            inputProps={{ style: { fontSize: '0.875rem' } }}
+                            fullWidth
+                            required={isFieldRequired(field.name)}
+                            type={field.field_type === 'number' ? 'number' : 'text'}
+                            multiline={field.field_type === 'textarea'}
+                            rows={field.field_type === 'textarea' ? 2 : 1}
+                          />
+                        )}
+                      </TableCell>
+                    ))}
                     <TableCell>-</TableCell>
                     <TableCell>
                       <Box sx={{ display: 'flex', gap: 0.5 }}>

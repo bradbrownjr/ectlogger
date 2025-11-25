@@ -291,6 +291,7 @@ class CheckInUpdate(BaseModel):
     feedback: Optional[str] = Field(None, max_length=1000)
     notes: Optional[str] = Field(None, max_length=2000)
     available_frequency_ids: Optional[List[int]] = None
+    custom_fields: Optional[dict] = None
 
 
 class CheckInResponse(CheckInBase):
@@ -300,6 +301,7 @@ class CheckInResponse(CheckInBase):
     status: StationStatus
     frequency_id: Optional[int] = None
     available_frequencies: List[int] = Field(default_factory=list)
+    custom_fields: Optional[dict] = Field(default_factory=dict)
     is_recheck: bool
     checked_in_by_id: Optional[int] = None
     checked_in_at: datetime
@@ -319,6 +321,14 @@ class CheckInResponse(CheckInBase):
                 obj.available_frequencies = []
         else:
             obj.available_frequencies = []
+        # Deserialize custom_fields JSON field
+        if hasattr(obj, 'custom_fields') and obj.custom_fields:
+            try:
+                obj.custom_fields = json.loads(obj.custom_fields) if isinstance(obj.custom_fields, str) else obj.custom_fields
+            except (json.JSONDecodeError, TypeError):
+                obj.custom_fields = {}
+        else:
+            obj.custom_fields = {}
         return super().from_orm(obj)
 
 

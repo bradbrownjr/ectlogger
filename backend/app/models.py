@@ -193,6 +193,9 @@ class CheckIn(Base):
     feedback = Column(Text)
     notes = Column(Text)
     
+    # Custom field values (JSON object: {"field_name": "value", ...})
+    custom_fields = Column(Text, default='{}')
+    
     # Status and tracking
     status = Column(Enum(StationStatus), default=StationStatus.CHECKED_IN)
     frequency_id = Column(Integer, ForeignKey("frequencies.id"))  # Frequency they checked in on

@@ -108,6 +108,11 @@ async def create_check_in(
             existing_check_in.feedback = check_in_data.feedback
         if check_in_data.notes:
             existing_check_in.notes = check_in_data.notes
+        # Merge custom fields
+        if check_in_data.custom_fields:
+            existing_custom = json.loads(existing_check_in.custom_fields) if existing_check_in.custom_fields else {}
+            existing_custom.update(check_in_data.custom_fields)
+            existing_check_in.custom_fields = json.dumps(existing_custom)
         existing_check_in.frequency_id = check_in_data.frequency_id
         existing_check_in.available_frequencies = available_frequencies_json
         existing_check_in.is_recheck = True
@@ -119,6 +124,8 @@ async def create_check_in(
     else:
         # Serialize available frequencies to JSON for new check-in
         available_frequencies_json = json.dumps(available_freq_ids)
+        # Serialize custom fields to JSON
+        custom_fields_json = json.dumps(check_in_data.custom_fields) if check_in_data.custom_fields else '{}'
         # Create new check-in
         check_in = CheckIn(
             net_id=net_id,
@@ -131,6 +138,7 @@ async def create_check_in(
             power_source=check_in_data.power_source,
             feedback=check_in_data.feedback,
             notes=check_in_data.notes,
+            custom_fields=custom_fields_json,
             frequency_id=check_in_data.frequency_id,
             available_frequencies=available_frequencies_json,
             is_recheck=False,
@@ -200,6 +208,12 @@ async def update_check_in(
     # Handle available_frequency_ids separately (needs JSON serialization)
     if 'available_frequency_ids' in update_data:
         check_in.available_frequencies = json.dumps(update_data.pop('available_frequency_ids'))
+    
+    # Handle custom_fields separately (needs JSON serialization)
+    if 'custom_fields' in update_data:
+        existing_custom = json.loads(check_in.custom_fields) if check_in.custom_fields else {}
+        existing_custom.update(update_data.pop('custom_fields') or {})
+        check_in.custom_fields = json.dumps(existing_custom)
     
     # Update remaining fields
     for field, value in update_data.items():
