@@ -146,6 +146,15 @@ async def verify_magic_link(
     
     # Get or create user
     user = await get_or_create_user(db, email, email, "email", email)
+    
+    # Check if user is banned (is_active = False)
+    if not user.is_active:
+        logger.warning("API", f"Banned user attempted login: {user.email} (ID: {user.id})")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Your account has been locked. Please contact an administrator for assistance."
+        )
+    
     logger.info("API", f"User authenticated: {user.email} (ID: {user.id})")
     
     # Create access token (sub must be string per JWT spec)
