@@ -664,37 +664,45 @@ const NetView: React.FC = () => {
                   {net.name}
                 </Typography>
               </Box>
-              {/* Stats and Frequency chips */}
-              <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexWrap: 'wrap', mb: 0.5 }}>
-                <Chip label={net.status} size="small" color={net.status === 'active' ? 'success' : 'default'} />
-                {netStats && (
-                  <>
-                    <Chip label={`${netStats.total_check_ins} Check-ins`} size="small" color="primary" variant="outlined" />
-                    <Chip label={`${netStats.online_count} Online`} size="small" color="success" variant="outlined" />
-                    {netStats.guest_count > 0 && (
-                      <Chip label={`${netStats.guest_count} Guests`} size="small" color="default" variant="outlined" />
-                    )}
-                  </>
+              {/* Stats and Frequency chips row */}
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', mb: 0.5, gap: 0.5 }}>
+                {/* Left side: Status and stats */}
+                <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <Chip label={net.status} size="small" color={net.status === 'active' ? 'success' : 'default'} />
+                  {netStats && (
+                    <>
+                      <Chip label={`${netStats.total_check_ins} Check-ins`} size="small" color="primary" variant="outlined" />
+                      <Chip label={`${netStats.online_count} Online`} size="small" color="success" variant="outlined" />
+                      {netStats.guest_count > 0 && (
+                        <Chip label={`${netStats.guest_count} Guests`} size="small" color="default" variant="outlined" />
+                      )}
+                    </>
+                  )}
+                </Box>
+                {/* Right side: Frequency chips */}
+                {net.frequencies && net.frequencies.length > 0 && (
+                  <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexWrap: 'wrap' }}>
+                    {net.frequencies.map((freq) => (
+                      <Chip
+                        key={freq.id}
+                        label={freq.frequency 
+                          ? `${freq.frequency} MHz ${freq.mode || ''}`.trim()
+                          : `${freq.network || ''}${freq.talkgroup ? ` TG${freq.talkgroup}` : ''} ${freq.mode || ''}`.trim()
+                        }
+                        size="small"
+                        color={freq.id === net.active_frequency_id ? 'primary' : 'default'}
+                        onClick={canManageCheckIns ? () => handleSetActiveFrequency(freq.id) : undefined}
+                        clickable={canManageCheckIns}
+                        sx={{ 
+                          height: 24,
+                          cursor: canManageCheckIns ? 'pointer' : 'default',
+                          fontWeight: freq.id === net.active_frequency_id ? 'bold' : 'normal',
+                        }}
+                        title={canManageCheckIns ? 'Click to set as active frequency' : undefined}
+                      />
+                    ))}
+                  </Box>
                 )}
-                {net.frequencies && net.frequencies.length > 0 && net.frequencies.map((freq) => (
-                  <Chip
-                    key={freq.id}
-                    label={freq.frequency 
-                      ? `${freq.frequency} MHz ${freq.mode || ''}`.trim()
-                      : `${freq.network || ''}${freq.talkgroup ? ` TG${freq.talkgroup}` : ''} ${freq.mode || ''}`.trim()
-                    }
-                    size="small"
-                    color={freq.id === net.active_frequency_id ? 'primary' : 'default'}
-                    onClick={canManageCheckIns ? () => handleSetActiveFrequency(freq.id) : undefined}
-                    clickable={canManageCheckIns}
-                    sx={{ 
-                      height: 24,
-                      cursor: canManageCheckIns ? 'pointer' : 'default',
-                      fontWeight: freq.id === net.active_frequency_id ? 'bold' : 'normal',
-                    }}
-                    title={canManageCheckIns ? 'Click to set as active frequency' : undefined}
-                  />
-                ))}
               </Box>
             </Grid>
             <Grid item xs={12} md={4} sx={{ pl: { md: 0.5 } }}>
