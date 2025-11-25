@@ -621,9 +621,10 @@ const NetView: React.FC = () => {
             await checkInApi.update(checkInId, { status: newStatus });
             await fetchCheckIns();
       }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Failed to update status:', error);
-        setToastMessage('Failed to update status');
+        const message = error.response?.data?.detail || 'Failed to update status';
+        setToastMessage(message);
     }
   };
 
@@ -718,6 +719,9 @@ const NetView: React.FC = () => {
   const userNetRole = netRoles.find((role: any) => role.user_id === user?.id);
   const isNCSOrLogger = userNetRole && (userNetRole.role === 'NCS' || userNetRole.role === 'Logger');
   const canManageCheckIns = canManage || isNCSOrLogger;
+  
+  // Check if net has any NCS assigned
+  const hasNCS = netRoles.some((role: any) => role.role === 'NCS');
 
   // Find the user's active check-in (not checked out)
   const userActiveCheckIn = checkIns.find(
@@ -750,6 +754,17 @@ const NetView: React.FC = () => {
     } catch (error) {
       console.error('Failed to check out:', error);
       alert('Failed to check out');
+    }
+  };
+
+  const handleClaimNCS = async () => {
+    try {
+      await netApi.claimNcs(netId);
+      await fetchNetRoles();
+      setToastMessage('You are now NCS');
+    } catch (error: any) {
+      console.error('Failed to claim NCS:', error);
+      alert(error.response?.data?.detail || 'Failed to claim NCS');
     }
   };
 
@@ -845,6 +860,16 @@ const NetView: React.FC = () => {
                     >
                       Manage Roles
                     </Button>
+                    {!hasNCS && (
+                      <Button 
+                        size="small" 
+                        variant="contained" 
+                        color="warning"
+                        onClick={handleClaimNCS}
+                      >
+                        Claim NCS
+                      </Button>
+                    )}
                   </>
                 )}
                 {isAuthenticated && net.status === 'active' && (

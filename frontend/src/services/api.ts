@@ -64,6 +64,7 @@ export const netApi = {
     api.put(`/nets/${netId}/active-frequency/${frequencyId}`),
   clearActiveFrequency: (netId: number) => 
     api.delete(`/nets/${netId}/active-frequency`),
+  claimNcs: (netId: number) => api.post(`/nets/${netId}/claim-ncs`),
 };
 
 // Check-in API

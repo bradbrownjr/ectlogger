@@ -775,6 +775,21 @@ async def remove_net_role(
     if not role:
         raise HTTPException(status_code=404, detail="Role not found")
     
+    # Prevent removing the last NCS from an active net
+    if role.role == "NCS" and net.status == NetStatus.ACTIVE:
+        result = await db.execute(
+            select(NetRole).where(
+                NetRole.net_id == net_id,
+                NetRole.role == "NCS"
+            )
+        )
+        ncs_roles = result.scalars().all()
+        if len(ncs_roles) <= 1:
+            raise HTTPException(
+                status_code=400, 
+                detail="Cannot remove the last NCS from an active net. Assign another NCS first."
+            )
+    
     await db.delete(role)
     await db.commit()
 
@@ -794,6 +809,78 @@ async def remove_net_role(
     }, net_id)
 
     return None
+
+
+@router.post("/{net_id}/claim-ncs")
+async def claim_ncs_role(
+    net_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Allow net owner or admin to claim NCS role when there is no NCS assigned.
+    This is a recovery mechanism for orphaned nets.
+    """
+    result = await db.execute(
+        select(Net).options(selectinload(Net.frequencies)).where(Net.id == net_id)
+    )
+    net = result.scalar_one_or_none()
+    
+    if not net:
+        raise HTTPException(status_code=404, detail="Net not found")
+    
+    # Only owner or admin can claim NCS
+    if net.owner_id != current_user.id and current_user.role.value != "admin":
+        raise HTTPException(status_code=403, detail="Only net owner or admin can claim NCS")
+    
+    # Check if there's already an NCS
+    result = await db.execute(
+        select(NetRole).where(
+            NetRole.net_id == net_id,
+            NetRole.role == "NCS"
+        )
+    )
+    existing_ncs = result.scalars().all()
+    
+    if existing_ncs:
+        raise HTTPException(status_code=400, detail="Net already has an NCS assigned")
+    
+    # Remove any existing role for this user
+    result = await db.execute(
+        select(NetRole).where(
+            NetRole.net_id == net_id,
+            NetRole.user_id == current_user.id
+        )
+    )
+    existing_role = result.scalar_one_or_none()
+    if existing_role:
+        await db.delete(existing_role)
+    
+    # Assign NCS role
+    ncs_role = NetRole(net_id=net_id, user_id=current_user.id, role="NCS")
+    db.add(ncs_role)
+    await db.commit()
+    
+    # Post system message
+    from app.main import post_system_message
+    await post_system_message(net_id, f"{current_user.callsign or current_user.email} has claimed NCS", db)
+    
+    # Broadcast role change via WebSocket
+    from app.main import manager
+    import datetime
+    await manager.broadcast({
+        "type": "role_change",
+        "data": {
+            "net_id": net_id,
+            "user_id": current_user.id,
+            "role": "NCS",
+            "removed": False,
+            "assigned_at": datetime.datetime.utcnow().isoformat()
+        },
+        "timestamp": datetime.datetime.utcnow().isoformat()
+    }, net_id)
+    
+    return {"message": "NCS role claimed successfully"}
 
 
 @router.get("/{net_id}/roles")
