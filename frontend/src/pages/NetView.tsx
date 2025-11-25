@@ -338,6 +338,7 @@ const NetView: React.FC = () => {
         power_source: '',
         feedback: '',
         notes: '',
+        available_frequency_ids: [],
       });
     } catch (error) {
       console.error('Failed to start net:', error);
@@ -1358,7 +1359,7 @@ const NetView: React.FC = () => {
               multiple
               options={net?.frequencies || []}
               getOptionLabel={(option: any) => formatFrequencyDisplay(option)}
-              value={net?.frequencies.filter((f: any) => checkInForm.available_frequency_ids.includes(f.id)) || []}
+              value={net?.frequencies.filter((f: any) => (checkInForm.available_frequency_ids || []).includes(f.id)) || []}
               onChange={(_, newValue: any[]) => {
                 setCheckInForm({
                   ...checkInForm,
