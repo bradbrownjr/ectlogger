@@ -56,7 +56,7 @@ const AppRoutes: React.FC = () => {
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
       <Navbar />
       {isAuthenticated && <ProfileSetupDialog />}
-      <Box component="main" sx={{ flexGrow: 1, bgcolor: 'background.default', display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
+      <Box component="main" sx={{ flexGrow: 1, bgcolor: 'background.default', display: 'flex', flexDirection: 'column', overflow: 'auto', minHeight: 0 }}>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/auth/verify" element={<VerifyMagicLink />} />
