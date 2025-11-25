@@ -257,6 +257,25 @@ class ChatMessage(Base):
     user = relationship("User", back_populates="chat_messages")
 
 
+class FieldDefinition(Base):
+    """Admin-defined check-in fields that can be enabled per-net"""
+    __tablename__ = "field_definitions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(50), unique=True, nullable=False)  # Internal name (e.g., "skywarn_number")
+    label = Column(String(100), nullable=False)  # Display label (e.g., "Spotter #")
+    field_type = Column(String(20), default='text')  # text, textarea, number, select
+    options = Column(Text)  # JSON array for select options
+    placeholder = Column(String(200))  # Placeholder text for input
+    default_enabled = Column(Boolean, default=False)  # Enabled by default for new nets
+    default_required = Column(Boolean, default=False)  # Required by default for new nets
+    is_builtin = Column(Boolean, default=False)  # True for system fields (name, location, etc.)
+    is_archived = Column(Boolean, default=False)  # Archived fields are hidden but data preserved
+    sort_order = Column(Integer, default=100)  # Display order
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
 class AppSettings(Base):
     """Global application settings - singleton table with one row"""
     __tablename__ = "app_settings"

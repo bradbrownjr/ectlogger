@@ -404,3 +404,66 @@ class AppSettingsResponse(BaseModel):
 class AppSettingsUpdate(BaseModel):
     default_field_config: Optional[dict] = None
     field_labels: Optional[dict] = None
+
+
+# Field Definition Schemas
+class FieldDefinitionBase(BaseModel):
+    name: str = Field(..., min_length=1, max_length=50, pattern=r'^[a-z][a-z0-9_]*$')
+    label: str = Field(..., min_length=1, max_length=100)
+    field_type: str = Field(default='text', pattern=r'^(text|textarea|number|select)$')
+    options: Optional[List[str]] = None  # For select type
+    placeholder: Optional[str] = Field(None, max_length=200)
+    default_enabled: bool = False
+    default_required: bool = False
+    sort_order: int = Field(default=100, ge=0)
+
+
+class FieldDefinitionCreate(FieldDefinitionBase):
+    pass
+
+
+class FieldDefinitionUpdate(BaseModel):
+    label: Optional[str] = Field(None, min_length=1, max_length=100)
+    field_type: Optional[str] = Field(None, pattern=r'^(text|textarea|number|select)$')
+    options: Optional[List[str]] = None
+    placeholder: Optional[str] = Field(None, max_length=200)
+    default_enabled: Optional[bool] = None
+    default_required: Optional[bool] = None
+    is_archived: Optional[bool] = None
+    sort_order: Optional[int] = Field(None, ge=0)
+
+
+class FieldDefinitionResponse(BaseModel):
+    id: int
+    name: str
+    label: str
+    field_type: str
+    options: Optional[List[str]] = None
+    placeholder: Optional[str] = None
+    default_enabled: bool
+    default_required: bool
+    is_builtin: bool
+    is_archived: bool
+    sort_order: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+    @classmethod
+    def from_orm(cls, field):
+        import json
+        return cls(
+            id=field.id,
+            name=field.name,
+            label=field.label,
+            field_type=field.field_type,
+            options=json.loads(field.options) if field.options else None,
+            placeholder=field.placeholder,
+            default_enabled=field.default_enabled,
+            default_required=field.default_required,
+            is_builtin=field.is_builtin,
+            is_archived=field.is_archived,
+            sort_order=field.sort_order,
+            created_at=field.created_at,
+        )

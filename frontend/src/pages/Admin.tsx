@@ -29,12 +29,16 @@ import {
   Switch,
   Snackbar,
   CircularProgress,
+  Tooltip,
+  FormHelperText,
 } from '@mui/material';
 import BlockIcon from '@mui/icons-material/Block';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
-import SaveIcon from '@mui/icons-material/Save';
+import AddIcon from '@mui/icons-material/Add';
+import ArchiveIcon from '@mui/icons-material/Archive';
+import UnarchiveIcon from '@mui/icons-material/Unarchive';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 
@@ -48,15 +52,19 @@ interface User {
   created_at: string;
 }
 
-interface FieldConfigItem {
-  enabled: boolean;
-  required: boolean;
-  label?: string;
-}
-
-interface AppSettings {
-  default_field_config: Record<string, FieldConfigItem>;
-  field_labels: Record<string, string>;
+interface FieldDefinition {
+  id: number;
+  name: string;
+  label: string;
+  field_type: string;
+  options?: string[];
+  placeholder?: string;
+  default_enabled: boolean;
+  default_required: boolean;
+  is_builtin: boolean;
+  is_archived: boolean;
+  sort_order: number;
+  created_at: string;
 }
 
 interface TabPanelProps {
@@ -80,17 +88,12 @@ function TabPanel(props: TabPanelProps) {
   );
 }
 
-const FIELD_ORDER = ['name', 'location', 'skywarn_number', 'weather_observation', 'power_source', 'feedback', 'notes'];
-
-const DEFAULT_LABELS: Record<string, string> = {
-  name: 'Name',
-  location: 'Location',
-  skywarn_number: 'Spotter #',
-  weather_observation: 'Weather',
-  power_source: 'Power Source',
-  feedback: 'Feedback',
-  notes: 'Notes',
-};
+const FIELD_TYPES = [
+  { value: 'text', label: 'Text (single line)' },
+  { value: 'textarea', label: 'Text Area (multi-line)' },
+  { value: 'number', label: 'Number' },
+  { value: 'select', label: 'Dropdown Select' },
+];
 
 const Admin: React.FC = () => {
   const [tabValue, setTabValue] = useState(0);
@@ -98,9 +101,24 @@ const Admin: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
   const [newRole, setNewRole] = useState('');
-  const [settings, setSettings] = useState<AppSettings | null>(null);
-  const [settingsLoading, setSettingsLoading] = useState(false);
-  const [settingsSaving, setSettingsSaving] = useState(false);
+  
+  // Field definitions state
+  const [fields, setFields] = useState<FieldDefinition[]>([]);
+  const [fieldsLoading, setFieldsLoading] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
+  const [fieldDialogOpen, setFieldDialogOpen] = useState(false);
+  const [editingField, setEditingField] = useState<FieldDefinition | null>(null);
+  const [fieldForm, setFieldForm] = useState({
+    name: '',
+    label: '',
+    field_type: 'text',
+    placeholder: '',
+    default_enabled: false,
+    default_required: false,
+    sort_order: 100,
+  });
+  const [fieldSaving, setFieldSaving] = useState(false);
+  
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
     message: '',
@@ -115,8 +133,12 @@ const Admin: React.FC = () => {
       return;
     }
     fetchUsers();
-    fetchSettings();
+    fetchFields();
   }, [currentUser, navigate]);
+
+  useEffect(() => {
+    fetchFields();
+  }, [showArchived]);
 
   const fetchUsers = async () => {
     try {
@@ -127,70 +149,103 @@ const Admin: React.FC = () => {
     }
   };
 
-  const fetchSettings = async () => {
-    setSettingsLoading(true);
+  const fetchFields = async () => {
+    setFieldsLoading(true);
     try {
-      const response = await api.get('/settings/');
-      setSettings(response.data);
+      const response = await api.get(`/settings/fields?include_archived=${showArchived}`);
+      setFields(response.data);
     } catch (error) {
-      console.error('Failed to fetch settings:', error);
-      // Initialize with defaults if settings don't exist
-      setSettings({
-        default_field_config: FIELD_ORDER.reduce((acc, field) => ({
-          ...acc,
-          [field]: { enabled: ['name', 'location'].includes(field), required: false, label: DEFAULT_LABELS[field] }
-        }), {}),
-        field_labels: DEFAULT_LABELS,
+      console.error('Failed to fetch fields:', error);
+    } finally {
+      setFieldsLoading(false);
+    }
+  };
+
+  const handleOpenFieldDialog = (field?: FieldDefinition) => {
+    if (field) {
+      setEditingField(field);
+      setFieldForm({
+        name: field.name,
+        label: field.label,
+        field_type: field.field_type,
+        placeholder: field.placeholder || '',
+        default_enabled: field.default_enabled,
+        default_required: field.default_required,
+        sort_order: field.sort_order,
       });
-    } finally {
-      setSettingsLoading(false);
+    } else {
+      setEditingField(null);
+      setFieldForm({
+        name: '',
+        label: '',
+        field_type: 'text',
+        placeholder: '',
+        default_enabled: false,
+        default_required: false,
+        sort_order: 100,
+      });
     }
+    setFieldDialogOpen(true);
   };
 
-  const handleSaveSettings = async () => {
-    if (!settings) return;
-    setSettingsSaving(true);
+  const handleSaveField = async () => {
+    setFieldSaving(true);
     try {
-      await api.put('/settings/', settings);
-      setSnackbar({ open: true, message: 'Settings saved successfully', severity: 'success' });
-    } catch (error) {
-      console.error('Failed to save settings:', error);
-      setSnackbar({ open: true, message: 'Failed to save settings', severity: 'error' });
+      if (editingField) {
+        // Update existing field
+        await api.put(`/settings/fields/${editingField.id}`, {
+          label: fieldForm.label,
+          field_type: fieldForm.field_type,
+          placeholder: fieldForm.placeholder || null,
+          default_enabled: fieldForm.default_enabled,
+          default_required: fieldForm.default_required,
+          sort_order: fieldForm.sort_order,
+        });
+        setSnackbar({ open: true, message: 'Field updated successfully', severity: 'success' });
+      } else {
+        // Create new field
+        await api.post('/settings/fields', fieldForm);
+        setSnackbar({ open: true, message: 'Field created successfully', severity: 'success' });
+      }
+      setFieldDialogOpen(false);
+      fetchFields();
+    } catch (error: any) {
+      console.error('Failed to save field:', error);
+      const message = error.response?.data?.detail || 'Failed to save field';
+      setSnackbar({ open: true, message, severity: 'error' });
     } finally {
-      setSettingsSaving(false);
+      setFieldSaving(false);
     }
   };
 
-  const handleFieldConfigChange = (field: string, key: keyof FieldConfigItem, value: boolean | string) => {
-    if (!settings) return;
-    setSettings({
-      ...settings,
-      default_field_config: {
-        ...settings.default_field_config,
-        [field]: {
-          ...settings.default_field_config[field],
-          [key]: value,
-        },
-      },
-    });
+  const handleArchiveField = async (field: FieldDefinition) => {
+    if (field.is_builtin) {
+      setSnackbar({ open: true, message: 'Built-in fields cannot be archived', severity: 'error' });
+      return;
+    }
+    
+    try {
+      await api.put(`/settings/fields/${field.id}`, { is_archived: !field.is_archived });
+      setSnackbar({ 
+        open: true, 
+        message: field.is_archived ? 'Field restored successfully' : 'Field archived successfully', 
+        severity: 'success' 
+      });
+      fetchFields();
+    } catch (error) {
+      console.error('Failed to archive field:', error);
+      setSnackbar({ open: true, message: 'Failed to archive field', severity: 'error' });
+    }
   };
 
-  const handleLabelChange = (field: string, label: string) => {
-    if (!settings) return;
-    setSettings({
-      ...settings,
-      field_labels: {
-        ...settings.field_labels,
-        [field]: label,
-      },
-      default_field_config: {
-        ...settings.default_field_config,
-        [field]: {
-          ...settings.default_field_config[field],
-          label: label,
-        },
-      },
-    });
+  const handleToggleFieldDefault = async (field: FieldDefinition, key: 'default_enabled' | 'default_required', value: boolean) => {
+    try {
+      await api.put(`/settings/fields/${field.id}`, { [key]: value });
+      fetchFields();
+    } catch (error) {
+      console.error('Failed to update field:', error);
+      setSnackbar({ open: true, message: 'Failed to update field', severity: 'error' });
+    }
   };
 
   const handleBanUser = async (userId: number) => {
@@ -274,7 +329,7 @@ const Admin: React.FC = () => {
 
         <Tabs value={tabValue} onChange={(_, newValue) => setTabValue(newValue)} sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <Tab label="Users" id="admin-tab-0" aria-controls="admin-tabpanel-0" />
-          <Tab label="Field Configuration" id="admin-tab-1" aria-controls="admin-tabpanel-1" />
+          <Tab label="Check-in Fields" id="admin-tab-1" aria-controls="admin-tabpanel-1" />
         </Tabs>
 
         {/* Users Tab */}
@@ -368,75 +423,120 @@ const Admin: React.FC = () => {
         {/* Field Configuration Tab */}
         <TabPanel value={tabValue} index={1}>
           <Alert severity="info" sx={{ mb: 3 }}>
-            Configure default check-in fields for new nets. Field labels are used throughout the application.
+            Configure check-in fields available when creating nets. Custom fields can be added and archived (but not deleted to preserve historical data).
           </Alert>
 
-          {settingsLoading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Switch
+                checked={showArchived}
+                onChange={(e) => setShowArchived(e.target.checked)}
+                size="small"
+              />
+              <Typography variant="body2" color="text.secondary">
+                Show archived fields
+              </Typography>
+            </Box>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => handleOpenFieldDialog()}
+            >
+              Add Field
+            </Button>
+          </Box>
+
+          {fieldsLoading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
               <CircularProgress />
             </Box>
-          ) : settings && (
-            <>
-              <TableContainer>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Field</TableCell>
-                      <TableCell>Label</TableCell>
-                      <TableCell align="center">Enabled by Default</TableCell>
-                      <TableCell align="center">Required by Default</TableCell>
+          ) : (
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Name</TableCell>
+                    <TableCell>Label</TableCell>
+                    <TableCell>Type</TableCell>
+                    <TableCell align="center">Default Enabled</TableCell>
+                    <TableCell align="center">Default Required</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {fields.map((field) => (
+                    <TableRow 
+                      key={field.id}
+                      sx={{ 
+                        opacity: field.is_archived ? 0.6 : 1,
+                        backgroundColor: field.is_archived ? 'action.hover' : 'inherit',
+                      }}
+                    >
+                      <TableCell>
+                        <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                          {field.name}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>{field.label}</TableCell>
+                      <TableCell>
+                        <Chip 
+                          label={FIELD_TYPES.find(t => t.value === field.field_type)?.label || field.field_type}
+                          size="small"
+                          variant="outlined"
+                        />
+                      </TableCell>
+                      <TableCell align="center">
+                        <Switch
+                          checked={field.default_enabled}
+                          onChange={(e) => handleToggleFieldDefault(field, 'default_enabled', e.target.checked)}
+                          disabled={field.is_archived}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell align="center">
+                        <Switch
+                          checked={field.default_required}
+                          onChange={(e) => handleToggleFieldDefault(field, 'default_required', e.target.checked)}
+                          disabled={field.is_archived || !field.default_enabled}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        {field.is_builtin ? (
+                          <Chip label="Built-in" size="small" color="info" />
+                        ) : field.is_archived ? (
+                          <Chip label="Archived" size="small" color="default" />
+                        ) : (
+                          <Chip label="Custom" size="small" color="success" />
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Tooltip title="Edit">
+                          <IconButton 
+                            size="small" 
+                            onClick={() => handleOpenFieldDialog(field)}
+                          >
+                            <EditIcon />
+                          </IconButton>
+                        </Tooltip>
+                        {!field.is_builtin && (
+                          <Tooltip title={field.is_archived ? "Restore" : "Archive"}>
+                            <IconButton 
+                              size="small" 
+                              onClick={() => handleArchiveField(field)}
+                              color={field.is_archived ? "success" : "warning"}
+                            >
+                              {field.is_archived ? <UnarchiveIcon /> : <ArchiveIcon />}
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </TableCell>
                     </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {FIELD_ORDER.map((field) => {
-                      const config = settings.default_field_config[field] || { enabled: false, required: false };
-                      const label = settings.field_labels[field] || DEFAULT_LABELS[field];
-                      return (
-                        <TableRow key={field}>
-                          <TableCell>
-                            <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
-                              {field}
-                            </Typography>
-                          </TableCell>
-                          <TableCell>
-                            <TextField
-                              size="small"
-                              value={label}
-                              onChange={(e) => handleLabelChange(field, e.target.value)}
-                              sx={{ width: 200 }}
-                            />
-                          </TableCell>
-                          <TableCell align="center">
-                            <Switch
-                              checked={config.enabled}
-                              onChange={(e) => handleFieldConfigChange(field, 'enabled', e.target.checked)}
-                            />
-                          </TableCell>
-                          <TableCell align="center">
-                            <Switch
-                              checked={config.required}
-                              onChange={(e) => handleFieldConfigChange(field, 'required', e.target.checked)}
-                              disabled={!config.enabled}
-                            />
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-
-              <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
-                <Button
-                  variant="contained"
-                  startIcon={settingsSaving ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
-                  onClick={handleSaveSettings}
-                  disabled={settingsSaving}
-                >
-                  Save Settings
-                </Button>
-              </Box>
-            </>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
           )}
         </TabPanel>
       </Paper>
@@ -468,6 +568,89 @@ const Admin: React.FC = () => {
           <Button onClick={() => setRoleDialogOpen(false)}>Cancel</Button>
           <Button onClick={handleUpdateRole} variant="contained">
             Update Role
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Field Edit/Create Dialog */}
+      <Dialog open={fieldDialogOpen} onClose={() => setFieldDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>{editingField ? 'Edit Field' : 'Add New Field'}</DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <TextField
+              label="Internal Name"
+              value={fieldForm.name}
+              onChange={(e) => setFieldForm({ ...fieldForm, name: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_') })}
+              disabled={!!editingField}
+              required
+              helperText="Lowercase letters, numbers, and underscores only. Cannot be changed after creation."
+              fullWidth
+            />
+            <TextField
+              label="Display Label"
+              value={fieldForm.label}
+              onChange={(e) => setFieldForm({ ...fieldForm, label: e.target.value })}
+              required
+              helperText="The label shown to users"
+              fullWidth
+            />
+            <FormControl fullWidth>
+              <InputLabel>Field Type</InputLabel>
+              <Select
+                value={fieldForm.field_type}
+                label="Field Type"
+                onChange={(e) => setFieldForm({ ...fieldForm, field_type: e.target.value })}
+                disabled={editingField?.is_builtin}
+              >
+                {FIELD_TYPES.map((type) => (
+                  <MenuItem key={type.value} value={type.value}>{type.label}</MenuItem>
+                ))}
+              </Select>
+              <FormHelperText>The type of input control</FormHelperText>
+            </FormControl>
+            <TextField
+              label="Placeholder Text"
+              value={fieldForm.placeholder}
+              onChange={(e) => setFieldForm({ ...fieldForm, placeholder: e.target.value })}
+              helperText="Optional hint text shown in empty fields"
+              fullWidth
+            />
+            <TextField
+              label="Sort Order"
+              type="number"
+              value={fieldForm.sort_order}
+              onChange={(e) => setFieldForm({ ...fieldForm, sort_order: parseInt(e.target.value) || 100 })}
+              helperText="Lower numbers appear first (built-in fields use 10-70)"
+              fullWidth
+            />
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Switch
+                  checked={fieldForm.default_enabled}
+                  onChange={(e) => setFieldForm({ ...fieldForm, default_enabled: e.target.checked })}
+                />
+                <Typography variant="body2">Enabled by default</Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Switch
+                  checked={fieldForm.default_required}
+                  onChange={(e) => setFieldForm({ ...fieldForm, default_required: e.target.checked })}
+                  disabled={!fieldForm.default_enabled}
+                />
+                <Typography variant="body2">Required by default</Typography>
+              </Box>
+            </Box>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setFieldDialogOpen(false)}>Cancel</Button>
+          <Button 
+            onClick={handleSaveField} 
+            variant="contained"
+            disabled={fieldSaving || !fieldForm.name || !fieldForm.label}
+            startIcon={fieldSaving ? <CircularProgress size={20} color="inherit" /> : null}
+          >
+            {editingField ? 'Update' : 'Create'}
           </Button>
         </DialogActions>
       </Dialog>
