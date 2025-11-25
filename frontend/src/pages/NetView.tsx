@@ -951,7 +951,7 @@ const NetView: React.FC = () => {
                         )}
                       </TableCell>
                       <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
                           {checkIn.user_id && onlineUserIds.includes(checkIn.user_id) && (
                             <Box 
                               sx={{ 
@@ -964,14 +964,12 @@ const NetView: React.FC = () => {
                               title="Online"
                             />
                           )}
-                          <Box>
+                          <Box sx={{ fontWeight: 500 }}>
                             {checkIn.callsign}
                           </Box>
-                        </Box>
-                        {/* Available frequencies - highlight active frequency */}
-                        {checkIn.available_frequencies && checkIn.available_frequencies.length > 0 && (
-                          <Box sx={{ mt: 0.5 }}>
-                            {checkIn.available_frequencies.map((freqId: number) => {
+                          {/* Available frequencies inline - highlight active frequency */}
+                          {checkIn.available_frequencies && checkIn.available_frequencies.length > 0 && 
+                            checkIn.available_frequencies.map((freqId: number) => {
                               const freq = net.frequencies.find((f: any) => f.id === freqId);
                               const isActive = freqId === checkIn.frequency_id;
                               return freq ? (
@@ -981,12 +979,12 @@ const NetView: React.FC = () => {
                                   size="small"
                                   variant={isActive ? "filled" : "outlined"}
                                   color={isActive ? "primary" : "default"}
-                                  sx={{ mr: 0.5, height: 18, fontSize: '0.7rem' }}
+                                  sx={{ height: 18, fontSize: '0.7rem' }}
                                 />
                               ) : null;
-                            })}
-                          </Box>
-                        )}
+                            })
+                          }
+                        </Box>
                       </TableCell>
                       {net?.field_config?.name?.enabled && <TableCell>{checkIn.name}</TableCell>}
                       {net?.field_config?.location?.enabled && <TableCell>{checkIn.location}</TableCell>}
