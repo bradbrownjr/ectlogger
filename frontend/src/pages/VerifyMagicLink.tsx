@@ -16,25 +16,17 @@ const VerifyMagicLink: React.FC = () => {
       const token = searchParams.get('token');
       
       if (!token) {
-        console.error('[VERIFY] No token in URL');
         setError('No verification token provided');
         setVerifying(false);
         return;
       }
 
       try {
-        console.log('[VERIFY] Starting magic link verification...');
-        console.log('[VERIFY] Token from URL:', token.substring(0, 20) + '...');
         const response = await authApi.verifyMagicLink(token);
-        console.log('[VERIFY] Verification successful!');
-        console.log('[VERIFY] Access token received:', response.data.access_token.substring(0, 20) + '...');
-        console.log('[VERIFY] Calling login...');
         await login(response.data.access_token);
-        console.log('[VERIFY] Login complete, navigating to dashboard...');
         navigate('/dashboard');
       } catch (err: any) {
-        console.error('[VERIFY] Verification failed:', err);
-        console.error('[VERIFY] Error details:', err.response?.data);
+        console.error('[VERIFY] Magic link verification failed:', err.response?.data);
         setError(err.response?.data?.detail || 'Invalid or expired magic link');
         setVerifying(false);
       }

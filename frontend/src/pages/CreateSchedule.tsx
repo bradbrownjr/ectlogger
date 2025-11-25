@@ -392,7 +392,7 @@ const CreateSchedule: React.FC = () => {
       } else {
         await templateApi.create(ScheduleData);
       }
-      navigate('/Schedules');
+      navigate('/scheduler');
     } catch (error: any) {
       console.error('Failed to save Schedule:', error);
       alert(error.response?.data?.detail || 'Failed to save Schedule');
@@ -628,7 +628,7 @@ const CreateSchedule: React.FC = () => {
           )}
 
           <Box sx={{ display: 'flex', gap: 2, mt: 3 }}>
-            <Button variant="outlined" onClick={() => navigate('/Schedules')}>
+            <Button variant="outlined" onClick={() => navigate('/scheduler')}>
               Cancel
             </Button>
             <Button type="submit" variant="contained" color="primary">

@@ -35,7 +35,6 @@ const Chat: React.FC<ChatProps> = ({ netId, onNewMessage }) => {
     // Listen for chat_message events dispatched from NetView WebSocket
     const handleNewChatMessage = (event: any) => {
       const chatMsg = event.detail;
-      console.log('WebSocket: chat_message event received', chatMsg);
       setMessages((prev) => {
         // Only add if not already present (deduplication by id)
         if (prev.some((msg) => msg.id === chatMsg.id)) {

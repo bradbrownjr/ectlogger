@@ -175,7 +175,7 @@ const NetView: React.FC = () => {
     const websocket = new WebSocket(`${wsUrl}/ws/nets/${netId}?token=${token}`);
     
     websocket.onopen = () => {
-      console.log('WebSocket connected');
+      console.log('WebSocket connected to net', netId);
     };
     
     websocket.onmessage = (event) => {
@@ -195,21 +195,17 @@ const NetView: React.FC = () => {
           window.dispatchEvent(new CustomEvent('newChatMessage', { detail: message.data }));
         }
       } else if (message.type === 'role_change') {
-        console.log('WebSocket: role_change event received', message);
         // Always refresh roles and check-ins for all clients
         fetchNetRoles();
         fetchCheckIns();
         // If the event contains a user_id, and it matches the current user, force a refresh
         if (message.data?.user_id && user?.id === message.data.user_id) {
-          console.log('Role change affects current user, forcing UI refresh');
           fetchNetRoles();
           fetchCheckIns();
         }
       } else if (message.type === 'status_change') {
-        console.log('WebSocket: status_change event received', message);
         fetchCheckIns();
         if (message.data?.user_id && user?.id === message.data.user_id) {
-          console.log('Status change affects current user, forcing UI refresh');
           fetchCheckIns();
         }
       }
@@ -259,7 +255,6 @@ const NetView: React.FC = () => {
   const fetchNetRoles = async () => {
     try {
       const response = await api.get(`/nets/${netId}/roles`);
-      console.log('[fetchNetRoles] Raw response:', response.data);
       setNetRoles(response.data);
     } catch (error) {
       console.error('Failed to fetch net roles:', error);
@@ -488,24 +483,19 @@ const NetView: React.FC = () => {
   };
 
   const handleStatusChange = async (checkInId: number, newStatus: string) => {
-    console.log('[handleStatusChange] called:', { checkInId, newStatus });
     const checkIn = checkIns.find((ci: any) => ci.id === checkInId);
     if (!checkIn) {
-      console.log('[handleStatusChange] Check-in not found');
       return;
     }
 
     try {
           if ((newStatus === 'ncs' || newStatus === 'logger') && checkIn.user_id) {
-            console.log('[handleStatusChange] Role assignment branch for:', newStatus, '| checkIn:', checkIn);
             // Remove any existing role
             const existingRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
             if (existingRole) {
-              console.log('[handleStatusChange] Removing existing role:', existingRole);
               await api.delete(`/nets/${netId}/roles/${existingRole.id}`);
             }
             // Assign new role
-            console.log('[handleStatusChange] Assigning new role:', newStatus.toUpperCase(), '| user_id:', checkIn.user_id);
             await api.post(`/nets/${netId}/roles`, null, {
               params: {
                 user_id: checkIn.user_id,
@@ -516,29 +506,23 @@ const NetView: React.FC = () => {
             await checkInApi.update(checkInId, { status: 'checked_in' });
             await fetchNetRoles();
             await fetchCheckIns();
-            console.log('[handleStatusChange] fetchCheckIns called after role change');
           } else if (newStatus === 'ncs' || newStatus === 'logger') {
-            console.log('[handleStatusChange] Cannot assign role to check-in without user_id');
             setToastMessage('Cannot assign roles to stations without user accounts');
             return;
           } else {
-            console.log('[handleStatusChange] Status change branch for:', newStatus);
             // Remove role if switching to a regular status
             if (checkIn.user_id) {
               const existingRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
               if (existingRole && owner?.id !== checkIn.user_id) {
-                console.log('[handleStatusChange] Removing role because switching to status:', existingRole);
                 await api.delete(`/nets/${netId}/roles/${existingRole.id}`);
                 await fetchNetRoles();
               }
             }
             await checkInApi.update(checkInId, { status: newStatus });
             await fetchCheckIns();
-            console.log('[handleStatusChange] fetchCheckIns called after status change');
       }
-      console.log('[handleStatusChange] Status change completed successfully');
       } catch (error) {
-        console.error('[handleStatusChange] Failed to update status:', error);
+        console.error('Failed to update status:', error);
         setToastMessage('Failed to update status');
     }
   };
@@ -857,21 +841,17 @@ const NetView: React.FC = () => {
                           if (!validValues.includes(selectValue)) {
                             selectValue = 'checked_in';
                           }
-                          console.log('[Select value logic] callsign:', checkIn.callsign, '| selectValue:', selectValue, '| user_id:', checkIn.user_id, '| userRole:', userRole);
 
                           return (
                             <Select
                               size="small"
                               value={selectValue}
                               onChange={async (e) => {
-                                console.log('[Select onChange] callsign:', checkIn.callsign, '| new value:', e.target.value, '| checkInId:', checkIn.id);
                                 await handleStatusChange(checkIn.id, e.target.value);
                                 // Force refresh after role assignment
                                 await fetchNetRoles();
                                 await fetchCheckIns();
                               }}
-                              onOpen={() => console.log('Select OPENED for', checkIn.callsign)}
-                              onClose={(event, reason) => console.log('Select CLOSED for', checkIn.callsign, '- reason:', reason)}
                               sx={{ minWidth: 50 }}
                               disabled={owner?.id === checkIn.user_id}
                               MenuProps={{
@@ -882,9 +862,6 @@ const NetView: React.FC = () => {
                                   style: {
                                     maxHeight: 300,
                                   },
-                                },
-                                onClose: (event, reason) => {
-                                  console.log('MenuProps onClose - reason:', reason);
                                 },
                               }}
                             >
