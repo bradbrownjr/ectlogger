@@ -886,8 +886,10 @@ const NetView: React.FC = () => {
                         borderColor: checkIn.id === activeSpeakerId ? 'success.main' : 'transparent',
                         '& .MuiTableCell-root': {
                           ...(checkIn.id === activeSpeakerId ? { fontWeight: 'bold' } : {}),
-                          // Add padding for frequency chips that overflow
-                          ...(checkIn.available_frequencies && checkIn.available_frequencies.length > 0 ? { pb: 2 } : {}),
+                          // Add padding and top-align for frequency chips that overflow, center-align otherwise
+                          ...(checkIn.available_frequencies && checkIn.available_frequencies.length > 0 
+                            ? { pb: 2, verticalAlign: 'top' } 
+                            : { verticalAlign: 'middle' }),
                         }
                       }}
                     >
@@ -952,7 +954,7 @@ const NetView: React.FC = () => {
                           </Tooltip>
                         )}
                       </TableCell>
-                      <TableCell sx={{ verticalAlign: 'top', position: 'relative' }}>
+                      <TableCell sx={{ position: 'relative' }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                           {checkIn.user_id && onlineUserIds.includes(checkIn.user_id) && (
                             <Box 
@@ -1000,13 +1002,13 @@ const NetView: React.FC = () => {
                           </Box>
                         )}
                       </TableCell>
-                      {net?.field_config?.name?.enabled && <TableCell sx={{ verticalAlign: 'top' }}>{checkIn.name}</TableCell>}
-                      {net?.field_config?.location?.enabled && <TableCell sx={{ verticalAlign: 'top' }}>{checkIn.location}</TableCell>}
-                      {net?.field_config?.skywarn_number?.enabled && <TableCell sx={{ verticalAlign: 'top' }}>{checkIn.skywarn_number}</TableCell>}
-                      {net?.field_config?.weather_observation?.enabled && <TableCell sx={{ verticalAlign: 'top' }}>{checkIn.weather_observation}</TableCell>}
-                      {net?.field_config?.power_source?.enabled && <TableCell sx={{ verticalAlign: 'top' }}>{checkIn.power_source}</TableCell>}
-                      {net?.field_config?.notes?.enabled && <TableCell sx={{ verticalAlign: 'top' }}>{checkIn.notes}</TableCell>}
-                      <TableCell sx={{ verticalAlign: 'top' }}>
+                      {net?.field_config?.name?.enabled && <TableCell>{checkIn.name}</TableCell>}
+                      {net?.field_config?.location?.enabled && <TableCell>{checkIn.location}</TableCell>}
+                      {net?.field_config?.skywarn_number?.enabled && <TableCell>{checkIn.skywarn_number}</TableCell>}
+                      {net?.field_config?.weather_observation?.enabled && <TableCell>{checkIn.weather_observation}</TableCell>}
+                      {net?.field_config?.power_source?.enabled && <TableCell>{checkIn.power_source}</TableCell>}
+                      {net?.field_config?.notes?.enabled && <TableCell>{checkIn.notes}</TableCell>}
+                      <TableCell>
                         {formatTime(checkIn.checked_in_at, user?.prefer_utc || false)}
                       </TableCell>
                       {canManage && (
