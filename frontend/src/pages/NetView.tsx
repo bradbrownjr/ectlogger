@@ -445,6 +445,27 @@ const NetView: React.FC = () => {
     return net?.field_config?.[fieldName]?.required ?? false;
   };
 
+  // Get appropriate callsign based on active frequency mode
+  const getAppropriateCallsign = (): string => {
+    if (!user) return '';
+    
+    // Check if active frequency is GMRS
+    const activeFreq = net?.frequencies?.find((f: Frequency) => f.id === net?.active_frequency_id);
+    const isGmrsFrequency = activeFreq?.mode === 'FM' && (
+      activeFreq?.description?.toLowerCase().includes('gmrs') ||
+      activeFreq?.frequency?.includes('462.') ||  // GMRS frequencies are in 462 MHz range
+      activeFreq?.frequency?.includes('467.')     // GMRS frequencies also in 467 MHz range
+    );
+    
+    // If GMRS frequency and user has a GMRS callsign, use it
+    if (isGmrsFrequency && user.gmrs_callsign) {
+      return user.gmrs_callsign;
+    }
+    
+    // Otherwise use primary (amateur) callsign
+    return user.callsign || '';
+  };
+
   const handleCheckIn = async () => {
     // Validate required fields
     if (!checkInForm.callsign) {
@@ -849,7 +870,7 @@ const NetView: React.FC = () => {
                         // Pre-fill form with user's profile data
                         if (user) {
                           setCheckInForm({
-                            callsign: user.callsign || '',
+                            callsign: getAppropriateCallsign(),
                             name: user.name || '',
                             location: user.location || '',
                             skywarn_number: '',

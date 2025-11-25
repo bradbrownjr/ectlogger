@@ -31,6 +31,7 @@ const Profile: React.FC = () => {
   const [formData, setFormData] = useState({
     name: user?.name || '',
     callsign: user?.callsign || '',
+    gmrs_callsign: user?.gmrs_callsign || '',
     callsigns: user?.callsigns || [],
     prefer_utc: user?.prefer_utc || false,
     email_notifications: user?.email_notifications ?? true,
@@ -92,11 +93,21 @@ const Profile: React.FC = () => {
 
           <TextField
             fullWidth
-            label="Primary Call Sign"
+            label="Amateur Radio Call Sign"
             value={formData.callsign}
             onChange={(e) => setFormData({ ...formData, callsign: e.target.value.toUpperCase() })}
             margin="normal"
-            helperText="Your main callsign (Amateur Radio, GMRS, etc.)"
+            helperText="Your FCC amateur radio callsign (e.g., KC1JMH)"
+            inputProps={{ style: { textTransform: 'uppercase' } }}
+          />
+
+          <TextField
+            fullWidth
+            label="GMRS Call Sign"
+            value={formData.gmrs_callsign}
+            onChange={(e) => setFormData({ ...formData, gmrs_callsign: e.target.value.toUpperCase() })}
+            margin="normal"
+            helperText="Your FCC GMRS callsign (e.g., WROP123) - used for GMRS frequency nets"
             inputProps={{ style: { textTransform: 'uppercase' } }}
           />
 

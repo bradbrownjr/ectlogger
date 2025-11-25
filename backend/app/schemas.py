@@ -38,6 +38,7 @@ class UserCreate(UserBase):
 class UserUpdate(BaseModel):
     name: Optional[str] = Field(None, max_length=100, min_length=1)
     callsign: Optional[str] = Field(None, max_length=20, min_length=3)
+    gmrs_callsign: Optional[str] = Field(None, max_length=20)
     callsigns: Optional[List[str]] = None
     email_notifications: Optional[bool] = None
     notify_net_start: Optional[bool] = None
@@ -72,6 +73,7 @@ class UserResponse(UserBase):
     notify_net_start: bool = True
     notify_net_close: bool = True
     notify_net_reminder: bool = False
+    gmrs_callsign: Optional[str] = None
     skywarn_number: Optional[str] = None
     location: Optional[str] = None
     prefer_utc: bool = False

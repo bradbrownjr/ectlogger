@@ -6,6 +6,7 @@ interface User {
   email: string;
   name?: string;
   callsign?: string;
+  gmrs_callsign?: string;
   callsigns?: string[];
   location?: string;
   prefer_utc?: boolean;
