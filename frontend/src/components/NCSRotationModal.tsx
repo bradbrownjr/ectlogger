@@ -502,7 +502,7 @@ const NCSRotationModal: React.FC<NCSRotationModalProps> = ({
           {!isCancellation && (
             <Autocomplete
               options={members.filter((m: RotationMember) => m.is_active && m.user_id !== selectedEntry?.user_id)}
-              getOptionLabel={(option: RotationMember) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
+              getOptionLabel={(option: RotationMember) => `${option.user_callsign}${option.user_name ? ` (${option.user_name})` : ''}`}
               value={swapUser ? members.find((m: RotationMember) => m.user_id === swapUser.id) || null : null}
               onChange={(_: React.SyntheticEvent, value: RotationMember | null) => {
                 if (value) {
