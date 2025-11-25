@@ -884,9 +884,11 @@ const NetView: React.FC = () => {
                         opacity: checkIn.status === 'checked_out' ? 0.6 : 1,
                         border: checkIn.id === activeSpeakerId ? 2 : 0,
                         borderColor: checkIn.id === activeSpeakerId ? 'success.main' : 'transparent',
-                        '& .MuiTableCell-root': checkIn.id === activeSpeakerId ? {
-                          fontWeight: 'bold'
-                        } : {}
+                        '& .MuiTableCell-root': {
+                          ...(checkIn.id === activeSpeakerId ? { fontWeight: 'bold' } : {}),
+                          // Add padding for frequency chips that overflow
+                          ...(checkIn.available_frequencies && checkIn.available_frequencies.length > 0 ? { pb: 3.5 } : {}),
+                        }
                       }}
                     >
                       <TableCell>{index + 1}</TableCell>
@@ -950,7 +952,7 @@ const NetView: React.FC = () => {
                           </Tooltip>
                         )}
                       </TableCell>
-                      <TableCell sx={{ verticalAlign: 'top' }}>
+                      <TableCell sx={{ verticalAlign: 'top', position: 'relative' }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                           {checkIn.user_id && onlineUserIds.includes(checkIn.user_id) && (
                             <Box 
@@ -968,9 +970,19 @@ const NetView: React.FC = () => {
                             {checkIn.callsign}
                           </Box>
                         </Box>
-                        {/* Available frequencies on second line - highlight active frequency */}
+                        {/* Available frequencies - positioned to overflow into adjacent columns */}
                         {checkIn.available_frequencies && checkIn.available_frequencies.length > 0 && (
-                          <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mt: 0.25 }}>
+                          <Box sx={{ 
+                            display: 'flex', 
+                            gap: 0.5, 
+                            flexWrap: 'nowrap', 
+                            mt: 0.25,
+                            position: 'absolute',
+                            left: 0,
+                            whiteSpace: 'nowrap',
+                            zIndex: 1,
+                            pl: 1,
+                          }}>
                             {checkIn.available_frequencies.map((freqId: number) => {
                               const freq = net.frequencies.find((f: any) => f.id === freqId);
                               const isActive = freqId === checkIn.frequency_id;
