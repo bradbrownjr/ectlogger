@@ -426,6 +426,108 @@ This is an automated message, please do not reply.
         )
 
     @staticmethod
+    async def send_net_cancellation(
+        to_email: str,
+        recipient_name: str,
+        recipient_callsign: str,
+        net_name: str,
+        net_date: str,
+        net_time: str,
+        reason: str | None,
+        is_ncs: bool = False,
+        scheduler_url: str = None
+    ):
+        """Send net cancellation notification"""
+        logger.info("EMAIL", f"Sending cancellation notice to {to_email} for {net_name} on {net_date}")
+        
+        if is_ncs:
+            subject_prefix = "🚫 NCS Duty Cancelled"
+            intro_text = """This is to inform you that your NCS duty has been cancelled 
+            for the following net session. You are no longer required to run this net."""
+        else:
+            subject_prefix = "🚫 Net Cancelled"
+            intro_text = """This is to inform you that a net you are subscribed to has been cancelled."""
+        
+        html_template = Template("""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .alert { background-color: #ffebee; border-left: 4px solid #f44336; padding: 15px; margin: 20px 0; border-radius: 4px; }
+                .details { background-color: #f5f5f5; padding: 15px; border-radius: 4px; margin: 20px 0; }
+                .reason { background-color: #fff3e0; border-left: 4px solid #ff9800; padding: 15px; margin: 20px 0; border-radius: 4px; }
+                .button { 
+                    display: inline-block; 
+                    padding: 12px 24px; 
+                    background-color: #1976d2; 
+                    color: #ffffff !important; 
+                    text-decoration: none; 
+                    border-radius: 4px; 
+                    margin: 20px 0;
+                    font-weight: bold;
+                }
+                .footer { margin-top: 30px; font-size: 12px; color: #666; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h2>{{ subject_prefix }}</h2>
+                
+                <div class="alert">
+                    <strong>The following net has been cancelled.</strong>
+                </div>
+                
+                <p>Hello {{ recipient_name }} ({{ recipient_callsign }}),</p>
+                
+                <p>{{ intro_text }}</p>
+                
+                <div class="details">
+                    <h3>Cancelled Net Details</h3>
+                    <p><strong>Net:</strong> {{ net_name }}</p>
+                    <p><strong>Original Date:</strong> {{ net_date }}</p>
+                    <p><strong>Original Time:</strong> {{ net_time }}</p>
+                </div>
+                
+                {% if reason %}
+                <div class="reason">
+                    <strong>Reason:</strong> {{ reason }}
+                </div>
+                {% endif %}
+                
+                {% if scheduler_url %}
+                <a href="{{ scheduler_url }}" class="button" style="color: #ffffff;">View Schedule</a>
+                {% endif %}
+                
+                <div class="footer">
+                    <p>This is an automated notification from {{ app_name }}.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """)
+        
+        html_content = html_template.render(
+            subject_prefix=subject_prefix,
+            recipient_name=recipient_name,
+            recipient_callsign=recipient_callsign,
+            net_name=net_name,
+            net_date=net_date,
+            net_time=net_time,
+            reason=reason,
+            intro_text=intro_text,
+            scheduler_url=scheduler_url,
+            app_name=settings.app_name
+        )
+        
+        await EmailService.send_email(
+            to_email=to_email,
+            subject=f"{subject_prefix}: {net_name} - {net_date}",
+            html_content=html_content
+        )
+
+    @staticmethod
     async def send_net_log(email: str, net_name: str, net_description: str, ncs_name: str, check_ins: list, started_at: str, closed_at: str, chat_messages: list = None):
         """Send net log after net is closed with check-ins table, CSV attachment, and chat log"""
         html_template = Template("""

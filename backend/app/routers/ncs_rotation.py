@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete, and_
 from sqlalchemy.orm import selectinload
@@ -10,7 +10,7 @@ import json
 
 from app.database import get_db
 from app.models import (
-    NetTemplate, NCSRotationMember, NCSScheduleOverride, User
+    NetTemplate, NCSRotationMember, NCSScheduleOverride, User, NetTemplateSubscription
 )
 from app.schemas import (
     NCSRotationMemberCreate, NCSRotationMemberResponse,
@@ -18,6 +18,9 @@ from app.schemas import (
     NCSScheduleEntry, NCSScheduleResponse
 )
 from app.dependencies import get_current_user, get_current_user_optional
+from app.email_service import EmailService
+from app.config import settings
+from app.logger import logger
 
 router = APIRouter(prefix="/templates/{template_id}/ncs-rotation", tags=["ncs-rotation"])
 
@@ -377,6 +380,7 @@ async def get_next_ncs(
 async def create_schedule_override(
     template_id: int,
     override_data: NCSScheduleOverrideCreate,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -431,6 +435,66 @@ async def create_schedule_override(
         .where(NCSScheduleOverride.id == override.id)
     )
     override = result.scalar_one()
+    
+    # Send cancellation notifications if this is a cancellation (no replacement)
+    if override_data.replacement_user_id is None:
+        # Get original NCS user if exists
+        original_user = None
+        if original_user_id:
+            result = await db.execute(select(User).where(User.id == original_user_id))
+            original_user = result.scalar_one_or_none()
+        
+        # Get all subscribers
+        result = await db.execute(
+            select(NetTemplateSubscription)
+            .options(selectinload(NetTemplateSubscription.user))
+            .where(NetTemplateSubscription.template_id == template_id)
+        )
+        subscriptions = result.scalars().all()
+        
+        # Parse schedule config for time
+        config = json.loads(template.schedule_config) if template.schedule_config else {}
+        net_time = config.get('time', '19:00')
+        
+        # Format date nicely
+        net_date = override_data.scheduled_date.strftime('%A, %B %d, %Y')
+        scheduler_url = f"{settings.frontend_url}/scheduler"
+        
+        # Send notification to original NCS
+        if original_user and original_user.email:
+            background_tasks.add_task(
+                EmailService.send_net_cancellation,
+                to_email=original_user.email,
+                recipient_name=original_user.name or original_user.callsign,
+                recipient_callsign=original_user.callsign,
+                net_name=template.name,
+                net_date=net_date,
+                net_time=net_time,
+                reason=override_data.reason,
+                is_ncs=True,
+                scheduler_url=scheduler_url
+            )
+            logger.info("NCS_ROTATION", f"Queued cancellation notice to NCS {original_user.callsign}")
+        
+        # Send notification to all subscribers (except original NCS who already got one)
+        for sub in subscriptions:
+            if sub.user and sub.user.email and sub.user_id != original_user_id:
+                background_tasks.add_task(
+                    EmailService.send_net_cancellation,
+                    to_email=sub.user.email,
+                    recipient_name=sub.user.name or sub.user.callsign,
+                    recipient_callsign=sub.user.callsign,
+                    net_name=template.name,
+                    net_date=net_date,
+                    net_time=net_time,
+                    reason=override_data.reason,
+                    is_ncs=False,
+                    scheduler_url=scheduler_url
+                )
+        
+        subscriber_count = len([s for s in subscriptions if s.user_id != original_user_id])
+        if subscriber_count > 0:
+            logger.info("NCS_ROTATION", f"Queued cancellation notice to {subscriber_count} subscribers")
     
     return NCSScheduleOverrideResponse.from_orm_with_users(override)
 
