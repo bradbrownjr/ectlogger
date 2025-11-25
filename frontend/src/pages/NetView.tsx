@@ -967,26 +967,26 @@ const NetView: React.FC = () => {
             <Grid item xs={12} md={8} sx={{ pr: { md: 0.5 }, display: 'flex', flexDirection: 'column', minHeight: { xs: 'auto', md: 0 }, height: { xs: 'auto', md: '100%' }, mb: { xs: 2, md: 0 } }}>
               {/* Desktop: Separate sticky header */}
               <Box sx={{ border: 1, borderColor: 'divider', borderRadius: '4px 4px 0 0', borderBottom: 0, flexShrink: 0, overflowX: 'hidden', display: { xs: 'none', md: 'block' } }}>
-                <Table size="small" sx={{ tableLayout: 'fixed', minWidth: 600 }}>
+                <Table size="small" sx={{ tableLayout: 'fixed' }}>
                   <TableHead>
                     <TableRow>
-                      <TableCell sx={{ width: 35, whiteSpace: 'nowrap' }}>#</TableCell>
-                      <TableCell sx={{ width: 75, whiteSpace: 'nowrap' }}>Status</TableCell>
-                      <TableCell sx={{ width: 140, whiteSpace: 'nowrap' }}>Callsign *</TableCell>
-                      {net?.field_config?.name?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Name {net.field_config.name.required && '*'}</TableCell>}
-                      {net?.field_config?.location?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Location {net.field_config.location.required && '*'}</TableCell>}
-                      {net?.field_config?.skywarn_number?.enabled && <TableCell sx={{ width: 70, whiteSpace: 'nowrap' }}>Spotter {net.field_config.skywarn_number.required && '*'}</TableCell>}
-                      {net?.field_config?.weather_observation?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Weather {net.field_config.weather_observation.required && '*'}</TableCell>}
-                      {net?.field_config?.power_source?.enabled && <TableCell sx={{ width: 70, whiteSpace: 'nowrap' }}>Power {net.field_config.power_source.required && '*'}</TableCell>}
-                      {net?.field_config?.notes?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Notes {net.field_config.notes.required && '*'}</TableCell>}
+                      <TableCell sx={{ width: 28, whiteSpace: 'nowrap', px: 0.5 }}>#</TableCell>
+                      <TableCell sx={{ width: 60, whiteSpace: 'nowrap', px: 0.5 }}>Status</TableCell>
+                      <TableCell sx={{ width: 130, whiteSpace: 'nowrap', px: 0.5 }}>Callsign *</TableCell>
+                      {net?.field_config?.name?.enabled && <TableCell sx={{ whiteSpace: 'nowrap', px: 0.5 }}>Name {net.field_config.name.required && '*'}</TableCell>}
+                      {net?.field_config?.location?.enabled && <TableCell sx={{ whiteSpace: 'nowrap', px: 0.5 }}>Location {net.field_config.location.required && '*'}</TableCell>}
+                      {net?.field_config?.skywarn_number?.enabled && <TableCell sx={{ width: 55, whiteSpace: 'nowrap', px: 0.5 }}>Spotter {net.field_config.skywarn_number.required && '*'}</TableCell>}
+                      {net?.field_config?.weather_observation?.enabled && <TableCell sx={{ whiteSpace: 'nowrap', px: 0.5 }}>Weather {net.field_config.weather_observation.required && '*'}</TableCell>}
+                      {net?.field_config?.power_source?.enabled && <TableCell sx={{ width: 55, whiteSpace: 'nowrap', px: 0.5 }}>Power {net.field_config.power_source.required && '*'}</TableCell>}
+                      {net?.field_config?.notes?.enabled && <TableCell sx={{ whiteSpace: 'nowrap', px: 0.5 }}>Notes {net.field_config.notes.required && '*'}</TableCell>}
                       {/* Custom fields */}
                       {getEnabledCustomFields().map((field) => (
-                        <TableCell key={field.name} sx={{ whiteSpace: 'nowrap' }}>
+                        <TableCell key={field.name} sx={{ whiteSpace: 'nowrap', px: 0.5 }}>
                           {field.label} {isFieldRequired(field.name) && '*'}
                         </TableCell>
                       ))}
-                      <TableCell sx={{ width: 95, whiteSpace: 'nowrap' }}>Time</TableCell>
-                      {canManage && <TableCell sx={{ width: 100, whiteSpace: 'nowrap' }}>Actions</TableCell>}
+                      <TableCell sx={{ width: 75, whiteSpace: 'nowrap', px: 0.5 }}>Time</TableCell>
+                      {canManage && <TableCell sx={{ width: 80, whiteSpace: 'nowrap', px: 0.5 }}>Actions</TableCell>}
                     </TableRow>
                   </TableHead>
                 </Table>
@@ -1060,7 +1060,7 @@ const NetView: React.FC = () => {
               </TableContainer>
               {/* Desktop: Scrolling body */}
               <TableContainer sx={{ flex: { xs: 'none', md: 1 }, overflow: 'auto', border: 1, borderColor: 'divider', borderTop: 0, borderRadius: '0 0 4px 4px', minHeight: 0, display: { xs: 'none', md: 'block' } }}>
-                <Table size="small" sx={{ tableLayout: 'fixed', minWidth: 600 }}>
+                <Table size="small" sx={{ tableLayout: 'fixed' }}>
                   <TableBody>
                   {/* Existing check-ins */}
                   {checkIns.map((checkIn, index) => {
@@ -1073,6 +1073,7 @@ const NetView: React.FC = () => {
                     <TableRow 
                       key={checkIn.id}
                       sx={{ 
+                        height: 48,
                         backgroundColor: checkIn.id === activeSpeakerId 
                           ? (theme) => theme.palette.mode === 'dark' ? theme.palette.success.dark : theme.palette.success.light
                           : checkIn.status === 'checked_out' 
@@ -1085,15 +1086,13 @@ const NetView: React.FC = () => {
                         borderColor: checkIn.id === activeSpeakerId ? 'success.main' : 'transparent',
                         '& .MuiTableCell-root': {
                           ...(checkIn.id === activeSpeakerId ? { fontWeight: 'bold' } : {}),
-                          // Add padding and top-align for frequency chips that overflow, center-align otherwise
-                          ...(net.frequencies && net.frequencies.length > 1 && checkIn.available_frequencies && checkIn.available_frequencies.length > 0 
-                            ? { pb: 2, verticalAlign: 'top' } 
-                            : { verticalAlign: 'middle' }),
+                          verticalAlign: 'middle',
+                          px: 0.5,
                         }
                       }}
                     >
-                      <TableCell sx={{ width: 35 }}>{index + 1}</TableCell>
-                      <TableCell sx={{ width: 75 }}>
+                      <TableCell sx={{ width: 28 }}>{index + 1}</TableCell>
+                      <TableCell sx={{ width: 60 }}>
                         {net.status === 'active' && checkIn.status !== 'checked_out' && (canManageCheckIns || checkIn.user_id === user?.id) ? (() => {
                           // Calculate value once
 
@@ -1153,7 +1152,7 @@ const NetView: React.FC = () => {
                           </Tooltip>
                         )}
                       </TableCell>
-                      <TableCell sx={{ position: 'relative', width: 140 }}>
+                      <TableCell sx={{ width: 130 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                           {checkIn.user_id && onlineUserIds.includes(checkIn.user_id) && (
                             <Box 
@@ -1199,9 +1198,9 @@ const NetView: React.FC = () => {
                       </TableCell>
                       {net?.field_config?.name?.enabled && <TableCell>{checkIn.name}</TableCell>}
                       {net?.field_config?.location?.enabled && <TableCell>{checkIn.location}</TableCell>}
-                      {net?.field_config?.skywarn_number?.enabled && <TableCell sx={{ width: 70 }}>{checkIn.skywarn_number}</TableCell>}
+                      {net?.field_config?.skywarn_number?.enabled && <TableCell sx={{ width: 55 }}>{checkIn.skywarn_number}</TableCell>}
                       {net?.field_config?.weather_observation?.enabled && <TableCell>{checkIn.weather_observation}</TableCell>}
-                      {net?.field_config?.power_source?.enabled && <TableCell sx={{ width: 70 }}>{checkIn.power_source}</TableCell>}
+                      {net?.field_config?.power_source?.enabled && <TableCell sx={{ width: 55 }}>{checkIn.power_source}</TableCell>}
                       {net?.field_config?.notes?.enabled && <TableCell>{checkIn.notes}</TableCell>}
                       {/* Custom field values */}
                       {getEnabledCustomFields().map((field) => (
@@ -1209,11 +1208,11 @@ const NetView: React.FC = () => {
                           {checkIn.custom_fields?.[field.name] || ''}
                         </TableCell>
                       ))}
-                      <TableCell sx={{ width: 95 }}>
+                      <TableCell sx={{ width: 75 }}>
                         {formatTime(checkIn.checked_in_at, user?.prefer_utc || false)}
                       </TableCell>
                       {canManage && (
-                      <TableCell sx={{ width: 100, whiteSpace: 'nowrap' }}>
+                      <TableCell sx={{ width: 80, whiteSpace: 'nowrap' }}>
                         <Box sx={{ display: 'flex', gap: 0 }}>
                           {net.status === 'active' && checkIn.status !== 'checked_out' && (
                             <IconButton
