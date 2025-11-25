@@ -184,18 +184,16 @@ const NetView: React.FC = () => {
   }, [net?.owner_id]);
 
   const connectWebSocket = () => {
-    // Get JWT token from localStorage
+    // Get JWT token from localStorage (optional - guests can still connect)
     const token = localStorage.getItem('token');
-    if (!token) {
-      console.error('No authentication token found');
-      return;
-    }
     
     // Get WebSocket URL from environment (convert http:// to ws://, https:// to wss://)
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
     const wsUrl = apiUrl.replace(/^http/, 'ws');
     
-    const websocket = new WebSocket(`${wsUrl}/ws/nets/${netId}?token=${token}`);
+    // Connect with or without token
+    const wsUrlWithToken = token ? `${wsUrl}/ws/nets/${netId}?token=${token}` : `${wsUrl}/ws/nets/${netId}`;
+    const websocket = new WebSocket(wsUrlWithToken);
     
     websocket.onopen = () => {
       console.log('WebSocket connected to net', netId);
