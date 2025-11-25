@@ -11,6 +11,8 @@ import {
   Box,
   Chip,
   Fab,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { netApi } from '../services/api';
@@ -34,6 +36,8 @@ const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   useEffect(() => {
     fetchNets();
@@ -70,18 +74,20 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" component="h1">
-          📻 Net Dashboard
+    <Container maxWidth="lg" sx={{ mt: { xs: 2, sm: 4 }, mb: 4, px: { xs: 1, sm: 3 } }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 1 }}>
+        <Typography variant={isMobile ? "h5" : "h4"} component="h1">
+          📻 {isMobile ? 'Active' : 'Active Nets'}
         </Typography>
-        <Typography variant="body1" color="text.secondary">
-          {isAuthenticated ? (
-            `Welcome, ${user?.callsign || user?.name || user?.email}`
-          ) : (
-            "Welcome! Feel free to look around, and set up an account if you'd like to participate."
-          )}
-        </Typography>
+        {!isMobile && (
+          <Typography variant="body1" color="text.secondary">
+            {isAuthenticated ? (
+              `Welcome, ${user?.callsign || user?.name || user?.email}`
+            ) : (
+              "Welcome! Feel free to look around, and set up an account if you'd like to participate."
+            )}
+          </Typography>
+        )}
       </Box>
 
       {loading ? (

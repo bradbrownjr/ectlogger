@@ -32,6 +32,8 @@ import {
   Autocomplete,
   Grid,
   Tooltip,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -116,6 +118,8 @@ interface NetRole {
 
 const NetView: React.FC = () => {
   const { netId } = useParams<{ netId: string }>();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [net, setNet] = useState<Net | null>(null);
   const [checkIns, setCheckIns] = useState<CheckIn[]>([]);
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
@@ -733,8 +737,8 @@ const NetView: React.FC = () => {
   };
 
   return (
-    <Container maxWidth={false} sx={{ height: '100%', py: 0, px: 0, display: 'flex', flexDirection: 'column' }}>
-      <Paper sx={{ p: 0.5, flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
+    <Container maxWidth={false} sx={{ height: { xs: 'auto', md: '100%' }, py: 0, px: { xs: 0.5, sm: 0 }, display: 'flex', flexDirection: 'column' }}>
+      <Paper sx={{ p: 0.5, flex: { xs: 'none', md: 1 }, display: 'flex', flexDirection: 'column', overflow: { xs: 'visible', md: 'hidden' }, minHeight: 0 }}>
         <Box sx={{ flexShrink: 0 }}>
           <Grid container spacing={0} sx={{ mt: 0.5, flex: 1, minHeight: 0 }}>
             <Grid item xs={12} md={8} sx={{ pr: { md: 0.5 }, display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%' }}>
@@ -917,10 +921,10 @@ const NetView: React.FC = () => {
         </Box>
 
         {net.status === 'active' && (
-          <Grid container spacing={0} sx={{ mt: 0.5, flex: 1, minHeight: 0 }}>
-            <Grid item xs={12} md={8} sx={{ pr: { md: 0.5 }, display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%' }}>
-              <Box sx={{ border: 1, borderColor: 'divider', borderRadius: '4px 4px 0 0', borderBottom: 0, flexShrink: 0 }}>
-                <Table size="small" sx={{ tableLayout: 'fixed' }}>
+          <Grid container spacing={0} sx={{ mt: 0.5, flex: { xs: 'none', md: 1 }, minHeight: 0, flexDirection: { xs: 'column', md: 'row' } }}>
+            <Grid item xs={12} md={8} sx={{ pr: { md: 0.5 }, display: 'flex', flexDirection: 'column', minHeight: { xs: 'auto', md: 0 }, height: { xs: 'auto', md: '100%' }, mb: { xs: 2, md: 0 } }}>
+              <Box sx={{ border: 1, borderColor: 'divider', borderRadius: '4px 4px 0 0', borderBottom: 0, flexShrink: 0, overflowX: 'auto' }}>
+                <Table size="small" sx={{ tableLayout: 'fixed', minWidth: 600 }}>
                   <TableHead>
                     <TableRow>
                       <TableCell sx={{ width: 35 }}>#</TableCell>
@@ -944,8 +948,8 @@ const NetView: React.FC = () => {
                   </TableHead>
                 </Table>
               </Box>
-              <TableContainer sx={{ flex: 1, overflow: 'auto', border: 1, borderColor: 'divider', borderTop: 0, minHeight: 0 }}>
-                <Table size="small" sx={{ tableLayout: 'fixed' }}>
+              <TableContainer sx={{ flex: { xs: 'none', md: 1 }, overflow: 'auto', border: 1, borderColor: 'divider', borderTop: 0, minHeight: { xs: 300, md: 0 }, maxHeight: { xs: 400, md: 'none' } }}>
+                <Table size="small" sx={{ tableLayout: 'fixed', minWidth: 600 }}>
                   <TableBody>
                   {/* Existing check-ins */}
                   {checkIns.map((checkIn, index) => {
@@ -1379,7 +1383,7 @@ const NetView: React.FC = () => {
             )}
             </Grid>
             
-            <Grid item xs={12} md={4} sx={{ pl: { md: 0.5 }, display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%' }}>
+            <Grid item xs={12} md={4} sx={{ pl: { md: 0.5 }, display: 'flex', flexDirection: 'column', minHeight: { xs: 300, md: 0 }, height: { xs: 350, md: '100%' } }}>
               <Chat netId={Number(netId)} />
             </Grid>
           </Grid>

@@ -19,6 +19,8 @@ import {
   TextField,
   Switch,
   FormControlLabel,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -89,6 +91,8 @@ const Scheduler: React.FC = () => {
   const [currentSchedule, setCurrentSchedule] = useState<Schedule | null>(null);
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   useEffect(() => {
     fetchSchedules();
@@ -151,15 +155,17 @@ const Scheduler: React.FC = () => {
   const isAdmin = user?.role === 'admin';
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          📅 Nets
+    <Container maxWidth="lg" sx={{ mt: { xs: 2, sm: 4 }, mb: 4, px: { xs: 1, sm: 3 } }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 1 }}>
+        <Typography variant={isMobile ? "h5" : "h4"} component="h1" gutterBottom>
+          📅 {isMobile ? 'Schedule' : 'Net Schedule'}
         </Typography>
         <Box sx={{ textAlign: 'right' }}>
-          <Typography variant="body1" color="text.secondary">
-            Create recurring net schedules and subscribe to notifications
-          </Typography>
+          {!isMobile && (
+            <Typography variant="body1" color="text.secondary">
+              Create recurring net schedules and subscribe to notifications
+            </Typography>
+          )}
           <Typography variant="caption" color="text.secondary">
             Times shown in {Intl.DateTimeFormat().resolvedOptions().timeZone}
           </Typography>
