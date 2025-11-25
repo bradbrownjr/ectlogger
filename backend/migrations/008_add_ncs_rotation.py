@@ -18,12 +18,12 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from sqlalchemy import text
-from app.database import async_engine
+from app.database import engine
 
 
 async def migrate():
     """Run the migration"""
-    async with async_engine.begin() as conn:
+    async with engine.begin() as conn:
         # Check if tables already exist
         result = await conn.execute(text(
             "SELECT name FROM sqlite_master WHERE type='table' AND name='ncs_rotation_members'"
