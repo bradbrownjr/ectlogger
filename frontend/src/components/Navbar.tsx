@@ -30,10 +30,10 @@ const Navbar: React.FC = () => {
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <Button color="inherit" onClick={() => navigate('/dashboard')}>
-            Dashboard
+            Nets
           </Button>
           <Button color="inherit" onClick={() => navigate('/scheduler')}>
-            Nets
+            Schedule
           </Button>
           {isAuthenticated && user?.role === 'admin' && (
             <Button color="inherit" onClick={() => navigate('/admin/users')}>
