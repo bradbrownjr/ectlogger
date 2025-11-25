@@ -887,7 +887,7 @@ const NetView: React.FC = () => {
                         '& .MuiTableCell-root': {
                           ...(checkIn.id === activeSpeakerId ? { fontWeight: 'bold' } : {}),
                           // Add padding for frequency chips that overflow
-                          ...(checkIn.available_frequencies && checkIn.available_frequencies.length > 0 ? { pb: 2.5 } : {}),
+                          ...(checkIn.available_frequencies && checkIn.available_frequencies.length > 0 ? { pb: 2 } : {}),
                         }
                       }}
                     >
