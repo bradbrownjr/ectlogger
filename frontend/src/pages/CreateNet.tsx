@@ -173,16 +173,21 @@ const CreateNet: React.FC = () => {
 
   const saveEdit = async (e?: React.KeyboardEvent) => {
     if (e && e.key !== 'Enter') return;
-    if (!editForm || !editingId) return;
+    await doSaveEdit();
+  };
+
+  const doSaveEdit = async (overrideForm?: typeof editForm) => {
+    const formToSave = overrideForm || editForm;
+    if (!formToSave || !editingId) return;
     
     try {
       // Clean up the data - convert empty strings to null
       const cleanData = {
-        frequency: editForm.frequency || null,
-        mode: editForm.mode,
-        network: editForm.network || null,
-        talkgroup: editForm.talkgroup || null,
-        description: editForm.description || null,
+        frequency: formToSave.frequency || null,
+        mode: formToSave.mode,
+        network: formToSave.network || null,
+        talkgroup: formToSave.talkgroup || null,
+        description: formToSave.description || null,
       };
       
       const response = await frequencyApi.update(editingId, cleanData);
@@ -226,7 +231,13 @@ const CreateNet: React.FC = () => {
             <FormControl size="small" fullWidth>
               <Select
                 value={form.mode}
-                onChange={(e: any) => setEditForm({ ...form, mode: e.target.value })}
+                onChange={(e: any) => {
+                  const newMode = e.target.value;
+                  const updatedForm = { ...form, mode: newMode };
+                  setEditForm(updatedForm);
+                  // Auto-save when mode changes
+                  doSaveEdit(updatedForm);
+                }}
               >
                 <MenuItem value="FM">FM</MenuItem>
                 <MenuItem value="GMRS">GMRS</MenuItem>
