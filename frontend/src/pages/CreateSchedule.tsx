@@ -36,10 +36,19 @@ interface Frequency {
   description?: string;
 }
 
+// Get timezone abbreviation (e.g., EST, EDT, UTC)
+const getTimezoneAbbr = () => {
+  const date = new Date();
+  const timeString = date.toLocaleTimeString('en-US', { timeZoneName: 'short' });
+  const match = timeString.match(/[A-Z]{2,5}$/);
+  return match ? match[0] : Intl.DateTimeFormat().resolvedOptions().timeZone;
+};
+
 const CreateSchedule: React.FC = () => {
   const { scheduleId } = useParams<{ scheduleId: string }>();
   const navigate = useNavigate();
   const isEdit = Boolean(scheduleId);
+  const timezoneAbbr = getTimezoneAbbr();
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -469,7 +478,7 @@ const CreateSchedule: React.FC = () => {
             <TextField
               fullWidth
               type="time"
-              label="Time"
+              label={`Time (${timezoneAbbr})`}
               value={scheduleConfig.time}
               onChange={(e) => setScheduleConfig({ ...scheduleConfig, time: e.target.value })}
               margin="normal"
@@ -495,7 +504,7 @@ const CreateSchedule: React.FC = () => {
               </FormControl>
               <TextField
                 type="time"
-                label="Time"
+                label={`Time (${timezoneAbbr})`}
                 value={scheduleConfig.time}
                 onChange={(e) => setScheduleConfig({ ...scheduleConfig, time: e.target.value })}
                 InputLabelProps={{ shrink: true }}
@@ -544,7 +553,7 @@ const CreateSchedule: React.FC = () => {
                 </FormControl>
                 <TextField
                   type="time"
-                  label="Time"
+                  label={`Time (${timezoneAbbr})`}
                   value={scheduleConfig.time}
                   onChange={(e) => setScheduleConfig({ ...scheduleConfig, time: e.target.value })}
                   InputLabelProps={{ shrink: true }}
