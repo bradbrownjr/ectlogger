@@ -84,7 +84,7 @@ const NCSRotationModal: React.FC<NCSRotationModalProps> = ({
   schedule,
   onUpdate,
 }: NCSRotationModalProps) => {
-  const [tabValue, setTabValue] = useState(0);
+  const [tabValue, setTabValue] = useState<number | null>(null); // null until data loads
   const [members, setMembers] = useState<RotationMember[]>([]);
   const [scheduleEntries, setScheduleEntries] = useState<ScheduleEntry[]>([]);
   const [loading, setLoading] = useState(false);
@@ -111,6 +111,9 @@ const NCSRotationModal: React.FC<NCSRotationModalProps> = ({
   useEffect(() => {
     if (open && schedule) {
       fetchData();
+    } else if (!open) {
+      // Reset tab when modal closes
+      setTabValue(null);
     }
   }, [open, schedule]);
 
@@ -127,9 +130,16 @@ const NCSRotationModal: React.FC<NCSRotationModalProps> = ({
         userApi.listUsers(),
       ]);
       
-      setMembers(membersRes.data);
+      const loadedMembers = membersRes.data;
+      setMembers(loadedMembers);
       setScheduleEntries(scheduleRes.data.schedule || []);
       setUsers(usersRes.data);
+      
+      // Set initial tab: show Manage Rotation if no members yet (for owners/admins), otherwise Schedule
+      const canManageNow = user?.id === schedule?.owner_id || user?.role === 'admin';
+      if (tabValue === null) {
+        setTabValue(loadedMembers.length === 0 && canManageNow ? 1 : 0);
+      }
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to load rotation data');
     } finally {
@@ -245,6 +255,7 @@ const NCSRotationModal: React.FC<NCSRotationModalProps> = ({
         maxWidth="md" 
         fullWidth
         fullScreen={isMobile}
+        disableEnforceFocus
       >
         <DialogTitle>
           NCS Rotation - {schedule?.name}
@@ -258,13 +269,13 @@ const NCSRotationModal: React.FC<NCSRotationModalProps> = ({
           )}
           
           <Tabs 
-            value={tabValue} 
+            value={tabValue ?? 0} 
             onChange={(_: React.SyntheticEvent, v: number) => setTabValue(v)} 
             sx={{ mb: 2 }}
             variant={isMobile ? 'fullWidth' : 'standard'}
           >
-            <Tab label="Schedule" />
-            {canManage && <Tab label="Manage Rotation" />}
+            <Tab label="Schedule" id="tab-schedule" />
+            {canManage && <Tab label="Manage Rotation" id="tab-manage" />}
           </Tabs>
           
           {loading ? (
