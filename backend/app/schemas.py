@@ -131,6 +131,7 @@ class NetUpdate(BaseModel):
     status: Optional[NetStatus] = None
     active_frequency_id: Optional[int] = None
     frequency_ids: Optional[List[int]] = Field(None, max_length=50)
+    field_config: Optional[dict] = None
     
     @field_validator('frequency_ids')
     @classmethod
