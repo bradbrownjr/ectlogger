@@ -764,7 +764,7 @@ const NetView: React.FC = () => {
       setToastMessage('You are now NCS');
     } catch (error: any) {
       console.error('Failed to claim NCS:', error);
-      alert(error.response?.data?.detail || 'Failed to claim NCS');
+      setToastMessage(error.response?.data?.detail || 'Failed to claim NCS');
     }
   };
 
