@@ -891,7 +891,13 @@ const NetView: React.FC = () => {
                 <Table size="small" sx={{ tableLayout: 'fixed' }}>
                   <TableBody>
                   {/* Existing check-ins */}
-                  {checkIns.map((checkIn, index) => (
+                  {checkIns.map((checkIn, index) => {
+                    // Check if this station is available on the active frequency
+                    const isOnActiveFrequency = net.active_frequency_id && 
+                      checkIn.available_frequencies && 
+                      checkIn.available_frequencies.includes(net.active_frequency_id);
+                    
+                    return (
                     <TableRow 
                       key={checkIn.id}
                       sx={{ 
@@ -899,6 +905,8 @@ const NetView: React.FC = () => {
                           ? (theme) => theme.palette.mode === 'dark' ? theme.palette.success.dark : theme.palette.success.light
                           : checkIn.status === 'checked_out' 
                           ? 'action.disabledBackground' 
+                          : isOnActiveFrequency
+                          ? (theme) => theme.palette.mode === 'dark' ? 'rgba(25, 118, 210, 0.15)' : 'rgba(25, 118, 210, 0.08)'
                           : 'inherit',
                         opacity: checkIn.status === 'checked_out' ? 0.6 : 1,
                         border: checkIn.id === activeSpeakerId ? 2 : 0,
@@ -1059,7 +1067,7 @@ const NetView: React.FC = () => {
                       </TableCell>
                       )}
                     </TableRow>
-                  ))}
+                  )})}
                 </TableBody>
               </Table>
             </TableContainer>
@@ -1077,6 +1085,13 @@ const NetView: React.FC = () => {
                 <Tooltip title="Has traffic or emergency to report" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>🚨 Traffic</Typography></Tooltip>
                 <Tooltip title="Has announcements to share" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>📢 Announce</Typography></Tooltip>
                 <Tooltip title="Checked out of net" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>👋 Out</Typography></Tooltip>
+                {net.frequencies && net.frequencies.length > 1 && net.active_frequency_id && (
+                  <Tooltip title="Station is available on the active frequency" placement="top" arrow>
+                    <Typography variant="caption" sx={{ cursor: 'help', backgroundColor: 'rgba(25, 118, 210, 0.15)', px: 0.5, borderRadius: 0.5 }}>
+                      🔵 On Active Freq
+                    </Typography>
+                  </Tooltip>
+                )}
               </Box>
             </Box>
             
