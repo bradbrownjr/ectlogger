@@ -24,6 +24,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
 import { netApi, frequencyApi } from '../services/api';
+import api from '../services/api';
 
 interface Frequency {
   id?: number;
@@ -32,6 +33,20 @@ interface Frequency {
   network?: string;
   talkgroup?: string;
   description?: string;
+}
+
+interface FieldDefinition {
+  id: number;
+  name: string;
+  label: string;
+  field_type: string;
+  options?: string[];
+  placeholder?: string;
+  default_enabled: boolean;
+  default_required: boolean;
+  is_builtin: boolean;
+  is_archived: boolean;
+  sort_order: number;
 }
 
 const CreateNet: React.FC = () => {
@@ -43,24 +58,39 @@ const CreateNet: React.FC = () => {
   const [newFrequency, setNewFrequency] = useState({ frequency: '', mode: 'FM', network: '', talkgroup: '', description: '' });
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<Frequency | null>(null);
-  const [fieldConfig, setFieldConfig] = useState({
-    name: { enabled: true, required: false },
-    location: { enabled: true, required: false },
-    skywarn_number: { enabled: false, required: false },
-    weather_observation: { enabled: false, required: false },
-    power_source: { enabled: false, required: false },
-    feedback: { enabled: false, required: false },
-    notes: { enabled: false, required: false },
-  });
+  const [fieldDefinitions, setFieldDefinitions] = useState<FieldDefinition[]>([]);
+  const [fieldConfig, setFieldConfig] = useState<Record<string, { enabled: boolean; required: boolean }>>({});
   const navigate = useNavigate();
   const isEditMode = !!netId;
 
   useEffect(() => {
     fetchFrequencies();
-    if (netId) {
+    fetchFieldDefinitions();
+  }, []);
+
+  useEffect(() => {
+    if (netId && fieldDefinitions.length > 0) {
       fetchNetData();
     }
-  }, [netId]);
+  }, [netId, fieldDefinitions]);
+
+  const fetchFieldDefinitions = async () => {
+    try {
+      const response = await api.get('/settings/fields');
+      setFieldDefinitions(response.data);
+      // Initialize fieldConfig with defaults from field definitions
+      const defaultConfig: Record<string, { enabled: boolean; required: boolean }> = {};
+      response.data.forEach((field: FieldDefinition) => {
+        defaultConfig[field.name] = {
+          enabled: field.default_enabled,
+          required: field.default_required,
+        };
+      });
+      setFieldConfig(defaultConfig);
+    } catch (error) {
+      console.error('Failed to fetch field definitions:', error);
+    }
+  };
 
   const fetchNetData = async () => {
     if (!netId) return;
@@ -70,7 +100,15 @@ const CreateNet: React.FC = () => {
       setDescription(response.data.description || '');
       setSelectedFrequencies(response.data.frequencies.map((f: Frequency) => f.id!));
       if (response.data.field_config) {
-        setFieldConfig(response.data.field_config);
+        // Merge saved config with field definitions (in case new fields were added)
+        const mergedConfig: Record<string, { enabled: boolean; required: boolean }> = {};
+        fieldDefinitions.forEach((field: FieldDefinition) => {
+          mergedConfig[field.name] = response.data.field_config[field.name] || {
+            enabled: field.default_enabled,
+            required: field.default_required,
+          };
+        });
+        setFieldConfig(mergedConfig);
       }
     } catch (error) {
       console.error('Failed to fetch net:', error);
@@ -423,30 +461,21 @@ const CreateNet: React.FC = () => {
           </Typography>
 
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 3 }}>
-            {Object.entries(fieldConfig).map(([fieldName, config]) => {
-              const fieldLabels: Record<string, string> = {
-                skywarn_number: 'Spotter #',
-                weather_observation: 'Weather Observation',
-                power_source: 'Power Source',
-                name: 'Name',
-                location: 'Location',
-                feedback: 'Feedback',
-                notes: 'Notes'
-              };
-              const label = fieldLabels[fieldName] || fieldName.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
+            {fieldDefinitions.map((field) => {
+              const config = fieldConfig[field.name] || { enabled: false, required: false };
               return (
-              <Box key={fieldName} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Box key={field.name} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 <Checkbox
                   checked={config.enabled}
                   onChange={(e: any) => 
                     setFieldConfig({
                       ...fieldConfig,
-                      [fieldName]: { ...config, enabled: e.target.checked, required: e.target.checked ? config.required : false }
+                      [field.name]: { ...config, enabled: e.target.checked, required: e.target.checked ? config.required : false }
                     })
                   }
                 />
                 <Typography sx={{ minWidth: 200 }}>
-                  {label}
+                  {field.label}
                 </Typography>
                 {config.enabled && (
                   <Checkbox
@@ -454,7 +483,7 @@ const CreateNet: React.FC = () => {
                     onChange={(e: any) =>
                       setFieldConfig({
                         ...fieldConfig,
-                        [fieldName]: { ...config, required: e.target.checked }
+                        [field.name]: { ...config, required: e.target.checked }
                       })
                     }
                   />

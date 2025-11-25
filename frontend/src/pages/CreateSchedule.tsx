@@ -26,6 +26,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
 import { templateApi, frequencyApi } from '../services/api';
+import api from '../services/api';
 
 interface Frequency {
   id: number;
@@ -34,6 +35,20 @@ interface Frequency {
   network?: string;
   talkgroup?: string;
   description?: string;
+}
+
+interface FieldDefinition {
+  id: number;
+  name: string;
+  label: string;
+  field_type: string;
+  options?: string[];
+  placeholder?: string;
+  default_enabled: boolean;
+  default_required: boolean;
+  is_builtin: boolean;
+  is_archived: boolean;
+  sort_order: number;
 }
 
 // Get timezone abbreviation (e.g., EST, EDT, UTC)
@@ -57,15 +72,8 @@ const CreateSchedule: React.FC = () => {
   const [newFrequency, setNewFrequency] = useState({ frequency: '', mode: 'FM', network: '', talkgroup: '', description: '' });
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<Frequency | null>(null);
-  const [fieldConfig, setFieldConfig] = useState({
-    name: { enabled: true, required: false },
-    location: { enabled: true, required: false },
-    skywarn_number: { enabled: false, required: false },
-    weather_observation: { enabled: false, required: false },
-    power_source: { enabled: false, required: false },
-    feedback: { enabled: false, required: false },
-    notes: { enabled: false, required: false },
-  });
+  const [fieldDefinitions, setFieldDefinitions] = useState<FieldDefinition[]>([]);
+  const [fieldConfig, setFieldConfig] = useState<Record<string, { enabled: boolean; required: boolean }>>({});
   const [isActive, setIsActive] = useState(true);
   
   // Schedule configuration
@@ -78,10 +86,32 @@ const CreateSchedule: React.FC = () => {
 
   useEffect(() => {
     fetchFrequencies();
-    if (isEdit) {
+    fetchFieldDefinitions();
+  }, []);
+
+  useEffect(() => {
+    if (isEdit && fieldDefinitions.length > 0) {
       fetchScheduleData();
     }
-  }, [scheduleId]);
+  }, [scheduleId, fieldDefinitions]);
+
+  const fetchFieldDefinitions = async () => {
+    try {
+      const response = await api.get('/settings/fields');
+      setFieldDefinitions(response.data);
+      // Initialize fieldConfig with defaults from field definitions
+      const defaultConfig: Record<string, { enabled: boolean; required: boolean }> = {};
+      response.data.forEach((field: FieldDefinition) => {
+        defaultConfig[field.name] = {
+          enabled: field.default_enabled,
+          required: field.default_required,
+        };
+      });
+      setFieldConfig(defaultConfig);
+    } catch (error) {
+      console.error('Failed to fetch field definitions:', error);
+    }
+  };
 
   const fetchFrequencies = async () => {
     try {
@@ -373,7 +403,17 @@ const CreateSchedule: React.FC = () => {
       setName(Schedule.name);
       setDescription(Schedule.description || '');
       setSelectedFrequencyIds(Schedule.frequencies.map((f: any) => f.id));
-      setFieldConfig(Schedule.field_config || fieldConfig);
+      // Merge saved config with field definitions (in case new fields were added)
+      if (Schedule.field_config) {
+        const mergedConfig: Record<string, { enabled: boolean; required: boolean }> = {};
+        fieldDefinitions.forEach((field: FieldDefinition) => {
+          mergedConfig[field.name] = Schedule.field_config[field.name] || {
+            enabled: field.default_enabled,
+            required: field.default_required,
+          };
+        });
+        setFieldConfig(mergedConfig);
+      }
       setIsActive(Schedule.is_active);
       setScheduleType(Schedule.schedule_type || 'ad_hoc');
       setScheduleConfig(Schedule.schedule_config || { day_of_week: 1, week_of_month: [], time: '18:00' });
@@ -408,14 +448,19 @@ const CreateSchedule: React.FC = () => {
     }
   };
 
-  const handleFieldToggle = (field: string, property: 'enabled' | 'required') => {
-    setFieldConfig(prev => ({
-      ...prev,
-      [field]: {
-        ...prev[field as keyof typeof prev],
-        [property]: !prev[field as keyof typeof prev][property]
-      }
-    }));
+  const handleFieldToggle = (fieldName: string, property: 'enabled' | 'required') => {
+    setFieldConfig(prev => {
+      const currentConfig = prev[fieldName] || { enabled: false, required: false };
+      return {
+        ...prev,
+        [fieldName]: {
+          ...currentConfig,
+          [property]: !currentConfig[property],
+          // If disabling, also disable required
+          ...(property === 'enabled' && currentConfig.enabled ? { required: false } : {})
+        }
+      };
+    });
   };
 
   return (
@@ -600,27 +645,18 @@ const CreateSchedule: React.FC = () => {
           </Box>
 
           <FormGroup>
-            {Object.entries(fieldConfig).map(([field, config]) => {
-              const fieldLabels: Record<string, string> = {
-                skywarn_number: 'Spotter #',
-                weather_observation: 'Weather Observation',
-                power_source: 'Power Source',
-                name: 'Name',
-                location: 'Location',
-                feedback: 'Feedback',
-                notes: 'Notes'
-              };
-              const label = fieldLabels[field] || field.replace(/_/g, ' ');
+            {fieldDefinitions.map((field) => {
+              const config = fieldConfig[field.name] || { enabled: false, required: false };
               return (
-              <Box key={field} sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 1 }}>
-                <Typography sx={{ minWidth: 180, textTransform: 'capitalize' }}>
-                  {label}:
+              <Box key={field.name} sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 1 }}>
+                <Typography sx={{ minWidth: 180 }}>
+                  {field.label}:
                 </Typography>
                 <FormControlLabel
                   control={
                     <Checkbox
                       checked={config.enabled}
-                      onChange={() => handleFieldToggle(field, 'enabled')}
+                      onChange={() => handleFieldToggle(field.name, 'enabled')}
                     />
                   }
                   label="Enabled"
@@ -629,7 +665,7 @@ const CreateSchedule: React.FC = () => {
                   control={
                     <Checkbox
                       checked={config.required}
-                      onChange={() => handleFieldToggle(field, 'required')}
+                      onChange={() => handleFieldToggle(field.name, 'required')}
                       disabled={!config.enabled}
                     />
                   }
