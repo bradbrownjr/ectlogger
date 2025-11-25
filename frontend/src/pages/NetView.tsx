@@ -830,7 +830,7 @@ const NetView: React.FC = () => {
               </Box>
             </Grid>
             <Grid item xs={12} md={4} sx={{ pl: { md: 0.5 } }}>
-              <Box sx={{ display: 'flex', gap: 0.5, flexWrap: { xs: 'wrap', md: 'nowrap' }, alignItems: 'center', justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
+              <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', alignItems: 'center', justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
                 {canManage && net.status === 'draft' && (
                   <>
                     <Button size="small" variant="outlined" onClick={() => navigate(`/nets/${netId}/edit`)}>
@@ -1085,7 +1085,10 @@ const NetView: React.FC = () => {
                         borderColor: checkIn.id === activeSpeakerId ? 'success.main' : 'transparent',
                         '& .MuiTableCell-root': {
                           ...(checkIn.id === activeSpeakerId ? { fontWeight: 'bold' } : {}),
-                          verticalAlign: 'middle',
+                          // Add padding and top-align for frequency chips that overflow, center-align otherwise
+                          ...(net.frequencies && net.frequencies.length > 1 && checkIn.available_frequencies && checkIn.available_frequencies.length > 0 
+                            ? { pb: 2, verticalAlign: 'top' } 
+                            : { verticalAlign: 'middle' }),
                         }
                       }}
                     >
@@ -1150,7 +1153,7 @@ const NetView: React.FC = () => {
                           </Tooltip>
                         )}
                       </TableCell>
-                      <TableCell sx={{ width: 140, overflow: 'hidden' }}>
+                      <TableCell sx={{ position: 'relative', width: 140 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                           {checkIn.user_id && onlineUserIds.includes(checkIn.user_id) && (
                             <Box 
@@ -1172,9 +1175,14 @@ const NetView: React.FC = () => {
                         {net.frequencies && net.frequencies.length > 1 && checkIn.available_frequencies && checkIn.available_frequencies.length > 0 && (
                           <Box sx={{ 
                             display: 'flex', 
-                            gap: 0.25, 
-                            flexWrap: 'wrap', 
+                            gap: 0.5, 
+                            flexWrap: 'nowrap', 
                             mt: 0.25,
+                            position: 'absolute',
+                            left: 0,
+                            whiteSpace: 'nowrap',
+                            zIndex: 1,
+                            pl: 1,
                           }}>
                             {checkIn.available_frequencies.map((freqId: number) => {
                               const freq = net.frequencies.find((f: any) => f.id === freqId);
@@ -1209,36 +1217,31 @@ const NetView: React.FC = () => {
                         {formatTime(checkIn.checked_in_at, user?.prefer_utc || false)}
                       </TableCell>
                       {canManage && (
-                      <TableCell sx={{ width: 100, whiteSpace: 'nowrap' }}>
-                        <Box sx={{ display: 'flex', gap: 0 }}>
-                          {net.status === 'active' && checkIn.status !== 'checked_out' && (
-                            <IconButton
-                              size="small"
-                              onClick={() => handleSetActiveSpeaker(checkIn.id)}
-                              color={checkIn.id === activeSpeakerId ? 'primary' : 'default'}
-                              title="Mark as active speaker"
-                              sx={{ p: 0.5 }}
-                            >
-                              🎤
-                            </IconButton>
-                          )}
+                      <TableCell sx={{ width: 100 }}>
+                        {net.status === 'active' && checkIn.status !== 'checked_out' && (
                           <IconButton
                             size="small"
-                            onClick={() => handleEditCheckIn(checkIn)}
-                            title="Edit check-in"
-                            sx={{ p: 0.5 }}
+                            onClick={() => handleSetActiveSpeaker(checkIn.id)}
+                            color={checkIn.id === activeSpeakerId ? 'primary' : 'default'}
+                            title="Mark as active speaker"
                           >
-                            <EditIcon fontSize="small" />
+                            🎤
                           </IconButton>
-                          <IconButton
-                            size="small"
-                            onClick={() => handleDeleteCheckIn(checkIn.id)}
-                            title="Delete check-in"
-                            sx={{ p: 0.5 }}
-                          >
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
-                        </Box>
+                        )}
+                        <IconButton
+                          size="small"
+                          onClick={() => handleEditCheckIn(checkIn)}
+                          title="Edit check-in"
+                        >
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleDeleteCheckIn(checkIn.id)}
+                          title="Delete check-in"
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
                       </TableCell>
                       )}
                     </TableRow>
