@@ -60,11 +60,12 @@ async def create_check_in(
     )
     existing_check_in = result.scalar_one_or_none()
     
-    # Try to automatically link to existing user by callsign
+    # Try to automatically link to existing user by callsign (amateur or GMRS)
     linked_user_id = None
     result = await db.execute(
         select(User).where(
             (User.callsign == check_in_data.callsign) | 
+            (User.gmrs_callsign == check_in_data.callsign) |
             (User.callsigns.like(f'%"{check_in_data.callsign}"%'))
         )
     )
