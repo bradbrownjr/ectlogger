@@ -877,7 +877,7 @@ const NetView: React.FC = () => {
                       <TableCell sx={{ width: 140 }}>Callsign *</TableCell>
                       {net?.field_config?.name?.enabled && <TableCell>Name {net.field_config.name.required && '*'}</TableCell>}
                       {net?.field_config?.location?.enabled && <TableCell>Location {net.field_config.location.required && '*'}</TableCell>}
-                      {net?.field_config?.skywarn_number?.enabled && <TableCell sx={{ width: 90 }}>SKYWARN # {net.field_config.skywarn_number.required && '*'}</TableCell>}
+                      {net?.field_config?.skywarn_number?.enabled && <TableCell sx={{ width: 90 }}>Spotter # {net.field_config.skywarn_number.required && '*'}</TableCell>}
                       {net?.field_config?.weather_observation?.enabled && <TableCell>Weather {net.field_config.weather_observation.required && '*'}</TableCell>}
                       {net?.field_config?.power_source?.enabled && <TableCell sx={{ width: 70 }}>Power {net.field_config.power_source.required && '*'}</TableCell>}
                       {net?.field_config?.notes?.enabled && <TableCell>Notes {net.field_config.notes.required && '*'}</TableCell>}
@@ -1170,7 +1170,7 @@ const NetView: React.FC = () => {
                               handleCheckIn();
                             }
                           }}
-                          placeholder="SKYWARN #"
+                          placeholder="Spotter #"
                           inputProps={{ style: { fontSize: '0.875rem' } }}
                           fullWidth
                           required={net.field_config.skywarn_number.required}
@@ -1442,7 +1442,7 @@ const NetView: React.FC = () => {
               )}
               {net?.field_config?.skywarn_number?.enabled && (
                 <TextField
-                  label="SKYWARN #"
+                  label="Spotter #"
                   value={editingCheckIn.skywarn_number || ''}
                   onChange={(e) => setEditingCheckIn({ ...editingCheckIn, skywarn_number: e.target.value })}
                   fullWidth
@@ -1561,7 +1561,7 @@ const NetView: React.FC = () => {
             
             {net?.field_config?.skywarn_number?.enabled && (
               <TextField
-                label="SKYWARN Number"
+                label="Spotter #"
                 value={checkInForm.skywarn_number}
                 onChange={(e) => setCheckInForm({ ...checkInForm, skywarn_number: e.target.value })}
                 fullWidth

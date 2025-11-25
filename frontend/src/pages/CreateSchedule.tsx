@@ -600,10 +600,21 @@ const CreateSchedule: React.FC = () => {
           </Box>
 
           <FormGroup>
-            {Object.entries(fieldConfig).map(([field, config]) => (
+            {Object.entries(fieldConfig).map(([field, config]) => {
+              const fieldLabels: Record<string, string> = {
+                skywarn_number: 'Spotter #',
+                weather_observation: 'Weather Observation',
+                power_source: 'Power Source',
+                name: 'Name',
+                location: 'Location',
+                feedback: 'Feedback',
+                notes: 'Notes'
+              };
+              const label = fieldLabels[field] || field.replace(/_/g, ' ');
+              return (
               <Box key={field} sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 1 }}>
                 <Typography sx={{ minWidth: 180, textTransform: 'capitalize' }}>
-                  {field.replace(/_/g, ' ')}:
+                  {label}:
                 </Typography>
                 <FormControlLabel
                   control={
@@ -625,7 +636,7 @@ const CreateSchedule: React.FC = () => {
                   label="Required"
                 />
               </Box>
-            ))}
+            )})}
           </FormGroup>
 
           {isEdit && (

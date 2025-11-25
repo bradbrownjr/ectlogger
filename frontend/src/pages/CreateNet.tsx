@@ -423,7 +423,18 @@ const CreateNet: React.FC = () => {
           </Typography>
 
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 3 }}>
-            {Object.entries(fieldConfig).map(([fieldName, config]) => (
+            {Object.entries(fieldConfig).map(([fieldName, config]) => {
+              const fieldLabels: Record<string, string> = {
+                skywarn_number: 'Spotter #',
+                weather_observation: 'Weather Observation',
+                power_source: 'Power Source',
+                name: 'Name',
+                location: 'Location',
+                feedback: 'Feedback',
+                notes: 'Notes'
+              };
+              const label = fieldLabels[fieldName] || fieldName.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
+              return (
               <Box key={fieldName} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 <Checkbox
                   checked={config.enabled}
@@ -435,7 +446,7 @@ const CreateNet: React.FC = () => {
                   }
                 />
                 <Typography sx={{ minWidth: 200 }}>
-                  {fieldName.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                  {label}
                 </Typography>
                 {config.enabled && (
                   <Checkbox
@@ -454,7 +465,7 @@ const CreateNet: React.FC = () => {
                   </Typography>
                 )}
               </Box>
-            ))}
+            )})}
           </Box>
 
           <Typography variant="h6" sx={{ mt: 4, mb: 2 }}>

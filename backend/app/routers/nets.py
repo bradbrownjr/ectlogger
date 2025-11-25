@@ -503,7 +503,7 @@ async def export_net_csv(
     # Write header
     headers = [
         "Check-in Time", "Callsign", "Name", "Location", 
-        "Available Frequencies", "SKYWARN Number", "Weather Observation",
+        "Available Frequencies", "Spotter #", "Weather Observation",
         "Power Source", "Feedback", "Notes", "Status"
     ]
     writer.writerow(headers)

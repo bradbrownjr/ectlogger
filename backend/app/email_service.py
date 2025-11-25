@@ -351,7 +351,7 @@ This is an automated message, please do not reply.
                             <th>Name</th>
                             <th>Location</th>
                             {% if has_frequencies %}<th>Frequencies</th>{% endif %}
-                            {% if has_skywarn %}<th>SKYWARN#</th>{% endif %}
+                            {% if has_skywarn %}<th>Spotter #</th>{% endif %}
                             {% if has_weather %}<th>Weather</th>{% endif %}
                             {% if has_power %}<th>Power</th>{% endif %}
                         </tr>
@@ -407,7 +407,7 @@ This is an automated message, please do not reply.
         writer = csv.writer(output)
         writer.writerow([
             "Check-in Time", "Callsign", "Name", "Location", 
-            "SKYWARN Number", "Weather Observation", "Power Source", 
+            "Spotter #", "Weather Observation", "Power Source", 
             "Feedback", "Notes", "Status"
         ])
         
