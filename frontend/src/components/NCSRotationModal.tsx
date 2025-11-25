@@ -55,8 +55,8 @@ interface NCSRotationModalProps {
 interface RotationMember {
   id: number;
   user_id: number;
-  callsign: string;
-  name: string | null;
+  user_callsign: string;
+  user_name: string | null;
   position: number;
   is_active: boolean;
 }
@@ -64,8 +64,8 @@ interface RotationMember {
 interface ScheduleEntry {
   date: string;
   user_id: number | null;
-  callsign: string | null;
-  name: string | null;
+  user_callsign: string | null;
+  user_name: string | null;
   is_override: boolean;
   is_cancelled: boolean;
   override_reason: string | null;
@@ -326,8 +326,8 @@ const NCSRotationModal: React.FC<NCSRotationModalProps> = ({
                                 ) : (
                                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                     <Typography>
-                                      {entry.callsign || 'TBD'}
-                                      {entry.name && ` (${entry.name})`}
+                                      {entry.user_callsign || 'TBD'}
+                                      {entry.user_name && ` (${entry.user_name})`}
                                     </Typography>
                                     {entry.is_override && (
                                       <Chip label="Swap" size="small" color="warning" />
@@ -416,8 +416,8 @@ const NCSRotationModal: React.FC<NCSRotationModalProps> = ({
                             primary={
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                 <Typography>
-                                  {idx + 1}. {member.callsign}
-                                  {member.name && ` (${member.name})`}
+                                  {idx + 1}. {member.user_callsign}
+                                  {member.user_name && ` (${member.user_name})`}
                                 </Typography>
                                 {!member.is_active && (
                                   <Chip label="Inactive" size="small" color="default" />
@@ -483,7 +483,7 @@ const NCSRotationModal: React.FC<NCSRotationModalProps> = ({
             {selectedEntry && (
               <>
                 <strong>Date:</strong> {formatDate(selectedEntry.date)}<br />
-                <strong>Current NCS:</strong> {selectedEntry.callsign || 'TBD'}
+                <strong>Current NCS:</strong> {selectedEntry.user_callsign || 'TBD'}
               </>
             )}
           </Typography>

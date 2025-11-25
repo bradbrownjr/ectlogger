@@ -40,8 +40,8 @@ import NCSRotationModal from '../components/NCSRotationModal';
 interface NextNCS {
   date: string;
   user_id: number;
-  callsign: string;
-  name: string | null;
+  user_callsign: string;
+  user_name: string | null;
 }
 
 interface Schedule {
@@ -282,8 +282,8 @@ const Scheduler: React.FC = () => {
                       <Typography variant="body2" color="text.secondary">
                         {schedule.nextNCS ? (
                           <>
-                            <strong>Next NCS:</strong> {schedule.nextNCS.callsign}
-                            {schedule.nextNCS.name && ` (${schedule.nextNCS.name})`}
+                            <strong>Next NCS:</strong> {schedule.nextNCS.user_callsign}
+                            {schedule.nextNCS.user_name && ` (${schedule.nextNCS.user_name})`}
                             {' - '}
                             {new Date(schedule.nextNCS.date).toLocaleDateString(undefined, { 
                               weekday: 'short', 
