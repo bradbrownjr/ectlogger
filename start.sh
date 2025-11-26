@@ -181,6 +181,15 @@ echo "📡 Backend:  http://localhost:8000"
 echo "📚 API Docs: http://localhost:8000/docs"
 echo ""
 
+# Show configured URLs if available
+if [ -f "backend/.env" ]; then
+    CONFIGURED_URL=$(grep "^FRONTEND_URL=" backend/.env | cut -d'=' -f2-)
+    if [ -n "$CONFIGURED_URL" ] && [ "$CONFIGURED_URL" != "http://localhost:3000" ]; then
+        echo "🌍 Production URL: $CONFIGURED_URL"
+        echo ""
+    fi
+fi
+
 if [ "$SERVICE_MODE" = true ]; then
     echo "Running in service mode..."
     # Don't trap signals in service mode, let systemd handle it
