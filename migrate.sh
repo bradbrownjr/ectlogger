@@ -97,7 +97,7 @@ if [ -z "$NEW_FRONTEND_URL" ] && [ -z "$NEW_API_URL" ]; then
     echo "🌐 Migration Options:"
     echo ""
     echo "1) Production with reverse proxy (same domain for frontend and API)"
-    echo "   Example: https://ectbeta.lynwood.us"
+    echo "   Example: https://ect.example.com"
     echo ""
     echo "2) LAN deployment (separate ports)"
     echo "   Example: http://192.168.1.100:3000 and http://192.168.1.100:8000"
