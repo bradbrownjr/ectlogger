@@ -7,7 +7,7 @@ ECTLogger is a production-ready, web-based net logging application designed spec
 
 ## ✨ Features
 
-- **🔐 Secure Authentication** - Magic link email authentication + OAuth (Google, Microsoft, GitHub)
+- **🔐 Secure Authentication** - Frictionless sign-in with magic link email authentication + OAuth (Google, Microsoft, GitHub)
 - **📻 Multi-Frequency Support** - Track stations across multiple frequencies and modes
 - **⚡ Real-Time Updates** - WebSocket-powered live check-ins and status updates
 - **👥 Role-Based Access** - Admin, NCS, Logger, User, and Guest roles
@@ -16,7 +16,7 @@ ECTLogger is a production-ready, web-based net logging application designed spec
 - **🎨 Modern UI** - Clean Material Design interface
 - **💾 Flexible Database** - SQLite, PostgreSQL, or MySQL support
 - **🔄 Recheck Tracking** - Automatically track stations checking in multiple times
-- **📊 Custom Fields** - Create custom fields for specific net requirements
+- **📊 Custom Fields** - Admins can create custom fields for specific net requirements
 - **📝 Complete Net Logs** - Automatic log generation and email delivery
 
 ## 🔒 Security
@@ -86,10 +86,21 @@ See [QUICKSTART.md](QUICKSTART.md) for detailed instructions.
 
 ## 👥 User Roles
 
-- **Admin** - Full system access, user management, view all nets
-- **NCS (Net Control Station)** - Create and manage nets, designate loggers and relays
-- **User** - Check into nets, receive notifications
-- **Guest** - View-only access to public nets
+ECTLogger has two types of roles: **global roles** (system-wide) and **net roles** (per-net assignments).
+
+### Global Roles
+- 🛡️ **Admin** - Full system access, user management, view all nets, configure custom fields
+- 👤 **User** - Create nets, check into nets, receive notifications
+- 👁️ **Guest** - View-only access to public nets (no account required)
+
+### Net Roles
+When a user creates a net, they automatically become its **NCS (Net Control Station)**. The net creator can then assign these roles to other users for that specific net:
+
+- 🎙️ **NCS** - Full control of the net: start/close, manage check-ins, assign roles
+- 📝 **Logger** - Log check-ins and manage station status
+- 📡 **Relay** - Check in stations on behalf of others (for contacts NCS can't hear directly)
+
+This means any registered user can run their own nets without needing admin privileges. A user might be a regular participant in one net while serving as NCS for another.
 
 ## 🎯 Key Capabilities
 
@@ -115,33 +126,41 @@ Visual indicators for:
 - Relay station tracking for extended coverage
 
 ## 📋 Net Workflow
-### 1. Create Net
-- NCS creates a new net with name and description
-- Define communication plan (frequencies and modes)
-- Configure required and optional check-in fields
-- Invite other NCS operators or users
-- Save as draft or schedule for later
 
-### 2. Start Net
-- NCS starts the net when ready
-- Email/SMS notifications sent to subscribers
+### 1. Create Net
+- User creates a new net with name and description
+- Define communication plan (frequencies, modes, talkgroups)
+- Configure required and optional check-in fields
+- Assign net roles (NCS, Logger, Relay) to other users
+- Save as draft for later editing
+
+### 2. Schedule Net (Optional)
+- Set date, time, and timezone for the net
+- Configure recurring schedule (daily, weekly, monthly)
+- Set up **NCS rotation** - automatically assign NCS duties across scheduled instances
+- System sends reminders to assigned NCS before their scheduled net
+- Scheduled nets auto-start at the configured time
+
+### 3. Start Net
+- NCS starts the net manually, or it auto-starts if scheduled
+- Email notifications sent to subscribers
 - Real-time WebSocket connections established
 - Guests can view, users can participate
 
-### 3. Log Check-ins
+### 4. Log Check-ins
 - NCS or designated logger enters check-ins
 - Stations can self-check-in via web interface
 - Support for relay stations (checking in contacts NCS can't hear)
 - Real-time updates to all connected clients
 - Edit or delete check-ins as needed
 
-### 4. Track Participation
+### 5. Track Participation
 - Monitor station status changes
 - Track frequency usage per station
 - Identify recheck stations
 - View check-in timeline
 
-### 5. Close Net
+### 6. Close Net
 - NCS or logger closes the net
 - Complete log generated automatically
 - Log emailed to NCS in text format
@@ -161,9 +180,10 @@ Visual indicators for:
 - **Notes** - Additional information
 
 ### Custom Fields
-- NCS or admin can create custom fields
+- Admins create custom fields for the system
 - Field types: text, number, textarea, select dropdown
-- Set as required or optional per net
+- NCS selects which custom fields to use when creating a net
+- Set fields as required or optional per net
 - Flexible for different net types and requirements
 
 ## 🖥️ System Requirements
@@ -217,6 +237,34 @@ npm install
 cp .env.example backend/.env
 # Edit backend/.env with your settings
 ```
+
+## 🔄 Migration
+
+Use `migrate.sh` (Linux/macOS) or `migrate.ps1` (Windows) to change host addresses when moving between environments (e.g., LAN development to production) without modifying other configuration settings.
+
+### Quick Migration Examples
+
+**Linux/macOS:**
+```bash
+# Production domain (with reverse proxy)
+./migrate.sh --host ect.example.com
+
+# LAN IP (development)
+./migrate.sh --lan-ip 192.168.1.100
+```
+
+**Windows PowerShell:**
+```powershell
+# Production domain (with reverse proxy)
+.\migrate.ps1 -Host ect.example.com
+
+# LAN IP (development)
+.\migrate.ps1 -LanIP 192.168.1.100
+```
+
+The script automatically updates `backend/.env` and `frontend/.env`, and configures the Vite allowed hosts for security.
+
+See [PRODUCTION-DEPLOYMENT.md](PRODUCTION-DEPLOYMENT.md) for complete deployment instructions.
 
 ## 🔧 Configuration
 
