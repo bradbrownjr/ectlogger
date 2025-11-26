@@ -39,7 +39,9 @@
 ## Station Map
 *View check-in locations on OpenStreetMap - supports GPS, Maidenhead grid squares, UTM, and MGRS coordinates*
 
-<!-- Screenshot placeholder - add Station-Map.png -->
+<a href="checkin-map.png">
+  <img src="checkin-map.png" alt="Station Map" width="100%">
+</a>
 
 ---
 
