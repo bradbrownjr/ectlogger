@@ -110,7 +110,7 @@ if [ -z "$NEW_FRONTEND_URL" ] && [ -z "$NEW_API_URL" ]; then
 
     case $choice in
         1)
-            echo "Enter hostname (e.g., ectbeta.lynwood.us):"
+            echo "Enter hostname (e.g., ect.example.com):"
             read -r host
             if [[ "$host" == *"localhost"* ]] || [[ "$host" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
                 NEW_FRONTEND_URL="http://$host"
