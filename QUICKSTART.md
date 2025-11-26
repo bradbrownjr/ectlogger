@@ -2,6 +2,29 @@
 
 ## 🚀 Get Started in 5 Minutes
 
+## ⚡ Speedrun Install (Recommended for Fresh Systems)
+
+**One command does everything** - installs prerequisites, clones the repo, and sets up ECTLogger:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/bradbrownjr/ectlogger/main/bootstrap.sh | bash
+```
+
+This works on Debian, Ubuntu, Fedora, RHEL, Rocky, and macOS. It will:
+- Install Git, Python 3, Node.js 22 LTS, and build tools
+- Clone the ECTLogger repository to `~/ectlogger`
+- Set up the Python virtual environment
+- Install all dependencies
+- Walk you through configuration
+
+After it completes, just run `cd ~/ectlogger && ./start.sh` to launch!
+
+---
+
+## 📋 Manual Installation
+
+If you prefer to install manually or the speedrun doesn't work for your system:
+
 ### Prerequisites
 - Python 3.9+ installed
 - Node.js 18+ installed
@@ -11,7 +34,8 @@
 
 #### Linux/macOS
 ```bash
-# Clone or download the repository
+# Clone the repository
+git clone https://github.com/bradbrownjr/ectlogger.git
 cd ectlogger
 
 # Make scripts executable
@@ -23,7 +47,8 @@ chmod +x *.sh
 
 #### Windows (PowerShell)
 ```powershell
-# Clone or download the repository
+# Clone the repository
+git clone https://github.com/bradbrownjr/ectlogger.git
 cd ectlogger
 
 # Run the startup script (it will install everything automatically)

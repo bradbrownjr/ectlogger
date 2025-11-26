@@ -61,6 +61,22 @@ install_dependencies() {
     echo "Detected OS: $OS"
     echo ""
     
+    # Check and install Git
+    if ! command -v git &> /dev/null; then
+        echo "Git not found. Installing..."
+        case "$OS" in
+            ubuntu|debian)
+                $install_cmd git
+                ;;
+            fedora|rhel|centos)
+                $install_cmd git
+                ;;
+            macos)
+                $install_cmd git
+                ;;
+        esac
+    fi
+    
     # Check and install Python
     if ! command -v python3 &> /dev/null; then
         echo "Python3 not found. Installing..."
@@ -120,6 +136,10 @@ install_dependencies() {
 
 # Check for missing dependencies
 MISSING_DEPS=()
+
+if ! command -v git &> /dev/null; then
+    MISSING_DEPS+=("Git")
+fi
 
 if ! command -v python3 &> /dev/null; then
     MISSING_DEPS+=("Python3")

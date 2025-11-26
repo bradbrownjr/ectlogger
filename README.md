@@ -42,8 +42,20 @@ For complete security documentation, deployment best practices, and vulnerabilit
 
 ### Linux/macOS
 ```bash
+### ⚡ One-Line Install (Debian/Ubuntu)
+
+Fresh system? Run this single command to download and install everything:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/bradbrownjr/ectlogger/main/bootstrap.sh | bash
+```
+
+This installs all prerequisites (Git, Python, Node.js), clones the repository, and runs the installer.
+
+### Linux/macOS (Manual)
+```bash
 # 1. Clone the repository
-git clone https://github.com/yourusername/ectlogger.git
+git clone https://github.com/bradbrownjr/ectlogger.git
 cd ectlogger
 
 # 2. Make scripts executable and install
@@ -60,7 +72,7 @@ chmod +x *.sh
 ### Windows
 ```powershell
 # 1. Clone the repository
-git clone https://github.com/yourusername/ectlogger.git
+git clone https://github.com/bradbrownjr/ectlogger.git
 cd ectlogger
 
 # 2. Run the setup script
