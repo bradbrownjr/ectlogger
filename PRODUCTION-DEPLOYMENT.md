@@ -110,17 +110,9 @@ ectlogger.example.com {
 
 **Replace `/home/bradb/ectlogger` with your actual path!**
 
-### 5. Update Backend to Use /api Prefix
+### 5. Backend /api Prefix (Already Configured)
 
-Edit `backend/app/main.py` to add API prefix:
-
-```python
-app = FastAPI(
-    title=settings.app_name, 
-    version="1.0.0",
-    root_path="/api"  # Add this line
-)
-```
+The backend routes are already configured with the `/api` prefix in `backend/app/main.py`. No manual changes needed - all API routes automatically respond to `/api/*` paths.
 
 ### 6. Start Services
 
@@ -253,17 +245,9 @@ sudo certbot --nginx -d ectlogger.example.com
 
 Follow the prompts. Certbot will automatically configure SSL and set up auto-renewal.
 
-### 7. Update Backend for API Prefix
+### 7. Backend /api Prefix (Already Configured)
 
-Edit `backend/app/main.py`:
-
-```python
-app = FastAPI(
-    title=settings.app_name, 
-    version="1.0.0",
-    root_path="/api"  # Add this line
-)
-```
+The backend routes are already configured with the `/api` prefix in `backend/app/main.py`. No manual changes needed.
 
 ### 8. Start Backend
 
@@ -367,17 +351,9 @@ sudo systemctl reload apache2
 sudo certbot --apache -d ectlogger.example.com
 ```
 
-### 7. Update Backend for API Prefix
+### 7. Backend /api Prefix (Already Configured)
 
-Edit `backend/app/main.py`:
-
-```python
-app = FastAPI(
-    title=settings.app_name, 
-    version="1.0.0",
-    root_path="/api"  # Add this line
-)
-```
+The backend routes are already configured with the `/api` prefix in `backend/app/main.py`. No manual changes needed.
 
 ### 8. Start Backend and Access
 
@@ -502,9 +478,9 @@ pg_dump -U ectlogger ectlogger > ~/backups/ectlogger-$(date +%Y%m%d).sql
 ### API Not Working
 
 1. Check backend is running: `sudo systemctl status ectlogger`
-2. Test API directly: `curl http://localhost:8000/docs`
+2. Test API directly: `curl http://localhost:8000/api/health`
 3. Check reverse proxy logs
-4. Verify `root_path="/api"` in `backend/app/main.py`
+4. Check API docs at `http://localhost:8000/docs`
 
 ### Frontend Shows Wrong URL
 
