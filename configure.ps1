@@ -109,6 +109,38 @@ if ($configureOAuth -eq "y" -or $configureOAuth -eq "Y") {
 Write-Host ""
 Write-Host "💾 Database Configuration" -ForegroundColor Cyan
 Write-Host "-------------------------" -ForegroundColor Cyan
+
+# Get LAN IP for defaults
+$lanIP = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -notlike "127.*" -and $_.IPAddress -notlike "169.*" } | Select-Object -First 1).IPAddress
+if ([string]::IsNullOrWhiteSpace($lanIP)) { $lanIP = "localhost" }
+
+Write-Host ""
+Write-Host "🌐 Frontend URL Configuration" -ForegroundColor Cyan
+Write-Host "-----------------------------" -ForegroundColor Cyan
+Write-Host "Detected LAN IP: $lanIP" -ForegroundColor Gray
+Write-Host ""
+$frontendUrl = Read-Host "Frontend URL (default: http://${lanIP}:3000)"
+if ([string]::IsNullOrWhiteSpace($frontendUrl)) { $frontendUrl = "http://${lanIP}:3000" }
+(Get-Content backend\.env) -replace 'FRONTEND_URL=.*', "FRONTEND_URL=$frontendUrl" | Set-Content backend\.env
+Write-Host "✓ Frontend URL: $frontendUrl" -ForegroundColor Green
+
+Write-Host ""
+Write-Host "📡 Backend API URL Configuration" -ForegroundColor Cyan
+Write-Host "---------------------------------" -ForegroundColor Cyan
+Write-Host "The frontend needs to know where to find the API." -ForegroundColor Gray
+Write-Host "For LAN use: http://${lanIP}:8000/api" -ForegroundColor Gray
+Write-Host "For production: https://yourdomain.com/api" -ForegroundColor Gray
+Write-Host ""
+$apiUrl = Read-Host "Backend API URL (default: http://${lanIP}:8000/api)"
+if ([string]::IsNullOrWhiteSpace($apiUrl)) { $apiUrl = "http://${lanIP}:8000/api" }
+
+# Create frontend/.env
+"VITE_API_URL=$apiUrl" | Set-Content frontend\.env
+Write-Host "✓ API URL configured: $apiUrl" -ForegroundColor Green
+
+Write-Host ""
+Write-Host "💾 Database Selection" -ForegroundColor Cyan
+Write-Host "---------------------" -ForegroundColor Cyan
 $usePostgres = Read-Host "Use PostgreSQL instead of SQLite? (y/N)"
 
 if ($usePostgres -eq "y" -or $usePostgres -eq "Y") {
