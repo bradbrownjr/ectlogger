@@ -40,11 +40,17 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import DownloadIcon from '@mui/icons-material/Download';
 import ArchiveIcon from '@mui/icons-material/Archive';
+import MapIcon from '@mui/icons-material/Map';
+import GroupIcon from '@mui/icons-material/Group';
+import LoginIcon from '@mui/icons-material/Login';
+import LogoutIcon from '@mui/icons-material/Logout';
+import CloseIcon from '@mui/icons-material/Close';
 import { netApi, checkInApi } from '../services/api';
 import api from '../services/api';
 import { formatDateTime, formatTime } from '../utils/dateUtils';
 import { useAuth } from '../contexts/AuthContext';
 import Chat from '../components/Chat';
+import CheckInMap from '../components/CheckInMap';
 
 interface Net {
   id: number;
@@ -138,6 +144,7 @@ const NetView: React.FC = () => {
   const [netStats, setNetStats] = useState<{total_check_ins: number, online_count: number, guest_count: number} | null>(null);
   const [frequencyDialogOpen, setFrequencyDialogOpen] = useState(false);
   const [fieldDefinitions, setFieldDefinitions] = useState<FieldDefinition[]>([]);
+  const [mapOpen, setMapOpen] = useState(false);
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
@@ -846,19 +853,21 @@ const NetView: React.FC = () => {
                     <Button 
                       size="small" 
                       variant="outlined" 
+                      startIcon={<EditIcon fontSize="small" />}
                       onClick={() => navigate(`/nets/${netId}/edit`)}
                     >
-                      Manage Net
+                      Net
                     </Button>
                     <Button 
                       size="small" 
                       variant="outlined" 
+                      startIcon={<GroupIcon fontSize="small" />}
                       onClick={() => {
                         fetchAllUsers();
                         setRoleDialogOpen(true);
                       }}
                     >
-                      Manage Roles
+                      Roles
                     </Button>
                     {!hasNCS && (
                       <Button 
@@ -872,21 +881,33 @@ const NetView: React.FC = () => {
                     )}
                   </>
                 )}
+                {net.status === 'active' && checkIns.length > 0 && (
+                  <Button 
+                    size="small" 
+                    variant="outlined" 
+                    startIcon={<MapIcon fontSize="small" />}
+                    onClick={() => setMapOpen(true)}
+                  >
+                    Map
+                  </Button>
+                )}
                 {isAuthenticated && net.status === 'active' && (
                   userActiveCheckIn ? (
                     <Button 
                       size="small"
                       variant="outlined" 
                       color="error"
+                      startIcon={<LogoutIcon fontSize="small" />}
                       onClick={handleCheckOut}
                     >
-                      Check Out
+                      Out
                     </Button>
                   ) : (
                     <Button 
                       size="small"
                       variant="contained" 
-                      color="primary" 
+                      color="primary"
+                      startIcon={<LoginIcon fontSize="small" />}
                       onClick={() => {
                         // Pre-fill form with user's profile data
                         if (user) {
@@ -915,13 +936,19 @@ const NetView: React.FC = () => {
                         }
                       }}
                     >
-                      Check In
+                      In
                     </Button>
                   )
                 )}
                 {canManage && net.status === 'active' && (
-                  <Button size="small" variant="contained" color="error" onClick={handleCloseNet}>
-                    Close Net
+                  <Button 
+                    size="small" 
+                    variant="contained" 
+                    color="error" 
+                    startIcon={<CloseIcon fontSize="small" />}
+                    onClick={handleCloseNet}
+                  >
+                    Close
                   </Button>
                 )}
                 {net.status === 'closed' && (
@@ -2107,6 +2134,14 @@ const NetView: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Check-in Location Map */}
+      <CheckInMap
+        open={mapOpen}
+        onClose={() => setMapOpen(false)}
+        checkIns={checkIns}
+        netName={net?.name || 'Net'}
+      />
 
       <Snackbar
         open={toastMessage !== ''}

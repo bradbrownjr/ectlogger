@@ -247,6 +247,19 @@ async def start_net(
     await db.commit()
     await db.refresh(net, ['frequencies'])
     
+    # Assign NCS role to the user who starts the net (if not already assigned)
+    existing_ncs = await db.execute(
+        select(NetRole).where(
+            NetRole.net_id == net_id,
+            NetRole.user_id == current_user.id,
+            NetRole.role == "NCS"
+        )
+    )
+    if not existing_ncs.scalar_one_or_none():
+        ncs_role = NetRole(net_id=net_id, user_id=current_user.id, role="NCS")
+        db.add(ncs_role)
+        await db.commit()
+    
     # Auto-check-in the NCS
     from app.models import CheckIn, StationStatus
     ncs_check_in = CheckIn(
