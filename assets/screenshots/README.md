@@ -1,14 +1,5 @@
 # ECTLogger Screenshots
 
-## Check-in Log
-*Multi-frequency/band check-ins with dark and light mode support*
-
-<a href="Check-in%20Log.png">
-  <img src="Check-in%20Log.png" alt="Check-in Log" width="100%">
-</a>
-
----
-
 ## Dashboard
 *Net overview and quick actions*
 
@@ -31,6 +22,15 @@
 
 <a href="Screenshot%202025-11-26%20142042.png">
   <img src="Screenshot%202025-11-26%20142042.png" alt="Additional View" width="100%">
+</a>
+
+---
+
+## Check-in Log
+*Multi-frequency/band check-ins with dark and light mode support*
+
+<a href="Check-in%20Log.png">
+  <img src="Check-in%20Log.png" alt="Check-in Log" width="100%">
 </a>
 
 ---
