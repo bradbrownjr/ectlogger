@@ -23,6 +23,7 @@ ECTLogger is a production-ready, web-based net logging application designed spec
 - **💾 Flexible Database** - SQLite, PostgreSQL, or MySQL support
 - **🔄 Recheck Tracking** - Automatically track stations checking in multiple times
 - **📊 Custom Fields** - Admins can create custom fields for specific net requirements
+- **🗺️ Station Mapping** - View check-in locations on OpenStreetMap (GPS, Maidenhead, UTM, MGRS)
 - **📝 Complete Net Logs** - Automatic log generation and email delivery
 
 ## 🔒 Security
@@ -389,7 +390,7 @@ Special thanks to all NCS operators, loggers, and participants who make emergenc
 ## 🗺️ Roadmap
 
 Future enhancements planned:
-- [ ] Participant station mapping (in development)
+- [x] ~~Participant station mapping~~ ✅ Complete!
 - [ ] Progressive Web App (PWA) for offline capability
 - [ ] SMS notifications via Twilio/AWS SNS
 - [ ] Advanced reporting and analytics
