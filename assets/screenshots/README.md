@@ -1,15 +1,38 @@
-# Screenshots
+# ECTLogger Screenshots
 
-Place application screenshots here. Recommended naming:
+## Check-in Log
+*Multi-frequency/band check-ins with dark and light mode support*
 
-- `dashboard.png` - Main dashboard view
-- `net-view.png` - Active net with check-ins
-- `net-view-mobile.png` - Mobile responsive view
-- `check-in-form.png` - Check-in form
-- `scheduler.png` - Net scheduler
-- `admin.png` - Admin panel
+<a href="Check-in%20Log.png">
+  <img src="Check-in%20Log.png" alt="Check-in Log" width="100%">
+</a>
 
-Reference in README.md:
-```markdown
-![Dashboard](assets/screenshots/dashboard.png)
-```
+---
+
+## Dashboard
+*Net overview and quick actions*
+
+<a href="Screenshot%202025-11-26%20141919.png">
+  <img src="Screenshot%202025-11-26%20141919.png" alt="Dashboard" width="100%">
+</a>
+
+---
+
+## Net Management
+*Create and manage nets with scheduling*
+
+<a href="Screenshot%202025-11-26%20142011.png">
+  <img src="Screenshot%202025-11-26%20142011.png" alt="Net Management" width="100%">
+</a>
+
+---
+
+## Additional View
+
+<a href="Screenshot%202025-11-26%20142042.png">
+  <img src="Screenshot%202025-11-26%20142042.png" alt="Additional View" width="100%">
+</a>
+
+---
+
+*Click any image to view full size*

@@ -9,7 +9,7 @@ ECTLogger is a production-ready, web-based net logging application designed spec
   <img src="assets/screenshots/Check-in%20Log.png" alt="Check-in Log" width="100%">
 </a>
 
-*Multi-frequency/band check-ins, in dark and light mode!*
+*Multi-frequency/band check-ins, in dark and light mode!* — [📷 More screenshots](assets/screenshots/README.md)
 
 ## ✨ Features
 
