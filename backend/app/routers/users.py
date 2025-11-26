@@ -37,7 +37,7 @@ async def update_my_profile(
     return UserResponse.from_orm(current_user)
 
 
-@router.get("/", response_model=List[UserResponse])
+@router.get("", response_model=List[UserResponse])
 async def list_users(
     skip: int = 0,
     limit: int = 100,
