@@ -130,19 +130,27 @@ npm run dev
   npm install
   ```
 
+## ⚠️ First Login - Administrator Setup
+
+**Important**: The first user to sign in is automatically granted Administrator privileges. Before making your server publicly accessible, you should:
+
+1. Complete first-time setup and configure email
+2. Access the application and sign in with your email
+3. Verify you have admin access (you'll see the Admin panel in the navigation)
+4. Only then expose the server to the network/internet
+
+This ensures the server owner becomes the administrator before anyone else can access the system.
+
 ## What's Next?
 
 See the full documentation:
-- **SETUP.md** - Complete installation and configuration guide
-- **DEVELOPMENT.md** - Development guide and project structure
-- **README.md** - Feature overview and requirements
+- **[MANUAL-INSTALLATION.md](MANUAL-INSTALLATION.md)** - Step-by-step manual installation
+- **[PRODUCTION-DEPLOYMENT.md](PRODUCTION-DEPLOYMENT.md)** - Deploy with SSL/HTTPS
+- **[DEVELOPMENT.md](DEVELOPMENT.md)** - Development guide and project structure
+- **[README.md](README.md)** - Feature overview and requirements
 
 ## Getting Help
 
 - Check the API documentation at http://localhost:8000/docs
-- Review the SETUP.md file for detailed configuration
+- Review the documentation files for detailed configuration
 - Open an issue on GitHub
-
----
-
-**Tip**: The first user to sign up can be promoted to admin by updating the database directly. See SETUP.md for instructions.

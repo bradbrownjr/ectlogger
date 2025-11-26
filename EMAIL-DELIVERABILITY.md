@@ -351,4 +351,4 @@ If emails continue going to spam:
 
 ## Related Documentation
 - [MAGIC-LINK-CONFIGURATION.md](MAGIC-LINK-CONFIGURATION.md) - Magic link expiration settings
-- [SETUP.md](SETUP.md) - General setup and configuration
+- [MANUAL-INSTALLATION.md](MANUAL-INSTALLATION.md) - Manual installation and configuration

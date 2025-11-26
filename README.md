@@ -74,8 +74,8 @@ See [QUICKSTART.md](QUICKSTART.md) for detailed instructions.
 ## 📚 Documentation
 
 ### Getting Started
-- **[QUICKSTART.md](QUICKSTART.md)** - Get up and running in 5 minutes
-- **[SETUP.md](SETUP.md)** - Complete installation and configuration guide
+- **[QUICKSTART.md](QUICKSTART.md)** - Get up and running in 5 minutes (recommended!)
+- **[MANUAL-INSTALLATION.md](MANUAL-INSTALLATION.md)** - Step-by-step manual installation for advanced users
 
 ### Deployment
 - **[PRODUCTION-DEPLOYMENT.md](PRODUCTION-DEPLOYMENT.md)** - Deploy to production with SSL/reverse proxy
@@ -211,7 +211,7 @@ Visual indicators for:
 
 ## 📦 Installation
 
-See [SETUP.md](SETUP.md) for complete installation instructions.
+See [MANUAL-INSTALLATION.md](MANUAL-INSTALLATION.md) for complete installation instructions.
 
 ### Quick Install
 
@@ -338,7 +338,7 @@ npm test
 5. Build frontend: `npm run build`
 6. Use production WSGI server (gunicorn)
 
-See [SETUP.md](SETUP.md) for detailed deployment guide.
+See [PRODUCTION-DEPLOYMENT.md](PRODUCTION-DEPLOYMENT.md) for detailed deployment guide.
 
 ## 🤝 Contributing
 
@@ -373,7 +373,7 @@ Special thanks to all NCS operators, loggers, and participants who make emergenc
 ## 📞 Support
 
 - **Issues**: [GitHub Issues](https://github.com/yourusername/ectlogger/issues)
-- **Documentation**: See SETUP.md and DEVELOPMENT.md
+- **Documentation**: See QUICKSTART.md and DEVELOPMENT.md
 - **Questions**: Open a discussion on GitHub
 
 ## 🗺️ Roadmap

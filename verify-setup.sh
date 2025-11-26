@@ -141,7 +141,7 @@ check_file() {
 check_file "README.md" "README"
 check_file "LICENSE" "License"
 check_file "QUICKSTART.md" "Quick Start Guide"
-check_file "SETUP.md" "Setup Guide"
+check_file "MANUAL-INSTALLATION.md" "Manual Installation Guide"
 check_file "DEVELOPMENT.md" "Development Guide"
 check_file "start.sh" "Startup Script"
 
@@ -166,4 +166,4 @@ else
 fi
 
 echo ""
-echo "For help, see QUICKSTART.md or SETUP.md"
+echo "For help, see QUICKSTART.md or MANUAL-INSTALLATION.md"
