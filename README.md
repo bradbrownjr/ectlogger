@@ -383,7 +383,7 @@ Special thanks to all NCS operators, loggers, and participants who make emergenc
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/ectlogger/issues)
+- **Issues**: [GitHub Issues](https://github.com/bradbrownjr/ectlogger/issues)
 - **Documentation**: See QUICKSTART.md and DEVELOPMENT.md
 - **Questions**: Open a discussion on GitHub
 
