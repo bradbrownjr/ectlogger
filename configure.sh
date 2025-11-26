@@ -58,14 +58,25 @@ echo "SMTP Port (press Enter for 587):"
 read -r smtp_port
 smtp_port=${smtp_port:-587}
 
-# SMTP User
+# SMTP User (required)
 echo "SMTP User (your email address):"
 read -r smtp_user
+while [ -z "$smtp_user" ]; do
+    echo "⚠️  Email address is required!"
+    echo "SMTP User (your email address):"
+    read -r smtp_user
+done
 
-# SMTP Password
+# SMTP Password (required)
 echo "SMTP Password (for Gmail, use an App Password):"
 read -rs smtp_password
 echo ""
+while [ -z "$smtp_password" ]; do
+    echo "⚠️  Password is required!"
+    echo "SMTP Password (for Gmail, use an App Password):"
+    read -rs smtp_password
+    echo ""
+done
 
 # SMTP From Email
 echo "From Email (press Enter for noreply@ectlogger.com):"
