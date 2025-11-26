@@ -518,6 +518,7 @@ const NetView: React.FC = () => {
       const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
       if (userRole?.role?.toUpperCase() === 'NCS') return '👑';
       if (userRole?.role?.toUpperCase() === 'LOGGER') return '📋';
+      if (userRole?.role?.toUpperCase() === 'RELAY') return '📡';
       
       // Show recheck icon for rechecked stations (replaces standard check-in)
       if (checkIn.is_recheck && status === 'checked_in') return '🔄';
@@ -554,6 +555,7 @@ const NetView: React.FC = () => {
       const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
       if (userRole?.role?.toUpperCase() === 'NCS') return 'Net Control Station - manages the net';
       if (userRole?.role?.toUpperCase() === 'LOGGER') return 'Logger - assists NCS with logging';
+      if (userRole?.role?.toUpperCase() === 'RELAY') return 'Relay - checks in stations on behalf of NCS';
       if (checkIn.is_recheck && status === 'checked_in') return 'Re-checked into the net';
     }
     
@@ -1308,6 +1310,7 @@ const NetView: React.FC = () => {
                 <Typography variant="caption" sx={{ fontWeight: 'bold' }}>Legend:</Typography>
                 <Tooltip title="Net Control Station - manages the net" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>👑 NCS</Typography></Tooltip>
                 <Tooltip title="Logger - assists NCS with logging" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>📋 Logger</Typography></Tooltip>
+                <Tooltip title="Relay - checks in stations on behalf of NCS" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>📡 Relay</Typography></Tooltip>
                 <Tooltip title="Checked in and available" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>✅ Standard</Typography></Tooltip>
                 <Tooltip title="Re-checked into the net" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>🔄 Recheck</Typography></Tooltip>
                 <Tooltip title="Monitoring only, not transmitting" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>👂 Listening</Typography></Tooltip>

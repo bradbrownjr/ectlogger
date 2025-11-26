@@ -96,8 +96,8 @@ ECTLogger has two types of roles: **global roles** (system-wide) and **net roles
 ### Net Roles
 When a user creates a net, they automatically become its **NCS (Net Control Station)**. The net creator can then assign these roles to other users for that specific net:
 
-- 🎙️ **NCS** - Full control of the net: start/close, manage check-ins, assign roles
-- 📝 **Logger** - Log check-ins and manage station status
+- 👑 **NCS** - Full control of the net: start/close, manage check-ins, assign roles
+- 📋 **Logger** - Log check-ins and manage station status
 - 📡 **Relay** - Check in stations on behalf of others (for contacts NCS can't hear directly)
 
 This means any registered user can run their own nets without needing admin privileges. A user might be a regular participant in one net while serving as NCS for another.
