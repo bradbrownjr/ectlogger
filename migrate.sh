@@ -176,6 +176,22 @@ else
 fi
 echo "    ✓ VITE_API_URL updated"
 
+# Extract hostname from frontend URL for allowed hosts
+ALLOWED_HOST=$(echo "$NEW_FRONTEND_URL" | sed -E 's|^https?://||' | sed -E 's|:[0-9]+$||' | sed -E 's|/.*$||')
+
+# Update or add VITE_ALLOWED_HOSTS
+echo "  Updating VITE_ALLOWED_HOSTS..."
+if grep -q "^VITE_ALLOWED_HOSTS=" frontend/.env; then
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        sed -i '' "s|^VITE_ALLOWED_HOSTS=.*|VITE_ALLOWED_HOSTS=$ALLOWED_HOST,localhost|" frontend/.env
+    else
+        sed -i "s|^VITE_ALLOWED_HOSTS=.*|VITE_ALLOWED_HOSTS=$ALLOWED_HOST,localhost|" frontend/.env
+    fi
+else
+    echo "VITE_ALLOWED_HOSTS=$ALLOWED_HOST,localhost" >> frontend/.env
+fi
+echo "    ✓ VITE_ALLOWED_HOSTS updated ($ALLOWED_HOST)"
+
 # Note: CORS origins are dynamically computed from FRONTEND_URL in main.py
 # No additional changes needed for CORS
 
