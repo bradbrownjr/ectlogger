@@ -41,6 +41,10 @@ import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import DownloadIcon from '@mui/icons-material/Download';
 import ArchiveIcon from '@mui/icons-material/Archive';
 import MapIcon from '@mui/icons-material/Map';
+import GroupIcon from '@mui/icons-material/Group';
+import LoginIcon from '@mui/icons-material/Login';
+import LogoutIcon from '@mui/icons-material/Logout';
+import CloseIcon from '@mui/icons-material/Close';
 import { netApi, checkInApi } from '../services/api';
 import api from '../services/api';
 import { formatDateTime, formatTime } from '../utils/dateUtils';
@@ -849,19 +853,21 @@ const NetView: React.FC = () => {
                     <Button 
                       size="small" 
                       variant="outlined" 
+                      startIcon={<EditIcon fontSize="small" />}
                       onClick={() => navigate(`/nets/${netId}/edit`)}
                     >
-                      Manage Net
+                      Net
                     </Button>
                     <Button 
                       size="small" 
                       variant="outlined" 
+                      startIcon={<GroupIcon fontSize="small" />}
                       onClick={() => {
                         fetchAllUsers();
                         setRoleDialogOpen(true);
                       }}
                     >
-                      Manage Roles
+                      Roles
                     </Button>
                     {!hasNCS && (
                       <Button 
@@ -876,16 +882,14 @@ const NetView: React.FC = () => {
                   </>
                 )}
                 {net.status === 'active' && checkIns.length > 0 && (
-                  <Tooltip title="View check-in locations on map">
-                    <Button 
-                      size="small" 
-                      variant="outlined" 
-                      onClick={() => setMapOpen(true)}
-                      sx={{ minWidth: 'auto', px: 1 }}
-                    >
-                      <MapIcon fontSize="small" />
-                    </Button>
-                  </Tooltip>
+                  <Button 
+                    size="small" 
+                    variant="outlined" 
+                    startIcon={<MapIcon fontSize="small" />}
+                    onClick={() => setMapOpen(true)}
+                  >
+                    Map
+                  </Button>
                 )}
                 {isAuthenticated && net.status === 'active' && (
                   userActiveCheckIn ? (
@@ -893,15 +897,17 @@ const NetView: React.FC = () => {
                       size="small"
                       variant="outlined" 
                       color="error"
+                      startIcon={<LogoutIcon fontSize="small" />}
                       onClick={handleCheckOut}
                     >
-                      Check Out
+                      Out
                     </Button>
                   ) : (
                     <Button 
                       size="small"
                       variant="contained" 
-                      color="primary" 
+                      color="primary"
+                      startIcon={<LoginIcon fontSize="small" />}
                       onClick={() => {
                         // Pre-fill form with user's profile data
                         if (user) {
@@ -930,13 +936,19 @@ const NetView: React.FC = () => {
                         }
                       }}
                     >
-                      Check In
+                      In
                     </Button>
                   )
                 )}
                 {canManage && net.status === 'active' && (
-                  <Button size="small" variant="contained" color="error" onClick={handleCloseNet}>
-                    Close Net
+                  <Button 
+                    size="small" 
+                    variant="contained" 
+                    color="error" 
+                    startIcon={<CloseIcon fontSize="small" />}
+                    onClick={handleCloseNet}
+                  >
+                    Close
                   </Button>
                 )}
                 {net.status === 'closed' && (
