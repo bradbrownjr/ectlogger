@@ -15,7 +15,8 @@ import json
 # Initialize rate limiter
 limiter = Limiter(key_func=get_remote_address, default_limits=["200 per minute"])
 
-app = FastAPI(title=settings.app_name, version="1.0.0")
+# Disable redirect_slashes to prevent 307 redirects that break HTTPS behind reverse proxy
+app = FastAPI(title=settings.app_name, version="1.0.0", redirect_slashes=False)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
