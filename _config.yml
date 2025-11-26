@@ -1,5 +1,5 @@
 # GitHub Pages Configuration for ECTLogger
-theme: jekyll-theme-architect
+theme: jekyll-theme-midnight
 
 title: ECTLogger
 description: A Modern Radio Net Logger for Emergency Communications Teams and SKYWARN Spotter Nets
