@@ -5,7 +5,10 @@
 
 ECTLogger is a production-ready, web-based net logging application designed specifically for Emergency Communications Teams, SKYWARN spotter nets, and amateur radio net control operations. Built with modern technology, it provides real-time check-in tracking, multi-frequency support, and comprehensive net management capabilities.
 
-![Check-in Log](assets/screenshots/Check-in%20Log.png)
+<a href="assets/screenshots/Check-in%20Log.png">
+  <img src="assets/screenshots/Check-in%20Log.png" alt="Check-in Log" width="100%">
+</a>
+
 *Multi-frequency/band check-ins, in dark and light mode!*
 
 ## ✨ Features
