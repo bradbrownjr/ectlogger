@@ -389,6 +389,9 @@ Future enhancements planned:
 - [ ] Voice check-in via phone bridge
 - [ ] Automated NCS assistant features
 
+### Stretch Goals
+- [ ] [TUI/Packet Radio Client](docs/concepts/TUI-PACKET-CLIENT.md) - Terminal-based client for packet radio and low-bandwidth operations
+
 ## ✅ Tested Environments
 
 | Environment | Status | Notes |
