@@ -1,0 +1,25 @@
+# GitHub Pages Configuration for ECTLogger
+theme: jekyll-theme-cayman
+
+title: ECTLogger
+description: A Modern Radio Net Logger for Emergency Communications Teams and SKYWARN Spotter Nets
+
+# Repository info (enables Edit on GitHub link)
+repository: bradbrownjr/ectlogger
+
+# Show downloads button
+show_downloads: true
+
+# Exclude files from the site
+exclude:
+  - backend/
+  - frontend/
+  - "*.sh"
+  - "*.ps1"
+  - "*.example"
+  - .env
+  - venv/
+  - node_modules/
+  - __pycache__/
+  - "*.pyc"
+  - .gitignore
