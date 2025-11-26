@@ -272,6 +272,74 @@ If you need immediate deliverability:
 4. **Backup method:** Have phone/SMS as fallback for critical notifications
 5. **User education:** Include "check spam folder" in training materials
 
+---
+
+## Troubleshooting
+
+### Connection Refused Error
+
+If you see `ERR_CONNECTION_REFUSED` in the browser console, the frontend can't reach the backend.
+
+**Solution**: Reconfigure with your LAN IP:
+```bash
+./configure.sh
+# Or use the migration script:
+./migrate.sh --lan-ip YOUR_LAN_IP
+```
+
+### Common SMTP Problems
+
+#### 1. SMTP Authentication Failed
+**Symptoms**: "Authentication failed" or "Invalid credentials"
+
+**Solution for Gmail**: Use an **App Password**, not your regular password:
+1. Enable 2-Step Verification
+2. Go to https://myaccount.google.com/apppasswords
+3. Generate a new App Password
+4. Use that 16-character password in configuration
+
+#### 2. SSL/TLS Configuration
+**Symptoms**: "SSL handshake failed" or "Certificate verification failed"
+
+**Solution**: Use port 465 for SSL:
+```bash
+SMTP_HOST=smtp.yourprovider.com
+SMTP_PORT=465
+```
+
+#### 3. Certificate Hostname Mismatch
+**Symptoms**: "Certificate hostname mismatch"
+
+**Solution**: Ensure `SMTP_HOST` matches the SSL certificate exactly.
+
+### Test SMTP Connection
+
+```bash
+cd ~/ectlogger/backend
+source venv/bin/activate
+python3 -c "
+import asyncio
+from app.email_service import EmailService
+
+async def test():
+    await EmailService.send_magic_link('your-email@example.com', 'test-token')
+    print('Email sent successfully!')
+
+asyncio.run(test())
+"
+```
+
+### Ad Blocker Issues
+
+Some ad blockers block requests containing "magic-link" in the URL.
+
+**Solutions**:
+1. Whitelist your ECTLogger domain
+2. Disable ad blocker temporarily
+3. Try a different browser
+
+---
+
 ## Need Help?
 
 If emails continue going to spam:
@@ -282,6 +350,5 @@ If emails continue going to spam:
 5. Contact your email hosting provider for assistance
 
 ## Related Documentation
-- `TROUBLESHOOTING-EMAIL.md` - SMTP configuration issues
-- `MAGIC-LINK-CONFIGURATION.md` - Magic link expiration settings
-- `SETUP.md` - General setup and configuration
+- [MAGIC-LINK-CONFIGURATION.md](MAGIC-LINK-CONFIGURATION.md) - Magic link expiration settings
+- [MANUAL-INSTALLATION.md](MANUAL-INSTALLATION.md) - Manual installation and configuration

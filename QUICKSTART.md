@@ -2,6 +2,29 @@
 
 ## 🚀 Get Started in 5 Minutes
 
+## ⚡ Speedrun Install (Recommended for Fresh Systems)
+
+**One command does everything** - installs prerequisites, clones the repo, and sets up ECTLogger:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/bradbrownjr/ectlogger/main/bootstrap.sh | bash
+```
+
+This works on Debian, Ubuntu, Fedora, RHEL, Rocky, and macOS. It will:
+- Install Git, Python 3, Node.js 22 LTS, and build tools
+- Clone the ECTLogger repository to `~/ectlogger`
+- Set up the Python virtual environment
+- Install all dependencies
+- Walk you through configuration
+
+After it completes, just run `cd ~/ectlogger && ./start.sh` to launch!
+
+---
+
+## 📋 Manual Installation
+
+If you prefer to install manually or the speedrun doesn't work for your system:
+
 ### Prerequisites
 - Python 3.9+ installed
 - Node.js 18+ installed
@@ -11,7 +34,8 @@
 
 #### Linux/macOS
 ```bash
-# Clone or download the repository
+# Clone the repository
+git clone https://github.com/bradbrownjr/ectlogger.git
 cd ectlogger
 
 # Make scripts executable
@@ -23,7 +47,8 @@ chmod +x *.sh
 
 #### Windows (PowerShell)
 ```powershell
-# Clone or download the repository
+# Clone the repository
+git clone https://github.com/bradbrownjr/ectlogger.git
 cd ectlogger
 
 # Run the startup script (it will install everything automatically)
@@ -130,19 +155,27 @@ npm run dev
   npm install
   ```
 
+## ⚠️ First Login - Administrator Setup
+
+**Important**: The first user to sign in is automatically granted Administrator privileges. Before making your server publicly accessible, you should:
+
+1. Complete first-time setup and configure email
+2. Access the application and sign in with your email
+3. Verify you have admin access (you'll see the Admin panel in the navigation)
+4. Only then expose the server to the network/internet
+
+This ensures the server owner becomes the administrator before anyone else can access the system.
+
 ## What's Next?
 
 See the full documentation:
-- **SETUP.md** - Complete installation and configuration guide
-- **DEVELOPMENT.md** - Development guide and project structure
-- **README.md** - Feature overview and requirements
+- **[MANUAL-INSTALLATION.md](MANUAL-INSTALLATION.md)** - Step-by-step manual installation
+- **[PRODUCTION-DEPLOYMENT.md](PRODUCTION-DEPLOYMENT.md)** - Deploy with SSL/HTTPS
+- **[DEVELOPMENT.md](DEVELOPMENT.md)** - Development guide and project structure
+- **[README.md](README.md)** - Feature overview and requirements
 
 ## Getting Help
 
 - Check the API documentation at http://localhost:8000/docs
-- Review the SETUP.md file for detailed configuration
+- Review the documentation files for detailed configuration
 - Open an issue on GitHub
-
----
-
-**Tip**: The first user to sign up can be promoted to admin by updating the database directly. See SETUP.md for instructions.

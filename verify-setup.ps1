@@ -128,7 +128,7 @@ $requiredFiles = @(
     @{ Path = "README.md"; Name = "README" },
     @{ Path = "LICENSE"; Name = "License" },
     @{ Path = "QUICKSTART.md"; Name = "Quick Start Guide" },
-    @{ Path = "SETUP.md"; Name = "Setup Guide" },
+    @{ Path = "MANUAL-INSTALLATION.md"; Name = "Manual Installation Guide" },
     @{ Path = "DEVELOPMENT.md"; Name = "Development Guide" },
     @{ Path = "start.ps1"; Name = "Startup Script" }
 )
@@ -163,4 +163,4 @@ if ($allGood) {
 }
 
 Write-Host ""
-Write-Host "For help, see QUICKSTART.md or SETUP.md" -ForegroundColor Cyan
+Write-Host "For help, see QUICKSTART.md or MANUAL-INSTALLATION.md" -ForegroundColor Cyan

@@ -1,4 +1,8 @@
-# ECTLogger - Setup and Installation Guide
+# ECTLogger - Manual Installation Guide
+
+> 📌 **New users**: Start with **[QUICKSTART.md](QUICKSTART.md)** for an easier automated setup!
+
+This guide covers manual step-by-step installation for advanced users, developers, or deployment environments where the automated scripts aren't suitable.
 
 ## Overview
 
@@ -124,8 +128,10 @@ npm install
 Create `.env.local` file if you need to customize the API URL:
 
 ```env
-VITE_API_URL=http://localhost:8000
+VITE_API_URL=http://localhost:8000/api
 ```
+
+> **Note**: The `/api` suffix is required. All backend routes are prefixed with `/api` for reverse proxy compatibility.
 
 ## Running the Application
 
@@ -357,10 +363,7 @@ The lint errors you're seeing are expected before dependencies are installed. Th
 - **NCS**: Can create and manage nets, designate loggers
 - **Admin**: Full system access, user management
 
-To promote a user to admin, update directly in database:
-```sql
-UPDATE users SET role = 'admin' WHERE email = 'your-email@example.com';
-```
+> 💡 **Note**: The first user to sign in is automatically granted Administrator privileges. Make sure to sign in before making the server publicly accessible.
 
 ## Support and Documentation
 

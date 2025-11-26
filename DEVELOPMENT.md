@@ -47,7 +47,7 @@ ectlogger/
 ├── .gitignore
 ├── LICENSE
 ├── README.md
-└── SETUP.md
+└── MANUAL-INSTALLATION.md
 ```
 
 ## Key Features Implemented

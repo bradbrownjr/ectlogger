@@ -86,4 +86,19 @@ Write-Host "🌐 Frontend: http://localhost:3000" -ForegroundColor Green
 Write-Host "📡 Backend:  http://localhost:8000" -ForegroundColor Green
 Write-Host "📚 API Docs: http://localhost:8000/docs" -ForegroundColor Green
 Write-Host ""
+
+# Show configured URLs if available
+if (Test-Path "backend\.env") {
+    $content = Get-Content "backend\.env"
+    foreach ($line in $content) {
+        if ($line -match "^FRONTEND_URL=(.*)") {
+            $configuredUrl = $matches[1]
+            if ($configuredUrl -and $configuredUrl -ne "http://localhost:3000") {
+                Write-Host "🌍 Production URL: $configuredUrl" -ForegroundColor Cyan
+                Write-Host ""
+            }
+        }
+    }
+}
+
 Write-Host "Press Ctrl+C in the server windows to stop them." -ForegroundColor Yellow

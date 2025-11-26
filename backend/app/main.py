@@ -61,16 +61,17 @@ async def security_middleware(request: Request, call_next):
     response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"
     return response
 
-# Include routers
-app.include_router(auth.router)
-app.include_router(users.router)
-app.include_router(nets.router)
-app.include_router(check_ins.router)
-app.include_router(frequencies.router)
-app.include_router(templates.router)
-app.include_router(chat.router)
-app.include_router(app_settings_router.router)
-app.include_router(ncs_rotation.router)
+# Include routers with /api prefix for reverse proxy compatibility
+# Caddy forwards /api/* to the backend, so all routes need this prefix
+app.include_router(auth.router, prefix="/api")
+app.include_router(users.router, prefix="/api")
+app.include_router(nets.router, prefix="/api")
+app.include_router(check_ins.router, prefix="/api")
+app.include_router(frequencies.router, prefix="/api")
+app.include_router(templates.router, prefix="/api")
+app.include_router(chat.router, prefix="/api")
+app.include_router(app_settings_router.router, prefix="/api")
+app.include_router(ncs_rotation.router, prefix="/api")
 
 
 # WebSocket connection manager
@@ -154,7 +155,7 @@ async def post_system_message(net_id: int, message: str, db_session=None):
             await db_session.close()
 
 
-@app.websocket("/ws/nets/{net_id}")
+@app.websocket("/api/ws/nets/{net_id}")
 async def websocket_endpoint(websocket: WebSocket, net_id: int, token: str = None):
     """WebSocket endpoint for real-time net updates - allows guests for viewing"""
     from app.auth import verify_token
@@ -222,7 +223,7 @@ async def shutdown_event():
     await ncs_reminder_service.stop()
 
 
-@app.get("/")
+@app.get("/api")
 async def root():
     return {
         "message": f"Welcome to {settings.app_name} API",
@@ -231,7 +232,7 @@ async def root():
     }
 
 
-@app.get("/health")
+@app.get("/api/health")
 async def health_check():
     return {"status": "healthy"}
 
