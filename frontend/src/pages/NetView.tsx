@@ -848,6 +848,16 @@ const NetView: React.FC = () => {
                     </Button>
                   </>
                 )}
+                {net.status === 'active' && checkIns.length > 0 && (
+                  <Button 
+                    size="small" 
+                    variant="outlined" 
+                    startIcon={<MapIcon fontSize="small" />}
+                    onClick={() => setMapOpen(true)}
+                  >
+                    Map
+                  </Button>
+                )}
                 {canManage && net.status === 'active' && (
                   <>
                     <Button 
@@ -880,16 +890,6 @@ const NetView: React.FC = () => {
                       </Button>
                     )}
                   </>
-                )}
-                {net.status === 'active' && checkIns.length > 0 && (
-                  <Button 
-                    size="small" 
-                    variant="outlined" 
-                    startIcon={<MapIcon fontSize="small" />}
-                    onClick={() => setMapOpen(true)}
-                  >
-                    Map
-                  </Button>
                 )}
                 {isAuthenticated && net.status === 'active' && (
                   userActiveCheckIn ? (
