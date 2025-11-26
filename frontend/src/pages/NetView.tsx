@@ -875,6 +875,18 @@ const NetView: React.FC = () => {
                     )}
                   </>
                 )}
+                {net.status === 'active' && checkIns.length > 0 && (
+                  <Tooltip title="View check-in locations on map">
+                    <Button 
+                      size="small" 
+                      variant="outlined" 
+                      onClick={() => setMapOpen(true)}
+                      sx={{ minWidth: 'auto', px: 1 }}
+                    >
+                      <MapIcon fontSize="small" />
+                    </Button>
+                  </Tooltip>
+                )}
                 {isAuthenticated && net.status === 'active' && (
                   userActiveCheckIn ? (
                     <Button 
@@ -926,18 +938,6 @@ const NetView: React.FC = () => {
                   <Button size="small" variant="contained" color="error" onClick={handleCloseNet}>
                     Close Net
                   </Button>
-                )}
-                {net.status === 'active' && checkIns.length > 0 && (
-                  <Tooltip title="View check-in locations on map">
-                    <Button 
-                      size="small" 
-                      variant="outlined" 
-                      onClick={() => setMapOpen(true)}
-                      sx={{ minWidth: 'auto', px: 1 }}
-                    >
-                      <MapIcon fontSize="small" />
-                    </Button>
-                  </Tooltip>
                 )}
                 {net.status === 'closed' && (
                   <>
