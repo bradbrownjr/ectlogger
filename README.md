@@ -67,11 +67,20 @@ See [QUICKSTART.md](QUICKSTART.md) for detailed instructions.
 
 ## 📚 Documentation
 
+### Getting Started
 - **[QUICKSTART.md](QUICKSTART.md)** - Get up and running in 5 minutes
 - **[SETUP.md](SETUP.md)** - Complete installation and configuration guide
+
+### Deployment
 - **[PRODUCTION-DEPLOYMENT.md](PRODUCTION-DEPLOYMENT.md)** - Deploy to production with SSL/reverse proxy
 - **[SECURITY.md](SECURITY.md)** - Security features and best practices
+
+### Configuration
 - **[MAGIC-LINK-CONFIGURATION.md](MAGIC-LINK-CONFIGURATION.md)** - Configure magic link expiration for extended operations
+- **[EMAIL-DELIVERABILITY.md](EMAIL-DELIVERABILITY.md)** - Email setup, troubleshooting, and spam prevention
+- **[LOGGING.md](LOGGING.md)** - Configure log levels and debug output
+
+### Development
 - **[DEVELOPMENT.md](DEVELOPMENT.md)** - Development guide and architecture
 
 ## 🛠️ Technology Stack
