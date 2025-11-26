@@ -40,8 +40,6 @@ For complete security documentation, deployment best practices, and vulnerabilit
 
 ## 🚀 Quick Start
 
-### Linux/macOS
-```bash
 ### ⚡ One-Line Install (Debian/Ubuntu)
 
 Fresh system? Run this single command to download and install everything:
