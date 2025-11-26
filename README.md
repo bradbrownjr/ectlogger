@@ -364,6 +364,7 @@ Special thanks to all NCS operators, loggers, and participants who make emergenc
 ## 🗺️ Roadmap
 
 Future enhancements planned:
+- [ ] Participant station mapping (in development)
 - [ ] Progressive Web App (PWA) for offline capability
 - [ ] SMS notifications via Twilio/AWS SNS
 - [ ] Advanced reporting and analytics
@@ -372,6 +373,14 @@ Future enhancements planned:
 - [ ] Integration with amateur radio logging software
 - [ ] Voice check-in via phone bridge
 - [ ] Automated NCS assistant features
+
+## ✅ Tested Environments
+
+| Environment | Status | Notes |
+|-------------|--------|-------|
+| **Debian Trixie** | ✅ Tested | Python 3.13, production with Caddy reverse proxy |
+| **Windows Server** | ⬜ Untested | Should work with PowerShell scripts |
+| **Host Migration** | ✅ Tested | LAN to production domain migration |
 
 ---
 
