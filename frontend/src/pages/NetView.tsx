@@ -300,7 +300,7 @@ const NetView: React.FC = () => {
 
   const fetchAllUsers = async () => {
     try {
-      const response = await api.get('/users/');
+      const response = await api.get('/users');
       setAllUsers(response.data);
     } catch (error) {
       console.error('Failed to fetch users:', error);
