@@ -45,4 +45,13 @@
 
 ---
 
+## NCS Rotation
+*Schedule NCS operators with automatic rotation and swap management*
+
+<a href="rotation.png">
+  <img src="rotation.png" alt="NCS Rotation" width="100%">
+</a>
+
+---
+
 *Click any image to view full size*
