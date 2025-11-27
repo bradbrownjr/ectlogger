@@ -293,6 +293,35 @@ async def remove_rotation_member(
     await db.commit()
 
 
+@router.delete("/members", status_code=status.HTTP_204_NO_CONTENT)
+async def clear_all_rotation_members(
+    template_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Remove all users from the NCS rotation (clear the entire rotation)"""
+    template = await get_template_or_404(template_id, db)
+    
+    if not await check_template_permission(template, current_user, db):
+        raise HTTPException(status_code=403, detail="Permission denied")
+    
+    # Delete all overrides for this template
+    await db.execute(
+        delete(NCSScheduleOverride).where(
+            NCSScheduleOverride.template_id == template_id
+        )
+    )
+    
+    # Delete all rotation members for this template
+    await db.execute(
+        delete(NCSRotationMember).where(
+            NCSRotationMember.template_id == template_id
+        )
+    )
+    
+    await db.commit()
+
+
 @router.put("/members/reorder", response_model=List[NCSRotationMemberResponse])
 async def reorder_rotation_members(
     template_id: int,

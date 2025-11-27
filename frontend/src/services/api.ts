@@ -112,6 +112,8 @@ export const ncsRotationApi = {
     api.post(`/templates/${templateId}/ncs-rotation/members`, data),
   removeMember: (templateId: number, memberId: number) => 
     api.delete(`/templates/${templateId}/ncs-rotation/members/${memberId}`),
+  clearAllMembers: (templateId: number) =>
+    api.delete(`/templates/${templateId}/ncs-rotation/members`),
   reorderMembers: (templateId: number, memberIds: number[]) => 
     api.put(`/templates/${templateId}/ncs-rotation/members/reorder`, { member_ids: memberIds }),
   updateMember: (templateId: number, memberId: number, data: { is_active?: boolean; position?: number }) =>

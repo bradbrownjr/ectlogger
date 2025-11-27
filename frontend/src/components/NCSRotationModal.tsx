@@ -187,6 +187,18 @@ const NCSRotationModal: React.FC<NCSRotationModalProps> = ({
     }
   };
 
+  const handleClearAllMembers = async () => {
+    if (!schedule || !confirm('Clear the entire NCS rotation? This will remove all members and swaps. The net owner will be the default NCS for all instances.')) return;
+    
+    try {
+      await ncsRotationApi.clearAllMembers(schedule.id);
+      await fetchData();
+      onUpdate?.();
+    } catch (err: any) {
+      setError(getErrorMessage(err, 'Failed to clear rotation'));
+    }
+  };
+
   const handleMoveMember = async (memberId: number, direction: 'up' | 'down') => {
     if (!schedule) return;
     
@@ -406,11 +418,24 @@ const NCSRotationModal: React.FC<NCSRotationModalProps> = ({
               {/* Manage Rotation Tab */}
               {tabValue === 1 && canManage && (
                 <Box>
-                  <Typography variant="subtitle2" gutterBottom>
-                    Rotation Members
-                  </Typography>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                    <Typography variant="subtitle2">
+                      Rotation Members
+                    </Typography>
+                    {members.length > 0 && (
+                      <Button
+                        size="small"
+                        color="error"
+                        variant="outlined"
+                        startIcon={<DeleteIcon />}
+                        onClick={handleClearAllMembers}
+                      >
+                        Clear All
+                      </Button>
+                    )}
+                  </Box>
                   <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
-                    NCS duties rotate through active members in order. Drag to reorder.
+                    NCS duties rotate through active members in order. Clear all to disable rotation (owner becomes default NCS).
                   </Typography>
                   
                   {/* Add member */}
