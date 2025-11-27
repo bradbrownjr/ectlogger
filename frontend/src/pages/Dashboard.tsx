@@ -225,20 +225,20 @@ const Dashboard: React.FC = () => {
                     {/* Closed net actions */}
                     {net.status === 'closed' && (
                       <>
-                        <Tooltip title="Archive net">
-                          <IconButton
-                            size="small"
-                            onClick={() => console.log('Archive net', net.id)}
-                          >
-                            <ArchiveIcon />
-                          </IconButton>
-                        </Tooltip>
                         <Tooltip title="Export log">
                           <IconButton
                             size="small"
                             onClick={() => console.log('Export net', net.id)}
                           >
                             <DownloadIcon />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Archive net">
+                          <IconButton
+                            size="small"
+                            onClick={() => console.log('Archive net', net.id)}
+                          >
+                            <ArchiveIcon />
                           </IconButton>
                         </Tooltip>
                         {user?.role === 'admin' && (
