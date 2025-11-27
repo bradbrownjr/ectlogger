@@ -1,5 +1,7 @@
 export const formatDateTime = (dateString: string, preferUtc: boolean = false): string => {
-  const date = new Date(dateString);
+  // Backend sends UTC times without 'Z' suffix - append it so JavaScript parses correctly
+  const normalizedDateString = dateString.endsWith('Z') ? dateString : dateString + 'Z';
+  const date = new Date(normalizedDateString);
   
   if (preferUtc) {
     return date.toUTCString();
@@ -15,7 +17,9 @@ export const formatDateTime = (dateString: string, preferUtc: boolean = false): 
 };
 
 export const formatTime = (dateString: string, preferUtc: boolean = false): string => {
-  const date = new Date(dateString);
+  // Backend sends UTC times without 'Z' suffix - append it so JavaScript parses correctly
+  const normalizedDateString = dateString.endsWith('Z') ? dateString : dateString + 'Z';
+  const date = new Date(normalizedDateString);
   
   if (preferUtc) {
     return date.toUTCString().split(' ')[4] + ' UTC'; // Extract just the time part
