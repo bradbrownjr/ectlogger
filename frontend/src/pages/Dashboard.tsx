@@ -186,64 +186,8 @@ const Dashboard: React.FC = () => {
                     )}
                   </Box>
                 </CardContent>
-                <CardActions sx={{ justifyContent: 'flex-end' }}>
-                  {/* Draft net actions */}
-                  {net.status === 'draft' && (user?.id === net.owner_id || user?.role === 'admin') && (
-                    <>
-                      <Tooltip title="Edit net">
-                        <IconButton
-                          size="small"
-                          onClick={() => navigate(`/nets/${net.id}/edit`)}
-                        >
-                          <EditIcon />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Start net">
-                        <IconButton
-                          size="small"
-                          color="success"
-                          onClick={() => handleStartNet(net.id)}
-                        >
-                          <PlayArrowIcon />
-                        </IconButton>
-                      </Tooltip>
-                    </>
-                  )}
-                  
-                  {/* Closed net actions */}
-                  {net.status === 'closed' && (
-                    <>
-                      <Tooltip title="Archive net">
-                        <IconButton
-                          size="small"
-                          onClick={() => console.log('Archive net', net.id)}
-                        >
-                          <ArchiveIcon />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Export log">
-                        <IconButton
-                          size="small"
-                          onClick={() => console.log('Export net', net.id)}
-                        >
-                          <DownloadIcon />
-                        </IconButton>
-                      </Tooltip>
-                      {user?.role === 'admin' && (
-                        <Tooltip title="Delete net">
-                          <IconButton
-                            size="small"
-                            color="error"
-                            onClick={() => console.log('Delete net', net.id)}
-                          >
-                            <DeleteIcon />
-                          </IconButton>
-                        </Tooltip>
-                      )}
-                    </>
-                  )}
-                  
-                  {/* View - always available */}
+                <CardActions sx={{ justifyContent: 'space-between' }}>
+                  {/* View - always available, left side */}
                   <Tooltip title="View net">
                     <IconButton
                       size="small"
@@ -253,6 +197,64 @@ const Dashboard: React.FC = () => {
                       <SearchIcon />
                     </IconButton>
                   </Tooltip>
+                  
+                  <Box>
+                    {/* Draft net actions */}
+                    {net.status === 'draft' && (user?.id === net.owner_id || user?.role === 'admin') && (
+                      <>
+                        <Tooltip title="Edit net">
+                          <IconButton
+                            size="small"
+                            onClick={() => navigate(`/nets/${net.id}/edit`)}
+                          >
+                            <EditIcon />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Start net">
+                          <IconButton
+                            size="small"
+                            color="success"
+                            onClick={() => handleStartNet(net.id)}
+                          >
+                            <PlayArrowIcon />
+                          </IconButton>
+                        </Tooltip>
+                      </>
+                    )}
+                    
+                    {/* Closed net actions */}
+                    {net.status === 'closed' && (
+                      <>
+                        <Tooltip title="Archive net">
+                          <IconButton
+                            size="small"
+                            onClick={() => console.log('Archive net', net.id)}
+                          >
+                            <ArchiveIcon />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Export log">
+                          <IconButton
+                            size="small"
+                            onClick={() => console.log('Export net', net.id)}
+                          >
+                            <DownloadIcon />
+                          </IconButton>
+                        </Tooltip>
+                        {user?.role === 'admin' && (
+                          <Tooltip title="Delete net">
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={() => console.log('Delete net', net.id)}
+                            >
+                              <DeleteIcon />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </>
+                    )}
+                  </Box>
                 </CardActions>
               </Card>
             </Grid>
