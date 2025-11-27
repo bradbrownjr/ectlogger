@@ -11,6 +11,8 @@ import {
   Box,
   Chip,
   Fab,
+  IconButton,
+  Tooltip,
   useMediaQuery,
   useTheme,
 } from '@mui/material';
@@ -18,6 +20,12 @@ import AddIcon from '@mui/icons-material/Add';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import RadioIcon from '@mui/icons-material/Radio';
 import PersonIcon from '@mui/icons-material/Person';
+import SearchIcon from '@mui/icons-material/Search';
+import EditIcon from '@mui/icons-material/Edit';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import ArchiveIcon from '@mui/icons-material/Archive';
+import DownloadIcon from '@mui/icons-material/Download';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { netApi } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { formatDateTime } from '../utils/dateUtils';
@@ -178,26 +186,73 @@ const Dashboard: React.FC = () => {
                     )}
                   </Box>
                 </CardContent>
-                <CardActions>
+                <CardActions sx={{ justifyContent: 'flex-end' }}>
+                  {/* Draft net actions */}
                   {net.status === 'draft' && (user?.id === net.owner_id || user?.role === 'admin') && (
                     <>
-                      <Button
-                        size="small"
-                        onClick={() => navigate(`/nets/${net.id}/edit`)}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        size="small"
-                        onClick={() => handleStartNet(net.id)}
-                      >
-                        Start Net
-                      </Button>
+                      <Tooltip title="Edit net">
+                        <IconButton
+                          size="small"
+                          onClick={() => navigate(`/nets/${net.id}/edit`)}
+                        >
+                          <EditIcon />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Start net">
+                        <IconButton
+                          size="small"
+                          color="success"
+                          onClick={() => handleStartNet(net.id)}
+                        >
+                          <PlayArrowIcon />
+                        </IconButton>
+                      </Tooltip>
                     </>
                   )}
-                  <Button size="small" onClick={() => navigate(`/nets/${net.id}`)}>
-                    View
-                  </Button>
+                  
+                  {/* Closed net actions */}
+                  {net.status === 'closed' && (
+                    <>
+                      <Tooltip title="Archive net">
+                        <IconButton
+                          size="small"
+                          onClick={() => console.log('Archive net', net.id)}
+                        >
+                          <ArchiveIcon />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Export log">
+                        <IconButton
+                          size="small"
+                          onClick={() => console.log('Export net', net.id)}
+                        >
+                          <DownloadIcon />
+                        </IconButton>
+                      </Tooltip>
+                      {user?.role === 'admin' && (
+                        <Tooltip title="Delete net">
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => console.log('Delete net', net.id)}
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                    </>
+                  )}
+                  
+                  {/* View - always available */}
+                  <Tooltip title="View net">
+                    <IconButton
+                      size="small"
+                      color="primary"
+                      onClick={() => navigate(`/nets/${net.id}`)}
+                    >
+                      <SearchIcon />
+                    </IconButton>
+                  </Tooltip>
                 </CardActions>
               </Card>
             </Grid>
