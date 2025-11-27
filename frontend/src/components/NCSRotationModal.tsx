@@ -372,7 +372,13 @@ const NCSRotationModal: React.FC<NCSRotationModalProps> = ({
                                     size="small" 
                                     onClick={() => handleCancelOverride(entry.override_id!)}
                                     title="Cancel swap (revert to normal rotation)"
-                                    color="warning"
+                                    sx={{ 
+                                      color: 'white',
+                                      bgcolor: 'error.main',
+                                      '&:hover': { bgcolor: 'error.dark' },
+                                      width: 28,
+                                      height: 28,
+                                    }}
                                   >
                                     <UndoIcon fontSize="small" />
                                   </IconButton>
