@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 from typing import List, Optional
 from datetime import datetime
@@ -103,11 +103,24 @@ async def list_nets(
     result = await db.execute(query)
     nets = result.scalars().all()
     
+    # Get check-in counts for all nets in one query
+    net_ids = [net.id for net in nets]
+    if net_ids:
+        count_result = await db.execute(
+            select(CheckIn.net_id, func.count(CheckIn.id))
+            .where(CheckIn.net_id.in_(net_ids))
+            .group_by(CheckIn.net_id)
+        )
+        check_in_counts = dict(count_result.all())
+    else:
+        check_in_counts = {}
+    
     return [
         NetResponse.from_orm(
             net,
             owner_callsign=net.owner.callsign if net.owner else None,
-            owner_name=net.owner.name if net.owner else None
+            owner_name=net.owner.name if net.owner else None,
+            check_in_count=check_in_counts.get(net.id, 0)
         ) for net in nets
     ]
 

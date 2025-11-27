@@ -53,6 +53,7 @@ interface Net {
   closed_at?: string;
   created_at: string;
   frequencies: any[];
+  check_in_count?: number;
 }
 
 const Dashboard: React.FC = () => {
@@ -374,6 +375,7 @@ const Dashboard: React.FC = () => {
                   <TableRow>
                     <TableCell>Net Name</TableCell>
                     <TableCell>NCS</TableCell>
+                    <TableCell align="center">Check-ins</TableCell>
                     <TableCell>Closed</TableCell>
                     <TableCell align="right">Actions</TableCell>
                   </TableRow>
@@ -386,6 +388,7 @@ const Dashboard: React.FC = () => {
                         {net.owner_callsign || 'Unknown'}
                         {net.owner_name && ` (${net.owner_name})`}
                       </TableCell>
+                      <TableCell align="center">{net.check_in_count ?? 0}</TableCell>
                       <TableCell>
                         {net.closed_at ? formatDateTime(net.closed_at, user?.prefer_utc || false) : 'N/A'}
                       </TableCell>
