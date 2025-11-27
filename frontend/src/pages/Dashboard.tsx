@@ -6,7 +6,6 @@ import {
   Card,
   CardContent,
   CardActions,
-  Button,
   Typography,
   Box,
   Chip,
@@ -38,6 +37,7 @@ import DownloadIcon from '@mui/icons-material/Download';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CloseIcon from '@mui/icons-material/Close';
 import { netApi } from '../services/api';
+import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { formatDateTime } from '../utils/dateUtils';
 
@@ -106,6 +106,26 @@ const Dashboard: React.FC = () => {
       fetchNets(); // Refresh active nets
     } catch (error) {
       console.error('Failed to archive net:', error);
+    }
+  };
+
+  const handleExportCSV = async (net: Net) => {
+    try {
+      const response = await api.get(`/nets/${net.id}/export/csv`, {
+        responseType: 'blob',
+      });
+      
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${net.name.replace(/ /g, '_')}_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Failed to export CSV:', error);
     }
   };
 
@@ -337,7 +357,7 @@ const Dashboard: React.FC = () => {
         fullWidth
       >
         <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="h6">📦 Archived Nets</Typography>
+          📦 Archived Nets
           <IconButton onClick={() => setShowArchived(false)}>
             <CloseIcon />
           </IconButton>
@@ -385,7 +405,7 @@ const Dashboard: React.FC = () => {
                         <Tooltip title="Export log">
                           <IconButton
                             size="small"
-                            onClick={() => console.log('Export net', net.id)}
+                            onClick={() => handleExportCSV(net)}
                           >
                             <DownloadIcon />
                           </IconButton>
