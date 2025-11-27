@@ -13,6 +13,16 @@ import {
   Fab,
   IconButton,
   Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
   useMediaQuery,
   useTheme,
 } from '@mui/material';
@@ -26,6 +36,7 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import ArchiveIcon from '@mui/icons-material/Archive';
 import DownloadIcon from '@mui/icons-material/Download';
 import DeleteIcon from '@mui/icons-material/Delete';
+import CloseIcon from '@mui/icons-material/Close';
 import { netApi } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { formatDateTime } from '../utils/dateUtils';
@@ -46,7 +57,9 @@ interface Net {
 
 const Dashboard: React.FC = () => {
   const [nets, setNets] = useState<Net[]>([]);
+  const [archivedNets, setArchivedNets] = useState<Net[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showArchived, setShowArchived] = useState(false);
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const theme = useTheme();
@@ -64,6 +77,35 @@ const Dashboard: React.FC = () => {
       console.error('Failed to fetch nets:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchArchivedNets = async () => {
+    try {
+      const response = await netApi.listArchived();
+      // Sort by closed_at date, newest first
+      const sorted = response.data.sort((a: Net, b: Net) => {
+        const dateA = a.closed_at ? new Date(a.closed_at).getTime() : 0;
+        const dateB = b.closed_at ? new Date(b.closed_at).getTime() : 0;
+        return dateB - dateA;
+      });
+      setArchivedNets(sorted);
+    } catch (error) {
+      console.error('Failed to fetch archived nets:', error);
+    }
+  };
+
+  const handleOpenArchived = () => {
+    fetchArchivedNets();
+    setShowArchived(true);
+  };
+
+  const handleArchiveNet = async (netId: number) => {
+    try {
+      await netApi.archive(netId);
+      fetchNets(); // Refresh active nets
+    } catch (error) {
+      console.error('Failed to archive net:', error);
     }
   };
 
@@ -223,7 +265,7 @@ const Dashboard: React.FC = () => {
                     )}
                     
                     {/* Closed net actions */}
-                    {net.status === 'closed' && (
+                    {net.status === 'closed' && (user?.id === net.owner_id || user?.role === 'admin') && (
                       <>
                         <Tooltip title="Export log">
                           <IconButton
@@ -236,7 +278,7 @@ const Dashboard: React.FC = () => {
                         <Tooltip title="Archive net">
                           <IconButton
                             size="small"
-                            onClick={() => console.log('Archive net', net.id)}
+                            onClick={() => handleArchiveNet(net.id)}
                           >
                             <ArchiveIcon />
                           </IconButton>
@@ -263,15 +305,111 @@ const Dashboard: React.FC = () => {
       )}
 
       {isAuthenticated && (
-        <Fab
-          color="primary"
-          aria-label="create net"
-          sx={{ position: 'fixed', bottom: 16, right: 16 }}
-          onClick={() => navigate('/nets/create')}
-        >
-          <AddIcon />
-        </Fab>
+        <>
+          <Tooltip title="View archived nets">
+            <Fab
+              color="default"
+              aria-label="view archived"
+              sx={{ position: 'fixed', bottom: 16, right: 80 }}
+              onClick={handleOpenArchived}
+            >
+              <ArchiveIcon />
+            </Fab>
+          </Tooltip>
+          <Tooltip title="Create new net">
+            <Fab
+              color="primary"
+              aria-label="create net"
+              sx={{ position: 'fixed', bottom: 16, right: 16 }}
+              onClick={() => navigate('/nets/create')}
+            >
+              <AddIcon />
+            </Fab>
+          </Tooltip>
+        </>
       )}
+
+      {/* Archived Nets Dialog */}
+      <Dialog
+        open={showArchived}
+        onClose={() => setShowArchived(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography variant="h6">📦 Archived Nets</Typography>
+          <IconButton onClick={() => setShowArchived(false)}>
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent>
+          {archivedNets.length === 0 ? (
+            <Typography color="text.secondary" sx={{ py: 4, textAlign: 'center' }}>
+              No archived nets found
+            </Typography>
+          ) : (
+            <TableContainer component={Paper} variant="outlined">
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Net Name</TableCell>
+                    <TableCell>NCS</TableCell>
+                    <TableCell>Closed</TableCell>
+                    <TableCell align="right">Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {archivedNets.map((net) => (
+                    <TableRow key={net.id} hover>
+                      <TableCell>{net.name}</TableCell>
+                      <TableCell>
+                        {net.owner_callsign || 'Unknown'}
+                        {net.owner_name && ` (${net.owner_name})`}
+                      </TableCell>
+                      <TableCell>
+                        {net.closed_at ? formatDateTime(net.closed_at, user?.prefer_utc || false) : 'N/A'}
+                      </TableCell>
+                      <TableCell align="right">
+                        <Tooltip title="View net">
+                          <IconButton
+                            size="small"
+                            color="primary"
+                            onClick={() => {
+                              setShowArchived(false);
+                              navigate(`/nets/${net.id}`);
+                            }}
+                          >
+                            <SearchIcon />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Export log">
+                          <IconButton
+                            size="small"
+                            onClick={() => console.log('Export net', net.id)}
+                          >
+                            <DownloadIcon />
+                          </IconButton>
+                        </Tooltip>
+                        {user?.role === 'admin' && (
+                          <Tooltip title="Delete net">
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={() => console.log('Delete net', net.id)}
+                            >
+                              <DeleteIcon />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </DialogContent>
+      </Dialog>
     </Container>
   );
 };

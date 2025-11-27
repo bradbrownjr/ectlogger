@@ -58,10 +58,12 @@ export const userApi = {
 export const netApi = {
   create: (data: any) => api.post('/nets/', data),
   list: (status?: string) => api.get('/nets/', { params: { status } }),
+  listArchived: () => api.get('/nets/', { params: { include_archived: true, status: 'archived' } }),
   get: (id: number) => api.get(`/nets/${id}`),
   update: (id: number, data: any) => api.put(`/nets/${id}`, data),
   start: (id: number) => api.post(`/nets/${id}/start`),
   close: (id: number) => api.post(`/nets/${id}/close`),
+  archive: (id: number) => api.post(`/nets/${id}/archive`),
   delete: (id: number) => api.delete(`/nets/${id}`),
   setActiveFrequency: (netId: number, frequencyId: number) => 
     api.put(`/nets/${netId}/active-frequency/${frequencyId}`),
