@@ -591,6 +591,7 @@ class NCSScheduleEntry(BaseModel):
     is_override: bool = False
     is_cancelled: bool = False
     override_reason: Optional[str] = None
+    override_id: Optional[int] = None  # ID of the override, if this is an override
 
 
 class NCSScheduleResponse(BaseModel):

@@ -33,6 +33,7 @@ import {
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
+import UndoIcon from '@mui/icons-material/Undo';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import AddIcon from '@mui/icons-material/Add';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
@@ -69,6 +70,7 @@ interface ScheduleEntry {
   is_override: boolean;
   is_cancelled: boolean;
   override_reason: string | null;
+  override_id: number | null;
 }
 
 interface User {
@@ -246,6 +248,18 @@ const NCSRotationModal: React.FC<NCSRotationModalProps> = ({
     }
   };
 
+  const handleCancelOverride = async (overrideId: number) => {
+    if (!schedule || !confirm('Cancel this swap and revert to the normal rotation?')) return;
+    
+    try {
+      await ncsRotationApi.deleteOverride(schedule.id, overrideId);
+      await fetchData();
+      onUpdate?.();
+    } catch (err: any) {
+      setError(getErrorMessage(err, 'Failed to cancel swap'));
+    }
+  };
+
   // Filter out users already in rotation
   const availableUsers = users.filter((u: User) => !members.some((m: RotationMember) => m.user_id === u.id));
 
@@ -352,8 +366,19 @@ const NCSRotationModal: React.FC<NCSRotationModalProps> = ({
                                 )}
                               </TableCell>
                               <TableCell align="right">
+                                {/* Show cancel swap button for overrides */}
+                                {entry.is_override && entry.override_id && canManage && (
+                                  <IconButton 
+                                    size="small" 
+                                    onClick={() => handleCancelOverride(entry.override_id!)}
+                                    title="Cancel swap (revert to normal rotation)"
+                                    color="warning"
+                                  >
+                                    <UndoIcon fontSize="small" />
+                                  </IconButton>
+                                )}
                                 {/* Allow swaps for managers or if user is the scheduled NCS */}
-                                {(canManage || (isRotationMember && entry.user_id === user?.id)) && !entry.is_cancelled && (
+                                {(canManage || (isRotationMember && entry.user_id === user?.id)) && !entry.is_cancelled && !entry.is_override && (
                                   <IconButton 
                                     size="small" 
                                     onClick={() => handleOpenSwapDialog(entry)}

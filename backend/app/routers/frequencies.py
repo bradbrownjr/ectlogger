@@ -10,7 +10,7 @@ from app.dependencies import get_current_user
 router = APIRouter(prefix="/frequencies", tags=["frequencies"])
 
 
-@router.post("/", response_model=FrequencyResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=FrequencyResponse, status_code=status.HTTP_201_CREATED)
 async def create_frequency(
     frequency_data: FrequencyCreate,
     current_user: User = Depends(get_current_user),
@@ -32,7 +32,7 @@ async def create_frequency(
     return FrequencyResponse.from_orm(frequency)
 
 
-@router.get("/", response_model=List[FrequencyResponse])
+@router.get("", response_model=List[FrequencyResponse])
 async def list_frequencies(
     skip: int = 0,
     limit: int = 100,

@@ -162,7 +162,8 @@ def compute_ncs_schedule(
                     user_email=None,
                     is_override=True,
                     is_cancelled=True,
-                    override_reason=override.reason
+                    override_reason=override.reason,
+                    override_id=override.id
                 )
             else:
                 # Swap to different user
@@ -174,7 +175,8 @@ def compute_ncs_schedule(
                     user_email=override.replacement_user.email if override.replacement_user else None,
                     is_override=True,
                     is_cancelled=False,
-                    override_reason=override.reason
+                    override_reason=override.reason,
+                    override_id=override.id
                 )
         else:
             # Normal rotation
@@ -277,6 +279,15 @@ async def remove_rotation_member(
     member = result.scalar_one_or_none()
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
+    
+    # Clean up any overrides that reference this user (as original or replacement)
+    await db.execute(
+        delete(NCSScheduleOverride).where(
+            NCSScheduleOverride.template_id == template_id,
+            (NCSScheduleOverride.original_user_id == member.user_id) | 
+            (NCSScheduleOverride.replacement_user_id == member.user_id)
+        )
+    )
     
     await db.delete(member)
     await db.commit()
