@@ -290,7 +290,7 @@ const Dashboard: React.FC = () => {
                         <Tooltip title="Export log">
                           <IconButton
                             size="small"
-                            onClick={() => console.log('Export net', net.id)}
+                            onClick={() => handleExportCSV(net)}
                           >
                             <DownloadIcon />
                           </IconButton>
