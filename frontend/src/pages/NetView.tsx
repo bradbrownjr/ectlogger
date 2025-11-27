@@ -989,8 +989,15 @@ const NetView: React.FC = () => {
           </Grid>
         </Box>
 
-        {net.status === 'active' && (
+        {(net.status === 'active' || net.status === 'closed') && (
           <Grid container spacing={0} sx={{ mt: 0.5, flex: { xs: 'none', md: 1 }, minHeight: 0 }}>
+            {net.status === 'closed' && (
+              <Grid item xs={12} sx={{ mb: 1 }}>
+                <Alert severity="info">
+                  This net has been closed. Check-ins are no longer accepted.
+                </Alert>
+              </Grid>
+            )}
             <Grid item xs={12} md={8} sx={{ pr: { md: 0.5 }, display: 'flex', flexDirection: 'column', minHeight: { xs: 'auto', md: 0 }, height: { xs: 'auto', md: '100%' }, mb: { xs: 2, md: 0 } }}>
               {/* Desktop: Combined table with sticky header */}
               <TableContainer sx={{ 
@@ -1356,7 +1363,7 @@ const NetView: React.FC = () => {
             </Box>
             
             {/* New check-in form - desktop only */}
-            {canManageCheckIns && (
+            {net.status === 'active' && canManageCheckIns && (
               <Paper sx={{ border: 1, borderColor: 'divider', borderTop: 0, borderRadius: '0 0 4px 4px', p: 1, flexShrink: 0, display: { xs: 'none', md: 'block' } }}>
                 <Table size="small">
                   <TableBody>
@@ -1576,7 +1583,7 @@ const NetView: React.FC = () => {
             )}
             
             {/* Mobile check-in form - full version */}
-            {canManageCheckIns && (
+            {net.status === 'active' && canManageCheckIns && (
               <Paper sx={{ p: 1.5, mt: 1, display: { xs: 'block', md: 'none' } }}>
                 <Typography variant="subtitle2" sx={{ mb: 1.5 }}>New Check-in</Typography>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
@@ -1748,12 +1755,6 @@ const NetView: React.FC = () => {
               <Chat netId={Number(netId)} />
             </Grid>
           </Grid>
-        )}
-
-        {net.status === 'closed' && (
-          <Alert severity="info">
-            This net has been closed. Check-ins are no longer accepted.
-          </Alert>
         )}
       </Paper>
 
