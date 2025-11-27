@@ -187,6 +187,15 @@ async def update_template(
     if template_data.schedule_config is not None:
         template.schedule_config = json.dumps(template_data.schedule_config)
     
+    # Update owner if provided (only owner or admin can transfer ownership)
+    if template_data.owner_id is not None and template_data.owner_id != template.owner_id:
+        # Verify new owner exists
+        new_owner_result = await db.execute(select(User).where(User.id == template_data.owner_id))
+        new_owner = new_owner_result.scalar_one_or_none()
+        if not new_owner:
+            raise HTTPException(status_code=404, detail="New owner not found")
+        template.owner_id = template_data.owner_id
+    
     # Update frequencies if provided
     if template_data.frequency_ids is not None:
         # Remove existing frequencies

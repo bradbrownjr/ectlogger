@@ -209,6 +209,7 @@ class NetTemplateUpdate(BaseModel):
     is_active: Optional[bool] = None
     schedule_type: Optional[str] = None
     schedule_config: Optional[dict] = None
+    owner_id: Optional[int] = None  # Allow changing the owner (admin only or current owner)
 
 
 class NetTemplateResponse(NetTemplateBase):

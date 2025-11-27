@@ -20,13 +20,23 @@ import {
   TableHead,
   TableRow,
   IconButton,
+  Autocomplete,
+  InputLabel,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
-import { templateApi, frequencyApi } from '../services/api';
+import { templateApi, frequencyApi, userApi } from '../services/api';
 import api from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
+
+interface User {
+  id: number;
+  callsign: string;
+  name: string | null;
+  email: string;
+}
 
 interface Frequency {
   id: number;
@@ -64,6 +74,7 @@ const CreateSchedule: React.FC = () => {
   const navigate = useNavigate();
   const isEdit = Boolean(scheduleId);
   const timezoneAbbr = getTimezoneAbbr();
+  const { user: currentUser } = useAuth();
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -76,6 +87,11 @@ const CreateSchedule: React.FC = () => {
   const [fieldConfig, setFieldConfig] = useState<Record<string, { enabled: boolean; required: boolean }>>({});
   const [isActive, setIsActive] = useState(true);
   
+  // Owner management (for editing)
+  const [ownerId, setOwnerId] = useState<number | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
+  const [originalOwnerId, setOriginalOwnerId] = useState<number | null>(null);
+  
   // Schedule configuration
   const [scheduleType, setScheduleType] = useState('ad_hoc');
   const [scheduleConfig, setScheduleConfig] = useState({
@@ -87,7 +103,10 @@ const CreateSchedule: React.FC = () => {
   useEffect(() => {
     fetchFrequencies();
     fetchFieldDefinitions();
-  }, []);
+    if (isEdit) {
+      fetchUsers();
+    }
+  }, [isEdit]);
 
   useEffect(() => {
     if (isEdit && fieldDefinitions.length > 0) {
@@ -110,6 +129,15 @@ const CreateSchedule: React.FC = () => {
       setFieldConfig(defaultConfig);
     } catch (error) {
       console.error('Failed to fetch field definitions:', error);
+    }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      const response = await userApi.listUsers();
+      setUsers(response.data);
+    } catch (error) {
+      console.error('Failed to fetch users:', error);
     }
   };
 
@@ -416,6 +444,9 @@ const CreateSchedule: React.FC = () => {
       setName(Schedule.name);
       setDescription(Schedule.description || '');
       setSelectedFrequencyIds(Schedule.frequencies.map((f: any) => f.id));
+      // Set owner info
+      setOwnerId(Schedule.owner_id);
+      setOriginalOwnerId(Schedule.owner_id);
       // Merge saved config with field definitions (in case new fields were added)
       if (Schedule.field_config) {
         const mergedConfig: Record<string, { enabled: boolean; required: boolean }> = {};
@@ -438,7 +469,7 @@ const CreateSchedule: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const ScheduleData = {
+    const ScheduleData: any = {
       name,
       description,
       frequency_ids: selectedFrequencyIds,
@@ -447,6 +478,11 @@ const CreateSchedule: React.FC = () => {
       schedule_type: scheduleType,
       schedule_config: scheduleConfig,
     };
+    
+    // Include owner_id if changed (only for edit mode)
+    if (isEdit && ownerId && ownerId !== originalOwnerId) {
+      ScheduleData.owner_id = ownerId;
+    }
 
     try {
       if (isEdit) {
@@ -509,6 +545,25 @@ const CreateSchedule: React.FC = () => {
             rows={3}
             helperText="Optional description of the net Schedule"
           />
+
+          {/* Owner selector - only show when editing and user is owner or admin */}
+          {isEdit && users.length > 0 && (currentUser?.role === 'admin' || currentUser?.id === originalOwnerId) && (
+            <Autocomplete
+              options={users}
+              getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
+              value={users.find((u: User) => u.id === ownerId) || null}
+              onChange={(_: any, value: User | null) => setOwnerId(value?.id || null)}
+              renderInput={(params: any) => (
+                <TextField 
+                  {...params} 
+                  label="Owner / Default NCS" 
+                  margin="normal"
+                  helperText="The owner is the default NCS when no rotation is configured"
+                />
+              )}
+              sx={{ mt: 2 }}
+            />
+          )}
 
           <Typography variant="h6" sx={{ mt: 4, mb: 2 }}>
             Schedule Configuration
