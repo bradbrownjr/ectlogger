@@ -1,8 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
+  Paper,
   IconButton,
   Box,
   Typography,
@@ -10,6 +8,9 @@ import {
   Chip,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import MinimizeIcon from '@mui/icons-material/Minimize';
+import CropSquareIcon from '@mui/icons-material/CropSquare';
+import { Rnd } from 'react-rnd';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -88,7 +89,17 @@ const FitBounds: React.FC<{ positions: [number, number][] }> = ({ positions }) =
 const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netName }) => {
   const [mappedCheckIns, setMappedCheckIns] = useState<MappedCheckIn[]>([]);
   const [loading, setLoading] = useState(true);
-  const [geocodeQueue, setGeocodeQueue] = useState<string[]>([]);
+  const [minimized, setMinimized] = useState(false);
+  const [mapKey, setMapKey] = useState(0);
+  const mapRef = useRef<L.Map | null>(null);
+
+  // Window position and size state
+  const [windowState, setWindowState] = useState({
+    x: window.innerWidth - 720,
+    y: 100,
+    width: 700,
+    height: 500,
+  });
 
   useEffect(() => {
     if (!open) return;
@@ -132,6 +143,11 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
     processLocations();
   }, [open, checkIns]);
 
+  // Invalidate map size after resize
+  const handleResizeStop = () => {
+    setMapKey(prev => prev + 1);
+  };
+
   const getMarkerColor = (status: string): string => {
     switch (status) {
       case 'checked_in': return '#4caf50'; // green
@@ -153,109 +169,184 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
     ? positions.reduce((acc, pos) => [acc[0] + pos[0] / positions.length, acc[1] + pos[1] / positions.length], [0, 0]) as [number, number]
     : defaultCenter;
 
+  if (!open) return null;
+
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      maxWidth="lg"
-      fullWidth
-      PaperProps={{
-        sx: { height: '80vh' }
+    <Rnd
+      default={{
+        x: windowState.x,
+        y: windowState.y,
+        width: windowState.width,
+        height: minimized ? 48 : windowState.height,
       }}
+      size={{ 
+        width: windowState.width, 
+        height: minimized ? 48 : windowState.height 
+      }}
+      position={{ x: windowState.x, y: windowState.y }}
+      onDragStop={(_e, d) => {
+        setWindowState(prev => ({ ...prev, x: d.x, y: d.y }));
+      }}
+      onResizeStop={(_e, _direction, ref, _delta, position) => {
+        setWindowState({
+          width: parseInt(ref.style.width),
+          height: parseInt(ref.style.height),
+          x: position.x,
+          y: position.y,
+        });
+        handleResizeStop();
+      }}
+      minWidth={400}
+      minHeight={minimized ? 48 : 300}
+      bounds="window"
+      dragHandleClassName="drag-handle"
+      enableResizing={!minimized}
+      style={{ zIndex: 1300 }}
     >
-      <DialogTitle sx={{ m: 0, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Box>
-          <Typography variant="h6">Check-in Map</Typography>
-          <Typography variant="body2" color="text.secondary">{netName}</Typography>
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Chip 
-            label={`${mappedCheckIns.length} mapped`} 
-            size="small" 
-            color="primary" 
-          />
-          <IconButton
-            aria-label="close"
-            onClick={onClose}
-            sx={{ color: (theme) => theme.palette.grey[500] }}
-          >
-            <CloseIcon />
-          </IconButton>
-        </Box>
-      </DialogTitle>
-      <DialogContent dividers sx={{ p: 0, position: 'relative' }}>
-        {loading ? (
-          <Box sx={{ 
-            display: 'flex', 
-            flexDirection: 'column',
-            alignItems: 'center', 
-            justifyContent: 'center', 
-            height: '100%',
-            gap: 2
-          }}>
-            <CircularProgress />
-            <Typography color="text.secondary">
-              Parsing locations and geocoding addresses...
+      <Paper
+        elevation={8}
+        sx={{
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          borderRadius: 1,
+        }}
+      >
+        {/* Title Bar - Draggable */}
+        <Box
+          className="drag-handle"
+          sx={{
+            p: 1,
+            px: 2,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            bgcolor: 'primary.main',
+            color: 'primary.contrastText',
+            cursor: 'move',
+            userSelect: 'none',
+            flexShrink: 0,
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+              📍 Check-in Map
             </Typography>
-          </Box>
-        ) : mappedCheckIns.length === 0 ? (
-          <Box sx={{ 
-            display: 'flex', 
-            flexDirection: 'column',
-            alignItems: 'center', 
-            justifyContent: 'center', 
-            height: '100%',
-            gap: 2
-          }}>
-            <Typography variant="h6" color="text.secondary">
-              No mappable locations found
+            <Typography variant="body2" sx={{ opacity: 0.8 }}>
+              {netName}
             </Typography>
-            <Typography color="text.secondary" sx={{ maxWidth: 400, textAlign: 'center' }}>
-              Check-ins need a location in one of these formats: GPS coordinates, 
-              Maidenhead grid square, UTM, MGRS, or City/State address.
-            </Typography>
-          </Box>
-        ) : (
-          <MapContainer
-            center={center}
-            zoom={6}
-            style={{ height: '100%', width: '100%' }}
-          >
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            <Chip 
+              label={`${mappedCheckIns.length} mapped`} 
+              size="small" 
+              sx={{ 
+                bgcolor: 'rgba(255,255,255,0.2)', 
+                color: 'inherit',
+                height: 20,
+              }} 
             />
-            <FitBounds positions={positions} />
-            {mappedCheckIns.map((checkIn) => (
-              checkIn.parsedLocation.lat !== 0 && checkIn.parsedLocation.lon !== 0 && (
-                <Marker
-                  key={checkIn.id}
-                  position={[checkIn.parsedLocation.lat, checkIn.parsedLocation.lon]}
-                  icon={createColoredIcon(getMarkerColor(checkIn.status))}
-                >
-                  <Popup>
-                    <Box sx={{ minWidth: 150 }}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-                        {checkIn.callsign}
-                      </Typography>
-                      {checkIn.name && (
-                        <Typography variant="body2">{checkIn.name}</Typography>
-                      )}
-                      <Typography variant="caption" color="text.secondary">
-                        {checkIn.location}
-                      </Typography>
-                      <Typography variant="caption" display="block" color="text.secondary">
-                        ({checkIn.parsedLocation.type})
-                      </Typography>
-                    </Box>
-                  </Popup>
-                </Marker>
-              )
-            ))}
-          </MapContainer>
+          </Box>
+          <Box sx={{ display: 'flex', gap: 0.5 }}>
+            <IconButton
+              size="small"
+              onClick={() => setMinimized(!minimized)}
+              sx={{ color: 'inherit' }}
+              title={minimized ? 'Restore' : 'Minimize'}
+            >
+              {minimized ? <CropSquareIcon fontSize="small" /> : <MinimizeIcon fontSize="small" />}
+            </IconButton>
+            <IconButton
+              size="small"
+              onClick={onClose}
+              sx={{ color: 'inherit' }}
+              title="Close"
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </Box>
+        </Box>
+
+        {/* Map Content - Only show when not minimized */}
+        {!minimized && (
+          <Box sx={{ flexGrow: 1, position: 'relative', overflow: 'hidden' }}>
+            {loading ? (
+              <Box sx={{ 
+                display: 'flex', 
+                flexDirection: 'column',
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                height: '100%',
+                gap: 2
+              }}>
+                <CircularProgress />
+                <Typography color="text.secondary">
+                  Parsing locations and geocoding addresses...
+                </Typography>
+              </Box>
+            ) : mappedCheckIns.length === 0 ? (
+              <Box sx={{ 
+                display: 'flex', 
+                flexDirection: 'column',
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                height: '100%',
+                gap: 2,
+                p: 2,
+              }}>
+                <Typography variant="h6" color="text.secondary">
+                  No mappable locations found
+                </Typography>
+                <Typography color="text.secondary" sx={{ maxWidth: 400, textAlign: 'center' }}>
+                  Check-ins need a location in one of these formats: GPS coordinates, 
+                  Maidenhead grid square, UTM, MGRS, or City/State address.
+                </Typography>
+              </Box>
+            ) : (
+              <MapContainer
+                key={mapKey}
+                center={center}
+                zoom={6}
+                style={{ height: '100%', width: '100%' }}
+                ref={mapRef}
+              >
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                <FitBounds positions={positions} />
+                {mappedCheckIns.map((checkIn) => (
+                  checkIn.parsedLocation.lat !== 0 && checkIn.parsedLocation.lon !== 0 && (
+                    <Marker
+                      key={checkIn.id}
+                      position={[checkIn.parsedLocation.lat, checkIn.parsedLocation.lon]}
+                      icon={createColoredIcon(getMarkerColor(checkIn.status))}
+                    >
+                      <Popup>
+                        <Box sx={{ minWidth: 150 }}>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+                            {checkIn.callsign}
+                          </Typography>
+                          {checkIn.name && (
+                            <Typography variant="body2">{checkIn.name}</Typography>
+                          )}
+                          <Typography variant="caption" color="text.secondary">
+                            {checkIn.location}
+                          </Typography>
+                          <Typography variant="caption" display="block" color="text.secondary">
+                            ({checkIn.parsedLocation.type})
+                          </Typography>
+                        </Box>
+                      </Popup>
+                    </Marker>
+                  )
+                ))}
+              </MapContainer>
+            )}
+          </Box>
         )}
-      </DialogContent>
-    </Dialog>
+      </Paper>
+    </Rnd>
   );
 };
 
