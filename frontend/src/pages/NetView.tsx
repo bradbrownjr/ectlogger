@@ -989,12 +989,14 @@ const NetView: React.FC = () => {
           </Grid>
         </Box>
 
-        {(net.status === 'active' || net.status === 'closed') && (
+        {(net.status === 'active' || net.status === 'closed' || net.status === 'archived') && (
           <Grid container spacing={0} sx={{ mt: 0.5, flex: { xs: 'none', md: 1 }, minHeight: 0 }}>
-            {net.status === 'closed' && (
+            {(net.status === 'closed' || net.status === 'archived') && (
               <Grid item xs={12} sx={{ mb: 1 }}>
                 <Alert severity="info">
-                  This net has been closed. Check-ins are no longer accepted.
+                  {net.status === 'archived' 
+                    ? 'This net has been archived. You are viewing historical data.'
+                    : 'This net has been closed. Check-ins are no longer accepted.'}
                 </Alert>
               </Grid>
             )}
