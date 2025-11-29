@@ -17,6 +17,24 @@ from app.email_service import EmailService
 router = APIRouter(prefix="/nets", tags=["nets"])
 
 
+def format_time_for_net(timestamp: datetime, net_started_at: datetime, net_closed_at: datetime = None) -> str:
+    """Format timestamp, including date only if net spans multiple days."""
+    if not timestamp:
+        return ""
+    
+    # Determine if net spans multiple days
+    is_multi_day = False
+    if net_started_at:
+        end_date = net_closed_at or datetime.utcnow()
+        if net_started_at.date() != end_date.date():
+            is_multi_day = True
+    
+    if is_multi_day:
+        return timestamp.strftime("%m/%d %H:%M:%S")
+    else:
+        return timestamp.strftime("%H:%M:%S")
+
+
 async def check_net_permission(db: AsyncSession, net: Net, user: User, required_roles: List[str] = None) -> bool:
     """Check if user has permission to manage a net (owner, admin, or has required role)"""
     # Owner and admin always have permission
@@ -470,7 +488,7 @@ async def close_net(
                 pass
         
         check_ins_data.append({
-            'time': check_in.checked_in_at.strftime("%Y-%m-%d %H:%M:%S") if check_in.checked_in_at else "",
+            'time': format_time_for_net(check_in.checked_in_at, net.started_at, net.closed_at),
             'callsign': check_in.callsign,
             'name': check_in.name,
             'location': check_in.location,
@@ -495,7 +513,7 @@ async def close_net(
     chat_messages_data = []
     for msg in result.scalars().all():
         chat_messages_data.append({
-            'timestamp': msg.created_at.strftime("%Y-%m-%d %H:%M:%S") if msg.created_at else "",
+            'timestamp': format_time_for_net(msg.created_at, net.started_at, net.closed_at),
             'callsign': msg.user.callsign if msg.user and msg.user.callsign else 'Unknown',
             'message': msg.message
         })
@@ -604,7 +622,7 @@ async def export_net_csv(
                 pass
         
         writer.writerow([
-            check_in.checked_in_at.strftime("%Y-%m-%d %H:%M:%S") if check_in.checked_in_at else "",
+            format_time_for_net(check_in.checked_in_at, net.started_at, net.closed_at),
             check_in.callsign,
             check_in.name,
             check_in.location,

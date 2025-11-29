@@ -47,7 +47,7 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import CloseIcon from '@mui/icons-material/Close';
 import { netApi, checkInApi } from '../services/api';
 import api from '../services/api';
-import { formatDateTime, formatTime } from '../utils/dateUtils';
+import { formatDateTime, formatTime, formatTimeWithDate } from '../utils/dateUtils';
 import { useAuth } from '../contexts/AuthContext';
 import Chat from '../components/Chat';
 import CheckInMap from '../components/CheckInMap';
@@ -1205,8 +1205,8 @@ const NetView: React.FC = () => {
                         </TableCell>
                       ))}
                       {hasAnyRelayedBy && <TableCell sx={{ width: 80 }}>{checkIn.relayed_by || ''}</TableCell>}
-                      <TableCell sx={{ width: 95 }}>
-                        {formatTime(checkIn.checked_in_at, user?.prefer_utc || false)}
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                        {formatTimeWithDate(checkIn.checked_in_at, user?.prefer_utc || false, net?.started_at)}
                       </TableCell>
                       {canManage && (
                       <TableCell sx={{ width: 100 }}>
@@ -1396,7 +1396,7 @@ const NetView: React.FC = () => {
                           <TableCell key={field.name} sx={{ whiteSpace: 'nowrap' }}>{checkIn.custom_fields?.[field.name] || ''}</TableCell>
                         ))}
                         {hasAnyRelayedBy && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.relayed_by || ''}</TableCell>}
-                        <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatTime(checkIn.checked_in_at, user?.prefer_utc || false)}</TableCell>
+                        <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatTimeWithDate(checkIn.checked_in_at, user?.prefer_utc || false, net?.started_at)}</TableCell>
                         {canManage && (
                           <TableCell sx={{ whiteSpace: 'nowrap' }}>
                             <IconButton size="small" onClick={() => handleEditCheckIn(checkIn)}><EditIcon fontSize="small" /></IconButton>
@@ -1883,7 +1883,7 @@ const NetView: React.FC = () => {
             </Grid>
             
             <Grid item xs={12} md={4} sx={{ pl: { md: 0.5 }, display: 'flex', flexDirection: 'column', minHeight: { xs: 300, md: 0 }, height: { xs: 350, md: '100%' } }}>
-              <Chat netId={Number(netId)} />
+              <Chat netId={Number(netId)} netStartedAt={net?.started_at} />
             </Grid>
           </Grid>
         )}

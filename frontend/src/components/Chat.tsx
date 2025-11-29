@@ -20,10 +20,11 @@ import { useAuth } from '../contexts/AuthContext';
 
 interface ChatProps {
   netId: number;
+  netStartedAt?: string;
   onNewMessage?: (message: ChatMessage) => void;
 }
 
-const Chat: React.FC<ChatProps> = ({ netId, onNewMessage }) => {
+const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, onNewMessage }) => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -125,11 +126,26 @@ const Chat: React.FC<ChatProps> = ({ netId, onNewMessage }) => {
 
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
-    return date.toLocaleTimeString('en-US', { 
+    
+    // Check if message is on a different day than net start
+    let showDate = false;
+    if (netStartedAt) {
+      const startDate = new Date(netStartedAt);
+      showDate = date.toLocaleDateString() !== startDate.toLocaleDateString();
+    }
+    
+    const timeStr = date.toLocaleTimeString('en-US', { 
       hour: '2-digit', 
       minute: '2-digit',
       hour12: true 
     });
+    
+    if (showDate) {
+      const dateStr = date.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' });
+      return `${dateStr} ${timeStr}`;
+    }
+    
+    return timeStr;
   };
 
   return (
