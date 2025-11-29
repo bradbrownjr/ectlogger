@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Container,
@@ -18,11 +18,14 @@ import {
   TableRow,
   IconButton,
   Checkbox,
+  Tabs,
+  Tab,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
 import { netApi, frequencyApi } from '../services/api';
 import api from '../services/api';
 
@@ -49,8 +52,30 @@ interface FieldDefinition {
   sort_order: number;
 }
 
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
+
+function TabPanel(props: TabPanelProps) {
+  const { children, value, index, ...other } = props;
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`net-tabpanel-${index}`}
+      aria-labelledby={`net-tab-${index}`}
+      {...other}
+    >
+      {value === index && <Box sx={{ py: 3 }}>{children}</Box>}
+    </div>
+  );
+}
+
 const CreateNet: React.FC = () => {
   const { netId } = useParams<{ netId: string }>();
+  const [activeTab, setActiveTab] = useState(0);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [script, setScript] = useState('');
@@ -61,6 +86,7 @@ const CreateNet: React.FC = () => {
   const [editForm, setEditForm] = useState<Frequency | null>(null);
   const [fieldDefinitions, setFieldDefinitions] = useState<FieldDefinition[]>([]);
   const [fieldConfig, setFieldConfig] = useState<Record<string, { enabled: boolean; required: boolean }>>({});
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const isEditMode = !!netId;
 
@@ -79,7 +105,6 @@ const CreateNet: React.FC = () => {
     try {
       const response = await api.get('/settings/fields');
       setFieldDefinitions(response.data);
-      // Initialize fieldConfig with defaults from field definitions
       const defaultConfig: Record<string, { enabled: boolean; required: boolean }> = {};
       response.data.forEach((field: FieldDefinition) => {
         defaultConfig[field.name] = {
@@ -102,7 +127,6 @@ const CreateNet: React.FC = () => {
       setScript(response.data.script || '');
       setSelectedFrequencies(response.data.frequencies.map((f: Frequency) => f.id!));
       if (response.data.field_config) {
-        // Merge saved config with field definitions (in case new fields were added)
         const mergedConfig: Record<string, { enabled: boolean; required: boolean }> = {};
         fieldDefinitions.forEach((field: FieldDefinition) => {
           mergedConfig[field.name] = response.data.field_config[field.name] || {
@@ -132,7 +156,6 @@ const CreateNet: React.FC = () => {
     if (!newFrequency.frequency && !newFrequency.network) return;
     
     try {
-      // Clean up the data - convert empty strings to null
       const cleanData = {
         frequency: newFrequency.frequency || null,
         mode: newFrequency.mode,
@@ -183,7 +206,6 @@ const CreateNet: React.FC = () => {
     if (!formToSave || !editingId) return;
     
     try {
-      // Clean up the data - convert empty strings to null
       const cleanData = {
         frequency: formToSave.frequency || null,
         mode: formToSave.mode,
@@ -214,6 +236,69 @@ const CreateNet: React.FC = () => {
     return 'N/A';
   };
 
+  const handleScriptFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const text = e.target?.result as string;
+        setScript(text);
+      };
+      reader.readAsText(file);
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleScriptDrop = (event: React.DragEvent) => {
+    event.preventDefault();
+    const file = event.dataTransfer.files[0];
+    if (file && (file.type === 'text/plain' || file.name.endsWith('.txt'))) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const text = e.target?.result as string;
+        setScript(text);
+      };
+      reader.readAsText(file);
+    }
+  };
+
+  const handleCreateNet = async () => {
+    try {
+      if (isEditMode) {
+        const response = await netApi.update(parseInt(netId!), {
+          name,
+          description,
+          script,
+          frequency_ids: selectedFrequencies,
+          field_config: fieldConfig,
+        });
+        navigate(`/nets/${response.data.id}`);
+      } else {
+        const response = await netApi.create({
+          name,
+          description,
+          script,
+          frequency_ids: selectedFrequencies,
+          field_config: fieldConfig,
+        });
+        navigate(`/nets/${response.data.id}`);
+      }
+    } catch (error) {
+      console.error('Failed to save net:', error);
+      alert('Failed to save net');
+    }
+  };
+
+  // Sort frequencies by mode, then by frequency/network
+  const sortedFrequencies = [...frequencies].sort((a, b) => {
+    if (a.mode !== b.mode) return a.mode.localeCompare(b.mode);
+    const aVal = a.frequency || a.network || '';
+    const bVal = b.frequency || b.network || '';
+    return aVal.localeCompare(bVal);
+  });
+
   const renderEditableRow = (freq: Frequency) => {
     const isEditing = editingId === freq.id;
     const form = isEditing ? editForm! : freq;
@@ -237,7 +322,6 @@ const CreateNet: React.FC = () => {
                   const newMode = e.target.value;
                   const updatedForm = { ...form, mode: newMode };
                   setEditForm(updatedForm);
-                  // Auto-save when mode changes
                   doSaveEdit(updatedForm);
                 }}
               >
@@ -311,7 +395,7 @@ const CreateNet: React.FC = () => {
         <TableCell>
           {isEditing ? (
             <>
-              <IconButton size="small" onClick={saveEdit} color="primary">
+              <IconButton size="small" onClick={() => saveEdit()} color="primary">
                 <CheckIcon />
               </IconButton>
               <IconButton size="small" onClick={cancelEdit}>
@@ -415,33 +499,6 @@ const CreateNet: React.FC = () => {
     );
   };
 
-  const handleCreateNet = async () => {
-    try {
-      if (isEditMode) {
-        const response = await netApi.update(parseInt(netId!), {
-          name,
-          description,
-          script,
-          frequency_ids: selectedFrequencies,
-          field_config: fieldConfig,
-        });
-        navigate(`/nets/${response.data.id}`);
-      } else {
-        const response = await netApi.create({
-          name,
-          description,
-          script,
-          frequency_ids: selectedFrequencies,
-          field_config: fieldConfig,
-        });
-        navigate(`/nets/${response.data.id}`);
-      }
-    } catch (error) {
-      console.error('Failed to save net:', error);
-      alert('Failed to save net');
-    }
-  };
-
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       <Paper sx={{ p: 3 }}>
@@ -449,7 +506,28 @@ const CreateNet: React.FC = () => {
           {isEditMode ? 'Edit Net' : 'Create New Net'}
         </Typography>
 
-        <Box sx={{ mt: 3 }}>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+          <Tabs 
+            value={activeTab} 
+            onChange={(_, newValue) => setActiveTab(newValue)}
+            aria-label="net configuration tabs"
+          >
+            <Tab label="Basic Info" />
+            <Tab label="Communication Plan" />
+            <Tab label="Net Script" />
+            <Tab label="Check-In Fields" />
+          </Tabs>
+        </Box>
+
+        {/* Tab 1: Basic Info */}
+        <TabPanel value={activeTab} index={0}>
+          <Typography variant="h6" gutterBottom>
+            Net Information
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Enter the basic information about this net.
+          </Typography>
+
           <TextField
             fullWidth
             label="Net Name"
@@ -457,6 +535,7 @@ const CreateNet: React.FC = () => {
             onChange={(e: any) => setName(e.target.value)}
             margin="normal"
             required
+            placeholder="e.g., SKYWARN Net, Emergency Comm Net"
           />
 
           <TextField
@@ -466,72 +545,19 @@ const CreateNet: React.FC = () => {
             onChange={(e: any) => setDescription(e.target.value)}
             margin="normal"
             multiline
-            rows={3}
+            rows={4}
+            placeholder="Describe the purpose and scope of this net..."
           />
+        </TabPanel>
 
-          <TextField
-            fullWidth
-            label="Net Script (optional)"
-            value={script}
-            onChange={(e: any) => setScript(e.target.value)}
-            margin="normal"
-            multiline
-            rows={8}
-            placeholder="Enter your net script here. This will be available to NCS during the net via a popup window."
-            helperText="A script or checklist for NCS to follow during the net. Supports plain text."
-          />
-
-          <Typography variant="h6" sx={{ mt: 4, mb: 2 }}>
-            Check-In Fields
-          </Typography>
-
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Configure which fields are available during check-in. Callsign is always required.
-          </Typography>
-
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 3 }}>
-            {fieldDefinitions.map((field) => {
-              const config = fieldConfig[field.name] || { enabled: false, required: false };
-              return (
-              <Box key={field.name} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Checkbox
-                  checked={config.enabled}
-                  onChange={(e: any) => 
-                    setFieldConfig({
-                      ...fieldConfig,
-                      [field.name]: { ...config, enabled: e.target.checked, required: e.target.checked ? config.required : false }
-                    })
-                  }
-                />
-                <Typography sx={{ minWidth: 200 }}>
-                  {field.label}
-                </Typography>
-                {config.enabled && (
-                  <Checkbox
-                    checked={config.required}
-                    onChange={(e: any) =>
-                      setFieldConfig({
-                        ...fieldConfig,
-                        [field.name]: { ...config, required: e.target.checked }
-                      })
-                    }
-                  />
-                )}
-                {config.enabled && (
-                  <Typography variant="body2" color="text.secondary">
-                    Required
-                  </Typography>
-                )}
-              </Box>
-            )})}
-          </Box>
-
-          <Typography variant="h6" sx={{ mt: 4, mb: 2 }}>
+        {/* Tab 2: Communication Plan */}
+        <TabPanel value={activeTab} index={1}>
+          <Typography variant="h6" gutterBottom>
             Communication Plan
           </Typography>
-
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Check the boxes to select frequencies for this net. Press Enter in any field to add a new frequency.
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Select the frequencies and modes for this net. Check the boxes to include them. 
+            Press Enter in any field to add a new frequency.
           </Typography>
 
           <TableContainer>
@@ -547,23 +573,178 @@ const CreateNet: React.FC = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {frequencies.map((freq: Frequency) => renderEditableRow(freq))}
+                {sortedFrequencies.map((freq: Frequency) => renderEditableRow(freq))}
                 {renderNewRow()}
               </TableBody>
             </Table>
           </TableContainer>
 
-          <Box sx={{ mt: 4, display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+          {selectedFrequencies.length === 0 && (
+            <Typography color="error" sx={{ mt: 2 }}>
+              Please select at least one frequency for this net.
+            </Typography>
+          )}
+        </TabPanel>
+
+        {/* Tab 3: Net Script */}
+        <TabPanel value={activeTab} index={2}>
+          <Typography variant="h6" gutterBottom>
+            Net Script
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Enter a script or checklist for NCS to follow during the net. 
+            This will be available via a popup window during the net session.
+            You can also drag and drop a .txt file into the text area below.
+          </Typography>
+
+          <input
+            type="file"
+            accept=".txt,text/plain"
+            ref={fileInputRef}
+            onChange={handleScriptFileUpload}
+            style={{ display: 'none' }}
+          />
+
+          <Box sx={{ mb: 2 }}>
+            <Button
+              variant="outlined"
+              startIcon={<UploadFileIcon />}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              Upload .txt File
+            </Button>
+          </Box>
+
+          <TextField
+            fullWidth
+            multiline
+            rows={20}
+            value={script}
+            onChange={(e: any) => setScript(e.target.value)}
+            placeholder={`Example net script:
+
+OPENING:
+"Good evening, this is [CALLSIGN], Net Control Station for tonight's [NET NAME]. 
+This net meets every [DAY] at [TIME] on [FREQUENCY].
+
+The purpose of this net is to [PURPOSE].
+
+We will now take check-ins. Please give your callsign phonetically, your name, 
+and location. If you have traffic, please indicate so at this time."
+
+CHECK-INS:
+- Acknowledge each station
+- Note any traffic requests
+- Keep a log of all check-ins
+
+CLOSING:
+"This concludes tonight's [NET NAME]. Thank you all for checking in.
+This is [CALLSIGN], closing the net at [TIME]. 73 to all."`}
+            onDrop={handleScriptDrop}
+            onDragOver={(e) => e.preventDefault()}
+            sx={{
+              '& .MuiInputBase-input': {
+                fontFamily: 'monospace',
+                fontSize: '0.95rem',
+                lineHeight: 1.6,
+              },
+            }}
+          />
+        </TabPanel>
+
+        {/* Tab 4: Check-In Fields */}
+        <TabPanel value={activeTab} index={3}>
+          <Typography variant="h6" gutterBottom>
+            Check-In Fields
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Configure which fields are available during check-in. Callsign is always required.
+            Check "Enabled" to show the field, and "Required" to make it mandatory.
+          </Typography>
+
+          <TableContainer>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Field</TableCell>
+                  <TableCell align="center">Enabled</TableCell>
+                  <TableCell align="center">Required</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {fieldDefinitions.map((field) => {
+                  const config = fieldConfig[field.name] || { enabled: false, required: false };
+                  return (
+                    <TableRow key={field.name}>
+                      <TableCell>
+                        <Typography>{field.label}</Typography>
+                        {field.placeholder && (
+                          <Typography variant="caption" color="text.secondary">
+                            {field.placeholder}
+                          </Typography>
+                        )}
+                      </TableCell>
+                      <TableCell align="center">
+                        <Checkbox
+                          checked={config.enabled}
+                          onChange={(e: any) => 
+                            setFieldConfig({
+                              ...fieldConfig,
+                              [field.name]: { 
+                                ...config, 
+                                enabled: e.target.checked, 
+                                required: e.target.checked ? config.required : false 
+                              }
+                            })
+                          }
+                        />
+                      </TableCell>
+                      <TableCell align="center">
+                        <Checkbox
+                          checked={config.required}
+                          disabled={!config.enabled}
+                          onChange={(e: any) =>
+                            setFieldConfig({
+                              ...fieldConfig,
+                              [field.name]: { ...config, required: e.target.checked }
+                            })
+                          }
+                        />
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </TabPanel>
+
+        {/* Action Buttons - Always visible */}
+        <Box sx={{ mt: 4, pt: 2, borderTop: 1, borderColor: 'divider', display: 'flex', gap: 2, justifyContent: 'space-between' }}>
+          <Box>
+            {activeTab > 0 && (
+              <Button variant="outlined" onClick={() => setActiveTab(activeTab - 1)}>
+                Previous
+              </Button>
+            )}
+          </Box>
+          <Box sx={{ display: 'flex', gap: 2 }}>
             <Button variant="outlined" onClick={() => navigate(isEditMode ? `/nets/${netId}` : '/dashboard')}>
               Cancel
             </Button>
-            <Button
-              variant="contained"
-              onClick={handleCreateNet}
-              disabled={!name || selectedFrequencies.length === 0}
-            >
-              {isEditMode ? 'Save Changes' : 'Create Net'}
-            </Button>
+            {activeTab < 3 ? (
+              <Button variant="contained" onClick={() => setActiveTab(activeTab + 1)}>
+                Next
+              </Button>
+            ) : (
+              <Button
+                variant="contained"
+                onClick={handleCreateNet}
+                disabled={!name || selectedFrequencies.length === 0}
+              >
+                {isEditMode ? 'Save Changes' : 'Create Net'}
+              </Button>
+            )}
           </Box>
         </Box>
       </Paper>
