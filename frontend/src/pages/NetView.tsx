@@ -452,6 +452,9 @@ const NetView: React.FC = () => {
     return net?.field_config?.[fieldName]?.required ?? false;
   };
 
+  // Check if any check-in has a relayed_by value (to conditionally show the column)
+  const hasAnyRelayedBy = checkIns.some((ci: CheckIn) => ci.relayed_by);
+
   // Get appropriate callsign based on active frequency mode
   const getAppropriateCallsign = (): string => {
     if (!user) return '';
@@ -1049,7 +1052,7 @@ const NetView: React.FC = () => {
                           {field.label} {isFieldRequired(field.name) && '*'}
                         </TableCell>
                       ))}
-                      <TableCell sx={{ whiteSpace: 'nowrap' }}>Relay</TableCell>
+                      {hasAnyRelayedBy && <TableCell sx={{ whiteSpace: 'nowrap' }}>Relayed By</TableCell>}
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>Time</TableCell>
                       {canManage && <TableCell sx={{ whiteSpace: 'nowrap' }}>Actions</TableCell>}
                     </TableRow>
@@ -1064,7 +1067,7 @@ const NetView: React.FC = () => {
                     
                     // Calculate column count for frequency chip row colspan
                     const hasFrequencyChips = net.frequencies && net.frequencies.length > 1 && checkIn.available_frequencies && checkIn.available_frequencies.length > 0;
-                    let columnCount = 5; // #, Status, Callsign, Relay, Time
+                    let columnCount = 4; // #, Status, Callsign, Time
                     if (net?.field_config?.name?.enabled) columnCount++;
                     if (net?.field_config?.location?.enabled) columnCount++;
                     if (net?.field_config?.skywarn_number?.enabled) columnCount++;
@@ -1072,6 +1075,7 @@ const NetView: React.FC = () => {
                     if (net?.field_config?.power_source?.enabled) columnCount++;
                     if (net?.field_config?.notes?.enabled) columnCount++;
                     columnCount += getEnabledCustomFields().length;
+                    if (hasAnyRelayedBy) columnCount++;
                     if (canManage) columnCount++;
                     
                     return (
@@ -1191,7 +1195,7 @@ const NetView: React.FC = () => {
                           {checkIn.custom_fields?.[field.name] || ''}
                         </TableCell>
                       ))}
-                      <TableCell sx={{ width: 80 }}>{checkIn.relayed_by || ''}</TableCell>
+                      {hasAnyRelayedBy && <TableCell sx={{ width: 80 }}>{checkIn.relayed_by || ''}</TableCell>}
                       <TableCell sx={{ width: 95 }}>
                         {formatTime(checkIn.checked_in_at, user?.prefer_utc || false)}
                       </TableCell>
@@ -1302,7 +1306,7 @@ const NetView: React.FC = () => {
                         {field.label} {isFieldRequired(field.name) && '*'}
                       </TableCell>
                     ))}
-                    <TableCell sx={{ whiteSpace: 'nowrap' }}>Relay</TableCell>
+                    {hasAnyRelayedBy && <TableCell sx={{ whiteSpace: 'nowrap' }}>Relayed By</TableCell>}
                     <TableCell sx={{ whiteSpace: 'nowrap' }}>Time</TableCell>
                     {canManage && <TableCell sx={{ whiteSpace: 'nowrap' }}>Actions</TableCell>}
                   </TableRow>
@@ -1380,7 +1384,7 @@ const NetView: React.FC = () => {
                         {getEnabledCustomFields().map((field) => (
                           <TableCell key={field.name} sx={{ whiteSpace: 'nowrap' }}>{checkIn.custom_fields?.[field.name] || ''}</TableCell>
                         ))}
-                        <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.relayed_by || ''}</TableCell>
+                        {hasAnyRelayedBy && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.relayed_by || ''}</TableCell>}
                         <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatTime(checkIn.checked_in_at, user?.prefer_utc || false)}</TableCell>
                         {canManage && (
                           <TableCell sx={{ whiteSpace: 'nowrap' }}>
@@ -1621,9 +1625,9 @@ const NetView: React.FC = () => {
                             handleCheckIn();
                           }
                         }}
-                        placeholder="Relay"
+                        placeholder="Relayed By"
                         inputProps={{ style: { textTransform: 'uppercase', fontSize: '0.875rem' } }}
-                        sx={{ width: 80 }}
+                        sx={{ width: 90 }}
                       />
                     </TableCell>
                     <TableCell>-</TableCell>
