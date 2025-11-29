@@ -1031,7 +1031,7 @@ const NetView: React.FC = () => {
                   },
                 },
               }}>
-                <Table size="small">
+                <Table size="small" sx={{ borderCollapse: 'collapse' }}>
                   <TableHead sx={{ position: 'sticky', top: 0, backgroundColor: 'background.paper', zIndex: 1 }}>
                     <TableRow>
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>#</TableCell>
