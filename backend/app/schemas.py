@@ -35,6 +35,21 @@ class UserCreate(UserBase):
     oauth_id: str
 
 
+class AdminUserCreate(BaseModel):
+    """Schema for admin to create/invite a user"""
+    email: EmailStr
+    name: Optional[str] = Field(None, max_length=100)
+    callsign: Optional[str] = Field(None, max_length=20, pattern=r'^[A-Z0-9/]+$')
+    role: UserRole = UserRole.USER
+    
+    @field_validator('callsign')
+    @classmethod
+    def validate_callsign(cls, v: Optional[str]) -> Optional[str]:
+        if v and not re.match(r'^[A-Z0-9/]+$', v):
+            raise ValueError('Callsign must contain only uppercase letters, numbers, and forward slashes')
+        return v
+
+
 class UserUpdate(BaseModel):
     name: Optional[str] = Field(None, max_length=100, min_length=1)
     callsign: Optional[str] = Field(None, max_length=20, min_length=3)

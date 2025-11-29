@@ -39,6 +39,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import AddIcon from '@mui/icons-material/Add';
 import ArchiveIcon from '@mui/icons-material/Archive';
 import UnarchiveIcon from '@mui/icons-material/Unarchive';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 
@@ -101,6 +102,16 @@ const Admin: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
   const [newRole, setNewRole] = useState('');
+  
+  // Add user dialog state
+  const [addUserDialogOpen, setAddUserDialogOpen] = useState(false);
+  const [addUserForm, setAddUserForm] = useState({
+    email: '',
+    name: '',
+    callsign: '',
+    role: 'user',
+  });
+  const [addUserSaving, setAddUserSaving] = useState(false);
   
   // Field definitions state
   const [fields, setFields] = useState<FieldDefinition[]>([]);
@@ -294,6 +305,39 @@ const Admin: React.FC = () => {
     setRoleDialogOpen(true);
   };
 
+  const handleOpenAddUserDialog = () => {
+    setAddUserForm({
+      email: '',
+      name: '',
+      callsign: '',
+      role: 'user',
+    });
+    setAddUserDialogOpen(true);
+  };
+
+  const handleAddUser = async () => {
+    if (!addUserForm.email) return;
+    
+    setAddUserSaving(true);
+    try {
+      await api.post('/users', {
+        email: addUserForm.email,
+        name: addUserForm.name || null,
+        callsign: addUserForm.callsign || null,
+        role: addUserForm.role,
+      });
+      setAddUserDialogOpen(false);
+      setSnackbar({ open: true, message: 'User created successfully. They can log in via magic link.', severity: 'success' });
+      fetchUsers();
+    } catch (error: any) {
+      console.error('Failed to create user:', error);
+      const message = error.response?.data?.detail || 'Failed to create user';
+      setSnackbar({ open: true, message, severity: 'error' });
+    } finally {
+      setAddUserSaving(false);
+    }
+  };
+
   const handleUpdateRole = async () => {
     if (!selectedUser) return;
     
@@ -338,6 +382,16 @@ const Admin: React.FC = () => {
           <Alert severity="info" sx={{ mb: 3 }}>
             Manage user accounts, change roles, and ban/unban users.
           </Alert>
+
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+            <Button
+              variant="contained"
+              startIcon={<PersonAddIcon />}
+              onClick={handleOpenAddUserDialog}
+            >
+              Add User
+            </Button>
+          </Box>
 
           <TableContainer>
             <Table>
@@ -569,6 +623,63 @@ const Admin: React.FC = () => {
           <Button onClick={() => setRoleDialogOpen(false)}>Cancel</Button>
           <Button onClick={handleUpdateRole} variant="contained">
             Update Role
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Add User Dialog */}
+      <Dialog open={addUserDialogOpen} onClose={() => setAddUserDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Add New User</DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <TextField
+              label="Email"
+              type="email"
+              value={addUserForm.email}
+              onChange={(e) => setAddUserForm({ ...addUserForm, email: e.target.value })}
+              required
+              fullWidth
+              helperText="User will log in via magic link sent to this email"
+            />
+            <TextField
+              label="Name"
+              value={addUserForm.name}
+              onChange={(e) => setAddUserForm({ ...addUserForm, name: e.target.value })}
+              fullWidth
+              helperText="Optional - user can set this in their profile"
+            />
+            <TextField
+              label="Callsign"
+              value={addUserForm.callsign}
+              onChange={(e) => setAddUserForm({ ...addUserForm, callsign: e.target.value.toUpperCase() })}
+              fullWidth
+              inputProps={{ style: { textTransform: 'uppercase' } }}
+              helperText="Optional - user can set this in their profile"
+            />
+            <FormControl fullWidth>
+              <InputLabel>Role</InputLabel>
+              <Select
+                value={addUserForm.role}
+                label="Role"
+                onChange={(e) => setAddUserForm({ ...addUserForm, role: e.target.value })}
+              >
+                <MenuItem value="guest">Guest</MenuItem>
+                <MenuItem value="user">User</MenuItem>
+                <MenuItem value="ncs">NCS</MenuItem>
+                <MenuItem value="admin">Admin</MenuItem>
+              </Select>
+              <FormHelperText>User's permission level</FormHelperText>
+            </FormControl>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAddUserDialogOpen(false)} disabled={addUserSaving}>Cancel</Button>
+          <Button 
+            onClick={handleAddUser} 
+            variant="contained" 
+            disabled={!addUserForm.email || addUserSaving}
+          >
+            {addUserSaving ? <CircularProgress size={24} /> : 'Add User'}
           </Button>
         </DialogActions>
       </Dialog>

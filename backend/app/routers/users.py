@@ -4,7 +4,7 @@ from sqlalchemy import select
 from typing import List, Optional
 from app.database import get_db
 from app.models import User, UserRole
-from app.schemas import UserResponse, UserUpdate
+from app.schemas import UserResponse, UserUpdate, AdminUserCreate
 from app.dependencies import get_current_user, get_current_user_optional, get_admin_user
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -50,6 +50,38 @@ async def list_users(
     )
     users = result.scalars().all()
     return [UserResponse.from_orm(user) for user in users]
+
+
+@router.post("", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+async def create_user(
+    user_data: AdminUserCreate,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Create/invite a new user (admin only)"""
+    # Check if user already exists
+    result = await db.execute(select(User).where(User.email == user_data.email))
+    existing_user = result.scalar_one_or_none()
+    
+    if existing_user:
+        raise HTTPException(status_code=400, detail="User with this email already exists")
+    
+    # Create the user - they can log in via magic link
+    new_user = User(
+        email=user_data.email,
+        name=user_data.name,
+        callsign=user_data.callsign,
+        role=user_data.role,
+        is_active=True,
+        oauth_provider="magic_link",  # Will use magic link auth
+        oauth_id=user_data.email,  # Use email as oauth_id for magic link users
+    )
+    
+    db.add(new_user)
+    await db.commit()
+    await db.refresh(new_user)
+    
+    return UserResponse.from_orm(new_user)
 
 
 @router.get("/{user_id}", response_model=UserResponse)
