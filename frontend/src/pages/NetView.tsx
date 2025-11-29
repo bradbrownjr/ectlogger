@@ -1093,7 +1093,7 @@ const NetView: React.FC = () => {
                           verticalAlign: 'middle',
                           whiteSpace: 'nowrap',
                           // Remove bottom border if frequency chips row follows
-                          ...(hasFrequencyChips ? { borderBottom: 'none' } : {}),
+                          ...(hasFrequencyChips ? { borderBottom: 0, borderBottomStyle: 'none' } : {}),
                         }
                       }}
                     >
@@ -1236,7 +1236,7 @@ const NetView: React.FC = () => {
                           : 'transparent',
                         opacity: checkIn.status === 'checked_out' ? 0.6 : 1,
                       }}>
-                        <TableCell colSpan={columnCount} sx={{ py: 0.25, borderBottom: 1, borderColor: 'divider' }}>
+                        <TableCell colSpan={columnCount} sx={{ pt: 0, pb: 0.5, borderBottom: 1, borderColor: 'divider' }}>
                           <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', pl: 4 }}>
                             {checkIn.available_frequencies!.map((freqId: number) => {
                               const freq = net.frequencies.find((f: any) => f.id === freqId);
