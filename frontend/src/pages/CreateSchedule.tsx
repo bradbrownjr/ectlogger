@@ -1051,7 +1051,7 @@ const CreateSchedule: React.FC = () => {
               type="file"
               ref={fileInputRef}
               onChange={handleScriptFileUpload}
-              accept=".txt"
+              accept=".txt,.md,text/plain,text/markdown"
               style={{ display: 'none' }}
             />
 
@@ -1136,7 +1136,7 @@ This concludes tonight's net. 73 to all."
                 startIcon={<UploadFileIcon />}
                 onClick={() => fileInputRef.current?.click()}
               >
-                Upload .txt file
+                Upload .txt or .md file
               </Button>
             </Box>
           </TabPanel>

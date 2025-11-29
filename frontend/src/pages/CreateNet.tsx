@@ -628,7 +628,7 @@ const CreateNet: React.FC = () => {
 
           <input
             type="file"
-            accept=".txt,text/plain"
+            accept=".txt,.md,text/plain,text/markdown"
             ref={fileInputRef}
             onChange={handleScriptFileUpload}
             style={{ display: 'none' }}
@@ -717,7 +717,7 @@ This is **[CALLSIGN]**, closing the net at [TIME]. 73 to all.`}
               startIcon={<UploadFileIcon />}
               onClick={() => fileInputRef.current?.click()}
             >
-              Upload .txt file
+              Upload .txt or .md file
             </Button>
           </Box>
         </TabPanel>
