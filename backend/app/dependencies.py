@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -7,23 +7,26 @@ from app.database import get_db
 from app.models import User, UserRole
 from app.auth import verify_token
 from app.logger import logger
+from app.security import get_client_ip
 
 security = HTTPBearer()
 optional_security = HTTPBearer(auto_error=False)
 
 
 async def get_current_user(
+    request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: AsyncSession = Depends(get_db)
 ) -> User:
     token = credentials.credentials
+    client_ip = get_client_ip(request)
     logger.debug("AUTH", "Authenticating user from token")
     logger.debug("AUTH", f"Token: {token[:20]}...{token[-10:]}")
     
-    payload = verify_token(token)
+    payload = verify_token(token, client_ip)
     
     if payload is None:
-        logger.warning("AUTH", "Token verification failed")
+        logger.auth_failure(f"Token verification failed", client_ip)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials"
@@ -33,7 +36,7 @@ async def get_current_user(
     
     user_id_str = payload.get("sub")
     if user_id_str is None:
-        logger.warning("AUTH", "No 'sub' claim in token payload")
+        logger.auth_failure("No 'sub' claim in token payload", client_ip)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials"
@@ -44,7 +47,7 @@ async def get_current_user(
         user_id = int(user_id_str)
         logger.debug("AUTH", f"User ID from token: {user_id}")
     except (ValueError, TypeError):
-        logger.warning("AUTH", f"Invalid user ID format: {user_id_str}")
+        logger.auth_failure(f"Invalid user ID format: {user_id_str}", client_ip)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials"

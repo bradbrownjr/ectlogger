@@ -25,7 +25,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     return encoded_jwt
 
 
-def verify_token(token: str):
+def verify_token(token: str, client_ip: str = None):
     try:
         logger.debug("AUTH", "Attempting to decode token...")
         logger.debug("AUTH", f"Algorithm: {settings.algorithm}")
@@ -34,10 +34,16 @@ def verify_token(token: str):
         logger.debug("AUTH", f"Token decoded successfully: {payload}")
         return payload
     except JWTError as e:
-        logger.warning("AUTH", f"JWT decode error: {type(e).__name__}: {str(e)}")
+        if client_ip:
+            logger.auth_failure(f"JWT decode error: {type(e).__name__}: {str(e)}", client_ip)
+        else:
+            logger.warning("AUTH", f"JWT decode error: {type(e).__name__}: {str(e)}")
         return None
     except Exception as e:
-        logger.error("AUTH", f"Unexpected error decoding token: {type(e).__name__}: {str(e)}")
+        if client_ip:
+            logger.auth_failure(f"Unexpected error decoding token: {type(e).__name__}: {str(e)}", client_ip)
+        else:
+            logger.error("AUTH", f"Unexpected error decoding token: {type(e).__name__}: {str(e)}")
         return None
 
 

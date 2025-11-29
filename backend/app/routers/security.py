@@ -68,22 +68,31 @@ def get_fail2ban_status() -> Fail2BanStatus:
         log_file_path=settings.log_file
     )
     
-    # Check if fail2ban-client exists
-    success, output = run_command(["which", "fail2ban-client"])
+    # Check if fail2ban-client exists (use full path for subprocess reliability)
+    fail2ban_client = "/usr/bin/fail2ban-client"
+    success, output = run_command(["test", "-x", fail2ban_client])
     if not success:
-        return status
+        # Try which as fallback
+        success, output = run_command(["which", "fail2ban-client"])
+        if not success:
+            return status
+        fail2ban_client = output.strip()
     
     status.installed = True
     
     # Check if fail2ban service is running
-    success, output = run_command(["systemctl", "is-active", "fail2ban"])
-    if not success or "active" not in output:
+    success, output = run_command(["/usr/bin/systemctl", "is-active", "fail2ban"])
+    if not success or "active" not in output.strip():
         return status
     
     status.running = True
     
-    # Get ectlogger jail status
-    success, output = run_command(["fail2ban-client", "status", "ectlogger"])
+    # Get ectlogger jail status - try with sudo first (requires NOPASSWD sudoers rule)
+    # If sudo fails, try without (in case user has socket access)
+    success, output = run_command(["/usr/bin/sudo", "-n", fail2ban_client, "status", "ectlogger"])
+    if not success:
+        # Try without sudo as fallback
+        success, output = run_command([fail2ban_client, "status", "ectlogger"])
     if not success:
         return status
     
@@ -224,11 +233,15 @@ async def unban_ip(
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid IP address format")
     
-    # Try to unban the IP
-    success, output = run_command(["fail2ban-client", "set", "ectlogger", "unbanip", ip])
+    # Try to unban the IP - use sudo -n (non-interactive)
+    success, output = run_command(["sudo", "-n", "fail2ban-client", "set", "ectlogger", "unbanip", ip])
     
     if not success:
-        raise HTTPException(status_code=500, detail=f"Failed to unban IP: {output}")
+        # Try without sudo as fallback
+        success, output = run_command(["fail2ban-client", "set", "ectlogger", "unbanip", ip])
+    
+    if not success:
+        raise HTTPException(status_code=500, detail=f"Failed to unban IP: {output}. You may need to configure sudoers for fail2ban-client.")
     
     logger.info("SECURITY", f"Admin {current_user.email} unbanned IP: {ip}")
     

@@ -440,8 +440,8 @@ const Admin: React.FC = () => {
         </Typography>
 
         <Tabs value={tabValue} onChange={(_, newValue) => setTabValue(newValue)} sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tab label="Users" id="admin-tab-0" aria-controls="admin-tabpanel-0" />
-          <Tab label="Check-in Fields" id="admin-tab-1" aria-controls="admin-tabpanel-1" />
+          <Tab label="Users" id="admin-tab-0" aria-controls="admin-tabpanel-0" icon={<PersonAddIcon />} iconPosition="start" />
+          <Tab label="Check-in Fields" id="admin-tab-1" aria-controls="admin-tabpanel-1" icon={<EditIcon />} iconPosition="start" />
           <Tab label="Security" id="admin-tab-2" aria-controls="admin-tabpanel-2" icon={<SecurityIcon />} iconPosition="start" />
         </Tabs>
 

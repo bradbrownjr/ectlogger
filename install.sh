@@ -430,6 +430,16 @@ if [ "$CONFIG_DONE" = true ] && [ -f /etc/os-release ]; then
             sudo cp fail2ban/jail.d/ectlogger.conf /etc/fail2ban/jail.d/
             echo "✓ Fail2Ban filter and jail configuration installed"
             
+            # Set up sudoers for fail2ban-client access from web app
+            echo "🔐 Setting up sudo permissions for fail2ban-client..."
+            SUDOERS_FILE="/etc/sudoers.d/ectlogger-fail2ban"
+            echo "# Allow ECTLogger user to run fail2ban-client without password" | sudo tee "$SUDOERS_FILE" > /dev/null
+            echo "# This enables the Security tab in the admin UI to show Fail2Ban status" | sudo tee -a "$SUDOERS_FILE" > /dev/null
+            echo "$CURRENT_USER ALL=(ALL) NOPASSWD: /usr/bin/fail2ban-client status ectlogger" | sudo tee -a "$SUDOERS_FILE" > /dev/null
+            echo "$CURRENT_USER ALL=(ALL) NOPASSWD: /usr/bin/fail2ban-client set ectlogger unbanip *" | sudo tee -a "$SUDOERS_FILE" > /dev/null
+            sudo chmod 440 "$SUDOERS_FILE"
+            echo "✓ Sudoers configured for fail2ban-client"
+            
             # Enable and restart Fail2Ban
             sudo systemctl enable fail2ban 2>/dev/null
             sudo systemctl restart fail2ban
