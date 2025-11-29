@@ -14,6 +14,7 @@ const VerifyMagicLink: React.FC = () => {
   useEffect(() => {
     const verifyToken = async () => {
       const token = searchParams.get('token');
+      const redirect = searchParams.get('redirect');
       
       if (!token) {
         setError('No verification token provided');
@@ -24,7 +25,8 @@ const VerifyMagicLink: React.FC = () => {
       try {
         const response = await authApi.verifyMagicLink(token);
         await login(response.data.access_token);
-        navigate('/dashboard');
+        // Redirect to specified path or default to dashboard
+        navigate(redirect || '/dashboard');
       } catch (err: any) {
         console.error('[VERIFY] Magic link verification failed:', err.response?.data);
         setError(err.response?.data?.detail || 'Invalid or expired magic link');

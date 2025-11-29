@@ -145,8 +145,8 @@ This is an automated message, please do not reply.
 
     @staticmethod
     async def send_net_notification(emails: List[str], net_name: str, net_id: int):
-        """Send notification that a net has started"""
-        net_url = f"{settings.frontend_url}/nets/{net_id}"
+        """Send notification that a net has started, with magic link for instant login"""
+        from app.auth import create_magic_link_token
         
         html_template = Template("""
         <!DOCTYPE html>
@@ -158,6 +158,7 @@ This is an automated message, please do not reply.
                 .button { display: inline-block; padding: 12px 24px; background-color: #1976d2; 
                          color: white; text-decoration: none; border-radius: 4px; margin: 20px 0; }
                 .alert { background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 12px; margin: 20px 0; }
+                .info { font-size: 12px; color: #666; margin-top: 20px; }
             </style>
         </head>
         <body>
@@ -167,20 +168,26 @@ This is an automated message, please do not reply.
                     <strong>A net you're subscribed to has started!</strong>
                 </div>
                 <p>The <strong>{{ net_name }}</strong> net is now active and ready for check-ins.</p>
-                <a href="{{ net_url }}" class="button">Join Net</a>
-                <p>Click the button above to view the net and check in.</p>
+                <a href="{{ join_url }}" class="button">Join Net</a>
+                <p>Click the button above to view the net and check in. You'll be automatically signed in.</p>
+                <p class="info">This link is unique to you and will sign you in automatically. Do not share it.</p>
             </div>
         </body>
         </html>
         """)
         
-        html_content = html_template.render(
-            net_name=net_name,
-            net_url=net_url
-        )
-        
         for email in emails:
             try:
+                # Generate a magic link token for this user
+                token = create_magic_link_token(email)
+                # URL that logs them in and redirects to the net
+                join_url = f"{settings.frontend_url}/auth/verify?token={token}&redirect=/nets/{net_id}"
+                
+                html_content = html_template.render(
+                    net_name=net_name,
+                    join_url=join_url
+                )
+                
                 await EmailService.send_email(
                     to_email=email,
                     subject=f"📻 Net Active: {net_name}",
