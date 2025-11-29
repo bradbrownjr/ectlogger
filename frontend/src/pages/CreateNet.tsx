@@ -20,12 +20,20 @@ import {
   Checkbox,
   Tabs,
   Tab,
+  Tooltip,
+  Divider,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
+import FormatBoldIcon from '@mui/icons-material/FormatBold';
+import FormatItalicIcon from '@mui/icons-material/FormatItalic';
+import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
+import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
+import TitleIcon from '@mui/icons-material/Title';
+import HorizontalRuleIcon from '@mui/icons-material/HorizontalRule';
 import { netApi, frequencyApi } from '../services/api';
 import api from '../services/api';
 
@@ -87,6 +95,7 @@ const CreateNet: React.FC = () => {
   const [fieldDefinitions, setFieldDefinitions] = useState<FieldDefinition[]>([]);
   const [fieldConfig, setFieldConfig] = useState<Record<string, { enabled: boolean; required: boolean }>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const scriptTextAreaRef = useRef<HTMLTextAreaElement>(null);
   const navigate = useNavigate();
   const isEditMode = !!netId;
 
@@ -262,6 +271,27 @@ const CreateNet: React.FC = () => {
       };
       reader.readAsText(file);
     }
+  };
+
+  // Markdown formatting helper
+  const insertMarkdown = (prefix: string, suffix: string = '', placeholder: string = '') => {
+    const textarea = scriptTextAreaRef.current;
+    if (!textarea) return;
+    
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = script.substring(start, end);
+    const textToInsert = selectedText || placeholder;
+    
+    const newText = script.substring(0, start) + prefix + textToInsert + suffix + script.substring(end);
+    setScript(newText);
+    
+    // Set cursor position after the operation
+    setTimeout(() => {
+      textarea.focus();
+      const newCursorPos = start + prefix.length + textToInsert.length + suffix.length;
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
+    }, 0);
   };
 
   const handleCreateNet = async () => {
@@ -593,8 +623,7 @@ const CreateNet: React.FC = () => {
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
             Enter a script or checklist for NCS to follow during the net. 
-            This will be available via a popup window during the net session.
-            You can also drag and drop a .txt file into the text area below.
+            Use the formatting toolbar for markdown styling.
           </Typography>
 
           <input
@@ -605,14 +634,39 @@ const CreateNet: React.FC = () => {
             style={{ display: 'none' }}
           />
 
-          <Box sx={{ mb: 2 }}>
-            <Button
-              variant="outlined"
-              startIcon={<UploadFileIcon />}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              Upload .txt File
-            </Button>
+          {/* Formatting Toolbar */}
+          <Box sx={{ display: 'flex', gap: 0.5, mb: 1, p: 1, bgcolor: 'action.hover', borderRadius: 1 }}>
+            <Tooltip title="Heading (## )">
+              <IconButton size="small" onClick={() => insertMarkdown('## ', '', 'Heading')}>
+                <TitleIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Bold (**text**)">
+              <IconButton size="small" onClick={() => insertMarkdown('**', '**', 'bold text')}>
+                <FormatBoldIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Italic (*text*)">
+              <IconButton size="small" onClick={() => insertMarkdown('*', '*', 'italic text')}>
+                <FormatItalicIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
+            <Tooltip title="Bulleted List">
+              <IconButton size="small" onClick={() => insertMarkdown('- ', '', 'List item')}>
+                <FormatListBulletedIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Numbered List">
+              <IconButton size="small" onClick={() => insertMarkdown('1. ', '', 'List item')}>
+                <FormatListNumberedIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Horizontal Rule">
+              <IconButton size="small" onClick={() => insertMarkdown('\n---\n', '', '')}>
+                <HorizontalRuleIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
           </Box>
 
           <TextField
@@ -621,25 +675,28 @@ const CreateNet: React.FC = () => {
             rows={20}
             value={script}
             onChange={(e: any) => setScript(e.target.value)}
-            placeholder={`Example net script:
+            inputRef={scriptTextAreaRef}
+            placeholder={`## Opening
+Good evening, this is **[CALLSIGN]**, Net Control Station for tonight's [NET NAME].
 
-OPENING:
-"Good evening, this is [CALLSIGN], Net Control Station for tonight's [NET NAME]. 
 This net meets every [DAY] at [TIME] on [FREQUENCY].
 
-The purpose of this net is to [PURPOSE].
+*Is there any emergency or priority traffic?*
 
-We will now take check-ins. Please give your callsign phonetically, your name, 
-and location. If you have traffic, please indicate so at this time."
+---
 
-CHECK-INS:
+## Check-Ins
+We will now take check-ins. Please give your callsign phonetically, your name, and location.
+
 - Acknowledge each station
 - Note any traffic requests
 - Keep a log of all check-ins
 
-CLOSING:
-"This concludes tonight's [NET NAME]. Thank you all for checking in.
-This is [CALLSIGN], closing the net at [TIME]. 73 to all."`}
+---
+
+## Closing
+This concludes tonight's net. Thank you all for checking in.
+This is **[CALLSIGN]**, closing the net at [TIME]. 73 to all.`}
             onDrop={handleScriptDrop}
             onDragOver={(e) => e.preventDefault()}
             sx={{
@@ -650,6 +707,19 @@ This is [CALLSIGN], closing the net at [TIME]. 73 to all."`}
               },
             }}
           />
+
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
+            <Typography variant="caption" color="text.secondary">
+              {script.length} characters • Supports Markdown formatting
+            </Typography>
+            <Button
+              size="small"
+              startIcon={<UploadFileIcon />}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              Upload .txt file
+            </Button>
+          </Box>
         </TabPanel>
 
         {/* Tab 4: Check-In Fields */}

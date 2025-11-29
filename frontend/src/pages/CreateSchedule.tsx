@@ -31,6 +31,8 @@ import {
   ListItemSecondaryAction,
   Switch,
   Chip,
+  Tooltip,
+  Divider,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -40,6 +42,12 @@ import UploadFileIcon from '@mui/icons-material/UploadFile';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import FormatBoldIcon from '@mui/icons-material/FormatBold';
+import FormatItalicIcon from '@mui/icons-material/FormatItalic';
+import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
+import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
+import TitleIcon from '@mui/icons-material/Title';
+import HorizontalRuleIcon from '@mui/icons-material/HorizontalRule';
 import { templateApi, frequencyApi, userApi, ncsRotationApi } from '../services/api';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -131,6 +139,7 @@ const CreateSchedule: React.FC = () => {
   
   // Script file upload
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const scriptTextAreaRef = useRef<HTMLTextAreaElement>(null);
   
   // NCS Rotation
   const [rotationMembers, setRotationMembers] = useState<RotationMember[]>([]);
@@ -565,6 +574,27 @@ const CreateSchedule: React.FC = () => {
 
   const handleScriptDragOver = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
+  };
+
+  // Markdown formatting helper
+  const insertMarkdown = (prefix: string, suffix: string = '', placeholder: string = '') => {
+    const textarea = scriptTextAreaRef.current;
+    if (!textarea) return;
+    
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = script.substring(start, end);
+    const textToInsert = selectedText || placeholder;
+    
+    const newText = script.substring(0, start) + prefix + textToInsert + suffix + script.substring(end);
+    setScript(newText);
+    
+    // Set cursor position after the operation
+    setTimeout(() => {
+      textarea.focus();
+      const newCursorPos = start + prefix.length + textToInsert.length + suffix.length;
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
+    }, 0);
   };
 
   // NCS Rotation handlers
@@ -1014,7 +1044,7 @@ const CreateSchedule: React.FC = () => {
           {/* Tab 4: Net Script */}
           <TabPanel value={activeTab} index={4}>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Enter the net script that NCS operators will follow. You can also upload or drag a .txt file.
+              Enter the net script that NCS operators will follow. Use the formatting toolbar for markdown styling.
             </Typography>
 
             <input
@@ -1025,57 +1055,90 @@ const CreateSchedule: React.FC = () => {
               style={{ display: 'none' }}
             />
 
-            <Box
-              onDrop={handleScriptDrop}
-              onDragOver={handleScriptDragOver}
-              sx={{
-                border: '2px dashed',
-                borderColor: 'divider',
-                borderRadius: 1,
-                p: 2,
-                mb: 2,
-                textAlign: 'center',
-                bgcolor: 'action.hover',
-                cursor: 'pointer',
-                '&:hover': { borderColor: 'primary.main' },
-              }}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <UploadFileIcon sx={{ fontSize: 40, color: 'text.secondary', mb: 1 }} />
-              <Typography color="text.secondary">
-                Drop a .txt file here or click to upload
-              </Typography>
+            {/* Formatting Toolbar */}
+            <Box sx={{ display: 'flex', gap: 0.5, mb: 1, p: 1, bgcolor: 'action.hover', borderRadius: 1 }}>
+              <Tooltip title="Heading (## )">
+                <IconButton size="small" onClick={() => insertMarkdown('## ', '', 'Heading')}>
+                  <TitleIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Bold (**text**)">
+                <IconButton size="small" onClick={() => insertMarkdown('**', '**', 'bold text')}>
+                  <FormatBoldIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Italic (*text*)">
+                <IconButton size="small" onClick={() => insertMarkdown('*', '*', 'italic text')}>
+                  <FormatItalicIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
+              <Tooltip title="Bulleted List">
+                <IconButton size="small" onClick={() => insertMarkdown('- ', '', 'List item')}>
+                  <FormatListBulletedIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Numbered List">
+                <IconButton size="small" onClick={() => insertMarkdown('1. ', '', 'List item')}>
+                  <FormatListNumberedIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Horizontal Rule">
+                <IconButton size="small" onClick={() => insertMarkdown('\n---\n', '', '')}>
+                  <HorizontalRuleIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
             </Box>
 
             <TextField
               fullWidth
-              label="Net Script"
               value={script}
               onChange={(e) => setScript(e.target.value)}
               multiline
-              rows={16}
+              rows={18}
+              inputRef={scriptTextAreaRef}
               placeholder="Enter your net script here...
 
-Example:
----
-Good evening, this is [CALLSIGN] calling the [NET NAME].
+## Opening
+Good evening, this is **[CALLSIGN]** calling the [NET NAME].
 
 This net meets every [DAY] at [TIME] on [FREQUENCY].
 
-Is there any emergency or priority traffic?
-[PAUSE]
+*Is there any emergency or priority traffic?*
 
+---
+
+## Check-Ins
 We will now take check-ins...
----"
+
+- Acknowledge each station
+- Note any traffic requests
+
+---
+
+## Closing
+This concludes tonight's net. 73 to all."
+              onDrop={handleScriptDrop}
+              onDragOver={handleScriptDragOver}
               sx={{
                 '& .MuiInputBase-root': {
                   fontFamily: 'monospace',
                 },
               }}
             />
-            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-              {script.length} characters
-            </Typography>
+
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
+              <Typography variant="caption" color="text.secondary">
+                {script.length} characters • Supports Markdown formatting
+              </Typography>
+              <Button
+                size="small"
+                startIcon={<UploadFileIcon />}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                Upload .txt file
+              </Button>
+            </Box>
           </TabPanel>
 
           {/* Tab 5: Check-In Fields */}
