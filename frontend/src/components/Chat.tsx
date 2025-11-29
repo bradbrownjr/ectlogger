@@ -13,6 +13,8 @@ import {
   TableHead,
   TableRow,
   TableCell,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import { chatApi, ChatMessage } from '../api/chat';
@@ -22,16 +24,25 @@ import { formatTimeWithDate } from '../utils/dateUtils';
 interface ChatProps {
   netId: number;
   netStartedAt?: string;
+  netStatus?: string;
   onNewMessage?: (message: ChatMessage) => void;
 }
 
-const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, onNewMessage }) => {
+const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, onNewMessage }) => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
+  const [showClosedToast, setShowClosedToast] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+
+  // Show toast when net is closed/archived
+  useEffect(() => {
+    if (netStatus === 'closed' || netStatus === 'archived') {
+      setShowClosedToast(true);
+    }
+  }, [netStatus]);
 
   useEffect(() => {
     // Listen for chat_message events dispatched from NetView WebSocket
@@ -259,28 +270,43 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, onNewMessage }) => {
         <div ref={messagesEndRef} />
       </List>
 
-      <Box sx={{ p: 1, borderTop: 1, borderColor: 'divider', flexShrink: 0 }}>
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <TextField
-            fullWidth
-            size="small"
-            placeholder={user ? "Type a message..." : "Sign in to send messages"}
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyPress={handleKeyPress}
-            disabled={sending || !user}
-            multiline
-            maxRows={3}
-          />
-          <IconButton 
-            color="primary" 
-            onClick={handleSend}
-            disabled={!newMessage.trim() || sending || !user}
-          >
-            <SendIcon />
-          </IconButton>
+      {netStatus !== 'closed' && netStatus !== 'archived' && (
+        <Box sx={{ p: 1, borderTop: 1, borderColor: 'divider', flexShrink: 0 }}>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <TextField
+              fullWidth
+              size="small"
+              placeholder={user ? "Type a message..." : "Sign in to send messages"}
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyPress={handleKeyPress}
+              disabled={sending || !user}
+              multiline
+              maxRows={3}
+            />
+            <IconButton 
+              color="primary" 
+              onClick={handleSend}
+              disabled={!newMessage.trim() || sending || !user}
+            >
+              <SendIcon />
+            </IconButton>
+          </Box>
         </Box>
-      </Box>
+      )}
+
+      <Snackbar
+        open={showClosedToast}
+        autoHideDuration={5000}
+        onClose={() => setShowClosedToast(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={() => setShowClosedToast(false)} severity="info" sx={{ width: '100%' }}>
+          {netStatus === 'archived' 
+            ? 'This net has been archived. You are viewing historical data.'
+            : 'This net has been closed. Check-ins are no longer accepted.'}
+        </Alert>
+      </Snackbar>
     </Paper>
   );
 };

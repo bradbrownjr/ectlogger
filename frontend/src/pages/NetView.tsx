@@ -1874,7 +1874,7 @@ const NetView: React.FC = () => {
             </Grid>
             
             <Grid item xs={12} md={4} sx={{ pl: { md: 0.5 }, display: 'flex', flexDirection: 'column', minHeight: { xs: 300, md: 0 }, height: { xs: 350, md: '100%' } }}>
-              <Chat netId={Number(netId)} netStartedAt={net?.started_at} />
+              <Chat netId={Number(netId)} netStartedAt={net?.started_at} netStatus={net?.status} />
             </Grid>
           </Grid>
         )}
