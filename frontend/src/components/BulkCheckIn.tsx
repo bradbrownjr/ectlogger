@@ -55,14 +55,14 @@ const BulkCheckIn: React.FC<BulkCheckInProps> = ({ open, onClose, netId, onCheck
     x: Math.max(50, window.innerWidth - 650),
     y: 100,
     width: 600,
-    height: minimized ? 48 : 400,
+    height: minimized ? 48 : 280,
   });
 
   // Update height when minimized state changes
   useEffect(() => {
     setWindowState(prev => ({
       ...prev,
-      height: minimized ? 48 : 400,
+      height: minimized ? 48 : 280,
     }));
   }, [minimized]);
 
@@ -189,7 +189,7 @@ const BulkCheckIn: React.FC<BulkCheckInProps> = ({ open, onClose, netId, onCheck
           });
         }}
         minWidth={400}
-        minHeight={minimized ? 48 : 300}
+        minHeight={minimized ? 48 : 220}
         bounds="window"
         dragHandleClassName="drag-handle"
         enableResizing={!minimized}
@@ -249,7 +249,7 @@ const BulkCheckIn: React.FC<BulkCheckInProps> = ({ open, onClose, netId, onCheck
               <TextField
                 fullWidth
                 multiline
-                rows={4}
+                rows={3}
                 value={bulkText}
                 onChange={(e) => setBulkText(e.target.value)}
                 onKeyDown={handleKeyDown}
