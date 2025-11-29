@@ -6,11 +6,11 @@ This adds a text field for NCS net scripts.
 
 import asyncio
 from sqlalchemy import text
-from app.database import async_engine
+from app.database import engine
 
 
 async def migrate():
-    async with async_engine.begin() as conn:
+    async with engine.begin() as conn:
         # Check if column already exists
         result = await conn.execute(text("PRAGMA table_info(nets)"))
         columns = [row[1] for row in result.fetchall()]
