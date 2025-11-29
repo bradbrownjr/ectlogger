@@ -149,6 +149,7 @@ const NetView: React.FC = () => {
   const [bulkCheckInOpen, setBulkCheckInOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [closeNetDialogOpen, setCloseNetDialogOpen] = useState(false);
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
@@ -391,6 +392,7 @@ const NetView: React.FC = () => {
   const handleCloseNet = async () => {
     try {
       await netApi.close(Number(netId));
+      setCloseNetDialogOpen(false);
       fetchNet();
     } catch (error) {
       console.error('Failed to close net:', error);
@@ -991,7 +993,7 @@ const NetView: React.FC = () => {
                       size="small" 
                       variant="contained" 
                       color="error" 
-                      onClick={handleCloseNet}
+                      onClick={() => setCloseNetDialogOpen(true)}
                       sx={{ minWidth: 'auto', px: 1 }}
                     >
                       <CloseIcon fontSize="small" />
@@ -1915,6 +1917,22 @@ const NetView: React.FC = () => {
           </Grid>
         )}
       </Paper>
+
+      {/* Close Net Confirmation Dialog */}
+      <Dialog open={closeNetDialogOpen} onClose={() => setCloseNetDialogOpen(false)}>
+        <DialogTitle>Close Net?</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to close this net? This will end the session and send log emails to subscribers.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCloseNetDialogOpen(false)}>Cancel</Button>
+          <Button onClick={handleCloseNet} variant="contained" color="error">
+            Close Net
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Role Management Dialog */}
       <Dialog open={roleDialogOpen} onClose={() => setRoleDialogOpen(false)} maxWidth="sm" fullWidth>
