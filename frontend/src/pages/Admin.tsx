@@ -32,6 +32,13 @@ import {
   Tooltip,
   FormHelperText,
   Fab,
+  Card,
+  CardContent,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+  Divider,
 } from '@mui/material';
 import BlockIcon from '@mui/icons-material/Block';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -41,6 +48,13 @@ import AddIcon from '@mui/icons-material/Add';
 import ArchiveIcon from '@mui/icons-material/Archive';
 import UnarchiveIcon from '@mui/icons-material/Unarchive';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import SecurityIcon from '@mui/icons-material/Security';
+import ShieldIcon from '@mui/icons-material/Shield';
+import WarningIcon from '@mui/icons-material/Warning';
+import ErrorIcon from '@mui/icons-material/Error';
+import InfoIcon from '@mui/icons-material/Info';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import LockOpenIcon from '@mui/icons-material/LockOpen';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 
@@ -67,6 +81,30 @@ interface FieldDefinition {
   is_archived: boolean;
   sort_order: number;
   created_at: string;
+}
+
+interface Fail2BanStatus {
+  installed: boolean;
+  running: boolean;
+  jail_enabled: boolean;
+  currently_banned: number;
+  total_banned: number;
+  banned_ips: string[];
+  log_file_configured: boolean;
+  log_file_path: string | null;
+}
+
+interface SecurityLogEntry {
+  timestamp: string;
+  level: string;
+  category: string;
+  message: string;
+  ip: string | null;
+}
+
+interface SecurityInfo {
+  fail2ban: Fail2BanStatus;
+  recent_auth_events: SecurityLogEntry[];
 }
 
 interface TabPanelProps {
@@ -132,6 +170,10 @@ const Admin: React.FC = () => {
   });
   const [fieldSaving, setFieldSaving] = useState(false);
   
+  // Security state
+  const [securityInfo, setSecurityInfo] = useState<SecurityInfo | null>(null);
+  const [securityLoading, setSecurityLoading] = useState(false);
+  
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
     message: '',
@@ -147,6 +189,7 @@ const Admin: React.FC = () => {
     }
     fetchUsers();
     fetchFields();
+    fetchSecurityInfo();
   }, [currentUser, navigate]);
 
   useEffect(() => {
@@ -171,6 +214,29 @@ const Admin: React.FC = () => {
       console.error('Failed to fetch fields:', error);
     } finally {
       setFieldsLoading(false);
+    }
+  };
+
+  const fetchSecurityInfo = async () => {
+    setSecurityLoading(true);
+    try {
+      const response = await api.get('/security/info');
+      setSecurityInfo(response.data);
+    } catch (error) {
+      console.error('Failed to fetch security info:', error);
+    } finally {
+      setSecurityLoading(false);
+    }
+  };
+
+  const handleUnbanIp = async (ip: string) => {
+    try {
+      await api.post(`/security/unban/${ip}`);
+      setSnackbar({ open: true, message: `IP ${ip} has been unbanned`, severity: 'success' });
+      fetchSecurityInfo();
+    } catch (error: any) {
+      const message = error.response?.data?.detail || 'Failed to unban IP';
+      setSnackbar({ open: true, message, severity: 'error' });
     }
   };
 
@@ -376,6 +442,7 @@ const Admin: React.FC = () => {
         <Tabs value={tabValue} onChange={(_, newValue) => setTabValue(newValue)} sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <Tab label="Users" id="admin-tab-0" aria-controls="admin-tabpanel-0" />
           <Tab label="Check-in Fields" id="admin-tab-1" aria-controls="admin-tabpanel-1" />
+          <Tab label="Security" id="admin-tab-2" aria-controls="admin-tabpanel-2" icon={<SecurityIcon />} iconPosition="start" />
         </Tabs>
 
         {/* Users Tab */}
@@ -576,6 +643,217 @@ const Admin: React.FC = () => {
                 </TableBody>
               </Table>
             </TableContainer>
+          )}
+        </TabPanel>
+
+        {/* Security Tab */}
+        <TabPanel value={tabValue} index={2}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <Typography variant="h6">
+              <SecurityIcon sx={{ verticalAlign: 'middle', mr: 1 }} />
+              Security & Fail2Ban
+            </Typography>
+            <Button
+              startIcon={securityLoading ? <CircularProgress size={20} /> : <RefreshIcon />}
+              onClick={fetchSecurityInfo}
+              disabled={securityLoading}
+            >
+              Refresh
+            </Button>
+          </Box>
+
+          {securityLoading && !securityInfo ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : securityInfo ? (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              {/* Fail2Ban Status Card */}
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    <ShieldIcon sx={{ verticalAlign: 'middle', mr: 1 }} />
+                    Fail2Ban Status
+                  </Typography>
+                  
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 2 }}>
+                    <Chip
+                      icon={securityInfo.fail2ban.installed ? <CheckCircleIcon /> : <ErrorIcon />}
+                      label={securityInfo.fail2ban.installed ? 'Installed' : 'Not Installed'}
+                      color={securityInfo.fail2ban.installed ? 'success' : 'error'}
+                    />
+                    <Chip
+                      icon={securityInfo.fail2ban.running ? <CheckCircleIcon /> : <ErrorIcon />}
+                      label={securityInfo.fail2ban.running ? 'Running' : 'Not Running'}
+                      color={securityInfo.fail2ban.running ? 'success' : 'error'}
+                    />
+                    <Chip
+                      icon={securityInfo.fail2ban.jail_enabled ? <CheckCircleIcon /> : <WarningIcon />}
+                      label={securityInfo.fail2ban.jail_enabled ? 'ECTLogger Jail Active' : 'Jail Not Active'}
+                      color={securityInfo.fail2ban.jail_enabled ? 'success' : 'warning'}
+                    />
+                    <Chip
+                      icon={securityInfo.fail2ban.log_file_configured ? <CheckCircleIcon /> : <WarningIcon />}
+                      label={securityInfo.fail2ban.log_file_configured ? 'Logging Enabled' : 'Logging Not Configured'}
+                      color={securityInfo.fail2ban.log_file_configured ? 'success' : 'warning'}
+                    />
+                  </Box>
+
+                  {!securityInfo.fail2ban.installed && (
+                    <Alert severity="info" sx={{ mb: 2 }}>
+                      Fail2Ban is not installed. See FAIL2BAN.md for installation instructions.
+                    </Alert>
+                  )}
+
+                  {securityInfo.fail2ban.installed && !securityInfo.fail2ban.jail_enabled && (
+                    <Alert severity="warning" sx={{ mb: 2 }}>
+                      Fail2Ban is installed but the ECTLogger jail is not active. Check /etc/fail2ban/jail.d/ectlogger.conf
+                    </Alert>
+                  )}
+
+                  {securityInfo.fail2ban.jail_enabled && (
+                    <Box sx={{ display: 'flex', gap: 4, mt: 2 }}>
+                      <Box>
+                        <Typography variant="h4" color="error.main">
+                          {securityInfo.fail2ban.currently_banned}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Currently Banned
+                        </Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="h4" color="text.secondary">
+                          {securityInfo.fail2ban.total_banned}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Total Banned (All Time)
+                        </Typography>
+                      </Box>
+                    </Box>
+                  )}
+
+                  {securityInfo.fail2ban.log_file_path && (
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                      Log file: <code>{securityInfo.fail2ban.log_file_path}</code>
+                    </Typography>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Banned IPs */}
+              {securityInfo.fail2ban.banned_ips.length > 0 && (
+                <Card variant="outlined">
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      <BlockIcon sx={{ verticalAlign: 'middle', mr: 1 }} />
+                      Currently Banned IPs
+                    </Typography>
+                    <TableContainer>
+                      <Table size="small">
+                        <TableHead>
+                          <TableRow>
+                            <TableCell>IP Address</TableCell>
+                            <TableCell align="right">Actions</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {securityInfo.fail2ban.banned_ips.map((ip) => (
+                            <TableRow key={ip}>
+                              <TableCell>
+                                <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                                  {ip}
+                                </Typography>
+                              </TableCell>
+                              <TableCell align="right">
+                                <Tooltip title="Unban this IP">
+                                  <IconButton
+                                    size="small"
+                                    color="success"
+                                    onClick={() => handleUnbanIp(ip)}
+                                  >
+                                    <LockOpenIcon />
+                                  </IconButton>
+                                </Tooltip>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Recent Security Events */}
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Recent Authentication Events
+                  </Typography>
+                  {securityInfo.recent_auth_events.length === 0 ? (
+                    <Typography variant="body2" color="text.secondary">
+                      No recent authentication events found.
+                    </Typography>
+                  ) : (
+                    <TableContainer sx={{ maxHeight: 400 }}>
+                      <Table size="small" stickyHeader>
+                        <TableHead>
+                          <TableRow>
+                            <TableCell>Time</TableCell>
+                            <TableCell>Level</TableCell>
+                            <TableCell>Message</TableCell>
+                            <TableCell>IP</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {securityInfo.recent_auth_events.map((event, index) => (
+                            <TableRow key={index}>
+                              <TableCell>
+                                <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>
+                                  {event.timestamp}
+                                </Typography>
+                              </TableCell>
+                              <TableCell>
+                                <Chip
+                                  size="small"
+                                  label={event.level}
+                                  color={
+                                    event.level === 'ERROR' ? 'error' :
+                                    event.level === 'WARNING' ? 'warning' :
+                                    event.level === 'INFO' ? 'info' : 'default'
+                                  }
+                                  icon={
+                                    event.level === 'ERROR' ? <ErrorIcon /> :
+                                    event.level === 'WARNING' ? <WarningIcon /> :
+                                    <InfoIcon />
+                                  }
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Typography variant="body2" sx={{ fontSize: '0.85rem' }}>
+                                  {event.message}
+                                </Typography>
+                              </TableCell>
+                              <TableCell>
+                                {event.ip && (
+                                  <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>
+                                    {event.ip}
+                                  </Typography>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  )}
+                </CardContent>
+              </Card>
+            </Box>
+          ) : (
+            <Alert severity="error">
+              Failed to load security information. Make sure you have admin access.
+            </Alert>
           )}
         </TabPanel>
       </Paper>
