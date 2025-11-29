@@ -31,6 +31,7 @@ import {
   CircularProgress,
   Tooltip,
   FormHelperText,
+  Fab,
 } from '@mui/material';
 import BlockIcon from '@mui/icons-material/Block';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -383,16 +384,6 @@ const Admin: React.FC = () => {
             Manage user accounts, change roles, and ban/unban users.
           </Alert>
 
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-            <Button
-              variant="contained"
-              startIcon={<PersonAddIcon />}
-              onClick={handleOpenAddUserDialog}
-            >
-              Add User
-            </Button>
-          </Box>
-
           <TableContainer>
             <Table>
               <TableHead>
@@ -492,13 +483,6 @@ const Admin: React.FC = () => {
                 Show archived fields
               </Typography>
             </Box>
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => handleOpenFieldDialog()}
-            >
-              Add Field
-            </Button>
           </Box>
 
           {fieldsLoading ? (
@@ -663,9 +647,7 @@ const Admin: React.FC = () => {
                 label="Role"
                 onChange={(e) => setAddUserForm({ ...addUserForm, role: e.target.value })}
               >
-                <MenuItem value="guest">Guest</MenuItem>
                 <MenuItem value="user">User</MenuItem>
-                <MenuItem value="ncs">NCS</MenuItem>
                 <MenuItem value="admin">Admin</MenuItem>
               </Select>
               <FormHelperText>User's permission level</FormHelperText>
@@ -785,6 +767,32 @@ const Admin: React.FC = () => {
         onClose={() => setSnackbar({ ...snackbar, open: false })}
         message={snackbar.message}
       />
+
+      {/* Floating Action Buttons */}
+      {tabValue === 0 && (
+        <Tooltip title="Add user">
+          <Fab
+            color="primary"
+            aria-label="add user"
+            sx={{ position: 'fixed', bottom: 16, right: 16 }}
+            onClick={handleOpenAddUserDialog}
+          >
+            <PersonAddIcon />
+          </Fab>
+        </Tooltip>
+      )}
+      {tabValue === 1 && (
+        <Tooltip title="Add field">
+          <Fab
+            color="primary"
+            aria-label="add field"
+            sx={{ position: 'fixed', bottom: 16, right: 16 }}
+            onClick={() => handleOpenFieldDialog()}
+          >
+            <AddIcon />
+          </Fab>
+        </Tooltip>
+      )}
     </Container>
   );
 };
