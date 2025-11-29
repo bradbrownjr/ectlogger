@@ -371,6 +371,91 @@ EOF
     fi
 fi
 
+# Step 3: Fail2Ban Setup (optional, only on Linux with apt/dnf)
+FAIL2BAN_SETUP=false
+if [ "$CONFIG_DONE" = true ] && [ -f /etc/os-release ]; then
+    detect_os
+    if [[ "$OS" == "ubuntu" || "$OS" == "debian" || "$OS" == "fedora" || "$OS" == "rhel" || "$OS" == "centos" ]]; then
+        echo ""
+        echo "================================="
+        echo "🛡️  Fail2Ban Security Setup"
+        echo "================================="
+        echo ""
+        echo "Fail2Ban can automatically block IPs that make too many"
+        echo "failed authentication attempts."
+        echo ""
+        read -p "Would you like to set up Fail2Ban protection? (y/n) " -n 1 -r
+        echo ""
+        echo ""
+        
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            # Get current user for log directory ownership
+            CURRENT_USER=$(whoami)
+            
+            # Install Fail2Ban if not present
+            if ! command -v fail2ban-client &> /dev/null; then
+                echo "📦 Installing Fail2Ban..."
+                case "$OS" in
+                    ubuntu|debian)
+                        sudo apt-get update -qq
+                        sudo apt-get install -y fail2ban
+                        ;;
+                    fedora|rhel|centos)
+                        sudo dnf install -y fail2ban
+                        ;;
+                esac
+                echo "✓ Fail2Ban installed"
+            else
+                echo "✓ Fail2Ban already installed"
+            fi
+            
+            # Create log directory
+            echo "📁 Setting up log directory..."
+            sudo mkdir -p /var/log/ectlogger
+            sudo chown "$CURRENT_USER":"$CURRENT_USER" /var/log/ectlogger
+            touch /var/log/ectlogger/app.log
+            echo "✓ Log directory created: /var/log/ectlogger"
+            
+            # Add LOG_FILE to .env if not present
+            if ! grep -q "LOG_FILE=" backend/.env 2>/dev/null; then
+                echo "LOG_FILE=/var/log/ectlogger/app.log" >> backend/.env
+                echo "✓ LOG_FILE added to backend/.env"
+            else
+                echo "✓ LOG_FILE already configured"
+            fi
+            
+            # Copy Fail2Ban configuration
+            echo "📝 Installing Fail2Ban configuration..."
+            sudo cp fail2ban/filter.d/ectlogger.conf /etc/fail2ban/filter.d/
+            sudo cp fail2ban/jail.d/ectlogger.conf /etc/fail2ban/jail.d/
+            echo "✓ Fail2Ban filter and jail configuration installed"
+            
+            # Enable and restart Fail2Ban
+            sudo systemctl enable fail2ban 2>/dev/null
+            sudo systemctl restart fail2ban
+            
+            # Verify ectlogger jail is active
+            sleep 2
+            if sudo fail2ban-client status 2>/dev/null | grep -q "ectlogger"; then
+                echo "✓ ECTLogger jail is active"
+                FAIL2BAN_SETUP=true
+            else
+                echo "⚠️  ECTLogger jail may not be active. Check: sudo fail2ban-client status"
+            fi
+            
+            echo ""
+            echo "Fail2Ban settings (can be customized in /etc/fail2ban/jail.d/ectlogger.conf):"
+            echo "  • Max failed attempts: 5"
+            echo "  • Time window: 10 minutes"
+            echo "  • Ban duration: 1 hour"
+            echo ""
+        else
+            echo "ℹ️  Skipping Fail2Ban setup. See FAIL2BAN.md for manual installation."
+            echo ""
+        fi
+    fi
+fi
+
 echo ""
 echo "================================="
 echo "✅ Installation Complete!"
@@ -413,6 +498,15 @@ else
     echo ""
     echo "📋 To start the application:"
     echo "  ./start.sh"
+fi
+
+# Show Fail2Ban info if set up
+if [ "$FAIL2BAN_SETUP" = true ]; then
+    echo ""
+    echo "🛡️  Fail2Ban Protection Active"
+    echo "  Status:  sudo fail2ban-client status ectlogger"
+    echo "  Logs:    sudo tail -f /var/log/fail2ban.log"
+    echo "  App Log: tail -f /var/log/ectlogger/app.log"
 fi
 
 echo ""
