@@ -143,6 +143,7 @@ class FrequencyResponse(FrequencyBase):
 class NetBase(BaseModel):
     name: str = Field(max_length=200, min_length=1)
     description: Optional[str] = Field(None, max_length=2000)
+    script: Optional[str] = Field(None, max_length=50000)
     field_config: Optional[dict] = None
 
 
@@ -153,6 +154,7 @@ class NetCreate(NetBase):
 class NetUpdate(BaseModel):
     name: Optional[str] = Field(None, max_length=200, min_length=1)
     description: Optional[str] = Field(None, max_length=2000)
+    script: Optional[str] = Field(None, max_length=50000)
     status: Optional[NetStatus] = None
     active_frequency_id: Optional[int] = None
     frequency_ids: Optional[List[int]] = Field(None, max_length=50)
@@ -187,6 +189,7 @@ class NetResponse(NetBase):
             'id': net.id,
             'name': net.name,
             'description': net.description,
+            'script': net.script,
             'status': net.status,
             'owner_id': net.owner_id,
             'owner_callsign': owner_callsign,

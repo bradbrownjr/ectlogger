@@ -53,6 +53,7 @@ const CreateNet: React.FC = () => {
   const { netId } = useParams<{ netId: string }>();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [script, setScript] = useState('');
   const [frequencies, setFrequencies] = useState<Frequency[]>([]);
   const [selectedFrequencies, setSelectedFrequencies] = useState<number[]>([]);
   const [newFrequency, setNewFrequency] = useState({ frequency: '', mode: 'FM', network: '', talkgroup: '', description: '' });
@@ -98,6 +99,7 @@ const CreateNet: React.FC = () => {
       const response = await netApi.get(parseInt(netId));
       setName(response.data.name);
       setDescription(response.data.description || '');
+      setScript(response.data.script || '');
       setSelectedFrequencies(response.data.frequencies.map((f: Frequency) => f.id!));
       if (response.data.field_config) {
         // Merge saved config with field definitions (in case new fields were added)
@@ -419,6 +421,7 @@ const CreateNet: React.FC = () => {
         const response = await netApi.update(parseInt(netId!), {
           name,
           description,
+          script,
           frequency_ids: selectedFrequencies,
           field_config: fieldConfig,
         });
@@ -427,6 +430,7 @@ const CreateNet: React.FC = () => {
         const response = await netApi.create({
           name,
           description,
+          script,
           frequency_ids: selectedFrequencies,
           field_config: fieldConfig,
         });
@@ -463,6 +467,18 @@ const CreateNet: React.FC = () => {
             margin="normal"
             multiline
             rows={3}
+          />
+
+          <TextField
+            fullWidth
+            label="Net Script (optional)"
+            value={script}
+            onChange={(e: any) => setScript(e.target.value)}
+            margin="normal"
+            multiline
+            rows={8}
+            placeholder="Enter your net script here. This will be available to NCS during the net via a popup window."
+            helperText="A script or checklist for NCS to follow during the net. Supports plain text."
           />
 
           <Typography variant="h6" sx={{ mt: 4, mb: 2 }}>

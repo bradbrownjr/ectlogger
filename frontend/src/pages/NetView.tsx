@@ -39,6 +39,7 @@ import ArchiveIcon from '@mui/icons-material/Archive';
 import MapIcon from '@mui/icons-material/Map';
 import FastForwardIcon from '@mui/icons-material/FastForward';
 import SearchIcon from '@mui/icons-material/Search';
+import DescriptionIcon from '@mui/icons-material/Description';
 import GroupIcon from '@mui/icons-material/Group';
 import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -51,11 +52,13 @@ import Chat from '../components/Chat';
 import CheckInMap from '../components/CheckInMap';
 import BulkCheckIn from '../components/BulkCheckIn';
 import SearchCheckIns from '../components/SearchCheckIns';
+import NetScript from '../components/NetScript';
 
 interface Net {
   id: number;
   name: string;
   description: string;
+  script?: string;
   status: string;
   owner_id: number;
   active_frequency_id?: number;
@@ -150,6 +153,7 @@ const NetView: React.FC = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [closeNetDialogOpen, setCloseNetDialogOpen] = useState(false);
+  const [scriptOpen, setScriptOpen] = useState(false);
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
@@ -869,6 +873,18 @@ const NetView: React.FC = () => {
                       sx={{ minWidth: 'auto', px: 1 }}
                     >
                       <FastForwardIcon fontSize="small" />
+                    </Button>
+                  </Tooltip>
+                )}
+                {net.script && canManage && (
+                  <Tooltip title="View net script">
+                    <Button 
+                      size="small" 
+                      variant="outlined" 
+                      onClick={() => setScriptOpen(true)}
+                      sx={{ minWidth: 'auto', px: 1 }}
+                    >
+                      <DescriptionIcon fontSize="small" />
                     </Button>
                   </Tooltip>
                 )}
@@ -2361,6 +2377,15 @@ const NetView: React.FC = () => {
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         matchCount={filteredCheckIns.length}
+      />
+
+      {/* Net Script Viewer */}
+      <NetScript
+        open={scriptOpen}
+        onClose={() => setScriptOpen(false)}
+        script={net?.script || ''}
+        netName={net?.name || 'Net'}
+        netId={Number(netId)}
       />
 
       <Snackbar

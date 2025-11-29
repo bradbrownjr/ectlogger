@@ -93,6 +93,7 @@ class Net(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), nullable=False)
     description = Column(Text)
+    script = Column(Text)  # Net script for NCS to follow during net operations
     status = Column(Enum(NetStatus), default=NetStatus.DRAFT)
     owner_id = Column(Integer, ForeignKey("users.id"))
     active_frequency_id = Column(Integer, ForeignKey("frequencies.id"), nullable=True)
