@@ -17,6 +17,7 @@ import {
 import SendIcon from '@mui/icons-material/Send';
 import { chatApi, ChatMessage } from '../api/chat';
 import { useAuth } from '../contexts/AuthContext';
+import { formatTimeWithDate } from '../utils/dateUtils';
 
 interface ChatProps {
   netId: number;
@@ -124,30 +125,6 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, onNewMessage }) => {
     });
   };
 
-  const formatTime = (timestamp: string) => {
-    const date = new Date(timestamp);
-    
-    // Check if message is on a different day than net start
-    let showDate = false;
-    if (netStartedAt) {
-      const startDate = new Date(netStartedAt);
-      showDate = date.toLocaleDateString() !== startDate.toLocaleDateString();
-    }
-    
-    const timeStr = date.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
-      minute: '2-digit',
-      hour12: true 
-    });
-    
-    if (showDate) {
-      const dateStr = date.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' });
-      return `${dateStr} ${timeStr}`;
-    }
-    
-    return timeStr;
-  };
-
   return (
     <Paper 
       sx={{ 
@@ -213,7 +190,7 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, onNewMessage }) => {
                           variant="caption" 
                           color="text.secondary"
                         >
-                          {formatTime(message.created_at)}
+                          {formatTimeWithDate(message.created_at, user?.prefer_utc || false, netStartedAt)}
                         </Typography>
                         <Typography
                           component="span"
@@ -256,7 +233,7 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, onNewMessage }) => {
                           variant="caption" 
                           color="text.secondary"
                         >
-                          {formatTime(message.created_at)}
+                          {formatTimeWithDate(message.created_at, user?.prefer_utc || false, netStartedAt)}
                         </Typography>
                       </Box>
                     }
