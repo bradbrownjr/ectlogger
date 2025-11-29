@@ -514,7 +514,7 @@ async def close_net(
     for msg in result.scalars().all():
         chat_messages_data.append({
             'timestamp': format_time_for_net(msg.created_at, net.started_at, net.closed_at),
-            'callsign': msg.user.callsign if msg.user and msg.user.callsign else 'Unknown',
+            'callsign': msg.user.callsign if msg.user and msg.user.callsign else ('System' if msg.is_system else 'Unknown'),
             'message': msg.message
         })
     
