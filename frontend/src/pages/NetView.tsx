@@ -41,6 +41,7 @@ import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import DownloadIcon from '@mui/icons-material/Download';
 import ArchiveIcon from '@mui/icons-material/Archive';
 import MapIcon from '@mui/icons-material/Map';
+import FastForwardIcon from '@mui/icons-material/FastForward';
 import GroupIcon from '@mui/icons-material/Group';
 import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -51,6 +52,7 @@ import { formatDateTime, formatTime, formatTimeWithDate } from '../utils/dateUti
 import { useAuth } from '../contexts/AuthContext';
 import Chat from '../components/Chat';
 import CheckInMap from '../components/CheckInMap';
+import BulkCheckIn from '../components/BulkCheckIn';
 
 interface Net {
   id: number;
@@ -147,6 +149,7 @@ const NetView: React.FC = () => {
   const [frequencyDialogOpen, setFrequencyDialogOpen] = useState(false);
   const [fieldDefinitions, setFieldDefinitions] = useState<FieldDefinition[]>([]);
   const [mapOpen, setMapOpen] = useState(false);
+  const [bulkCheckInOpen, setBulkCheckInOpen] = useState(false);
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
@@ -874,11 +877,21 @@ const NetView: React.FC = () => {
                 )}
                 {canManage && net.status === 'active' && (
                   <>
+                    <Tooltip title="Bulk add multiple check-ins at once">
+                      <Button 
+                        size="small" 
+                        variant="outlined" 
+                        startIcon={<FastForwardIcon fontSize="small" />}
+                        onClick={() => setBulkCheckInOpen(true)}
+                      >
+                        Bulk
+                      </Button>
+                    </Tooltip>
                     <Button 
                       size="small" 
                       variant="outlined" 
                       startIcon={<EditIcon fontSize="small" />}
-                      onClick={() => navigate(`/nets/${netId}/edit`)}
+                      onClick={() => navigate(`/nets/${netId}/edit`)}}
                     >
                       Net
                     </Button>
@@ -2290,6 +2303,14 @@ const NetView: React.FC = () => {
         onClose={() => setMapOpen(false)}
         checkIns={checkIns}
         netName={net?.name || 'Net'}
+      />
+
+      {/* Bulk Check-In Dialog */}
+      <BulkCheckIn
+        open={bulkCheckInOpen}
+        onClose={() => setBulkCheckInOpen(false)}
+        netId={Number(netId)}
+        onCheckInsAdded={fetchCheckIns}
       />
 
       <Snackbar
