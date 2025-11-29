@@ -1112,7 +1112,7 @@ const NetView: React.FC = () => {
                             selectValue = userRole.role.toLowerCase();
                           }
                           // Only allow lowercase values for Select and MenuItem
-                          const validValues = ['ncs', 'logger', 'checked_in', 'listening', 'away', 'available', 'announcements'];
+                          const validValues = ['ncs', 'logger', 'checked_in', 'listening', 'relay', 'away', 'available', 'announcements'];
                           if (!validValues.includes(selectValue)) {
                             selectValue = 'checked_in';
                           }
@@ -1134,11 +1134,6 @@ const NetView: React.FC = () => {
                                   disableScrollLock: true,
                                   disableAutoFocusItem: false,
                                   autoFocus: true,
-                                  PaperProps: {
-                                    style: {
-                                      maxHeight: 300,
-                                    },
-                                  },
                                 }}
                               >
                                 {/* Always render the current value as an option to prevent MUI errors */}
@@ -1323,7 +1318,44 @@ const NetView: React.FC = () => {
                         opacity: checkIn.status === 'checked_out' ? 0.6 : 1,
                       }}>
                         <TableCell sx={{ whiteSpace: 'nowrap' }}>{index + 1}</TableCell>
-                        <TableCell sx={{ whiteSpace: 'nowrap' }}>{getStatusIcon(checkIn.status, checkIn)}</TableCell>
+                        <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                          {net.status === 'active' && checkIn.status !== 'checked_out' && (canManageCheckIns || checkIn.user_id === user?.id) ? (() => {
+                            const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
+                            let selectValue = checkIn.status.toLowerCase();
+                            if (userRole && ['ncs', 'logger'].includes(userRole.role.toLowerCase())) {
+                              selectValue = userRole.role.toLowerCase();
+                            }
+                            const validValues = ['ncs', 'logger', 'checked_in', 'listening', 'relay', 'away', 'available', 'announcements'];
+                            if (!validValues.includes(selectValue)) {
+                              selectValue = 'checked_in';
+                            }
+                            return (
+                              <Select
+                                size="small"
+                                value={selectValue}
+                                onChange={async (e) => {
+                                  await handleStatusChange(checkIn.id, e.target.value);
+                                  await fetchNetRoles();
+                                  await fetchCheckIns();
+                                }}
+                                sx={{ minWidth: 45 }}
+                                disabled={owner?.id === checkIn.user_id}
+                                MenuProps={{ disableScrollLock: true }}
+                              >
+                                {((canManageCheckIns || selectValue === 'ncs') && <MenuItem value="ncs">👑</MenuItem>)}
+                                {((canManageCheckIns || selectValue === 'logger') && <MenuItem value="logger">📋</MenuItem>)}
+                                <MenuItem value="checked_in">{checkIn.is_recheck ? '🔄' : '✅'}</MenuItem>
+                                <MenuItem value="listening">👂</MenuItem>
+                                <MenuItem value="relay">📡</MenuItem>
+                                <MenuItem value="away">⏸️</MenuItem>
+                                <MenuItem value="available">🚨</MenuItem>
+                                <MenuItem value="announcements">📢</MenuItem>
+                              </Select>
+                            );
+                          })() : (
+                            <span>{getStatusIcon(checkIn.status, checkIn)}</span>
+                          )}
+                        </TableCell>
                         <TableCell sx={{ whiteSpace: 'nowrap' }}>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                             {checkIn.user_id && onlineUserIds.includes(checkIn.user_id) && (
