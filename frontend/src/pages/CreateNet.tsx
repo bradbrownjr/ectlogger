@@ -32,7 +32,6 @@ import FormatBoldIcon from '@mui/icons-material/FormatBold';
 import FormatItalicIcon from '@mui/icons-material/FormatItalic';
 import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
 import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
-import TitleIcon from '@mui/icons-material/Title';
 import HorizontalRuleIcon from '@mui/icons-material/HorizontalRule';
 import { netApi, frequencyApi } from '../services/api';
 import api from '../services/api';
@@ -636,11 +635,22 @@ const CreateNet: React.FC = () => {
 
           {/* Formatting Toolbar */}
           <Box sx={{ display: 'flex', gap: 0.5, mb: 1, p: 1, bgcolor: 'action.hover', borderRadius: 1 }}>
-            <Tooltip title="Heading (## )">
-              <IconButton size="small" onClick={() => insertMarkdown('## ', '', 'Heading')}>
-                <TitleIcon fontSize="small" />
+            <Tooltip title="Heading 1">
+              <IconButton size="small" onClick={() => insertMarkdown('# ', '', 'Heading')} sx={{ fontWeight: 'bold', fontSize: '0.85rem' }}>
+                H1
               </IconButton>
             </Tooltip>
+            <Tooltip title="Heading 2">
+              <IconButton size="small" onClick={() => insertMarkdown('## ', '', 'Heading')} sx={{ fontWeight: 'bold', fontSize: '0.8rem' }}>
+                H2
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Heading 3">
+              <IconButton size="small" onClick={() => insertMarkdown('### ', '', 'Heading')} sx={{ fontWeight: 'bold', fontSize: '0.75rem' }}>
+                H3
+              </IconButton>
+            </Tooltip>
+            <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
             <Tooltip title="Bold (**text**)">
               <IconButton size="small" onClick={() => insertMarkdown('**', '**', 'bold text')}>
                 <FormatBoldIcon fontSize="small" />
