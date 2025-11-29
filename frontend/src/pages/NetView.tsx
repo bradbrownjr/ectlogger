@@ -88,6 +88,7 @@ interface CheckIn {
   skywarn_number?: string;
   weather_observation?: string;
   power_source?: string;
+  power?: string;
   notes?: string;
   custom_fields?: Record<string, string>;
   relayed_by?: string;
@@ -157,6 +158,7 @@ const NetView: React.FC = () => {
     skywarn_number: '',
     weather_observation: '',
     power_source: '',
+    power: '',
     feedback: '',
     notes: '',
     relayed_by: '',
@@ -374,6 +376,7 @@ const NetView: React.FC = () => {
         skywarn_number: '',
         weather_observation: '',
         power_source: '',
+        power: '',
         feedback: '',
         notes: '',
         available_frequency_ids: [],
@@ -495,6 +498,7 @@ const NetView: React.FC = () => {
         skywarn_number: '',
         weather_observation: '',
         power_source: '',
+        power: '',
         feedback: '',
         notes: '',
         relayed_by: '',
@@ -671,6 +675,7 @@ const NetView: React.FC = () => {
         skywarn_number: editingCheckIn.skywarn_number,
         weather_observation: editingCheckIn.weather_observation,
         power_source: editingCheckIn.power_source,
+        power: editingCheckIn.power,
         notes: editingCheckIn.notes,
         available_frequency_ids: editingCheckIn.available_frequencies || [],
       });
@@ -927,6 +932,7 @@ const NetView: React.FC = () => {
                             skywarn_number: '',
                             weather_observation: '',
                             power_source: '',
+                            power: '',
                             feedback: '',
                             notes: '',
                             available_frequency_ids: [],
@@ -1044,7 +1050,8 @@ const NetView: React.FC = () => {
                       {net?.field_config?.location?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Location {net.field_config.location.required && '*'}</TableCell>}
                       {net?.field_config?.skywarn_number?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Spotter {net.field_config.skywarn_number.required && '*'}</TableCell>}
                       {net?.field_config?.weather_observation?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Weather {net.field_config.weather_observation.required && '*'}</TableCell>}
-                      {net?.field_config?.power_source?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Power {net.field_config.power_source.required && '*'}</TableCell>}
+                      {net?.field_config?.power_source?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Power Src {net.field_config.power_source.required && '*'}</TableCell>}
+                      {net?.field_config?.power?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Power {net.field_config.power.required && '*'}</TableCell>}
                       {net?.field_config?.notes?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Notes {net.field_config.notes.required && '*'}</TableCell>}
                       {/* Custom fields */}
                       {getEnabledCustomFields().map((field) => (
@@ -1073,6 +1080,7 @@ const NetView: React.FC = () => {
                     if (net?.field_config?.skywarn_number?.enabled) columnCount++;
                     if (net?.field_config?.weather_observation?.enabled) columnCount++;
                     if (net?.field_config?.power_source?.enabled) columnCount++;
+                    if (net?.field_config?.power?.enabled) columnCount++;
                     if (net?.field_config?.notes?.enabled) columnCount++;
                     columnCount += getEnabledCustomFields().length;
                     if (hasAnyRelayedBy) columnCount++;
@@ -1188,6 +1196,7 @@ const NetView: React.FC = () => {
                       {net?.field_config?.skywarn_number?.enabled && <TableCell sx={{ width: 70 }}>{checkIn.skywarn_number}</TableCell>}
                       {net?.field_config?.weather_observation?.enabled && <TableCell>{checkIn.weather_observation}</TableCell>}
                       {net?.field_config?.power_source?.enabled && <TableCell sx={{ width: 70 }}>{checkIn.power_source}</TableCell>}
+                      {net?.field_config?.power?.enabled && <TableCell sx={{ width: 70 }}>{checkIn.power}</TableCell>}
                       {net?.field_config?.notes?.enabled && <TableCell>{checkIn.notes}</TableCell>}
                       {/* Custom field values */}
                       {getEnabledCustomFields().map((field) => (
@@ -1299,7 +1308,8 @@ const NetView: React.FC = () => {
                     {net?.field_config?.location?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Location {net.field_config.location.required && '*'}</TableCell>}
                     {net?.field_config?.skywarn_number?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Spotter {net.field_config.skywarn_number.required && '*'}</TableCell>}
                     {net?.field_config?.weather_observation?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Weather {net.field_config.weather_observation.required && '*'}</TableCell>}
-                    {net?.field_config?.power_source?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Power {net.field_config.power_source.required && '*'}</TableCell>}
+                    {net?.field_config?.power_source?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Power Src {net.field_config.power_source.required && '*'}</TableCell>}
+                    {net?.field_config?.power?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Power {net.field_config.power.required && '*'}</TableCell>}
                     {net?.field_config?.notes?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Notes {net.field_config.notes.required && '*'}</TableCell>}
                     {getEnabledCustomFields().map((field) => (
                       <TableCell key={field.name} sx={{ whiteSpace: 'nowrap' }}>
@@ -1380,6 +1390,7 @@ const NetView: React.FC = () => {
                         {net?.field_config?.skywarn_number?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.skywarn_number}</TableCell>}
                         {net?.field_config?.weather_observation?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.weather_observation}</TableCell>}
                         {net?.field_config?.power_source?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.power_source}</TableCell>}
+                        {net?.field_config?.power?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.power}</TableCell>}
                         {net?.field_config?.notes?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.notes}</TableCell>}
                         {getEnabledCustomFields().map((field) => (
                           <TableCell key={field.name} sx={{ whiteSpace: 'nowrap' }}>{checkIn.custom_fields?.[field.name] || ''}</TableCell>
@@ -1536,10 +1547,29 @@ const NetView: React.FC = () => {
                               handleCheckIn();
                             }
                           }}
-                          placeholder="Power"
+                          placeholder="Pwr Src"
                           inputProps={{ style: { fontSize: '0.875rem' } }}
                           fullWidth
                           required={net.field_config.power_source.required}
+                        />
+                      </TableCell>
+                    )}
+                    {net?.field_config?.power?.enabled && (
+                      <TableCell>
+                        <TextField
+                          size="small"
+                          value={checkInForm.power}
+                          onChange={(e) => setCheckInForm({ ...checkInForm, power: e.target.value })}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleCheckIn();
+                            }
+                          }}
+                          placeholder="Power"
+                          inputProps={{ style: { fontSize: '0.875rem' } }}
+                          fullWidth
+                          required={net.field_config.power.required}
                         />
                       </TableCell>
                     )}
@@ -1625,9 +1655,9 @@ const NetView: React.FC = () => {
                             handleCheckIn();
                           }
                         }}
-                        placeholder="Relayed By"
-                        inputProps={{ style: { textTransform: 'uppercase', fontSize: '0.875rem' } }}
-                        sx={{ width: 90 }}
+                        placeholder="Relay"
+                        inputProps={{ style: { textTransform: 'uppercase', fontSize: '0.75rem' } }}
+                        sx={{ width: 70 }}
                       />
                     </TableCell>
                     <TableCell>-</TableCell>
@@ -1730,12 +1760,24 @@ const NetView: React.FC = () => {
                   {net?.field_config?.power_source?.enabled && (
                     <TextField
                       size="small"
-                      label={`Power${net.field_config.power_source.required ? ' *' : ''}`}
+                      label={`Power Src${net.field_config.power_source.required ? ' *' : ''}`}
                       value={checkInForm.power_source}
                       onChange={(e) => setCheckInForm({ ...checkInForm, power_source: e.target.value })}
                       placeholder="Power source"
                       fullWidth
                       required={net.field_config.power_source.required}
+                    />
+                  )}
+                  
+                  {net?.field_config?.power?.enabled && (
+                    <TextField
+                      size="small"
+                      label={`Power${net.field_config.power.required ? ' *' : ''}`}
+                      value={checkInForm.power}
+                      onChange={(e) => setCheckInForm({ ...checkInForm, power: e.target.value })}
+                      placeholder="Power output"
+                      fullWidth
+                      required={net.field_config.power.required}
                     />
                   )}
                   
@@ -2028,9 +2070,17 @@ const NetView: React.FC = () => {
               )}
               {net?.field_config?.power_source?.enabled && (
                 <TextField
-                  label="Power Source"
+                  label="Power Src"
                   value={editingCheckIn.power_source || ''}
                   onChange={(e) => setEditingCheckIn({ ...editingCheckIn, power_source: e.target.value })}
+                  fullWidth
+                />
+              )}
+              {net?.field_config?.power?.enabled && (
+                <TextField
+                  label="Power"
+                  value={editingCheckIn.power || ''}
+                  onChange={(e) => setEditingCheckIn({ ...editingCheckIn, power: e.target.value })}
                   fullWidth
                 />
               )}
@@ -2161,11 +2211,21 @@ const NetView: React.FC = () => {
             
             {net?.field_config?.power_source?.enabled && (
               <TextField
-                label="Power Source"
+                label="Power Src"
                 value={checkInForm.power_source}
                 onChange={(e) => setCheckInForm({ ...checkInForm, power_source: e.target.value })}
                 fullWidth
                 required={net.field_config.power_source.required}
+              />
+            )}
+            
+            {net?.field_config?.power?.enabled && (
+              <TextField
+                label="Power"
+                value={checkInForm.power}
+                onChange={(e) => setCheckInForm({ ...checkInForm, power: e.target.value })}
+                fullWidth
+                required={net.field_config.power.required}
               />
             )}
             

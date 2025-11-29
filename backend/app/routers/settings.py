@@ -20,7 +20,8 @@ BUILTIN_FIELDS = [
     {"name": "location", "label": "Location", "field_type": "text", "default_enabled": True, "is_builtin": True, "sort_order": 20},
     {"name": "skywarn_number", "label": "Spotter #", "field_type": "text", "default_enabled": False, "is_builtin": True, "sort_order": 30},
     {"name": "weather_observation", "label": "Weather", "field_type": "textarea", "default_enabled": False, "is_builtin": True, "sort_order": 40},
-    {"name": "power_source", "label": "Power Source", "field_type": "text", "default_enabled": False, "is_builtin": True, "sort_order": 50},
+    {"name": "power_source", "label": "Power Src", "field_type": "text", "default_enabled": False, "is_builtin": True, "sort_order": 50},
+    {"name": "power", "label": "Power", "field_type": "text", "default_enabled": False, "is_builtin": True, "sort_order": 55},
     {"name": "feedback", "label": "Feedback", "field_type": "textarea", "default_enabled": False, "is_builtin": True, "sort_order": 60},
     {"name": "notes", "label": "Notes", "field_type": "textarea", "default_enabled": False, "is_builtin": True, "sort_order": 70},
 ]

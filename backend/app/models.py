@@ -97,7 +97,7 @@ class Net(Base):
     owner_id = Column(Integer, ForeignKey("users.id"))
     active_frequency_id = Column(Integer, ForeignKey("frequencies.id"), nullable=True)
     template_id = Column(Integer, ForeignKey("net_templates.id"), nullable=True)
-    field_config = Column(Text, default='{"name": {"enabled": true, "required": false}, "location": {"enabled": true, "required": false}, "skywarn_number": {"enabled": false, "required": false}, "weather_observation": {"enabled": false, "required": false}, "power_source": {"enabled": false, "required": false}, "feedback": {"enabled": false, "required": false}, "notes": {"enabled": false, "required": false}}')  # JSON config for check-in fields
+    field_config = Column(Text, default='{"name": {"enabled": true, "required": false}, "location": {"enabled": true, "required": false}, "skywarn_number": {"enabled": false, "required": false}, "weather_observation": {"enabled": false, "required": false}, "power_source": {"enabled": false, "required": false}, "power": {"enabled": false, "required": false}, "feedback": {"enabled": false, "required": false}, "notes": {"enabled": false, "required": false}}')  # JSON config for check-in fields
     started_at = Column(DateTime(timezone=True))
     closed_at = Column(DateTime(timezone=True))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -121,7 +121,7 @@ class NetTemplate(Base):
     name = Column(String(200), nullable=False)
     description = Column(Text)
     owner_id = Column(Integer, ForeignKey("users.id"))
-    field_config = Column(Text, default='{"name": {"enabled": true, "required": false}, "location": {"enabled": true, "required": false}, "skywarn_number": {"enabled": false, "required": false}, "weather_observation": {"enabled": false, "required": false}, "power_source": {"enabled": false, "required": false}, "feedback": {"enabled": false, "required": false}, "notes": {"enabled": false, "required": false}}')
+    field_config = Column(Text, default='{"name": {"enabled": true, "required": false}, "location": {"enabled": true, "required": false}, "skywarn_number": {"enabled": false, "required": false}, "weather_observation": {"enabled": false, "required": false}, "power_source": {"enabled": false, "required": false}, "power": {"enabled": false, "required": false}, "feedback": {"enabled": false, "required": false}, "notes": {"enabled": false, "required": false}}')
     is_active = Column(Boolean, default=True)
     
     # Schedule configuration
@@ -198,6 +198,7 @@ class CheckIn(Base):
     skywarn_number = Column(String(50))
     weather_observation = Column(Text)
     power_source = Column(String(255))
+    power = Column(String(255))  # Power output (e.g., "100W", "50W mobile")
     feedback = Column(Text)
     notes = Column(Text)
     relayed_by = Column(String(50))  # Callsign of relay station if this check-in was relayed
@@ -347,7 +348,7 @@ class AppSettings(Base):
 
     id = Column(Integer, primary_key=True, default=1)
     # Default field configuration for new nets
-    default_field_config = Column(Text, default='{"name": {"enabled": true, "required": false, "label": "Name"}, "location": {"enabled": true, "required": false, "label": "Location"}, "skywarn_number": {"enabled": false, "required": false, "label": "Spotter #"}, "weather_observation": {"enabled": false, "required": false, "label": "Weather"}, "power_source": {"enabled": false, "required": false, "label": "Power Source"}, "feedback": {"enabled": false, "required": false, "label": "Feedback"}, "notes": {"enabled": false, "required": false, "label": "Notes"}}')
+    default_field_config = Column(Text, default='{"name": {"enabled": true, "required": false, "label": "Name"}, "location": {"enabled": true, "required": false, "label": "Location"}, "skywarn_number": {"enabled": false, "required": false, "label": "Spotter #"}, "weather_observation": {"enabled": false, "required": false, "label": "Weather"}, "power_source": {"enabled": false, "required": false, "label": "Power Src"}, "power": {"enabled": false, "required": false, "label": "Power"}, "feedback": {"enabled": false, "required": false, "label": "Feedback"}, "notes": {"enabled": false, "required": false, "label": "Notes"}}')
     # Field labels (for display across the app)
-    field_labels = Column(Text, default='{"name": "Name", "location": "Location", "skywarn_number": "Spotter #", "weather_observation": "Weather", "power_source": "Power Source", "feedback": "Feedback", "notes": "Notes"}')
+    field_labels = Column(Text, default='{"name": "Name", "location": "Location", "skywarn_number": "Spotter #", "weather_observation": "Weather", "power_source": "Power Src", "power": "Power", "feedback": "Feedback", "notes": "Notes"}')
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

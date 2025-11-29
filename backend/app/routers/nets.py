@@ -478,6 +478,7 @@ async def close_net(
             'skywarn_number': check_in.skywarn_number or '',
             'weather_observation': check_in.weather_observation or '',
             'power_source': check_in.power_source or '',
+            'power': check_in.power or '',
             'feedback': check_in.feedback or '',
             'notes': check_in.notes or '',
             'status': check_in.status.value if check_in.status else ''
@@ -585,7 +586,7 @@ async def export_net_csv(
     headers = [
         "Check-in Time", "Callsign", "Name", "Location", 
         "Available Frequencies", "Spotter #", "Weather Observation",
-        "Power Source", "Feedback", "Notes", "Relayed By", "Status"
+        "Power Src", "Power", "Feedback", "Notes", "Relayed By", "Status"
     ]
     writer.writerow(headers)
     
@@ -611,6 +612,7 @@ async def export_net_csv(
             check_in.skywarn_number or "",
             check_in.weather_observation or "",
             check_in.power_source or "",
+            check_in.power or "",
             check_in.feedback or "",
             check_in.notes or "",
             check_in.relayed_by or "",
