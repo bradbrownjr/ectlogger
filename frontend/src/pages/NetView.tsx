@@ -1237,7 +1237,7 @@ const NetView: React.FC = () => {
                             color={checkIn.id === activeSpeakerId ? 'primary' : 'default'}
                             title="Mark as active speaker"
                           >
-                            🎤
+                            🗣️
                           </IconButton>
                         )}
                         <IconButton
