@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     
     # Logging
     log_level: str = "INFO"  # DEBUG, INFO, WARNING, ERROR
+    log_file: Optional[str] = None  # Optional file path for Fail2Ban integration
     
     # Frontend
     frontend_url: str = "http://localhost:3000"

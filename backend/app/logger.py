@@ -34,8 +34,8 @@ class Logger:
         self._setup_log_file()
     
     def _setup_log_file(self):
-        """Setup log file if LOG_FILE is configured"""
-        log_file_path = os.environ.get("LOG_FILE")
+        """Setup log file if log_file is configured in settings"""
+        log_file_path = settings.log_file
         if log_file_path:
             try:
                 # Ensure directory exists
