@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -11,6 +11,7 @@ from app.auth import create_access_token, create_magic_link_token, verify_magic_
 from app.email_service import EmailService
 from app.config import settings
 from app.logger import logger
+from app.security import get_client_ip
 from datetime import timedelta
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
@@ -97,16 +98,18 @@ async def get_or_create_user(db: AsyncSession, email: str, name: str, provider: 
 @router.post("/magic-link/request")
 async def request_magic_link(
     request: MagicLinkRequest,
+    req: Request,
     db: AsyncSession = Depends(get_db)
 ):
     """Request a magic link to sign in via email"""
-    logger.info("API", f"Magic link request received for {request.email}")
+    client_ip = get_client_ip(req)
+    logger.info("API", f"Magic link request received for {request.email}", ip=client_ip)
     
     # Check if user exists and is banned
     result = await db.execute(select(User).where(User.email == request.email))
     existing_user = result.scalar_one_or_none()
     if existing_user and not existing_user.is_active:
-        logger.warning("API", f"Magic link request denied - user is banned: {request.email}")
+        logger.banned_access(request.email, client_ip)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Your account has been deactivated. Please contact an administrator."
@@ -137,35 +140,37 @@ async def request_magic_link(
 @router.post("/magic-link/verify", response_model=Token)
 async def verify_magic_link(
     request: MagicLinkVerify,
+    req: Request,
     db: AsyncSession = Depends(get_db)
 ):
     """Verify magic link token and sign in"""
-    logger.info("API", "Magic link verification request received")
-    logger.debug("API", f"Token: {request.token[:20]}...{request.token[-10:]} (truncated)")
+    client_ip = get_client_ip(req)
+    logger.info("API", "Magic link verification request received", ip=client_ip)
+    logger.debug("API", f"Token: {request.token[:20]}...{request.token[-10:]} (truncated)", ip=client_ip)
     
     email = verify_magic_link_token(request.token)
     
     if not email:
-        logger.warning("API", "Invalid or expired magic link token")
+        logger.auth_failure("Invalid or expired magic link token", client_ip)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired magic link"
         )
     
-    logger.debug("API", f"Token valid for email: {email}")
+    logger.debug("API", f"Token valid for email: {email}", ip=client_ip)
     
     # Get or create user
     user = await get_or_create_user(db, email, email, "email", email)
     
     # Check if user is banned (is_active = False)
     if not user.is_active:
-        logger.warning("API", f"Banned user attempted login: {user.email} (ID: {user.id})")
+        logger.banned_access(user.email, client_ip)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Your account has been locked. Please contact an administrator for assistance."
         )
     
-    logger.info("API", f"User authenticated: {user.email} (ID: {user.id})")
+    logger.auth_success(user.email, client_ip)
     
     # Create access token (sub must be string per JWT spec)
     access_token = create_access_token(
@@ -173,7 +178,7 @@ async def verify_magic_link(
         expires_delta=timedelta(minutes=settings.access_token_expire_minutes)
     )
     
-    logger.debug("API", "Access token created successfully")
+    logger.debug("API", "Access token created successfully", ip=client_ip)
     
     return Token(
         access_token=access_token,

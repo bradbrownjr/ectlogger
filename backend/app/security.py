@@ -4,6 +4,33 @@ Security utilities for input sanitization and validation
 import html
 import re
 from typing import Optional
+from fastapi import Request
+
+
+def get_client_ip(request: Request) -> str:
+    """
+    Extract the client IP address from a request.
+    Handles reverse proxy headers (X-Forwarded-For, X-Real-IP).
+    
+    Returns the client's real IP address for logging and Fail2Ban.
+    """
+    # Check X-Forwarded-For header (set by reverse proxies)
+    forwarded_for = request.headers.get("X-Forwarded-For")
+    if forwarded_for:
+        # X-Forwarded-For can contain multiple IPs: client, proxy1, proxy2
+        # The first IP is the original client
+        return forwarded_for.split(",")[0].strip()
+    
+    # Check X-Real-IP header (set by nginx)
+    real_ip = request.headers.get("X-Real-IP")
+    if real_ip:
+        return real_ip.strip()
+    
+    # Fall back to direct client IP
+    if request.client:
+        return request.client.host
+    
+    return "unknown"
 
 
 def sanitize_html(text: Optional[str]) -> Optional[str]:
