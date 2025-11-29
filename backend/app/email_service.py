@@ -670,6 +670,7 @@ This is an automated message, please do not reply.
                             {% if has_frequencies %}<th>Frequencies</th>{% endif %}
                             {% if has_skywarn %}<th>Spotter #</th>{% endif %}
                             {% if has_weather %}<th>Weather</th>{% endif %}
+                            {% if has_power_source %}<th>Power Src</th>{% endif %}
                             {% if has_power %}<th>Power</th>{% endif %}
                         </tr>
                     </thead>
@@ -683,7 +684,8 @@ This is an automated message, please do not reply.
                             {% if has_frequencies %}<td>{{ check_in.frequencies }}</td>{% endif %}
                             {% if has_skywarn %}<td>{{ check_in.skywarn_number }}</td>{% endif %}
                             {% if has_weather %}<td>{{ check_in.weather_observation }}</td>{% endif %}
-                            {% if has_power %}<td>{{ check_in.power_source }}</td>{% endif %}
+                            {% if has_power_source %}<td>{{ check_in.power_source }}</td>{% endif %}
+                            {% if has_power %}<td>{{ check_in.power }}</td>{% endif %}
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -702,7 +704,8 @@ This is an automated message, please do not reply.
         has_frequencies = any(c.get('frequencies') for c in check_ins)
         has_skywarn = any(c.get('skywarn_number') for c in check_ins)
         has_weather = any(c.get('weather_observation') for c in check_ins)
-        has_power = any(c.get('power_source') for c in check_ins)
+        has_power_source = any(c.get('power_source') for c in check_ins)
+        has_power = any(c.get('power') for c in check_ins)
         
         html_content = html_template.render(
             app_name=settings.app_name,
@@ -716,6 +719,7 @@ This is an automated message, please do not reply.
             has_frequencies=has_frequencies,
             has_skywarn=has_skywarn,
             has_weather=has_weather,
+            has_power_source=has_power_source,
             has_power=has_power
         )
         
@@ -724,7 +728,7 @@ This is an automated message, please do not reply.
         writer = csv.writer(output)
         writer.writerow([
             "Check-in Time", "Callsign", "Name", "Location", 
-            "Spotter #", "Weather Observation", "Power Source", 
+            "Spotter #", "Weather Observation", "Power Src", "Power",
             "Feedback", "Notes", "Status"
         ])
         
@@ -737,6 +741,7 @@ This is an automated message, please do not reply.
                 check_in.get('skywarn_number', ''),
                 check_in.get('weather_observation', ''),
                 check_in.get('power_source', ''),
+                check_in.get('power', ''),
                 check_in.get('feedback', ''),
                 check_in.get('notes', ''),
                 check_in.get('status', '')
