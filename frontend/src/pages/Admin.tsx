@@ -92,6 +92,9 @@ interface Fail2BanStatus {
   banned_ips: string[];
   log_file_configured: boolean;
   log_file_path: string | null;
+  max_retries: number;
+  find_time: number;
+  ban_time: number;
 }
 
 interface SecurityLogEntry {
@@ -712,24 +715,30 @@ const Admin: React.FC = () => {
                   )}
 
                   {securityInfo.fail2ban.jail_enabled && (
-                    <Box sx={{ display: 'flex', gap: 4, mt: 2 }}>
-                      <Box>
-                        <Typography variant="h4" color="error.main">
-                          {securityInfo.fail2ban.currently_banned}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          Currently Banned
-                        </Typography>
+                    <>
+                      <Box sx={{ display: 'flex', gap: 4, mt: 2, flexWrap: 'wrap' }}>
+                        <Box>
+                          <Typography variant="h4" color="error.main">
+                            {securityInfo.fail2ban.currently_banned}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            Currently Banned
+                          </Typography>
+                        </Box>
+                        <Box>
+                          <Typography variant="h4" color="text.secondary">
+                            {securityInfo.fail2ban.total_banned}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            Total Banned (All Time)
+                          </Typography>
+                        </Box>
                       </Box>
-                      <Box>
-                        <Typography variant="h4" color="text.secondary">
-                          {securityInfo.fail2ban.total_banned}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          Total Banned (All Time)
-                        </Typography>
-                      </Box>
-                    </Box>
+                      <Alert severity="info" sx={{ mt: 2 }}>
+                        <strong>Ban Settings:</strong> After {securityInfo.fail2ban.max_retries} failed login attempts within {Math.round(securityInfo.fail2ban.find_time / 60)} minutes, the IP is banned for {Math.round(securityInfo.fail2ban.ban_time / 60)} minutes.
+                        {' '}Settings can be adjusted in <code>/etc/fail2ban/jail.d/ectlogger.conf</code>
+                      </Alert>
+                    </>
                   )}
 
                   {securityInfo.fail2ban.log_file_path && (
@@ -740,46 +749,67 @@ const Admin: React.FC = () => {
                 </CardContent>
               </Card>
 
-              {/* Banned IPs */}
-              {securityInfo.fail2ban.banned_ips.length > 0 && (
+              {/* Banned IPs - always show when jail is enabled */}
+              {securityInfo.fail2ban.jail_enabled && (
                 <Card variant="outlined">
                   <CardContent>
                     <Typography variant="h6" gutterBottom>
                       <BlockIcon sx={{ verticalAlign: 'middle', mr: 1 }} />
                       Currently Banned IPs
                     </Typography>
-                    <TableContainer>
-                      <Table size="small">
-                        <TableHead>
-                          <TableRow>
-                            <TableCell>IP Address</TableCell>
-                            <TableCell align="right">Actions</TableCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {securityInfo.fail2ban.banned_ips.map((ip) => (
-                            <TableRow key={ip}>
-                              <TableCell>
-                                <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
-                                  {ip}
-                                </Typography>
-                              </TableCell>
-                              <TableCell align="right">
-                                <Tooltip title="Unban this IP">
-                                  <IconButton
-                                    size="small"
-                                    color="success"
-                                    onClick={() => handleUnbanIp(ip)}
-                                  >
-                                    <LockOpenIcon />
-                                  </IconButton>
-                                </Tooltip>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
+                    {securityInfo.fail2ban.banned_ips.length === 0 ? (
+                      <Typography variant="body2" color="text.secondary">
+                        No IPs are currently banned. IPs are automatically unbanned after {Math.round(securityInfo.fail2ban.ban_time / 60)} minutes.
+                      </Typography>
+                    ) : (
+                      <>
+                        <Alert severity="warning" sx={{ mb: 2 }}>
+                          These IPs are blocked from accessing ECTLogger. They will be automatically unbanned after the ban period expires,
+                          or you can manually unban them using the button below.
+                        </Alert>
+                        <TableContainer>
+                          <Table size="small">
+                            <TableHead>
+                              <TableRow>
+                                <TableCell>IP Address</TableCell>
+                                <TableCell>Status</TableCell>
+                                <TableCell align="right">Actions</TableCell>
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {securityInfo.fail2ban.banned_ips.map((ip) => (
+                                <TableRow key={ip}>
+                                  <TableCell>
+                                    <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                                      {ip}
+                                    </Typography>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Chip size="small" label="Banned" color="error" icon={<BlockIcon />} />
+                                  </TableCell>
+                                  <TableCell align="right">
+                                    <Tooltip title="Unban this IP - allows immediate access">
+                                      <Button
+                                        size="small"
+                                        variant="outlined"
+                                        color="success"
+                                        startIcon={<LockOpenIcon />}
+                                        onClick={() => handleUnbanIp(ip)}
+                                      >
+                                        Unban
+                                      </Button>
+                                    </Tooltip>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </TableContainer>
+                        <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
+                          To unban via command line: <code>sudo fail2ban-client set ectlogger unbanip IP_ADDRESS</code>
+                        </Typography>
+                      </>
+                    )}
                   </CardContent>
                 </Card>
               )}

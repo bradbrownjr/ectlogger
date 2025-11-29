@@ -22,6 +22,10 @@ class Fail2BanStatus(BaseModel):
     banned_ips: List[str]
     log_file_configured: bool
     log_file_path: Optional[str]
+    # Ban settings (from jail config)
+    max_retries: int = 5
+    find_time: int = 600  # seconds (10 minutes)
+    ban_time: int = 3600  # seconds (1 hour)
 
 
 class SecurityLogEntry(BaseModel):

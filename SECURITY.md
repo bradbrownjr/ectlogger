@@ -138,6 +138,36 @@ FRONTEND_URL=https://your-domain.com
 - User input sanitized before email inclusion
 - No execution of user-provided code
 
+### 8. Fail2Ban Integration (Optional)
+
+ECTLogger supports optional Fail2Ban integration for automatic IP banning after repeated failed login attempts.
+
+**Features:**
+- Automatic IP banning after 5 failed attempts within 10 minutes
+- 1-hour ban duration (configurable)
+- Admin UI for viewing banned IPs and manually unbanning
+- Compatible with existing Fail2Ban installations
+
+**Quick Setup:**
+```bash
+# During installation, select "Yes" when prompted for Fail2Ban setup
+# Or manually set up later:
+sudo cp fail2ban/filter.d/ectlogger.conf /etc/fail2ban/filter.d/
+sudo cp fail2ban/jail.d/ectlogger.conf /etc/fail2ban/jail.d/
+sudo systemctl restart fail2ban
+```
+
+**Admin Commands:**
+```bash
+# Check jail status
+sudo fail2ban-client status ectlogger
+
+# Manually unban an IP
+sudo fail2ban-client set ectlogger unbanip 192.168.1.100
+```
+
+For complete Fail2Ban setup instructions, see **[FAIL2BAN.md](FAIL2BAN.md)**.
+
 ## Vulnerability Reporting
 
 If you discover a security vulnerability, please report it to:

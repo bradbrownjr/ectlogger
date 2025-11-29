@@ -35,9 +35,12 @@ ECTLogger implements comprehensive security measures to protect your data and pr
 - **SQL Injection Prevention** - SQLAlchemy ORM with parameterized queries
 - **Rate Limiting** - 200 requests/minute per IP prevents abuse and DDoS attacks
 - **Authenticated WebSockets** - JWT token required for real-time connections
+- **Fail2Ban Integration** - Optional automatic IP banning after repeated failed login attempts
 - **OWASP Top 10** - Protected against the most critical web application security risks
 
 For complete security documentation, deployment best practices, and vulnerability reporting, see **[SECURITY.md](SECURITY.md)**.
+
+For Fail2Ban setup instructions, see **[FAIL2BAN.md](FAIL2BAN.md)**.
 
 ## 🚀 Quick Start
 
