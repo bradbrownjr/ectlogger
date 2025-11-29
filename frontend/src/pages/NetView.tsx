@@ -1112,7 +1112,7 @@ const NetView: React.FC = () => {
                             selectValue = userRole.role.toLowerCase();
                           }
                           // Only allow lowercase values for Select and MenuItem
-                          const validValues = ['ncs', 'logger', 'checked_in', 'listening', 'relay', 'away', 'available', 'announcements'];
+                          const validValues = ['ncs', 'logger', 'checked_in', 'listening', 'relay', 'away', 'available', 'announcements', 'checked_out'];
                           if (!validValues.includes(selectValue)) {
                             selectValue = 'checked_in';
                           }
@@ -1145,6 +1145,7 @@ const NetView: React.FC = () => {
                                 <MenuItem value="away">⏸️</MenuItem>
                                 <MenuItem value="available">🚨</MenuItem>
                                 <MenuItem value="announcements">📢</MenuItem>
+                                {canManageCheckIns && <MenuItem value="checked_out">👋</MenuItem>}
                               </Select>
                             </Tooltip>
                           );
@@ -1325,7 +1326,7 @@ const NetView: React.FC = () => {
                             if (userRole && ['ncs', 'logger'].includes(userRole.role.toLowerCase())) {
                               selectValue = userRole.role.toLowerCase();
                             }
-                            const validValues = ['ncs', 'logger', 'checked_in', 'listening', 'relay', 'away', 'available', 'announcements'];
+                            const validValues = ['ncs', 'logger', 'checked_in', 'listening', 'relay', 'away', 'available', 'announcements', 'checked_out'];
                             if (!validValues.includes(selectValue)) {
                               selectValue = 'checked_in';
                             }
@@ -1350,6 +1351,7 @@ const NetView: React.FC = () => {
                                 <MenuItem value="away">⏸️</MenuItem>
                                 <MenuItem value="available">🚨</MenuItem>
                                 <MenuItem value="announcements">📢</MenuItem>
+                                {canManageCheckIns && <MenuItem value="checked_out">👋</MenuItem>}
                               </Select>
                             );
                           })() : (
