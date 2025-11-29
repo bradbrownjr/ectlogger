@@ -53,6 +53,7 @@ import CheckInMap from '../components/CheckInMap';
 import BulkCheckIn from '../components/BulkCheckIn';
 import SearchCheckIns from '../components/SearchCheckIns';
 import NetScript from '../components/NetScript';
+import FloatingWindow from '../components/FloatingWindow';
 
 interface Net {
   id: number;
@@ -154,6 +155,12 @@ const NetView: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [closeNetDialogOpen, setCloseNetDialogOpen] = useState(false);
   const [scriptOpen, setScriptOpen] = useState(false);
+  const [checkInListDetached, setCheckInListDetached] = useState(() => {
+    return localStorage.getItem('floatingWindow_checkInList_detached') === 'true';
+  });
+  const [chatDetached, setChatDetached] = useState(() => {
+    return localStorage.getItem('floatingWindow_chat_detached') === 'true';
+  });
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
@@ -200,6 +207,20 @@ const NetView: React.FC = () => {
       fetchOwner();
     }
   }, [net?.owner_id]);
+
+  // Persist detached panel states to localStorage
+  useEffect(() => {
+    localStorage.setItem('floatingWindow_checkInList_detached', String(checkInListDetached));
+  }, [checkInListDetached]);
+
+  useEffect(() => {
+    localStorage.setItem('floatingWindow_chat_detached', String(chatDetached));
+  }, [chatDetached]);
+
+  const handleDetachCheckInList = () => setCheckInListDetached(true);
+  const handleAttachCheckInList = () => setCheckInListDetached(false);
+  const handleDetachChat = () => setChatDetached(true);
+  const handleAttachChat = () => setChatDetached(false);
 
   const connectWebSocket = () => {
     // Get JWT token from localStorage (optional - guests can still connect)
@@ -1060,7 +1081,20 @@ const NetView: React.FC = () => {
 
         {(net.status === 'active' || net.status === 'closed' || net.status === 'archived') && (
           <Grid container spacing={0} sx={{ mt: 0.5, flex: { xs: 'none', md: 1 }, minHeight: 0 }}>
-            <Grid item xs={12} md={8} sx={{ pr: { md: 0.5 }, display: 'flex', flexDirection: 'column', minHeight: { xs: 'auto', md: 0 }, height: { xs: 'auto', md: '100%' }, mb: { xs: 2, md: 0 } }}>
+            {/* Check-in list - hide Grid if detached */}
+            {!checkInListDetached && (
+            <Grid item xs={12} md={chatDetached ? 12 : 8} sx={{ pr: { md: 0.5 }, display: 'flex', flexDirection: 'column', minHeight: { xs: 'auto', md: 0 }, height: { xs: 'auto', md: '100%' }, mb: { xs: 2, md: 0 } }}>
+              <FloatingWindow
+                title="Check-in List"
+                isDetached={false}
+                onDetach={handleDetachCheckInList}
+                onAttach={handleAttachCheckInList}
+                defaultWidth={900}
+                defaultHeight={600}
+                minWidth={400}
+                minHeight={300}
+                storageKey="checkInList"
+              >
               {/* Desktop: Combined table with sticky header */}
               <TableContainer sx={{ 
                 flex: { xs: 'none', md: 1 }, 
@@ -1925,12 +1959,127 @@ const NetView: React.FC = () => {
                 </Box>
               </Paper>
             )}
+              </FloatingWindow>
             </Grid>
+            )}
             
-            <Grid item xs={12} md={4} sx={{ pl: { md: 0.5 }, display: 'flex', flexDirection: 'column', minHeight: { xs: 300, md: 0 }, height: { xs: 350, md: '100%' } }}>
+            {/* Chat panel - hide Grid if detached */}
+            {!chatDetached && (
+            <Grid item xs={12} md={checkInListDetached ? 12 : 4} sx={{ pl: { md: 0.5 }, display: 'flex', flexDirection: 'column', minHeight: { xs: 300, md: 0 }, height: { xs: 350, md: '100%' } }}>
+              <FloatingWindow
+                title="Chat"
+                isDetached={false}
+                onDetach={handleDetachChat}
+                onAttach={handleAttachChat}
+                defaultWidth={450}
+                defaultHeight={500}
+                minWidth={300}
+                minHeight={250}
+                storageKey="chat"
+              >
               <Chat netId={Number(netId)} netStartedAt={net?.started_at} netStatus={net?.status} searchQuery={searchQuery} />
+              </FloatingWindow>
             </Grid>
+            )}
           </Grid>
+        )}
+
+        {/* Floating Check-in List when detached */}
+        {checkInListDetached && (net.status === 'active' || net.status === 'closed' || net.status === 'archived') && (
+          <FloatingWindow
+            title="Check-in List"
+            isDetached={true}
+            onDetach={handleDetachCheckInList}
+            onAttach={handleAttachCheckInList}
+            defaultWidth={900}
+            defaultHeight={600}
+            minWidth={400}
+            minHeight={300}
+            storageKey="checkInList"
+          >
+            <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              {/* Desktop: Combined table with sticky header */}
+              <TableContainer sx={{ 
+                flex: 1, 
+                overflow: 'auto', 
+                minHeight: 0,
+                '&::-webkit-scrollbar': {
+                  width: 8,
+                  height: 8,
+                },
+                '&::-webkit-scrollbar-track': {
+                  backgroundColor: (thm) => thm.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                },
+                '&::-webkit-scrollbar-thumb': {
+                  backgroundColor: (thm) => thm.palette.mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)',
+                  borderRadius: 4,
+                },
+              }}>
+                <Table size="small" sx={{ borderCollapse: 'collapse' }}>
+                  <TableHead sx={{ position: 'sticky', top: 0, backgroundColor: 'background.paper', zIndex: 1 }}>
+                    <TableRow>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>#</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>Status</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>Callsign</TableCell>
+                      {net?.field_config?.name?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Name</TableCell>}
+                      {net?.field_config?.location?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Location</TableCell>}
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>Time</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {filteredCheckIns.map((checkIn, index) => (
+                      <TableRow 
+                        key={checkIn.id}
+                        sx={{ 
+                          backgroundColor: checkIn.id === activeSpeakerId 
+                            ? (thm) => thm.palette.mode === 'dark' ? thm.palette.success.dark : thm.palette.success.light
+                            : checkIn.status === 'checked_out' ? 'action.disabledBackground' : 'inherit',
+                          opacity: checkIn.status === 'checked_out' ? 0.6 : 1,
+                        }}
+                      >
+                        <TableCell>{index + 1}</TableCell>
+                        <TableCell>
+                          <Tooltip title={getStatusTooltip(checkIn.status, checkIn)} placement="right" arrow>
+                            <span style={{ cursor: 'help' }}>{getStatusIcon(checkIn.status, checkIn)}</span>
+                          </Tooltip>
+                        </TableCell>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            {checkIn.user_id && onlineUserIds.includes(checkIn.user_id) && (
+                              <Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: 'success.main', flexShrink: 0 }} />
+                            )}
+                            {checkIn.callsign}
+                          </Box>
+                        </TableCell>
+                        {net?.field_config?.name?.enabled && <TableCell>{checkIn.name}</TableCell>}
+                        {net?.field_config?.location?.enabled && <TableCell>{checkIn.location}</TableCell>}
+                        <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                          {formatTimeWithDate(checkIn.checked_in_at, user?.prefer_utc || false, net?.started_at)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Box>
+          </FloatingWindow>
+        )}
+
+        {/* Floating Chat when detached */}
+        {chatDetached && (net.status === 'active' || net.status === 'closed' || net.status === 'archived') && (
+          <FloatingWindow
+            title="Chat"
+            isDetached={true}
+            onDetach={handleDetachChat}
+            onAttach={handleAttachChat}
+            defaultWidth={450}
+            defaultHeight={500}
+            minWidth={300}
+            minHeight={250}
+            storageKey="chat"
+          >
+            <Chat netId={Number(netId)} netStartedAt={net?.started_at} netStatus={net?.status} searchQuery={searchQuery} />
+          </FloatingWindow>
         )}
       </Paper>
 
