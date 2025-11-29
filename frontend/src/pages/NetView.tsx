@@ -1084,7 +1084,7 @@ const NetView: React.FC = () => {
                           ? 'action.disabledBackground' 
                           : isOnActiveFrequency
                           ? (theme) => theme.palette.mode === 'dark' ? 'rgba(25, 118, 210, 0.15)' : 'rgba(25, 118, 210, 0.08)'
-                          : 'inherit',
+                          : 'transparent',
                         opacity: checkIn.status === 'checked_out' ? 0.6 : 1,
                         border: checkIn.id === activeSpeakerId ? 2 : 0,
                         borderColor: checkIn.id === activeSpeakerId ? 'success.main' : 'transparent',
@@ -1233,7 +1233,7 @@ const NetView: React.FC = () => {
                           ? 'action.disabledBackground' 
                           : isOnActiveFrequency
                           ? (theme) => theme.palette.mode === 'dark' ? 'rgba(25, 118, 210, 0.15)' : 'rgba(25, 118, 210, 0.08)'
-                          : 'inherit',
+                          : 'transparent',
                         opacity: checkIn.status === 'checked_out' ? 0.6 : 1,
                       }}>
                         <TableCell colSpan={columnCount} sx={{ py: 0.25, borderBottom: 1, borderColor: 'divider' }}>
