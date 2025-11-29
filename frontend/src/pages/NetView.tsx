@@ -866,46 +866,52 @@ const NetView: React.FC = () => {
                   </>
                 )}
                 {net.status === 'active' && checkIns.length > 0 && (
-                  <Button 
-                    size="small" 
-                    variant="outlined" 
-                    startIcon={<MapIcon fontSize="small" />}
-                    onClick={() => setMapOpen(true)}
-                  >
-                    Map
-                  </Button>
+                  <Tooltip title="View check-in locations on map">
+                    <Button 
+                      size="small" 
+                      variant="outlined" 
+                      onClick={() => setMapOpen(true)}
+                      sx={{ minWidth: 'auto', px: 1 }}
+                    >
+                      <MapIcon fontSize="small" />
+                    </Button>
+                  </Tooltip>
                 )}
                 {canManage && net.status === 'active' && (
                   <>
-                    <Tooltip title="Bulk add multiple check-ins at once">
+                    <Tooltip title="Bulk add multiple check-ins">
                       <Button 
                         size="small" 
                         variant="outlined" 
-                        startIcon={<FastForwardIcon fontSize="small" />}
                         onClick={() => setBulkCheckInOpen(true)}
+                        sx={{ minWidth: 'auto', px: 1 }}
                       >
-                        Bulk
+                        <FastForwardIcon fontSize="small" />
                       </Button>
                     </Tooltip>
-                    <Button 
-                      size="small" 
-                      variant="outlined" 
-                      startIcon={<EditIcon fontSize="small" />}
-                      onClick={() => navigate(`/nets/${netId}/edit`)}
-                    >
-                      Net
-                    </Button>
-                    <Button 
-                      size="small" 
-                      variant="outlined" 
-                      startIcon={<GroupIcon fontSize="small" />}
-                      onClick={() => {
-                        fetchAllUsers();
-                        setRoleDialogOpen(true);
-                      }}
-                    >
-                      Roles
-                    </Button>
+                    <Tooltip title="Edit net settings">
+                      <Button 
+                        size="small" 
+                        variant="outlined" 
+                        onClick={() => navigate(`/nets/${netId}/edit`)}
+                        sx={{ minWidth: 'auto', px: 1 }}
+                      >
+                        <EditIcon fontSize="small" />
+                      </Button>
+                    </Tooltip>
+                    <Tooltip title="Manage NCS and logger roles">
+                      <Button 
+                        size="small" 
+                        variant="outlined" 
+                        onClick={() => {
+                          fetchAllUsers();
+                          setRoleDialogOpen(true);
+                        }}
+                        sx={{ minWidth: 'auto', px: 1 }}
+                      >
+                        <GroupIcon fontSize="small" />
+                      </Button>
+                    </Tooltip>
                     {!hasNCS && (
                       <Button 
                         size="small" 
@@ -920,84 +926,94 @@ const NetView: React.FC = () => {
                 )}
                 {isAuthenticated && net.status === 'active' && (
                   userActiveCheckIn ? (
-                    <Button 
-                      size="small"
-                      variant="outlined" 
-                      color="error"
-                      startIcon={<LogoutIcon fontSize="small" />}
-                      onClick={handleCheckOut}
-                    >
-                      Out
-                    </Button>
-                  ) : (
-                    <Button 
-                      size="small"
-                      variant="contained" 
-                      color="primary"
-                      startIcon={<LoginIcon fontSize="small" />}
-                      onClick={() => {
-                        // Pre-fill form with user's profile data
-                        if (user) {
-                          setCheckInForm({
-                            callsign: getAppropriateCallsign(),
-                            name: user.name || '',
-                            location: user.location || '',
-                            skywarn_number: '',
-                            weather_observation: '',
-                            power_source: '',
-                            power: '',
-                            feedback: '',
-                            notes: '',
-                            available_frequency_ids: [],
-                          });
-                        }
-                        if (canManageCheckIns) {
-                          // NCS/Logger: Scroll to and focus the callsign field
-                          const callsignField = document.querySelector('input[placeholder="Callsign"]') as HTMLInputElement;
-                          if (callsignField) {
-                            callsignField.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                            callsignField.focus();
-                          }
-                        } else {
-                          // Regular user: Open check-in dialog
-                          setCheckInDialogOpen(true);
-                        }
-                      }}
-                    >
-                      In
-                    </Button>
-                  )
-                )}
-                {canManage && net.status === 'active' && (
-                  <Button 
-                    size="small" 
-                    variant="contained" 
-                    color="error" 
-                    startIcon={<CloseIcon fontSize="small" />}
-                    onClick={handleCloseNet}
-                  >
-                    Close
-                  </Button>
-                )}
-                {net.status === 'closed' && (
-                  <>
-                    <Button 
-                      size="small"
-                      variant="outlined" 
-                      startIcon={<DownloadIcon fontSize="small" />} 
-                      onClick={handleExportCSV}
-                    >
-                      CSV
-                    </Button>
-                    {canManage && (
+                    <Tooltip title="Check out of net">
                       <Button 
                         size="small"
                         variant="outlined" 
-                        startIcon={<ArchiveIcon fontSize="small" />} 
-                        onClick={handleArchive}
+                        color="error"
+                        onClick={handleCheckOut}
+                        sx={{ minWidth: 'auto', px: 1 }}
                       >
-                        Archive
+                        <LogoutIcon fontSize="small" />
                       </Button>
+                    </Tooltip>
+                  ) : (
+                    <Tooltip title="Check into net">
+                      <Button 
+                        size="small"
+                        variant="contained" 
+                        color="primary"
+                        onClick={() => {
+                          // Pre-fill form with user's profile data
+                          if (user) {
+                            setCheckInForm({
+                              callsign: getAppropriateCallsign(),
+                              name: user.name || '',
+                              location: user.location || '',
+                              skywarn_number: '',
+                              weather_observation: '',
+                              power_source: '',
+                              power: '',
+                              feedback: '',
+                              notes: '',
+                              available_frequency_ids: [],
+                            });
+                          }
+                          if (canManageCheckIns) {
+                            // NCS/Logger: Scroll to and focus the callsign field
+                            const callsignField = document.querySelector('input[placeholder="Callsign"]') as HTMLInputElement;
+                            if (callsignField) {
+                              callsignField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                              callsignField.focus();
+                            }
+                          } else {
+                            // Regular user: Open check-in dialog
+                            setCheckInDialogOpen(true);
+                          }
+                        }}
+                        sx={{ minWidth: 'auto', px: 1 }}
+                      >
+                        <LoginIcon fontSize="small" />
+                      </Button>
+                    </Tooltip>
+                  )
+                )}
+                {canManage && net.status === 'active' && (
+                  <Tooltip title="Close net">
+                    <Button 
+                      size="small" 
+                      variant="contained" 
+                      color="error" 
+                      onClick={handleCloseNet}
+                      sx={{ minWidth: 'auto', px: 1 }}
+                    >
+                      <CloseIcon fontSize="small" />
+                    </Button>
+                  </Tooltip>
+                )}
+                {net.status === 'closed' && (
+                  <>
+                    <Tooltip title="Export check-ins to CSV">
+                      <Button 
+                        size="small"
+                        variant="outlined" 
+                        onClick={handleExportCSV}
+                        sx={{ minWidth: 'auto', px: 1 }}
+                      >
+                        <DownloadIcon fontSize="small" />
+                      </Button>
+                    </Tooltip>
+                    {canManage && (
+                      <Tooltip title="Archive net">
+                        <Button 
+                          size="small"
+                          variant="outlined" 
+                          onClick={handleArchive}
+                          sx={{ minWidth: 'auto', px: 1 }}
+                        >
+                          <ArchiveIcon fontSize="small" />
+                        </Button>
+                      </Tooltip>
                     )}
                   </>
                 )}
