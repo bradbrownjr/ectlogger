@@ -859,6 +859,18 @@ const NetView: React.FC = () => {
                   </>
                 )}
                 {net.status === 'active' && checkIns.length > 0 && (
+                  <Tooltip title="Bulk add multiple check-ins">
+                    <Button 
+                      size="small" 
+                      variant="outlined" 
+                      onClick={() => setBulkCheckInOpen(true)}
+                      sx={{ minWidth: 'auto', px: 1 }}
+                    >
+                      <FastForwardIcon fontSize="small" />
+                    </Button>
+                  </Tooltip>
+                )}
+                {checkIns.length > 0 && (
                   <>
                     <Tooltip title="Search check-ins">
                       <Button 
@@ -884,16 +896,6 @@ const NetView: React.FC = () => {
                 )}
                 {canManage && net.status === 'active' && (
                   <>
-                    <Tooltip title="Bulk add multiple check-ins">
-                      <Button 
-                        size="small" 
-                        variant="outlined" 
-                        onClick={() => setBulkCheckInOpen(true)}
-                        sx={{ minWidth: 'auto', px: 1 }}
-                      >
-                        <FastForwardIcon fontSize="small" />
-                      </Button>
-                    </Tooltip>
                     <Tooltip title="Edit net settings">
                       <Button 
                         size="small" 
