@@ -1088,12 +1088,12 @@ const NetView: React.FC = () => {
                         opacity: checkIn.status === 'checked_out' ? 0.6 : 1,
                         border: checkIn.id === activeSpeakerId ? 2 : 0,
                         borderColor: checkIn.id === activeSpeakerId ? 'success.main' : 'transparent',
-                        '& .MuiTableCell-root': {
+                        '& td, & th': {
                           ...(checkIn.id === activeSpeakerId ? { fontWeight: 'bold' } : {}),
                           verticalAlign: 'middle',
                           whiteSpace: 'nowrap',
                           // Remove bottom border if frequency chips row follows
-                          ...(hasFrequencyChips ? { borderBottom: 0, borderBottomStyle: 'none' } : {}),
+                          ...(hasFrequencyChips ? { border: 0 } : {}),
                         }
                       }}
                     >
