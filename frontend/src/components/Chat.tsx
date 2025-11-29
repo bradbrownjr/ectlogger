@@ -25,10 +25,11 @@ interface ChatProps {
   netId: number;
   netStartedAt?: string;
   netStatus?: string;
+  searchQuery?: string;
   onNewMessage?: (message: ChatMessage) => void;
 }
 
-const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, onNewMessage }) => {
+const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery, onNewMessage }) => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -77,10 +78,22 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, onNewMessag
     scrollToBottom();
   }, [messages]);
 
-  // Filter messages based on user preference for system messages
-  const filteredMessages = user?.show_activity_in_chat !== false 
-    ? messages 
-    : messages.filter(m => !m.is_system);
+  // Filter messages based on user preference for system messages AND search query
+  const filteredMessages = messages.filter(m => {
+    // First filter by system message preference
+    if (user?.show_activity_in_chat === false && m.is_system) {
+      return false;
+    }
+    // Then filter by search query if present
+    if (searchQuery && searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      const senderMatch = m.sender_callsign?.toLowerCase().includes(query) || 
+                          m.sender_display_name?.toLowerCase().includes(query);
+      const messageMatch = m.message?.toLowerCase().includes(query);
+      return senderMatch || messageMatch;
+    }
+    return true;
+  });
 
   const fetchMessages = async () => {
     try {

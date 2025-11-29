@@ -19,7 +19,6 @@ import {
   DialogActions,
   TextField,
   IconButton,
-  Alert,
   FormControl,
   InputLabel,
   Select,
@@ -27,32 +26,31 @@ import {
   List,
   ListItem,
   ListItemText,
-  ListItemSecondaryAction,
   Snackbar,
   Autocomplete,
   Grid,
   Tooltip,
-  useMediaQuery,
   useTheme,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import DownloadIcon from '@mui/icons-material/Download';
 import ArchiveIcon from '@mui/icons-material/Archive';
 import MapIcon from '@mui/icons-material/Map';
 import FastForwardIcon from '@mui/icons-material/FastForward';
+import SearchIcon from '@mui/icons-material/Search';
 import GroupIcon from '@mui/icons-material/Group';
 import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
 import CloseIcon from '@mui/icons-material/Close';
 import { netApi, checkInApi } from '../services/api';
 import api from '../services/api';
-import { formatDateTime, formatTime, formatTimeWithDate } from '../utils/dateUtils';
+import { formatTimeWithDate } from '../utils/dateUtils';
 import { useAuth } from '../contexts/AuthContext';
 import Chat from '../components/Chat';
 import CheckInMap from '../components/CheckInMap';
 import BulkCheckIn from '../components/BulkCheckIn';
+import SearchCheckIns from '../components/SearchCheckIns';
 
 interface Net {
   id: number;
@@ -129,7 +127,6 @@ interface NetRole {
 const NetView: React.FC = () => {
   const { netId } = useParams<{ netId: string }>();
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [net, setNet] = useState<Net | null>(null);
   const [checkIns, setCheckIns] = useState<CheckIn[]>([]);
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
@@ -150,6 +147,8 @@ const NetView: React.FC = () => {
   const [fieldDefinitions, setFieldDefinitions] = useState<FieldDefinition[]>([]);
   const [mapOpen, setMapOpen] = useState(false);
   const [bulkCheckInOpen, setBulkCheckInOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
@@ -442,15 +441,10 @@ const NetView: React.FC = () => {
 
   // Get custom fields (non-builtin) that are enabled for this net
   const getEnabledCustomFields = () => {
-    return fieldDefinitions.filter(field => 
+    return fieldDefinitions.filter((field: FieldDefinition) => 
       !field.is_builtin && 
       net?.field_config?.[field.name]?.enabled
     );
-  };
-
-  // Check if a builtin field is enabled
-  const isFieldEnabled = (fieldName: string) => {
-    return net?.field_config?.[fieldName]?.enabled ?? false;
   };
 
   // Check if a field is required
@@ -554,19 +548,6 @@ const NetView: React.FC = () => {
       case 'announcements': return '📢'; // Has announcements
       case 'checked_out': return '👋'; // Checked out
       default: return '✅';
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'checked_in': return 'Standard';
-      case 'listening': return 'Just Listening';
-      case 'relay': return 'Relay Station';
-      case 'away': return 'Short Term';
-      case 'available': return 'Has Traffic';
-      case 'announcements': return 'Announcements';
-      case 'checked_out': return 'Checked Out';
-      default: return 'Standard';
     }
   };
 
@@ -695,7 +676,7 @@ const NetView: React.FC = () => {
     const newActiveSpeakerId = activeSpeakerId === checkInId ? null : checkInId;
     
     // Show toast if setting someone with "listening" status as active speaker
-    const checkIn = checkIns.find(ci => ci.id === checkInId);
+    const checkIn = checkIns.find((ci: CheckIn) => ci.id === checkInId);
     if (checkIn && checkIn.status === 'listening' && newActiveSpeakerId !== null) {
       setToastMessage(`${checkIn.callsign} is set to "Just Listening"`);
     }
@@ -746,6 +727,18 @@ const NetView: React.FC = () => {
   
   // Check if net has any NCS assigned
   const hasNCS = netRoles.some((role: any) => role.role === 'NCS');
+
+  // Filter check-ins based on search query
+  const filteredCheckIns = searchQuery.trim() 
+    ? checkIns.filter((checkIn: CheckIn) => {
+        const query = searchQuery.toLowerCase();
+        return (
+          checkIn.callsign?.toLowerCase().includes(query) ||
+          checkIn.name?.toLowerCase().includes(query) ||
+          checkIn.location?.toLowerCase().includes(query)
+        );
+      })
+    : checkIns;
 
   // Find the user's active check-in (not checked out)
   const userActiveCheckIn = checkIns.find(
@@ -866,16 +859,28 @@ const NetView: React.FC = () => {
                   </>
                 )}
                 {net.status === 'active' && checkIns.length > 0 && (
-                  <Tooltip title="View check-in locations on map">
-                    <Button 
-                      size="small" 
-                      variant="outlined" 
-                      onClick={() => setMapOpen(true)}
-                      sx={{ minWidth: 'auto', px: 1 }}
-                    >
-                      <MapIcon fontSize="small" />
-                    </Button>
-                  </Tooltip>
+                  <>
+                    <Tooltip title="Search check-ins">
+                      <Button 
+                        size="small" 
+                        variant={searchQuery ? "contained" : "outlined"}
+                        onClick={() => setSearchOpen(true)}
+                        sx={{ minWidth: 'auto', px: 1 }}
+                      >
+                        <SearchIcon fontSize="small" />
+                      </Button>
+                    </Tooltip>
+                    <Tooltip title="View check-in locations on map">
+                      <Button 
+                        size="small" 
+                        variant="outlined" 
+                        onClick={() => setMapOpen(true)}
+                        sx={{ minWidth: 'auto', px: 1 }}
+                      >
+                        <MapIcon fontSize="small" />
+                      </Button>
+                    </Tooltip>
+                  </>
                 )}
                 {canManage && net.status === 'active' && (
                   <>
@@ -1086,7 +1091,7 @@ const NetView: React.FC = () => {
                   </TableHead>
                   <TableBody>
                   {/* Existing check-ins */}
-                  {checkIns.map((checkIn, index) => {
+                  {filteredCheckIns.map((checkIn, index) => {
                     // Check if this station is available on the active frequency
                     const isOnActiveFrequency = net.active_frequency_id && 
                       checkIn.available_frequencies && 
@@ -1342,7 +1347,7 @@ const NetView: React.FC = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {checkIns.map((checkIn, index) => {
+                  {filteredCheckIns.map((checkIn, index) => {
                     const isOnActiveFrequency = net.active_frequency_id && checkIn.available_frequencies?.includes(net.active_frequency_id);
                     return (
                       <TableRow key={checkIn.id} sx={{ 
@@ -1903,7 +1908,7 @@ const NetView: React.FC = () => {
             </Grid>
             
             <Grid item xs={12} md={4} sx={{ pl: { md: 0.5 }, display: 'flex', flexDirection: 'column', minHeight: { xs: 300, md: 0 }, height: { xs: 350, md: '100%' } }}>
-              <Chat netId={Number(netId)} netStartedAt={net?.started_at} netStatus={net?.status} />
+              <Chat netId={Number(netId)} netStartedAt={net?.started_at} netStatus={net?.status} searchQuery={searchQuery} />
             </Grid>
           </Grid>
         )}
@@ -2317,7 +2322,7 @@ const NetView: React.FC = () => {
       <CheckInMap
         open={mapOpen}
         onClose={() => setMapOpen(false)}
-        checkIns={checkIns}
+        checkIns={filteredCheckIns}
         netName={net?.name || 'Net'}
       />
 
@@ -2327,6 +2332,15 @@ const NetView: React.FC = () => {
         onClose={() => setBulkCheckInOpen(false)}
         netId={Number(netId)}
         onCheckInsAdded={fetchCheckIns}
+      />
+
+      {/* Search Dialog */}
+      <SearchCheckIns
+        open={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        matchCount={filteredCheckIns.length}
       />
 
       <Snackbar
