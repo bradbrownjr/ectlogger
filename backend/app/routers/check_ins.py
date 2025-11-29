@@ -109,6 +109,8 @@ async def create_check_in(
             existing_check_in.feedback = check_in_data.feedback
         if check_in_data.notes:
             existing_check_in.notes = check_in_data.notes
+        if check_in_data.relayed_by is not None:
+            existing_check_in.relayed_by = check_in_data.relayed_by.upper() if check_in_data.relayed_by else None
         # Merge custom fields
         if check_in_data.custom_fields:
             existing_custom = json.loads(existing_check_in.custom_fields) if existing_check_in.custom_fields else {}
@@ -139,6 +141,7 @@ async def create_check_in(
             power_source=check_in_data.power_source,
             feedback=check_in_data.feedback,
             notes=check_in_data.notes,
+            relayed_by=check_in_data.relayed_by.upper() if check_in_data.relayed_by else None,
             custom_fields=custom_fields_json,
             frequency_id=check_in_data.frequency_id,
             available_frequencies=available_frequencies_json,

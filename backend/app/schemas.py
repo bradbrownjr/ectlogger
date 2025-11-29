@@ -270,6 +270,7 @@ class CheckInBase(BaseModel):
     power_source: Optional[str] = Field(None, max_length=100)
     feedback: Optional[str] = Field(None, max_length=1000)
     notes: Optional[str] = Field(None, max_length=2000)
+    relayed_by: Optional[str] = Field(None, max_length=50)
     
     @field_validator('callsign')
     @classmethod
@@ -311,6 +312,7 @@ class CheckInUpdate(BaseModel):
     power_source: Optional[str] = Field(None, max_length=100)
     feedback: Optional[str] = Field(None, max_length=1000)
     notes: Optional[str] = Field(None, max_length=2000)
+    relayed_by: Optional[str] = Field(None, max_length=50)
     available_frequency_ids: Optional[List[int]] = None
     custom_fields: Optional[dict] = None
 

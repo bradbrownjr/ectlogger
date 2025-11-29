@@ -585,7 +585,7 @@ async def export_net_csv(
     headers = [
         "Check-in Time", "Callsign", "Name", "Location", 
         "Available Frequencies", "Spotter #", "Weather Observation",
-        "Power Source", "Feedback", "Notes", "Status"
+        "Power Source", "Feedback", "Notes", "Relayed By", "Status"
     ]
     writer.writerow(headers)
     
@@ -613,6 +613,7 @@ async def export_net_csv(
             check_in.power_source or "",
             check_in.feedback or "",
             check_in.notes or "",
+            check_in.relayed_by or "",
             check_in.status.value if check_in.status else ""
         ])
     

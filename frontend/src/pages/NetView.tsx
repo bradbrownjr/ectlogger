@@ -90,6 +90,7 @@ interface CheckIn {
   power_source?: string;
   notes?: string;
   custom_fields?: Record<string, string>;
+  relayed_by?: string;
   status: string;
   is_recheck: boolean;
   checked_in_at: string;
@@ -158,6 +159,7 @@ const NetView: React.FC = () => {
     power_source: '',
     feedback: '',
     notes: '',
+    relayed_by: '',
     available_frequency_ids: [] as number[],
     custom_fields: {} as Record<string, string>,
   });
@@ -492,6 +494,7 @@ const NetView: React.FC = () => {
         power_source: '',
         feedback: '',
         notes: '',
+        relayed_by: '',
         available_frequency_ids: [],
         custom_fields: {},
       });
@@ -535,6 +538,7 @@ const NetView: React.FC = () => {
     switch (status) {
       case 'checked_in': return '✅'; // Standard
       case 'listening': return '👂'; // Just listening
+      case 'relay': return '📡'; // Relay station
       case 'away': return '⏸️'; // Short term
       case 'available': return '🚨'; // Has traffic
       case 'announcements': return '📢'; // Has announcements
@@ -547,6 +551,7 @@ const NetView: React.FC = () => {
     switch (status) {
       case 'checked_in': return 'Standard';
       case 'listening': return 'Just Listening';
+      case 'relay': return 'Relay Station';
       case 'away': return 'Short Term';
       case 'available': return 'Has Traffic';
       case 'announcements': return 'Announcements';
@@ -569,6 +574,7 @@ const NetView: React.FC = () => {
     switch (status) {
       case 'checked_in': return 'Checked in and available';
       case 'listening': return 'Monitoring only, not transmitting';
+      case 'relay': return 'Relay station - can relay stations NCS cannot hear';
       case 'away': return 'Temporarily away, will return';
       case 'available': return 'Has traffic or emergency to report';
       case 'announcements': return 'Has announcements to share';
@@ -1043,6 +1049,7 @@ const NetView: React.FC = () => {
                           {field.label} {isFieldRequired(field.name) && '*'}
                         </TableCell>
                       ))}
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>Relay</TableCell>
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>Time</TableCell>
                       {canManage && <TableCell sx={{ whiteSpace: 'nowrap' }}>Actions</TableCell>}
                     </TableRow>
@@ -1139,6 +1146,7 @@ const NetView: React.FC = () => {
                                 {((canManageCheckIns || selectValue === 'logger') && <MenuItem value="logger">📋</MenuItem>)}
                                 <MenuItem value="checked_in">{checkIn.is_recheck ? '🔄' : '✅'}</MenuItem>
                                 <MenuItem value="listening">👂</MenuItem>
+                                <MenuItem value="relay">📡</MenuItem>
                                 <MenuItem value="away">⏸️</MenuItem>
                                 <MenuItem value="available">🚨</MenuItem>
                                 <MenuItem value="announcements">📢</MenuItem>
@@ -1168,6 +1176,11 @@ const NetView: React.FC = () => {
                           <Box sx={{ fontWeight: 500 }}>
                             {checkIn.callsign}
                           </Box>
+                          {checkIn.relayed_by && (
+                            <Tooltip title={`Relayed by ${checkIn.relayed_by}`} arrow>
+                              <span style={{ cursor: 'help' }}>📡</span>
+                            </Tooltip>
+                          )}
                         </Box>
                       </TableCell>
                       {net?.field_config?.name?.enabled && <TableCell>{checkIn.name}</TableCell>}
@@ -1182,6 +1195,7 @@ const NetView: React.FC = () => {
                           {checkIn.custom_fields?.[field.name] || ''}
                         </TableCell>
                       ))}
+                      <TableCell sx={{ width: 80 }}>{checkIn.relayed_by || ''}</TableCell>
                       <TableCell sx={{ width: 95 }}>
                         {formatTime(checkIn.checked_in_at, user?.prefer_utc || false)}
                       </TableCell>
@@ -1292,6 +1306,7 @@ const NetView: React.FC = () => {
                         {field.label} {isFieldRequired(field.name) && '*'}
                       </TableCell>
                     ))}
+                    <TableCell sx={{ whiteSpace: 'nowrap' }}>Relay</TableCell>
                     <TableCell sx={{ whiteSpace: 'nowrap' }}>Time</TableCell>
                     {canManage && <TableCell sx={{ whiteSpace: 'nowrap' }}>Actions</TableCell>}
                   </TableRow>
@@ -1315,6 +1330,11 @@ const NetView: React.FC = () => {
                               <Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: 'success.main', flexShrink: 0 }} />
                             )}
                             {checkIn.callsign}
+                            {checkIn.relayed_by && (
+                              <Tooltip title={`Relayed by ${checkIn.relayed_by}`} arrow>
+                                <span>📡</span>
+                              </Tooltip>
+                            )}
                           </Box>
                         </TableCell>
                         {net?.field_config?.name?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.name}</TableCell>}
@@ -1326,6 +1346,7 @@ const NetView: React.FC = () => {
                         {getEnabledCustomFields().map((field) => (
                           <TableCell key={field.name} sx={{ whiteSpace: 'nowrap' }}>{checkIn.custom_fields?.[field.name] || ''}</TableCell>
                         ))}
+                        <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.relayed_by || ''}</TableCell>
                         <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatTime(checkIn.checked_in_at, user?.prefer_utc || false)}</TableCell>
                         {canManage && (
                           <TableCell sx={{ whiteSpace: 'nowrap' }}>
@@ -1346,10 +1367,10 @@ const NetView: React.FC = () => {
                 <Typography variant="caption" sx={{ fontWeight: 'bold' }}>Legend:</Typography>
                 <Tooltip title="Net Control Station - manages the net" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>👑 NCS</Typography></Tooltip>
                 <Tooltip title="Logger - assists NCS with logging" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>📋 Logger</Typography></Tooltip>
-                <Tooltip title="Relay - checks in stations on behalf of NCS" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>📡 Relay</Typography></Tooltip>
                 <Tooltip title="Checked in and available" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>✅ Standard</Typography></Tooltip>
                 <Tooltip title="Re-checked into the net" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>🔄 Recheck</Typography></Tooltip>
                 <Tooltip title="Monitoring only, not transmitting" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>👂 Listening</Typography></Tooltip>
+                <Tooltip title="Relay station - can relay stations NCS cannot hear" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>📡 Relay</Typography></Tooltip>
                 <Tooltip title="Temporarily away, will return" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>⏸️ Away</Typography></Tooltip>
                 <Tooltip title="Has traffic or emergency to report" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>🚨 Traffic</Typography></Tooltip>
                 <Tooltip title="Has announcements to share" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>📢 Announce</Typography></Tooltip>
@@ -1555,6 +1576,22 @@ const NetView: React.FC = () => {
                         )}
                       </TableCell>
                     ))}
+                    <TableCell>
+                      <TextField
+                        size="small"
+                        value={checkInForm.relayed_by}
+                        onChange={(e) => setCheckInForm({ ...checkInForm, relayed_by: e.target.value.toUpperCase() })}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleCheckIn();
+                          }
+                        }}
+                        placeholder="Relay"
+                        inputProps={{ style: { textTransform: 'uppercase', fontSize: '0.875rem' } }}
+                        sx={{ width: 80 }}
+                      />
+                    </TableCell>
                     <TableCell>-</TableCell>
                     <TableCell>
                       <Box sx={{ display: 'flex', gap: 0.5 }}>
@@ -1724,6 +1761,18 @@ const NetView: React.FC = () => {
                       />
                     )
                   ))}
+                  
+                  {/* Relayed By field */}
+                  <TextField
+                    size="small"
+                    label="Relayed By"
+                    value={checkInForm.relayed_by}
+                    onChange={(e) => setCheckInForm({ ...checkInForm, relayed_by: e.target.value.toUpperCase() })}
+                    placeholder="Relay callsign"
+                    inputProps={{ style: { textTransform: 'uppercase' } }}
+                    fullWidth
+                    helperText="Callsign of station who relayed this check-in"
+                  />
                   
                   {/* Frequency selector if multiple frequencies */}
                   {net?.frequencies && net.frequencies.length > 1 && (
@@ -1957,6 +2006,14 @@ const NetView: React.FC = () => {
                   rows={2}
                 />
               )}
+              <TextField
+                label="Relayed By"
+                value={editingCheckIn.relayed_by || ''}
+                onChange={(e) => setEditingCheckIn({ ...editingCheckIn, relayed_by: e.target.value.toUpperCase() })}
+                fullWidth
+                inputProps={{ style: { textTransform: 'uppercase' } }}
+                helperText="Callsign of station who relayed this check-in"
+              />
               {net?.frequencies && net.frequencies.length > 1 && (
                 <Autocomplete
                   multiple

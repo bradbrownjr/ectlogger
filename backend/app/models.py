@@ -49,6 +49,7 @@ class StationStatus(str, enum.Enum):
     CHECKED_IN = "checked_in"
     AVAILABLE = "available"
     LISTENING = "listening"
+    RELAY = "relay"
     AWAY = "away"
     CHECKED_OUT = "checked_out"
 
@@ -199,6 +200,7 @@ class CheckIn(Base):
     power_source = Column(String(255))
     feedback = Column(Text)
     notes = Column(Text)
+    relayed_by = Column(String(50))  # Callsign of relay station if this check-in was relayed
     
     # Custom field values (JSON object: {"field_name": "value", ...})
     custom_fields = Column(Text, default='{}')
