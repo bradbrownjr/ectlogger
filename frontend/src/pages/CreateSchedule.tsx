@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Container,
@@ -24,12 +24,23 @@ import {
   InputLabel,
   Tabs,
   Tab,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+  ListItemSecondaryAction,
+  Switch,
+  Chip,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
-import { templateApi, frequencyApi, userApi } from '../services/api';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import { templateApi, frequencyApi, userApi, ncsRotationApi } from '../services/api';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -38,6 +49,15 @@ interface User {
   callsign: string;
   name: string | null;
   email: string;
+}
+
+interface RotationMember {
+  id: number;
+  user_id: number;
+  user_callsign: string;
+  user_name: string | null;
+  position: number;
+  is_active: boolean;
 }
 
 interface Frequency {
@@ -99,6 +119,7 @@ const CreateSchedule: React.FC = () => {
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [script, setScript] = useState('');
   const [frequencies, setFrequencies] = useState<Frequency[]>([]);
   const [selectedFrequencyIds, setSelectedFrequencyIds] = useState<number[]>([]);
   const [newFrequency, setNewFrequency] = useState({ frequency: '', mode: 'FM', network: '', talkgroup: '', description: '' });
@@ -107,6 +128,13 @@ const CreateSchedule: React.FC = () => {
   const [fieldDefinitions, setFieldDefinitions] = useState<FieldDefinition[]>([]);
   const [fieldConfig, setFieldConfig] = useState<Record<string, { enabled: boolean; required: boolean }>>({});
   const [isActive, setIsActive] = useState(true);
+  
+  // Script file upload
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // NCS Rotation
+  const [rotationMembers, setRotationMembers] = useState<RotationMember[]>([]);
+  const [selectedUserForRotation, setSelectedUserForRotation] = useState<User | null>(null);
   
   // Owner management (for editing)
   const [ownerId, setOwnerId] = useState<number | null>(null);
@@ -127,16 +155,31 @@ const CreateSchedule: React.FC = () => {
   useEffect(() => {
     fetchFrequencies();
     fetchFieldDefinitions();
-    if (isEdit) {
-      fetchUsers();
-    }
-  }, [isEdit]);
+    fetchUsers(); // Always fetch users for NCS rotation
+  }, []);
 
   useEffect(() => {
     if (isEdit && fieldDefinitions.length > 0) {
       fetchScheduleData();
     }
   }, [scheduleId, fieldDefinitions]);
+
+  useEffect(() => {
+    // Fetch rotation members when editing
+    if (isEdit && scheduleId) {
+      fetchRotationMembers();
+    }
+  }, [scheduleId, isEdit]);
+
+  const fetchRotationMembers = async () => {
+    if (!scheduleId) return;
+    try {
+      const response = await ncsRotationApi.listMembers(Number(scheduleId));
+      setRotationMembers(response.data);
+    } catch (error) {
+      console.error('Failed to fetch rotation members:', error);
+    }
+  };
 
   const fetchFieldDefinitions = async () => {
     try {
@@ -467,6 +510,7 @@ const CreateSchedule: React.FC = () => {
       const Schedule = response.data;
       setName(Schedule.name);
       setDescription(Schedule.description || '');
+      setScript(Schedule.script || '');
       setSelectedFrequencyIds(Schedule.frequencies.map((f: any) => f.id));
       // Set owner info
       setOwnerId(Schedule.owner_id);
@@ -490,12 +534,108 @@ const CreateSchedule: React.FC = () => {
     }
   };
 
+  // Script file upload handlers
+  const handleScriptFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const text = e.target?.result as string;
+        setScript(text);
+      };
+      reader.readAsText(file);
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleScriptDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    const file = event.dataTransfer.files?.[0];
+    if (file && file.type === 'text/plain') {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const text = e.target?.result as string;
+        setScript(text);
+      };
+      reader.readAsText(file);
+    }
+  };
+
+  const handleScriptDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+  };
+
+  // NCS Rotation handlers
+  const handleAddRotationMember = async () => {
+    if (!selectedUserForRotation || !scheduleId) return;
+    try {
+      const response = await ncsRotationApi.addMember(Number(scheduleId), {
+        user_id: selectedUserForRotation.id,
+        position: rotationMembers.length + 1
+      });
+      setRotationMembers([...rotationMembers, response.data]);
+      setSelectedUserForRotation(null);
+    } catch (error) {
+      console.error('Failed to add rotation member:', error);
+      alert('Failed to add rotation member');
+    }
+  };
+
+  const handleRemoveRotationMember = async (memberId: number) => {
+    if (!scheduleId) return;
+    try {
+      await ncsRotationApi.removeMember(Number(scheduleId), memberId);
+      setRotationMembers(rotationMembers.filter(m => m.id !== memberId));
+    } catch (error) {
+      console.error('Failed to remove rotation member:', error);
+    }
+  };
+
+  const handleToggleRotationMemberActive = async (memberId: number, currentActive: boolean) => {
+    if (!scheduleId) return;
+    try {
+      await ncsRotationApi.updateMember(Number(scheduleId), memberId, { is_active: !currentActive });
+      setRotationMembers(rotationMembers.map(m => 
+        m.id === memberId ? { ...m, is_active: !currentActive } : m
+      ));
+    } catch (error) {
+      console.error('Failed to update rotation member:', error);
+    }
+  };
+
+  const handleMoveRotationMember = async (memberId: number, direction: 'up' | 'down') => {
+    if (!scheduleId) return;
+    const currentIndex = rotationMembers.findIndex(m => m.id === memberId);
+    if (currentIndex === -1) return;
+    
+    const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (newIndex < 0 || newIndex >= rotationMembers.length) return;
+    
+    const newOrder = [...rotationMembers];
+    [newOrder[currentIndex], newOrder[newIndex]] = [newOrder[newIndex], newOrder[currentIndex]];
+    
+    try {
+      await ncsRotationApi.reorderMembers(Number(scheduleId), newOrder.map(m => m.id));
+      setRotationMembers(newOrder.map((m, i) => ({ ...m, position: i + 1 })));
+    } catch (error) {
+      console.error('Failed to reorder rotation members:', error);
+    }
+  };
+
+  // Get users not already in rotation
+  const availableUsersForRotation = users.filter(
+    u => !rotationMembers.some(m => m.user_id === u.id)
+  );
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     const ScheduleData: any = {
       name,
       description,
+      script,
       frequency_ids: selectedFrequencyIds,
       field_config: fieldConfig,
       is_active: isActive,
@@ -555,10 +695,12 @@ const CreateSchedule: React.FC = () => {
         </Box>
 
         <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 2 }}>
-          <Tabs value={activeTab} onChange={(_, newValue) => setActiveTab(newValue)}>
+          <Tabs value={activeTab} onChange={(_, newValue) => setActiveTab(newValue)} variant="scrollable" scrollButtons="auto">
             <Tab label="Basic Info" />
             <Tab label="Schedule" />
+            <Tab label="NCS Rotation" disabled={!isEdit} />
             <Tab label="Communication Plan" />
+            <Tab label="Net Script" />
             <Tab label="Check-In Fields" />
           </Tabs>
         </Box>
@@ -741,8 +883,110 @@ const CreateSchedule: React.FC = () => {
             )}
           </TabPanel>
 
-          {/* Tab 2: Communication Plan */}
+          {/* Tab 2: NCS Rotation */}
           <TabPanel value={activeTab} index={2}>
+            {!isEdit ? (
+              <Typography color="text.secondary">
+                Save the schedule first to configure NCS rotation.
+              </Typography>
+            ) : (
+              <>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  Add operators to the NCS rotation. Drag to reorder their positions in the rotation.
+                  Toggle the switch to temporarily disable an operator from the rotation.
+                </Typography>
+
+                <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+                  <Autocomplete
+                    options={availableUsersForRotation}
+                    getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
+                    value={selectedUserForRotation}
+                    onChange={(_: any, value: User | null) => setSelectedUserForRotation(value)}
+                    renderInput={(params: any) => (
+                      <TextField {...params} label="Add Operator" size="small" />
+                    )}
+                    sx={{ flexGrow: 1 }}
+                  />
+                  <Button
+                    variant="contained"
+                    startIcon={<PersonAddIcon />}
+                    onClick={handleAddRotationMember}
+                    disabled={!selectedUserForRotation}
+                  >
+                    Add
+                  </Button>
+                </Box>
+
+                {rotationMembers.length === 0 ? (
+                  <Typography color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+                    No NCS operators in rotation. Add operators above to start a rotation.
+                  </Typography>
+                ) : (
+                  <List>
+                    {rotationMembers.map((member, index) => (
+                      <ListItem
+                        key={member.id}
+                        sx={{
+                          border: 1,
+                          borderColor: 'divider',
+                          borderRadius: 1,
+                          mb: 1,
+                          bgcolor: member.is_active ? 'background.paper' : 'action.disabledBackground',
+                        }}
+                      >
+                        <ListItemIcon>
+                          <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleMoveRotationMember(member.id, 'up')}
+                              disabled={index === 0}
+                            >
+                              <ArrowUpwardIcon fontSize="small" />
+                            </IconButton>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleMoveRotationMember(member.id, 'down')}
+                              disabled={index === rotationMembers.length - 1}
+                            >
+                              <ArrowDownwardIcon fontSize="small" />
+                            </IconButton>
+                          </Box>
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Chip label={`#${index + 1}`} size="small" color="primary" variant="outlined" />
+                              <Typography fontWeight="bold">{member.user_callsign}</Typography>
+                              {member.user_name && (
+                                <Typography color="text.secondary">({member.user_name})</Typography>
+                              )}
+                            </Box>
+                          }
+                        />
+                        <ListItemSecondaryAction>
+                          <Switch
+                            checked={member.is_active}
+                            onChange={() => handleToggleRotationMemberActive(member.id, member.is_active)}
+                            title={member.is_active ? 'Active in rotation' : 'Inactive (skipped)'}
+                          />
+                          <IconButton
+                            edge="end"
+                            onClick={() => handleRemoveRotationMember(member.id)}
+                            color="error"
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </ListItemSecondaryAction>
+                      </ListItem>
+                    ))}
+                  </List>
+                )}
+              </>
+            )}
+          </TabPanel>
+
+          {/* Tab 3: Communication Plan */}
+          <TabPanel value={activeTab} index={3}>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
               Check the boxes to select frequencies for this schedule. Press Enter in any field to add a new frequency.
             </Typography>
@@ -767,8 +1011,75 @@ const CreateSchedule: React.FC = () => {
             </TableContainer>
           </TabPanel>
 
-          {/* Tab 3: Check-In Fields */}
-          <TabPanel value={activeTab} index={3}>
+          {/* Tab 4: Net Script */}
+          <TabPanel value={activeTab} index={4}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Enter the net script that NCS operators will follow. You can also upload or drag a .txt file.
+            </Typography>
+
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleScriptFileUpload}
+              accept=".txt"
+              style={{ display: 'none' }}
+            />
+
+            <Box
+              onDrop={handleScriptDrop}
+              onDragOver={handleScriptDragOver}
+              sx={{
+                border: '2px dashed',
+                borderColor: 'divider',
+                borderRadius: 1,
+                p: 2,
+                mb: 2,
+                textAlign: 'center',
+                bgcolor: 'action.hover',
+                cursor: 'pointer',
+                '&:hover': { borderColor: 'primary.main' },
+              }}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <UploadFileIcon sx={{ fontSize: 40, color: 'text.secondary', mb: 1 }} />
+              <Typography color="text.secondary">
+                Drop a .txt file here or click to upload
+              </Typography>
+            </Box>
+
+            <TextField
+              fullWidth
+              label="Net Script"
+              value={script}
+              onChange={(e) => setScript(e.target.value)}
+              multiline
+              rows={16}
+              placeholder="Enter your net script here...
+
+Example:
+---
+Good evening, this is [CALLSIGN] calling the [NET NAME].
+
+This net meets every [DAY] at [TIME] on [FREQUENCY].
+
+Is there any emergency or priority traffic?
+[PAUSE]
+
+We will now take check-ins...
+---"
+              sx={{
+                '& .MuiInputBase-root': {
+                  fontFamily: 'monospace',
+                },
+              }}
+            />
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+              {script.length} characters
+            </Typography>
+          </TabPanel>
+
+          {/* Tab 5: Check-In Fields */}
+          <TabPanel value={activeTab} index={5}>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
               Configure which fields are available when stations check in to nets created from this schedule.
             </Typography>
@@ -822,7 +1133,7 @@ const CreateSchedule: React.FC = () => {
               )}
             </Box>
             <Box sx={{ display: 'flex', gap: 2 }}>
-              {activeTab < 3 ? (
+              {activeTab < 5 ? (
                 <Button variant="contained" onClick={() => setActiveTab(activeTab + 1)}>
                   Next
                 </Button>

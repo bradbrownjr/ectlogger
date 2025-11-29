@@ -212,6 +212,7 @@ class NetResponse(NetBase):
 class NetTemplateBase(BaseModel):
     name: str = Field(max_length=200, min_length=1)
     description: Optional[str] = Field(None, max_length=2000)
+    script: Optional[str] = None  # Net script template
     field_config: Optional[dict] = None
     schedule_type: Optional[str] = Field(default='ad_hoc')  # ad_hoc, daily, weekly, monthly
     schedule_config: Optional[dict] = Field(default_factory=dict)  # {day_of_week, week_of_month, time}
@@ -224,6 +225,7 @@ class NetTemplateCreate(NetTemplateBase):
 class NetTemplateUpdate(BaseModel):
     name: Optional[str] = Field(None, max_length=200, min_length=1)
     description: Optional[str] = Field(None, max_length=2000)
+    script: Optional[str] = None
     field_config: Optional[dict] = None
     frequency_ids: Optional[List[int]] = None
     is_active: Optional[bool] = None
@@ -250,6 +252,7 @@ class NetTemplateResponse(NetTemplateBase):
             'id': template.id,
             'name': template.name,
             'description': template.description,
+            'script': template.script,
             'owner_id': template.owner_id,
             'owner_callsign': owner_callsign,
             'owner_name': owner_name,

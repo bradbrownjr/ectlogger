@@ -121,6 +121,7 @@ class NetTemplate(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(200), nullable=False)
     description = Column(Text)
+    script = Column(Text)  # Net script template
     owner_id = Column(Integer, ForeignKey("users.id"))
     field_config = Column(Text, default='{"name": {"enabled": true, "required": false}, "location": {"enabled": true, "required": false}, "skywarn_number": {"enabled": false, "required": false}, "weather_observation": {"enabled": false, "required": false}, "power_source": {"enabled": false, "required": false}, "power": {"enabled": false, "required": false}, "feedback": {"enabled": false, "required": false}, "notes": {"enabled": false, "required": false}}')
     is_active = Column(Boolean, default=True)
