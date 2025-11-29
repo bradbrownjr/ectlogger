@@ -55,6 +55,7 @@ import ErrorIcon from '@mui/icons-material/Error';
 import InfoIcon from '@mui/icons-material/Info';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
+import HistoryIcon from '@mui/icons-material/History';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 
@@ -818,6 +819,7 @@ const Admin: React.FC = () => {
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
+                    <HistoryIcon sx={{ verticalAlign: 'middle', mr: 1 }} />
                     Recent Authentication Events
                   </Typography>
                   {securityInfo.recent_auth_events.length === 0 ? (
