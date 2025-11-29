@@ -22,6 +22,8 @@ import {
   IconButton,
   Autocomplete,
   InputLabel,
+  Tabs,
+  Tab,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -59,6 +61,25 @@ interface FieldDefinition {
   is_builtin: boolean;
   is_archived: boolean;
   sort_order: number;
+}
+
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
+
+function TabPanel(props: TabPanelProps) {
+  const { children, value, index, ...other } = props;
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      {...other}
+    >
+      {value === index && <Box sx={{ pt: 3 }}>{children}</Box>}
+    </div>
+  );
 }
 
 // Get timezone abbreviation (e.g., EST, EDT, UTC)
@@ -99,6 +120,9 @@ const CreateSchedule: React.FC = () => {
     week_of_month: [], // e.g., [1, 3] for 1st and 3rd week
     time: '18:00'
   });
+
+  // Tab state
+  const [activeTab, setActiveTab] = useState(0);
 
   useEffect(() => {
     fetchFrequencies();
@@ -512,6 +536,12 @@ const CreateSchedule: React.FC = () => {
     });
   };
 
+  // Sort frequencies by mode for display
+  const sortedFrequencies = [...frequencies].sort((a, b) => {
+    const modeOrder = ['FM', 'GMRS', 'SSB', 'DMR', 'D-STAR', 'YSF', 'P25'];
+    return modeOrder.indexOf(a.mode) - modeOrder.indexOf(b.mode);
+  });
+
   return (
     <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
       <Paper sx={{ p: 3 }}>
@@ -524,144 +554,126 @@ const CreateSchedule: React.FC = () => {
           </Typography>
         </Box>
 
-        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3 }}>
-          <TextField
-            fullWidth
-            label="Schedule Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            margin="normal"
-            required
-            helperText="e.g., 'Weekly SKYWARN Net', 'Monthly Emergency Preparedness Net'"
-          />
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 2 }}>
+          <Tabs value={activeTab} onChange={(_, newValue) => setActiveTab(newValue)}>
+            <Tab label="Basic Info" />
+            <Tab label="Schedule" />
+            <Tab label="Communication Plan" />
+            <Tab label="Check-In Fields" />
+          </Tabs>
+        </Box>
 
-          <TextField
-            fullWidth
-            label="Description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            margin="normal"
-            multiline
-            rows={3}
-            helperText="Optional description of the net Schedule"
-          />
-
-          {/* Owner selector - only show when editing and user is owner or admin */}
-          {isEdit && users.length > 0 && (currentUser?.role === 'admin' || currentUser?.id === originalOwnerId) && (
-            <Autocomplete
-              options={users}
-              getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
-              value={users.find((u: User) => u.id === ownerId) || null}
-              onChange={(_: any, value: User | null) => setOwnerId(value?.id || null)}
-              renderInput={(params: any) => (
-                <TextField 
-                  {...params} 
-                  label="Owner / Default NCS" 
-                  margin="normal"
-                  helperText="The owner is the default NCS when no rotation is configured"
-                />
-              )}
-              sx={{ mt: 2 }}
-            />
-          )}
-
-          <Typography variant="h6" sx={{ mt: 4, mb: 2 }}>
-            Schedule Configuration
-          </Typography>
-
-          <FormControl fullWidth margin="normal">
-            <Select
-              value={scheduleType}
-              onChange={(e) => {
-                setScheduleType(e.target.value);
-                // Reset config when changing type
-                if (e.target.value === 'ad_hoc') {
-                  setScheduleConfig({ day_of_week: 1, week_of_month: [], time: '18:00' });
-                }
-              }}
-            >
-              <MenuItem value="ad_hoc">Ad-Hoc (As Needed)</MenuItem>
-              <MenuItem value="daily">Daily</MenuItem>
-              <MenuItem value="weekly">Weekly</MenuItem>
-              <MenuItem value="monthly">Monthly</MenuItem>
-            </Select>
-          </FormControl>
-
-          {scheduleType === 'daily' && (
+        <Box component="form" onSubmit={handleSubmit}>
+          {/* Tab 0: Basic Info */}
+          <TabPanel value={activeTab} index={0}>
             <TextField
               fullWidth
-              type="time"
-              label={`Time (${timezoneAbbr})`}
-              value={scheduleConfig.time}
-              onChange={(e) => setScheduleConfig({ ...scheduleConfig, time: e.target.value })}
+              label="Schedule Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               margin="normal"
-              InputLabelProps={{ shrink: true }}
+              required
+              helperText="e.g., 'Weekly SKYWARN Net', 'Monthly Emergency Preparedness Net'"
             />
-          )}
 
-          {scheduleType === 'weekly' && (
-            <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
-              <FormControl fullWidth>
-                <Select
-                  value={scheduleConfig.day_of_week}
-                  onChange={(e) => setScheduleConfig({ ...scheduleConfig, day_of_week: Number(e.target.value) })}
-                >
-                  <MenuItem value={1}>Monday</MenuItem>
-                  <MenuItem value={2}>Tuesday</MenuItem>
-                  <MenuItem value={3}>Wednesday</MenuItem>
-                  <MenuItem value={4}>Thursday</MenuItem>
-                  <MenuItem value={5}>Friday</MenuItem>
-                  <MenuItem value={6}>Saturday</MenuItem>
-                  <MenuItem value={0}>Sunday</MenuItem>
-                </Select>
-              </FormControl>
+            <TextField
+              fullWidth
+              label="Description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              margin="normal"
+              multiline
+              rows={4}
+              helperText="Optional description of the net schedule"
+            />
+
+            {/* Owner selector - only show when editing and user is owner or admin */}
+            {isEdit && users.length > 0 && (currentUser?.role === 'admin' || currentUser?.id === originalOwnerId) && (
+              <Autocomplete
+                options={users}
+                getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
+                value={users.find((u: User) => u.id === ownerId) || null}
+                onChange={(_: any, value: User | null) => setOwnerId(value?.id || null)}
+                renderInput={(params: any) => (
+                  <TextField 
+                    {...params} 
+                    label="Owner / Default NCS" 
+                    margin="normal"
+                    helperText="The owner is the default NCS when no rotation is configured"
+                  />
+                )}
+                sx={{ mt: 2 }}
+              />
+            )}
+
+            {isEdit && (
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={isActive}
+                    onChange={(e) => setIsActive(e.target.checked)}
+                  />
+                }
+                label="Schedule is active (can be used to create nets)"
+                sx={{ mt: 2, display: 'block' }}
+              />
+            )}
+          </TabPanel>
+
+          {/* Tab 1: Schedule Configuration */}
+          <TabPanel value={activeTab} index={1}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Configure when this net runs. Ad-hoc nets are created manually as needed.
+            </Typography>
+
+            <FormControl fullWidth margin="normal">
+              <InputLabel>Schedule Type</InputLabel>
+              <Select
+                value={scheduleType}
+                label="Schedule Type"
+                onChange={(e) => {
+                  setScheduleType(e.target.value);
+                  // Reset config when changing type
+                  if (e.target.value === 'ad_hoc') {
+                    setScheduleConfig({ day_of_week: 1, week_of_month: [], time: '18:00' });
+                  }
+                }}
+              >
+                <MenuItem value="ad_hoc">Ad-Hoc (As Needed)</MenuItem>
+                <MenuItem value="daily">Daily</MenuItem>
+                <MenuItem value="weekly">Weekly</MenuItem>
+                <MenuItem value="monthly">Monthly</MenuItem>
+              </Select>
+            </FormControl>
+
+            {scheduleType === 'daily' && (
               <TextField
+                fullWidth
                 type="time"
                 label={`Time (${timezoneAbbr})`}
                 value={scheduleConfig.time}
                 onChange={(e) => setScheduleConfig({ ...scheduleConfig, time: e.target.value })}
+                margin="normal"
                 InputLabelProps={{ shrink: true }}
-                sx={{ minWidth: 150 }}
               />
-            </Box>
-          )}
+            )}
 
-          {scheduleType === 'monthly' && (
-            <Box sx={{ mt: 2 }}>
-              <FormGroup sx={{ flexDirection: 'row', gap: 2, mb: 2 }}>
-                {[1, 2, 3, 4, 5].map(week => (
-                  <FormControlLabel
-                    key={week}
-                    control={
-                      <Checkbox
-                        checked={scheduleConfig.week_of_month?.includes(week) || false}
-                        onChange={(e) => {
-                          const weeks = scheduleConfig.week_of_month || [];
-                          if (e.target.checked) {
-                            setScheduleConfig({ ...scheduleConfig, week_of_month: [...weeks, week] });
-                          } else {
-                            setScheduleConfig({ ...scheduleConfig, week_of_month: weeks.filter(w => w !== week) });
-                          }
-                        }}
-                      />
-                    }
-                    label={week === 5 ? 'Last' : `${week}${week === 1 ? 'st' : week === 2 ? 'nd' : week === 3 ? 'rd' : 'th'}`}
-                  />
-                ))}
-              </FormGroup>
-              <Box sx={{ display: 'flex', gap: 2 }}>
+            {scheduleType === 'weekly' && (
+              <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
                 <FormControl fullWidth>
+                  <InputLabel>Day of Week</InputLabel>
                   <Select
                     value={scheduleConfig.day_of_week}
+                    label="Day of Week"
                     onChange={(e) => setScheduleConfig({ ...scheduleConfig, day_of_week: Number(e.target.value) })}
                   >
+                    <MenuItem value={0}>Sunday</MenuItem>
                     <MenuItem value={1}>Monday</MenuItem>
                     <MenuItem value={2}>Tuesday</MenuItem>
                     <MenuItem value={3}>Wednesday</MenuItem>
                     <MenuItem value={4}>Thursday</MenuItem>
                     <MenuItem value={5}>Friday</MenuItem>
                     <MenuItem value={6}>Saturday</MenuItem>
-                    <MenuItem value={0}>Sunday</MenuItem>
                   </Select>
                 </FormControl>
                 <TextField
@@ -673,96 +685,153 @@ const CreateSchedule: React.FC = () => {
                   sx={{ minWidth: 150 }}
                 />
               </Box>
-            </Box>
-          )}
+            )}
 
-          <Typography variant="h6" sx={{ mt: 4, mb: 2 }}>
-            Communication Plan
-          </Typography>
-
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Check the boxes to select frequencies for this Schedule. Press Enter in any field to add a new frequency.
-          </Typography>
-
-          <TableContainer>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell padding="checkbox">Use</TableCell>
-                  <TableCell>Mode</TableCell>
-                  <TableCell>Frequency/Network</TableCell>
-                  <TableCell>TG/Room</TableCell>
-                  <TableCell>Description</TableCell>
-                  <TableCell>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {frequencies.map((freq: Frequency) => renderEditableRow(freq))}
-                {renderNewRow()}
-              </TableBody>
-            </Table>
-          </TableContainer>
-
-          <Box sx={{ mt: 3, mb: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Check-In Field Configuration
-            </Typography>
-            <Typography variant="body2" color="text.secondary" gutterBottom>
-              Configure which fields are available when stations check in to nets created from this Schedule
-            </Typography>
-          </Box>
-
-          <FormGroup>
-            {fieldDefinitions.map((field) => {
-              const config = fieldConfig[field.name] || { enabled: false, required: false };
-              return (
-              <Box key={field.name} sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 1 }}>
-                <Typography sx={{ minWidth: 180 }}>
-                  {field.label}:
-                </Typography>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={config.enabled}
-                      onChange={() => handleFieldToggle(field.name, 'enabled')}
+            {scheduleType === 'monthly' && (
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="body2" sx={{ mb: 1 }}>Which weeks of the month?</Typography>
+                <FormGroup sx={{ flexDirection: 'row', gap: 2, mb: 2 }}>
+                  {[1, 2, 3, 4, 5].map(week => (
+                    <FormControlLabel
+                      key={week}
+                      control={
+                        <Checkbox
+                          checked={scheduleConfig.week_of_month?.includes(week) || false}
+                          onChange={(e) => {
+                            const weeks = scheduleConfig.week_of_month || [];
+                            if (e.target.checked) {
+                              setScheduleConfig({ ...scheduleConfig, week_of_month: [...weeks, week] });
+                            } else {
+                              setScheduleConfig({ ...scheduleConfig, week_of_month: weeks.filter(w => w !== week) });
+                            }
+                          }}
+                        />
+                      }
+                      label={week === 5 ? 'Last' : `${week}${week === 1 ? 'st' : week === 2 ? 'nd' : week === 3 ? 'rd' : 'th'}`}
                     />
-                  }
-                  label="Enabled"
-                />
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={config.required}
-                      onChange={() => handleFieldToggle(field.name, 'required')}
-                      disabled={!config.enabled}
-                    />
-                  }
-                  label="Required"
-                />
+                  ))}
+                </FormGroup>
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                  <FormControl fullWidth>
+                    <InputLabel>Day of Week</InputLabel>
+                    <Select
+                      value={scheduleConfig.day_of_week}
+                      label="Day of Week"
+                      onChange={(e) => setScheduleConfig({ ...scheduleConfig, day_of_week: Number(e.target.value) })}
+                    >
+                      <MenuItem value={0}>Sunday</MenuItem>
+                      <MenuItem value={1}>Monday</MenuItem>
+                      <MenuItem value={2}>Tuesday</MenuItem>
+                      <MenuItem value={3}>Wednesday</MenuItem>
+                      <MenuItem value={4}>Thursday</MenuItem>
+                      <MenuItem value={5}>Friday</MenuItem>
+                      <MenuItem value={6}>Saturday</MenuItem>
+                    </Select>
+                  </FormControl>
+                  <TextField
+                    type="time"
+                    label={`Time (${timezoneAbbr})`}
+                    value={scheduleConfig.time}
+                    onChange={(e) => setScheduleConfig({ ...scheduleConfig, time: e.target.value })}
+                    InputLabelProps={{ shrink: true }}
+                    sx={{ minWidth: 150 }}
+                  />
+                </Box>
               </Box>
-            )})}
-          </FormGroup>
+            )}
+          </TabPanel>
 
-          {isEdit && (
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={isActive}
-                  onChange={(e) => setIsActive(e.target.checked)}
-                />
-              }
-              label="Schedule is active (can be used to create nets)"
-              sx={{ mt: 2 }}
-            />
-          )}
+          {/* Tab 2: Communication Plan */}
+          <TabPanel value={activeTab} index={2}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Check the boxes to select frequencies for this schedule. Press Enter in any field to add a new frequency.
+            </Typography>
 
-          <Box sx={{ display: 'flex', gap: 2, mt: 3 }}>
-            <Button variant="outlined" onClick={() => navigate('/scheduler')}>
-              Cancel
-            </Button>
-            <Button type="submit" variant="contained" color="primary">
-              {isEdit ? 'Save Changes' : 'Create Schedule'}
-            </Button>
+            <TableContainer>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell padding="checkbox">Use</TableCell>
+                    <TableCell>Mode</TableCell>
+                    <TableCell>Frequency/Network</TableCell>
+                    <TableCell>TG/Room</TableCell>
+                    <TableCell>Description</TableCell>
+                    <TableCell>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {sortedFrequencies.map((freq: Frequency) => renderEditableRow(freq))}
+                  {renderNewRow()}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </TabPanel>
+
+          {/* Tab 3: Check-In Fields */}
+          <TabPanel value={activeTab} index={3}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Configure which fields are available when stations check in to nets created from this schedule.
+            </Typography>
+
+            <TableContainer>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Field</TableCell>
+                    <TableCell align="center">Enabled</TableCell>
+                    <TableCell align="center">Required</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {fieldDefinitions.map((field) => {
+                    const config = fieldConfig[field.name] || { enabled: false, required: false };
+                    return (
+                      <TableRow key={field.name}>
+                        <TableCell>{field.label}</TableCell>
+                        <TableCell align="center">
+                          <Checkbox
+                            checked={config.enabled}
+                            onChange={() => handleFieldToggle(field.name, 'enabled')}
+                          />
+                        </TableCell>
+                        <TableCell align="center">
+                          <Checkbox
+                            checked={config.required}
+                            onChange={() => handleFieldToggle(field.name, 'required')}
+                            disabled={!config.enabled}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </TabPanel>
+
+          {/* Navigation buttons */}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3, pt: 2, borderTop: 1, borderColor: 'divider' }}>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Button variant="outlined" onClick={() => navigate('/scheduler')}>
+                Cancel
+              </Button>
+              {activeTab > 0 && (
+                <Button variant="outlined" onClick={() => setActiveTab(activeTab - 1)}>
+                  Previous
+                </Button>
+              )}
+            </Box>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              {activeTab < 3 ? (
+                <Button variant="contained" onClick={() => setActiveTab(activeTab + 1)}>
+                  Next
+                </Button>
+              ) : (
+                <Button type="submit" variant="contained" color="primary">
+                  {isEdit ? 'Save Changes' : 'Create Schedule'}
+                </Button>
+              )}
+            </Box>
           </Box>
         </Box>
       </Paper>
