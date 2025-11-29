@@ -1092,8 +1092,8 @@ const NetView: React.FC = () => {
                           ...(checkIn.id === activeSpeakerId ? { fontWeight: 'bold' } : {}),
                           verticalAlign: 'middle',
                           whiteSpace: 'nowrap',
-                          // Remove bottom border if frequency chips row follows
-                          ...(hasFrequencyChips ? { border: 0 } : {}),
+                          // Remove bottom border and padding if frequency chips row follows
+                          ...(hasFrequencyChips ? { border: 0, paddingBottom: 0 } : {}),
                         }
                       }}
                     >
