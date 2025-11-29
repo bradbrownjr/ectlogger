@@ -891,7 +891,7 @@ const NetView: React.FC = () => {
                       size="small" 
                       variant="outlined" 
                       startIcon={<EditIcon fontSize="small" />}
-                      onClick={() => navigate(`/nets/${netId}/edit`)}}
+                      onClick={() => navigate(`/nets/${netId}/edit`)}
                     >
                       Net
                     </Button>
