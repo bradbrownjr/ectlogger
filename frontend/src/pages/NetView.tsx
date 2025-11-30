@@ -1164,7 +1164,7 @@ const NetView: React.FC = () => {
                     
                     // Calculate column count for frequency chip row colspan
                     const hasFrequencyChips = net.frequencies && net.frequencies.length > 1 && checkIn.available_frequencies && checkIn.available_frequencies.length > 0;
-                    let columnCount = 4; // #, Status, Callsign, Time
+                    let columnCount = 5; // #, Status, Callsign, Time, pop-out icon
                     if (net?.field_config?.name?.enabled) columnCount++;
                     if (net?.field_config?.location?.enabled) columnCount++;
                     if (net?.field_config?.skywarn_number?.enabled) columnCount++;
@@ -1326,6 +1326,7 @@ const NetView: React.FC = () => {
                         </IconButton>
                       </TableCell>
                       )}
+                      <TableCell />
                     </TableRow>
                     {/* Frequency chips row - only show if net has multiple frequencies */}
                     {hasFrequencyChips && (

@@ -163,11 +163,11 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
         overflow: 'hidden'
       }}
     >
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', flexShrink: 0 }}>
+      <Box sx={{ flexShrink: 0 }}>
         <Table size="small">
           <TableHead>
             <TableRow>
-              <TableCell>
+              <TableCell sx={{ borderBottom: 1, borderColor: 'divider' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   Chat
                   {onDetach && (
