@@ -13,6 +13,7 @@ This file contains environment information for AI coding agents to reference.
 - **Host**: `bradb@10.6.26.6`
 - **OS**: Debian Linux LXC container
 - **Python**: 3.13
+- **App Path**: `~/ectlogger` (i.e., `/home/bradb/ectlogger`)
 - **Frontend URL**: http://10.6.26.6:3000/
 - **Backend URL**: http://10.6.26.6:8000/
 - **Purpose**: Alpha/feature testing before beta
@@ -21,6 +22,7 @@ This file contains environment information for AI coding agents to reference.
 - **Host**: `bradb@10.6.26.3`
 - **OS**: Debian Linux LXC container  
 - **Python**: 3.13
+- **App Path**: `~/ectlogger` (i.e., `/home/bradb/ectlogger`)
 - **Frontend URL**: https://ectbeta.lynwood.us/
 - **Backend URL**: https://ectbeta.lynwood.us/api/ (proxied)
 - **Purpose**: Beta testing / current production

@@ -10,7 +10,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional, List
 from app.database import get_db
 from app.models import Net, CheckIn, User, NetStatus, NetTemplate, NetTemplateSubscription
-from app.auth import get_current_user, get_optional_current_user
+from app.dependencies import get_current_user, get_current_user_optional
 from app.schemas import (
     GlobalStatsResponse, 
     NetStatsResponse, 
@@ -28,7 +28,7 @@ router = APIRouter(prefix="/statistics", tags=["statistics"])
 @router.get("/global", response_model=GlobalStatsResponse)
 async def get_global_statistics(
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: Optional[User] = Depends(get_current_user_optional)
 ):
     """
     Get global platform statistics - available to all users (including unauthenticated).
@@ -156,7 +156,7 @@ async def get_global_statistics(
 async def get_net_statistics(
     net_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: Optional[User] = Depends(get_current_user_optional)
 ):
     """
     Get statistics for a specific net.
@@ -239,7 +239,7 @@ async def get_net_statistics(
 async def get_template_statistics(
     template_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: Optional[User] = Depends(get_current_user_optional)
 ):
     """
     Get historical statistics for a net template (recurring net series).
@@ -325,7 +325,7 @@ async def get_my_statistics(
 async def get_user_statistics(
     user_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    current_user: Optional[User] = Depends(get_current_user_optional)
 ):
     """
     Get public statistics for a user by ID.
