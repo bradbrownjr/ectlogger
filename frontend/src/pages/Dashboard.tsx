@@ -36,6 +36,8 @@ import ArchiveIcon from '@mui/icons-material/Archive';
 import DownloadIcon from '@mui/icons-material/Download';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CloseIcon from '@mui/icons-material/Close';
+import LinkIcon from '@mui/icons-material/Link';
+import InfoIcon from '@mui/icons-material/Info';
 import { netApi } from '../services/api';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -45,6 +47,7 @@ interface Net {
   id: number;
   name: string;
   description: string;
+  info_url?: string;
   status: string;
   owner_id: number;
   owner_callsign?: string | null;
@@ -251,15 +254,27 @@ const Dashboard: React.FC = () => {
                 </CardContent>
                 <CardActions sx={{ justifyContent: 'space-between' }}>
                   {/* View - always available, left side */}
-                  <Tooltip title="View net">
-                    <IconButton
-                      size="small"
-                      color="primary"
-                      onClick={() => navigate(`/nets/${net.id}`)}
-                    >
-                      <SearchIcon />
-                    </IconButton>
-                  </Tooltip>
+                  <Box>
+                    <Tooltip title="View net">
+                      <IconButton
+                        size="small"
+                        color="primary"
+                        onClick={() => navigate(`/nets/${net.id}`)}
+                      >
+                        <SearchIcon />
+                      </IconButton>
+                    </Tooltip>
+                    {net.info_url && (
+                      <Tooltip title="Net/Club info">
+                        <IconButton
+                          size="small"
+                          onClick={() => window.open(net.info_url, '_blank')}
+                        >
+                          <LinkIcon />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                  </Box>
                   
                   <Box>
                     {/* Draft net actions */}

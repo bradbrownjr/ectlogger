@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import {
   Container,
   Paper,
@@ -82,9 +82,12 @@ function TabPanel(props: TabPanelProps) {
 
 const CreateNet: React.FC = () => {
   const { netId } = useParams<{ netId: string }>();
+  const location = useLocation();
+  const isInfoMode = location.pathname.endsWith('/info');
   const [activeTab, setActiveTab] = useState(0);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [infoUrl, setInfoUrl] = useState('');
   const [script, setScript] = useState('');
   const [frequencies, setFrequencies] = useState<Frequency[]>([]);
   const [selectedFrequencies, setSelectedFrequencies] = useState<number[]>([]);
@@ -132,6 +135,7 @@ const CreateNet: React.FC = () => {
       const response = await netApi.get(parseInt(netId));
       setName(response.data.name);
       setDescription(response.data.description || '');
+      setInfoUrl(response.data.info_url || '');
       setScript(response.data.script || '');
       setSelectedFrequencies(response.data.frequencies.map((f: Frequency) => f.id!));
       if (response.data.field_config) {
@@ -299,6 +303,7 @@ const CreateNet: React.FC = () => {
         const response = await netApi.update(parseInt(netId!), {
           name,
           description,
+          info_url: infoUrl || null,
           script,
           frequency_ids: selectedFrequencies,
           field_config: fieldConfig,
@@ -308,6 +313,7 @@ const CreateNet: React.FC = () => {
         const response = await netApi.create({
           name,
           description,
+          info_url: infoUrl || null,
           script,
           frequency_ids: selectedFrequencies,
           field_config: fieldConfig,
@@ -532,7 +538,7 @@ const CreateNet: React.FC = () => {
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       <Paper sx={{ p: 3 }}>
         <Typography variant="h4" component="h1" gutterBottom>
-          {isEditMode ? 'Edit Net' : 'Create New Net'}
+          {isInfoMode ? 'Net Information' : isEditMode ? 'Edit Net' : 'Create New Net'}
         </Typography>
 
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
@@ -563,8 +569,9 @@ const CreateNet: React.FC = () => {
             value={name}
             onChange={(e: any) => setName(e.target.value)}
             margin="normal"
-            required
+            required={!isInfoMode}
             placeholder="e.g., SKYWARN Net, Emergency Comm Net"
+            InputProps={{ readOnly: isInfoMode }}
           />
 
           <TextField
@@ -576,6 +583,18 @@ const CreateNet: React.FC = () => {
             multiline
             rows={4}
             placeholder="Describe the purpose and scope of this net..."
+            InputProps={{ readOnly: isInfoMode }}
+          />
+
+          <TextField
+            fullWidth
+            label="Info URL"
+            value={infoUrl}
+            onChange={(e: any) => setInfoUrl(e.target.value)}
+            margin="normal"
+            placeholder="https://example.com/club-info"
+            helperText={isInfoMode && infoUrl ? <a href={infoUrl} target="_blank" rel="noopener noreferrer">Open link</a> : "Optional link to club, organization, or net information page"}
+            InputProps={{ readOnly: isInfoMode }}
           />
         </TabPanel>
 
@@ -809,21 +828,23 @@ This is **[CALLSIGN]**, closing the net at [TIME]. 73 to all.`}
             )}
           </Box>
           <Box sx={{ display: 'flex', gap: 2 }}>
-            <Button variant="outlined" onClick={() => navigate(isEditMode ? `/nets/${netId}` : '/dashboard')}>
-              Cancel
+            <Button variant="outlined" onClick={() => navigate(isEditMode || isInfoMode ? `/nets/${netId}` : '/dashboard')}>
+              {isInfoMode ? 'Back' : 'Cancel'}
             </Button>
-            {activeTab < 3 ? (
-              <Button variant="contained" onClick={() => setActiveTab(activeTab + 1)}>
-                Next
-              </Button>
-            ) : (
-              <Button
-                variant="contained"
-                onClick={handleCreateNet}
-                disabled={!name || selectedFrequencies.length === 0}
-              >
-                {isEditMode ? 'Save Changes' : 'Create Net'}
-              </Button>
+            {!isInfoMode && (
+              activeTab < 3 ? (
+                <Button variant="contained" onClick={() => setActiveTab(activeTab + 1)}>
+                  Next
+                </Button>
+              ) : (
+                <Button
+                  variant="contained"
+                  onClick={handleCreateNet}
+                  disabled={!name || selectedFrequencies.length === 0}
+                >
+                  {isEditMode ? 'Save Changes' : 'Create Net'}
+                </Button>
+              )
             )}
           </Box>
         </Box>

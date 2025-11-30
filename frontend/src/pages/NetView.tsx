@@ -45,6 +45,8 @@ import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
 import CloseIcon from '@mui/icons-material/Close';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import LinkIcon from '@mui/icons-material/Link';
+import InfoIcon from '@mui/icons-material/Info';
 import { netApi, checkInApi } from '../services/api';
 import api from '../services/api';
 import { formatTimeWithDate } from '../utils/dateUtils';
@@ -60,6 +62,7 @@ interface Net {
   id: number;
   name: string;
   description: string;
+  info_url?: string;
   script?: string;
   status: string;
   owner_id: number;
@@ -934,7 +937,19 @@ const NetView: React.FC = () => {
                     </Tooltip>
                   </>
                 )}
-                {canManage && net.status === 'active' && (
+                {net.info_url && (
+                  <Tooltip title="Net/Club info">
+                    <Button 
+                      size="small" 
+                      variant="outlined" 
+                      onClick={() => window.open(net.info_url, '_blank')}
+                      sx={{ minWidth: 'auto', px: 1 }}
+                    >
+                      <LinkIcon fontSize="small" />
+                    </Button>
+                  </Tooltip>
+                )}
+                {canManage && net.status === 'active' ? (
                   <>
                     <Tooltip title="Edit net settings">
                       <Button 
@@ -970,6 +985,17 @@ const NetView: React.FC = () => {
                       </Button>
                     )}
                   </>
+                ) : (
+                  <Tooltip title="View net info">
+                    <Button 
+                      size="small" 
+                      variant="outlined" 
+                      onClick={() => navigate(`/nets/${netId}/info`)}
+                      sx={{ minWidth: 'auto', px: 1 }}
+                    >
+                      <InfoIcon fontSize="small" />
+                    </Button>
+                  </Tooltip>
                 )}
                 {isAuthenticated && net.status === 'active' && (
                   userActiveCheckIn ? (

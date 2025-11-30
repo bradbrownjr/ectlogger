@@ -33,6 +33,7 @@ import PersonIcon from '@mui/icons-material/Person';
 import GroupsIcon from '@mui/icons-material/Groups';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import RadioIcon from '@mui/icons-material/Radio';
+import LinkIcon from '@mui/icons-material/Link';
 import { templateApi, netApi, ncsRotationApi } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import NCSRotationModal from '../components/NCSRotationModal';
@@ -48,6 +49,7 @@ interface Schedule {
   id: number;
   name: string;
   description: string;
+  info_url?: string;
   owner_id: number;
   owner_callsign?: string | null;
   owner_name?: string | null;
@@ -320,6 +322,16 @@ const Scheduler: React.FC = () => {
                     >
                       Create Net
                     </Button>
+                    {schedule.info_url && (
+                      <Tooltip title="Net/Club info">
+                        <IconButton
+                          size="small"
+                          onClick={() => window.open(schedule.info_url, '_blank')}
+                        >
+                          <LinkIcon />
+                        </IconButton>
+                      </Tooltip>
+                    )}
                   </Box>
                   <Box>
                     {/* Notifications */}

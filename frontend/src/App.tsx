@@ -103,6 +103,7 @@ const AppRoutes: React.FC = () => {
               </PrivateRoute>
             }
           />
+          <Route path="/nets/:netId/info" element={<CreateNet />} />
           <Route path="/nets/:netId" element={<NetView />} />
           <Route
             path="/admin/users"
