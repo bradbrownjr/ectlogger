@@ -47,7 +47,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchUser = async (authToken: string) => {
     try {
       const response = await authApi.getCurrentUser();
-      setUser(response.data);
+      // Normalize role to lowercase for consistent comparison
+      const userData = {
+        ...response.data,
+        role: response.data.role?.toLowerCase() || 'user'
+      };
+      setUser(userData);
     } catch (error: any) {
       console.error('[AUTH] Failed to fetch user:', error.response?.status, error.response?.data);
       logout();
