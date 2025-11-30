@@ -135,3 +135,14 @@ export const ncsRotationApi = {
   deleteOverride: (templateId: number, overrideId: number) => 
     api.delete(`/templates/${templateId}/ncs-rotation/overrides/${overrideId}`),
 };
+
+// Statistics API
+export const statisticsApi = {
+  getGlobal: () => api.get('/statistics/global'),
+  getNetStats: (netId: number) => api.get(`/statistics/nets/${netId}`),
+  getNetOperators: (netId: number) => api.get(`/statistics/nets/${netId}/operators`),
+  getNetDaily: (netId: number) => api.get(`/statistics/nets/${netId}/daily`),
+  getTemplateStats: (templateId: number) => api.get(`/statistics/templates/${templateId}`),
+  getUserStats: () => api.get('/statistics/users/me'),
+  getUserStatsById: (userId: number) => api.get(`/statistics/users/${userId}`),
+};

@@ -14,6 +14,8 @@ import CreateSchedule from './pages/CreateSchedule';
 import VerifyMagicLink from './pages/VerifyMagicLink';
 import Admin from './pages/Admin';
 import Profile from './pages/Profile';
+import Statistics from './pages/Statistics';
+import NetStatistics from './pages/NetStatistics';
 import Navbar from './components/Navbar';
 import ProfileSetupDialog from './components/ProfileSetupDialog';
 
@@ -130,6 +132,8 @@ const AppRoutes: React.FC = () => {
               </PrivateRoute>
             }
           />
+          <Route path="/statistics" element={<Statistics />} />
+          <Route path="/statistics/nets/:netId" element={<NetStatistics />} />
           <Route
             path="/scheduler/:scheduleId/edit"
             element={

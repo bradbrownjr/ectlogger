@@ -26,6 +26,7 @@ import Brightness7Icon from '@mui/icons-material/Brightness7';
 import MenuIcon from '@mui/icons-material/Menu';
 import RadioIcon from '@mui/icons-material/Radio';
 import EventIcon from '@mui/icons-material/Event';
+import BarChartIcon from '@mui/icons-material/BarChart';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import PersonIcon from '@mui/icons-material/Person';
 
@@ -51,6 +52,7 @@ const Navbar: React.FC = () => {
   const menuItems = [
     { label: 'Nets', path: '/dashboard', icon: <RadioIcon /> },
     { label: 'Schedule', path: '/scheduler', icon: <EventIcon /> },
+    { label: 'Stats', path: '/statistics', icon: <BarChartIcon /> },
   ];
 
   if (isAuthenticated && user?.role === 'admin') {
@@ -133,6 +135,9 @@ const Navbar: React.FC = () => {
             </Button>
             <Button color="inherit" onClick={() => navigate('/scheduler')}>
               Schedule
+            </Button>
+            <Button color="inherit" onClick={() => navigate('/statistics')}>
+              Stats
             </Button>
             {isAuthenticated && user?.role === 'admin' && (
               <Button color="inherit" onClick={() => navigate('/admin/users')}>

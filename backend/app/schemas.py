@@ -634,3 +634,112 @@ class NCSScheduleResponse(BaseModel):
     schedule: List[NCSScheduleEntry]
     rotation_members: List[NCSRotationMemberResponse]
 
+
+# Statistics Schemas
+
+class TimeSeriesDataPoint(BaseModel):
+    """A single data point for time-series charts"""
+    label: str  # Display label (e.g., "11/30", "2024-W48")
+    value: int  # The count/value
+    date: str  # ISO date string for reference
+
+
+class TopOperator(BaseModel):
+    """Top operator by check-in count"""
+    callsign: str
+    check_in_count: int
+
+
+class NetParticipation(BaseModel):
+    """User's participation in a specific net"""
+    net_id: int
+    net_name: str
+    check_in_count: int
+    first_check_in: datetime
+    last_check_in: datetime
+
+
+class CheckInsByNet(BaseModel):
+    """Check-in count for a net (used in favorites)"""
+    net_id: int
+    net_name: str
+    count: int
+
+
+class GlobalStatsResponse(BaseModel):
+    """Global platform statistics"""
+    # Totals
+    total_nets: int
+    total_check_ins: int
+    total_users: int
+    unique_operators: int
+    
+    # Current activity
+    active_nets: int
+    nets_last_24h: int
+    nets_last_7_days: int
+    nets_last_30_days: int
+    check_ins_last_24h: int
+    check_ins_last_7_days: int
+    
+    # Averages
+    avg_check_ins_per_net: float
+    
+    # Time series for charts
+    nets_per_day: List[TimeSeriesDataPoint]  # Last 30 days
+    nets_per_week: List[TimeSeriesDataPoint]  # Last 6 months
+    check_ins_per_day: List[TimeSeriesDataPoint]  # Last 30 days
+    unique_operators_per_week: List[TimeSeriesDataPoint]  # Last 6 months
+
+
+class NetStatsResponse(BaseModel):
+    """Statistics for a specific net"""
+    net_id: int
+    net_name: str
+    status: str
+    
+    # Counts
+    total_check_ins: int
+    unique_callsigns: int
+    rechecks: int
+    
+    # Timing
+    duration_minutes: Optional[int]
+    started_at: Optional[datetime]
+    closed_at: Optional[datetime]
+    
+    # Breakdowns
+    status_counts: dict  # {"checked_in": 5, "checked_out": 3, ...}
+    check_ins_timeline: List[TimeSeriesDataPoint]  # Check-ins over time during net
+    top_operators: List[TopOperator]  # Top 10 operators in this net
+    check_ins_by_frequency: dict  # {"146.520 MHz": 10, "Wires-X Room 12345": 5}
+
+
+class FrequentNetStats(BaseModel):
+    """Statistics about a user's participation in a recurring net"""
+    net_name: str
+    template_id: Optional[int] = None
+    check_ins: int
+    total_instances: int = 0  # Total instances of this recurring net
+    participation_rate: Optional[float] = None  # 0-1, percentage of instances checked into
+
+
+class UserStatsResponse(BaseModel):
+    """Statistics for a user"""
+    user_id: int
+    callsign: Optional[str]
+    
+    # Totals
+    total_check_ins: int
+    unique_nets: int
+    nets_participated: int = 0  # Alias for unique_nets for backwards compat
+    nets_as_ncs: int = 0  # Number of nets where user was NCS
+    last_30_days_check_ins: int = 0  # Check-ins in last 30 days
+    
+    # Participation details - kept for backwards compat
+    nets_participated_list: List[NetParticipation] = []
+    check_ins_by_month: List[TimeSeriesDataPoint] = []  # Last 12 months
+    favorite_nets: List[CheckInsByNet] = []  # Top 5 nets by check-in count
+    
+    # New field for recurring net participation
+    frequent_nets: List[FrequentNetStats] = []  # Recurring nets with participation rates

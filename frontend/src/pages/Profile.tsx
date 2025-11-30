@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -14,11 +14,23 @@ import {
   FormControlLabel,
   Switch,
   Divider,
+  Card,
+  CardContent,
+  Grid,
+  CircularProgress,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
+import BarChartIcon from '@mui/icons-material/BarChart';
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import { useAuth } from '../contexts/AuthContext';
-import api from '../services/api';
+import api, { statisticsApi } from '../services/api';
 
 const Profile: React.FC = () => {
   const { user, login } = useAuth();
@@ -27,6 +39,8 @@ const Profile: React.FC = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [newCallsign, setNewCallsign] = useState('');
+  const [userStats, setUserStats] = useState<any>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
   
   const [formData, setFormData] = useState({
     name: user?.name || '',
@@ -40,6 +54,20 @@ const Profile: React.FC = () => {
     notify_net_close: user?.notify_net_close ?? true,
     notify_net_reminder: user?.notify_net_reminder ?? false,
   });
+
+  useEffect(() => {
+    const fetchUserStats = async () => {
+      try {
+        const stats = await statisticsApi.getUserStats();
+        setUserStats(stats);
+      } catch (err) {
+        console.error('Failed to fetch user stats:', err);
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+    fetchUserStats();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,7 +96,126 @@ const Profile: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="sm" sx={{ mt: 4, mb: 4 }}>
+    <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
+      {/* Statistics Section */}
+      <Paper sx={{ p: 4, mb: 3 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+          <BarChartIcon color="primary" />
+          <Typography variant="h5">Your Activity Statistics</Typography>
+        </Box>
+        
+        {statsLoading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+            <CircularProgress />
+          </Box>
+        ) : userStats ? (
+          <>
+            <Grid container spacing={2} sx={{ mb: 3 }}>
+              <Grid item xs={6} sm={3}>
+                <Card variant="outlined">
+                  <CardContent sx={{ textAlign: 'center' }}>
+                    <Typography variant="h4" color="primary">
+                      {userStats.total_check_ins}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Total Check-ins
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={6} sm={3}>
+                <Card variant="outlined">
+                  <CardContent sx={{ textAlign: 'center' }}>
+                    <Typography variant="h4" color="primary">
+                      {userStats.nets_participated}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Nets Joined
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={6} sm={3}>
+                <Card variant="outlined">
+                  <CardContent sx={{ textAlign: 'center' }}>
+                    <Typography variant="h4" color="primary">
+                      {userStats.nets_as_ncs}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      As NCS
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={6} sm={3}>
+                <Card variant="outlined">
+                  <CardContent sx={{ textAlign: 'center' }}>
+                    <Typography variant="h4" color="primary">
+                      {userStats.last_30_days_check_ins}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Last 30 Days
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
+
+            {userStats.frequent_nets && userStats.frequent_nets.length > 0 && (
+              <>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                  <EmojiEventsIcon color="warning" />
+                  <Typography variant="h6">Your Favorite Nets</Typography>
+                </Box>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  Nets you check into the most - a source of pride for dedicated operators!
+                </Typography>
+                <TableContainer>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Net Name</TableCell>
+                        <TableCell align="right">Check-ins</TableCell>
+                        <TableCell align="right">Participation Rate</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {userStats.frequent_nets.slice(0, 5).map((net: any, index: number) => (
+                        <TableRow 
+                          key={net.net_name} 
+                          hover
+                          sx={{ 
+                            backgroundColor: index === 0 ? 'rgba(255, 215, 0, 0.1)' : 'inherit',
+                          }}
+                        >
+                          <TableCell>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              {index === 0 && <EmojiEventsIcon sx={{ color: 'gold', fontSize: 20 }} />}
+                              {index === 1 && <EmojiEventsIcon sx={{ color: 'silver', fontSize: 20 }} />}
+                              {index === 2 && <EmojiEventsIcon sx={{ color: '#CD7F32', fontSize: 20 }} />}
+                              {net.net_name}
+                            </Box>
+                          </TableCell>
+                          <TableCell align="right">{net.check_ins}</TableCell>
+                          <TableCell align="right">
+                            {net.participation_rate ? `${(net.participation_rate * 100).toFixed(0)}%` : '-'}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </>
+            )}
+          </>
+        ) : (
+          <Typography color="text.secondary">
+            No activity statistics available yet. Check into some nets to build your history!
+          </Typography>
+        )}
+      </Paper>
+
+      {/* Profile Settings Section */}
       <Paper sx={{ p: 4 }}>
         <Typography variant="h4" gutterBottom>
           Profile Settings

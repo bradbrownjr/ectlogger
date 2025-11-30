@@ -38,6 +38,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import CloseIcon from '@mui/icons-material/Close';
 import LanguageIcon from '@mui/icons-material/Language';
 import InfoIcon from '@mui/icons-material/Info';
+import BarChartIcon from '@mui/icons-material/BarChart';
 import { netApi } from '../services/api';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -264,6 +265,16 @@ const Dashboard: React.FC = () => {
                         <SearchIcon />
                       </IconButton>
                     </Tooltip>
+                    {(net.status === 'closed' || net.status === 'active') && (
+                      <Tooltip title="Net statistics">
+                        <IconButton
+                          size="small"
+                          onClick={() => navigate(`/statistics/nets/${net.id}`)}
+                        >
+                          <BarChartIcon />
+                        </IconButton>
+                      </Tooltip>
+                    )}
                   </Box>
                   
                   <Box>
