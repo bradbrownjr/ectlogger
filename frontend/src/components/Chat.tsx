@@ -17,6 +17,7 @@ import {
   Alert,
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { chatApi, ChatMessage } from '../api/chat';
 import { useAuth } from '../contexts/AuthContext';
 import { formatTimeWithDate } from '../utils/dateUtils';
@@ -27,9 +28,10 @@ interface ChatProps {
   netStatus?: string;
   searchQuery?: string;
   onNewMessage?: (message: ChatMessage) => void;
+  onDetach?: () => void;
 }
 
-const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery, onNewMessage }) => {
+const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery, onNewMessage, onDetach }) => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -165,7 +167,21 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
         <Table size="small">
           <TableHead>
             <TableRow>
-              <TableCell>Chat</TableCell>
+              <TableCell>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  Chat
+                  {onDetach && (
+                    <IconButton
+                      size="small"
+                      onClick={onDetach}
+                      title="Detach to floating window"
+                      sx={{ p: 0.25, display: { xs: 'none', lg: 'inline-flex' } }}
+                    >
+                      <OpenInNewIcon sx={{ fontSize: 14 }} />
+                    </IconButton>
+                  )}
+                </Box>
+              </TableCell>
             </TableRow>
           </TableHead>
         </Table>

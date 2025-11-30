@@ -1979,30 +1979,8 @@ const NetView: React.FC = () => {
                 storageKey="chat"
               >
               <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                {/* Chat header with title and detach button */}
-                <Box sx={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'space-between',
-                  px: 1, 
-                  py: 0.25, 
-                  borderBottom: 1, 
-                  borderColor: 'divider',
-                  backgroundColor: 'background.paper',
-                  minHeight: 28,
-                }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 'bold', fontSize: '0.875rem' }}>Chat</Typography>
-                  <IconButton
-                    size="small"
-                    onClick={handleDetachChat}
-                    title="Detach to floating window"
-                    sx={{ p: 0.25, display: { xs: 'none', lg: 'inline-flex' } }}
-                  >
-                    <OpenInNewIcon sx={{ fontSize: 16 }} />
-                  </IconButton>
-                </Box>
                 <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-                  <Chat netId={Number(netId)} netStartedAt={net?.started_at} netStatus={net?.status} searchQuery={searchQuery} />
+                  <Chat netId={Number(netId)} netStartedAt={net?.started_at} netStatus={net?.status} searchQuery={searchQuery} onDetach={handleDetachChat} />
                 </Box>
               </Box>
               </FloatingWindow>
