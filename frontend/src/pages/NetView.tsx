@@ -45,7 +45,7 @@ import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
 import CloseIcon from '@mui/icons-material/Close';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import LinkIcon from '@mui/icons-material/Link';
+import LanguageIcon from '@mui/icons-material/Language';
 import InfoIcon from '@mui/icons-material/Info';
 import { netApi, checkInApi } from '../services/api';
 import api from '../services/api';
@@ -945,7 +945,7 @@ const NetView: React.FC = () => {
                       onClick={() => window.open(net.info_url, '_blank')}
                       sx={{ minWidth: 'auto', px: 1 }}
                     >
-                      <LinkIcon fontSize="small" />
+                      <LanguageIcon fontSize="small" />
                     </Button>
                   </Tooltip>
                 )}

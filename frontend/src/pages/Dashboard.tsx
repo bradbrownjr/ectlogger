@@ -36,7 +36,7 @@ import ArchiveIcon from '@mui/icons-material/Archive';
 import DownloadIcon from '@mui/icons-material/Download';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CloseIcon from '@mui/icons-material/Close';
-import LinkIcon from '@mui/icons-material/Link';
+import LanguageIcon from '@mui/icons-material/Language';
 import InfoIcon from '@mui/icons-material/Info';
 import { netApi } from '../services/api';
 import api from '../services/api';
@@ -264,19 +264,19 @@ const Dashboard: React.FC = () => {
                         <SearchIcon />
                       </IconButton>
                     </Tooltip>
+                  </Box>
+                  
+                  <Box>
                     {net.info_url && (
                       <Tooltip title="Net/Club info">
                         <IconButton
                           size="small"
                           onClick={() => window.open(net.info_url, '_blank')}
                         >
-                          <LinkIcon />
+                          <LanguageIcon />
                         </IconButton>
                       </Tooltip>
                     )}
-                  </Box>
-                  
-                  <Box>
                     {/* Draft net actions */}
                     {net.status === 'draft' && (user?.id === net.owner_id || user?.role === 'admin') && (
                       <>
