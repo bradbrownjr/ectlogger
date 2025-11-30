@@ -1142,6 +1142,16 @@ const NetView: React.FC = () => {
                       {hasAnyRelayedBy && <TableCell sx={{ whiteSpace: 'nowrap' }}>Relayed By</TableCell>}
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>Time</TableCell>
                       {canManage && <TableCell sx={{ whiteSpace: 'nowrap' }}>Actions</TableCell>}
+                      <TableCell sx={{ whiteSpace: 'nowrap', width: 30, p: 0.5 }}>
+                        <IconButton
+                          size="small"
+                          onClick={handleDetachCheckInList}
+                          title="Detach to floating window"
+                          sx={{ p: 0.25 }}
+                        >
+                          <OpenInNewIcon sx={{ fontSize: 14 }} />
+                        </IconButton>
+                      </TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
