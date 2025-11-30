@@ -1979,19 +1979,19 @@ const NetView: React.FC = () => {
                 storageKey="chat"
               >
               <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                {/* Chat header with detach button */}
+                {/* Chat header with title and detach button */}
                 <Box sx={{ 
                   display: 'flex', 
                   alignItems: 'center', 
                   justifyContent: 'space-between',
                   px: 1, 
-                  py: 0.5, 
+                  py: 0.25, 
                   borderBottom: 1, 
                   borderColor: 'divider',
-                  backgroundColor: 'action.hover',
-                  minHeight: 32,
+                  backgroundColor: 'background.paper',
+                  minHeight: 28,
                 }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>Chat</Typography>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 'bold', fontSize: '0.875rem' }}>Chat</Typography>
                   <IconButton
                     size="small"
                     onClick={handleDetachChat}
