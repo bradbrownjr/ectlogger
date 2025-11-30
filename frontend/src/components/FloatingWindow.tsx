@@ -86,32 +86,11 @@ const FloatingWindow: React.FC<FloatingWindowProps> = ({
   }, []);
 
   if (!isDetached) {
-    // When attached, just render children with a detach button
+    // When attached, just render children directly - no wrapper header
+    // The parent component is responsible for placing the detach button
     return (
-      <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-        <Box
-          sx={{
-            display: { xs: 'none', lg: 'flex' }, // Only show on large screens
-            justifyContent: 'flex-end',
-            px: 1,
-            py: 0.5,
-            borderBottom: 1,
-            borderColor: 'divider',
-            backgroundColor: 'action.hover',
-          }}
-        >
-          <IconButton
-            size="small"
-            onClick={onDetach}
-            title={`Detach ${title} to floating window`}
-            sx={{ p: 0.5 }}
-          >
-            <OpenInNewIcon fontSize="small" />
-          </IconButton>
-        </Box>
-        <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-          {children}
-        </Box>
+      <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+        {children}
       </Box>
     );
   }

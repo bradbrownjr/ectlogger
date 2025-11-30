@@ -44,6 +44,7 @@ import GroupIcon from '@mui/icons-material/Group';
 import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
 import CloseIcon from '@mui/icons-material/Close';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { netApi, checkInApi } from '../services/api';
 import api from '../services/api';
 import { formatTimeWithDate } from '../utils/dateUtils';
@@ -1977,7 +1978,33 @@ const NetView: React.FC = () => {
                 minHeight={250}
                 storageKey="chat"
               >
-              <Chat netId={Number(netId)} netStartedAt={net?.started_at} netStatus={net?.status} searchQuery={searchQuery} />
+              <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                {/* Chat header with detach button */}
+                <Box sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'space-between',
+                  px: 1, 
+                  py: 0.5, 
+                  borderBottom: 1, 
+                  borderColor: 'divider',
+                  backgroundColor: 'action.hover',
+                  minHeight: 32,
+                }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>Chat</Typography>
+                  <IconButton
+                    size="small"
+                    onClick={handleDetachChat}
+                    title="Detach to floating window"
+                    sx={{ p: 0.25, display: { xs: 'none', lg: 'inline-flex' } }}
+                  >
+                    <OpenInNewIcon sx={{ fontSize: 16 }} />
+                  </IconButton>
+                </Box>
+                <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+                  <Chat netId={Number(netId)} netStartedAt={net?.started_at} netStatus={net?.status} searchQuery={searchQuery} />
+                </Box>
+              </Box>
               </FloatingWindow>
             </Grid>
             )}
