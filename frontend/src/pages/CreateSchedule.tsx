@@ -126,6 +126,7 @@ const CreateSchedule: React.FC = () => {
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [infoUrl, setInfoUrl] = useState('');
   const [script, setScript] = useState('');
   const [frequencies, setFrequencies] = useState<Frequency[]>([]);
   const [selectedFrequencyIds, setSelectedFrequencyIds] = useState<number[]>([]);
@@ -518,6 +519,7 @@ const CreateSchedule: React.FC = () => {
       const Schedule = response.data;
       setName(Schedule.name);
       setDescription(Schedule.description || '');
+      setInfoUrl(Schedule.info_url || '');
       setScript(Schedule.script || '');
       setSelectedFrequencyIds(Schedule.frequencies.map((f: any) => f.id));
       // Set owner info
@@ -664,6 +666,7 @@ const CreateSchedule: React.FC = () => {
     const ScheduleData: any = {
       name,
       description,
+      info_url: infoUrl || null,
       script,
       frequency_ids: selectedFrequencyIds,
       field_config: fieldConfig,
@@ -756,6 +759,17 @@ const CreateSchedule: React.FC = () => {
               multiline
               rows={4}
               helperText="Optional description of the net schedule"
+            />
+
+            <TextField
+              fullWidth
+              label="Info URL"
+              value={infoUrl}
+              onChange={(e) => setInfoUrl(e.target.value)}
+              margin="normal"
+              type="url"
+              placeholder="https://example.com/net-info"
+              helperText="Optional URL for net, club or organization info"
             />
 
             {/* Owner selector - only show when editing and user is owner or admin */}
