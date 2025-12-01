@@ -359,6 +359,15 @@ async def get_user_statistics(
     return await _get_user_statistics(db, user)
 
 
+def _ensure_tz_aware(dt: datetime) -> datetime:
+    """Ensure a datetime is timezone-aware (assumes UTC if naive)."""
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt
+
+
 async def _get_user_statistics(db: AsyncSession, user: User) -> UserStatsResponse:
     """Helper to build user statistics."""
     import json
@@ -402,8 +411,8 @@ async def _get_user_statistics(db: AsyncSession, user: User) -> UserStatsRespons
     
     total_check_ins = len(check_ins)
     
-    # Last 30 days check-ins
-    last_30_days_check_ins = sum(1 for c in check_ins if c.checked_in_at >= last_30d)
+    # Last 30 days check-ins (ensure timezone-aware comparison)
+    last_30_days_check_ins = sum(1 for c in check_ins if _ensure_tz_aware(c.checked_in_at) >= last_30d)
     
     # Count nets as NCS (user is the ncs_operator of the net)
     ncs_result = await db.execute(
