@@ -5,6 +5,7 @@ import { CssBaseline, Box } from '@mui/material';
 import { SnackbarProvider } from 'notistack';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeContext } from './contexts/ThemeContext';
+import { LocationProvider } from './contexts/LocationContext';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import NetView from './pages/NetView';
@@ -172,7 +173,9 @@ const App: React.FC = () => {
         <SnackbarProvider maxSnack={3}>
           <Router>
             <AuthProvider>
-              <AppRoutes />
+              <LocationProvider>
+                <AppRoutes />
+              </LocationProvider>
             </AuthProvider>
           </Router>
         </SnackbarProvider>

@@ -11,6 +11,7 @@ interface User {
   location?: string;
   prefer_utc?: boolean;
   show_activity_in_chat?: boolean;
+  location_awareness?: boolean;
   email_notifications?: boolean;
   notify_net_start?: boolean;
   notify_net_close?: boolean;

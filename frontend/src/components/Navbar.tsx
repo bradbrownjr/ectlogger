@@ -20,6 +20,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useThemeMode } from '../contexts/ThemeContext';
+import { useLocation } from '../contexts/LocationContext';
 import LogoutIcon from '@mui/icons-material/Logout';
 import LoginIcon from '@mui/icons-material/Login';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
@@ -31,9 +32,11 @@ import BarChartIcon from '@mui/icons-material/BarChart';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import PersonIcon from '@mui/icons-material/Person';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import GridOnIcon from '@mui/icons-material/GridOn';
 
 const NavbarClock: React.FC = () => {
   const [time, setTime] = useState(new Date());
+  const { gridSquare, loading: locationLoading } = useLocation();
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
@@ -45,8 +48,12 @@ const NavbarClock: React.FC = () => {
   // Get timezone abbreviation (e.g., EST, PST, CST)
   const localTz = time.toLocaleTimeString('en-US', { timeZoneName: 'short' }).split(' ').pop() || 'Local';
 
+  const tooltipContent = gridSquare 
+    ? `${localTz}: ${localTime} | UTC: ${utcTime} | Grid: ${gridSquare}`
+    : `${localTz}: ${localTime} | UTC: ${utcTime}`;
+
   return (
-    <Tooltip title={`${localTz}: ${localTime} | UTC: ${utcTime}`}>
+    <Tooltip title={tooltipContent}>
       <Box 
         sx={{ 
           display: 'flex', 
@@ -69,6 +76,23 @@ const NavbarClock: React.FC = () => {
             {utcTime} UTC
           </Typography>
         </Box>
+        {gridSquare && (
+          <>
+            <Divider orientation="vertical" flexItem sx={{ mx: 0.5, borderColor: 'rgba(255,255,255,0.3)' }} />
+            <GridOnIcon sx={{ fontSize: 16 }} />
+            <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '0.75rem', fontWeight: 'bold' }}>
+              {gridSquare}
+            </Typography>
+          </>
+        )}
+        {locationLoading && (
+          <>
+            <Divider orientation="vertical" flexItem sx={{ mx: 0.5, borderColor: 'rgba(255,255,255,0.3)' }} />
+            <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '0.7rem', opacity: 0.7 }}>
+              ...
+            </Typography>
+          </>
+        )}
       </Box>
     </Tooltip>
   );

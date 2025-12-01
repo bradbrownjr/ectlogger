@@ -72,6 +72,7 @@ class User(Base):
     notify_net_close = Column(Boolean, default=True)  # Notify when subscribed net closes (with log)
     notify_net_reminder = Column(Boolean, default=False)  # Reminder 1 hour before subscribed net
     show_activity_in_chat = Column(Boolean, default=True)  # Show check-in/out activity in chat
+    location_awareness = Column(Boolean, default=False)  # Enable browser geolocation for grid square
     sms_gateway = Column(String(255))  # email-to-sms gateway address
     skywarn_number = Column(String(50))
     location = Column(String(255))

@@ -74,6 +74,7 @@ const Profile: React.FC = () => {
     callsigns: user?.callsigns || [],
     prefer_utc: user?.prefer_utc || false,
     show_activity_in_chat: user?.show_activity_in_chat ?? true,
+    location_awareness: user?.location_awareness ?? false,
     email_notifications: user?.email_notifications ?? true,
     notify_net_start: user?.notify_net_start ?? true,
     notify_net_close: user?.notify_net_close ?? true,
@@ -272,6 +273,22 @@ const Profile: React.FC = () => {
               />
               <Typography variant="body2" color="text.secondary" sx={{ ml: 4 }}>
                 Display check-in/out and net events as system messages in chat (IRC-style)
+              </Typography>
+            </Box>
+
+            <Box sx={{ mb: 2 }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.location_awareness}
+                    onChange={(e) => setFormData({ ...formData, location_awareness: e.target.checked })}
+                  />
+                }
+                label="Enable location awareness"
+              />
+              <Typography variant="body2" color="text.secondary" sx={{ ml: 4 }}>
+                Show your Maidenhead grid square in the navbar and use it to auto-fill location on check-ins. 
+                Your browser will prompt for location permission.
               </Typography>
             </Box>
 
