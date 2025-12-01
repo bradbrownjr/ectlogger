@@ -34,7 +34,11 @@ import PersonIcon from '@mui/icons-material/Person';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import GridOnIcon from '@mui/icons-material/GridOn';
 
-const NavbarClock: React.FC = () => {
+interface NavbarClockProps {
+  compact?: boolean;
+}
+
+const NavbarClock: React.FC<NavbarClockProps> = ({ compact = false }) => {
   const [time, setTime] = useState(new Date());
   const { gridSquare, loading: locationLoading } = useLocation();
 
@@ -52,6 +56,40 @@ const NavbarClock: React.FC = () => {
     ? `${localTz}: ${localTime} | UTC: ${utcTime} | Grid: ${gridSquare}`
     : `${localTz}: ${localTime} | UTC: ${utcTime}`;
 
+  // Compact mobile version - single line
+  if (compact) {
+    return (
+      <Tooltip title={tooltipContent}>
+        <Box 
+          sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 0.5,
+            bgcolor: 'rgba(0,0,0,0.15)',
+            px: 1,
+            py: 0.25,
+            borderRadius: 1,
+            fontFamily: 'monospace',
+            fontSize: '0.75rem',
+          }}
+        >
+          <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '0.7rem' }}>
+            {utcTime}z
+          </Typography>
+          {gridSquare && (
+            <>
+              <Box sx={{ width: '1px', height: 12, bgcolor: 'rgba(255,255,255,0.3)' }} />
+              <Typography variant="caption" sx={{ fontFamily: 'monospace', fontSize: '0.7rem' }}>
+                {gridSquare}
+              </Typography>
+            </>
+          )}
+        </Box>
+      </Tooltip>
+    );
+  }
+
+  // Full desktop version
   return (
     <Tooltip title={tooltipContent}>
       <Box 
@@ -139,7 +177,7 @@ const Navbar: React.FC = () => {
           📻 ECTLogger
         </Typography>
         
-        <NavbarClock />
+        <NavbarClock compact={isMobile} />
         
         <Box sx={{ flexGrow: 1 }} />
         
