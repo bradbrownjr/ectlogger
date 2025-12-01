@@ -371,7 +371,7 @@ const Dashboard: React.FC = () => {
                             <IconButton
                               size="small"
                               color="error"
-                              onClick={() => console.log('Delete net', net.id)}
+                              onClick={() => handleDeleteClick(net)}
                             >
                               <DeleteIcon />
                             </IconButton>
