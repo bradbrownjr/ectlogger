@@ -191,16 +191,13 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
       }
       setMaximized(false);
     } else {
-      // Save current state and maximize
-      // Use clientWidth/Height to get viewport without scrollbars
+      // Save current state and maximize to fill viewport
       setPreMaximizeState({ ...windowState });
-      const viewportWidth = document.documentElement.clientWidth;
-      const viewportHeight = document.documentElement.clientHeight;
       setWindowState({
         x: 0,
         y: 0,
-        width: viewportWidth,
-        height: viewportHeight,
+        width: Math.floor(document.documentElement.clientWidth),
+        height: Math.floor(document.documentElement.clientHeight),
       });
       setMaximized(true);
     }
@@ -273,23 +270,31 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
       }}
       position={{ x: windowState.x, y: windowState.y }}
       onDragStop={(_e, d) => {
-        setWindowState(prev => ({ ...prev, x: d.x, y: d.y }));
+        if (!maximized) {
+          setWindowState(prev => ({ ...prev, x: d.x, y: d.y }));
+        }
       }}
       onResizeStop={(_e, _direction, ref, _delta, position) => {
-        setWindowState({
-          width: parseInt(ref.style.width),
-          height: parseInt(ref.style.height),
-          x: position.x,
-          y: position.y,
-        });
-        handleResizeStop();
+        if (!maximized) {
+          setWindowState({
+            width: parseInt(ref.style.width),
+            height: parseInt(ref.style.height),
+            x: position.x,
+            y: position.y,
+          });
+          handleResizeStop();
+        }
       }}
       minWidth={isMobile ? 280 : 400}
       minHeight={minimized ? 48 : 300}
-      bounds="window"
+      bounds={maximized ? undefined : "window"}
       dragHandleClassName="drag-handle"
-      enableResizing={!minimized}
-      style={{ zIndex: 1300 }}
+      enableResizing={!minimized && !maximized}
+      disableDragging={maximized}
+      style={{ 
+        zIndex: 1300,
+        position: maximized ? 'fixed' : undefined,
+      }}
     >
       <Paper
         elevation={8}
