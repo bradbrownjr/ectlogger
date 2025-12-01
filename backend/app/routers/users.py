@@ -37,6 +37,24 @@ async def update_my_profile(
     return UserResponse.from_orm(current_user)
 
 
+@router.put("/me/location")
+async def update_my_location(
+    location_data: dict,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Update current user's live location (grid square).
+    
+    Called automatically when location_awareness is enabled and GPS position updates.
+    This allows NCS to see the user's current location when checking them in.
+    """
+    location = location_data.get('location', '')
+    if location:
+        current_user.location = location.upper()
+        await db.commit()
+    return {"status": "ok", "location": current_user.location}
+
+
 @router.get("", response_model=List[UserResponse])
 async def list_users(
     skip: int = 0,

@@ -55,6 +55,7 @@ export const authApi = {
 export const userApi = {
   getProfile: () => api.get('/users/me'),
   updateProfile: (data: any) => api.put('/users/me', data),
+  updateLocation: (location: string) => api.put('/users/me/location', { location }),
   listUsers: () => api.get('/users'),
   lookupByCallsign: (callsign: string) => api.get(`/users/lookup/${encodeURIComponent(callsign)}`),
 };

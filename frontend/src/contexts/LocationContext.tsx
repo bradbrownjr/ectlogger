@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from './AuthContext';
+import { userApi } from '../services/api';
 
 interface LocationContextType {
   gridSquare: string | null;
@@ -46,6 +47,20 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [longitude, setLongitude] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const lastSavedGrid = useRef<string | null>(null);
+
+  // Save grid square to database when it changes
+  const saveLocationToServer = useCallback(async (grid: string) => {
+    if (grid && grid !== lastSavedGrid.current) {
+      try {
+        await userApi.updateLocation(grid);
+        lastSavedGrid.current = grid;
+        console.debug('[LOCATION] Saved grid square to server:', grid);
+      } catch (err) {
+        console.error('[LOCATION] Failed to save grid square:', err);
+      }
+    }
+  }, []);
 
   const fetchLocation = useCallback(() => {
     if (!user?.location_awareness) {
@@ -66,10 +81,14 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude: lat, longitude: lon } = position.coords;
+        const newGridSquare = toMaidenhead(lat, lon);
         setLatitude(lat);
         setLongitude(lon);
-        setGridSquare(toMaidenhead(lat, lon));
+        setGridSquare(newGridSquare);
         setLoading(false);
+        
+        // Save to database for NCS lookup
+        saveLocationToServer(newGridSquare);
       },
       (err) => {
         console.error('[LOCATION] Geolocation error:', err.message);
@@ -82,7 +101,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         maximumAge: 300000  // Cache for 5 minutes
       }
     );
-  }, [user?.location_awareness]);
+  }, [user?.location_awareness, saveLocationToServer]);
 
   // Fetch location when user enables location awareness or user object changes
   useEffect(() => {
