@@ -109,7 +109,7 @@ const Navbar: React.FC = () => {
         <Typography
           variant="h6"
           component="div"
-          sx={{ cursor: 'pointer' }}
+          sx={{ cursor: 'pointer', mr: 2 }}
           onClick={() => handleNavigate('/dashboard')}
         >
           📻 ECTLogger
