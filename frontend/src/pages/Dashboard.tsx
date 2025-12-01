@@ -15,6 +15,8 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
+  DialogActions,
+  Button,
   Table,
   TableBody,
   TableCell,
@@ -65,6 +67,8 @@ const Dashboard: React.FC = () => {
   const [archivedNets, setArchivedNets] = useState<Net[]>([]);
   const [loading, setLoading] = useState(true);
   const [showArchived, setShowArchived] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [netToDelete, setNetToDelete] = useState<Net | null>(null);
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const theme = useTheme();
@@ -150,6 +154,29 @@ const Dashboard: React.FC = () => {
       navigate(`/nets/${netId}`);
     } catch (error) {
       console.error('Failed to start net:', error);
+    }
+  };
+
+  const handleDeleteClick = (net: Net) => {
+    setNetToDelete(net);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!netToDelete) return;
+    try {
+      await netApi.delete(netToDelete.id);
+      fetchNets();
+      // Also refresh archived nets if the dialog is open
+      if (showArchived) {
+        fetchArchivedNets();
+      }
+    } catch (error) {
+      console.error('Failed to delete net:', error);
+      alert('Failed to delete net. Make sure you have permission.');
+    } finally {
+      setDeleteConfirmOpen(false);
+      setNetToDelete(null);
     }
   };
 
@@ -453,7 +480,7 @@ const Dashboard: React.FC = () => {
                             <IconButton
                               size="small"
                               color="error"
-                              onClick={() => console.log('Delete net', net.id)}
+                              onClick={() => handleDeleteClick(net)}
                             >
                               <DeleteIcon />
                             </IconButton>
@@ -467,6 +494,25 @@ const Dashboard: React.FC = () => {
             </TableContainer>
           )}
         </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)}>
+        <DialogTitle>Delete Net</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to permanently delete "{netToDelete?.name}"?
+          </Typography>
+          <Typography color="error" sx={{ mt: 1 }}>
+            This will delete all check-ins and cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteConfirmOpen(false)}>Cancel</Button>
+          <Button onClick={handleDeleteConfirm} color="error" variant="contained">
+            Delete
+          </Button>
+        </DialogActions>
       </Dialog>
     </Container>
   );
