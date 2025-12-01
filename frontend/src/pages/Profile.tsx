@@ -73,6 +73,7 @@ const Profile: React.FC = () => {
     gmrs_callsign: user?.gmrs_callsign || '',
     callsigns: user?.callsigns || [],
     skywarn_number: user?.skywarn_number || '',
+    location: user?.location || '',
     prefer_utc: user?.prefer_utc || false,
     show_activity_in_chat: user?.show_activity_in_chat ?? true,
     location_awareness: user?.location_awareness ?? false,
@@ -195,6 +196,16 @@ const Profile: React.FC = () => {
               onChange={(e) => setFormData({ ...formData, skywarn_number: e.target.value.toUpperCase() })}
               margin="normal"
               helperText="Your NWS SKYWARN spotter ID (e.g., DFW-1234) - auto-fills when checking into SKYWARN nets"
+              inputProps={{ style: { textTransform: 'uppercase' } }}
+            />
+
+            <TextField
+              fullWidth
+              label="Default Location"
+              value={formData.location}
+              onChange={(e) => setFormData({ ...formData, location: e.target.value.toUpperCase() })}
+              margin="normal"
+              helperText="Your default location or Maidenhead grid square (e.g., FN43pp) - auto-fills when NCS checks you in"
               inputProps={{ style: { textTransform: 'uppercase' } }}
             />
 

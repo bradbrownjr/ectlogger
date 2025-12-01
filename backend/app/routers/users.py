@@ -188,12 +188,11 @@ async def lookup_by_callsign(
         # Return empty response instead of 404 - callsign may be valid but unregistered
         return CallsignLookupResponse()
     
-    # Only return location if user has location_awareness enabled
-    location = user.location if user.location_awareness else None
-    
+    # Return user's profile location (static, user-entered value)
+    # Note: Real-time grid square from GPS is only available client-side
     return CallsignLookupResponse(
         name=user.name,
-        location=location,
+        location=user.location,
         skywarn_number=user.skywarn_number
     )
 
