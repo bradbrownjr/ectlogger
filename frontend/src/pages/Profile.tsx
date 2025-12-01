@@ -168,7 +168,7 @@ const Profile: React.FC = () => {
                   <Typography variant="h6">Your Favorite Nets</Typography>
                 </Box>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                  Nets you check into the most - a source of pride for dedicated operators!
+                  Nets you check into the most.
                 </Typography>
                 <TableContainer>
                   <Table size="small">
