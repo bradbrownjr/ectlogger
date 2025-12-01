@@ -4,7 +4,8 @@ export const formatDateTime = (dateString: string, preferUtc: boolean = false): 
   const date = new Date(normalizedDateString);
   
   if (preferUtc) {
-    return date.toUTCString();
+    // toUTCString() returns "GMT" but we want to display "UTC"
+    return date.toUTCString().replace('GMT', 'UTC');
   }
   
   // Get timezone abbreviation
