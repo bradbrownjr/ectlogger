@@ -93,14 +93,40 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
   const [mapKey, setMapKey] = useState(0);
   const mapRef = useRef<L.Map | null>(null);
 
-  // Window position and size state
-  const [windowState, setWindowState] = useState({
-    x: window.innerWidth - 720,
-    y: 100,
-    width: 700,
-    height: 500,
+  // Window position and size state - responsive for mobile
+  const isMobile = window.innerWidth < 768;
+  const [windowState, setWindowState] = useState(() => {
+    if (isMobile) {
+      // On mobile, use almost full screen with some padding
+      return {
+        x: 10,
+        y: 60,
+        width: Math.min(window.innerWidth - 20, 700),
+        height: Math.min(window.innerHeight - 120, 500),
+      };
+    }
+    return {
+      x: Math.max(20, window.innerWidth - 720),
+      y: 100,
+      width: 700,
+      height: 500,
+    };
   });
 
+  // Keep window within viewport bounds on resize
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowState(prev => ({
+        ...prev,
+        x: Math.max(0, Math.min(prev.x, window.innerWidth - 100)),
+        y: Math.max(0, Math.min(prev.y, window.innerHeight - 50)),
+        width: Math.min(prev.width, window.innerWidth - 20),
+        height: Math.min(prev.height, window.innerHeight - 100),
+      }));
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   useEffect(() => {
     if (!open) return;
 
@@ -196,7 +222,7 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
         });
         handleResizeStop();
       }}
-      minWidth={400}
+      minWidth={isMobile ? 280 : 400}
       minHeight={minimized ? 48 : 300}
       bounds="window"
       dragHandleClassName="drag-handle"
