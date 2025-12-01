@@ -25,6 +25,7 @@ ECTLogger is a production-ready, web-based net logging application designed spec
 - **📊 Custom Fields** - Admins can create custom fields for specific net requirements
 - **🗺️ Station Mapping** - View check-in locations on OpenStreetMap (GPS, Maidenhead, UTM, MGRS)
 - **📝 Complete Net Logs** - Automatic log generation and email delivery
+- **📈 Statistics & Analytics** - Track participation trends, operator activity, and net performance with interactive charts
 
 ## 🔒 Security
 
@@ -153,6 +154,13 @@ Visual indicators for:
 - Designate NCS, loggers, and relay stations
 - Multiple NCS support for large nets
 - Relay station tracking for extended coverage
+
+### Statistics & Analytics
+Track participation and performance with interactive charts:
+- **Platform Statistics** - Total nets, check-ins, active operators, and trends over time
+- **Net Statistics** - Per-net check-in counts, top operators, daily/weekly breakdowns
+- **User Activity** - Personal check-in history, favorite nets, NCS service record
+- **Participation Tracking** - See which nets operators check into most frequently
 
 ## 📋 Net Workflow
 
