@@ -191,7 +191,7 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
     } else {
       // Save current state and maximize (leave room for navbar at top)
       setPreMaximizeState({ ...windowState });
-      const navbarHeight = 64;
+      const navbarHeight = 48;
       setWindowState({
         x: 0,
         y: navbarHeight,
