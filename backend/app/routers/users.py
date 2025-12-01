@@ -47,12 +47,15 @@ async def update_my_location(
     
     Called automatically when location_awareness is enabled and GPS position updates.
     This allows NCS to see the user's current location when checking them in.
+    Stored separately from the user's default location so GPS doesn't overwrite manual entry.
     """
+    from datetime import datetime, UTC
     location = location_data.get('location', '')
     if location:
-        current_user.location = location.upper()
+        current_user.live_location = location.upper()
+        current_user.live_location_updated = datetime.now(UTC)
         await db.commit()
-    return {"status": "ok", "location": current_user.location}
+    return {"status": "ok", "live_location": current_user.live_location}
 
 
 @router.get("", response_model=List[UserResponse])
@@ -206,11 +209,21 @@ async def lookup_by_callsign(
         # Return empty response instead of 404 - callsign may be valid but unregistered
         return CallsignLookupResponse()
     
-    # Return user's profile location (static, user-entered value)
-    # Note: Real-time grid square from GPS is only available client-side
+    # Prefer live GPS location if available and recent (within 1 hour), otherwise use static default
+    from datetime import datetime, UTC, timedelta
+    location = None
+    if user.live_location and user.live_location_updated:
+        age = datetime.now(UTC) - user.live_location_updated.replace(tzinfo=UTC)
+        if age < timedelta(hours=1):
+            location = user.live_location
+    
+    # Fall back to static default location if no recent live location
+    if not location:
+        location = user.location
+    
     return CallsignLookupResponse(
         name=user.name,
-        location=user.location,
+        location=location,
         skywarn_number=user.skywarn_number
     )
 

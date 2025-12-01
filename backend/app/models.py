@@ -75,7 +75,9 @@ class User(Base):
     location_awareness = Column(Boolean, default=False)  # Enable browser geolocation for grid square
     sms_gateway = Column(String(255))  # email-to-sms gateway address
     skywarn_number = Column(String(50))
-    location = Column(String(255))
+    location = Column(String(255))  # User's default/static location
+    live_location = Column(String(50))  # GPS-derived grid square (updated automatically)
+    live_location_updated = Column(DateTime(timezone=True))  # When live_location was last updated
     prefer_utc = Column(Boolean, default=False)  # Display times in UTC instead of local time
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
