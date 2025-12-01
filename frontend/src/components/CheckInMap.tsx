@@ -191,13 +191,19 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
       }
       setMaximized(false);
     } else {
-      // Save current state and maximize to fill viewport
+      // Save current state and maximize
+      // Get the navbar element to position below it
+      const navbar = document.querySelector('header, nav, .MuiAppBar-root');
+      const navbarBottom = navbar ? navbar.getBoundingClientRect().bottom : 0;
+      const availableHeight = document.documentElement.clientHeight - navbarBottom;
+      const availableWidth = document.documentElement.clientWidth;
+      
       setPreMaximizeState({ ...windowState });
       setWindowState({
         x: 0,
-        y: 0,
-        width: Math.floor(document.documentElement.clientWidth),
-        height: Math.floor(document.documentElement.clientHeight),
+        y: navbarBottom,
+        width: availableWidth,
+        height: availableHeight,
       });
       setMaximized(true);
     }
