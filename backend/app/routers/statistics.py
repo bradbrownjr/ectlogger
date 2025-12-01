@@ -414,9 +414,9 @@ async def _get_user_statistics(db: AsyncSession, user: User) -> UserStatsRespons
     # Last 30 days check-ins (ensure timezone-aware comparison)
     last_30_days_check_ins = sum(1 for c in check_ins if _ensure_tz_aware(c.checked_in_at) >= last_30d)
     
-    # Count nets as NCS (user is the ncs_operator of the net)
+    # Count nets as NCS/owner (user owns the net)
     ncs_result = await db.execute(
-        select(func.count(Net.id)).where(Net.ncs_operator_id == user.id)
+        select(func.count(Net.id)).where(Net.owner_id == user.id)
     )
     nets_as_ncs = ncs_result.scalar() or 0
     
