@@ -31,6 +31,7 @@ import {
   Grid,
   Tooltip,
   useTheme,
+  CircularProgress,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -159,6 +160,7 @@ const NetView: React.FC = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [closeNetDialogOpen, setCloseNetDialogOpen] = useState(false);
+  const [startingNet, setStartingNet] = useState(false);
   const [scriptOpen, setScriptOpen] = useState(false);
   const [checkInListDetached, setCheckInListDetached] = useState(() => {
     return localStorage.getItem('floatingWindow_checkInList_detached') === 'true';
@@ -398,6 +400,7 @@ const NetView: React.FC = () => {
   };
 
   const handleStartNet = async () => {
+    setStartingNet(true);
     try {
       await netApi.start(Number(netId));
       fetchNet();
@@ -418,6 +421,7 @@ const NetView: React.FC = () => {
       });
     } catch (error) {
       console.error('Failed to start net:', error);
+      setStartingNet(false);
     }
   };
 
@@ -910,8 +914,15 @@ const NetView: React.FC = () => {
                     <Button size="small" variant="outlined" onClick={() => navigate(`/nets/${netId}/edit`)}>
                       Edit
                     </Button>
-                    <Button size="small" variant="contained" onClick={handleStartNet}>
-                      Start Net
+                    <Button size="small" variant="contained" onClick={handleStartNet} disabled={startingNet}>
+                      {startingNet ? (
+                        <>
+                          <CircularProgress size={16} color="inherit" sx={{ mr: 1 }} />
+                          Starting...
+                        </>
+                      ) : (
+                        'Start Net'
+                      )}
                     </Button>
                   </>
                 )}
