@@ -73,6 +73,8 @@ const Dashboard: React.FC = () => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [netToDelete, setNetToDelete] = useState<Net | null>(null);
   const [archiveFilter, setArchiveFilter] = useState('');
+  const [archiveDateFrom, setArchiveDateFrom] = useState('');
+  const [archiveDateTo, setArchiveDateTo] = useState('');
   const [archiveSortField, setArchiveSortField] = useState<'name' | 'owner' | 'check_ins' | 'closed'>('closed');
   const [archiveSortDirection, setArchiveSortDirection] = useState<'asc' | 'desc'>('desc');
   const navigate = useNavigate();
@@ -199,13 +201,36 @@ const Dashboard: React.FC = () => {
   // Filter and sort archived nets
   const filteredArchivedNets = archivedNets
     .filter((net) => {
-      if (!archiveFilter) return true;
-      const search = archiveFilter.toLowerCase();
-      return (
-        net.name.toLowerCase().includes(search) ||
-        (net.owner_callsign?.toLowerCase() || '').includes(search) ||
-        (net.owner_name?.toLowerCase() || '').includes(search)
-      );
+      // Text filter
+      if (archiveFilter) {
+        const search = archiveFilter.toLowerCase();
+        const matchesText = (
+          net.name.toLowerCase().includes(search) ||
+          (net.owner_callsign?.toLowerCase() || '').includes(search) ||
+          (net.owner_name?.toLowerCase() || '').includes(search)
+        );
+        if (!matchesText) return false;
+      }
+      
+      // Date filter
+      if (archiveDateFrom || archiveDateTo) {
+        const closedDate = net.closed_at ? new Date(net.closed_at) : null;
+        if (!closedDate) return false;
+        
+        if (archiveDateFrom) {
+          const fromDate = new Date(archiveDateFrom);
+          fromDate.setHours(0, 0, 0, 0);
+          if (closedDate < fromDate) return false;
+        }
+        
+        if (archiveDateTo) {
+          const toDate = new Date(archiveDateTo);
+          toDate.setHours(23, 59, 59, 999);
+          if (closedDate > toDate) return false;
+        }
+      }
+      
+      return true;
     })
     .sort((a, b) => {
       let comparison = 0;
@@ -466,36 +491,59 @@ const Dashboard: React.FC = () => {
         onClose={() => {
           setShowArchived(false);
           setArchiveFilter('');
+          setArchiveDateFrom('');
+          setArchiveDateTo('');
         }}
         maxWidth="md"
         fullWidth
       >
         <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          📦 Archived Nets ({filteredArchivedNets.length}{archiveFilter ? ` of ${archivedNets.length}` : ''})
+          📦 Archived Nets ({filteredArchivedNets.length}{(archiveFilter || archiveDateFrom || archiveDateTo) ? ` of ${archivedNets.length}` : ''})
           <IconButton onClick={() => {
             setShowArchived(false);
             setArchiveFilter('');
+            setArchiveDateFrom('');
+            setArchiveDateTo('');
           }}>
             <CloseIcon />
           </IconButton>
         </DialogTitle>
         <DialogContent>
           {/* Search/Filter */}
-          <TextField
-            fullWidth
-            size="small"
-            placeholder="Search by net name or NCS callsign..."
-            value={archiveFilter}
-            onChange={(e) => setArchiveFilter(e.target.value)}
-            sx={{ mb: 2 }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon color="action" />
-                </InputAdornment>
-              ),
-            }}
-          />
+          <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
+            <TextField
+              size="small"
+              placeholder="Search by net name or NCS callsign..."
+              value={archiveFilter}
+              onChange={(e) => setArchiveFilter(e.target.value)}
+              sx={{ flexGrow: 1, minWidth: 200 }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon color="action" />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <TextField
+              size="small"
+              type="date"
+              label="From"
+              value={archiveDateFrom}
+              onChange={(e) => setArchiveDateFrom(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+              sx={{ width: 150 }}
+            />
+            <TextField
+              size="small"
+              type="date"
+              label="To"
+              value={archiveDateTo}
+              onChange={(e) => setArchiveDateTo(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+              sx={{ width: 150 }}
+            />
+          </Box>
           
           {archivedNets.length === 0 ? (
             <Typography color="text.secondary" sx={{ py: 4, textAlign: 'center' }}>
