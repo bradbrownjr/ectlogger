@@ -53,17 +53,17 @@ const BulkCheckIn: React.FC<BulkCheckInProps> = ({ open, onClose, netId, onCheck
 
   // Window position and size state
   const [windowState, setWindowState] = useState({
-    x: Math.max(50, window.innerWidth - 650),
+    x: Math.max(50, window.innerWidth - 720),
     y: 100,
-    width: 600,
-    height: minimized ? 48 : 280,
+    width: 680,
+    height: minimized ? 48 : 340,
   });
 
   // Update height when minimized state changes
   useEffect(() => {
     setWindowState(prev => ({
       ...prev,
-      height: minimized ? 48 : 280,
+      height: minimized ? 48 : 340,
     }));
   }, [minimized]);
 
@@ -189,8 +189,8 @@ const BulkCheckIn: React.FC<BulkCheckInProps> = ({ open, onClose, netId, onCheck
             y: position.y,
           });
         }}
-        minWidth={400}
-        minHeight={minimized ? 48 : 220}
+        minWidth={500}
+        minHeight={minimized ? 48 : 280}
         bounds="window"
         dragHandleClassName="drag-handle"
         enableResizing={!minimized}
@@ -259,13 +259,22 @@ const BulkCheckIn: React.FC<BulkCheckInProps> = ({ open, onClose, netId, onCheck
                 sx={{ mb: 1 }}
               />
               
-              <Typography variant="caption" color="text.secondary" sx={{ mb: 1 }}>
-                Format: <strong>callsign, name, location, power source, notes</strong> — separate check-ins with <strong>;</strong>
-                <br />
-                Add status with <strong>:</strong> at end — <strong>:jl</strong> = Just Listening, <strong>:r</strong> = Relay, <strong>:t</strong> = Traffic, <strong>:a</strong> = Announcements, <strong>:m</strong> = Mobile
-                <br />
-                Missing fields are okay — just leave them empty (e.g., "KC1ABC, John,, Battery" skips location)
-              </Typography>
+              <Box sx={{ mb: 1, p: 1.5, bgcolor: 'action.hover', borderRadius: 1 }}>
+                <Typography variant="caption" component="div" sx={{ fontWeight: 'bold', mb: 0.5 }}>
+                  Format: callsign, name, location, power, notes
+                </Typography>
+                <Typography variant="caption" component="div" color="text.secondary" sx={{ mb: 0.5 }}>
+                  Separate multiple check-ins with semicolon <strong>;</strong>
+                </Typography>
+                <Typography variant="caption" component="div" sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
+                  <span><strong>:jl</strong> Listening</span>
+                  <span><strong>:r</strong> Relay</span>
+                  <span><strong>:t</strong> Traffic</span>
+                  <span><strong>:a</strong> Announce</span>
+                  <span><strong>:m</strong> Mobile</span>
+                  <span><strong>:o</strong> Check Out</span>
+                </Typography>
+              </Box>
 
               {/* Preview */}
               {preview.length > 0 && (
