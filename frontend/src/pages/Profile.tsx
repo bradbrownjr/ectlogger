@@ -58,8 +58,8 @@ const Profile: React.FC = () => {
   useEffect(() => {
     const fetchUserStats = async () => {
       try {
-        const stats = await statisticsApi.getUserStats();
-        setUserStats(stats);
+        const response = await statisticsApi.getUserStats();
+        setUserStats(response.data);
       } catch (err) {
         console.error('Failed to fetch user stats:', err);
       } finally {
