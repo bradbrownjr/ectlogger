@@ -325,14 +325,6 @@ const Scheduler: React.FC = () => {
                     </Button>
                   </Box>
                   <Box>
-                    <Tooltip title="Schedule statistics">
-                      <IconButton
-                        size="small"
-                        onClick={() => navigate(`/statistics/schedules/${schedule.id}`)}
-                      >
-                        <BarChartIcon />
-                      </IconButton>
-                    </Tooltip>
                     {schedule.info_url && (
                       <Tooltip title="Net/Club info">
                         <IconButton
@@ -343,6 +335,14 @@ const Scheduler: React.FC = () => {
                         </IconButton>
                       </Tooltip>
                     )}
+                    <Tooltip title="Schedule statistics">
+                      <IconButton
+                        size="small"
+                        onClick={() => navigate(`/statistics/schedules/${schedule.id}`)}
+                      >
+                        <BarChartIcon />
+                      </IconButton>
+                    </Tooltip>
                     {/* Notifications */}
                     {schedule.is_subscribed ? (
                       <Tooltip title="Unsubscribe from notifications">
