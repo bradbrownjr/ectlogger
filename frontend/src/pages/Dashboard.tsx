@@ -23,7 +23,10 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TableSortLabel,
   Paper,
+  TextField,
+  InputAdornment,
   useMediaQuery,
   useTheme,
 } from '@mui/material';
@@ -69,6 +72,9 @@ const Dashboard: React.FC = () => {
   const [showArchived, setShowArchived] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [netToDelete, setNetToDelete] = useState<Net | null>(null);
+  const [archiveFilter, setArchiveFilter] = useState('');
+  const [archiveSortField, setArchiveSortField] = useState<'name' | 'owner' | 'check_ins' | 'closed'>('closed');
+  const [archiveSortDirection, setArchiveSortDirection] = useState<'asc' | 'desc'>('desc');
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const theme = useTheme();
@@ -179,6 +185,48 @@ const Dashboard: React.FC = () => {
       setNetToDelete(null);
     }
   };
+
+  // Handle archive sort
+  const handleArchiveSort = (field: 'name' | 'owner' | 'check_ins' | 'closed') => {
+    if (archiveSortField === field) {
+      setArchiveSortDirection(archiveSortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setArchiveSortField(field);
+      setArchiveSortDirection(field === 'closed' ? 'desc' : 'asc');
+    }
+  };
+
+  // Filter and sort archived nets
+  const filteredArchivedNets = archivedNets
+    .filter((net) => {
+      if (!archiveFilter) return true;
+      const search = archiveFilter.toLowerCase();
+      return (
+        net.name.toLowerCase().includes(search) ||
+        (net.owner_callsign?.toLowerCase() || '').includes(search) ||
+        (net.owner_name?.toLowerCase() || '').includes(search)
+      );
+    })
+    .sort((a, b) => {
+      let comparison = 0;
+      switch (archiveSortField) {
+        case 'name':
+          comparison = a.name.localeCompare(b.name);
+          break;
+        case 'owner':
+          comparison = (a.owner_callsign || '').localeCompare(b.owner_callsign || '');
+          break;
+        case 'check_ins':
+          comparison = (a.check_in_count ?? 0) - (b.check_in_count ?? 0);
+          break;
+        case 'closed':
+          const dateA = a.closed_at ? new Date(a.closed_at).getTime() : 0;
+          const dateB = b.closed_at ? new Date(b.closed_at).getTime() : 0;
+          comparison = dateA - dateB;
+          break;
+      }
+      return archiveSortDirection === 'asc' ? comparison : -comparison;
+    });
 
   return (
     <Container maxWidth="lg" sx={{ mt: { xs: 2, sm: 4 }, mb: 4, px: { xs: 1, sm: 3 } }}>
@@ -415,35 +463,94 @@ const Dashboard: React.FC = () => {
       {/* Archived Nets Dialog */}
       <Dialog
         open={showArchived}
-        onClose={() => setShowArchived(false)}
+        onClose={() => {
+          setShowArchived(false);
+          setArchiveFilter('');
+        }}
         maxWidth="md"
         fullWidth
       >
         <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          📦 Archived Nets
-          <IconButton onClick={() => setShowArchived(false)}>
+          📦 Archived Nets ({filteredArchivedNets.length}{archiveFilter ? ` of ${archivedNets.length}` : ''})
+          <IconButton onClick={() => {
+            setShowArchived(false);
+            setArchiveFilter('');
+          }}>
             <CloseIcon />
           </IconButton>
         </DialogTitle>
         <DialogContent>
+          {/* Search/Filter */}
+          <TextField
+            fullWidth
+            size="small"
+            placeholder="Search by net name or NCS callsign..."
+            value={archiveFilter}
+            onChange={(e) => setArchiveFilter(e.target.value)}
+            sx={{ mb: 2 }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon color="action" />
+                </InputAdornment>
+              ),
+            }}
+          />
+          
           {archivedNets.length === 0 ? (
             <Typography color="text.secondary" sx={{ py: 4, textAlign: 'center' }}>
               No archived nets found
+            </Typography>
+          ) : filteredArchivedNets.length === 0 ? (
+            <Typography color="text.secondary" sx={{ py: 4, textAlign: 'center' }}>
+              No nets match your search
             </Typography>
           ) : (
             <TableContainer component={Paper} variant="outlined">
               <Table size="small">
                 <TableHead>
                   <TableRow>
-                    <TableCell>Net Name</TableCell>
-                    <TableCell>NCS</TableCell>
-                    <TableCell align="center">Check-ins</TableCell>
-                    <TableCell>Closed</TableCell>
+                    <TableCell>
+                      <TableSortLabel
+                        active={archiveSortField === 'name'}
+                        direction={archiveSortField === 'name' ? archiveSortDirection : 'asc'}
+                        onClick={() => handleArchiveSort('name')}
+                      >
+                        Net Name
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell>
+                      <TableSortLabel
+                        active={archiveSortField === 'owner'}
+                        direction={archiveSortField === 'owner' ? archiveSortDirection : 'asc'}
+                        onClick={() => handleArchiveSort('owner')}
+                      >
+                        NCS
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell align="center">
+                      <TableSortLabel
+                        active={archiveSortField === 'check_ins'}
+                        direction={archiveSortField === 'check_ins' ? archiveSortDirection : 'asc'}
+                        onClick={() => handleArchiveSort('check_ins')}
+                      >
+                        Check-ins
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell>
+                      <TableSortLabel
+                        active={archiveSortField === 'closed'}
+                        direction={archiveSortField === 'closed' ? archiveSortDirection : 'asc'}
+                        onClick={() => handleArchiveSort('closed')}
+                      >
+                        Closed
+                      </TableSortLabel>
+                    </TableCell>
                     <TableCell align="right">Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {archivedNets.map((net) => (
+                  {filteredArchivedNets.map((net) => (
                     <TableRow key={net.id} hover>
                       <TableCell>{net.name}</TableCell>
                       <TableCell>
