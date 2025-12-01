@@ -24,6 +24,7 @@ ECTLogger is a production-ready, web-based net logging application designed spec
 - **🔄 Recheck Tracking** - Automatically track stations checking in multiple times
 - **📊 Custom Fields** - Admins can create custom fields for specific net requirements
 - **🗺️ Station Mapping** - View check-in locations on OpenStreetMap (GPS, Maidenhead, UTM, MGRS)
+- **📍 Location Awareness** - Auto-fill Maidenhead grid square from browser location; NCS sees registered users' locations when checking them in
 - **📝 Complete Net Logs** - Automatic log generation and email delivery
 - **📈 Statistics & Analytics** - Track participation trends, operator activity, and net performance with interactive charts
 
@@ -154,6 +155,13 @@ Visual indicators for:
 - Designate NCS, loggers, and relay stations
 - Multiple NCS support for large nets
 - Relay station tracking for extended coverage
+
+### Location Awareness
+Streamline check-ins with automatic location detection:
+- **Maidenhead Grid Square** - Users who enable location awareness see their 6-character grid square in the navbar
+- **Auto-Fill on Check-In** - When a user checks into a net, their location field is automatically populated with their current grid square
+- **NCS Auto-Fill** - When NCS enters a callsign, the system looks up the registered user and auto-fills their name, location (if they've enabled location awareness), and SKYWARN number
+- **Privacy Respecting** - Location is only shared when the user explicitly enables it in their profile settings
 
 ### Statistics & Analytics
 Track participation and performance with interactive charts:
