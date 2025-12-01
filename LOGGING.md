@@ -300,6 +300,7 @@ logger.banned_access("banned@example.com", ip="192.168.1.100")
 
 ## Related Configuration
 
+- `LOG_FILE` - See `FAIL2BAN.md` for file logging setup
 - `MAGIC_LINK_EXPIRE_DAYS` - See `MAGIC-LINK-CONFIGURATION.md`
 - `SMTP_*` - See `TROUBLESHOOTING-EMAIL.md`
 - `LOG_LEVEL` - This document
