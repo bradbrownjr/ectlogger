@@ -17,11 +17,19 @@ import CropSquareIcon from '@mui/icons-material/CropSquare';
 import { Rnd } from 'react-rnd';
 import { checkInApi } from '../services/api';
 
+interface FieldConfig {
+  [key: string]: {
+    enabled: boolean;
+    required: boolean;
+  };
+}
+
 interface BulkCheckInProps {
   open: boolean;
   onClose: () => void;
   netId: number;
   onCheckInsAdded: () => void;
+  fieldConfig?: FieldConfig;
 }
 
 interface ParsedCheckIn {
@@ -44,12 +52,44 @@ const STATUS_SHORTCUTS: Record<string, string> = {
   'o': 'checked_out',     // Out / Checked Out
 };
 
-const BulkCheckIn: React.FC<BulkCheckInProps> = ({ open, onClose, netId, onCheckInsAdded }) => {
+const BulkCheckIn: React.FC<BulkCheckInProps> = ({ open, onClose, netId, onCheckInsAdded, fieldConfig }) => {
   const [minimized, setMinimized] = useState(false);
   const [bulkText, setBulkText] = useState('');
   const [processing, setProcessing] = useState(false);
   const [results, setResults] = useState<{ success: number; failed: number; errors: string[] }>({ success: 0, failed: 0, errors: [] });
   const [showResults, setShowResults] = useState(false);
+
+  // Build dynamic field list based on enabled fields
+  const enabledFields = [
+    'callsign', // Always required
+    ...(fieldConfig?.name?.enabled !== false ? ['name'] : []),
+    ...(fieldConfig?.location?.enabled !== false ? ['location'] : []),
+    ...(fieldConfig?.power_source?.enabled ? ['power'] : []),
+    ...(fieldConfig?.notes?.enabled !== false ? ['notes'] : []),
+  ];
+
+  // Generate format string
+  const formatString = enabledFields.join(', ');
+
+  // Generate placeholder example based on enabled fields
+  const generatePlaceholder = () => {
+    const examples: string[] = [];
+    
+    // First example - basic check-in
+    const ex1Parts = ['KC1ABC'];
+    if (fieldConfig?.name?.enabled !== false) ex1Parts.push('John');
+    if (fieldConfig?.location?.enabled !== false) ex1Parts.push('Portland ME');
+    if (fieldConfig?.power_source?.enabled) ex1Parts.push('Generator');
+    examples.push(ex1Parts.join(', '));
+    
+    // Second example - with status
+    const ex2Parts = ['N1XYZ'];
+    if (fieldConfig?.name?.enabled !== false) ex2Parts.push('Jane');
+    if (fieldConfig?.location?.enabled !== false) ex2Parts.push('Boston MA');
+    examples.push(ex2Parts.join(', ') + ':jl');
+    
+    return examples.join('; ');
+  };
 
   // Window position and size state
   const [windowState, setWindowState] = useState({
@@ -254,14 +294,14 @@ const BulkCheckIn: React.FC<BulkCheckInProps> = ({ open, onClose, netId, onCheck
                 value={bulkText}
                 onChange={(e) => setBulkText(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="KC1ABC, John, Portland ME, Generator; N1XYZ, Jane, Boston MA:jl; W1AAA, Bob, Augusta ME,, Has message for NCS:t"
+                placeholder={generatePlaceholder()}
                 disabled={processing}
                 sx={{ mb: 1 }}
               />
               
               <Box sx={{ mb: 1, p: 1.5, bgcolor: 'action.hover', borderRadius: 1 }}>
                 <Typography variant="caption" component="div" sx={{ fontWeight: 'bold', mb: 0.5 }}>
-                  Format: callsign, name, location, power, notes
+                  Format: {formatString}
                 </Typography>
                 <Typography variant="caption" component="div" color="text.secondary" sx={{ mb: 0.5 }}>
                   Separate multiple check-ins with semicolon <strong>;</strong>

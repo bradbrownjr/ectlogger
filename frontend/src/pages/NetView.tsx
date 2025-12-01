@@ -2730,6 +2730,7 @@ const NetView: React.FC = () => {
         onClose={() => setBulkCheckInOpen(false)}
         netId={Number(netId)}
         onCheckInsAdded={fetchCheckIns}
+        fieldConfig={net?.field_config}
       />
 
       {/* Search Dialog */}
