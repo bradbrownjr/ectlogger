@@ -51,6 +51,7 @@ import { netApi, checkInApi } from '../services/api';
 import api from '../services/api';
 import { formatTimeWithDate } from '../utils/dateUtils';
 import { useAuth } from '../contexts/AuthContext';
+import { useLocation } from '../contexts/LocationContext';
 import Chat from '../components/Chat';
 import CheckInMap from '../components/CheckInMap';
 import BulkCheckIn from '../components/BulkCheckIn';
@@ -166,6 +167,7 @@ const NetView: React.FC = () => {
     return localStorage.getItem('floatingWindow_chat_detached') === 'true';
   });
   const { user, isAuthenticated } = useAuth();
+  const { gridSquare } = useLocation();
   const navigate = useNavigate();
 
   // Check-in form state - includes custom_fields for dynamic fields
@@ -1019,10 +1021,14 @@ const NetView: React.FC = () => {
                         onClick={() => {
                           // Pre-fill form with user's profile data
                           if (user) {
+                            // Use grid square if location_awareness is enabled and available, otherwise use profile location
+                            const locationValue = (user.location_awareness && gridSquare) 
+                              ? gridSquare 
+                              : (user.location || '');
                             setCheckInForm({
                               callsign: getAppropriateCallsign(),
                               name: user.name || '',
-                              location: user.location || '',
+                              location: locationValue,
                               skywarn_number: '',
                               weather_observation: '',
                               power_source: '',
