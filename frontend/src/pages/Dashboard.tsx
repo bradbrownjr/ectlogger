@@ -532,7 +532,7 @@ const Dashboard: React.FC = () => {
               value={archiveDateFrom}
               onChange={(e) => setArchiveDateFrom(e.target.value)}
               InputLabelProps={{ shrink: true }}
-              sx={{ width: 150 }}
+              sx={{ minWidth: 160 }}
             />
             <TextField
               size="small"
@@ -541,7 +541,7 @@ const Dashboard: React.FC = () => {
               value={archiveDateTo}
               onChange={(e) => setArchiveDateTo(e.target.value)}
               InputLabelProps={{ shrink: true }}
-              sx={{ width: 150 }}
+              sx={{ minWidth: 160 }}
             />
           </Box>
           
