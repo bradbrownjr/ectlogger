@@ -47,8 +47,8 @@ const NavbarClock: React.FC<NavbarClockProps> = ({ compact = false }) => {
     return () => clearInterval(timer);
   }, []);
 
-  const localTime = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  const utcTime = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
+  const localTime = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+  const utcTime = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' });
   // Get timezone abbreviation (e.g., EST, PST, CST)
   const localTz = time.toLocaleTimeString('en-US', { timeZoneName: 'short' }).split(' ').pop() || 'Local';
 
