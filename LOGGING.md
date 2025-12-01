@@ -287,6 +287,15 @@ logger.warning("CATEGORY", "Something unexpected but not critical")
 
 # Error level (always shown)
 logger.error("CATEGORY", "Something failed")
+
+# Include IP address for Fail2Ban integration (optional)
+logger.warning("AUTH", "Invalid token", ip="192.168.1.100")
+
+# Security-specific methods for Fail2Ban
+logger.auth_failure("Invalid password", ip="192.168.1.100", email="user@example.com")
+logger.auth_success("user@example.com", ip="192.168.1.100")
+logger.rate_limit(ip="192.168.1.100", endpoint="/api/auth/login")
+logger.banned_access("banned@example.com", ip="192.168.1.100")
 ```
 
 ## Related Configuration
