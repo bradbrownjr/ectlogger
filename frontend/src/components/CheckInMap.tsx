@@ -347,6 +347,7 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
                 </Typography>
               </Box>
             ) : (
+              <>
               <MapContainer
                 key={mapKey}
                 center={center}
@@ -428,6 +429,7 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
                     </Box>
                   ))}
               </Box>
+              </>
             )}
           </Box>
         )}
