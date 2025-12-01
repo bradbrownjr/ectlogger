@@ -265,7 +265,11 @@ const Dashboard: React.FC = () => {
                         <SearchIcon />
                       </IconButton>
                     </Tooltip>
-                    {(net.status === 'closed' || net.status === 'active') && (
+                  </Box>
+                  
+                  <Box>
+                    {/* Active net - show stats on right side */}
+                    {net.status === 'active' && (
                       <Tooltip title="Net statistics">
                         <IconButton
                           size="small"
@@ -275,9 +279,6 @@ const Dashboard: React.FC = () => {
                         </IconButton>
                       </Tooltip>
                     )}
-                  </Box>
-                  
-                  <Box>
                     {net.info_url && (
                       <Tooltip title="Net/Club info">
                         <IconButton
@@ -314,6 +315,14 @@ const Dashboard: React.FC = () => {
                     {/* Closed net actions */}
                     {net.status === 'closed' && (user?.id === net.owner_id || user?.role === 'admin') && (
                       <>
+                        <Tooltip title="Net statistics">
+                          <IconButton
+                            size="small"
+                            onClick={() => navigate(`/statistics/nets/${net.id}`)}
+                          >
+                            <BarChartIcon />
+                          </IconButton>
+                        </Tooltip>
                         <Tooltip title="Export log">
                           <IconButton
                             size="small"

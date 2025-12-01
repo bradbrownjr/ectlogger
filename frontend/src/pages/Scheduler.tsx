@@ -34,6 +34,7 @@ import GroupsIcon from '@mui/icons-material/Groups';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import RadioIcon from '@mui/icons-material/Radio';
 import LanguageIcon from '@mui/icons-material/Language';
+import BarChartIcon from '@mui/icons-material/BarChart';
 import { templateApi, netApi, ncsRotationApi } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import NCSRotationModal from '../components/NCSRotationModal';
@@ -324,6 +325,7 @@ const Scheduler: React.FC = () => {
                     </Button>
                   </Box>
                   <Box>
+                    {/* TODO: Add schedule statistics page to show aggregate stats for all nets created from this schedule */}
                     {schedule.info_url && (
                       <Tooltip title="Net/Club info">
                         <IconButton
