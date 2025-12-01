@@ -180,8 +180,19 @@ async def get_net_statistics(
     # Duration
     duration_minutes = None
     if net.started_at:
-        end_time = net.closed_at or datetime.now(timezone.utc)
-        duration_minutes = int((end_time - net.started_at).total_seconds() / 60)
+        started_at = net.started_at
+        # Ensure timezone awareness
+        if started_at.tzinfo is None:
+            started_at = started_at.replace(tzinfo=timezone.utc)
+        
+        end_time = net.closed_at
+        if end_time:
+            if end_time.tzinfo is None:
+                end_time = end_time.replace(tzinfo=timezone.utc)
+        else:
+            end_time = datetime.now(timezone.utc)
+        
+        duration_minutes = int((end_time - started_at).total_seconds() / 60)
     
     # Check-ins by status
     status_counts = {}
@@ -192,9 +203,16 @@ async def get_net_statistics(
     # Check-ins over time (binned by 10-minute intervals if net is long enough)
     check_ins_timeline = []
     if net.started_at and net.check_ins:
+        started_at = net.started_at
+        if started_at.tzinfo is None:
+            started_at = started_at.replace(tzinfo=timezone.utc)
+        
         sorted_checkins = sorted(net.check_ins, key=lambda c: c.checked_in_at)
         for checkin in sorted_checkins:
-            minutes_from_start = int((checkin.checked_in_at - net.started_at).total_seconds() / 60)
+            checked_in_at = checkin.checked_in_at
+            if checked_in_at.tzinfo is None:
+                checked_in_at = checked_in_at.replace(tzinfo=timezone.utc)
+            minutes_from_start = int((checked_in_at - started_at).total_seconds() / 60)
             check_ins_timeline.append(TimeSeriesDataPoint(
                 label=f"+{minutes_from_start}m",
                 value=1,
