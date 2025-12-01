@@ -191,14 +191,14 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
       }
       setMaximized(false);
     } else {
-      // Save current state and maximize (leave room for navbar at top)
+      // Save current state and maximize
+      // Position at top of viewport, fill available space
       setPreMaximizeState({ ...windowState });
-      const navbarHeight = 48;
       setWindowState({
         x: 0,
-        y: navbarHeight,
+        y: 0,
         width: window.innerWidth,
-        height: window.innerHeight - navbarHeight,
+        height: window.innerHeight,
       });
       setMaximized(true);
     }
@@ -446,7 +446,7 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
               <Box
                 sx={{
                   position: 'absolute',
-                  bottom: maximized ? 48 : 24,
+                  bottom: 32,
                   right: 8,
                   backgroundColor: 'rgba(255, 255, 255, 0.9)',
                   borderRadius: 1,
