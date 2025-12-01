@@ -66,6 +66,7 @@ interface CheckInMapProps {
   onClose: () => void;
   checkIns: CheckIn[];
   netName: string;
+  ncsUserIds?: number[]; // User IDs of NCS operators
 }
 
 interface MappedCheckIn extends CheckIn {
@@ -86,7 +87,7 @@ const FitBounds: React.FC<{ positions: [number, number][] }> = ({ positions }) =
   return null;
 };
 
-const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netName }) => {
+const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netName, ncsUserIds = [] }) => {
   const [mappedCheckIns, setMappedCheckIns] = useState<MappedCheckIn[]>([]);
   const [loading, setLoading] = useState(true);
   const [minimized, setMinimized] = useState(false);
@@ -174,16 +175,34 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
     setMapKey(prev => prev + 1);
   };
 
-  const getMarkerColor = (status: string): string => {
-    switch (status) {
-      case 'checked_in': return '#4caf50'; // green
-      case 'listening': return '#9c27b0'; // purple
-      case 'away': return '#ff9800'; // orange
-      case 'available': return '#f44336'; // red (traffic)
-      case 'announcements': return '#2196f3'; // blue
+  const getMarkerColor = (checkIn: MappedCheckIn): string => {
+    // NCS gets special blue color regardless of status
+    if (checkIn.user_id && ncsUserIds.includes(checkIn.user_id)) {
+      return '#1565c0'; // dark blue for NCS
+    }
+    
+    switch (checkIn.status) {
+      case 'checked_in': return '#4caf50'; // green - standard check-in
+      case 'listening': return '#9c27b0'; // purple - monitoring
+      case 'away': return '#ff9800'; // orange - temporarily away
+      case 'available': return '#f44336'; // red - has traffic
+      case 'announcements': return '#00bcd4'; // cyan - has announcements
+      case 'tactical': return '#795548'; // brown - tactical station
+      case 'mobile': return '#607d8b'; // blue-gray - mobile station
+      case 'priority': return '#e91e63'; // pink - priority traffic
       default: return '#4caf50';
     }
   };
+
+  // Color legend for the map
+  const colorLegend = [
+    { color: '#1565c0', label: 'NCS', show: ncsUserIds.length > 0 },
+    { color: '#4caf50', label: 'Checked In', show: true },
+    { color: '#f44336', label: 'Has Traffic', show: true },
+    { color: '#9c27b0', label: 'Listening', show: true },
+    { color: '#ff9800', label: 'Away', show: true },
+    { color: '#00bcd4', label: 'Announcements', show: true },
+  ];
 
   const positions: [number, number][] = mappedCheckIns
     .filter(c => c.parsedLocation.lat !== 0 && c.parsedLocation.lon !== 0)
@@ -345,13 +364,18 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
                     <Marker
                       key={checkIn.id}
                       position={[checkIn.parsedLocation.lat, checkIn.parsedLocation.lon]}
-                      icon={createColoredIcon(getMarkerColor(checkIn.status))}
+                      icon={createColoredIcon(getMarkerColor(checkIn))}
                     >
                       <Popup>
                         <Box sx={{ minWidth: 150 }}>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-                            {checkIn.callsign}
-                          </Typography>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+                              {checkIn.callsign}
+                            </Typography>
+                            {checkIn.user_id && ncsUserIds.includes(checkIn.user_id) && (
+                              <Typography component="span" sx={{ fontSize: '0.9rem' }}>👑</Typography>
+                            )}
+                          </Box>
                           {checkIn.name && (
                             <Typography variant="body2">{checkIn.name}</Typography>
                           )}
@@ -367,6 +391,43 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
                   )
                 ))}
               </MapContainer>
+              {/* Color Legend */}
+              <Box
+                sx={{
+                  position: 'absolute',
+                  bottom: 24,
+                  right: 8,
+                  backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                  borderRadius: 1,
+                  px: 1,
+                  py: 0.5,
+                  boxShadow: 1,
+                  zIndex: 1000,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 0.25,
+                }}
+              >
+                {colorLegend
+                  .filter(item => item.show)
+                  .map((item) => (
+                    <Box key={item.label} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <Box
+                        sx={{
+                          width: 12,
+                          height: 12,
+                          borderRadius: '50%',
+                          backgroundColor: item.color,
+                          border: '1px solid white',
+                          boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
+                        }}
+                      />
+                      <Typography variant="caption" sx={{ fontSize: '0.65rem', lineHeight: 1.2 }}>
+                        {item.label}
+                      </Typography>
+                    </Box>
+                  ))}
+              </Box>
             )}
           </Box>
         )}
