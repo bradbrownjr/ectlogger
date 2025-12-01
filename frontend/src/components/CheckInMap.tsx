@@ -185,16 +185,18 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
       // Restore previous size
       if (preMaximizeState) {
         setWindowState(preMaximizeState);
+        setPreMaximizeState(null);
       }
       setMaximized(false);
     } else {
-      // Save current state and maximize
+      // Save current state and maximize (leave room for navbar at top)
       setPreMaximizeState({ ...windowState });
+      const navbarHeight = 64;
       setWindowState({
         x: 0,
-        y: 0,
+        y: navbarHeight,
         width: window.innerWidth,
-        height: window.innerHeight,
+        height: window.innerHeight - navbarHeight,
       });
       setMaximized(true);
     }
