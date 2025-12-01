@@ -84,10 +84,12 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     );
   }, [user?.location_awareness]);
 
-  // Fetch location when user enables location awareness
+  // Fetch location when user enables location awareness or user object changes
   useEffect(() => {
-    fetchLocation();
-  }, [fetchLocation]);
+    if (user?.location_awareness) {
+      fetchLocation();
+    }
+  }, [fetchLocation, user?.location_awareness]);
 
   // Refresh location periodically (every 5 minutes) if enabled
   useEffect(() => {
