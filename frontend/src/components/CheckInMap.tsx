@@ -192,13 +192,15 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
       setMaximized(false);
     } else {
       // Save current state and maximize
-      // Position at top of viewport, fill available space
+      // Use clientWidth/Height to get viewport without scrollbars
       setPreMaximizeState({ ...windowState });
+      const viewportWidth = document.documentElement.clientWidth;
+      const viewportHeight = document.documentElement.clientHeight;
       setWindowState({
         x: 0,
         y: 0,
-        width: window.innerWidth,
-        height: window.innerHeight,
+        width: viewportWidth,
+        height: viewportHeight,
       });
       setMaximized(true);
     }
