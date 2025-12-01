@@ -10,6 +10,8 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import MinimizeIcon from '@mui/icons-material/Minimize';
 import CropSquareIcon from '@mui/icons-material/CropSquare';
+import FullscreenIcon from '@mui/icons-material/Fullscreen';
+import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
 import { Rnd } from 'react-rnd';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -91,6 +93,8 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
   const [mappedCheckIns, setMappedCheckIns] = useState<MappedCheckIn[]>([]);
   const [loading, setLoading] = useState(true);
   const [minimized, setMinimized] = useState(false);
+  const [maximized, setMaximized] = useState(false);
+  const [preMaximizeState, setPreMaximizeState] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
   const [mapKey, setMapKey] = useState(0);
   const mapRef = useRef<L.Map | null>(null);
 
@@ -173,6 +177,30 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
   // Invalidate map size after resize
   const handleResizeStop = () => {
     setMapKey(prev => prev + 1);
+  };
+
+  // Toggle maximize/restore
+  const toggleMaximize = () => {
+    if (maximized) {
+      // Restore previous size
+      if (preMaximizeState) {
+        setWindowState(preMaximizeState);
+      }
+      setMaximized(false);
+    } else {
+      // Save current state and maximize
+      setPreMaximizeState({ ...windowState });
+      setWindowState({
+        x: 0,
+        y: 0,
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+      setMaximized(true);
+    }
+    setMinimized(false);
+    // Trigger map resize
+    setTimeout(() => setMapKey(prev => prev + 1), 100);
   };
 
   const getMarkerColor = (checkIn: MappedCheckIn): string => {
@@ -302,6 +330,15 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
             </IconButton>
             <IconButton
               size="small"
+              onClick={toggleMaximize}
+              onTouchEnd={(e) => { e.preventDefault(); e.stopPropagation(); toggleMaximize(); }}
+              sx={{ color: 'inherit', p: 0.5 }}
+              title={maximized ? 'Restore' : 'Maximize'}
+            >
+              {maximized ? <FullscreenExitIcon fontSize="small" /> : <FullscreenIcon fontSize="small" />}
+            </IconButton>
+            <IconButton
+              size="small"
               onClick={onClose}
               onTouchEnd={(e) => { e.preventDefault(); e.stopPropagation(); onClose(); }}
               sx={{ color: 'inherit', p: 0.5 }}
@@ -424,7 +461,7 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
                           boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
                         }}
                       />
-                      <Typography variant="caption" sx={{ fontSize: '0.65rem', lineHeight: 1.2 }}>
+                      <Typography variant="caption" sx={{ fontSize: '0.65rem', lineHeight: 1.2, color: '#333' }}>
                         {item.label}
                       </Typography>
                     </Box>
