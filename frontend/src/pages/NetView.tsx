@@ -2720,6 +2720,8 @@ const NetView: React.FC = () => {
         checkIns={filteredCheckIns}
         netName={net?.name || 'Net'}
         ncsUserIds={netRoles.filter((r: any) => r.role === 'NCS').map((r: any) => r.user_id)}
+        loggerUserIds={netRoles.filter((r: any) => r.role === 'Logger').map((r: any) => r.user_id)}
+        relayUserIds={netRoles.filter((r: any) => r.role === 'Relay').map((r: any) => r.user_id)}
       />
 
       {/* Bulk Check-In Dialog */}

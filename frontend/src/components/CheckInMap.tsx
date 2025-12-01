@@ -69,6 +69,8 @@ interface CheckInMapProps {
   checkIns: CheckIn[];
   netName: string;
   ncsUserIds?: number[]; // User IDs of NCS operators
+  loggerUserIds?: number[]; // User IDs of Logger operators
+  relayUserIds?: number[]; // User IDs of Relay operators
 }
 
 interface MappedCheckIn extends CheckIn {
@@ -89,7 +91,7 @@ const FitBounds: React.FC<{ positions: [number, number][] }> = ({ positions }) =
   return null;
 };
 
-const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netName, ncsUserIds = [] }) => {
+const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netName, ncsUserIds = [], loggerUserIds = [], relayUserIds = [] }) => {
   const [mappedCheckIns, setMappedCheckIns] = useState<MappedCheckIn[]>([]);
   const [loading, setLoading] = useState(true);
   const [minimized, setMinimized] = useState(false);
@@ -206,9 +208,15 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
   };
 
   const getMarkerColor = (checkIn: MappedCheckIn): string => {
-    // NCS gets special blue color regardless of status
+    // Role-based colors take priority over status
     if (checkIn.user_id && ncsUserIds.includes(checkIn.user_id)) {
       return '#1565c0'; // dark blue for NCS
+    }
+    if (checkIn.user_id && loggerUserIds.includes(checkIn.user_id)) {
+      return '#6a1b9a'; // deep purple for Logger
+    }
+    if (checkIn.user_id && relayUserIds.includes(checkIn.user_id)) {
+      return '#00695c'; // teal for Relay
     }
     
     switch (checkIn.status) {
@@ -227,6 +235,8 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
   // Color legend for the map
   const colorLegend = [
     { color: '#1565c0', label: 'NCS', show: ncsUserIds.length > 0 },
+    { color: '#6a1b9a', label: 'Logger', show: loggerUserIds.length > 0 },
+    { color: '#00695c', label: 'Relay', show: relayUserIds.length > 0 },
     { color: '#4caf50', label: 'Checked In', show: true },
     { color: '#f44336', label: 'Has Traffic', show: true },
     { color: '#9c27b0', label: 'Listening', show: true },
