@@ -17,6 +17,7 @@ import Admin from './pages/Admin';
 import Profile from './pages/Profile';
 import Statistics from './pages/Statistics';
 import NetStatistics from './pages/NetStatistics';
+import ScheduleStatistics from './pages/ScheduleStatistics';
 import Navbar from './components/Navbar';
 import ProfileSetupDialog from './components/ProfileSetupDialog';
 
@@ -135,6 +136,7 @@ const AppRoutes: React.FC = () => {
           />
           <Route path="/statistics" element={<Statistics />} />
           <Route path="/statistics/nets/:netId" element={<NetStatistics />} />
+          <Route path="/statistics/schedules/:templateId" element={<ScheduleStatistics />} />
           <Route
             path="/scheduler/:scheduleId/edit"
             element={

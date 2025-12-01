@@ -325,7 +325,14 @@ const Scheduler: React.FC = () => {
                     </Button>
                   </Box>
                   <Box>
-                    {/* TODO: Add schedule statistics page to show aggregate stats for all nets created from this schedule */}
+                    <Tooltip title="Schedule statistics">
+                      <IconButton
+                        size="small"
+                        onClick={() => navigate(`/statistics/schedules/${schedule.id}`)}
+                      >
+                        <BarChartIcon />
+                      </IconButton>
+                    </Tooltip>
                     {schedule.info_url && (
                       <Tooltip title="Net/Club info">
                         <IconButton
