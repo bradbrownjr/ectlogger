@@ -446,7 +446,7 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
               <Box
                 sx={{
                   position: 'absolute',
-                  bottom: 24,
+                  bottom: 32,
                   right: 8,
                   backgroundColor: 'rgba(255, 255, 255, 0.9)',
                   borderRadius: 1,
@@ -457,6 +457,8 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
                   display: 'flex',
                   flexDirection: 'column',
                   gap: 0.25,
+                  maxHeight: 'calc(100% - 50px)',
+                  overflowY: 'auto',
                 }}
               >
                 {colorLegend
