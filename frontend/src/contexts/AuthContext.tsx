@@ -9,6 +9,7 @@ interface User {
   gmrs_callsign?: string;
   callsigns?: string[];
   location?: string;
+  skywarn_number?: string;
   prefer_utc?: boolean;
   show_activity_in_chat?: boolean;
   location_awareness?: boolean;

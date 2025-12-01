@@ -72,6 +72,7 @@ const Profile: React.FC = () => {
     callsign: user?.callsign || '',
     gmrs_callsign: user?.gmrs_callsign || '',
     callsigns: user?.callsigns || [],
+    skywarn_number: user?.skywarn_number || '',
     prefer_utc: user?.prefer_utc || false,
     show_activity_in_chat: user?.show_activity_in_chat ?? true,
     location_awareness: user?.location_awareness ?? false,
@@ -184,6 +185,16 @@ const Profile: React.FC = () => {
               onChange={(e) => setFormData({ ...formData, gmrs_callsign: e.target.value.toUpperCase() })}
               margin="normal"
               helperText="Your FCC GMRS callsign (e.g., WROP123) - used for GMRS frequency nets"
+              inputProps={{ style: { textTransform: 'uppercase' } }}
+            />
+
+            <TextField
+              fullWidth
+              label="SKYWARN Spotter Number"
+              value={formData.skywarn_number}
+              onChange={(e) => setFormData({ ...formData, skywarn_number: e.target.value.toUpperCase() })}
+              margin="normal"
+              helperText="Your NWS SKYWARN spotter ID (e.g., DFW-1234) - auto-fills when checking into SKYWARN nets"
               inputProps={{ style: { textTransform: 'uppercase' } }}
             />
 
