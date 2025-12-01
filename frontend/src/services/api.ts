@@ -26,10 +26,14 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      console.error('[API] 401 Unauthorized - redirecting to login');
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+      // Don't redirect to login if we're already verifying a magic link
+      const isVerifyingMagicLink = window.location.pathname === '/auth/verify';
+      if (!isVerifyingMagicLink) {
+        console.error('[API] 401 Unauthorized - redirecting to login');
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
