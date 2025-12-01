@@ -510,7 +510,7 @@ const Dashboard: React.FC = () => {
         </DialogTitle>
         <DialogContent>
           {/* Search/Filter */}
-          <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
+          <Box sx={{ display: 'flex', gap: 2, mb: 2, mt: 1, flexWrap: 'wrap', alignItems: 'center' }}>
             <TextField
               size="small"
               placeholder="Search by net name or NCS callsign..."
