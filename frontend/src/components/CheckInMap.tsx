@@ -202,6 +202,7 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
     { color: '#9c27b0', label: 'Listening', show: true },
     { color: '#ff9800', label: 'Away', show: true },
     { color: '#00bcd4', label: 'Announcements', show: true },
+    { color: '#607d8b', label: 'Mobile', show: true },
   ];
 
   const positions: [number, number][] = mappedCheckIns

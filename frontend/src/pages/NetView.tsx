@@ -607,6 +607,7 @@ const NetView: React.FC = () => {
       case 'away': return '⏸️'; // Short term
       case 'available': return '🚨'; // Has traffic
       case 'announcements': return '📢'; // Has announcements
+      case 'mobile': return '🚗'; // Mobile station
       case 'checked_out': return '👋'; // Checked out
       default: return '✅';
     }
@@ -630,6 +631,7 @@ const NetView: React.FC = () => {
       case 'away': return 'Temporarily away, will return';
       case 'available': return 'Has traffic or emergency to report';
       case 'announcements': return 'Has announcements to share';
+      case 'mobile': return 'Mobile - may only be available briefly';
       case 'checked_out': return 'Checked out of net';
       default: return 'Checked in and available';
     }
@@ -1281,7 +1283,7 @@ const NetView: React.FC = () => {
                             selectValue = userRole.role.toLowerCase();
                           }
                           // Only allow lowercase values for Select and MenuItem
-                          const validValues = ['ncs', 'logger', 'checked_in', 'listening', 'relay', 'away', 'available', 'announcements', 'checked_out'];
+                          const validValues = ['ncs', 'logger', 'checked_in', 'listening', 'relay', 'away', 'available', 'announcements', 'mobile', 'checked_out'];
                           if (!validValues.includes(selectValue)) {
                             selectValue = 'checked_in';
                           }
@@ -1314,6 +1316,7 @@ const NetView: React.FC = () => {
                                 <MenuItem value="away">⏸️</MenuItem>
                                 <MenuItem value="available">🚨</MenuItem>
                                 <MenuItem value="announcements">📢</MenuItem>
+                                <MenuItem value="mobile">🚗</MenuItem>
                                 {canManageCheckIns && <MenuItem value="checked_out">👋</MenuItem>}
                               </Select>
                             </Tooltip>
@@ -1498,7 +1501,7 @@ const NetView: React.FC = () => {
                             if (userRole && ['ncs', 'logger'].includes(userRole.role.toLowerCase())) {
                               selectValue = userRole.role.toLowerCase();
                             }
-                            const validValues = ['ncs', 'logger', 'checked_in', 'listening', 'relay', 'away', 'available', 'announcements', 'checked_out'];
+                            const validValues = ['ncs', 'logger', 'checked_in', 'listening', 'relay', 'away', 'available', 'announcements', 'mobile', 'checked_out'];
                             if (!validValues.includes(selectValue)) {
                               selectValue = 'checked_in';
                             }
@@ -1523,6 +1526,7 @@ const NetView: React.FC = () => {
                                 <MenuItem value="away">⏸️</MenuItem>
                                 <MenuItem value="available">🚨</MenuItem>
                                 <MenuItem value="announcements">📢</MenuItem>
+                                <MenuItem value="mobile">🚗</MenuItem>
                                 {canManageCheckIns && <MenuItem value="checked_out">👋</MenuItem>}
                               </Select>
                             );
@@ -2138,7 +2142,7 @@ const NetView: React.FC = () => {
                               if (userRole && ['ncs', 'logger'].includes(userRole.role.toLowerCase())) {
                                 selectValue = userRole.role.toLowerCase();
                               }
-                              const validValues = ['ncs', 'logger', 'checked_in', 'listening', 'relay', 'away', 'available', 'announcements', 'checked_out'];
+                              const validValues = ['ncs', 'logger', 'checked_in', 'listening', 'relay', 'away', 'available', 'announcements', 'mobile', 'checked_out'];
                               if (!validValues.includes(selectValue)) selectValue = 'checked_in';
                               return (
                                 <Tooltip title={getStatusTooltip(checkIn.status, checkIn)} placement="right" arrow>
@@ -2158,6 +2162,7 @@ const NetView: React.FC = () => {
                                     <MenuItem value="away">⏸️</MenuItem>
                                     <MenuItem value="available">🚨</MenuItem>
                                     <MenuItem value="announcements">📢</MenuItem>
+                                    <MenuItem value="mobile">🚗</MenuItem>
                                     {canManageCheckIns && <MenuItem value="checked_out">👋</MenuItem>}
                                   </Select>
                                 </Tooltip>

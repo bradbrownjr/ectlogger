@@ -40,6 +40,7 @@ const STATUS_SHORTCUTS: Record<string, string> = {
   'r': 'relay',           // Relay
   't': 'available',       // Traffic (has traffic to report)
   'a': 'announcements',   // Announcements
+  'm': 'mobile',          // Mobile (may only be available briefly)
   'o': 'checked_out',     // Out / Checked Out
 };
 
@@ -261,7 +262,7 @@ const BulkCheckIn: React.FC<BulkCheckInProps> = ({ open, onClose, netId, onCheck
               <Typography variant="caption" color="text.secondary" sx={{ mb: 1 }}>
                 Format: <strong>callsign, name, location, power source, notes</strong> — separate check-ins with <strong>;</strong>
                 <br />
-                Add status with <strong>:</strong> at end — <strong>:jl</strong> = Just Listening, <strong>:r</strong> = Relay, <strong>:t</strong> = Traffic, <strong>:a</strong> = Announcements
+                Add status with <strong>:</strong> at end — <strong>:jl</strong> = Just Listening, <strong>:r</strong> = Relay, <strong>:t</strong> = Traffic, <strong>:a</strong> = Announcements, <strong>:m</strong> = Mobile
                 <br />
                 Missing fields are okay — just leave them empty (e.g., "KC1ABC, John,, Battery" skips location)
               </Typography>
