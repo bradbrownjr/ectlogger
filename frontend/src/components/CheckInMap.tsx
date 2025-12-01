@@ -244,8 +244,8 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
         <Box
           className="drag-handle"
           sx={{
-            p: 1,
-            px: 2,
+            py: 0.5,
+            px: 1.5,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -257,11 +257,8 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
               📍 Check-in Map
-            </Typography>
-            <Typography variant="body2" sx={{ opacity: 0.8 }}>
-              {netName}
             </Typography>
             <Chip 
               label={`${mappedCheckIns.length} mapped`} 
@@ -273,11 +270,12 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
               }} 
             />
           </Box>
-          <Box sx={{ display: 'flex', gap: 0.5 }}>
+          <Box sx={{ display: 'flex', gap: 0.5 }} onTouchStart={(e) => e.stopPropagation()}>
             <IconButton
               size="small"
               onClick={() => setMinimized(!minimized)}
-              sx={{ color: 'inherit' }}
+              onTouchEnd={(e) => { e.preventDefault(); e.stopPropagation(); setMinimized(!minimized); }}
+              sx={{ color: 'inherit', p: 0.5 }}
               title={minimized ? 'Restore' : 'Minimize'}
             >
               {minimized ? <CropSquareIcon fontSize="small" /> : <MinimizeIcon fontSize="small" />}
@@ -285,7 +283,8 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
             <IconButton
               size="small"
               onClick={onClose}
-              sx={{ color: 'inherit' }}
+              onTouchEnd={(e) => { e.preventDefault(); e.stopPropagation(); onClose(); }}
+              sx={{ color: 'inherit', p: 0.5 }}
               title="Close"
             >
               <CloseIcon fontSize="small" />
