@@ -402,6 +402,7 @@ const NetView: React.FC = () => {
       await netApi.start(Number(netId));
       fetchNet();
       fetchCheckIns();
+      fetchNetRoles();  // Fetch roles since NCS is assigned when starting
       // Clear the form so it's ready for the next check-in
       setCheckInForm({
         callsign: '',
