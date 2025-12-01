@@ -40,9 +40,10 @@ const NavbarClock: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
-  const localTime = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  const utcTime = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'UTC' });
-  const localTz = Intl.DateTimeFormat().resolvedOptions().timeZone.split('/').pop()?.replace('_', ' ') || 'Local';
+  const localTime = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const utcTime = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
+  // Get timezone abbreviation (e.g., EST, PST, CST)
+  const localTz = time.toLocaleTimeString('en-US', { timeZoneName: 'short' }).split(' ').pop() || 'Local';
 
   return (
     <Tooltip title={`${localTz}: ${localTime} | UTC: ${utcTime}`}>
@@ -108,15 +109,18 @@ const Navbar: React.FC = () => {
         <Typography
           variant="h6"
           component="div"
-          sx={{ flexGrow: 1, cursor: 'pointer' }}
+          sx={{ cursor: 'pointer' }}
           onClick={() => handleNavigate('/dashboard')}
         >
           📻 ECTLogger
         </Typography>
         
+        <NavbarClock />
+        
+        <Box sx={{ flexGrow: 1 }} />
+        
         {isMobile ? (
           <>
-            <NavbarClock />
             <IconButton color="inherit" onClick={toggleColorMode} title={`Switch to ${mode === 'light' ? 'dark' : 'light'} mode`}>
               {mode === 'light' ? <Brightness4Icon /> : <Brightness7Icon />}
             </IconButton>
@@ -188,7 +192,6 @@ const Navbar: React.FC = () => {
                 Admin
               </Button>
             )}
-            <NavbarClock />
             {isAuthenticated && (
               <Button 
                 color="inherit" 
