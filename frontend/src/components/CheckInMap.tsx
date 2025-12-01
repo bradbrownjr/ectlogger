@@ -446,7 +446,7 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
               <Box
                 sx={{
                   position: 'absolute',
-                  bottom: 48,
+                  bottom: maximized ? 48 : 24,
                   right: 8,
                   backgroundColor: 'rgba(255, 255, 255, 0.9)',
                   borderRadius: 1,
