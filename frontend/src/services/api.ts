@@ -56,6 +56,7 @@ export const userApi = {
   getProfile: () => api.get('/users/me'),
   updateProfile: (data: any) => api.put('/users/me', data),
   listUsers: () => api.get('/users'),
+  lookupByCallsign: (callsign: string) => api.get(`/users/lookup/${encodeURIComponent(callsign)}`),
 };
 
 // Net API

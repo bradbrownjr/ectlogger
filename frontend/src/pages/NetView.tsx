@@ -47,7 +47,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import LanguageIcon from '@mui/icons-material/Language';
 import InfoIcon from '@mui/icons-material/Info';
-import { netApi, checkInApi } from '../services/api';
+import { netApi, checkInApi, userApi } from '../services/api';
 import api from '../services/api';
 import { formatTimeWithDate } from '../utils/dateUtils';
 import { useAuth } from '../contexts/AuthContext';
@@ -503,6 +503,29 @@ const NetView: React.FC = () => {
     
     // Otherwise use primary (amateur) callsign
     return user.callsign || '';
+  };
+
+  // Look up user info by callsign and auto-fill form fields (for NCS)
+  const handleCallsignLookup = async (callsign: string) => {
+    if (!callsign || callsign.length < 3) return;
+    
+    try {
+      const response = await userApi.lookupByCallsign(callsign);
+      const userData = response.data;
+      
+      // Only auto-fill fields that are currently empty
+      if (userData.name || userData.location || userData.skywarn_number) {
+        setCheckInForm(prev => ({
+          ...prev,
+          name: prev.name || userData.name || '',
+          location: prev.location || userData.location || '',
+          skywarn_number: prev.skywarn_number || userData.skywarn_number || '',
+        }));
+      }
+    } catch (error) {
+      // Silently fail - user may not be registered
+      console.debug('Callsign lookup failed:', error);
+    }
   };
 
   const handleCheckIn = async () => {
@@ -1570,6 +1593,7 @@ const NetView: React.FC = () => {
                         size="small"
                         value={checkInForm.callsign}
                         onChange={(e) => setCheckInForm({ ...checkInForm, callsign: e.target.value.toUpperCase() })}
+                        onBlur={(e) => handleCallsignLookup(e.target.value)}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
                             e.preventDefault();
@@ -1823,6 +1847,7 @@ const NetView: React.FC = () => {
                     label="Callsign *"
                     value={checkInForm.callsign}
                     onChange={(e) => setCheckInForm({ ...checkInForm, callsign: e.target.value.toUpperCase() })}
+                    onBlur={(e) => handleCallsignLookup(e.target.value)}
                     placeholder="Callsign"
                     inputProps={{ style: { textTransform: 'uppercase' } }}
                     fullWidth
@@ -2195,6 +2220,7 @@ const NetView: React.FC = () => {
                       size="small"
                       value={checkInForm.callsign}
                       onChange={(e) => setCheckInForm({ ...checkInForm, callsign: e.target.value.toUpperCase() })}
+                      onBlur={(e) => handleCallsignLookup(e.target.value)}
                       onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleCheckIn(); } }}
                       placeholder="Callsign *"
                       inputProps={{ style: { textTransform: 'uppercase' } }}
@@ -2538,6 +2564,7 @@ const NetView: React.FC = () => {
               label="Callsign"
               value={checkInForm.callsign}
               onChange={(e) => setCheckInForm({ ...checkInForm, callsign: e.target.value.toUpperCase() })}
+              onBlur={(e) => handleCallsignLookup(e.target.value)}
               fullWidth
               required
               inputProps={{ style: { textTransform: 'uppercase' } }}

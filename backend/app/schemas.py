@@ -115,6 +115,17 @@ class UserResponse(UserBase):
         return super().from_orm(obj)
 
 
+# Callsign Lookup Response (limited info for privacy)
+class CallsignLookupResponse(BaseModel):
+    """Limited user info returned when looking up by callsign - for NCS auto-fill."""
+    name: Optional[str] = None
+    location: Optional[str] = None  # Grid square if location_awareness enabled
+    skywarn_number: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
 # Frequency Schemas
 class FrequencyBase(BaseModel):
     frequency: Optional[str] = Field(None, max_length=50)

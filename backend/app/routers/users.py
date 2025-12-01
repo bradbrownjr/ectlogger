@@ -4,7 +4,7 @@ from sqlalchemy import select
 from typing import List, Optional
 from app.database import get_db
 from app.models import User, UserRole
-from app.schemas import UserResponse, UserUpdate, AdminUserCreate
+from app.schemas import UserResponse, UserUpdate, AdminUserCreate, CallsignLookupResponse
 from app.dependencies import get_current_user, get_current_user_optional, get_admin_user
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -159,6 +159,43 @@ async def unban_user(
     await db.commit()
     await db.refresh(user)
     return UserResponse.from_orm(user)
+
+
+@router.get("/lookup/{callsign}", response_model=CallsignLookupResponse)
+async def lookup_by_callsign(
+    callsign: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Look up user info by callsign for check-in auto-fill.
+    
+    Returns limited info (name, location, skywarn_number) if user exists.
+    Location is only returned if user has location_awareness enabled.
+    """
+    callsign_upper = callsign.upper()
+    
+    # Look up by primary callsign, GMRS callsign, or additional callsigns
+    result = await db.execute(
+        select(User).where(
+            (User.callsign == callsign_upper) | 
+            (User.gmrs_callsign == callsign_upper) |
+            (User.callsigns.like(f'%"{callsign_upper}"%'))
+        )
+    )
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        # Return empty response instead of 404 - callsign may be valid but unregistered
+        return CallsignLookupResponse()
+    
+    # Only return location if user has location_awareness enabled
+    location = user.location if user.location_awareness else None
+    
+    return CallsignLookupResponse(
+        name=user.name,
+        location=location,
+        skywarn_number=user.skywarn_number
+    )
 
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
