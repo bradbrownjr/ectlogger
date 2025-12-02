@@ -44,6 +44,41 @@ This file contains environment information for AI coding agents to reference.
 4. Once validated, merge to main and deploy to beta for beta testers (10.6.26.3)
 5. Once approved for production, deploy to production environment (app.ectlogger.us)
 
+## AI Agent SSH Limitations
+
+**IMPORTANT**: The VS Code terminal cannot run interactive commands over SSH. Once an SSH session is established, the agent loses the ability to send input to the remote shell.
+
+### What DOES NOT work:
+```bash
+# DON'T DO THIS - Agent can't interact after connection
+ssh user@host
+# Agent is stuck, cannot type commands
+```
+
+### What DOES work:
+```bash
+# Run commands inline via SSH
+ssh user@host "cd ~/ectlogger && git pull"
+
+# For non-interactive install (agent can do this)
+ssh user@host "curl -fsSL https://raw.githubusercontent.com/bradbrownjr/ectlogger/main/bootstrap.sh | bash -s -- --non-interactive"
+
+# Chain multiple commands
+ssh user@host "cd ~/ectlogger && git pull && cd backend && source venv/bin/activate && pip install -r requirements.txt"
+```
+
+### For new installations by AI agent:
+1. Use `--non-interactive` flag with bootstrap script
+2. After install, manually configure `backend/.env` with SMTP settings
+3. Or have user run `./configure.sh` interactively themselves
+
+### For new installations by humans:
+The bootstrap script now auto-detects when piped (`curl | bash`) and saves itself to a temp file, prompting the user to run it properly for interactive configuration. Users just run:
+```bash
+curl -fsSL https://raw.githubusercontent.com/bradbrownjr/ectlogger/main/bootstrap.sh | bash
+# Then follow the on-screen instructions to run the saved script
+```
+
 ## Important Notes
 
 - **No scripts are run locally** on the dev laptop

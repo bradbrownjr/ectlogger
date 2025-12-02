@@ -7,10 +7,8 @@
 # USAGE (run as your normal user, not root):
 #   curl -fsSL https://raw.githubusercontent.com/bradbrownjr/ectlogger/main/bootstrap.sh | bash
 #
-# Or if you want to review first:
-#   curl -fsSL https://raw.githubusercontent.com/bradbrownjr/ectlogger/main/bootstrap.sh -o bootstrap.sh
-#   chmod +x bootstrap.sh
-#   ./bootstrap.sh
+# When piped (curl | bash), the script saves itself to a temp file and prompts you
+# to run it for full interactive configuration (email, service setup, etc.)
 #
 # OPTIONS:
 #   --non-interactive    Skip all prompts, use defaults (for automated deployments)
@@ -29,6 +27,28 @@ NC='\033[0m' # No Color
 INSTALL_DIR="$HOME/ectlogger"
 NON_INTERACTIVE=false
 REPO_URL="https://github.com/bradbrownjr/ectlogger.git"
+
+# Detect if stdin is a pipe (e.g., curl | bash) - interactive mode won't work
+if [ ! -t 0 ]; then
+    # stdin is not a terminal - we're being piped
+    # Save ourselves to a temp file and re-execute with a proper terminal
+    BOOTSTRAP_SCRIPT=$(mktemp /tmp/ectlogger-bootstrap.XXXXXX.sh)
+    cat > "$BOOTSTRAP_SCRIPT"
+    chmod +x "$BOOTSTRAP_SCRIPT"
+    
+    echo ""
+    echo -e "${BLUE}╔═══════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${BLUE}║     ${GREEN}ECTLogger - Speedrun Installation${BLUE}                         ║${NC}"
+    echo -e "${BLUE}╚═══════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    echo -e "${GREEN}✓ Bootstrap script downloaded!${NC}"
+    echo ""
+    echo -e "Run this command to start the interactive installer:"
+    echo ""
+    echo -e "    ${GREEN}bash $BOOTSTRAP_SCRIPT${NC}"
+    echo ""
+    exit 0
+fi
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
