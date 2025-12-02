@@ -459,8 +459,247 @@ if [ "$CONFIG_DONE" = true ] && [ -f /etc/os-release ]; then
             echo "  • Time window: 10 minutes"
             echo "  • Ban duration: 1 hour"
             echo ""
+            
+            # If Caddy is already installed, offer to add Caddy protection too
+            if command -v caddy &> /dev/null; then
+                echo "🌐 Caddy detected! Would you like to add Fail2Ban protection for Caddy too?"
+                echo "   This blocks scanners probing for WordPress, PHPMyAdmin, exploits, etc."
+                read -p "Add Caddy Fail2Ban protection? (Y/n) " -n 1 -r
+                echo ""
+                
+                if [[ ! "$REPLY" =~ ^[Nn]$ ]]; then
+                    # Create Caddy log directory
+                    sudo mkdir -p /var/log/caddy
+                    sudo chown caddy:caddy /var/log/caddy 2>/dev/null || sudo chown root:root /var/log/caddy
+                    
+                    # Install Caddy Fail2Ban filter and jail
+                    sudo cp fail2ban/filter.d/caddy-ectlogger.conf /etc/fail2ban/filter.d/
+                    sudo cp fail2ban/jail.d/caddy-ectlogger.conf /etc/fail2ban/jail.d/
+                    
+                    # Restart Fail2Ban
+                    sudo systemctl restart fail2ban
+                    
+                    sleep 2
+                    if sudo fail2ban-client status 2>/dev/null | grep -q "caddy-ectlogger"; then
+                        echo "✓ Caddy Fail2Ban protection enabled"
+                    else
+                        echo "⚠️  Caddy jail may need Caddy to start logging first"
+                    fi
+                    
+                    echo ""
+                    echo "⚠️  Note: Make sure your Caddyfile includes logging:"
+                    echo "     log {"
+                    echo "         output file /var/log/caddy/access.log"
+                    echo "         format json"
+                    echo "     }"
+                    echo ""
+                fi
+            fi
         else
             echo "ℹ️  Skipping Fail2Ban setup. See FAIL2BAN.md for manual installation."
+            echo ""
+        fi
+    fi
+fi
+
+# Step 4: Caddy Reverse Proxy Setup (optional, only on Linux)
+CADDY_SETUP=false
+if [ "$CONFIG_DONE" = true ] && [ -f /etc/os-release ]; then
+    detect_os
+    if [[ "$OS" == "ubuntu" || "$OS" == "debian" || "$OS" == "fedora" || "$OS" == "rhel" || "$OS" == "centos" ]]; then
+        echo ""
+        echo "================================="
+        echo "🌐 Caddy Reverse Proxy Setup"
+        echo "================================="
+        echo ""
+        echo "Caddy can serve as a reverse proxy with automatic HTTPS."
+        echo "This is recommended for production deployments."
+        echo ""
+        read -p "Would you like to set up Caddy as a reverse proxy? (y/n) " -n 1 -r
+        echo ""
+        echo ""
+        
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            # Install Caddy if not present
+            if ! command -v caddy &> /dev/null; then
+                echo "📦 Installing Caddy..."
+                case "$OS" in
+                    ubuntu|debian)
+                        sudo apt-get update -qq
+                        sudo apt-get install -y debian-keyring debian-archive-keyring apt-transport-https curl
+                        curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+                        curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
+                        sudo apt-get update -qq
+                        sudo apt-get install -y caddy
+                        ;;
+                    fedora|rhel|centos)
+                        sudo dnf install -y 'dnf-command(copr)'
+                        sudo dnf copr enable -y @caddy/caddy
+                        sudo dnf install -y caddy
+                        ;;
+                esac
+                echo "✓ Caddy installed"
+            else
+                echo "✓ Caddy already installed"
+            fi
+            
+            # Get domain name
+            echo ""
+            echo "Enter the domain name for ECTLogger (e.g., ectlogger.example.com):"
+            echo "  • For automatic HTTPS, enter a real domain pointing to this server"
+            echo "  • For local/testing, enter 'localhost' or leave blank"
+            read -p "Domain: " CADDY_DOMAIN
+            
+            if [ -z "$CADDY_DOMAIN" ]; then
+                CADDY_DOMAIN="localhost"
+            fi
+            
+            # Create Caddy configuration
+            CADDYFILE="/etc/caddy/Caddyfile"
+            CADDY_CONFIG_BLOCK="
+# ECTLogger - Added by install.sh
+$CADDY_DOMAIN {
+    # Access logging for Fail2Ban integration
+    log {
+        output file /var/log/caddy/access.log {
+            roll_size 100mb
+            roll_keep 5
+        }
+        format json
+    }
+    
+    # Serve frontend static files
+    root * $(pwd)/frontend/dist
+    file_server
+    
+    # Proxy API and WebSocket requests to backend
+    handle /api/* {
+        reverse_proxy localhost:8000
+    }
+    
+    handle /ws/* {
+        reverse_proxy localhost:8000
+    }
+    
+    handle /docs* {
+        reverse_proxy localhost:8000
+    }
+    
+    handle /openapi.json {
+        reverse_proxy localhost:8000
+    }
+    
+    # Try files, fallback to index.html for SPA routing
+    try_files {path} /index.html
+    
+    # Security headers
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        Referrer-Policy strict-origin-when-cross-origin
+    }
+    
+    # Compression
+    encode gzip
+}
+"
+            
+            # Check if domain already exists in Caddyfile
+            if [ -f "$CADDYFILE" ] && grep -q "^$CADDY_DOMAIN {" "$CADDYFILE" 2>/dev/null; then
+                echo ""
+                echo "⚠️  Configuration for '$CADDY_DOMAIN' already exists in Caddyfile."
+                read -p "Replace existing configuration? (y/n) " -n 1 -r
+                echo ""
+                if [[ $REPLY =~ ^[Yy]$ ]]; then
+                    # Remove existing block (from domain line to next domain or EOF)
+                    sudo sed -i "/^$CADDY_DOMAIN {/,/^[a-zA-Z]/{ /^[a-zA-Z].*{/!d }" "$CADDYFILE"
+                    echo "$CADDY_CONFIG_BLOCK" | sudo tee -a "$CADDYFILE" > /dev/null
+                    echo "✓ Caddyfile updated"
+                else
+                    echo "ℹ️  Keeping existing configuration"
+                fi
+            else
+                # Append to existing Caddyfile or create new one
+                echo "$CADDY_CONFIG_BLOCK" | sudo tee -a "$CADDYFILE" > /dev/null
+                echo "✓ Caddyfile configured for $CADDY_DOMAIN"
+            fi
+            
+            # Build frontend for production if not already built
+            if [ ! -d "frontend/dist" ]; then
+                echo ""
+                echo "📦 Building frontend for production..."
+                cd frontend
+                npm run build
+                cd ..
+                echo "✓ Frontend built"
+            fi
+            
+            # Validate Caddy configuration
+            echo ""
+            echo "🔍 Validating Caddy configuration..."
+            if sudo caddy validate --config "$CADDYFILE" 2>/dev/null; then
+                echo "✓ Caddy configuration is valid"
+            else
+                echo "⚠️  Caddy configuration may have issues. Check: sudo caddy validate --config $CADDYFILE"
+            fi
+            
+            # Enable and restart Caddy
+            sudo systemctl enable caddy 2>/dev/null
+            sudo systemctl restart caddy
+            
+            # Verify Caddy is running
+            sleep 2
+            if systemctl is-active --quiet caddy; then
+                echo "✓ Caddy is running"
+                CADDY_SETUP=true
+            else
+                echo "⚠️  Caddy may not be running. Check: sudo systemctl status caddy"
+            fi
+            
+            # Show access info
+            echo ""
+            if [ "$CADDY_DOMAIN" = "localhost" ]; then
+                echo "🌐 ECTLogger will be available at: http://localhost"
+            else
+                echo "🌐 ECTLogger will be available at: https://$CADDY_DOMAIN"
+                echo "   (Caddy will automatically obtain SSL certificate)"
+            fi
+            echo ""
+            
+            # Integrate with Fail2Ban if it's installed or was just set up
+            if [ "$FAIL2BAN_SETUP" = true ] || command -v fail2ban-client &> /dev/null; then
+                echo "🛡️  Integrating Caddy with Fail2Ban..."
+                
+                # Create Caddy log directory
+                sudo mkdir -p /var/log/caddy
+                sudo chown caddy:caddy /var/log/caddy 2>/dev/null || sudo chown root:root /var/log/caddy
+                echo "✓ Caddy log directory created: /var/log/caddy"
+                
+                # Install Caddy Fail2Ban filter and jail
+                sudo cp fail2ban/filter.d/caddy-ectlogger.conf /etc/fail2ban/filter.d/
+                sudo cp fail2ban/jail.d/caddy-ectlogger.conf /etc/fail2ban/jail.d/
+                echo "✓ Caddy Fail2Ban filter and jail installed"
+                
+                # Restart Fail2Ban to pick up new config
+                sudo systemctl restart fail2ban
+                
+                # Verify Caddy jail is active
+                sleep 2
+                if sudo fail2ban-client status 2>/dev/null | grep -q "caddy-ectlogger"; then
+                    echo "✓ Caddy Fail2Ban jail is active"
+                else
+                    echo "⚠️  Caddy jail may need a restart. Check: sudo fail2ban-client status"
+                fi
+                
+                echo ""
+                echo "🛡️  Caddy + Fail2Ban Integration:"
+                echo "  • Bans scanners probing for WordPress, PHPMyAdmin, etc."
+                echo "  • Bans path traversal and SQL injection attempts"
+                echo "  • Default: 24-hour ban after 3 suspicious requests"
+                echo ""
+            fi
+        else
+            echo "ℹ️  Skipping Caddy setup. See PRODUCTION-DEPLOYMENT.md for manual configuration."
             echo ""
         fi
     fi
@@ -514,14 +753,35 @@ fi
 if [ "$FAIL2BAN_SETUP" = true ]; then
     echo ""
     echo "🛡️  Fail2Ban Protection Active"
-    echo "  Status:  sudo fail2ban-client status ectlogger"
-    echo "  Logs:    sudo tail -f /var/log/fail2ban.log"
-    echo "  App Log: tail -f /var/log/ectlogger/app.log"
+    echo "  App jail:   sudo fail2ban-client status ectlogger"
+    if [ "$CADDY_SETUP" = true ] || (command -v caddy &> /dev/null && [ -f /etc/fail2ban/jail.d/caddy-ectlogger.conf ]); then
+        echo "  Caddy jail: sudo fail2ban-client status caddy-ectlogger"
+    fi
+    echo "  Logs:       sudo tail -f /var/log/fail2ban.log"
+    echo "  App Log:    tail -f /var/log/ectlogger/app.log"
+fi
+
+# Show Caddy info if set up
+if [ "$CADDY_SETUP" = true ]; then
+    echo ""
+    echo "🌐 Caddy Reverse Proxy Active"
+    echo "  Status:     sudo systemctl status caddy"
+    echo "  Logs:       sudo journalctl -u caddy -f"
+    echo "  Access Log: tail -f /var/log/caddy/access.log"
+    echo "  Config:     /etc/caddy/Caddyfile"
 fi
 
 echo ""
-echo "🌐 Access the application at:"
-echo "  Frontend: http://localhost:3000"
-echo "  API Docs: http://localhost:8000/docs"
+if [ "$CADDY_SETUP" = true ]; then
+    if [ "$CADDY_DOMAIN" = "localhost" ]; then
+        echo "🌐 Access the application at: http://localhost"
+    else
+        echo "🌐 Access the application at: https://$CADDY_DOMAIN"
+    fi
+else
+    echo "🌐 Access the application at:"
+    echo "  Frontend: http://localhost:3000"
+    echo "  API Docs: http://localhost:8000/docs"
+fi
 echo ""
 echo "📚 For help, see QUICKSTART.md or MANUAL-INSTALLATION.md"

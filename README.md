@@ -233,9 +233,15 @@ Track participation and performance with interactive charts:
 
 ## 🖥️ System Requirements
 
+### Hardware (Minimum)
+- **CPU**: 1 vCPU
+- **RAM**: 512 MB (1 GB recommended)
+- **Disk**: 1 GB free space (grows with database)
+
+### Software
 - **Server**: Windows, Linux, or macOS
-- **Python**: 3.9 or higher
-- **Node.js**: 18 or higher
+- **Python**: 3.10 or higher
+- **Node.js**: 18 or higher (build only, not required at runtime)
 - **Database**: SQLite (included) or PostgreSQL/MySQL
 - **Browser**: Modern browser (Chrome, Firefox, Safari, Edge)
 

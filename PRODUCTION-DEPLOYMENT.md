@@ -2,6 +2,8 @@
 
 This guide covers deploying ECTLogger to production with SSL/HTTPS using a reverse proxy.
 
+> **Quick Setup:** The `install.sh` script can automatically install and configure Caddy for you. Just run `./install.sh` and answer "yes" when prompted for reverse proxy setup.
+
 ## Overview
 
 For production deployment, you'll serve both the frontend and backend through a reverse proxy on the same domain. This provides:

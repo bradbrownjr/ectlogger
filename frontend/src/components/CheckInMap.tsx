@@ -12,6 +12,7 @@ import MinimizeIcon from '@mui/icons-material/Minimize';
 import CropSquareIcon from '@mui/icons-material/CropSquare';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
+import MapIcon from '@mui/icons-material/Map';
 import { Rnd } from 'react-rnd';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -192,19 +193,7 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
       setMaximized(false);
     } else {
       // Save current state and maximize
-      // Get the navbar element to position below it
-      const navbar = document.querySelector('header, nav, .MuiAppBar-root');
-      const navbarBottom = navbar ? navbar.getBoundingClientRect().bottom : 0;
-      const availableHeight = document.documentElement.clientHeight - navbarBottom;
-      const availableWidth = document.documentElement.clientWidth;
-      
       setPreMaximizeState({ ...windowState });
-      setWindowState({
-        x: 0,
-        y: navbarBottom,
-        width: availableWidth,
-        height: availableHeight,
-      });
       setMaximized(true);
     }
     setMinimized(false);
@@ -262,6 +251,196 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
 
   if (!open) return null;
 
+  // Calculate maximized dimensions
+  const getMaximizedStyle = (): React.CSSProperties => {
+    const navbar = document.querySelector('header, nav, .MuiAppBar-root');
+    const navbarHeight = navbar ? navbar.getBoundingClientRect().height : 48;
+    return {
+      position: 'fixed',
+      top: navbarHeight,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      width: '100vw',
+      height: `calc(100vh - ${navbarHeight}px)`,
+      zIndex: 1300,
+    };
+  };
+
+  // When maximized, render without Rnd to avoid positioning conflicts
+  if (maximized) {
+    return (
+      <div style={getMaximizedStyle()}>
+        <Paper
+          elevation={8}
+          sx={{
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+          }}
+        >
+          {/* Title bar */}
+          <Box
+            className="drag-handle"
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              p: 1,
+              bgcolor: 'primary.main',
+              color: 'primary.contrastText',
+              cursor: 'default',
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <MapIcon fontSize="small" />
+              <Typography variant="subtitle2">Check-In Map</Typography>
+            </Box>
+            <Box>
+              <IconButton 
+                size="small" 
+                onClick={toggleMaximize}
+                sx={{ color: 'inherit' }}
+                title="Restore"
+              >
+                <FullscreenExitIcon fontSize="small" />
+              </IconButton>
+              <IconButton 
+                size="small" 
+                onClick={onClose}
+                sx={{ color: 'inherit' }}
+                title="Close"
+              >
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            </Box>
+          </Box>
+          
+          {/* Map content */}
+          <Box sx={{ flexGrow: 1, position: 'relative', overflow: 'hidden' }}>
+            {loading ? (
+              <Box sx={{ 
+                display: 'flex', 
+                flexDirection: 'column',
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                height: '100%',
+                gap: 2
+              }}>
+                <CircularProgress />
+                <Typography color="text.secondary">
+                  Parsing locations and geocoding addresses...
+                </Typography>
+              </Box>
+            ) : mappedCheckIns.length === 0 ? (
+              <Box sx={{ 
+                display: 'flex', 
+                flexDirection: 'column',
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                height: '100%',
+                gap: 2,
+                p: 2,
+              }}>
+                <Typography variant="h6" color="text.secondary">
+                  No mappable locations found
+                </Typography>
+              </Box>
+            ) : (
+              <>
+                <MapContainer
+                  key={mapKey}
+                  center={center}
+                  zoom={6}
+                  style={{ height: '100%', width: '100%' }}
+                  ref={mapRef}
+                >
+                  <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
+                  <FitBounds positions={positions} />
+                  {mappedCheckIns.map((checkIn) => (
+                    checkIn.parsedLocation.lat !== 0 && checkIn.parsedLocation.lon !== 0 && (
+                      <Marker
+                        key={checkIn.id}
+                        position={[checkIn.parsedLocation.lat, checkIn.parsedLocation.lon]}
+                        icon={createColoredIcon(getMarkerColor(checkIn))}
+                      >
+                        <Popup>
+                          <Box sx={{ minWidth: 150 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                              <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+                                {checkIn.callsign}
+                              </Typography>
+                              {checkIn.user_id && ncsUserIds.includes(checkIn.user_id) && (
+                                <Typography component="span" sx={{ fontSize: '0.9rem' }}>👑</Typography>
+                              )}
+                            </Box>
+                            {checkIn.name && (
+                              <Typography variant="body2">{checkIn.name}</Typography>
+                            )}
+                            <Typography variant="caption" color="text.secondary">
+                              {checkIn.location}
+                            </Typography>
+                            <Typography variant="caption" display="block" color="text.secondary">
+                              ({checkIn.parsedLocation.type})
+                            </Typography>
+                          </Box>
+                        </Popup>
+                      </Marker>
+                    )
+                  ))}
+                </MapContainer>
+                {/* Color Legend */}
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    bottom: 32,
+                    right: 8,
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    borderRadius: 1,
+                    px: 1,
+                    py: 0.5,
+                    boxShadow: 1,
+                    zIndex: 1000,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 0.25,
+                    maxHeight: 'calc(100% - 60px)',
+                    overflowY: 'auto',
+                  }}
+                >
+                  {colorLegend
+                    .filter(item => item.show)
+                    .map((item) => (
+                      <Box key={item.label} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <Box
+                          sx={{
+                            width: 12,
+                            height: 12,
+                            borderRadius: '50%',
+                            backgroundColor: item.color,
+                            border: '1px solid white',
+                            boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
+                          }}
+                        />
+                        <Typography variant="caption" sx={{ fontSize: '0.65rem', lineHeight: 1.2, color: '#333' }}>
+                          {item.label}
+                        </Typography>
+                      </Box>
+                    ))}
+                </Box>
+              </>
+            )}
+          </Box>
+        </Paper>
+      </div>
+    );
+  }
+
   return (
     <Rnd
       default={{
@@ -276,31 +455,23 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
       }}
       position={{ x: windowState.x, y: windowState.y }}
       onDragStop={(_e, d) => {
-        if (!maximized) {
-          setWindowState(prev => ({ ...prev, x: d.x, y: d.y }));
-        }
+        setWindowState(prev => ({ ...prev, x: d.x, y: d.y }));
       }}
       onResizeStop={(_e, _direction, ref, _delta, position) => {
-        if (!maximized) {
-          setWindowState({
-            width: parseInt(ref.style.width),
-            height: parseInt(ref.style.height),
-            x: position.x,
-            y: position.y,
-          });
-          handleResizeStop();
-        }
+        setWindowState({
+          width: parseInt(ref.style.width),
+          height: parseInt(ref.style.height),
+          x: position.x,
+          y: position.y,
+        });
+        handleResizeStop();
       }}
       minWidth={isMobile ? 280 : 400}
       minHeight={minimized ? 48 : 300}
-      bounds={maximized ? undefined : "window"}
+      bounds="window"
       dragHandleClassName="drag-handle"
-      enableResizing={!minimized && !maximized}
-      disableDragging={maximized}
-      style={{ 
-        zIndex: 1300,
-        position: maximized ? 'fixed' : undefined,
-      }}
+      enableResizing={!minimized}
+      style={{ zIndex: 1300 }}
     >
       <Paper
         elevation={8}

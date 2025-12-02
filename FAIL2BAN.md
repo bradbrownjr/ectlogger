@@ -160,3 +160,78 @@ ECTLogger automatically reads these headers:
 
 1. Ensure proxy sends `X-Forwarded-For` or `X-Real-IP`
 2. Check ECTLogger logs show correct client IPs
+
+---
+
+## Caddy Reverse Proxy Protection
+
+If you're using Caddy as a reverse proxy, ECTLogger includes additional Fail2Ban filters to block web scanners and exploit attempts.
+
+### What It Blocks
+
+- **CMS Scanners**: WordPress, Joomla, Drupal probes (`wp-admin`, `wp-login`, etc.)
+- **Database Admin Probes**: PHPMyAdmin, Adminer, MySQL admin paths
+- **Sensitive File Access**: `.env`, `.git`, `.htaccess`, config files
+- **Exploit Attempts**: Shell uploads, path traversal, SQL injection
+- **Vulnerability Scanners**: CGI-bin, ASP/JSP/PL paths
+
+### Quick Setup
+
+```bash
+# Copy Caddy filter and jail
+sudo cp fail2ban/filter.d/caddy-ectlogger.conf /etc/fail2ban/filter.d/
+sudo cp fail2ban/jail.d/caddy-ectlogger.conf /etc/fail2ban/jail.d/
+
+# Create log directory
+sudo mkdir -p /var/log/caddy
+sudo chown caddy:caddy /var/log/caddy
+
+# Restart Fail2Ban
+sudo systemctl restart fail2ban
+```
+
+### Configure Caddy Logging
+
+Add logging to your Caddyfile (inside your site block):
+
+```caddy
+ectlogger.example.com {
+    log {
+        output file /var/log/caddy/access.log {
+            roll_size 100mb
+            roll_keep 5
+        }
+        format json
+    }
+    
+    # ... rest of your configuration
+}
+```
+
+Reload Caddy:
+```bash
+sudo systemctl reload caddy
+```
+
+### Jail Settings
+
+The Caddy jails are more aggressive than the application jail:
+
+| Jail | Max Retry | Find Time | Ban Time |
+|------|-----------|-----------|----------|
+| `caddy-ectlogger` | 3 | 10 min | 24 hours |
+| `caddy-ectlogger-aggressive` | 10 | 24 hours | 1 week |
+
+### Check Status
+
+```bash
+# View Caddy jail status
+sudo fail2ban-client status caddy-ectlogger
+
+# Test filter against access log
+fail2ban-regex /var/log/caddy/access.log /etc/fail2ban/filter.d/caddy-ectlogger.conf
+
+# View currently banned IPs
+sudo fail2ban-client status caddy-ectlogger | grep "Banned IP"
+```
+
