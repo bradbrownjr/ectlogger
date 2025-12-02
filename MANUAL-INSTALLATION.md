@@ -288,6 +288,15 @@ npm run build
 
 The `dist` folder contains production-ready static files.
 
+> **Important:** If using a reverse proxy (Caddy, nginx) to serve the frontend, ensure the web server user can read the files. Home directories are typically mode 700, which prevents access:
+> ```bash
+> # Make directories traversable for the web server
+> chmod 755 /home/your-user
+> chmod 755 /path/to/ectlogger
+> chmod 755 /path/to/ectlogger/frontend
+> chmod -R a+rX /path/to/ectlogger/frontend/dist
+> ```
+
 ### systemd Service (Linux)
 
 Create `/etc/systemd/system/ectlogger-backend.service`:

@@ -87,7 +87,19 @@ npm run build
 
 This creates `frontend/dist/` with optimized static files.
 
-### 3. Configure Production Settings
+### 3. Set Permissions for Caddy
+
+The `caddy` user needs to read the frontend files. Home directories are typically mode 700, which blocks access:
+
+```bash
+# Make directories traversable (adjust paths to your installation)
+chmod 755 ~
+chmod 755 ~/ectlogger
+chmod 755 ~/ectlogger/frontend
+chmod -R a+rX ~/ectlogger/frontend/dist
+```
+
+### 4. Configure Production Settings
 
 **Update `frontend/.env`:**
 ```bash
@@ -107,7 +119,7 @@ cd ~/ectlogger/frontend
 npm run build
 ```
 
-### 4. Create Caddyfile
+### 5. Create Caddyfile
 
 ```bash
 sudo nano /etc/caddy/Caddyfile
@@ -149,11 +161,11 @@ ectlogger.example.com {
 
 **Replace `/home/ectlogger/ectlogger` with your actual path and port if needed!**
 
-### 5. Backend /api Prefix (Already Configured)
+### 6. Backend /api Prefix (Already Configured)
 
 The backend routes are already configured with the `/api` prefix in `backend/app/main.py`. No manual changes needed - all API routes automatically respond to `/api/*` paths.
 
-### 6. Start Services
+### 7. Start Services
 
 **Reload Caddy:**
 ```bash
@@ -166,7 +178,7 @@ sudo systemctl start ectlogger
 # Or manually: cd ~/ectlogger && ./start.sh
 ```
 
-### 7. Access Your Application
+### 8. Access Your Application
 
 Navigate to: `https://ectlogger.example.com`
 

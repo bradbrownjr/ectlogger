@@ -780,6 +780,17 @@ $CADDY_DOMAIN {
                 cd ..
             fi
             
+            # Set directory permissions so Caddy can read frontend files
+            # Home directories are typically 700 which prevents Caddy from traversing
+            echo ""
+            echo "🔐 Setting permissions for Caddy to access frontend files..."
+            INSTALL_DIR=$(pwd)
+            chmod 755 "$HOME" 2>/dev/null || true  # Make home directory traversable
+            chmod 755 "$INSTALL_DIR" 2>/dev/null || true
+            chmod 755 "$INSTALL_DIR/frontend" 2>/dev/null || true
+            chmod -R a+rX "$INSTALL_DIR/frontend/dist" 2>/dev/null || true
+            echo "✓ Permissions set for Caddy access"
+            
             # Create Caddy log directory with correct permissions BEFORE starting Caddy
             echo ""
             echo "📁 Setting up Caddy log directory..."
