@@ -265,16 +265,15 @@ See [MANUAL-INSTALLATION.md](MANUAL-INSTALLATION.md) for complete installation i
 **Linux/macOS:**
 ```bash
 chmod +x *.sh
-./install.sh      # Automated installation
+./install.sh      # Automated installation (includes optional systemd, Fail2Ban, Caddy setup)
 ./configure.sh    # Interactive configuration
 ./start.sh        # Start the application
 ```
 
-**Optional: Install as systemd service (Linux):**
-```bash
-./install-service.sh  # Install systemd service
-sudo systemctl start ectlogger
-```
+The `install.sh` script will interactively offer to set up:
+- **systemd service** - Run ECTLogger on boot
+- **Fail2Ban** - Block brute-force login attempts
+- **Caddy** - Reverse proxy with automatic SSL certificates
 
 **Windows:**
 ```powershell

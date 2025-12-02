@@ -73,7 +73,9 @@ The scripts will:
 - Create Python virtual environment
 - Install all backend dependencies
 - Install all frontend dependencies
-- Start both servers
+- Optionally set up **systemd service** (run on boot)
+- Optionally set up **Fail2Ban** (block brute-force attacks)
+- Optionally set up **Caddy** reverse proxy (automatic SSL)
 
 ### Step 2: Configure Email
 
