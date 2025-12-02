@@ -18,7 +18,7 @@ This file contains environment information for AI coding agents to reference.
 - **Backend URL**: http://10.6.26.6:8000/
 - **Purpose**: Alpha/feature testing before beta
 
-### Beta Environment (Current Production)
+### Beta Environment
 - **Host**: `bradb@10.6.26.3`
 - **OS**: Debian Linux LXC container  
 - **Python**: 3.13
@@ -27,12 +27,22 @@ This file contains environment information for AI coding agents to reference.
 - **Backend URL**: https://ectbeta.lynwood.us/api/ (proxied)
 - **Purpose**: Beta testing / current production
 
+### Production Environment
+- **Host**: `ectlogger@app.ectlogger.us`
+- **OS**: Debian Linux VPS host 
+- **Python**: 3.11.2
+- **App Path**: `~/ectlogger`
+- **Frontend URL**: http://app.ectlogger.us/
+- **Backend URL**: http://app.ectlogger.us/api/ (proxied)
+- **Purpose**: Current production
+
 ## Workflow
 
 1. Develop and commit on local Windows laptop
 2. Push to feature/alpha branch
-3. Deploy to alpha environment (10.6.26.6) for testing
-4. Once validated, merge to main and deploy to beta (10.6.26.3)
+3. Deploy to alpha environment (10.6.26.6) for dev testing
+4. Once validated, merge to main and deploy to beta for beta testers (10.6.26.3)
+5. Once approved for production, deploy to production environment (app.ectlogger.us)
 
 ## Important Notes
 
