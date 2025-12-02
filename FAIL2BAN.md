@@ -2,6 +2,8 @@
 
 ECTLogger includes Fail2Ban-compatible security logging to protect against brute-force authentication attacks.
 
+> **Note:** The `install.sh` script can automatically set up Fail2Ban for you. Run `./install.sh` and answer "yes" when prompted for Fail2Ban setup. The manual instructions below are for custom installations.
+
 ## Quick Setup
 
 ### 1. Configure ECTLogger Logging
@@ -160,6 +162,19 @@ ECTLogger automatically reads these headers:
 
 1. Ensure proxy sends `X-Forwarded-For` or `X-Real-IP`
 2. Check ECTLogger logs show correct client IPs
+
+### Fail2Ban fails to start on Debian 12+
+
+Modern Debian/Ubuntu systems use systemd journal instead of `/var/log/auth.log`. If you see errors like `Have not found any log file for sshd jail`, configure the sshd jail to use the systemd backend:
+
+```bash
+# Edit /etc/fail2ban/jail.d/defaults-debian.conf
+[sshd]
+enabled = true
+backend = systemd
+```
+
+Then restart: `sudo systemctl restart fail2ban`
 
 ---
 
