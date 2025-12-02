@@ -278,6 +278,108 @@ else
     echo ""
 fi
 
+# Step 1.5: Port Conflict Detection
+if [ "$CONFIG_DONE" = true ]; then
+    echo ""
+    echo "🔍 Checking for port conflicts..."
+    
+    # Get configured backend port (default 8000)
+    BACKEND_PORT=8000
+    if [ -f "backend/.env" ]; then
+        CONFIGURED_PORT=$(grep "^BACKEND_PORT=" backend/.env | cut -d'=' -f2)
+        if [ -n "$CONFIGURED_PORT" ]; then
+            BACKEND_PORT=$CONFIGURED_PORT
+        fi
+    fi
+    
+    # Check if port is in use
+    check_port_in_use() {
+        local port=$1
+        if command -v ss &> /dev/null; then
+            ss -tlnH 2>/dev/null | grep -q ":$port " && return 0
+        elif command -v netstat &> /dev/null; then
+            netstat -tln 2>/dev/null | grep -q ":$port " && return 0
+        elif command -v lsof &> /dev/null; then
+            lsof -i :$port &>/dev/null && return 0
+        fi
+        return 1
+    }
+    
+    # Find next available port
+    find_available_port() {
+        local start_port=$1
+        local port=$start_port
+        while check_port_in_use $port; do
+            port=$((port + 1))
+            # Safety limit
+            if [ $port -gt $((start_port + 100)) ]; then
+                echo ""
+                return 1
+            fi
+        done
+        echo $port
+    }
+    
+    if check_port_in_use $BACKEND_PORT; then
+        echo ""
+        echo "⚠️  Port $BACKEND_PORT is already in use by another service!"
+        echo ""
+        
+        # Try to identify what's using the port
+        if command -v ss &> /dev/null; then
+            PROCESS_INFO=$(ss -tlnp 2>/dev/null | grep ":$BACKEND_PORT " | head -1)
+            if [ -n "$PROCESS_INFO" ]; then
+                echo "   Currently in use by: $PROCESS_INFO"
+            fi
+        fi
+        
+        # Find next available port
+        NEXT_PORT=$(find_available_port $((BACKEND_PORT + 1)))
+        
+        if [ -n "$NEXT_PORT" ]; then
+            echo ""
+            echo "   Suggested alternative: $NEXT_PORT"
+            echo ""
+            read -p "Use port $NEXT_PORT instead? (Y/n) " -n 1 -r
+            echo ""
+            
+            if [[ ! "$REPLY" =~ ^[Nn]$ ]]; then
+                BACKEND_PORT=$NEXT_PORT
+                
+                # Update backend/.env with new port
+                if grep -q "^BACKEND_PORT=" backend/.env 2>/dev/null; then
+                    if [[ "$OSTYPE" == "darwin"* ]]; then
+                        sed -i '' "s/^BACKEND_PORT=.*/BACKEND_PORT=$BACKEND_PORT/" backend/.env
+                    else
+                        sed -i "s/^BACKEND_PORT=.*/BACKEND_PORT=$BACKEND_PORT/" backend/.env
+                    fi
+                else
+                    echo "BACKEND_PORT=$BACKEND_PORT" >> backend/.env
+                fi
+                
+                echo "✓ Backend port set to $BACKEND_PORT"
+            else
+                echo ""
+                echo "⚠️  WARNING: Port conflict not resolved."
+                echo "   You may need to manually stop the service using port $BACKEND_PORT"
+                echo "   or edit backend/.env to set BACKEND_PORT to an available port."
+            fi
+        else
+            echo ""
+            echo "❌ Could not find an available port in range $BACKEND_PORT-$((BACKEND_PORT + 100))"
+            echo "   Please manually configure BACKEND_PORT in backend/.env"
+        fi
+    else
+        echo "✓ Port $BACKEND_PORT is available"
+        
+        # Ensure BACKEND_PORT is in .env
+        if ! grep -q "^BACKEND_PORT=" backend/.env 2>/dev/null; then
+            echo "BACKEND_PORT=$BACKEND_PORT" >> backend/.env
+        fi
+    fi
+    echo ""
+fi
+
 # Step 2: Service Installation (only if configured and systemd available)
 SERVICE_INSTALLED=false
 if command -v systemctl &> /dev/null; then
@@ -570,6 +672,15 @@ if [ "$CONFIG_DONE" = true ] && [ -f /etc/os-release ]; then
                 CADDY_DOMAIN="localhost"
             fi
             
+            # Get backend port from .env (default 8000)
+            BACKEND_PORT=8000
+            if [ -f "backend/.env" ]; then
+                CONFIGURED_PORT=$(grep "^BACKEND_PORT=" backend/.env | cut -d'=' -f2)
+                if [ -n "$CONFIGURED_PORT" ]; then
+                    BACKEND_PORT=$CONFIGURED_PORT
+                fi
+            fi
+            
             # Create Caddy configuration
             CADDYFILE="/etc/caddy/Caddyfile"
             CADDY_CONFIG_BLOCK="
@@ -590,19 +701,19 @@ $CADDY_DOMAIN {
     
     # Proxy API and WebSocket requests to backend
     handle /api/* {
-        reverse_proxy localhost:8000
+        reverse_proxy localhost:$BACKEND_PORT
     }
     
     handle /ws/* {
-        reverse_proxy localhost:8000
+        reverse_proxy localhost:$BACKEND_PORT
     }
     
     handle /docs* {
-        reverse_proxy localhost:8000
+        reverse_proxy localhost:$BACKEND_PORT
     }
     
     handle /openapi.json {
-        reverse_proxy localhost:8000
+        reverse_proxy localhost:$BACKEND_PORT
     }
     
     # Try files, fallback to index.html for SPA routing
@@ -644,11 +755,39 @@ $CADDY_DOMAIN {
             if [ ! -d "frontend/dist" ]; then
                 echo ""
                 echo "📦 Building frontend for production..."
+                echo "   (This may take a while on low-memory systems)"
+                
+                # Check available memory and set NODE_OPTIONS for low-memory systems
+                AVAILABLE_MEM=$(free -m 2>/dev/null | awk '/^Mem:/{print $7}' || echo "4096")
+                if [ "$AVAILABLE_MEM" -lt 1024 ]; then
+                    echo "   ⚠️  Low memory detected (${AVAILABLE_MEM}MB available)"
+                    echo "   Setting memory limit for Node.js build..."
+                    export NODE_OPTIONS="--max-old-space-size=512"
+                fi
+                
                 cd frontend
-                npm run build
+                if npm run build; then
+                    echo "✓ Frontend built"
+                else
+                    echo ""
+                    echo "⚠️  Frontend build failed!"
+                    echo "   This often happens on low-memory systems (<1GB RAM)."
+                    echo "   Options:"
+                    echo "   1. Add swap space: sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile"
+                    echo "   2. Build on a local machine and copy frontend/dist/ to the server"
+                    echo ""
+                fi
                 cd ..
-                echo "✓ Frontend built"
             fi
+            
+            # Create Caddy log directory with correct permissions BEFORE starting Caddy
+            echo ""
+            echo "📁 Setting up Caddy log directory..."
+            sudo mkdir -p /var/log/caddy
+            sudo chown caddy:caddy /var/log/caddy
+            sudo touch /var/log/caddy/access.log
+            sudo chown caddy:caddy /var/log/caddy/access.log
+            echo "✓ Caddy log directory configured: /var/log/caddy"
             
             # Validate Caddy configuration
             echo ""

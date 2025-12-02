@@ -107,7 +107,18 @@ See [QUICKSTART.md](QUICKSTART.md) for detailed instructions.
 
 ## 🛠️ Technology Stack
 
-# Technology
+### System Requirements
+
+| Resource | Minimum | Recommended |
+|----------|---------|-------------|
+| **RAM** | 1 GB | 2 GB+ |
+| **Storage** | 1 GB | 5 GB+ |
+| **Python** | 3.9+ | 3.11+ |
+| **Node.js** | 18+ | 22 LTS |
+
+> ⚠️ **Low-memory systems (<1GB):** The frontend build may fail. Add swap space or build locally. See [PRODUCTION-DEPLOYMENT.md](PRODUCTION-DEPLOYMENT.md#low-memory-systems-1gb-ram).
+
+### Technology
 - **Frontend**: React with TypeScript and Material-UI (MUI)
 - **Backend**: Python FastAPI with async/await support
 - **Database**: SQLAlchemy ORM (SQLite, PostgreSQL, MySQL)

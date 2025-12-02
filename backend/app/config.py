@@ -6,6 +6,9 @@ class Settings(BaseSettings):
     # Database
     database_url: str = "sqlite:///./ectlogger.db"
     
+    # Backend Server
+    backend_port: int = 8000  # Can be changed if port conflicts exist
+    
     # Security
     secret_key: str
     algorithm: str = "HS256"

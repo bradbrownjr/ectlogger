@@ -11,6 +11,9 @@ export default defineConfig(({ mode }) => {
     ? env.VITE_ALLOWED_HOSTS.split(',').map(h => h.trim())
     : ['localhost', '127.0.0.1']
   
+  // Backend port - can be configured via VITE_BACKEND_PORT or defaults to 8000
+  const backendPort = env.VITE_BACKEND_PORT || '8000'
+  
   return {
     plugins: [react()],
     server: {
@@ -20,11 +23,11 @@ export default defineConfig(({ mode }) => {
       allowedHosts,
       proxy: {
         '/api': {
-          target: 'http://localhost:8000',
+          target: `http://localhost:${backendPort}`,
           changeOrigin: true,
         },
         '/ws': {
-          target: 'ws://localhost:8000',
+          target: `ws://localhost:${backendPort}`,
           ws: true,
         }
       }

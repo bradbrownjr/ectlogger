@@ -4,6 +4,39 @@ This guide covers deploying ECTLogger to production with SSL/HTTPS using a rever
 
 > **Quick Setup:** The `install.sh` script can automatically install and configure Caddy for you. Just run `./install.sh` and answer "yes" when prompted for reverse proxy setup.
 
+## System Requirements
+
+| Resource | Minimum | Recommended |
+|----------|---------|-------------|
+| **RAM** | 1 GB | 2 GB+ |
+| **Storage** | 1 GB | 5 GB+ |
+| **CPU** | 1 core | 2+ cores |
+
+### Low-Memory Systems (<1GB RAM)
+
+If your server has less than 1GB of RAM, the frontend build (`npm run build`) may fail with an out-of-memory error. Options:
+
+1. **Add swap space** (recommended):
+   ```bash
+   sudo fallocate -l 2G /swapfile
+   sudo chmod 600 /swapfile
+   sudo mkswap /swapfile
+   sudo swapon /swapfile
+   # Make permanent:
+   echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+   ```
+
+2. **Build locally and deploy**: Build `frontend/dist/` on a development machine and copy to the server.
+
+3. **Limit Node.js memory**: `export NODE_OPTIONS="--max-old-space-size=512" && npm run build`
+
+### Port Conflicts
+
+The backend uses port **8000** by default. If another service is using this port, the installer will detect it and offer an alternative. You can also manually configure the port:
+
+1. Set `BACKEND_PORT=8001` (or any available port) in `backend/.env`
+2. Update your reverse proxy configuration to use the new port
+
 ## Overview
 
 For production deployment, you'll serve both the frontend and backend through a reverse proxy on the same domain. This provides:
@@ -19,8 +52,8 @@ For production deployment, you'll serve both the frontend and backend through a 
 ```
 Internet → Reverse Proxy (SSL) → {
     /           → Frontend (built static files)
-    /api/       → Backend API (port 8000)
-    /ws/        → WebSocket (port 8000)
+    /api/       → Backend API (port 8000 or configured BACKEND_PORT)
+    /ws/        → WebSocket (port 8000 or configured BACKEND_PORT)
 }
 ```
 
@@ -62,6 +95,8 @@ VITE_API_URL=https://ectlogger.example.com/api
 **Update `backend/.env`:**
 ```bash
 FRONTEND_URL=https://ectlogger.example.com
+# If port 8000 is in use by another service, change this:
+BACKEND_PORT=8000
 ```
 
 **Rebuild frontend after changing .env:**
@@ -76,15 +111,15 @@ npm run build
 sudo nano /etc/caddy/Caddyfile
 ```
 
-**Add this configuration:**
+**Add this configuration (adjust port if you changed BACKEND_PORT):**
 ```caddy
 ectlogger.example.com {
     # Automatic HTTPS via Let's Encrypt
     
     # Serve frontend static files
-    root * /home/bradb/ectlogger/frontend/dist
+    root * /home/ectlogger/ectlogger/frontend/dist
     
-    # API endpoints - proxy to backend
+    # API endpoints - proxy to backend (change 8000 if using different BACKEND_PORT)
     handle /api/* {
         reverse_proxy localhost:8000
     }
@@ -110,7 +145,7 @@ ectlogger.example.com {
 }
 ```
 
-**Replace `/home/bradb/ectlogger` with your actual path!**
+**Replace `/home/ectlogger/ectlogger` with your actual path and port if needed!**
 
 ### 5. Backend /api Prefix (Already Configured)
 

@@ -155,11 +155,23 @@ echo ""
 echo "🚀 Starting servers..."
 echo ""
 
+# Get backend port from .env (default: 8000)
+BACKEND_PORT=8000
+if [ -f "backend/.env" ]; then
+    CONFIGURED_PORT=$(grep "^BACKEND_PORT=" backend/.env | cut -d'=' -f2)
+    if [ -n "$CONFIGURED_PORT" ]; then
+        BACKEND_PORT=$CONFIGURED_PORT
+    fi
+fi
+
+# Export port for frontend vite proxy
+export VITE_BACKEND_PORT=$BACKEND_PORT
+
 # Start backend in background
-echo "📡 Starting backend server on http://localhost:8000"
+echo "📡 Starting backend server on http://localhost:$BACKEND_PORT"
 cd backend
 . venv/bin/activate
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 &
+uvicorn app.main:app --reload --host 0.0.0.0 --port $BACKEND_PORT &
 BACKEND_PID=$!
 cd ..
 
@@ -177,8 +189,8 @@ echo ""
 echo "✓ ECTLogger is starting!"
 echo ""
 echo "🌐 Frontend: http://localhost:3000"
-echo "📡 Backend:  http://localhost:8000"
-echo "📚 API Docs: http://localhost:8000/docs"
+echo "📡 Backend:  http://localhost:$BACKEND_PORT"
+echo "📚 API Docs: http://localhost:$BACKEND_PORT/docs"
 echo ""
 
 # Show configured URLs if available
