@@ -8,13 +8,15 @@ This guide covers deploying ECTLogger to production with SSL/HTTPS using a rever
 
 | Resource | Minimum | Recommended |
 |----------|---------|-------------|
-| **RAM** | 1 GB | 2 GB+ |
-| **Storage** | 1 GB | 5 GB+ |
+| **RAM** | 2 GB | 4 GB+ |
+| **Storage** | 2 GB | 10 GB+ |
 | **CPU** | 1 core | 2+ cores |
 
-### Low-Memory Systems (<1GB RAM)
+> ⚠️ **1GB RAM servers are NOT recommended.** ECTLogger with Caddy, the Python backend, and Node.js frontend requires ~1.5GB RAM at runtime. Servers with <2GB RAM will experience severe performance issues, timeouts, and may become unresponsive.
 
-If your server has less than 1GB of RAM, the frontend build (`npm run build`) may fail with an out-of-memory error. Options:
+### Low-Memory Systems (<2GB RAM)
+
+If your server has less than 2GB of RAM, you may experience issues with frontend builds and overall system responsiveness. Options:
 
 1. **Add swap space** (recommended):
    ```bash

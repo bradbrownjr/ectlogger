@@ -6,12 +6,12 @@
 
 | Resource | Minimum | Recommended |
 |----------|---------|-------------|
-| **RAM** | 1 GB | 2 GB+ |
-| **Storage** | 1 GB | 5 GB+ |
+| **RAM** | 2 GB | 4 GB+ |
+| **Storage** | 2 GB | 10 GB+ |
 | **Python** | 3.9+ | 3.11+ |
 | **Node.js** | 18+ | 22 LTS |
 
-> **Low-memory systems (<1GB):** The frontend build may fail. See [PRODUCTION-DEPLOYMENT.md](PRODUCTION-DEPLOYMENT.md#low-memory-systems-1gb-ram) for workarounds (add swap or build locally).
+> ⚠️ **Servers with <2GB RAM** will struggle to run ECTLogger reliably. See [PRODUCTION-DEPLOYMENT.md](PRODUCTION-DEPLOYMENT.md#system-requirements) for low-memory workarounds.
 
 ## ⚡ Speedrun Install (Recommended for Fresh Systems)
 

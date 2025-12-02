@@ -111,12 +111,12 @@ See [QUICKSTART.md](QUICKSTART.md) for detailed instructions.
 
 | Resource | Minimum | Recommended |
 |----------|---------|-------------|
-| **RAM** | 1 GB | 2 GB+ |
-| **Storage** | 1 GB | 5 GB+ |
+| **RAM** | 2 GB | 4 GB+ |
+| **Storage** | 2 GB | 10 GB+ |
 | **Python** | 3.9+ | 3.11+ |
 | **Node.js** | 18+ | 22 LTS |
 
-> ⚠️ **Low-memory systems (<1GB):** The frontend build may fail. Add swap space or build locally. See [PRODUCTION-DEPLOYMENT.md](PRODUCTION-DEPLOYMENT.md#low-memory-systems-1gb-ram).
+> ⚠️ **Servers with <2GB RAM** will struggle to run ECTLogger reliably, especially during frontend builds. If you must use a low-memory server, add swap space and consider building the frontend elsewhere. See [PRODUCTION-DEPLOYMENT.md](PRODUCTION-DEPLOYMENT.md#system-requirements).
 
 ### Technology
 - **Frontend**: React with TypeScript and Material-UI (MUI)
