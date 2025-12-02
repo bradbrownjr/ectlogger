@@ -27,13 +27,14 @@ NC='\033[0m' # No Color
 INSTALL_DIR="$HOME/ectlogger"
 NON_INTERACTIVE=false
 REPO_URL="https://github.com/bradbrownjr/ectlogger.git"
+BOOTSTRAP_URL="https://raw.githubusercontent.com/bradbrownjr/ectlogger/main/bootstrap.sh"
 
 # Detect if stdin is a pipe (e.g., curl | bash) - interactive mode won't work
 if [ ! -t 0 ]; then
     # stdin is not a terminal - we're being piped
-    # Save ourselves to a temp file and re-execute with a proper terminal
+    # Download the script fresh to a temp file so user can run it interactively
     BOOTSTRAP_SCRIPT=$(mktemp /tmp/ectlogger-bootstrap.XXXXXX.sh)
-    cat > "$BOOTSTRAP_SCRIPT"
+    curl -fsSL "$BOOTSTRAP_URL" > "$BOOTSTRAP_SCRIPT"
     chmod +x "$BOOTSTRAP_SCRIPT"
     
     echo ""
