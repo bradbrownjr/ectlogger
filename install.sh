@@ -543,12 +543,28 @@ if [ "$CONFIG_DONE" = true ] && [ -f /etc/os-release ]; then
                 echo "✓ Caddy already installed"
             fi
             
+            # Try to get domain from FRONTEND_URL in .env
+            DEFAULT_CADDY_DOMAIN=""
+            if [ -f "backend/.env" ]; then
+                FRONTEND_URL=$(grep "^FRONTEND_URL=" backend/.env | cut -d'=' -f2)
+                if [ -n "$FRONTEND_URL" ]; then
+                    # Extract domain from URL (remove protocol and port)
+                    DEFAULT_CADDY_DOMAIN=$(echo "$FRONTEND_URL" | sed -E 's|^https?://||' | sed -E 's|:[0-9]+.*||' | sed -E 's|/.*||')
+                fi
+            fi
+            
             # Get domain name
             echo ""
             echo "Enter the domain name for ECTLogger (e.g., ectlogger.example.com):"
             echo "  • For automatic HTTPS, enter a real domain pointing to this server"
             echo "  • For local/testing, enter 'localhost' or leave blank"
-            read -p "Domain: " CADDY_DOMAIN
+            if [ -n "$DEFAULT_CADDY_DOMAIN" ] && [ "$DEFAULT_CADDY_DOMAIN" != "localhost" ]; then
+                echo ""
+                read -p "Domain (press Enter for $DEFAULT_CADDY_DOMAIN): " CADDY_DOMAIN
+                CADDY_DOMAIN=${CADDY_DOMAIN:-$DEFAULT_CADDY_DOMAIN}
+            else
+                read -p "Domain: " CADDY_DOMAIN
+            fi
             
             if [ -z "$CADDY_DOMAIN" ]; then
                 CADDY_DOMAIN="localhost"

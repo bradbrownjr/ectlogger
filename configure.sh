@@ -43,6 +43,67 @@ else
     echo "   Please edit backend/.env and add a secure secret key"
 fi
 
+# ============================================
+# STEP 1: Frontend URL (needed for email defaults)
+# ============================================
+echo ""
+echo "🌐 Application URL Configuration"
+echo "================================="
+echo ""
+
+# Detect LAN IP address
+LAN_IP=""
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    # macOS
+    LAN_IP=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || echo "localhost")
+elif command -v hostname &> /dev/null; then
+    # Linux - try hostname -I first, then fallback to ip command
+    LAN_IP=$(hostname -I 2>/dev/null | awk '{print $1}')
+    if [ -z "$LAN_IP" ]; then
+        LAN_IP=$(ip route get 1 2>/dev/null | grep -oP 'src \K\S+' || echo "localhost")
+    fi
+else
+    LAN_IP="localhost"
+fi
+
+# Clean up any whitespace
+LAN_IP=$(echo "$LAN_IP" | xargs)
+
+echo "Detected LAN IP: $LAN_IP"
+echo ""
+echo "Frontend URL - Where users will access the application:"
+echo ""
+echo "For testing/LAN use:"
+echo "  - http://$LAN_IP:3000 (recommended for local network)"
+echo "  - http://localhost:3000 (local machine only)"
+echo ""
+echo "For production (with reverse proxy and HTTPS):"
+echo "  - https://ectlogger.example.com"
+echo "  - https://nets.example.org"
+echo ""
+echo "Enter Frontend URL (press Enter for http://$LAN_IP:3000):"
+read -r frontend_url
+frontend_url=${frontend_url:-http://$LAN_IP:3000}
+
+# Extract domain from frontend URL for use in email config
+# Remove protocol (http:// or https://)
+APP_DOMAIN=$(echo "$frontend_url" | sed -E 's|^https?://||' | sed -E 's|:[0-9]+.*||' | sed -E 's|/.*||')
+
+# Update .env file with frontend URL
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    sed -i '' "s|FRONTEND_URL=.*|FRONTEND_URL=$frontend_url|" backend/.env
+else
+    sed -i "s|FRONTEND_URL=.*|FRONTEND_URL=$frontend_url|" backend/.env
+fi
+
+echo ""
+echo "✓ Frontend URL configured: $frontend_url"
+echo "  (Domain: $APP_DOMAIN)"
+echo ""
+
+# ============================================
+# STEP 2: Email Configuration  
+# ============================================
 echo ""
 echo "📧 Email Configuration (Required for authentication)"
 echo "===================================================="
@@ -78,10 +139,11 @@ while [ -z "$smtp_password" ]; do
     echo ""
 done
 
-# SMTP From Email
-echo "From Email (press Enter for noreply@ectlogger.com):"
+# SMTP From Email - use domain from frontend URL
+DEFAULT_FROM_EMAIL="noreply@$APP_DOMAIN"
+echo "From Email (press Enter for $DEFAULT_FROM_EMAIL):"
 read -r smtp_from
-smtp_from=${smtp_from:-noreply@ectlogger.com}
+smtp_from=${smtp_from:-$DEFAULT_FROM_EMAIL}
 
 # Update .env file
 if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -104,79 +166,35 @@ echo ""
 echo "✓ Email configuration saved"
 echo ""
 
-# Frontend URL configuration
-echo "🌐 Frontend URL Configuration"
-echo "=============================="
-echo ""
+# ============================================
+# STEP 3: Backend API URL Configuration
+# ============================================
 
-# Detect LAN IP address
-LAN_IP=""
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    # macOS
-    LAN_IP=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || echo "localhost")
-elif command -v hostname &> /dev/null; then
-    # Linux - try hostname -I first, then fallback to ip command
-    LAN_IP=$(hostname -I 2>/dev/null | awk '{print $1}')
-    if [ -z "$LAN_IP" ]; then
-        LAN_IP=$(ip route get 1 2>/dev/null | grep -oP 'src \K\S+' || echo "localhost")
-    fi
+# Derive default backend URL from frontend URL
+# If frontend is https://app.example.com -> backend is https://app.example.com/api
+# If frontend is http://192.168.1.1:3000 -> backend is http://192.168.1.1:8000/api
+if [[ "$frontend_url" == *":3000"* ]]; then
+    # Development mode with port - switch to port 8000
+    DEFAULT_BACKEND_URL=$(echo "$frontend_url" | sed 's/:3000/:8000/')/api
 else
-    LAN_IP="localhost"
+    # Production mode - same domain with /api path
+    DEFAULT_BACKEND_URL="${frontend_url}/api"
 fi
 
-# Clean up any whitespace
-LAN_IP=$(echo "$LAN_IP" | xargs)
-
-echo "Detected LAN IP: $LAN_IP"
-echo ""
-echo "Frontend URL - Where users will access the application:"
-echo ""
-echo "For testing/LAN use:"
-echo "  - http://$LAN_IP:3000 (recommended for local network)"
-echo "  - http://localhost:3000 (local machine only)"
-echo ""
-echo "For production with reverse proxy (same domain as API):"
-echo "  - https://ectlogger.example.com"
-echo "  - https://nets.example.org"
-echo ""
-echo "⚠️  Note: Production deployments should use a reverse proxy to serve"
-echo "   both frontend and backend on the same domain (prevents CORS/XSS issues)."
-echo "   See PRODUCTION-DEPLOYMENT.md for setup instructions."
-echo ""
-echo "Enter Frontend URL (press Enter for http://$LAN_IP:3000):"
-read -r frontend_url
-frontend_url=${frontend_url:-http://$LAN_IP:3000}
-
-# Update .env file
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    sed -i '' "s|FRONTEND_URL=.*|FRONTEND_URL=$frontend_url|" backend/.env
-else
-    sed -i "s|FRONTEND_URL=.*|FRONTEND_URL=$frontend_url|" backend/.env
-fi
-
-echo ""
-echo "✓ Frontend URL configured: $frontend_url"
-echo ""
-
-# Configure frontend .env for API connection
-BACKEND_URL="http://$LAN_IP:8000/api"
+echo "🔗 Backend API URL Configuration"
+echo "================================="
 echo ""
 echo "Backend API URL - Where the frontend will connect to the API:"
 echo ""
-echo "For testing/LAN use:"
-echo "  - http://$LAN_IP:8000/api (recommended for local network)"
-echo "  - http://localhost:8000/api (local machine only)"
+echo "For production (recommended):"
+echo "  - ${frontend_url}/api (same domain as frontend)"
 echo ""
-echo "For production with reverse proxy:"
-echo "  - https://ectlogger.example.com/api"
-echo "  - https://nets.example.org/api"
+echo "For development/testing:"
+echo "  - http://$LAN_IP:8000/api"
 echo ""
-echo "⚠️  Production: Must be on the same domain as frontend (with /api path)"
-echo "   to prevent cross-origin blocking. See PRODUCTION-DEPLOYMENT.md."
-echo ""
-echo "Enter Backend API URL (press Enter for $BACKEND_URL):"
+echo "Enter Backend API URL (press Enter for $DEFAULT_BACKEND_URL):"
 read -r backend_url
-backend_url=${backend_url:-$BACKEND_URL}
+backend_url=${backend_url:-$DEFAULT_BACKEND_URL}
 
 # Create frontend/.env
 cat > frontend/.env << EOF
