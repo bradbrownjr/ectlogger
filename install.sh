@@ -695,10 +695,6 @@ $CADDY_DOMAIN {
         format json
     }
     
-    # Serve frontend static files
-    root * $(pwd)/frontend/dist
-    file_server
-    
     # Proxy API and WebSocket requests to backend
     handle /api/* {
         reverse_proxy localhost:$BACKEND_PORT
@@ -716,8 +712,12 @@ $CADDY_DOMAIN {
         reverse_proxy localhost:$BACKEND_PORT
     }
     
-    # Try files, fallback to index.html for SPA routing
-    try_files {path} /index.html
+    # Serve frontend static files with SPA fallback
+    handle {
+        root * $(pwd)/frontend/dist
+        try_files {path} /index.html
+        file_server
+    }
     
     # Security headers
     header {

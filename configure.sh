@@ -85,6 +85,26 @@ echo "Enter Frontend URL (press Enter for http://$LAN_IP:3000):"
 read -r frontend_url
 frontend_url=${frontend_url:-http://$LAN_IP:3000}
 
+# If a custom domain is entered with http://, warn and suggest https://
+# Skip this check for localhost and IP addresses (development)
+if [[ "$frontend_url" == http://* ]] && [[ ! "$frontend_url" =~ ^http://(localhost|127\.|192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.) ]]; then
+    # Extract domain to check if it looks like a real domain (not IP)
+    domain_part=$(echo "$frontend_url" | sed -E 's|^https?://||' | sed -E 's|:[0-9]+.*||' | sed -E 's|/.*||')
+    if [[ "$domain_part" =~ \.[a-zA-Z]{2,}$ ]]; then
+        echo ""
+        echo "⚠️  Warning: You entered http:// for what looks like a production domain."
+        echo "   Production domains should use https:// for security."
+        echo ""
+        https_url=$(echo "$frontend_url" | sed 's|^http://|https://|')
+        read -p "Switch to $https_url? (Y/n) " -n 1 -r
+        echo ""
+        if [[ ! "$REPLY" =~ ^[Nn]$ ]]; then
+            frontend_url="$https_url"
+            echo "✓ Changed to: $frontend_url"
+        fi
+    fi
+fi
+
 # Extract domain from frontend URL for use in email config
 # Remove protocol (http:// or https://)
 APP_DOMAIN=$(echo "$frontend_url" | sed -E 's|^https?://||' | sed -E 's|:[0-9]+.*||' | sed -E 's|/.*||')
