@@ -49,3 +49,4 @@ This file contains environment information for AI coding agents to reference.
 - **No scripts are run locally** on the dev laptop
 - All testing happens on the Linux LXC containers
 - Alpha is for experimental features, beta is user-facing
+- AI can not run any commands once an SSH connection is established, commands must be sent as part of the SSH connection. If the session hangs because it's waiting for output that doesn't happen, the user may need to hit control+C to kill the hung command.
