@@ -129,6 +129,7 @@ ECTLogger can be self-hosted on your own server. See the self-hosting documentat
 | **[Production Deployment](docs/PRODUCTION-DEPLOYMENT.md)** | Deploy with SSL/HTTPS and reverse proxy |
 
 ### Configuration
+
 | Document | Description |
 |----------|-------------|
 | **[Magic Link Configuration](docs/MAGIC-LINK-CONFIGURATION.md)** | Configure magic link expiration |
@@ -136,12 +137,14 @@ ECTLogger can be self-hosted on your own server. See the self-hosting documentat
 | **[Logging](docs/LOGGING.md)** | Configure log levels and debug output |
 
 ### Security
+
 | Document | Description |
 |----------|-------------|
 | **[Security](docs/SECURITY.md)** | Security features and best practices |
 | **[Fail2Ban](docs/FAIL2BAN.md)** | Automatic IP banning setup |
 
 ### Development
+
 | Document | Description |
 |----------|-------------|
 | **[Development Guide](docs/DEVELOPMENT.md)** | Architecture, API, and contributing |
