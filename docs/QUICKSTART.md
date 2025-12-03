@@ -185,10 +185,11 @@ This ensures the server owner becomes the administrator before anyone else can a
 ## What's Next?
 
 See the full documentation:
-- **[MANUAL-INSTALLATION.md](MANUAL-INSTALLATION.md)** - Step-by-step manual installation
-- **[PRODUCTION-DEPLOYMENT.md](PRODUCTION-DEPLOYMENT.md)** - Deploy with SSL/HTTPS
-- **[DEVELOPMENT.md](DEVELOPMENT.md)** - Development guide and project structure
-- **[README.md](../README.md)** - Feature overview and requirements
+- **[Self-Hosting Guide](SELF-HOSTING.md)** - Overview and requirements
+- **[Manual Installation](MANUAL-INSTALLATION.md)** - Step-by-step manual installation
+- **[Production Deployment](PRODUCTION-DEPLOYMENT.md)** - Deploy with SSL/HTTPS
+- **[Development Guide](DEVELOPMENT.md)** - Development guide and project structure
+- **[README](../README.md)** - Feature overview
 
 ## Getting Help
 

@@ -350,5 +350,6 @@ If emails continue going to spam:
 5. Contact your email hosting provider for assistance
 
 ## Related Documentation
-- [MAGIC-LINK-CONFIGURATION.md](MAGIC-LINK-CONFIGURATION.md) - Magic link expiration settings
-- [MANUAL-INSTALLATION.md](MANUAL-INSTALLATION.md) - Manual installation and configuration
+- [Magic Link Configuration](MAGIC-LINK-CONFIGURATION.md) - Magic link expiration settings
+- [Manual Installation](MANUAL-INSTALLATION.md) - Manual installation and configuration
+- [Self-Hosting Guide](SELF-HOSTING.md) - Self-hosting overview

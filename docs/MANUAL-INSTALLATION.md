@@ -1,6 +1,6 @@
 # ECTLogger - Manual Installation Guide
 
-> 📌 **New users**: Start with **[QUICKSTART.md](QUICKSTART.md)** for an easier automated setup!
+> 📌 **New users**: Start with **[Quick Start Guide](QUICKSTART.md)** for an easier automated setup!
 
 This guide covers manual step-by-step installation for advanced users, developers, or deployment environments where the automated scripts aren't suitable.
 

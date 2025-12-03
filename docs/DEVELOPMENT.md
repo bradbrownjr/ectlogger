@@ -283,3 +283,62 @@ alembic upgrade head
 - Regularly update dependencies
 - Use environment variables for sensitive data
 - Implement proper CORS policies
+
+---
+
+## 🗺️ Roadmap
+
+Future enhancements planned:
+
+### Completed
+- [x] ~~Participant station mapping~~ ✅
+
+### In Progress / Planned
+- [ ] Progressive Web App (PWA) for offline capability
+- [ ] SMS notifications via Twilio/AWS SNS
+- [ ] Advanced reporting and analytics
+- [ ] Export logs in multiple formats (CSV, PDF)
+- [ ] Mobile native apps (iOS/Android)
+- [ ] Integration with amateur radio logging software
+- [ ] Voice check-in via phone bridge
+- [ ] Automated NCS assistant features
+
+### Stretch Goals
+- [ ] [TUI/Packet Radio Client](concepts/TUI-PACKET-CLIENT.md) — Terminal-based client for packet radio and low-bandwidth operations
+
+---
+
+## ✅ Tested Environments
+
+| Environment | Status | Notes |
+|-------------|--------|-------|
+| **Debian Trixie** | ✅ Tested | Python 3.13, production with Caddy reverse proxy |
+| **Windows 11** | ✅ Tested | Development with PowerShell scripts |
+| **Host Migration** | ✅ Tested | LAN to production domain migration |
+| **Windows Server** | ⬜ Untested | Should work with PowerShell scripts |
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+### Code Style
+
+#### Backend (Python)
+- Follow PEP 8
+- Use type hints
+- Async/await for database operations
+- Comprehensive error handling
+
+#### Frontend (TypeScript)
+- Use TypeScript strict mode
+- Functional components with hooks
+- Material-UI design system
+- Proper prop typing
