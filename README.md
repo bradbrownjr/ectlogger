@@ -40,9 +40,9 @@ ECTLogger implements comprehensive security measures to protect your data and pr
 - **Fail2Ban Integration** - Optional automatic IP banning after repeated failed login attempts
 - **OWASP Top 10** - Protected against the most critical web application security risks
 
-For complete security documentation, deployment best practices, and vulnerability reporting, see **[SECURITY.md](SECURITY.md)**.
+For complete security documentation, deployment best practices, and vulnerability reporting, see **[SECURITY.md](docs/SECURITY.md)**.
 
-For Fail2Ban setup instructions, see **[FAIL2BAN.md](FAIL2BAN.md)**.
+For Fail2Ban setup instructions, see **[FAIL2BAN.md](docs/FAIL2BAN.md)**.
 
 ## 🚀 Quick Start
 
@@ -85,25 +85,25 @@ cd ectlogger
 # 3. Open http://localhost:3000 and sign in!
 ```
 
-See [QUICKSTART.md](QUICKSTART.md) for detailed instructions.
+See [QUICKSTART.md](docs/QUICKSTART.md) for detailed instructions.
 
 ## 📚 Documentation
 
 ### Getting Started
-- **[QUICKSTART.md](QUICKSTART.md)** - Get up and running in 5 minutes (recommended!)
-- **[MANUAL-INSTALLATION.md](MANUAL-INSTALLATION.md)** - Step-by-step manual installation for advanced users
+- **[QUICKSTART.md](docs/QUICKSTART.md)** - Get up and running in 5 minutes (recommended!)
+- **[MANUAL-INSTALLATION.md](docs/MANUAL-INSTALLATION.md)** - Step-by-step manual installation for advanced users
 
 ### Deployment
-- **[PRODUCTION-DEPLOYMENT.md](PRODUCTION-DEPLOYMENT.md)** - Deploy to production with SSL/reverse proxy
-- **[SECURITY.md](SECURITY.md)** - Security features and best practices
+- **[PRODUCTION-DEPLOYMENT.md](docs/PRODUCTION-DEPLOYMENT.md)** - Deploy to production with SSL/reverse proxy
+- **[SECURITY.md](docs/SECURITY.md)** - Security features and best practices
 
 ### Configuration
-- **[MAGIC-LINK-CONFIGURATION.md](MAGIC-LINK-CONFIGURATION.md)** - Configure magic link expiration for extended operations
-- **[EMAIL-DELIVERABILITY.md](EMAIL-DELIVERABILITY.md)** - Email setup, troubleshooting, and spam prevention
-- **[LOGGING.md](LOGGING.md)** - Configure log levels and debug output
+- **[MAGIC-LINK-CONFIGURATION.md](docs/MAGIC-LINK-CONFIGURATION.md)** - Configure magic link expiration for extended operations
+- **[EMAIL-DELIVERABILITY.md](docs/EMAIL-DELIVERABILITY.md)** - Email setup, troubleshooting, and spam prevention
+- **[LOGGING.md](docs/LOGGING.md)** - Configure log levels and debug output
 
 ### Development
-- **[DEVELOPMENT.md](DEVELOPMENT.md)** - Development guide and architecture
+- **[DEVELOPMENT.md](docs/DEVELOPMENT.md)** - Development guide and architecture
 
 ## 🛠️ Technology Stack
 
@@ -116,7 +116,7 @@ See [QUICKSTART.md](QUICKSTART.md) for detailed instructions.
 | **Python** | 3.9+ | 3.11+ |
 | **Node.js** | 18+ | 22 LTS |
 
-> ⚠️ **Servers with <2GB RAM** will struggle to run ECTLogger reliably, especially during frontend builds. If you must use a low-memory server, add swap space and consider building the frontend elsewhere. See [PRODUCTION-DEPLOYMENT.md](PRODUCTION-DEPLOYMENT.md#system-requirements).
+> ⚠️ **Servers with <2GB RAM** will struggle to run ECTLogger reliably, especially during frontend builds. If you must use a low-memory server, add swap space and consider building the frontend elsewhere. See [PRODUCTION-DEPLOYMENT.md](docs/PRODUCTION-DEPLOYMENT.md#system-requirements).
 
 ### Technology
 - **Frontend**: React with TypeScript and Material-UI (MUI)
@@ -258,7 +258,7 @@ Track participation and performance with interactive charts:
 
 ## 📦 Installation
 
-See [MANUAL-INSTALLATION.md](MANUAL-INSTALLATION.md) for complete installation instructions.
+See [MANUAL-INSTALLATION.md](docs/MANUAL-INSTALLATION.md) for complete installation instructions.
 
 ### Quick Install
 
@@ -325,7 +325,7 @@ Use `migrate.sh` (Linux/macOS) or `migrate.ps1` (Windows) to change host address
 
 The script automatically updates `backend/.env` and `frontend/.env`, and configures the Vite allowed hosts for security.
 
-See [PRODUCTION-DEPLOYMENT.md](PRODUCTION-DEPLOYMENT.md) for complete deployment instructions.
+See [PRODUCTION-DEPLOYMENT.md](docs/PRODUCTION-DEPLOYMENT.md) for complete deployment instructions.
 
 ## 🔧 Configuration
 

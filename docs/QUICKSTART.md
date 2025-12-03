@@ -188,7 +188,7 @@ See the full documentation:
 - **[MANUAL-INSTALLATION.md](MANUAL-INSTALLATION.md)** - Step-by-step manual installation
 - **[PRODUCTION-DEPLOYMENT.md](PRODUCTION-DEPLOYMENT.md)** - Deploy with SSL/HTTPS
 - **[DEVELOPMENT.md](DEVELOPMENT.md)** - Development guide and project structure
-- **[README.md](README.md)** - Feature overview and requirements
+- **[README.md](../README.md)** - Feature overview and requirements
 
 ## Getting Help
 
