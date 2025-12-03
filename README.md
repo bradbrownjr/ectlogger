@@ -46,6 +46,7 @@ ECTLogger is a production-ready, web-based net logging application designed spec
 ECTLogger has two types of roles: **global roles** (system-wide) and **net roles** (per-net assignments).
 
 ### Global Roles
+
 | Role | Description |
 |------|-------------|
 | 🛡️ **Admin** | Full system access, user management, view all nets, configure custom fields |
@@ -114,11 +115,13 @@ Complete log generated automatically and emailed to NCS. Net archived for report
 ## 📚 Documentation
 
 ### Getting Started
+
 | Document | Description |
 |----------|-------------|
 | **[User Guide](docs/USER-GUIDE.md)** | How to use ECTLogger as a participant or NCS |
 
 ### Self-Hosting
+
 ECTLogger can be self-hosted on your own server. See the self-hosting documentation:
 
 | Document | Description |
