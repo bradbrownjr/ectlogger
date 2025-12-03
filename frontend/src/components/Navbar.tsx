@@ -33,6 +33,7 @@ import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import PersonIcon from '@mui/icons-material/Person';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import GridOnIcon from '@mui/icons-material/GridOn';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 
 interface NavbarClockProps {
   compact?: boolean;
@@ -208,6 +209,18 @@ const Navbar: React.FC = () => {
                       </ListItemButton>
                     </ListItem>
                   ))}
+                  <ListItem disablePadding>
+                    <ListItemButton 
+                      component="a" 
+                      href="https://ectlogger.us" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      onClick={() => setDrawerOpen(false)}
+                    >
+                      <ListItemIcon><HelpOutlineIcon /></ListItemIcon>
+                      <ListItemText primary="Docs" />
+                    </ListItemButton>
+                  </ListItem>
                 </List>
                 <Divider />
                 <List>
@@ -254,6 +267,14 @@ const Navbar: React.FC = () => {
                 Admin
               </Button>
             )}
+            <Button 
+              color="inherit" 
+              href="https://ectlogger.us" 
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Docs
+            </Button>
             {isAuthenticated && (
               <Button 
                 color="inherit" 
