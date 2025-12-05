@@ -138,7 +138,7 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
     : user?.id === net?.owner_id;
   const isAdmin = user?.role === 'admin';
   // Can't manage staff for closed nets
-  const isNetClosed = isNetContext && net?.status === 'CLOSED';
+  const isNetClosed = isNetContext && net?.status === 'closed';
   const canManage = isAuthenticated && (isOwner || isAdmin) && !isNetClosed;
   
   // Check if user is in the rotation (for schedules)
