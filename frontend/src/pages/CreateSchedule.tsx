@@ -841,8 +841,13 @@ const CreateSchedule: React.FC = () => {
           {/* Tab 1: Schedule Configuration */}
           <TabPanel value={activeTab} index={1}>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Configure when this net runs. Ad-hoc nets are created manually as needed.
+              Choose how often this net runs:
             </Typography>
+            <Box component="ul" sx={{ mt: 0, mb: 2, pl: 2, color: 'text.secondary', fontSize: '0.875rem' }}>
+              <li><strong>One-Time</strong> — Create a single net right now (for special events or testing)</li>
+              <li><strong>Ad-Hoc</strong> — Save as a template to start nets manually whenever needed</li>
+              <li><strong>Daily/Weekly/Monthly</strong> — Set up a recurring schedule</li>
+            </Box>
 
             <FormControl fullWidth margin="normal">
               <InputLabel>Schedule Type</InputLabel>
@@ -852,24 +857,18 @@ const CreateSchedule: React.FC = () => {
                 onChange={(e) => {
                   setScheduleType(e.target.value);
                   // Reset config when changing type
-                  if (e.target.value === 'ad_hoc') {
+                  if (e.target.value === 'ad_hoc' || e.target.value === 'one_time') {
                     setScheduleConfig({ day_of_week: 1, week_of_month: [], time: '18:00' });
                   }
                 }}
               >
-                <MenuItem value="ad_hoc">Ad-Hoc (As Needed)</MenuItem>
                 <MenuItem value="one_time">One-Time Net</MenuItem>
+                <MenuItem value="ad_hoc">Ad-Hoc (Start Manually)</MenuItem>
                 <MenuItem value="daily">Daily</MenuItem>
                 <MenuItem value="weekly">Weekly</MenuItem>
                 <MenuItem value="monthly">Monthly</MenuItem>
               </Select>
             </FormControl>
-
-            {scheduleType === 'one_time' && (
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 2, p: 2, bgcolor: 'action.hover', borderRadius: 1 }}>
-                A one-time net will be created immediately when you save. Use this for single events or testing.
-              </Typography>
-            )}
 
             {scheduleType === 'daily' && (
               <TextField
