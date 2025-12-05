@@ -39,7 +39,7 @@ import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import BlockIcon from '@mui/icons-material/Block';
 import PersonIcon from '@mui/icons-material/Person';
-import { ncsRotationApi, userApi, netApi } from '../services/api';
+import { ncsRotationApi, userApi } from '../services/api';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
