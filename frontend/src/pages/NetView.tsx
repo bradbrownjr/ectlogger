@@ -785,8 +785,12 @@ const NetView: React.FC = () => {
 
   // Check if user has NCS or Logger role
   const userNetRole = netRoles.find((role: any) => role.user_id === user?.id);
+  const isNCS = userNetRole && userNetRole.role === 'NCS';
   const isNCSOrLogger = userNetRole && (userNetRole.role === 'NCS' || userNetRole.role === 'Logger');
   const canManageCheckIns = canManage || isNCSOrLogger;
+  
+  // NCS can start/manage the net even if they're not the owner
+  const canStartNet = canManage || isNCS;
   
   // Check if net has any NCS assigned
   const hasNCS = netRoles.some((role: any) => role.role === 'NCS');
@@ -911,22 +915,37 @@ const NetView: React.FC = () => {
             </Grid>
             <Grid item xs={12} md={4} sx={{ pl: { md: 0.5 } }}>
               <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', alignItems: 'center', justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
-                {canManage && net.status === 'draft' && (
+                {canManage && (net.status === 'draft' || net.status === 'scheduled') && (
                   <>
                     <Button size="small" variant="outlined" onClick={() => navigate(`/nets/${netId}/edit`)}>
                       Edit
                     </Button>
-                    <Button size="small" variant="contained" onClick={handleStartNet} disabled={startingNet}>
-                      {startingNet ? (
-                        <>
-                          <CircularProgress size={16} color="inherit" sx={{ mr: 1 }} />
-                          Starting...
-                        </>
-                      ) : (
-                        'Start Net'
-                      )}
-                    </Button>
+                    <Tooltip title="Assign NCS and logger roles (any assigned NCS can start the net)">
+                      <Button 
+                        size="small" 
+                        variant="outlined" 
+                        onClick={() => {
+                          fetchAllUsers();
+                          setRoleDialogOpen(true);
+                        }}
+                        sx={{ minWidth: 'auto', px: 1 }}
+                      >
+                        <GroupIcon fontSize="small" />
+                      </Button>
+                    </Tooltip>
                   </>
+                )}
+                {canStartNet && (net.status === 'draft' || net.status === 'scheduled') && (
+                  <Button size="small" variant="contained" onClick={handleStartNet} disabled={startingNet}>
+                    {startingNet ? (
+                      <>
+                        <CircularProgress size={16} color="inherit" sx={{ mr: 1 }} />
+                        Starting...
+                      </>
+                    ) : (
+                      'Start Net'
+                    )}
+                  </Button>
                 )}
                 {net.status === 'active' && checkIns.length > 0 && (
                   <Tooltip title="Bulk add multiple check-ins">
@@ -2314,7 +2333,7 @@ const NetView: React.FC = () => {
         <DialogContent>
           <Box sx={{ pt: 2 }}>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Assign NCS (Net Control Station) or LOGGER roles to users. They will be able to edit and manage this net.
+              Assign NCS (Net Control Station) or Logger roles. You can assign multiple people as NCS — any of them can start or manage the net, providing backup if the primary NCS is unavailable.
             </Typography>
             
             <FormControl fullWidth sx={{ mb: 2 }}>

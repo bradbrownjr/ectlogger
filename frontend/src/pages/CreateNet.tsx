@@ -22,6 +22,13 @@ import {
   Tab,
   Tooltip,
   Divider,
+  Autocomplete,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemSecondaryAction,
+  Chip,
+  Alert,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -33,8 +40,11 @@ import FormatItalicIcon from '@mui/icons-material/FormatItalic';
 import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
 import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
 import HorizontalRuleIcon from '@mui/icons-material/HorizontalRule';
-import { netApi, frequencyApi } from '../services/api';
+import AddIcon from '@mui/icons-material/Add';
+import PersonIcon from '@mui/icons-material/Person';
+import { netApi, frequencyApi, userApi } from '../services/api';
 import api from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 
 interface Frequency {
   id?: number;
@@ -57,6 +67,23 @@ interface FieldDefinition {
   is_builtin: boolean;
   is_archived: boolean;
   sort_order: number;
+}
+
+interface User {
+  id: number;
+  callsign: string;
+  name: string | null;
+  email: string;
+}
+
+interface NetRole {
+  id: number;
+  user_id: number;
+  email: string;
+  name: string | null;
+  callsign: string;
+  role: string;
+  assigned_at: string;
 }
 
 interface TabPanelProps {
@@ -100,17 +127,47 @@ const CreateNet: React.FC = () => {
   const scriptTextAreaRef = useRef<HTMLTextAreaElement>(null);
   const navigate = useNavigate();
   const isEditMode = !!netId;
+  
+  // NCS Staff state
+  const [users, setUsers] = useState<User[]>([]);
+  const [pendingNCSUsers, setPendingNCSUsers] = useState<User[]>([]); // For new nets - users to assign after creation
+  const [existingNCSRoles, setExistingNCSRoles] = useState<NetRole[]>([]); // For edit mode - current roles
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [ncsError, setNcsError] = useState<string | null>(null);
+  
+  const { user } = useAuth();
 
   useEffect(() => {
     fetchFrequencies();
     fetchFieldDefinitions();
+    fetchUsers();
   }, []);
 
   useEffect(() => {
     if (netId && fieldDefinitions.length > 0) {
       fetchNetData();
+      fetchNetRoles();
     }
   }, [netId, fieldDefinitions]);
+  
+  const fetchUsers = async () => {
+    try {
+      const response = await userApi.listUsers();
+      setUsers(response.data);
+    } catch (error) {
+      console.error('Failed to fetch users:', error);
+    }
+  };
+  
+  const fetchNetRoles = async () => {
+    if (!netId) return;
+    try {
+      const response = await api.get(`/nets/${netId}/roles`);
+      setExistingNCSRoles(response.data.filter((r: NetRole) => r.role === 'NCS'));
+    } catch (error) {
+      console.error('Failed to fetch net roles:', error);
+    }
+  };
 
   const fetchFieldDefinitions = async () => {
     try {
@@ -297,6 +354,50 @@ const CreateNet: React.FC = () => {
     }, 0);
   };
 
+  // NCS Staff handlers
+  const handleAddPendingNCS = () => {
+    if (!selectedUser) return;
+    if (pendingNCSUsers.some(u => u.id === selectedUser.id)) return;
+    setPendingNCSUsers([...pendingNCSUsers, selectedUser]);
+    setSelectedUser(null);
+  };
+
+  const handleRemovePendingNCS = (userId: number) => {
+    setPendingNCSUsers(pendingNCSUsers.filter(u => u.id !== userId));
+  };
+
+  const handleAddExistingNCS = async () => {
+    if (!selectedUser || !netId) return;
+    setNcsError(null);
+    try {
+      await api.post(`/nets/${netId}/roles?user_id=${selectedUser.id}&role=NCS`);
+      await fetchNetRoles();
+      setSelectedUser(null);
+    } catch (error: any) {
+      setNcsError(error.response?.data?.detail || 'Failed to add NCS');
+    }
+  };
+
+  const handleRemoveExistingNCS = async (roleId: number) => {
+    if (!netId) return;
+    setNcsError(null);
+    try {
+      await api.delete(`/nets/${netId}/roles/${roleId}`);
+      await fetchNetRoles();
+    } catch (error: any) {
+      setNcsError(error.response?.data?.detail || 'Failed to remove NCS');
+    }
+  };
+
+  // Get users not already assigned
+  const availableUsers = users.filter(u => {
+    // Exclude users already in pending list (for new nets)
+    if (pendingNCSUsers.some(p => p.id === u.id)) return false;
+    // Exclude users already assigned (for edit mode)
+    if (existingNCSRoles.some(r => r.user_id === u.id)) return false;
+    return true;
+  });
+
   const handleCreateNet = async () => {
     try {
       if (isEditMode) {
@@ -318,7 +419,18 @@ const CreateNet: React.FC = () => {
           frequency_ids: selectedFrequencies,
           field_config: fieldConfig,
         });
-        navigate(`/nets/${response.data.id}`);
+        
+        // Assign pending NCS users to the newly created net
+        const newNetId = response.data.id;
+        for (const ncsUser of pendingNCSUsers) {
+          try {
+            await api.post(`/nets/${newNetId}/roles?user_id=${ncsUser.id}&role=NCS`);
+          } catch (error) {
+            console.error(`Failed to assign NCS ${ncsUser.callsign}:`, error);
+          }
+        }
+        
+        navigate(`/nets/${newNetId}`);
       }
     } catch (error) {
       console.error('Failed to save net:', error);
@@ -546,8 +658,11 @@ const CreateNet: React.FC = () => {
             value={activeTab} 
             onChange={(_, newValue) => setActiveTab(newValue)}
             aria-label="net configuration tabs"
+            variant="scrollable"
+            scrollButtons="auto"
           >
             <Tab label="Basic Info" />
+            <Tab label="Net Staff" />
             <Tab label="Communication Plan" />
             <Tab label="Net Script" />
             <Tab label="Check-In Fields" />
@@ -598,8 +713,153 @@ const CreateNet: React.FC = () => {
           />
         </TabPanel>
 
-        {/* Tab 2: Communication Plan */}
+        {/* Tab 2: Net Staff */}
         <TabPanel value={activeTab} index={1}>
+          <Typography variant="h6" gutterBottom>
+            Net Staff
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            {isEditMode 
+              ? "Assign additional Net Control Stations who can manage check-ins and control this net."
+              : "Pre-assign Net Control Stations who will be able to manage check-ins and control this net. You (as the host) always have full access."
+            }
+          </Typography>
+
+          {ncsError && (
+            <Alert severity="error" sx={{ mb: 2 }} onClose={() => setNcsError(null)}>
+              {ncsError}
+            </Alert>
+          )}
+
+          {/* Current host info */}
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+              Net Host (always has full access)
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1.5, bgcolor: 'action.hover', borderRadius: 1 }}>
+              <PersonIcon color="primary" />
+              <Typography>
+                {user?.callsign || 'You'}
+                {user?.name && ` (${user.name})`}
+              </Typography>
+              <Chip label="Host" size="small" color="primary" />
+            </Box>
+          </Box>
+
+          {/* Add NCS */}
+          {!isInfoMode && (
+            <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+              <Autocomplete
+                options={availableUsers}
+                getOptionLabel={(option) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
+                value={selectedUser}
+                onChange={(_, value) => setSelectedUser(value)}
+                renderInput={(params) => (
+                  <TextField {...params} label="Add Net Control Station" size="small" />
+                )}
+                sx={{ flex: 1 }}
+              />
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={isEditMode ? handleAddExistingNCS : handleAddPendingNCS}
+                disabled={!selectedUser}
+              >
+                Add
+              </Button>
+            </Box>
+          )}
+
+          {/* NCS List */}
+          {isEditMode ? (
+            // Edit mode: show existing roles from API
+            existingNCSRoles.length === 0 ? (
+              <Typography color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
+                No additional NCS assigned yet.
+              </Typography>
+            ) : (
+              <List>
+                {existingNCSRoles.map((role) => (
+                  <ListItem
+                    key={role.id}
+                    sx={{ 
+                      bgcolor: 'background.paper',
+                      border: 1,
+                      borderColor: 'divider',
+                      borderRadius: 1,
+                      mb: 0.5,
+                    }}
+                  >
+                    <PersonIcon sx={{ mr: 1, color: 'primary.main' }} />
+                    <ListItemText
+                      primary={
+                        <Typography>
+                          {role.callsign}
+                          {role.name && ` (${role.name})`}
+                        </Typography>
+                      }
+                    />
+                    {!isInfoMode && (
+                      <ListItemSecondaryAction>
+                        <IconButton
+                          size="small"
+                          color="error"
+                          onClick={() => handleRemoveExistingNCS(role.id)}
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </ListItemSecondaryAction>
+                    )}
+                  </ListItem>
+                ))}
+              </List>
+            )
+          ) : (
+            // Create mode: show pending users to be assigned
+            pendingNCSUsers.length === 0 ? (
+              <Typography color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
+                No additional NCS assigned yet. The host will serve as NCS by default.
+              </Typography>
+            ) : (
+              <List>
+                {pendingNCSUsers.map((ncsUser) => (
+                  <ListItem
+                    key={ncsUser.id}
+                    sx={{ 
+                      bgcolor: 'background.paper',
+                      border: 1,
+                      borderColor: 'divider',
+                      borderRadius: 1,
+                      mb: 0.5,
+                    }}
+                  >
+                    <PersonIcon sx={{ mr: 1, color: 'primary.main' }} />
+                    <ListItemText
+                      primary={
+                        <Typography>
+                          {ncsUser.callsign}
+                          {ncsUser.name && ` (${ncsUser.name})`}
+                        </Typography>
+                      }
+                    />
+                    <ListItemSecondaryAction>
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={() => handleRemovePendingNCS(ncsUser.id)}
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </ListItemSecondaryAction>
+                  </ListItem>
+                ))}
+              </List>
+            )
+          )}
+        </TabPanel>
+
+        {/* Tab 3: Communication Plan */}
+        <TabPanel value={activeTab} index={2}>
           <Typography variant="h6" gutterBottom>
             Communication Plan
           </Typography>
@@ -634,8 +894,8 @@ const CreateNet: React.FC = () => {
           )}
         </TabPanel>
 
-        {/* Tab 3: Net Script */}
-        <TabPanel value={activeTab} index={2}>
+        {/* Tab 4: Net Script */}
+        <TabPanel value={activeTab} index={3}>
           <Typography variant="h6" gutterBottom>
             Net Script
           </Typography>
@@ -751,8 +1011,8 @@ This is **[CALLSIGN]**, closing the net at [TIME]. 73 to all.`}
           </Box>
         </TabPanel>
 
-        {/* Tab 4: Check-In Fields */}
-        <TabPanel value={activeTab} index={3}>
+        {/* Tab 5: Check-In Fields */}
+        <TabPanel value={activeTab} index={4}>
           <Typography variant="h6" gutterBottom>
             Check-In Fields
           </Typography>
@@ -832,7 +1092,7 @@ This is **[CALLSIGN]**, closing the net at [TIME]. 73 to all.`}
               {isInfoMode ? 'Back' : 'Cancel'}
             </Button>
             {!isInfoMode && (
-              activeTab < 3 ? (
+              activeTab < 4 ? (
                 <Button variant="contained" onClick={() => setActiveTab(activeTab + 1)}>
                   Next
                 </Button>

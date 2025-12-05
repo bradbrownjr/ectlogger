@@ -44,7 +44,9 @@ import CloseIcon from '@mui/icons-material/Close';
 import LanguageIcon from '@mui/icons-material/Language';
 import InfoIcon from '@mui/icons-material/Info';
 import BarChartIcon from '@mui/icons-material/BarChart';
+import GroupsIcon from '@mui/icons-material/Groups';
 import { netApi } from '../services/api';
+import NCSStaffModal from '../components/NCSStaffModal';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { formatDateTime } from '../utils/dateUtils';
@@ -72,6 +74,8 @@ const Dashboard: React.FC = () => {
   const [showArchived, setShowArchived] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [netToDelete, setNetToDelete] = useState<Net | null>(null);
+  const [staffModalOpen, setStaffModalOpen] = useState(false);
+  const [selectedNet, setSelectedNet] = useState<Net | null>(null);
   const [archiveFilter, setArchiveFilter] = useState('');
   const [archiveDateFrom, setArchiveDateFrom] = useState('');
   const [archiveDateTo, setArchiveDateTo] = useState('');
@@ -363,6 +367,17 @@ const Dashboard: React.FC = () => {
                         onClick={() => navigate(`/nets/${net.id}`)}
                       >
                         <SearchIcon />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="View net staff">
+                      <IconButton
+                        size="small"
+                        onClick={() => {
+                          setSelectedNet(net);
+                          setStaffModalOpen(true);
+                        }}
+                      >
+                        <GroupsIcon />
                       </IconButton>
                     </Tooltip>
                   </Box>
@@ -669,6 +684,24 @@ const Dashboard: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* NCS Staff Modal */}
+      <NCSStaffModal
+        open={staffModalOpen}
+        onClose={() => {
+          setStaffModalOpen(false);
+          setSelectedNet(null);
+        }}
+        net={selectedNet ? {
+          id: selectedNet.id,
+          name: selectedNet.name,
+          owner_id: selectedNet.owner_id,
+          owner_callsign: selectedNet.owner_callsign || undefined,
+          owner_name: selectedNet.owner_name || undefined,
+          status: selectedNet.status,
+        } : null}
+        onUpdate={fetchNets}
+      />
     </Container>
   );
 };

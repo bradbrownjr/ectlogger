@@ -37,7 +37,7 @@ import LanguageIcon from '@mui/icons-material/Language';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import { templateApi, netApi, ncsRotationApi } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
-import NCSRotationModal from '../components/NCSRotationModal';
+import NCSStaffModal from '../components/NCSStaffModal';
 
 interface NextNCS {
   date: string;
@@ -313,16 +313,17 @@ const Scheduler: React.FC = () => {
                   </Box>
                 </CardContent>
                 
-                {isAuthenticated && (
                 <CardActions sx={{ justifyContent: 'space-between', flexWrap: 'wrap' }}>
                   <Box>
-                    <Button
-                      size="small"
-                      startIcon={<PlayArrowIcon />}
-                      onClick={() => handleCreateNetFromSchedule(schedule.id)}
-                    >
-                      Create Net
-                    </Button>
+                    {isAuthenticated && (
+                      <Button
+                        size="small"
+                        startIcon={<PlayArrowIcon />}
+                        onClick={() => handleCreateNetFromSchedule(schedule.id)}
+                      >
+                        Create Net
+                      </Button>
+                    )}
                   </Box>
                   <Box>
                     {schedule.info_url && (
@@ -343,38 +344,37 @@ const Scheduler: React.FC = () => {
                         <BarChartIcon />
                       </IconButton>
                     </Tooltip>
-                    {/* Notifications */}
-                    {schedule.is_subscribed ? (
-                      <Tooltip title="Unsubscribe from notifications">
-                        <IconButton
-                          size="small"
-                          color="primary"
-                          onClick={() => handleUnsubscribe(schedule.id)}
-                        >
-                          <NotificationsActiveIcon />
-                        </IconButton>
-                      </Tooltip>
-                    ) : (
-                      <Tooltip title="Subscribe to notifications">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleSubscribe(schedule.id)}
-                        >
-                          <NotificationsOffIcon />
-                        </IconButton>
-                      </Tooltip>
-                    )}
-                    
-                    {/* Rotation - visible to all if exists, only owner/admin to set up */}
-                    {(schedule.nextNCS || isOwner(schedule) || isAdmin) && (
-                      <Tooltip title={schedule.nextNCS ? "View rotation schedule" : "Set up NCS rotation"}>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleOpenRotationModal(schedule)}
-                        >
-                          <GroupsIcon />
-                        </IconButton>
-                      </Tooltip>
+                    {/* Net Staff - always visible */}
+                    <Tooltip title="View net staff">
+                      <IconButton
+                        size="small"
+                        onClick={() => handleOpenRotationModal(schedule)}
+                      >
+                        <GroupsIcon />
+                      </IconButton>
+                    </Tooltip>
+                    {/* Notifications - auth required */}
+                    {isAuthenticated && (
+                      schedule.is_subscribed ? (
+                        <Tooltip title="Unsubscribe from notifications">
+                          <IconButton
+                            size="small"
+                            color="primary"
+                            onClick={() => handleUnsubscribe(schedule.id)}
+                          >
+                            <NotificationsActiveIcon />
+                          </IconButton>
+                        </Tooltip>
+                      ) : (
+                        <Tooltip title="Subscribe to notifications">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleSubscribe(schedule.id)}
+                          >
+                            <NotificationsOffIcon />
+                          </IconButton>
+                        </Tooltip>
+                      )
                     )}
                     
                     {/* Edit & Delete for owners/admins */}
@@ -401,7 +401,6 @@ const Scheduler: React.FC = () => {
                     )}
                   </Box>
                 </CardActions>
-                )}
               </Card>
             </Grid>
           ))}
@@ -419,11 +418,17 @@ const Scheduler: React.FC = () => {
         </Fab>
       )}
 
-      {/* NCS Rotation Modal */}
-      <NCSRotationModal
+      {/* NCS Staff Modal */}
+      <NCSStaffModal
         open={rotationModalOpen}
         onClose={handleCloseRotationModal}
-        schedule={selectedSchedule}
+        schedule={selectedSchedule ? {
+          id: selectedSchedule.id,
+          name: selectedSchedule.name,
+          owner_id: selectedSchedule.owner_id,
+          owner_callsign: selectedSchedule.owner_callsign || undefined,
+          owner_name: selectedSchedule.owner_name || undefined,
+        } : null}
         onUpdate={fetchSchedules}
       />
     </Container>
