@@ -144,6 +144,8 @@ const CreateSchedule: React.FC = () => {
   // NCS Rotation
   const [rotationMembers, setRotationMembers] = useState<RotationMember[]>([]);
   const [selectedUserForRotation, setSelectedUserForRotation] = useState<User | null>(null);
+  // Pending NCS users for new schedules (assigned after creation)
+  const [pendingNCSUsers, setPendingNCSUsers] = useState<User[]>([]);
   
   // Owner management (for editing)
   const [ownerId, setOwnerId] = useState<number | null>(null);
@@ -684,7 +686,20 @@ const CreateSchedule: React.FC = () => {
       if (isEdit) {
         await templateApi.update(Number(scheduleId), ScheduleData);
       } else {
-        await templateApi.create(ScheduleData);
+        const response = await templateApi.create(ScheduleData);
+        const newScheduleId = response.data.id;
+        
+        // Add pending NCS users to the new schedule
+        for (const user of pendingNCSUsers) {
+          try {
+            await ncsRotationApi.addMember(newScheduleId, {
+              user_id: user.id,
+              position: pendingNCSUsers.indexOf(user) + 1
+            });
+          } catch (err) {
+            console.error(`Failed to add NCS ${user.callsign}:`, err);
+          }
+        }
       }
       navigate('/scheduler');
     } catch (error: any) {
@@ -730,7 +745,7 @@ const CreateSchedule: React.FC = () => {
           <Tabs value={activeTab} onChange={(_, newValue) => setActiveTab(newValue)} variant="scrollable" scrollButtons="auto">
             <Tab label="Basic Info" />
             <Tab label="Schedule" />
-            <Tab label="NCS Rotation" disabled={!isEdit} />
+            <Tab label="Net Staff" />
             <Tab label="Communication Plan" />
             <Tab label="Net Script" />
             <Tab label="Check-In Fields" />
@@ -926,105 +941,155 @@ const CreateSchedule: React.FC = () => {
             )}
           </TabPanel>
 
-          {/* Tab 2: NCS Rotation */}
+          {/* Tab 2: Net Staff */}
           <TabPanel value={activeTab} index={2}>
-            {!isEdit ? (
-              <Typography color="text.secondary">
-                Save the schedule first to configure NCS rotation.
-              </Typography>
-            ) : (
-              <>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                  Add operators to the NCS rotation. Drag to reorder their positions in the rotation.
-                  Toggle the switch to temporarily disable an operator from the rotation.
-                </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              {isEdit 
+                ? 'Add operators to the NCS rotation. Reorder their positions, or toggle the switch to temporarily disable an operator.'
+                : 'Select NCS operators for this schedule. They will be added to the rotation when you save.'}
+            </Typography>
 
-                <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-                  <Autocomplete
-                    options={availableUsersForRotation}
-                    getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
-                    value={selectedUserForRotation}
-                    onChange={(_: any, value: User | null) => setSelectedUserForRotation(value)}
-                    renderInput={(params: any) => (
-                      <TextField {...params} label="Add Operator" size="small" />
-                    )}
-                    sx={{ flexGrow: 1 }}
-                  />
-                  <Button
-                    variant="contained"
-                    startIcon={<PersonAddIcon />}
-                    onClick={handleAddRotationMember}
-                    disabled={!selectedUserForRotation}
-                  >
-                    Add
-                  </Button>
-                </Box>
-
-                {rotationMembers.length === 0 ? (
-                  <Typography color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
-                    No NCS operators in rotation. Add operators above to start a rotation.
-                  </Typography>
-                ) : (
-                  <List>
-                    {rotationMembers.map((member, index) => (
-                      <ListItem
-                        key={member.id}
-                        sx={{
-                          border: 1,
-                          borderColor: 'divider',
-                          borderRadius: 1,
-                          mb: 1,
-                          bgcolor: member.is_active ? 'background.paper' : 'action.disabledBackground',
-                        }}
-                      >
-                        <ListItemIcon>
-                          <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                            <IconButton
-                              size="small"
-                              onClick={() => handleMoveRotationMember(member.id, 'up')}
-                              disabled={index === 0}
-                            >
-                              <ArrowUpwardIcon fontSize="small" />
-                            </IconButton>
-                            <IconButton
-                              size="small"
-                              onClick={() => handleMoveRotationMember(member.id, 'down')}
-                              disabled={index === rotationMembers.length - 1}
-                            >
-                              <ArrowDownwardIcon fontSize="small" />
-                            </IconButton>
-                          </Box>
-                        </ListItemIcon>
-                        <ListItemText
-                          primary={
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <Chip label={`#${index + 1}`} size="small" color="primary" variant="outlined" />
-                              <Typography fontWeight="bold">{member.user_callsign}</Typography>
-                              {member.user_name && (
-                                <Typography color="text.secondary">({member.user_name})</Typography>
-                              )}
-                            </Box>
-                          }
-                        />
-                        <ListItemSecondaryAction>
-                          <Switch
-                            checked={member.is_active}
-                            onChange={() => handleToggleRotationMemberActive(member.id, member.is_active)}
-                            title={member.is_active ? 'Active in rotation' : 'Inactive (skipped)'}
-                          />
-                          <IconButton
-                            edge="end"
-                            onClick={() => handleRemoveRotationMember(member.id)}
-                            color="error"
-                          >
-                            <DeleteIcon />
-                          </IconButton>
-                        </ListItemSecondaryAction>
-                      </ListItem>
-                    ))}
-                  </List>
+            {/* Add user input - works for both new and edit modes */}
+            <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+              <Autocomplete
+                options={isEdit 
+                  ? availableUsersForRotation 
+                  : users.filter(u => !pendingNCSUsers.some(p => p.id === u.id))}
+                getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
+                value={selectedUserForRotation}
+                onChange={(_: any, value: User | null) => setSelectedUserForRotation(value)}
+                renderInput={(params: any) => (
+                  <TextField {...params} label="Add NCS Operator" size="small" />
                 )}
-              </>
+                sx={{ flexGrow: 1 }}
+              />
+              <Button
+                variant="contained"
+                startIcon={<PersonAddIcon />}
+                onClick={() => {
+                  if (isEdit) {
+                    handleAddRotationMember();
+                  } else if (selectedUserForRotation) {
+                    setPendingNCSUsers([...pendingNCSUsers, selectedUserForRotation]);
+                    setSelectedUserForRotation(null);
+                  }
+                }}
+                disabled={!selectedUserForRotation}
+              >
+                Add
+              </Button>
+            </Box>
+
+            {/* For NEW schedules - show pending users */}
+            {!isEdit && (
+              pendingNCSUsers.length === 0 ? (
+                <Typography color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+                  No NCS operators selected yet. The schedule owner will be the default NCS.
+                </Typography>
+              ) : (
+                <List>
+                  {pendingNCSUsers.map((user, index) => (
+                    <ListItem
+                      key={user.id}
+                      sx={{
+                        border: 1,
+                        borderColor: 'divider',
+                        borderRadius: 1,
+                        mb: 1,
+                      }}
+                    >
+                      <ListItemText
+                        primary={
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Chip label={`#${index + 1}`} size="small" color="primary" variant="outlined" />
+                            <Typography fontWeight="bold">{user.callsign}</Typography>
+                            {user.name && (
+                              <Typography color="text.secondary">({user.name})</Typography>
+                            )}
+                          </Box>
+                        }
+                      />
+                      <ListItemSecondaryAction>
+                        <IconButton
+                          edge="end"
+                          onClick={() => setPendingNCSUsers(pendingNCSUsers.filter(u => u.id !== user.id))}
+                          color="error"
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </ListItemSecondaryAction>
+                    </ListItem>
+                  ))}
+                </List>
+              )
+            )}
+
+            {/* For EDIT mode - show existing rotation members with full controls */}
+            {isEdit && (
+              rotationMembers.length === 0 ? (
+                <Typography color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+                  No NCS operators in rotation. Add operators above to start a rotation.
+                </Typography>
+              ) : (
+                <List>
+                  {rotationMembers.map((member, index) => (
+                    <ListItem
+                      key={member.id}
+                      sx={{
+                        border: 1,
+                        borderColor: 'divider',
+                        borderRadius: 1,
+                        mb: 1,
+                        bgcolor: member.is_active ? 'background.paper' : 'action.disabledBackground',
+                      }}
+                    >
+                      <ListItemIcon>
+                        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleMoveRotationMember(member.id, 'up')}
+                            disabled={index === 0}
+                          >
+                            <ArrowUpwardIcon fontSize="small" />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleMoveRotationMember(member.id, 'down')}
+                            disabled={index === rotationMembers.length - 1}
+                          >
+                            <ArrowDownwardIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Chip label={`#${index + 1}`} size="small" color="primary" variant="outlined" />
+                            <Typography fontWeight="bold">{member.user_callsign}</Typography>
+                            {member.user_name && (
+                              <Typography color="text.secondary">({member.user_name})</Typography>
+                            )}
+                          </Box>
+                        }
+                      />
+                      <ListItemSecondaryAction>
+                        <Switch
+                          checked={member.is_active}
+                          onChange={() => handleToggleRotationMemberActive(member.id, member.is_active)}
+                          title={member.is_active ? 'Active in rotation' : 'Inactive (skipped)'}
+                        />
+                        <IconButton
+                          edge="end"
+                          onClick={() => handleRemoveRotationMember(member.id)}
+                          color="error"
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </ListItemSecondaryAction>
+                    </ListItem>
+                  ))}
+                </List>
+              )
             )}
           </TabPanel>
 

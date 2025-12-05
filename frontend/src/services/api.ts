@@ -92,9 +92,9 @@ export const checkInApi = {
 
 // Template API
 export const templateApi = {
-  create: (data: any) => api.post('/templates/', data),
+  create: (data: any) => api.post('/templates', data),
   list: (params?: { my_templates?: boolean; include_inactive?: boolean }) => 
-    api.get('/templates/', { params }),
+    api.get('/templates', { params }),
   get: (id: number) => api.get(`/templates/${id}`),
   update: (id: number, data: any) => api.put(`/templates/${id}`, data),
   delete: (id: number) => api.delete(`/templates/${id}`),

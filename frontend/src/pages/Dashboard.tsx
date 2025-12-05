@@ -369,6 +369,10 @@ const Dashboard: React.FC = () => {
                         <SearchIcon />
                       </IconButton>
                     </Tooltip>
+                  </Box>
+                  
+                  <Box>
+                    {/* Net staff - always visible */}
                     <Tooltip title="View net staff">
                       <IconButton
                         size="small"
@@ -380,9 +384,6 @@ const Dashboard: React.FC = () => {
                         <GroupsIcon />
                       </IconButton>
                     </Tooltip>
-                  </Box>
-                  
-                  <Box>
                     {/* Active net - show stats on right side */}
                     {net.status === 'active' && (
                       <Tooltip title="Net statistics">
