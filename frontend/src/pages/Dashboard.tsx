@@ -493,7 +493,7 @@ const Dashboard: React.FC = () => {
               color="primary"
               aria-label="create net"
               sx={{ position: 'fixed', bottom: 16, right: 16 }}
-              onClick={() => navigate('/nets/create')}
+              onClick={() => navigate('/scheduler/create?type=one_time')}
             >
               <AddIcon />
             </Fab>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   Container,
   Paper,
@@ -119,10 +119,14 @@ const getTimezoneAbbr = () => {
 
 const CreateSchedule: React.FC = () => {
   const { scheduleId } = useParams<{ scheduleId: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const isEdit = Boolean(scheduleId);
   const timezoneAbbr = getTimezoneAbbr();
   const { user: currentUser } = useAuth();
+  
+  // Check if coming from Dashboard + button for one-time net
+  const initialType = searchParams.get('type') || 'ad_hoc';
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -153,7 +157,7 @@ const CreateSchedule: React.FC = () => {
   const [originalOwnerId, setOriginalOwnerId] = useState<number | null>(null);
   
   // Schedule configuration
-  const [scheduleType, setScheduleType] = useState('ad_hoc');
+  const [scheduleType, setScheduleType] = useState(initialType);
   const [scheduleConfig, setScheduleConfig] = useState({
     day_of_week: 1, // Monday
     week_of_month: [], // e.g., [1, 3] for 1st and 3rd week
@@ -685,6 +689,7 @@ const CreateSchedule: React.FC = () => {
     try {
       if (isEdit) {
         await templateApi.update(Number(scheduleId), ScheduleData);
+        navigate('/scheduler');
       } else {
         const response = await templateApi.create(ScheduleData);
         const newScheduleId = response.data.id;
@@ -700,8 +705,21 @@ const CreateSchedule: React.FC = () => {
             console.error(`Failed to add NCS ${user.callsign}:`, err);
           }
         }
+        
+        // For one-time nets, automatically create the net and navigate to it
+        if (scheduleType === 'one_time') {
+          try {
+            const netResponse = await templateApi.createNetFromTemplate(newScheduleId);
+            navigate(`/nets/${netResponse.data.id}`);
+            return;
+          } catch (err) {
+            console.error('Failed to auto-create net:', err);
+            // Fall through to navigate to scheduler
+          }
+        }
+        
+        navigate('/scheduler');
       }
-      navigate('/scheduler');
     } catch (error: any) {
       console.error('Failed to save Schedule:', error);
       alert(error.response?.data?.detail || 'Failed to save Schedule');
@@ -840,11 +858,18 @@ const CreateSchedule: React.FC = () => {
                 }}
               >
                 <MenuItem value="ad_hoc">Ad-Hoc (As Needed)</MenuItem>
+                <MenuItem value="one_time">One-Time Net</MenuItem>
                 <MenuItem value="daily">Daily</MenuItem>
                 <MenuItem value="weekly">Weekly</MenuItem>
                 <MenuItem value="monthly">Monthly</MenuItem>
               </Select>
             </FormControl>
+
+            {scheduleType === 'one_time' && (
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 2, p: 2, bgcolor: 'action.hover', borderRadius: 1 }}>
+                A one-time net will be created immediately when you save. Use this for single events or testing.
+              </Typography>
+            )}
 
             {scheduleType === 'daily' && (
               <TextField
