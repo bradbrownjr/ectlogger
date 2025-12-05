@@ -945,8 +945,8 @@ const CreateSchedule: React.FC = () => {
           <TabPanel value={activeTab} index={2}>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
               {isEdit 
-                ? 'Add operators to the NCS rotation. Reorder their positions, or toggle the switch to temporarily disable an operator.'
-                : 'Select NCS operators for this schedule. They will be added to the rotation when you save.'}
+                ? 'Manage NCS operators for this schedule. Any assigned NCS can start and run nets from this schedule.'
+                : 'Add NCS operators who can start and run nets from this schedule. Any assigned NCS can pick up the net as needed.'}
             </Typography>
 
             {/* Add user input - works for both new and edit modes */}
@@ -984,7 +984,7 @@ const CreateSchedule: React.FC = () => {
             {!isEdit && (
               pendingNCSUsers.length === 0 ? (
                 <Typography color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
-                  No NCS operators selected yet. The schedule owner will be the default NCS.
+                  No additional NCS operators added. The schedule owner can start nets from this schedule.
                 </Typography>
               ) : (
                 <List>
@@ -1001,7 +1001,6 @@ const CreateSchedule: React.FC = () => {
                       <ListItemText
                         primary={
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Chip label={`#${index + 1}`} size="small" color="primary" variant="outlined" />
                             <Typography fontWeight="bold">{user.callsign}</Typography>
                             {user.name && (
                               <Typography color="text.secondary">({user.name})</Typography>
@@ -1028,7 +1027,7 @@ const CreateSchedule: React.FC = () => {
             {isEdit && (
               rotationMembers.length === 0 ? (
                 <Typography color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
-                  No NCS operators in rotation. Add operators above to start a rotation.
+                  No additional NCS operators assigned. Add operators above to let them start nets.
                 </Typography>
               ) : (
                 <List>

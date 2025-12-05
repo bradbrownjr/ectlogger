@@ -374,56 +374,59 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
   // Render the staff list section (always visible for both contexts)
   const renderStaffList = () => {
     if (isScheduleContext) {
-      // For schedules - show rotation members OR owner if no rotation
-      if (hasRotation) {
-        return (
-          <Box>
-            <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-              NCS Rotation ({members.length} {members.length === 1 ? 'member' : 'members'})
-            </Typography>
-            <List dense>
-              {members.map((member, idx) => (
-                <ListItem key={member.id} sx={{ py: 0.5 }}>
-                  <PersonIcon sx={{ mr: 1, color: member.is_active ? 'primary.main' : 'action.disabled' }} />
-                  <ListItemText
-                    primary={
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography variant="body2">
-                          {idx + 1}. {member.user_callsign}
-                          {member.user_name && ` (${member.user_name})`}
-                        </Typography>
-                        {!member.is_active && (
-                          <Chip label="Inactive" size="small" variant="outlined" />
-                        )}
-                      </Box>
-                    }
-                  />
-                </ListItem>
-              ))}
-            </List>
-          </Box>
-        );
-      } else {
-        // No rotation - show owner as default NCS
-        return (
-          <Box>
-            <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-              Net Control Station
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1, bgcolor: 'action.hover', borderRadius: 1 }}>
-              <PersonIcon color="primary" />
-              <Typography>
-                {schedule?.owner_callsign || 'Owner'}
-                {schedule?.owner_name && ` (${schedule.owner_name})`}
-              </Typography>
-              <Chip label="Host" size="small" color="primary" variant="outlined" />
-            </Box>
+      // For schedules - show staff members (owner + any assigned NCS)
+      return (
+        <Box>
+          <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+            Authorized Net Control Stations
+          </Typography>
+          <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
+            Any of these operators can start and run nets from this schedule.
+          </Typography>
+          
+          {/* Always show owner first */}
+          <List dense>
+            <ListItem sx={{ py: 0.5, bgcolor: 'action.hover', borderRadius: 1, mb: 0.5 }}>
+              <PersonIcon sx={{ mr: 1, color: 'primary.main' }} />
+              <ListItemText
+                primary={
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="body2">
+                      {schedule?.owner_callsign || 'Owner'}
+                      {schedule?.owner_name && ` (${schedule.owner_name})`}
+                    </Typography>
+                    <Chip label="Host" size="small" color="primary" variant="outlined" />
+                  </Box>
+                }
+              />
+            </ListItem>
+            {members.map((member) => (
+              <ListItem key={member.id} sx={{ py: 0.5 }}>
+                <PersonIcon sx={{ mr: 1, color: member.is_active ? 'primary.main' : 'action.disabled' }} />
+                <ListItemText
+                  primary={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography variant="body2">
+                        {member.user_callsign}
+                        {member.user_name && ` (${member.user_name})`}
+                      </Typography>
+                      {!member.is_active && (
+                        <Chip label="Inactive" size="small" variant="outlined" />
+                      )}
+                    </Box>
+                  }
+                />
+              </ListItem>
+            ))}
+          </List>
+          
+          {members.length === 0 && (
             <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-              No rotation schedule configured. The host serves as NCS.
+              No additional NCS assigned. Only the host can start nets.
             </Typography>
-          </Box>
-        );
-      }
+          )}
+        </Box>
+      );
     } else if (isNetContext) {
       // For nets - show assigned NCS roles OR owner if none assigned
       if (ncsRoles.length > 0) {
@@ -504,20 +507,20 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
             </Alert>
           )}
           
-          {/* Tabs - only show if user can manage or if there's rotation data to show */}
-          {(canManage || (isScheduleContext && hasRotation)) && (
+          {/* Simplified tabs based on context */}
+          {canManage && (
             <Tabs 
               value={tabValue} 
-              onChange={(_, v) => setTabValue(v)} 
+              onChange={(_, v: number) => setTabValue(v)} 
               sx={{ mb: 2 }}
               variant={isMobile ? 'fullWidth' : 'standard'}
             >
               <Tab label="Staff" id="tab-staff" />
-              {isScheduleContext && hasRotation && (
-                <Tab label="Schedule" id="tab-schedule" />
-              )}
               {canManage && (
-                <Tab label={isScheduleContext ? "Manage Rotation" : "Manage Staff"} id="tab-manage" />
+                <Tab label="Manage Staff" id="tab-manage-staff" />
+              )}
+              {isScheduleContext && hasRotation && (
+                <Tab label="Manage Rotation" id="tab-manage-rotation" />
               )}
             </Tabs>
           )}
@@ -531,138 +534,28 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
               {/* Staff Tab - always visible, default view */}
               {tabValue === 0 && renderStaffList()}
               
-              {/* Schedule Tab - only for templates with rotation */}
-              {tabValue === 1 && isScheduleContext && hasRotation && (
-                <Box>
-                  {scheduleEntries.length === 0 ? (
-                    <Typography color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
-                      No upcoming dates scheduled.
-                    </Typography>
-                  ) : (
-                    <TableContainer component={Paper} variant="outlined">
-                      <Table size="small">
-                        <TableHead>
-                          <TableRow>
-                            <TableCell>Date</TableCell>
-                            <TableCell>NCS</TableCell>
-                            {canManage && <TableCell align="right">Actions</TableCell>}
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {scheduleEntries.map((entry, idx) => (
-                            <TableRow 
-                              key={idx}
-                              sx={{ 
-                                bgcolor: entry.is_cancelled 
-                                  ? 'action.disabledBackground' 
-                                  : entry.is_override 
-                                    ? 'warning.light' 
-                                    : undefined 
-                              }}
-                            >
-                              <TableCell>{formatDate(entry.date)}</TableCell>
-                              <TableCell>
-                                {entry.is_cancelled ? (
-                                  <Chip 
-                                    icon={<BlockIcon />} 
-                                    label="Cancelled" 
-                                    size="small" 
-                                    color="default"
-                                  />
-                                ) : (
-                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    <Typography variant="body2">
-                                      {entry.user_callsign || 'TBD'}
-                                      {entry.user_name && ` (${entry.user_name})`}
-                                    </Typography>
-                                    {entry.is_override && (
-                                      <Chip label="Swap" size="small" color="warning" />
-                                    )}
-                                  </Box>
-                                )}
-                                {entry.override_reason && (
-                                  <Typography variant="caption" color="text.secondary" display="block">
-                                    {entry.override_reason}
-                                  </Typography>
-                                )}
-                              </TableCell>
-                              {canManage && (
-                                <TableCell align="right">
-                                  {entry.is_override && entry.override_id && (
-                                    <Tooltip title="Revert to normal rotation">
-                                      <IconButton 
-                                        size="small" 
-                                        onClick={() => handleCancelOverride(entry.override_id!)}
-                                        sx={{ 
-                                          color: 'white',
-                                          bgcolor: 'error.main',
-                                          '&:hover': { bgcolor: 'error.dark' },
-                                          width: 28,
-                                          height: 28,
-                                        }}
-                                      >
-                                        <UndoIcon fontSize="small" />
-                                      </IconButton>
-                                    </Tooltip>
-                                  )}
-                                  {(canManage || (isRotationMember && entry.user_id === user?.id)) && 
-                                   !entry.is_cancelled && !entry.is_override && (
-                                    <Tooltip title="Swap or cancel">
-                                      <IconButton 
-                                        size="small" 
-                                        onClick={() => handleOpenSwapDialog(entry)}
-                                      >
-                                        <SwapHorizIcon fontSize="small" />
-                                      </IconButton>
-                                    </Tooltip>
-                                  )}
-                                </TableCell>
-                              )}
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
-                  )}
-                </Box>
-              )}
-              
-              {/* Manage Tab - for owners/admins */}
-              {((isScheduleContext && tabValue === (hasRotation ? 2 : 1)) || 
-                (isNetContext && tabValue === 1)) && canManage && (
+              {/* Manage Staff Tab - add/remove staff (tab 1) */}
+              {tabValue === 1 && canManage && (
                 <Box>
                   {isScheduleContext ? (
-                    // Manage rotation members for schedules
+                    // Manage NCS staff for schedules (without rotation ordering)
                     <>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                        <Typography variant="subtitle2">
-                          Rotation Members
-                        </Typography>
-                        {members.length > 0 && (
-                          <Button
-                            size="small"
-                            color="error"
-                            variant="outlined"
-                            startIcon={<DeleteIcon />}
-                            onClick={handleClearAllMembers}
-                          >
-                            Clear All
-                          </Button>
-                        )}
-                      </Box>
+                      <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                        NCS Staff
+                      </Typography>
                       <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
-                        NCS duties rotate through active members in order. Clear all to use the host as default NCS.
+                        Add operators who can start and run nets from this schedule. Any assigned NCS can pick up the net as needed.
                       </Typography>
                       
                       {/* Add member */}
                       <Box sx={{ display: 'flex', gap: 1, mb: 2, flexDirection: isMobile ? 'column' : 'row' }}>
                         <Autocomplete
                           options={availableUsers}
-                          getOptionLabel={(option) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
+                          getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
                           value={selectedUser}
-                          onChange={(_, value) => setSelectedUser(value)}
-                          renderInput={(params) => (
-                            <TextField {...params} label="Add operator" size="small" />
+                          onChange={(_: any, value: User | null) => setSelectedUser(value)}
+                          renderInput={(params: any) => (
+                            <TextField {...params} label="Add NCS operator" size="small" />
                           )}
                           sx={{ flex: 1 }}
                         />
@@ -676,14 +569,14 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                         </Button>
                       </Box>
                       
-                      {/* Members list */}
+                      {/* Staff list (unordered) */}
                       {members.length === 0 ? (
                         <Typography color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
-                          No operators in rotation yet
+                          No additional NCS staff. Only the host can start nets.
                         </Typography>
                       ) : (
                         <List>
-                          {members.map((member, idx) => (
+                          {members.map((member: RotationMember) => (
                             <ListItem
                               key={member.id}
                               sx={{ 
@@ -694,12 +587,12 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                                 mb: 0.5,
                               }}
                             >
-                              <DragIndicatorIcon sx={{ mr: 1, color: 'action.disabled' }} />
+                              <PersonIcon sx={{ mr: 1, color: member.is_active ? 'primary.main' : 'action.disabled' }} />
                               <ListItemText
                                 primary={
                                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                     <Typography>
-                                      {idx + 1}. {member.user_callsign}
+                                      {member.user_callsign}
                                       {member.user_name && ` (${member.user_name})`}
                                     </Typography>
                                     {!member.is_active && (
@@ -709,20 +602,6 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                                 }
                               />
                               <ListItemSecondaryAction>
-                                <IconButton
-                                  size="small"
-                                  onClick={() => handleMoveMember(member.id, 'up')}
-                                  disabled={idx === 0}
-                                >
-                                  <ArrowUpwardIcon fontSize="small" />
-                                </IconButton>
-                                <IconButton
-                                  size="small"
-                                  onClick={() => handleMoveMember(member.id, 'down')}
-                                  disabled={idx === members.length - 1}
-                                >
-                                  <ArrowDownwardIcon fontSize="small" />
-                                </IconButton>
                                 <Tooltip title={member.is_active ? 'Mark inactive' : 'Mark active'}>
                                   <IconButton
                                     size="small"
@@ -746,6 +625,25 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                           ))}
                         </List>
                       )}
+                      
+                      {/* Button to enable rotation (if not already enabled) */}
+                      {!hasRotation && members.length >= 2 && (
+                        <Box sx={{ mt: 3, p: 2, border: 1, borderColor: 'divider', borderRadius: 1, bgcolor: 'action.hover' }}>
+                          <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                            Enable NCS Rotation?
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
+                            Create a rotating schedule where NCS duties alternate between staff members in order.
+                          </Typography>
+                          <Button
+                            variant="outlined"
+                            onClick={() => setTabValue(2)}
+                            disabled={members.length < 2}
+                          >
+                            Set Up Rotation
+                          </Button>
+                        </Box>
+                      )}
                     </>
                   ) : (
                     // Manage NCS roles for nets
@@ -761,10 +659,10 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                       <Box sx={{ display: 'flex', gap: 1, mb: 2, flexDirection: isMobile ? 'column' : 'row' }}>
                         <Autocomplete
                           options={availableUsers}
-                          getOptionLabel={(option) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
+                          getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
                           value={selectedUser}
-                          onChange={(_, value) => setSelectedUser(value)}
-                          renderInput={(params) => (
+                          onChange={(_: any, value: User | null) => setSelectedUser(value)}
+                          renderInput={(params: any) => (
                             <TextField {...params} label="Add NCS" size="small" />
                           )}
                           sx={{ flex: 1 }}
@@ -786,7 +684,7 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                         </Typography>
                       ) : (
                         <List>
-                          {ncsRoles.map((role) => (
+                          {ncsRoles.map((role: NetRole) => (
                             <ListItem
                               key={role.id}
                               sx={{ 
@@ -820,6 +718,164 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                         </List>
                       )}
                     </>
+                  )}
+                </Box>
+              )}
+              
+              {/* Manage Rotation Tab (tab 2) - only for schedules with rotation */}
+              {tabValue === 2 && isScheduleContext && canManage && (
+                <Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                    <Typography variant="subtitle2">
+                      Rotation Order
+                    </Typography>
+                    {members.length > 0 && (
+                      <Button
+                        size="small"
+                        color="error"
+                        variant="outlined"
+                        startIcon={<DeleteIcon />}
+                        onClick={handleClearAllMembers}
+                      >
+                        Clear All
+                      </Button>
+                    )}
+                  </Box>
+                  <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
+                    NCS duties rotate through staff members in order. Use the arrows to reorder.
+                  </Typography>
+                  
+                  {/* Members list with reorder controls */}
+                  {members.length === 0 ? (
+                    <Typography color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
+                      No NCS staff to create a rotation. Add staff first on the "Manage Staff" tab.
+                    </Typography>
+                  ) : (
+                    <List>
+                      {members.map((member: RotationMember, idx: number) => (
+                        <ListItem
+                          key={member.id}
+                          sx={{ 
+                            bgcolor: member.is_active ? 'background.paper' : 'action.disabledBackground',
+                            border: 1,
+                            borderColor: 'divider',
+                            borderRadius: 1,
+                            mb: 0.5,
+                          }}
+                        >
+                          <DragIndicatorIcon sx={{ mr: 1, color: 'action.disabled' }} />
+                          <ListItemText
+                            primary={
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Chip label={`#${idx + 1}`} size="small" color="primary" variant="outlined" />
+                                <Typography>
+                                  {member.user_callsign}
+                                  {member.user_name && ` (${member.user_name})`}
+                                </Typography>
+                                {!member.is_active && (
+                                  <Chip label="Inactive" size="small" color="default" />
+                                )}
+                              </Box>
+                            }
+                          />
+                          <ListItemSecondaryAction>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleMoveMember(member.id, 'up')}
+                              disabled={idx === 0}
+                            >
+                              <ArrowUpwardIcon fontSize="small" />
+                            </IconButton>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleMoveMember(member.id, 'down')}
+                              disabled={idx === members.length - 1}
+                            >
+                              <ArrowDownwardIcon fontSize="small" />
+                            </IconButton>
+                          </ListItemSecondaryAction>
+                        </ListItem>
+                      ))}
+                    </List>
+                  )}
+                  
+                  {/* Upcoming rotation schedule preview */}
+                  {scheduleEntries.length > 0 && (
+                    <Box sx={{ mt: 3 }}>
+                      <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                        Upcoming Schedule
+                      </Typography>
+                      <TableContainer component={Paper} variant="outlined">
+                        <Table size="small">
+                          <TableHead>
+                            <TableRow>
+                              <TableCell>Date</TableCell>
+                              <TableCell>NCS</TableCell>
+                              <TableCell align="right">Actions</TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {scheduleEntries.slice(0, 8).map((entry: ScheduleEntry, idx: number) => (
+                              <TableRow 
+                                key={idx}
+                                sx={{ 
+                                  bgcolor: entry.is_cancelled 
+                                    ? 'action.disabledBackground' 
+                                    : entry.is_override 
+                                      ? 'warning.light' 
+                                      : undefined 
+                                }}
+                              >
+                                <TableCell>{formatDate(entry.date)}</TableCell>
+                                <TableCell>
+                                  {entry.is_cancelled ? (
+                                    <Chip 
+                                      icon={<BlockIcon />} 
+                                      label="Cancelled" 
+                                      size="small" 
+                                      color="default"
+                                    />
+                                  ) : (
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                      <Typography variant="body2">
+                                        {entry.user_callsign || 'TBD'}
+                                        {entry.user_name && ` (${entry.user_name})`}
+                                      </Typography>
+                                      {entry.is_override && (
+                                        <Chip label="Swap" size="small" color="warning" />
+                                      )}
+                                    </Box>
+                                  )}
+                                </TableCell>
+                                <TableCell align="right">
+                                  {entry.is_override && entry.override_id && (
+                                    <Tooltip title="Revert to normal rotation">
+                                      <IconButton 
+                                        size="small" 
+                                        onClick={() => handleCancelOverride(entry.override_id!)}
+                                        color="error"
+                                      >
+                                        <UndoIcon fontSize="small" />
+                                      </IconButton>
+                                    </Tooltip>
+                                  )}
+                                  {!entry.is_cancelled && !entry.is_override && (
+                                    <Tooltip title="Swap or cancel">
+                                      <IconButton 
+                                        size="small" 
+                                        onClick={() => handleOpenSwapDialog(entry)}
+                                      >
+                                        <SwapHorizIcon fontSize="small" />
+                                      </IconButton>
+                                    </Tooltip>
+                                  )}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
+                    </Box>
                   )}
                 </Box>
               )}
