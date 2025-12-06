@@ -250,19 +250,23 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
     if (!schedule || !confirm('Remove this operator from the staff? They will also be removed from the rotation if present.')) return;
     
     // Find the staff member to get their user_id
-    const staffMember = staff.find(s => s.id === staffId);
+    const staffMember = staff.find((s: StaffMember) => s.id === staffId);
     
     try {
       await templateStaffApi.remove(schedule.id, staffId);
       // Update local state
-      setStaff(prev => prev.filter(s => s.id !== staffId));
+      setStaff(prev => prev.filter((s: StaffMember) => s.id !== staffId));
       
       // Also remove from rotation if they're in it
       if (staffMember) {
-        const rotationMember = members.find(m => m.user_id === staffMember.user_id);
+        const rotationMember = members.find((m: RotationMember) => m.user_id === staffMember.user_id);
         if (rotationMember) {
           await ncsRotationApi.removeMember(schedule.id, rotationMember.id);
-          setMembers(prev => prev.filter(m => m.id !== rotationMember.id));
+          setMembers(prev => prev.filter((m: RotationMember) => m.id !== rotationMember.id));
+          
+          // Refresh schedule entries since rotation changed
+          const scheduleRes = await ncsRotationApi.getSchedule(schedule.id, 12);
+          setScheduleEntries(scheduleRes.data.schedule || []);
         }
       }
     } catch (err: any) {
