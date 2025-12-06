@@ -142,6 +142,18 @@ export const ncsRotationApi = {
     api.delete(`/templates/${templateId}/ncs-rotation/overrides/${overrideId}`),
 };
 
+// Template Staff API (who can run nets, separate from rotation schedule)
+export const templateStaffApi = {
+  list: (templateId: number) =>
+    api.get(`/templates/${templateId}/ncs-rotation/staff`),
+  add: (templateId: number, data: { user_id: number }) =>
+    api.post(`/templates/${templateId}/ncs-rotation/staff`, data),
+  remove: (templateId: number, staffId: number) =>
+    api.delete(`/templates/${templateId}/ncs-rotation/staff/${staffId}`),
+  updateActive: (templateId: number, staffId: number, isActive: boolean) =>
+    api.patch(`/templates/${templateId}/ncs-rotation/staff/${staffId}`, null, { params: { is_active: isActive } }),
+};
+
 // Statistics API
 export const statisticsApi = {
   getGlobal: () => api.get('/statistics/global'),

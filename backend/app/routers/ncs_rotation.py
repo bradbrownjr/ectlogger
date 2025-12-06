@@ -10,12 +10,13 @@ import json
 
 from app.database import get_db
 from app.models import (
-    NetTemplate, NCSRotationMember, NCSScheduleOverride, User, NetTemplateSubscription
+    NetTemplate, NCSRotationMember, NCSScheduleOverride, User, NetTemplateSubscription, TemplateStaff
 )
 from app.schemas import (
     NCSRotationMemberCreate, NCSRotationMemberResponse,
     NCSScheduleOverrideCreate, NCSScheduleOverrideResponse,
-    NCSScheduleEntry, NCSScheduleResponse
+    NCSScheduleEntry, NCSScheduleResponse,
+    TemplateStaffCreate, TemplateStaffResponse
 )
 from app.dependencies import get_current_user, get_current_user_optional
 from app.email_service import EmailService
@@ -33,6 +34,7 @@ async def get_template_or_404(template_id: int, db: AsyncSession) -> NetTemplate
             selectinload(NetTemplate.rotation_members).selectinload(NCSRotationMember.user),
             selectinload(NetTemplate.schedule_overrides).selectinload(NCSScheduleOverride.original_user),
             selectinload(NetTemplate.schedule_overrides).selectinload(NCSScheduleOverride.replacement_user),
+            selectinload(NetTemplate.staff).selectinload(TemplateStaff.user),
         )
         .where(NetTemplate.id == template_id)
     )
@@ -43,7 +45,7 @@ async def get_template_or_404(template_id: int, db: AsyncSession) -> NetTemplate
 
 
 async def check_template_permission(template: NetTemplate, user: User, db: AsyncSession) -> bool:
-    """Check if user can manage this template's rotation"""
+    """Check if user can manage this template's rotation and staff"""
     if user.role == 'admin':
         return True
     if template.owner_id == user.id:
@@ -579,3 +581,124 @@ async def list_schedule_overrides(
         NCSScheduleOverrideResponse.from_orm_with_users(override)
         for override in template.schedule_overrides
     ]
+
+
+# ========================================
+# Template Staff Endpoints (separate from rotation)
+# ========================================
+
+@router.get("/staff", response_model=List[TemplateStaffResponse])
+async def list_template_staff(
+    template_id: int,
+    current_user: User = Depends(get_current_user_optional),
+    db: AsyncSession = Depends(get_db)
+):
+    """List all staff members who can run nets from this template"""
+    template = await get_template_or_404(template_id, db)
+    
+    return [
+        TemplateStaffResponse.from_orm_with_user(staff)
+        for staff in template.staff
+    ]
+
+
+@router.post("/staff", response_model=TemplateStaffResponse, status_code=status.HTTP_201_CREATED)
+async def add_template_staff(
+    template_id: int,
+    staff_data: TemplateStaffCreate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Add a user to the template staff (people who can run nets)"""
+    template = await get_template_or_404(template_id, db)
+    
+    if not await check_template_permission(template, current_user, db):
+        raise HTTPException(status_code=403, detail="Permission denied")
+    
+    # Check user exists
+    result = await db.execute(select(User).where(User.id == staff_data.user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Check if already staff
+    for existing in template.staff:
+        if existing.user_id == staff_data.user_id:
+            raise HTTPException(status_code=400, detail="User is already staff")
+    
+    staff = TemplateStaff(
+        template_id=template_id,
+        user_id=staff_data.user_id
+    )
+    db.add(staff)
+    await db.commit()
+    
+    # Reload with user relationship
+    result = await db.execute(
+        select(TemplateStaff)
+        .options(selectinload(TemplateStaff.user))
+        .where(TemplateStaff.id == staff.id)
+    )
+    staff = result.scalar_one()
+    
+    return TemplateStaffResponse.from_orm_with_user(staff)
+
+
+@router.delete("/staff/{staff_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def remove_template_staff(
+    template_id: int,
+    staff_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Remove a user from the template staff"""
+    template = await get_template_or_404(template_id, db)
+    
+    if not await check_template_permission(template, current_user, db):
+        raise HTTPException(status_code=403, detail="Permission denied")
+    
+    result = await db.execute(
+        select(TemplateStaff).where(
+            TemplateStaff.id == staff_id,
+            TemplateStaff.template_id == template_id
+        )
+    )
+    staff = result.scalar_one_or_none()
+    if not staff:
+        raise HTTPException(status_code=404, detail="Staff member not found")
+    
+    await db.delete(staff)
+    await db.commit()
+
+
+@router.patch("/staff/{staff_id}", response_model=TemplateStaffResponse)
+async def update_template_staff(
+    template_id: int,
+    staff_id: int,
+    is_active: bool,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Update a staff member's active status"""
+    template = await get_template_or_404(template_id, db)
+    
+    if not await check_template_permission(template, current_user, db):
+        raise HTTPException(status_code=403, detail="Permission denied")
+    
+    result = await db.execute(
+        select(TemplateStaff)
+        .options(selectinload(TemplateStaff.user))
+        .where(
+            TemplateStaff.id == staff_id,
+            TemplateStaff.template_id == template_id
+        )
+    )
+    staff = result.scalar_one_or_none()
+    if not staff:
+        raise HTTPException(status_code=404, detail="Staff member not found")
+    
+    staff.is_active = is_active
+    await db.commit()
+    await db.refresh(staff)
+    
+    return TemplateStaffResponse.from_orm_with_user(staff)

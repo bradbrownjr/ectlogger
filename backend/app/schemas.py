@@ -648,6 +648,41 @@ class NCSScheduleResponse(BaseModel):
     rotation_members: List[NCSRotationMemberResponse]
 
 
+# Template Staff Schemas (separate from rotation)
+class TemplateStaffCreate(BaseModel):
+    """Request to add a staff member"""
+    user_id: int
+
+
+class TemplateStaffResponse(BaseModel):
+    """Response for a template staff member"""
+    id: int
+    template_id: int
+    user_id: int
+    is_active: bool
+    created_at: datetime
+    # User info for display
+    user_email: Optional[str] = None
+    user_name: Optional[str] = None
+    user_callsign: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+    @classmethod
+    def from_orm_with_user(cls, staff):
+        return cls(
+            id=staff.id,
+            template_id=staff.template_id,
+            user_id=staff.user_id,
+            is_active=staff.is_active,
+            created_at=staff.created_at,
+            user_email=staff.user.email if staff.user else None,
+            user_name=staff.user.name if staff.user else None,
+            user_callsign=staff.user.callsign if staff.user else None,
+        )
+
+
 # Statistics Schemas
 
 class TimeSeriesDataPoint(BaseModel):

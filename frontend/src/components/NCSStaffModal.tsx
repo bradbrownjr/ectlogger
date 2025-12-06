@@ -39,7 +39,7 @@ import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import BlockIcon from '@mui/icons-material/Block';
 import PersonIcon from '@mui/icons-material/Person';
-import { ncsRotationApi, userApi } from '../services/api';
+import { ncsRotationApi, userApi, templateStaffApi } from '../services/api';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -72,6 +72,14 @@ interface RotationMember {
   user_callsign: string;
   user_name: string | null;
   position: number;
+  is_active: boolean;
+}
+
+interface StaffMember {
+  id: number;
+  user_id: number;
+  user_callsign: string;
+  user_name: string | null;
   is_active: boolean;
 }
 
@@ -111,7 +119,8 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
   onUpdate,
 }) => {
   const [tabValue, setTabValue] = useState<number>(0);
-  const [members, setMembers] = useState<RotationMember[]>([]);
+  const [staff, setStaff] = useState<StaffMember[]>([]);  // Separate staff list
+  const [members, setMembers] = useState<RotationMember[]>([]);  // Rotation members (with position/order)
   const [scheduleEntries, setScheduleEntries] = useState<ScheduleEntry[]>([]);
   const [netRoles, setNetRoles] = useState<NetRole[]>([]);
   const [loading, setLoading] = useState(false);
@@ -183,12 +192,14 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
     
     try {
       if (isScheduleContext && schedule) {
-        // Fetch template rotation data
-        const [membersRes, scheduleRes] = await Promise.all([
+        // Fetch template staff and rotation data separately
+        const [staffRes, membersRes, scheduleRes] = await Promise.all([
+          templateStaffApi.list(schedule.id),
           ncsRotationApi.listMembers(schedule.id),
           ncsRotationApi.getSchedule(schedule.id, 12), // 12 weeks ahead
         ]);
         
+        setStaff(staffRes.data);
         setMembers(membersRes.data);
         setScheduleEntries(scheduleRes.data.schedule || []);
         
@@ -215,7 +226,46 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
     }
   };
 
-  // ===== SCHEDULE/TEMPLATE HANDLERS =====
+  // ===== SCHEDULE/TEMPLATE STAFF HANDLERS =====
+  
+  const handleAddStaff = async () => {
+    if (!schedule || !selectedUser) return;
+    
+    try {
+      await templateStaffApi.add(schedule.id, { user_id: selectedUser.id });
+      setSelectedUser(null);
+      await fetchData();
+      onUpdate?.();
+    } catch (err: any) {
+      setError(getErrorMessage(err, 'Failed to add staff'));
+    }
+  };
+
+  const handleRemoveStaff = async (staffId: number) => {
+    if (!schedule || !confirm('Remove this operator from the staff?')) return;
+    
+    try {
+      await templateStaffApi.remove(schedule.id, staffId);
+      await fetchData();
+      onUpdate?.();
+    } catch (err: any) {
+      setError(getErrorMessage(err, 'Failed to remove staff'));
+    }
+  };
+
+  const handleToggleStaffActive = async (staffMember: StaffMember) => {
+    if (!schedule) return;
+    
+    try {
+      await templateStaffApi.updateActive(schedule.id, staffMember.id, !staffMember.is_active);
+      await fetchData();
+      onUpdate?.();
+    } catch (err: any) {
+      setError(getErrorMessage(err, 'Failed to update staff'));
+    }
+  };
+
+  // ===== SCHEDULE/TEMPLATE ROTATION HANDLERS =====
   
   const handleAddMember = async () => {
     if (!schedule || !selectedUser) return;
@@ -353,10 +403,15 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
     }
   };
 
-  // Filter out users already assigned
-  const availableUsers = isScheduleContext
-    ? users.filter((u: User) => !members.some((m: RotationMember) => m.user_id === u.id))
+  // Filter out users already assigned (staff, not rotation)
+  const availableStaffUsers = isScheduleContext
+    ? users.filter((u: User) => !staff.some((s: StaffMember) => s.user_id === u.id))
     : users.filter((u: User) => !netRoles.some((r: NetRole) => r.user_id === u.id && r.role === 'NCS'));
+
+  // Filter out users already in rotation (for rotation tab)
+  const availableRotationUsers = isScheduleContext
+    ? users.filter((u: User) => !members.some((m: RotationMember) => m.user_id === u.id))
+    : [];
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -373,7 +428,7 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
   // Render the staff list section (always visible for both contexts)
   const renderStaffList = () => {
     if (isScheduleContext) {
-      // For schedules - show staff members (owner + any assigned NCS)
+      // For schedules - show staff members (owner + any assigned staff)
       return (
         <Box>
           <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
@@ -399,17 +454,17 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                 }
               />
             </ListItem>
-            {members.map((member) => (
-              <ListItem key={member.id} sx={{ py: 0.5 }}>
-                <PersonIcon sx={{ mr: 1, color: member.is_active ? 'primary.main' : 'action.disabled' }} />
+            {staff.map((s: StaffMember) => (
+              <ListItem key={s.id} sx={{ py: 0.5 }}>
+                <PersonIcon sx={{ mr: 1, color: s.is_active ? 'primary.main' : 'action.disabled' }} />
                 <ListItemText
                   primary={
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <Typography variant="body2">
-                        {member.user_callsign}
-                        {member.user_name && ` (${member.user_name})`}
+                        {s.user_callsign}
+                        {s.user_name && ` (${s.user_name})`}
                       </Typography>
-                      {!member.is_active && (
+                      {!s.is_active && (
                         <Chip label="Inactive" size="small" variant="outlined" />
                       )}
                     </Box>
@@ -419,7 +474,7 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
             ))}
           </List>
           
-          {members.length === 0 && (
+          {staff.length === 0 && (
             <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
               No additional NCS assigned. Only the host can start nets.
             </Typography>
@@ -543,13 +598,13 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                         NCS Staff
                       </Typography>
                       <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
-                        Add operators who can start and run nets from this schedule. Any assigned NCS can pick up the net as needed.
+                        Add operators who can start and run nets from this schedule. Staff is separate from the rotation schedule.
                       </Typography>
                       
-                      {/* Add member */}
+                      {/* Add staff member */}
                       <Box sx={{ display: 'flex', gap: 1, mb: 2, flexDirection: isMobile ? 'column' : 'row' }}>
                         <Autocomplete
-                          options={availableUsers}
+                          options={availableStaffUsers}
                           getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
                           value={selectedUser}
                           onChange={(_: any, value: User | null) => setSelectedUser(value)}
@@ -561,7 +616,7 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                         <Button
                           variant="contained"
                           startIcon={<AddIcon />}
-                          onClick={handleAddMember}
+                          onClick={handleAddStaff}
                           disabled={!selectedUser}
                         >
                           Add
@@ -569,53 +624,53 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                       </Box>
                       
                       {/* Staff list (unordered) */}
-                      {members.length === 0 ? (
+                      {staff.length === 0 ? (
                         <Typography color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
                           No additional NCS staff. Only the host can start nets.
                         </Typography>
                       ) : (
                         <List>
-                          {members.map((member: RotationMember) => (
+                          {staff.map((s: StaffMember) => (
                             <ListItem
-                              key={member.id}
+                              key={s.id}
                               sx={{ 
-                                bgcolor: member.is_active ? 'background.paper' : 'action.disabledBackground',
+                                bgcolor: s.is_active ? 'background.paper' : 'action.disabledBackground',
                                 border: 1,
                                 borderColor: 'divider',
                                 borderRadius: 1,
                                 mb: 0.5,
                               }}
                             >
-                              <PersonIcon sx={{ mr: 1, color: member.is_active ? 'primary.main' : 'action.disabled' }} />
+                              <PersonIcon sx={{ mr: 1, color: s.is_active ? 'primary.main' : 'action.disabled' }} />
                               <ListItemText
                                 primary={
                                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                     <Typography>
-                                      {member.user_callsign}
-                                      {member.user_name && ` (${member.user_name})`}
+                                      {s.user_callsign}
+                                      {s.user_name && ` (${s.user_name})`}
                                     </Typography>
-                                    {!member.is_active && (
+                                    {!s.is_active && (
                                       <Chip label="Inactive" size="small" color="default" />
                                     )}
                                   </Box>
                                 }
                               />
                               <ListItemSecondaryAction>
-                                <Tooltip title={member.is_active ? 'Mark inactive' : 'Mark active'}>
+                                <Tooltip title={s.is_active ? 'Mark inactive' : 'Mark active'}>
                                   <IconButton
                                     size="small"
-                                    onClick={() => handleToggleMemberActive(member)}
+                                    onClick={() => handleToggleStaffActive(s)}
                                   >
                                     <BlockIcon 
                                       fontSize="small" 
-                                      color={member.is_active ? 'action' : 'error'} 
+                                      color={s.is_active ? 'action' : 'error'} 
                                     />
                                   </IconButton>
                                 </Tooltip>
                                 <IconButton
                                   size="small"
                                   color="error"
-                                  onClick={() => handleRemoveMember(member.id)}
+                                  onClick={() => handleRemoveStaff(s.id)}
                                 >
                                   <DeleteIcon fontSize="small" />
                                 </IconButton>
@@ -638,7 +693,7 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                       {/* Add NCS */}
                       <Box sx={{ display: 'flex', gap: 1, mb: 2, flexDirection: isMobile ? 'column' : 'row' }}>
                         <Autocomplete
-                          options={availableUsers}
+                          options={availableStaffUsers}
                           getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
                           value={selectedUser}
                           onChange={(_: any, value: User | null) => setSelectedUser(value)}
@@ -722,13 +777,35 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                     )}
                   </Box>
                   <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
-                    NCS duties rotate through staff members in order. Use the arrows to reorder.
+                    NCS duties rotate through members in order. Add members and use the arrows to reorder.
                   </Typography>
+                  
+                  {/* Add to rotation */}
+                  <Box sx={{ display: 'flex', gap: 1, mb: 2, flexDirection: isMobile ? 'column' : 'row' }}>
+                    <Autocomplete
+                      options={availableRotationUsers}
+                      getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
+                      value={selectedUser}
+                      onChange={(_: any, value: User | null) => setSelectedUser(value)}
+                      renderInput={(params: any) => (
+                        <TextField {...params} label="Add to rotation" size="small" />
+                      )}
+                      sx={{ flex: 1 }}
+                    />
+                    <Button
+                      variant="contained"
+                      startIcon={<AddIcon />}
+                      onClick={handleAddMember}
+                      disabled={!selectedUser}
+                    >
+                      Add
+                    </Button>
+                  </Box>
                   
                   {/* Members list with reorder controls */}
                   {members.length === 0 ? (
                     <Typography color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
-                      No NCS staff to create a rotation. Add staff first on the "Manage Staff" tab.
+                      No members in the rotation. Add members above to create a rotation schedule.
                     </Typography>
                   ) : (
                     <List>
@@ -772,6 +849,24 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                               disabled={idx === members.length - 1}
                             >
                               <ArrowDownwardIcon fontSize="small" />
+                            </IconButton>
+                            <Tooltip title={member.is_active ? 'Skip (mark inactive)' : 'Include (mark active)'}>
+                              <IconButton
+                                size="small"
+                                onClick={() => handleToggleMemberActive(member)}
+                              >
+                                <BlockIcon 
+                                  fontSize="small" 
+                                  color={member.is_active ? 'action' : 'error'} 
+                                />
+                              </IconButton>
+                            </Tooltip>
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={() => handleRemoveMember(member.id)}
+                            >
+                              <DeleteIcon fontSize="small" />
                             </IconButton>
                           </ListItemSecondaryAction>
                         </ListItem>

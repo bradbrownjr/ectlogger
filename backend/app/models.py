@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Text, Enum, Table
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Text, Enum, Table, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
@@ -143,6 +143,7 @@ class NetTemplate(Base):
     frequencies = relationship("Frequency", secondary=net_template_frequencies)
     subscriptions = relationship("NetTemplateSubscription", back_populates="template", cascade="all, delete-orphan")
     nets = relationship("Net", back_populates="template")
+    staff = relationship("TemplateStaff", back_populates="template", cascade="all, delete-orphan")
     rotation_members = relationship("NCSRotationMember", back_populates="template", cascade="all, delete-orphan", order_by="NCSRotationMember.position")
     schedule_overrides = relationship("NCSScheduleOverride", back_populates="template", cascade="all, delete-orphan")
 
@@ -295,6 +296,26 @@ class FieldDefinition(Base):
     sort_order = Column(Integer, default=100)  # Display order
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+class TemplateStaff(Base):
+    """NCS staff who can run nets from a template (separate from rotation)"""
+    __tablename__ = "template_staff"
+
+    id = Column(Integer, primary_key=True, index=True)
+    template_id = Column(Integer, ForeignKey("net_templates.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    is_active = Column(Boolean, default=True)  # Can be temporarily disabled
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    template = relationship("NetTemplate", back_populates="staff")
+    user = relationship("User")
+
+    # Unique constraint - each user can only be staff once per template
+    __table_args__ = (
+        UniqueConstraint('template_id', 'user_id', name='uq_template_staff_template_user'),
+    )
 
 
 class NCSRotationMember(Base):
