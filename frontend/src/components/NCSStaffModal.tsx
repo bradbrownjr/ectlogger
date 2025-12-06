@@ -176,6 +176,10 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
     return fallback;
   };
 
+  // Use IDs to prevent refetch when parent re-renders with same data
+  const scheduleId = schedule?.id;
+  const netId = net?.id;
+  
   useEffect(() => {
     if (open) {
       fetchData();
@@ -184,7 +188,8 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
       setTabValue(0);
       setError(null);
     }
-  }, [open, schedule, net]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, scheduleId, netId]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -232,9 +237,10 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
     if (!schedule || !selectedUser) return;
     
     try {
-      await templateStaffApi.add(schedule.id, { user_id: selectedUser.id });
+      const response = await templateStaffApi.add(schedule.id, { user_id: selectedUser.id });
+      // Update local state instead of refetching
+      setStaff(prev => [...prev, response.data]);
       setSelectedUser(null);
-      await fetchData();
     } catch (err: any) {
       setError(getErrorMessage(err, 'Failed to add staff'));
     }
@@ -245,7 +251,8 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
     
     try {
       await templateStaffApi.remove(schedule.id, staffId);
-      await fetchData();
+      // Update local state instead of refetching
+      setStaff(prev => prev.filter(s => s.id !== staffId));
     } catch (err: any) {
       setError(getErrorMessage(err, 'Failed to remove staff'));
     }
@@ -256,7 +263,10 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
     
     try {
       await templateStaffApi.updateActive(schedule.id, staffMember.id, !staffMember.is_active);
-      await fetchData();
+      // Update local state instead of refetching
+      setStaff(prev => prev.map(s => 
+        s.id === staffMember.id ? { ...s, is_active: !s.is_active } : s
+      ));
     } catch (err: any) {
       setError(getErrorMessage(err, 'Failed to update staff'));
     }
