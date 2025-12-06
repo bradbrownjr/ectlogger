@@ -247,12 +247,24 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
   };
 
   const handleRemoveStaff = async (staffId: number) => {
-    if (!schedule || !confirm('Remove this operator from the staff?')) return;
+    if (!schedule || !confirm('Remove this operator from the staff? They will also be removed from the rotation if present.')) return;
+    
+    // Find the staff member to get their user_id
+    const staffMember = staff.find(s => s.id === staffId);
     
     try {
       await templateStaffApi.remove(schedule.id, staffId);
-      // Update local state instead of refetching
+      // Update local state
       setStaff(prev => prev.filter(s => s.id !== staffId));
+      
+      // Also remove from rotation if they're in it
+      if (staffMember) {
+        const rotationMember = members.find(m => m.user_id === staffMember.user_id);
+        if (rotationMember) {
+          await ncsRotationApi.removeMember(schedule.id, rotationMember.id);
+          setMembers(prev => prev.filter(m => m.id !== rotationMember.id));
+        }
+      }
     } catch (err: any) {
       setError(getErrorMessage(err, 'Failed to remove staff'));
     }
@@ -274,18 +286,6 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
 
   // ===== SCHEDULE/TEMPLATE ROTATION HANDLERS =====
   
-  const handleAddMember = async () => {
-    if (!schedule || !selectedUser) return;
-    
-    try {
-      await ncsRotationApi.addMember(schedule.id, { user_id: selectedUser.id });
-      setSelectedUser(null);
-      await fetchData();
-    } catch (err: any) {
-      setError(getErrorMessage(err, 'Failed to add member'));
-    }
-  };
-
   const handleRemoveMember = async (memberId: number) => {
     if (!schedule || !confirm('Remove this operator from the rotation?')) return;
     
@@ -431,11 +431,6 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
   const availableStaffUsers = isScheduleContext
     ? users.filter((u: User) => !staff.some((s: StaffMember) => s.user_id === u.id))
     : users.filter((u: User) => !netRoles.some((r: NetRole) => r.user_id === u.id && r.role === 'NCS'));
-
-  // Filter out users already in rotation (for rotation tab)
-  const availableRotationUsers = isScheduleContext
-    ? users.filter((u: User) => !members.some((m: RotationMember) => m.user_id === u.id))
-    : [];
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -808,38 +803,16 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                   {staff.filter((s: StaffMember) => s.is_active && !members.some((m: RotationMember) => m.user_id === s.user_id)).length > 0 && (
                     <Box sx={{ mb: 2 }}>
                       <Button
-                        variant="outlined"
+                        variant="contained"
                         color="primary"
                         startIcon={<AddIcon />}
                         onClick={handleCreateRotationFromStaff}
                         fullWidth={isMobile}
                       >
-                        Create from Staff ({staff.filter((s: StaffMember) => s.is_active && !members.some((m: RotationMember) => m.user_id === s.user_id)).length} available)
+                        Add Staff to Rotation ({staff.filter((s: StaffMember) => s.is_active && !members.some((m: RotationMember) => m.user_id === s.user_id)).length} available)
                       </Button>
                     </Box>
                   )}
-                  
-                  {/* Or add individuals manually */}
-                  <Box sx={{ display: 'flex', gap: 1, mb: 2, flexDirection: isMobile ? 'column' : 'row' }}>
-                    <Autocomplete
-                      options={availableRotationUsers}
-                      getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
-                      value={selectedUser}
-                      onChange={(_: any, value: User | null) => setSelectedUser(value)}
-                      renderInput={(params: any) => (
-                        <TextField {...params} label="Or add individual" size="small" />
-                      )}
-                      sx={{ flex: 1 }}
-                    />
-                    <Button
-                      variant="contained"
-                      startIcon={<AddIcon />}
-                      onClick={handleAddMember}
-                      disabled={!selectedUser}
-                    >
-                      Add
-                    </Button>
-                  </Box>
                   
                   {/* Members list with reorder controls */}
                   {members.length === 0 ? (
