@@ -1022,18 +1022,18 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
           
           {!isCancellation && (
             <Autocomplete
-              options={members.filter((m) => m.is_active && m.user_id !== selectedEntry?.user_id)}
-              getOptionLabel={(option) => `${option.user_callsign}${option.user_name ? ` (${option.user_name})` : ''}`}
-              value={swapUser ? members.find((m) => m.user_id === swapUser.id) || null : null}
-              onChange={(_, value) => {
+              options={staff.filter((s: StaffMember) => s.is_active && s.user_id !== selectedEntry?.user_id)}
+              getOptionLabel={(option: StaffMember) => `${option.user_callsign}${option.user_name ? ` (${option.user_name})` : ''}`}
+              value={swapUser ? staff.find((s: StaffMember) => s.user_id === swapUser.id) || null : null}
+              onChange={(_: any, value: StaffMember | null) => {
                 if (value) {
-                  const foundUser = users.find((u) => u.id === value.user_id);
+                  const foundUser = users.find((u: User) => u.id === value.user_id);
                   setSwapUser(foundUser || null);
                 } else {
                   setSwapUser(null);
                 }
               }}
-              renderInput={(params) => (
+              renderInput={(params: any) => (
                 <TextField {...params} label="Replacement NCS" fullWidth />
               )}
               sx={{ mb: 2 }}
