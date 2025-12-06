@@ -235,7 +235,6 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
       await templateStaffApi.add(schedule.id, { user_id: selectedUser.id });
       setSelectedUser(null);
       await fetchData();
-      onUpdate?.();
     } catch (err: any) {
       setError(getErrorMessage(err, 'Failed to add staff'));
     }
@@ -247,7 +246,6 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
     try {
       await templateStaffApi.remove(schedule.id, staffId);
       await fetchData();
-      onUpdate?.();
     } catch (err: any) {
       setError(getErrorMessage(err, 'Failed to remove staff'));
     }
@@ -259,7 +257,6 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
     try {
       await templateStaffApi.updateActive(schedule.id, staffMember.id, !staffMember.is_active);
       await fetchData();
-      onUpdate?.();
     } catch (err: any) {
       setError(getErrorMessage(err, 'Failed to update staff'));
     }
@@ -274,7 +271,6 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
       await ncsRotationApi.addMember(schedule.id, { user_id: selectedUser.id });
       setSelectedUser(null);
       await fetchData();
-      onUpdate?.();
     } catch (err: any) {
       setError(getErrorMessage(err, 'Failed to add member'));
     }
@@ -286,7 +282,6 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
     try {
       await ncsRotationApi.removeMember(schedule.id, memberId);
       await fetchData();
-      onUpdate?.();
     } catch (err: any) {
       setError(getErrorMessage(err, 'Failed to remove member'));
     }
@@ -298,9 +293,32 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
     try {
       await ncsRotationApi.clearAllMembers(schedule.id);
       await fetchData();
-      onUpdate?.();
     } catch (err: any) {
       setError(getErrorMessage(err, 'Failed to clear rotation'));
+    }
+  };
+
+  const handleCreateRotationFromStaff = async () => {
+    if (!schedule) return;
+    
+    // Get staff members not already in rotation
+    const staffNotInRotation = staff.filter(
+      (s: StaffMember) => s.is_active && !members.some((m: RotationMember) => m.user_id === s.user_id)
+    );
+    
+    if (staffNotInRotation.length === 0) {
+      setError('All active staff members are already in the rotation');
+      return;
+    }
+    
+    try {
+      // Add each staff member to rotation
+      for (const s of staffNotInRotation) {
+        await ncsRotationApi.addMember(schedule.id, { user_id: s.user_id });
+      }
+      await fetchData();
+    } catch (err: any) {
+      setError(getErrorMessage(err, 'Failed to create rotation from staff'));
     }
   };
 
@@ -320,7 +338,6 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
     try {
       await ncsRotationApi.reorderMembers(schedule.id, memberIds);
       await fetchData();
-      onUpdate?.();
     } catch (err: any) {
       setError(getErrorMessage(err, 'Failed to reorder members'));
     }
@@ -332,7 +349,6 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
     try {
       await ncsRotationApi.updateMember(schedule.id, member.id, { is_active: !member.is_active });
       await fetchData();
-      onUpdate?.();
     } catch (err: any) {
       setError(getErrorMessage(err, 'Failed to update member'));
     }
@@ -358,7 +374,6 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
       
       setSwapDialogOpen(false);
       await fetchData();
-      onUpdate?.();
     } catch (err: any) {
       setError(getErrorMessage(err, 'Failed to create override'));
     }
@@ -370,7 +385,6 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
     try {
       await ncsRotationApi.deleteOverride(schedule.id, overrideId);
       await fetchData();
-      onUpdate?.();
     } catch (err: any) {
       setError(getErrorMessage(err, 'Failed to cancel swap'));
     }
@@ -777,10 +791,25 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                     )}
                   </Box>
                   <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
-                    NCS duties rotate through members in order. Add members and use the arrows to reorder.
+                    NCS duties rotate through members in order. Use "Create from Staff" to populate from your staff list.
                   </Typography>
                   
-                  {/* Add to rotation */}
+                  {/* Create from Staff button - only show if there are staff not in rotation */}
+                  {staff.filter((s: StaffMember) => s.is_active && !members.some((m: RotationMember) => m.user_id === s.user_id)).length > 0 && (
+                    <Box sx={{ mb: 2 }}>
+                      <Button
+                        variant="outlined"
+                        color="primary"
+                        startIcon={<AddIcon />}
+                        onClick={handleCreateRotationFromStaff}
+                        fullWidth={isMobile}
+                      >
+                        Create from Staff ({staff.filter((s: StaffMember) => s.is_active && !members.some((m: RotationMember) => m.user_id === s.user_id)).length} available)
+                      </Button>
+                    </Box>
+                  )}
+                  
+                  {/* Or add individuals manually */}
                   <Box sx={{ display: 'flex', gap: 1, mb: 2, flexDirection: isMobile ? 'column' : 'row' }}>
                     <Autocomplete
                       options={availableRotationUsers}
@@ -788,7 +817,7 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                       value={selectedUser}
                       onChange={(_: any, value: User | null) => setSelectedUser(value)}
                       renderInput={(params: any) => (
-                        <TextField {...params} label="Add to rotation" size="small" />
+                        <TextField {...params} label="Or add individual" size="small" />
                       )}
                       sx={{ flex: 1 }}
                     />
@@ -804,9 +833,20 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                   
                   {/* Members list with reorder controls */}
                   {members.length === 0 ? (
-                    <Typography color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
-                      No members in the rotation. Add members above to create a rotation schedule.
-                    </Typography>
+                    <Box sx={{ textAlign: 'center', py: 2 }}>
+                      <Typography color="text.secondary" sx={{ mb: 1 }}>
+                        No members in the rotation.
+                      </Typography>
+                      {staff.length > 0 ? (
+                        <Typography variant="caption" color="text.secondary">
+                          Use "Create from Staff" above to populate from your staff list.
+                        </Typography>
+                      ) : (
+                        <Typography variant="caption" color="text.secondary">
+                          Add staff members first on the "Manage Staff" tab.
+                        </Typography>
+                      )}
+                    </Box>
                   ) : (
                     <List>
                       {members.map((member: RotationMember, idx: number) => (
