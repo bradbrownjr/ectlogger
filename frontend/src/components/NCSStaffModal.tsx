@@ -368,10 +368,7 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
   };
 
   // Get NCS-only roles for display
-  const ncsRoles = netRoles.filter(r => r.role === 'NCS');
-  
-  // Determine if we have rotation data
-  const hasRotation = members.length > 0;
+  const ncsRoles = netRoles.filter((r: NetRole) => r.role === 'NCS');
 
   // Render the staff list section (always visible for both contexts)
   const renderStaffList = () => {
@@ -521,7 +518,7 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
               {canManage && (
                 <Tab label="Manage Staff" id="tab-manage-staff" />
               )}
-              {isScheduleContext && hasRotation && (
+              {isScheduleContext && canManage && (
                 <Tab label="Manage Rotation" id="tab-manage-rotation" />
               )}
             </Tabs>
@@ -626,25 +623,6 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                             </ListItem>
                           ))}
                         </List>
-                      )}
-                      
-                      {/* Button to enable rotation (if not already enabled) */}
-                      {!hasRotation && members.length >= 2 && (
-                        <Box sx={{ mt: 3, p: 2, border: 1, borderColor: 'divider', borderRadius: 1, bgcolor: 'action.hover' }}>
-                          <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                            Enable NCS Rotation?
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
-                            Create a rotating schedule where NCS duties alternate between staff members in order.
-                          </Typography>
-                          <Button
-                            variant="outlined"
-                            onClick={() => setTabValue(2)}
-                            disabled={members.length < 2}
-                          >
-                            Set Up Rotation
-                          </Button>
-                        </Box>
                       )}
                     </>
                   ) : (
