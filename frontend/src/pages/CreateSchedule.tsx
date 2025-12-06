@@ -1316,7 +1316,7 @@ This concludes tonight's net. 73 to all."
                 <Button type="submit" variant="contained" color="primary">
                   {isEdit ? 'Save Changes' : 'Create Schedule'}
                 </Button>
-              )}}
+              )}
             </Box>
           </Box>
         </Box>
