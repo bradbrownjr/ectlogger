@@ -969,8 +969,8 @@ const CreateSchedule: React.FC = () => {
           <TabPanel value={activeTab} index={2}>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
               {isEdit 
-                ? 'Manage NCS operators for this schedule. Any assigned NCS can start and run nets from this schedule.'
-                : 'Add NCS operators who can start and run nets from this schedule. Any assigned NCS can pick up the net as needed.'}
+                ? 'Manage NCS operators for this schedule. Any operator listed here can start and run nets. Use the arrows to set the rotation order - the system will automatically cycle through operators for each scheduled net.'
+                : 'Add NCS operators who can start and run nets from this schedule. The order you add them determines the rotation schedule - the system will automatically assign operators in order for each scheduled net.'}
             </Typography>
 
             {/* Add user input - works for both new and edit modes */}
@@ -1298,25 +1298,25 @@ This concludes tonight's net. 73 to all."
           {/* Navigation buttons */}
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3, pt: 2, borderTop: 1, borderColor: 'divider' }}>
             <Box sx={{ display: 'flex', gap: 2 }}>
-              <Button variant="outlined" onClick={() => navigate('/scheduler')}>
+              <Button type="button" variant="outlined" onClick={() => navigate('/scheduler')}>
                 Cancel
               </Button>
               {activeTab > 0 && (
-                <Button variant="outlined" onClick={() => setActiveTab(activeTab - 1)}>
+                <Button type="button" variant="outlined" onClick={() => setActiveTab(activeTab - 1)}>
                   Previous
                 </Button>
               )}
             </Box>
             <Box sx={{ display: 'flex', gap: 2 }}>
               {activeTab < 5 ? (
-                <Button variant="contained" onClick={() => setActiveTab(activeTab + 1)}>
+                <Button type="button" variant="contained" onClick={() => setActiveTab(activeTab + 1)}>
                   Next
                 </Button>
               ) : (
                 <Button type="submit" variant="contained" color="primary">
                   {isEdit ? 'Save Changes' : 'Create Schedule'}
                 </Button>
-              )}
+              )}}
             </Box>
           </Box>
         </Box>

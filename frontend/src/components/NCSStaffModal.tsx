@@ -180,6 +180,15 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
   const scheduleId = schedule?.id;
   const netId = net?.id;
   
+  // Ensure tabValue is valid for current context
+  // Tab 2 (Manage Rotation) only exists for schedule context
+  const maxTab = isScheduleContext && canManage ? 2 : (canManage ? 1 : 0);
+  useEffect(() => {
+    if (tabValue > maxTab) {
+      setTabValue(0);
+    }
+  }, [tabValue, maxTab]);
+  
   useEffect(() => {
     if (open) {
       fetchData();

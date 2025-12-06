@@ -13,7 +13,7 @@ from app.models import (
     NetTemplate, NCSRotationMember, NCSScheduleOverride, User, NetTemplateSubscription, TemplateStaff
 )
 from app.schemas import (
-    NCSRotationMemberCreate, NCSRotationMemberResponse,
+    NCSRotationMemberCreate, NCSRotationMemberResponse, NCSRotationMemberReorder,
     NCSScheduleOverrideCreate, NCSScheduleOverrideResponse,
     NCSScheduleEntry, NCSScheduleResponse,
     TemplateStaffCreate, TemplateStaffResponse
@@ -327,7 +327,7 @@ async def clear_all_rotation_members(
 @router.put("/members/reorder", response_model=List[NCSRotationMemberResponse])
 async def reorder_rotation_members(
     template_id: int,
-    member_ids: List[int],
+    reorder_data: NCSRotationMemberReorder,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -338,7 +338,7 @@ async def reorder_rotation_members(
         raise HTTPException(status_code=403, detail="Permission denied")
     
     # Update positions
-    for i, member_id in enumerate(member_ids, start=1):
+    for i, member_id in enumerate(reorder_data.member_ids, start=1):
         result = await db.execute(
             select(NCSRotationMember).where(
                 NCSRotationMember.id == member_id,

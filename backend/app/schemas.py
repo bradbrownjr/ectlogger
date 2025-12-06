@@ -559,6 +559,11 @@ class NCSRotationMemberCreate(BaseModel):
     user_id: int
 
 
+class NCSRotationMemberReorder(BaseModel):
+    """Request body for reordering rotation members"""
+    member_ids: List[int]
+
+
 class NCSRotationMemberResponse(NCSRotationMemberBase):
     id: int
     template_id: int
