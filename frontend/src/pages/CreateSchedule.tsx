@@ -414,19 +414,19 @@ const CreateSchedule: React.FC = () => {
         <TableCell>
           {isEditing ? (
             <>
-              <IconButton size="small" onClick={saveEdit} color="primary">
+              <IconButton type="button" size="small" onClick={saveEdit} color="primary">
                 <CheckIcon />
               </IconButton>
-              <IconButton size="small" onClick={cancelEdit}>
+              <IconButton type="button" size="small" onClick={cancelEdit}>
                 <CloseIcon />
               </IconButton>
             </>
           ) : (
             <>
-              <IconButton size="small" onClick={() => startEdit(freq)}>
+              <IconButton type="button" size="small" onClick={() => startEdit(freq)}>
                 <EditIcon />
               </IconButton>
-              <IconButton size="small" onClick={() => handleDeleteFrequency(freq.id!)} color="error">
+              <IconButton type="button" size="small" onClick={() => handleDeleteFrequency(freq.id!)} color="error">
                 <DeleteIcon />
               </IconButton>
             </>
@@ -506,6 +506,7 @@ const CreateSchedule: React.FC = () => {
         </TableCell>
         <TableCell>
           <Button
+            type="button"
             size="small"
             variant="contained"
             onClick={() => handleAddFrequency()}
@@ -988,6 +989,7 @@ const CreateSchedule: React.FC = () => {
                 sx={{ flexGrow: 1 }}
               />
               <Button
+                type="button"
                 variant="contained"
                 startIcon={<PersonAddIcon />}
                 onClick={() => {
@@ -1034,6 +1036,7 @@ const CreateSchedule: React.FC = () => {
                       />
                       <ListItemSecondaryAction>
                         <IconButton
+                          type="button"
                           edge="end"
                           onClick={() => setPendingNCSUsers(pendingNCSUsers.filter(u => u.id !== user.id))}
                           color="error"
@@ -1069,6 +1072,7 @@ const CreateSchedule: React.FC = () => {
                       <ListItemIcon>
                         <Box sx={{ display: 'flex', flexDirection: 'column' }}>
                           <IconButton
+                            type="button"
                             size="small"
                             onClick={() => handleMoveRotationMember(member.id, 'up')}
                             disabled={index === 0}
@@ -1076,6 +1080,7 @@ const CreateSchedule: React.FC = () => {
                             <ArrowUpwardIcon fontSize="small" />
                           </IconButton>
                           <IconButton
+                            type="button"
                             size="small"
                             onClick={() => handleMoveRotationMember(member.id, 'down')}
                             disabled={index === rotationMembers.length - 1}
@@ -1102,6 +1107,7 @@ const CreateSchedule: React.FC = () => {
                           title={member.is_active ? 'Active in rotation' : 'Inactive (skipped)'}
                         />
                         <IconButton
+                          type="button"
                           edge="end"
                           onClick={() => handleRemoveRotationMember(member.id)}
                           color="error"
@@ -1159,44 +1165,44 @@ const CreateSchedule: React.FC = () => {
             {/* Formatting Toolbar */}
             <Box sx={{ display: 'flex', gap: 0.5, mb: 1, p: 1, bgcolor: 'action.hover', borderRadius: 1 }}>
               <Tooltip title="Heading 1">
-                <IconButton size="small" onClick={() => insertMarkdown('# ', '', 'Heading')} sx={{ fontWeight: 'bold', fontSize: '0.85rem' }}>
+                <IconButton type="button" size="small" onClick={() => insertMarkdown('# ', '', 'Heading')} sx={{ fontWeight: 'bold', fontSize: '0.85rem' }}>
                   H1
                 </IconButton>
               </Tooltip>
               <Tooltip title="Heading 2">
-                <IconButton size="small" onClick={() => insertMarkdown('## ', '', 'Heading')} sx={{ fontWeight: 'bold', fontSize: '0.8rem' }}>
+                <IconButton type="button" size="small" onClick={() => insertMarkdown('## ', '', 'Heading')} sx={{ fontWeight: 'bold', fontSize: '0.8rem' }}>
                   H2
                 </IconButton>
               </Tooltip>
               <Tooltip title="Heading 3">
-                <IconButton size="small" onClick={() => insertMarkdown('### ', '', 'Heading')} sx={{ fontWeight: 'bold', fontSize: '0.75rem' }}>
+                <IconButton type="button" size="small" onClick={() => insertMarkdown('### ', '', 'Heading')} sx={{ fontWeight: 'bold', fontSize: '0.75rem' }}>
                   H3
                 </IconButton>
               </Tooltip>
               <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
               <Tooltip title="Bold (**text**)">
-                <IconButton size="small" onClick={() => insertMarkdown('**', '**', 'bold text')}>
+                <IconButton type="button" size="small" onClick={() => insertMarkdown('**', '**', 'bold text')}>
                   <FormatBoldIcon fontSize="small" />
                 </IconButton>
               </Tooltip>
               <Tooltip title="Italic (*text*)">
-                <IconButton size="small" onClick={() => insertMarkdown('*', '*', 'italic text')}>
+                <IconButton type="button" size="small" onClick={() => insertMarkdown('*', '*', 'italic text')}>
                   <FormatItalicIcon fontSize="small" />
                 </IconButton>
               </Tooltip>
               <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
               <Tooltip title="Bulleted List">
-                <IconButton size="small" onClick={() => insertMarkdown('- ', '', 'List item')}>
+                <IconButton type="button" size="small" onClick={() => insertMarkdown('- ', '', 'List item')}>
                   <FormatListBulletedIcon fontSize="small" />
                 </IconButton>
               </Tooltip>
               <Tooltip title="Numbered List">
-                <IconButton size="small" onClick={() => insertMarkdown('1. ', '', 'List item')}>
+                <IconButton type="button" size="small" onClick={() => insertMarkdown('1. ', '', 'List item')}>
                   <FormatListNumberedIcon fontSize="small" />
                 </IconButton>
               </Tooltip>
               <Tooltip title="Horizontal Rule">
-                <IconButton size="small" onClick={() => insertMarkdown('\n---\n', '', '')}>
+                <IconButton type="button" size="small" onClick={() => insertMarkdown('\n---\n', '', '')}>
                   <HorizontalRuleIcon fontSize="small" />
                 </IconButton>
               </Tooltip>
@@ -1244,6 +1250,7 @@ This concludes tonight's net. 73 to all."
                 {script.length} characters • Supports Markdown formatting
               </Typography>
               <Button
+                type="button"
                 size="small"
                 startIcon={<UploadFileIcon />}
                 onClick={() => fileInputRef.current?.click()}
