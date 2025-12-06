@@ -75,6 +75,11 @@ async def create_check_in(
     
     # If there's an existing check-in, update it and accumulate frequencies
     if existing_check_in:
+        # Track location change for system message
+        old_location = existing_check_in.location
+        new_location = check_in_data.location if check_in_data.location else old_location
+        location_changed = old_location and new_location and old_location != new_location
+        
         # Merge available frequencies - add new frequency_id to available_frequencies
         existing_freqs = json.loads(existing_check_in.available_frequencies) if existing_check_in.available_frequencies else []
         
@@ -157,9 +162,15 @@ async def create_check_in(
     # Post system message for check-in activity
     from app.main import post_system_message
     if existing_check_in:
-        await post_system_message(net_id, f"{check_in_data.callsign} has rechecked", db)
+        if location_changed:
+            await post_system_message(net_id, f"{check_in_data.callsign} has checked in from {new_location}", db)
+        else:
+            await post_system_message(net_id, f"{check_in_data.callsign} has rechecked", db)
     else:
-        await post_system_message(net_id, f"{check_in_data.callsign} has checked in", db)
+        if check_in_data.location:
+            await post_system_message(net_id, f"{check_in_data.callsign} has checked in from {check_in_data.location}", db)
+        else:
+            await post_system_message(net_id, f"{check_in_data.callsign} has checked in", db)
     
     return CheckInResponse.from_orm(check_in)
 

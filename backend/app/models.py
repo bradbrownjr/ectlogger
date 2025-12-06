@@ -183,11 +183,13 @@ class NetRole(Base):
     net_id = Column(Integer, ForeignKey("nets.id", ondelete="CASCADE"))
     user_id = Column(Integer, ForeignKey("users.id"))
     role = Column(String(50), nullable=False)  # NCS, LOGGER, RELAY
+    active_frequency_id = Column(Integer, ForeignKey("frequencies.id", ondelete="SET NULL"), nullable=True)  # Frequency this NCS is monitoring
     assigned_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # Relationships
     net = relationship("Net", back_populates="net_roles")
     user = relationship("User")
+    active_frequency = relationship("Frequency")
 
 
 class CheckIn(Base):

@@ -955,7 +955,126 @@ async def list_net_roles(
                 "name": user.name,
                 "callsign": user.callsign,
                 "role": role.role,
+                "active_frequency_id": role.active_frequency_id,
                 "assigned_at": role.assigned_at
             })
     
     return role_list
+
+
+@router.put("/{net_id}/roles/{role_id}/frequency/{frequency_id}")
+async def claim_ncs_frequency(
+    net_id: int,
+    role_id: int,
+    frequency_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Claim a frequency as an NCS operator. Only the NCS themselves can claim their frequency."""
+    # Get the net with frequencies
+    result = await db.execute(
+        select(Net).options(selectinload(Net.frequencies)).where(Net.id == net_id)
+    )
+    net = result.scalar_one_or_none()
+    
+    if not net:
+        raise HTTPException(status_code=404, detail="Net not found")
+    
+    # Get the role
+    result = await db.execute(select(NetRole).where(NetRole.id == role_id, NetRole.net_id == net_id))
+    role = result.scalar_one_or_none()
+    
+    if not role:
+        raise HTTPException(status_code=404, detail="Role not found")
+    
+    # Only the NCS user, owner, or admin can set/change their frequency
+    if role.user_id != current_user.id and net.owner_id != current_user.id and current_user.role.value != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized to claim frequency for this role")
+    
+    # Verify the frequency belongs to this net
+    if frequency_id not in [f.id for f in net.frequencies]:
+        raise HTTPException(status_code=400, detail="Frequency not associated with this net")
+    
+    # Update the role's active frequency
+    role.active_frequency_id = frequency_id
+    await db.commit()
+    
+    # Get frequency info for the message
+    freq = next((f for f in net.frequencies if f.id == frequency_id), None)
+    freq_display = ""
+    if freq:
+        if freq.frequency:
+            freq_display = f"{freq.frequency} {freq.mode or ''}".strip()
+        else:
+            freq_display = f"{freq.network or ''} TG{freq.talkgroup or ''} {freq.mode or ''}".strip()
+    
+    # Get user info
+    result = await db.execute(select(User).where(User.id == role.user_id))
+    user = result.scalar_one_or_none()
+    callsign = user.callsign if user else "Unknown"
+    
+    # Post system message
+    from app.main import post_system_message
+    await post_system_message(net_id, f"{callsign} is now monitoring {freq_display}", db)
+    
+    # Broadcast role update via WebSocket
+    from app.main import manager
+    import datetime
+    await manager.broadcast({
+        "type": "role_change",
+        "data": {
+            "net_id": net_id,
+            "user_id": role.user_id,
+            "role": role.role,
+            "active_frequency_id": frequency_id,
+            "assigned_at": role.assigned_at.isoformat() if hasattr(role.assigned_at, 'isoformat') else str(role.assigned_at)
+        },
+        "timestamp": datetime.datetime.utcnow().isoformat()
+    }, net_id)
+    
+    return {"message": f"Now monitoring {freq_display}", "active_frequency_id": frequency_id}
+
+
+@router.delete("/{net_id}/roles/{role_id}/frequency")
+async def clear_ncs_frequency(
+    net_id: int,
+    role_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Clear the claimed frequency for an NCS operator."""
+    result = await db.execute(select(Net).where(Net.id == net_id))
+    net = result.scalar_one_or_none()
+    
+    if not net:
+        raise HTTPException(status_code=404, detail="Net not found")
+    
+    result = await db.execute(select(NetRole).where(NetRole.id == role_id, NetRole.net_id == net_id))
+    role = result.scalar_one_or_none()
+    
+    if not role:
+        raise HTTPException(status_code=404, detail="Role not found")
+    
+    # Only the NCS user, owner, or admin can clear their frequency
+    if role.user_id != current_user.id and net.owner_id != current_user.id and current_user.role.value != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized to clear frequency for this role")
+    
+    role.active_frequency_id = None
+    await db.commit()
+    
+    # Broadcast role update via WebSocket
+    from app.main import manager
+    import datetime
+    await manager.broadcast({
+        "type": "role_change",
+        "data": {
+            "net_id": net_id,
+            "user_id": role.user_id,
+            "role": role.role,
+            "active_frequency_id": None,
+            "assigned_at": role.assigned_at.isoformat() if hasattr(role.assigned_at, 'isoformat') else str(role.assigned_at)
+        },
+        "timestamp": datetime.datetime.utcnow().isoformat()
+    }, net_id)
+    
+    return {"message": "Frequency cleared"}

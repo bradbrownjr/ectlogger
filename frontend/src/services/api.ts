@@ -164,3 +164,12 @@ export const statisticsApi = {
   getUserStats: () => api.get('/statistics/users/me'),
   getUserStatsById: (userId: number) => api.get(`/statistics/users/${userId}`),
 };
+
+// Net Role API (for NCS frequency claiming)
+export const netRoleApi = {
+  list: (netId: number) => api.get(`/nets/${netId}/roles`),
+  claimFrequency: (netId: number, roleId: number, frequencyId: number) =>
+    api.put(`/nets/${netId}/roles/${roleId}/frequency/${frequencyId}`),
+  clearFrequency: (netId: number, roleId: number) =>
+    api.delete(`/nets/${netId}/roles/${roleId}/frequency`),
+};
