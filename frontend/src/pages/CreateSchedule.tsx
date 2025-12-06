@@ -166,6 +166,19 @@ const CreateSchedule: React.FC = () => {
 
   // Tab state
   const [activeTab, setActiveTab] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  
+  // Prevent double-click from accidentally submitting when advancing to final tab
+  const handleNextTab = () => {
+    if (activeTab === 4) {
+      // Going to final tab - briefly disable submit to prevent accidental double-click
+      setIsTransitioning(true);
+      setActiveTab(5);
+      setTimeout(() => setIsTransitioning(false), 500);
+    } else {
+      setActiveTab(activeTab + 1);
+    }
+  };
 
   useEffect(() => {
     fetchFrequencies();
@@ -1316,11 +1329,11 @@ This concludes tonight's net. 73 to all."
             </Box>
             <Box sx={{ display: 'flex', gap: 2 }}>
               {activeTab < 5 ? (
-                <Button type="button" variant="contained" onClick={() => setActiveTab(activeTab + 1)}>
+                <Button type="button" variant="contained" onClick={handleNextTab}>
                   Next
                 </Button>
               ) : (
-                <Button type="submit" variant="contained" color="primary">
+                <Button type="submit" variant="contained" color="primary" disabled={isTransitioning}>
                   {isEdit ? 'Save Changes' : 'Create Schedule'}
                 </Button>
               )}
