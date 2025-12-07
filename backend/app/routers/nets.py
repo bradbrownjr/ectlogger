@@ -307,8 +307,18 @@ async def start_net(
     await db.commit()
     
     # Post system message for net start
-    from app.main import post_system_message
+    from app.main import post_system_message, manager
     await post_system_message(net_id, f"Net has been started by {current_user.callsign or current_user.email}", db)
+    
+    # Broadcast net_started event so all connected clients refresh
+    await manager.broadcast({
+        "type": "net_started",
+        "data": {
+            "net_id": net_id,
+            "started_by": current_user.callsign or current_user.email,
+            "started_at": net.started_at.isoformat() if net.started_at else None
+        }
+    }, net_id)
     
     # Send email notification to net owner and template subscribers
     try:

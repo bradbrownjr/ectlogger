@@ -35,6 +35,7 @@ import {
   Switch,
   FormControlLabel,
 } from '@mui/material';
+import { keyframes } from '@mui/system';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DownloadIcon from '@mui/icons-material/Download';
@@ -148,6 +149,19 @@ const NCS_COLORS = [
   { bg: 'rgba(0, 188, 212, 0.15)', border: '#00bcd4', text: '#00bcd4' },   // Cyan
 ];
 
+// Pulse animation for highlighting the check-in button
+const pulseAnimation = keyframes`
+  0% {
+    box-shadow: 0 0 0 0 rgba(25, 118, 210, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(25, 118, 210, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(25, 118, 210, 0);
+  }
+`;
+
 const NetView: React.FC = () => {
   const { netId } = useParams<{ netId: string }>();
   const theme = useTheme();
@@ -176,6 +190,7 @@ const NetView: React.FC = () => {
   const [closeNetDialogOpen, setCloseNetDialogOpen] = useState(false);
   const [startingNet, setStartingNet] = useState(false);
   const [scriptOpen, setScriptOpen] = useState(false);
+  const [highlightCheckIn, setHighlightCheckIn] = useState(false);
   const [checkInListDetached, setCheckInListDetached] = useState(() => {
     return localStorage.getItem('floatingWindow_checkInList_detached') === 'true';
   });
@@ -292,6 +307,15 @@ const NetView: React.FC = () => {
         if (message.data?.user_id && user?.id === message.data.user_id) {
           fetchCheckIns();
         }
+      } else if (message.type === 'net_started') {
+        // Net has been started - refresh everything and highlight check-in
+        fetchNet();
+        fetchCheckIns();
+        fetchNetRoles();
+        setToastMessage(`Net started by ${message.data?.started_by || 'NCS'} - Check in now!`);
+        setHighlightCheckIn(true);
+        // Remove highlight after 10 seconds
+        setTimeout(() => setHighlightCheckIn(false), 10000);
       }
     };
 
@@ -1291,7 +1315,13 @@ const NetView: React.FC = () => {
                             setCheckInDialogOpen(true);
                           }
                         }}
-                        sx={{ minWidth: 'auto', px: 1 }}
+                        sx={{ 
+                          minWidth: 'auto', 
+                          px: 1,
+                          ...(highlightCheckIn && {
+                            animation: `${pulseAnimation} 1s infinite`,
+                          })
+                        }}
                       >
                         <LoginIcon fontSize="small" />
                       </Button>
