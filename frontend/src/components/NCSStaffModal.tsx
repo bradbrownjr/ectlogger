@@ -440,10 +440,11 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
     }
   };
 
-  // Filter out users already assigned (staff, not rotation)
+  // Filter out users already assigned (staff, not rotation) AND the owner
+  const ownerId = isScheduleContext ? schedule?.owner_id : net?.owner_id;
   const availableStaffUsers = isScheduleContext
-    ? users.filter((u: User) => !staff.some((s: StaffMember) => s.user_id === u.id))
-    : users.filter((u: User) => !netRoles.some((r: NetRole) => r.user_id === u.id && r.role === 'NCS'));
+    ? users.filter((u: User) => u.id !== ownerId && !staff.some((s: StaffMember) => s.user_id === u.id))
+    : users.filter((u: User) => u.id !== ownerId && !netRoles.some((r: NetRole) => r.user_id === u.id && r.role === 'NCS'));
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -481,7 +482,7 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                       {schedule?.owner_callsign || 'Owner'}
                       {schedule?.owner_name && ` (${schedule.owner_name})`}
                     </Typography>
-                    <Chip label="Host" size="small" color="primary" variant="outlined" />
+                    <Chip label="Owner" size="small" color="primary" variant="outlined" />
                   </Box>
                 }
               />
@@ -508,7 +509,7 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
           
           {staff.length === 0 && (
             <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-              No additional NCS assigned. Only the host can start nets.
+              No additional NCS assigned. Only the owner can start nets.
             </Typography>
           )}
         </Box>
@@ -562,10 +563,10 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                 {net?.owner_callsign || 'Owner'}
                 {net?.owner_name && ` (${net.owner_name})`}
               </Typography>
-              <Chip label="Host" size="small" color="primary" variant="outlined" />
+              <Chip label="Owner" size="small" color="primary" variant="outlined" />
             </Box>
             <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-              No additional NCS assigned. The host serves as NCS.
+              No additional NCS assigned. The owner serves as NCS.
             </Typography>
           </Box>
         );
@@ -655,14 +656,34 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                         </Button>
                       </Box>
                       
-                      {/* Staff list (unordered) */}
-                      {staff.length === 0 ? (
-                        <Typography color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
-                          No additional NCS staff. Only the host can start nets.
-                        </Typography>
-                      ) : (
-                        <List>
-                          {staff.map((s: StaffMember) => (
+                      {/* Staff list - owner first, then additional staff */}
+                      <List>
+                        {/* Owner - always shown, not deletable */}
+                        <ListItem
+                          sx={{ 
+                            bgcolor: 'action.hover',
+                            border: 1,
+                            borderColor: 'primary.main',
+                            borderRadius: 1,
+                            mb: 0.5,
+                          }}
+                        >
+                          <PersonIcon sx={{ mr: 1, color: 'primary.main' }} />
+                          <ListItemText
+                            primary={
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Typography>
+                                  {schedule?.owner_callsign || 'Owner'}
+                                  {schedule?.owner_name && ` (${schedule.owner_name})`}
+                                </Typography>
+                                <Chip label="Owner" size="small" color="primary" />
+                              </Box>
+                            }
+                          />
+                        </ListItem>
+                        
+                        {/* Additional staff members */}
+                        {staff.map((s: StaffMember) => (
                             <ListItem
                               key={s.id}
                               sx={{ 
@@ -709,8 +730,7 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                               </ListItemSecondaryAction>
                             </ListItem>
                           ))}
-                        </List>
-                      )}
+                      </List>
                     </>
                   ) : (
                     // Manage NCS roles for nets
@@ -719,7 +739,7 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                         Assign Net Control Stations
                       </Typography>
                       <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
-                        Any assigned NCS can manage check-ins and control the net. The host always has full access.
+                        Any assigned NCS can manage check-ins and control the net. The owner always has full access.
                       </Typography>
                       
                       {/* Add NCS */}
@@ -747,7 +767,7 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                       {/* Current NCS list */}
                       {ncsRoles.length === 0 ? (
                         <Typography color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
-                          No additional NCS assigned. The host ({net?.owner_callsign}) serves as NCS.
+                          No additional NCS assigned. The owner ({net?.owner_callsign}) serves as NCS.
                         </Typography>
                       ) : (
                         <List>
