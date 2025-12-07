@@ -852,12 +852,14 @@ const NetView: React.FC = () => {
 
   const isOwner = user?.id === net.owner_id;
   const isAdmin = user?.role === 'admin';
-  const canManage = isOwner || isAdmin;
-
+  
   // Check if user has NCS or Logger role
   const userNetRole = netRoles.find((role: any) => role.user_id === user?.id);
   const isNCS = userNetRole && userNetRole.role === 'NCS';
   const isNCSOrLogger = userNetRole && (userNetRole.role === 'NCS' || userNetRole.role === 'Logger');
+  
+  // NCS users can manage the net (edit settings, close, etc.) - they're co-owners
+  const canManage = isOwner || isAdmin || isNCS;
   const canManageCheckIns = canManage || isNCSOrLogger;
   
   // NCS can start/manage the net even if they're not the owner

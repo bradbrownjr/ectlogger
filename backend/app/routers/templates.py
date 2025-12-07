@@ -13,6 +13,26 @@ import json
 router = APIRouter(prefix="/templates", tags=["templates"])
 
 
+async def check_template_permission(db: AsyncSession, template: NetTemplate, user: User) -> bool:
+    """Check if user has permission to manage a template (owner, admin, or NCS rotation member)"""
+    # Owner and admin always have permission
+    if template.owner_id == user.id or user.role == UserRole.ADMIN:
+        return True
+    
+    # Check if user is in the NCS rotation for this template
+    result = await db.execute(
+        select(NCSRotationMember).where(
+            NCSRotationMember.template_id == template.id,
+            NCSRotationMember.user_id == user.id,
+            NCSRotationMember.is_active == True
+        )
+    )
+    if result.scalar_one_or_none():
+        return True
+    
+    return False
+
+
 async def check_schedule_creation_eligibility(db: AsyncSession, user: User) -> tuple[bool, str]:
     """
     Check if user is eligible to create schedules based on app settings.
@@ -141,14 +161,25 @@ async def list_templates(
     """List net templates (no auth required for guest access)"""
     query = select(NetTemplate).options(
         selectinload(NetTemplate.frequencies),
-        selectinload(NetTemplate.owner)
+        selectinload(NetTemplate.owner),
+        selectinload(NetTemplate.rotation_members)
     )
     
     if not include_inactive:
         query = query.where(NetTemplate.is_active == True)
     
     if my_templates and current_user:
-        query = query.where(NetTemplate.owner_id == current_user.id)
+        # Include templates user owns OR is in the NCS rotation for
+        rotation_template_ids = await db.execute(
+            select(NCSRotationMember.template_id)
+            .where(NCSRotationMember.user_id == current_user.id)
+            .where(NCSRotationMember.is_active == True)
+        )
+        rotation_ids = [row[0] for row in rotation_template_ids.fetchall()]
+        query = query.where(
+            (NetTemplate.owner_id == current_user.id) | 
+            (NetTemplate.id.in_(rotation_ids))
+        )
     
     query = query.offset(skip).limit(limit).order_by(NetTemplate.name)
     
@@ -166,6 +197,7 @@ async def list_templates(
         
         # Check if current user is subscribed (guests are never subscribed)
         is_subscribed = False
+        can_manage = False
         if current_user:
             subscription_result = await db.execute(
                 select(NetTemplateSubscription)
@@ -175,13 +207,17 @@ async def list_templates(
                 )
             )
             is_subscribed = subscription_result.scalar_one_or_none() is not None
+            
+            # Check if user can manage (owner, admin, or NCS rotation member)
+            can_manage = await check_template_permission(db, template, current_user)
         
         template_responses.append(NetTemplateResponse.from_orm(
             template, 
             subscriber_count=subscriber_count,
             is_subscribed=is_subscribed,
             owner_callsign=template.owner.callsign if template.owner else None,
-            owner_name=template.owner.name if template.owner else None
+            owner_name=template.owner.name if template.owner else None,
+            can_manage=can_manage
         ))
     
     return template_responses
@@ -221,7 +257,10 @@ async def get_template(
     )
     is_subscribed = subscription_result.scalar_one_or_none() is not None
     
-    return NetTemplateResponse.from_orm(template, subscriber_count=subscriber_count, is_subscribed=is_subscribed)
+    # Check if user can manage
+    can_manage = await check_template_permission(db, template, current_user)
+    
+    return NetTemplateResponse.from_orm(template, subscriber_count=subscriber_count, is_subscribed=is_subscribed, can_manage=can_manage)
 
 
 @router.put("/{template_id}", response_model=NetTemplateResponse)
@@ -240,8 +279,8 @@ async def update_template(
     if not template:
         raise HTTPException(status_code=404, detail="Template not found")
     
-    # Check permissions
-    if template.owner_id != current_user.id and current_user.role != "admin":
+    # Check permissions (owner, admin, or NCS rotation member)
+    if not await check_template_permission(db, template, current_user):
         raise HTTPException(status_code=403, detail="Not authorized to update this template")
     
     # Update fields
@@ -333,8 +372,8 @@ async def delete_template(
     if not template:
         raise HTTPException(status_code=404, detail="Template not found")
     
-    # Check permissions
-    if template.owner_id != current_user.id and current_user.role != "admin":
+    # Check permissions (owner, admin, or NCS rotation member)
+    if not await check_template_permission(db, template, current_user):
         raise HTTPException(status_code=403, detail="Not authorized to delete this template")
     
     await db.delete(template)
@@ -419,7 +458,8 @@ async def list_template_subscriptions(
     if not template:
         raise HTTPException(status_code=404, detail="Template not found")
     
-    if template.owner_id != current_user.id and current_user.role != "admin":
+    # Check permissions (owner, admin, or NCS rotation member)
+    if not await check_template_permission(db, template, current_user):
         raise HTTPException(status_code=403, detail="Not authorized to view subscriptions")
     
     result = await db.execute(

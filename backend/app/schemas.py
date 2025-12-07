@@ -271,9 +271,10 @@ class NetTemplateResponse(NetTemplateBase):
     frequencies: List[FrequencyResponse] = []
     subscriber_count: int = 0
     is_subscribed: bool = False
+    can_manage: bool = False  # True if current user can edit this template
 
     @classmethod
-    def from_orm(cls, template, subscriber_count: int = 0, is_subscribed: bool = False, owner_callsign: str = None, owner_name: str = None):
+    def from_orm(cls, template, subscriber_count: int = 0, is_subscribed: bool = False, owner_callsign: str = None, owner_name: str = None, can_manage: bool = False):
         import json
         data = {
             'id': template.id,
@@ -292,7 +293,8 @@ class NetTemplateResponse(NetTemplateBase):
             'created_at': template.created_at,
             'frequencies': [FrequencyResponse.model_validate(f) for f in template.frequencies],
             'subscriber_count': subscriber_count,
-            'is_subscribed': is_subscribed
+            'is_subscribed': is_subscribed,
+            'can_manage': can_manage
         }
         return cls(**data)
 

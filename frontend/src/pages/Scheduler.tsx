@@ -58,6 +58,7 @@ interface Schedule {
   subscriber_count: number;
   frequencies: any[];
   is_subscribed: boolean;
+  can_manage?: boolean;  // True if current user can edit (owner, admin, or NCS rotation member)
   schedule_type?: string;
   schedule_config?: {
     day_of_week?: number;
@@ -377,8 +378,8 @@ const Scheduler: React.FC = () => {
                       )
                     )}
                     
-                    {/* Edit & Delete for owners/admins */}
-                    {(isOwner(schedule) || isAdmin) && (
+                    {/* Edit & Delete for owners, admins, or NCS rotation members */}
+                    {(schedule.can_manage || isAdmin) && (
                       <>
                         <Tooltip title="Edit schedule">
                           <IconButton
