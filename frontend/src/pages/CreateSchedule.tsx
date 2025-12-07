@@ -50,6 +50,7 @@ import HorizontalRuleIcon from '@mui/icons-material/HorizontalRule';
 import { templateApi, frequencyApi, userApi, ncsRotationApi } from '../services/api';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import BlockingAlert from '../components/BlockingAlert';
 
 interface User {
   id: number;
@@ -167,6 +168,14 @@ const CreateSchedule: React.FC = () => {
   // Tab state
   const [activeTab, setActiveTab] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  
+  // Blocking alert for errors
+  const [blockingAlert, setBlockingAlert] = useState<{
+    open: boolean;
+    message: string;
+    title?: string;
+    severity?: 'error' | 'warning' | 'info' | 'success';
+  }>({ open: false, message: '' });
   
   // Prevent double-click from accidentally submitting when advancing to final tab
   const handleNextTab = () => {
@@ -739,7 +748,12 @@ const CreateSchedule: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Failed to save Schedule:', error);
-      alert(error.response?.data?.detail || 'Failed to save Schedule');
+      setBlockingAlert({
+        open: true,
+        message: error.response?.data?.detail || 'Failed to save Schedule',
+        title: 'Cannot Create Schedule',
+        severity: 'error',
+      });
     }
   };
 
@@ -1371,6 +1385,15 @@ This concludes tonight's net. 73 to all."
           </Box>
         </Box>
       </Paper>
+
+      {/* Blocking Alert for errors */}
+      <BlockingAlert
+        open={blockingAlert.open}
+        onClose={() => setBlockingAlert({ ...blockingAlert, open: false })}
+        message={blockingAlert.message}
+        title={blockingAlert.title}
+        severity={blockingAlert.severity}
+      />
     </Container>
   );
 };
