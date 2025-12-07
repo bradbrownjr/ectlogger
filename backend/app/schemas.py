@@ -239,6 +239,7 @@ class NetTemplateBase(BaseModel):
     field_config: Optional[dict] = None
     schedule_type: Optional[str] = Field(default='ad_hoc')  # ad_hoc, daily, weekly, monthly
     schedule_config: Optional[dict] = Field(default_factory=dict)  # {day_of_week, week_of_month, time}
+    ics309_enabled: bool = False  # Enable ICS-309 format for net close emails
 
 
 class NetTemplateCreate(NetTemplateBase):
@@ -257,6 +258,7 @@ class NetTemplateUpdate(BaseModel):
     schedule_type: Optional[str] = None
     schedule_config: Optional[dict] = None
     owner_id: Optional[int] = None  # Allow changing the owner (admin only or current owner)
+    ics309_enabled: Optional[bool] = None
 
 
 class NetTemplateResponse(NetTemplateBase):
@@ -285,6 +287,7 @@ class NetTemplateResponse(NetTemplateBase):
             'field_config': json.loads(template.field_config) if template.field_config else None,
             'schedule_type': template.schedule_type,
             'schedule_config': json.loads(template.schedule_config) if template.schedule_config else {},
+            'ics309_enabled': template.ics309_enabled or False,
             'is_active': template.is_active,
             'created_at': template.created_at,
             'frequencies': [FrequencyResponse.model_validate(f) for f in template.frequencies],

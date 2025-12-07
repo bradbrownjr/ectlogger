@@ -29,6 +29,8 @@ import {
   ListItemSecondaryAction,
   Chip,
   Alert,
+  FormControlLabel,
+  Switch,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -116,6 +118,7 @@ const CreateNet: React.FC = () => {
   const [description, setDescription] = useState('');
   const [infoUrl, setInfoUrl] = useState('');
   const [script, setScript] = useState('');
+  const [ics309Enabled, setIcs309Enabled] = useState(false);
   const [frequencies, setFrequencies] = useState<Frequency[]>([]);
   const [selectedFrequencies, setSelectedFrequencies] = useState<number[]>([]);
   const [newFrequency, setNewFrequency] = useState({ frequency: '', mode: 'FM', network: '', talkgroup: '', description: '' });
@@ -194,6 +197,7 @@ const CreateNet: React.FC = () => {
       setDescription(response.data.description || '');
       setInfoUrl(response.data.info_url || '');
       setScript(response.data.script || '');
+      setIcs309Enabled(response.data.ics309_enabled || false);
       setSelectedFrequencies(response.data.frequencies.map((f: Frequency) => f.id!));
       if (response.data.field_config) {
         const mergedConfig: Record<string, { enabled: boolean; required: boolean }> = {};
@@ -408,6 +412,7 @@ const CreateNet: React.FC = () => {
           script,
           frequency_ids: selectedFrequencies,
           field_config: fieldConfig,
+          ics309_enabled: ics309Enabled,
         });
         navigate(`/nets/${response.data.id}`);
       } else {
@@ -418,6 +423,7 @@ const CreateNet: React.FC = () => {
           script,
           frequency_ids: selectedFrequencies,
           field_config: fieldConfig,
+          ics309_enabled: ics309Enabled,
         });
         
         // Assign pending NCS users to the newly created net
@@ -711,6 +717,23 @@ const CreateNet: React.FC = () => {
             helperText={isInfoMode && infoUrl ? <a href={infoUrl} target="_blank" rel="noopener noreferrer">Open link</a> : "Optional link to club, organization, or net information page"}
             InputProps={{ readOnly: isInfoMode }}
           />
+
+          {!isInfoMode && (
+            <Box sx={{ mt: 2 }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={ics309Enabled}
+                    onChange={(e) => setIcs309Enabled(e.target.checked)}
+                  />
+                }
+                label="Enable ICS-309 Communications Log format"
+              />
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
+                When enabled, net close emails will use the official ICS-309 format used by ARES, RACES, and EmComm organizations.
+              </Typography>
+            </Box>
+          )}
         </TabPanel>
 
         {/* Tab 2: Net Staff */}

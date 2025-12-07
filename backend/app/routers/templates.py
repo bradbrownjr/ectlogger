@@ -463,7 +463,8 @@ async def create_net_from_template(
         owner_id=current_user.id,
         template_id=template_id,
         field_config=template.field_config,
-        status=NetStatus.DRAFT
+        status=NetStatus.DRAFT,
+        ics309_enabled=template.ics309_enabled or False
     )
     db.add(net)
     await db.flush()

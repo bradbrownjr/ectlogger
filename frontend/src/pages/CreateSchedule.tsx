@@ -133,6 +133,7 @@ const CreateSchedule: React.FC = () => {
   const [description, setDescription] = useState('');
   const [infoUrl, setInfoUrl] = useState('');
   const [script, setScript] = useState('');
+  const [ics309Enabled, setIcs309Enabled] = useState(false);
   const [frequencies, setFrequencies] = useState<Frequency[]>([]);
   const [selectedFrequencyIds, setSelectedFrequencyIds] = useState<number[]>([]);
   const [newFrequency, setNewFrequency] = useState({ frequency: '', mode: 'FM', network: '', talkgroup: '', description: '' });
@@ -550,6 +551,7 @@ const CreateSchedule: React.FC = () => {
       setDescription(Schedule.description || '');
       setInfoUrl(Schedule.info_url || '');
       setScript(Schedule.script || '');
+      setIcs309Enabled(Schedule.ics309_enabled || false);
       setSelectedFrequencyIds(Schedule.frequencies.map((f: any) => f.id));
       // Set owner info
       setOwnerId(Schedule.owner_id);
@@ -702,6 +704,7 @@ const CreateSchedule: React.FC = () => {
       is_active: isActive,
       schedule_type: scheduleType,
       schedule_config: scheduleConfig,
+      ics309_enabled: ics309Enabled,
     };
     
     // Include owner_id if changed (for both create and edit)
@@ -835,6 +838,21 @@ const CreateSchedule: React.FC = () => {
               placeholder="https://example.com/net-info"
               helperText="Optional URL for net, club or organization info"
             />
+
+            <Box sx={{ mt: 2 }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={ics309Enabled}
+                    onChange={(e) => setIcs309Enabled(e.target.checked)}
+                  />
+                }
+                label="Enable ICS-309 Communications Log format"
+              />
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
+                When enabled, net close emails will use the official ICS-309 format used by ARES, RACES, and EmComm organizations.
+              </Typography>
+            </Box>
 
             {/* Owner selector - only show when editing and user is owner or admin */}
             {isEdit && users.length > 0 && (currentUser?.role === 'admin' || currentUser?.id === originalOwnerId) && (

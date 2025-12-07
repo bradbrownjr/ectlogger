@@ -132,6 +132,7 @@ class NetTemplate(Base):
     owner_id = Column(Integer, ForeignKey("users.id"))
     field_config = Column(Text, default='{"name": {"enabled": true, "required": false}, "location": {"enabled": true, "required": false}, "skywarn_number": {"enabled": false, "required": false}, "weather_observation": {"enabled": false, "required": false}, "power_source": {"enabled": false, "required": false}, "power": {"enabled": false, "required": false}, "feedback": {"enabled": false, "required": false}, "notes": {"enabled": false, "required": false}}')
     is_active = Column(Boolean, default=True)
+    ics309_enabled = Column(Boolean, default=False)  # Enable ICS-309 format for net close emails
     
     # Schedule configuration
     schedule_type = Column(String(20), default='ad_hoc')  # ad_hoc, daily, weekly, monthly
