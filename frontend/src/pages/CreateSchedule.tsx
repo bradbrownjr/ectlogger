@@ -1022,47 +1022,11 @@ const CreateSchedule: React.FC = () => {
                 : 'Add NCS operators who can start and run nets from this schedule. The order you add them determines the rotation schedule - the system will automatically assign operators in order for each scheduled net.'}
             </Typography>
 
-            {/* Add user input - works for both new and edit modes */}
-            <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-              <Autocomplete
-                options={isEdit 
-                  ? availableUsersForRotation 
-                  : users.filter(u => {
-                      // Filter out pending users and the owner
-                      const effectiveOwnerId = ownerId || currentUser?.id;
-                      return u.id !== effectiveOwnerId && !pendingNCSUsers.some(p => p.id === u.id);
-                    })}
-                getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
-                value={selectedUserForRotation}
-                onChange={(_: any, value: User | null) => setSelectedUserForRotation(value)}
-                renderInput={(params: any) => (
-                  <TextField {...params} label="Add NCS Operator" size="small" />
-                )}
-                sx={{ flexGrow: 1 }}
-              />
-              <Button
-                type="button"
-                variant="contained"
-                startIcon={<PersonAddIcon />}
-                onClick={() => {
-                  if (isEdit) {
-                    handleAddRotationMember();
-                  } else if (selectedUserForRotation) {
-                    setPendingNCSUsers([...pendingNCSUsers, selectedUserForRotation]);
-                    setSelectedUserForRotation(null);
-                  }
-                }}
-                disabled={!selectedUserForRotation}
-              >
-                Add
-              </Button>
-            </Box>
-
-            {/* For NEW schedules - show owner first, then pending users */}
+            {/* For NEW schedules - show owner first, then add input, then pending users */}
             {!isEdit && (
               <>
                 {/* Owner display and selector */}
-                <Box sx={{ mb: 2 }}>
+                <Box sx={{ mb: 3 }}>
                   <Typography variant="subtitle2" sx={{ mb: 1 }}>Schedule Owner</Typography>
                   <Autocomplete
                     options={users}
@@ -1080,6 +1044,38 @@ const CreateSchedule: React.FC = () => {
                 </Box>
 
                 <Divider sx={{ my: 2 }} />
+
+                {/* Add NCS operator input */}
+                <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+                  <Autocomplete
+                    options={users.filter(u => {
+                      // Filter out pending users and the owner
+                      const effectiveOwnerId = ownerId || currentUser?.id;
+                      return u.id !== effectiveOwnerId && !pendingNCSUsers.some(p => p.id === u.id);
+                    })}
+                    getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
+                    value={selectedUserForRotation}
+                    onChange={(_: any, value: User | null) => setSelectedUserForRotation(value)}
+                    renderInput={(params: any) => (
+                      <TextField {...params} label="Add NCS Operator" size="small" />
+                    )}
+                    sx={{ flexGrow: 1 }}
+                  />
+                  <Button
+                    type="button"
+                    variant="contained"
+                    startIcon={<PersonAddIcon />}
+                    onClick={() => {
+                      if (selectedUserForRotation) {
+                        setPendingNCSUsers([...pendingNCSUsers, selectedUserForRotation]);
+                        setSelectedUserForRotation(null);
+                      }
+                    }}
+                    disabled={!selectedUserForRotation}
+                  >
+                    Add
+                  </Button>
+                </Box>
                 
                 <Typography variant="subtitle2" sx={{ mb: 1 }}>Additional NCS Operators</Typography>
                 {pendingNCSUsers.length === 0 ? (
@@ -1125,9 +1121,33 @@ const CreateSchedule: React.FC = () => {
               </>
             )}
 
-            {/* For EDIT mode - show existing rotation members with full controls */}
+            {/* For EDIT mode - show add input and existing rotation members */}
             {isEdit && (
-              rotationMembers.length === 0 ? (
+              <>
+                {/* Add user input for edit mode */}
+                <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+                  <Autocomplete
+                    options={availableUsersForRotation}
+                    getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
+                    value={selectedUserForRotation}
+                    onChange={(_: any, value: User | null) => setSelectedUserForRotation(value)}
+                    renderInput={(params: any) => (
+                      <TextField {...params} label="Add NCS Operator" size="small" />
+                    )}
+                    sx={{ flexGrow: 1 }}
+                  />
+                  <Button
+                    type="button"
+                    variant="contained"
+                    startIcon={<PersonAddIcon />}
+                    onClick={handleAddRotationMember}
+                    disabled={!selectedUserForRotation}
+                  >
+                    Add
+                  </Button>
+                </Box>
+
+                {rotationMembers.length === 0 ? (
                 <Typography color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
                   No additional NCS operators assigned. Add operators above to let them start nets.
                 </Typography>
@@ -1193,7 +1213,8 @@ const CreateSchedule: React.FC = () => {
                     </ListItem>
                   ))}
                 </List>
-              )
+              )}
+              </>
             )}
           </TabPanel>
 
