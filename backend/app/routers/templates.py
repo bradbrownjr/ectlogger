@@ -23,9 +23,9 @@ async def create_template(
     field_config_json = json.dumps(template_data.field_config) if template_data.field_config else None
     schedule_config_json = json.dumps(template_data.schedule_config) if template_data.schedule_config else '{}'
     
-    # Determine owner - admin can assign to another user
+    # Determine owner - creator can assign to another user
     owner_id = current_user.id
-    if template_data.owner_id and current_user.role == "admin":
+    if template_data.owner_id:
         # Verify the target user exists
         target_user = await db.execute(select(User).where(User.id == template_data.owner_id))
         if target_user.scalar_one_or_none():

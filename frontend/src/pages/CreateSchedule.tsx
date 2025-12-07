@@ -1032,38 +1032,19 @@ const CreateSchedule: React.FC = () => {
                 {/* Owner display and selector */}
                 <Box sx={{ mb: 2 }}>
                   <Typography variant="subtitle2" sx={{ mb: 1 }}>Schedule Owner</Typography>
-                  {currentUser?.role === 'admin' ? (
-                    <Autocomplete
-                      options={users}
-                      getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
-                      value={users.find((u: User) => u.id === (ownerId || currentUser?.id)) || null}
-                      onChange={(_: any, value: User | null) => setOwnerId(value?.id || null)}
-                      renderInput={(params: any) => (
-                        <TextField 
-                          {...params} 
-                          size="small"
-                          helperText="Admin: You can assign this schedule to another user"
-                        />
-                      )}
-                    />
-                  ) : (
-                    <Box sx={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      gap: 1, 
-                      p: 1.5, 
-                      bgcolor: 'action.hover', 
-                      borderRadius: 1,
-                      border: 1,
-                      borderColor: 'primary.main'
-                    }}>
-                      <Typography fontWeight="bold">{currentUser?.callsign}</Typography>
-                      {currentUser?.name && (
-                        <Typography color="text.secondary">({currentUser.name})</Typography>
-                      )}
-                      <Chip label="Owner" size="small" color="primary" />
-                    </Box>
-                  )}
+                  <Autocomplete
+                    options={users}
+                    getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
+                    value={users.find((u: User) => u.id === (ownerId || currentUser?.id)) || null}
+                    onChange={(_: any, value: User | null) => setOwnerId(value?.id || null)}
+                    renderInput={(params: any) => (
+                      <TextField 
+                        {...params} 
+                        size="small"
+                        helperText="You can assign this schedule to another user"
+                      />
+                    )}
+                  />
                 </Box>
 
                 <Divider sx={{ my: 2 }} />
