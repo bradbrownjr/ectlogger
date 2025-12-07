@@ -703,12 +703,12 @@ const NetView: React.FC = () => {
     // Show role icons for users with active roles
     if (checkIn) {
       // Owner always gets the primary crown
-      if (owner?.id === checkIn.user_id) return '👑';
+      if (net?.owner_id === checkIn.user_id) return '👑';
       
       const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
       if (userRole?.role?.toUpperCase() === 'NCS') {
         // Check if owner is checked in - if so, this NCS is secondary
-        const ownerCheckedIn = owner && checkIns.some(c => c.user_id === owner.id && c.status !== 'checked_out');
+        const ownerCheckedIn = net?.owner_id && checkIns.some(c => c.user_id === net.owner_id && c.status !== 'checked_out');
         if (ownerCheckedIn) {
           // Owner is present - all other NCS are secondary
           return '🤴';
@@ -752,11 +752,11 @@ const NetView: React.FC = () => {
   const getStatusTooltip = (status: string, checkIn?: CheckIn) => {
     // Check for role-based tooltips first
     if (checkIn) {
-      if (owner?.id === checkIn.user_id) return 'Net Control Station - manages the net';
+      if (net?.owner_id === checkIn.user_id) return 'Net Control Station - manages the net';
       const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
       if (userRole?.role?.toUpperCase() === 'NCS') {
         // Check if owner is checked in - if so, this NCS is secondary
-        const ownerCheckedIn = owner && checkIns.some(c => c.user_id === owner.id && c.status !== 'checked_out');
+        const ownerCheckedIn = net?.owner_id && checkIns.some(c => c.user_id === net.owner_id && c.status !== 'checked_out');
         if (ownerCheckedIn) {
           return '2nd NCS - assists primary Net Control Station';
         }
