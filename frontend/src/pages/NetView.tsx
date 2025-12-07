@@ -1281,6 +1281,19 @@ const NetView: React.FC = () => {
                         </Button>
                       </Tooltip>
                     )}
+                    {isAdmin && (
+                      <Tooltip title="Delete net">
+                        <Button 
+                          size="small"
+                          variant="outlined" 
+                          color="error"
+                          onClick={handleDelete}
+                          sx={{ minWidth: 'auto', px: 1 }}
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </Button>
+                      </Tooltip>
+                    )}
                   </>
                 )}
                 {canManage && (net.status === 'draft' || net.status === 'archived') && (
