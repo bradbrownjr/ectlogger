@@ -178,6 +178,15 @@ const Admin: React.FC = () => {
   const [securityInfo, setSecurityInfo] = useState<SecurityInfo | null>(null);
   const [securityLoading, setSecurityLoading] = useState(false);
   
+  // Schedule creation limits state
+  const [scheduleSettings, setScheduleSettings] = useState({
+    schedule_min_account_age_days: 7,
+    schedule_min_net_participations: 1,
+    schedule_max_per_day: 5,
+  });
+  const [scheduleSettingsLoading, setScheduleSettingsLoading] = useState(false);
+  const [scheduleSettingsSaving, setScheduleSettingsSaving] = useState(false);
+  
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
     message: '',
@@ -194,6 +203,7 @@ const Admin: React.FC = () => {
     fetchUsers();
     fetchFields();
     fetchSecurityInfo();
+    fetchScheduleSettings();
   }, [currentUser, navigate]);
 
   useEffect(() => {
@@ -230,6 +240,35 @@ const Admin: React.FC = () => {
       console.error('Failed to fetch security info:', error);
     } finally {
       setSecurityLoading(false);
+    }
+  };
+
+  const fetchScheduleSettings = async () => {
+    setScheduleSettingsLoading(true);
+    try {
+      const response = await api.get('/settings');
+      setScheduleSettings({
+        schedule_min_account_age_days: response.data.schedule_min_account_age_days ?? 7,
+        schedule_min_net_participations: response.data.schedule_min_net_participations ?? 1,
+        schedule_max_per_day: response.data.schedule_max_per_day ?? 5,
+      });
+    } catch (error) {
+      console.error('Failed to fetch schedule settings:', error);
+    } finally {
+      setScheduleSettingsLoading(false);
+    }
+  };
+
+  const handleSaveScheduleSettings = async () => {
+    setScheduleSettingsSaving(true);
+    try {
+      await api.put('/settings', scheduleSettings);
+      setSnackbar({ open: true, message: 'Schedule creation settings saved', severity: 'success' });
+    } catch (error: any) {
+      const message = error.response?.data?.detail || 'Failed to save settings';
+      setSnackbar({ open: true, message, severity: 'error' });
+    } finally {
+      setScheduleSettingsSaving(false);
     }
   };
 
@@ -878,6 +917,74 @@ const Admin: React.FC = () => {
                         </TableBody>
                       </Table>
                     </TableContainer>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Schedule Creation Limits Card */}
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    <ShieldIcon sx={{ verticalAlign: 'middle', mr: 1 }} />
+                    Schedule Creation Limits
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                    Configure requirements for non-admin users to create schedules. Admins bypass all restrictions.
+                  </Typography>
+                  
+                  {scheduleSettingsLoading ? (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+                      <CircularProgress size={24} />
+                    </Box>
+                  ) : (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                      <TextField
+                        label="Minimum Account Age (days)"
+                        type="number"
+                        value={scheduleSettings.schedule_min_account_age_days}
+                        onChange={(e) => setScheduleSettings({
+                          ...scheduleSettings,
+                          schedule_min_account_age_days: parseInt(e.target.value) || 0
+                        })}
+                        inputProps={{ min: 0, max: 365 }}
+                        helperText="New accounts must wait this many days before creating schedules. Set to 0 to disable."
+                        fullWidth
+                      />
+                      <TextField
+                        label="Minimum Net Participations"
+                        type="number"
+                        value={scheduleSettings.schedule_min_net_participations}
+                        onChange={(e) => setScheduleSettings({
+                          ...scheduleSettings,
+                          schedule_min_net_participations: parseInt(e.target.value) || 0
+                        })}
+                        inputProps={{ min: 0, max: 100 }}
+                        helperText="Users must have checked in to this many nets before creating schedules. Set to 0 to disable."
+                        fullWidth
+                      />
+                      <TextField
+                        label="Maximum Schedules Per Day"
+                        type="number"
+                        value={scheduleSettings.schedule_max_per_day}
+                        onChange={(e) => setScheduleSettings({
+                          ...scheduleSettings,
+                          schedule_max_per_day: parseInt(e.target.value) || 0
+                        })}
+                        inputProps={{ min: 0, max: 100 }}
+                        helperText="Maximum schedules a user can create in one day. Set to 0 for unlimited."
+                        fullWidth
+                      />
+                      <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                        <Button
+                          variant="contained"
+                          onClick={handleSaveScheduleSettings}
+                          disabled={scheduleSettingsSaving}
+                          startIcon={scheduleSettingsSaving ? <CircularProgress size={20} /> : null}
+                        >
+                          {scheduleSettingsSaving ? 'Saving...' : 'Save Settings'}
+                        </Button>
+                      </Box>
+                    </Box>
                   )}
                 </CardContent>
               </Card>

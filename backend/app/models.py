@@ -381,4 +381,10 @@ class AppSettings(Base):
     default_field_config = Column(Text, default='{"name": {"enabled": true, "required": false, "label": "Name"}, "location": {"enabled": true, "required": false, "label": "Location"}, "skywarn_number": {"enabled": false, "required": false, "label": "Spotter #"}, "weather_observation": {"enabled": false, "required": false, "label": "Weather"}, "power_source": {"enabled": false, "required": false, "label": "Power Src"}, "power": {"enabled": false, "required": false, "label": "Power"}, "feedback": {"enabled": false, "required": false, "label": "Feedback"}, "notes": {"enabled": false, "required": false, "label": "Notes"}}')
     # Field labels (for display across the app)
     field_labels = Column(Text, default='{"name": "Name", "location": "Location", "skywarn_number": "Spotter #", "weather_observation": "Weather", "power_source": "Power Src", "power": "Power", "feedback": "Feedback", "notes": "Notes"}')
+    
+    # Schedule creation limits (anti-abuse)
+    schedule_min_account_age_days = Column(Integer, default=7)  # Minimum days since account creation
+    schedule_min_net_participations = Column(Integer, default=1)  # Minimum net check-ins
+    schedule_max_per_day = Column(Integer, default=5)  # Maximum schedules per day
+    
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

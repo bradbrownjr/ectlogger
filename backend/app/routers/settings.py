@@ -63,7 +63,10 @@ async def get_settings(
     
     return AppSettingsResponse(
         default_field_config=json.loads(settings.default_field_config) if settings.default_field_config else {},
-        field_labels=json.loads(settings.field_labels) if settings.field_labels else {}
+        field_labels=json.loads(settings.field_labels) if settings.field_labels else {},
+        schedule_min_account_age_days=settings.schedule_min_account_age_days or 7,
+        schedule_min_net_participations=settings.schedule_min_net_participations or 1,
+        schedule_max_per_day=settings.schedule_max_per_day or 5
     )
 
 
@@ -85,12 +88,25 @@ async def update_settings(
     if settings_update.field_labels is not None:
         settings.field_labels = json.dumps(settings_update.field_labels)
     
+    # Schedule creation limits
+    if settings_update.schedule_min_account_age_days is not None:
+        settings.schedule_min_account_age_days = settings_update.schedule_min_account_age_days
+    
+    if settings_update.schedule_min_net_participations is not None:
+        settings.schedule_min_net_participations = settings_update.schedule_min_net_participations
+    
+    if settings_update.schedule_max_per_day is not None:
+        settings.schedule_max_per_day = settings_update.schedule_max_per_day
+    
     await db.commit()
     await db.refresh(settings)
     
     return AppSettingsResponse(
         default_field_config=json.loads(settings.default_field_config) if settings.default_field_config else {},
-        field_labels=json.loads(settings.field_labels) if settings.field_labels else {}
+        field_labels=json.loads(settings.field_labels) if settings.field_labels else {},
+        schedule_min_account_age_days=settings.schedule_min_account_age_days or 7,
+        schedule_min_net_participations=settings.schedule_min_net_participations or 1,
+        schedule_max_per_day=settings.schedule_max_per_day or 5
     )
 
 

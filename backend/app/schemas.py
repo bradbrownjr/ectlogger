@@ -475,6 +475,10 @@ class FieldConfigItem(BaseModel):
 class AppSettingsResponse(BaseModel):
     default_field_config: dict
     field_labels: dict
+    # Schedule creation limits
+    schedule_min_account_age_days: int = 7
+    schedule_min_net_participations: int = 1
+    schedule_max_per_day: int = 5
 
     class Config:
         from_attributes = True
@@ -483,6 +487,10 @@ class AppSettingsResponse(BaseModel):
 class AppSettingsUpdate(BaseModel):
     default_field_config: Optional[dict] = None
     field_labels: Optional[dict] = None
+    # Schedule creation limits
+    schedule_min_account_age_days: Optional[int] = None
+    schedule_min_net_participations: Optional[int] = None
+    schedule_max_per_day: Optional[int] = None
 
 
 # Field Definition Schemas

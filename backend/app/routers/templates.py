@@ -3,13 +3,69 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, delete
 from sqlalchemy.orm import selectinload
 from typing import List
+from datetime import datetime, timedelta, timezone
 from app.database import get_db
-from app.models import NetTemplate, NetTemplateSubscription, User, net_template_frequencies, Frequency, Net, NetStatus, NCSRotationMember, NetRole
+from app.models import NetTemplate, NetTemplateSubscription, User, net_template_frequencies, Frequency, Net, NetStatus, NCSRotationMember, NetRole, CheckIn, AppSettings, UserRole
 from app.schemas import NetTemplateCreate, NetTemplateUpdate, NetTemplateResponse, NetTemplateSubscriptionResponse, NetResponse
 from app.dependencies import get_current_user, get_current_user_optional
 import json
 
 router = APIRouter(prefix="/templates", tags=["templates"])
+
+
+async def check_schedule_creation_eligibility(db: AsyncSession, user: User) -> tuple[bool, str]:
+    """
+    Check if user is eligible to create schedules based on app settings.
+    Returns (is_eligible, error_message).
+    Admins bypass all checks.
+    """
+    if user.role == UserRole.ADMIN:
+        return True, ""
+    
+    # Get app settings
+    result = await db.execute(select(AppSettings).where(AppSettings.id == 1))
+    settings = result.scalar_one_or_none()
+    
+    if not settings:
+        # No settings, use defaults
+        min_age_days = 7
+        min_participations = 1
+        max_per_day = 5
+    else:
+        min_age_days = settings.schedule_min_account_age_days or 7
+        min_participations = settings.schedule_min_net_participations or 1
+        max_per_day = settings.schedule_max_per_day or 5
+    
+    # Check account age
+    if user.created_at:
+        account_age = datetime.now(timezone.utc) - user.created_at.replace(tzinfo=timezone.utc)
+        if account_age.days < min_age_days:
+            days_remaining = min_age_days - account_age.days
+            return False, f"Your account must be at least {min_age_days} days old to create schedules. Please wait {days_remaining} more day(s)."
+    
+    # Check net participation count
+    if min_participations > 0:
+        participation_result = await db.execute(
+            select(func.count(func.distinct(CheckIn.net_id)))
+            .where(CheckIn.user_id == user.id)
+        )
+        participation_count = participation_result.scalar() or 0
+        if participation_count < min_participations:
+            return False, f"You must participate in at least {min_participations} net(s) before creating schedules. You have participated in {participation_count}."
+    
+    # Check daily creation limit
+    if max_per_day > 0:
+        today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+        templates_today_result = await db.execute(
+            select(func.count(NetTemplate.id))
+            .where(NetTemplate.owner_id == user.id)
+            .where(NetTemplate.created_at >= today_start)
+        )
+        templates_today = templates_today_result.scalar() or 0
+        if templates_today >= max_per_day:
+            return False, f"You have reached the daily limit of {max_per_day} schedules. Please try again tomorrow."
+    
+    return True, ""
 
 
 @router.post("/", response_model=NetTemplateResponse, status_code=status.HTTP_201_CREATED)
@@ -19,6 +75,11 @@ async def create_template(
     db: AsyncSession = Depends(get_db)
 ):
     """Create a new net template"""
+    # Check eligibility for schedule creation (admins bypass)
+    is_eligible, error_message = await check_schedule_creation_eligibility(db, current_user)
+    if not is_eligible:
+        raise HTTPException(status_code=403, detail=error_message)
+    
     # Serialize field_config and schedule_config to JSON
     field_config_json = json.dumps(template_data.field_config) if template_data.field_config else None
     schedule_config_json = json.dumps(template_data.schedule_config) if template_data.schedule_config else '{}'
