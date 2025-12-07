@@ -346,14 +346,18 @@ const NetView: React.FC = () => {
           fetchCheckIns();
         }
       } else if (message.type === 'net_started') {
-        // Net has been started - refresh everything and highlight check-in
+        // Net has been started - refresh everything first, then highlight check-in
+        // Use a small delay to ensure the net status update renders before highlighting
         fetchNet();
         fetchCheckIns();
         fetchNetRoles();
-        setToastMessage(`Net started by ${message.data?.started_by || 'NCS'} - Check in now!`);
-        setHighlightCheckIn(true);
-        // Remove highlight after 10 seconds
-        setTimeout(() => setHighlightCheckIn(false), 10000);
+        // Delay the toast and highlight so the check-in button is visible first
+        setTimeout(() => {
+          setToastMessage(`Net started by ${message.data?.started_by || 'NCS'} - Check in now!`);
+          setHighlightCheckIn(true);
+          // Remove highlight after 10 seconds
+          setTimeout(() => setHighlightCheckIn(false), 10000);
+        }, 500);
       }
     };
 
@@ -1280,19 +1284,6 @@ const NetView: React.FC = () => {
                       >
                         <GroupIcon fontSize="small" />
                       </Button>
-                    </Tooltip>
-                    <Tooltip title="Enable ICS-309 format for net close emails (ARES/RACES/EmComm)">
-                      <FormControlLabel
-                        control={
-                          <Switch
-                            size="small"
-                            checked={net.ics309_enabled || false}
-                            onChange={handleToggleICS309}
-                          />
-                        }
-                        label={<Typography variant="caption">ICS-309</Typography>}
-                        sx={{ ml: 0.5, mr: 0 }}
-                      />
                     </Tooltip>
                     {!hasNCS && (
                       <Button 
