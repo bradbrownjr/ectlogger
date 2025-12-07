@@ -271,6 +271,29 @@ const NetView: React.FC = () => {
     localStorage.setItem('floatingWindow_chat_detached', String(chatDetached));
   }, [chatDetached]);
 
+  // Show start net reminder when viewing a draft/scheduled net that user can start
+  // Note: We check netRoles to determine if user is NCS/owner
+  useEffect(() => {
+    if (!net || !user) return;
+    
+    const isOwner = net.owner_id === user.id;
+    const isAdmin = user.role === 'admin';
+    const userRole = netRoles.find((role: any) => role.user_id === user.id);
+    const isNCS = userRole && userRole.role === 'NCS';
+    const canStart = isOwner || isAdmin || isNCS;
+    
+    if (canStart && (net.status === 'draft' || net.status === 'scheduled')) {
+      // Small delay to ensure page is rendered
+      const timer = setTimeout(() => {
+        setToastMessage('Ready to start? Click the green play button to begin the net!');
+        setHighlightStartNet(true);
+        // Remove highlight after 10 seconds
+        setTimeout(() => setHighlightStartNet(false), 10000);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [net?.id, net?.status, net?.owner_id, user?.id, user?.role, netRoles]);
+
   const handleDetachCheckInList = () => setCheckInListDetached(true);
   const handleAttachCheckInList = () => setCheckInListDetached(false);
   const handleDetachChat = () => setChatDetached(true);
@@ -879,20 +902,6 @@ const NetView: React.FC = () => {
   
   // NCS can start/manage the net even if they're not the owner
   const canStartNet = canManage || isNCS;
-  
-  // Show start net reminder when viewing a draft/scheduled net that user can start
-  useEffect(() => {
-    if (net && canStartNet && (net.status === 'draft' || net.status === 'scheduled')) {
-      // Small delay to ensure page is rendered
-      const timer = setTimeout(() => {
-        setToastMessage('Ready to start? Click the green play button to begin the net!');
-        setHighlightStartNet(true);
-        // Remove highlight after 10 seconds
-        setTimeout(() => setHighlightStartNet(false), 10000);
-      }, 500);
-      return () => clearTimeout(timer);
-    }
-  }, [net?.id, net?.status, canStartNet]);
   
   // Check if net has any NCS assigned
   const hasNCS = netRoles.some((role: any) => role.role === 'NCS');
