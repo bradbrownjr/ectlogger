@@ -81,6 +81,7 @@ const Profile: React.FC = () => {
     notify_net_start: user?.notify_net_start ?? true,
     notify_net_close: user?.notify_net_close ?? true,
     notify_net_reminder: user?.notify_net_reminder ?? false,
+    notify_ics309: user?.notify_ics309 ?? false,
   });
 
   useEffect(() => {
@@ -365,6 +366,24 @@ const Profile: React.FC = () => {
                 <Typography variant="body2" color="text.secondary" sx={{ ml: 4, mb: 1 }}>
                   Receive the net log when a subscribed net closes
                 </Typography>
+
+                {/* ICS-309 format option - nested under close notifications */}
+                <Box sx={{ ml: 4, opacity: formData.notify_net_close && formData.email_notifications ? 1 : 0.5 }}>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={formData.notify_ics309}
+                        onChange={(e) => setFormData({ ...formData, notify_ics309: e.target.checked })}
+                        disabled={!formData.email_notifications || !formData.notify_net_close}
+                        size="small"
+                      />
+                    }
+                    label="Use ICS-309 format"
+                  />
+                  <Typography variant="body2" color="text.secondary" sx={{ ml: 4, mb: 1 }}>
+                    Format net logs as ICS-309 Communications Log (FEMA standard)
+                  </Typography>
+                </Box>
 
                 <FormControlLabel
                   control={

@@ -791,3 +791,263 @@ This is an automated message, please do not reply.
                 attachment_data=csv_data,
                 attachment_filename=csv_filename
             )
+
+    @staticmethod
+    async def send_ics309_log(
+        email: str, 
+        net_name: str, 
+        net_description: str, 
+        ncs_name: str, 
+        ncs_callsign: str,
+        check_ins: list, 
+        started_at: str, 
+        closed_at: str, 
+        chat_messages: list = None,
+        frequencies: list = None
+    ):
+        """Send ICS-309 Communications Log format after net is closed"""
+        
+        # Format frequencies for display
+        freq_list = ", ".join(frequencies) if frequencies else "Multiple"
+        
+        # Calculate operational period
+        html_template = Template("""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.4; color: #000; background: #fff; }
+                .container { max-width: 800px; margin: 0 auto; padding: 10px; }
+                .form-header { 
+                    display: flex; 
+                    justify-content: space-between; 
+                    border-bottom: 2px solid #000; 
+                    padding-bottom: 5px;
+                    margin-bottom: 10px;
+                }
+                .form-title { font-size: 14px; font-weight: bold; }
+                .form-number { font-size: 18px; font-weight: bold; }
+                .header-grid {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 5px;
+                    border: 1px solid #000;
+                    margin-bottom: 10px;
+                }
+                .header-cell {
+                    border: 1px solid #000;
+                    padding: 5px;
+                    font-size: 11px;
+                }
+                .header-label { font-weight: bold; font-size: 10px; }
+                .header-value { font-size: 12px; }
+                table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 11px; }
+                th, td { border: 1px solid #000; padding: 4px; text-align: left; }
+                th { background-color: #e0e0e0; font-weight: bold; font-size: 10px; }
+                .log-table th { text-align: center; }
+                .time-col { width: 80px; text-align: center; }
+                .callsign-col { width: 80px; }
+                .subject-col { width: auto; }
+                .footer-grid {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 5px;
+                    border: 1px solid #000;
+                    margin-top: 10px;
+                }
+                .page-num { text-align: right; font-size: 10px; margin-top: 5px; }
+                .ics-footer { font-size: 9px; color: #666; margin-top: 10px; }
+                @media print {
+                    .container { max-width: 100%; }
+                    body { font-size: 10px; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <!-- ICS-309 Header -->
+                <div class="form-header">
+                    <div>
+                        <div class="form-title">COMMUNICATIONS LOG</div>
+                    </div>
+                    <div>
+                        <div class="form-number">ICS 309</div>
+                    </div>
+                </div>
+
+                <!-- Header Information Grid -->
+                <div class="header-grid">
+                    <div class="header-cell">
+                        <div class="header-label">1. Incident Name:</div>
+                        <div class="header-value">{{ net_name }}</div>
+                    </div>
+                    <div class="header-cell">
+                        <div class="header-label">2. Operational Period:</div>
+                        <div class="header-value">{{ started_at }} to {{ closed_at }}</div>
+                    </div>
+                    <div class="header-cell">
+                        <div class="header-label">3. Radio Operator Name/Callsign:</div>
+                        <div class="header-value">{{ ncs_name }} / {{ ncs_callsign }}</div>
+                    </div>
+                    <div class="header-cell">
+                        <div class="header-label">4. Radio Channel/Frequency:</div>
+                        <div class="header-value">{{ frequencies }}</div>
+                    </div>
+                </div>
+
+                <!-- Log Table -->
+                <table class="log-table">
+                    <thead>
+                        <tr>
+                            <th class="time-col">5. TIME</th>
+                            <th class="callsign-col">6. FROM</th>
+                            <th class="callsign-col">7. TO</th>
+                            <th class="subject-col">8. SUBJECT/MESSAGE</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in log_entries %}
+                        <tr>
+                            <td class="time-col">{{ entry.time }}</td>
+                            <td class="callsign-col">{{ entry.from_station }}</td>
+                            <td class="callsign-col">{{ entry.to_station }}</td>
+                            <td class="subject-col">{{ entry.message }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <!-- Footer Grid -->
+                <div class="footer-grid">
+                    <div class="header-cell">
+                        <div class="header-label">9. Prepared By:</div>
+                        <div class="header-value">{{ app_name }} - Automated Log</div>
+                    </div>
+                    <div class="header-cell">
+                        <div class="header-label">10. Date/Time:</div>
+                        <div class="header-value">{{ closed_at }}</div>
+                    </div>
+                </div>
+
+                <div class="page-num">Page 1 of 1</div>
+
+                <div class="ics-footer">
+                    <p>ICS 309 - Communications Log generated by {{ app_name }}</p>
+                    <p>Total Check-ins: {{ check_in_count }} | Total Messages: {{ message_count }}</p>
+                    <p>A CSV file with detailed check-in data is attached.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """)
+        
+        # Build log entries combining check-ins and chat messages
+        log_entries = []
+        
+        # Add check-ins as log entries
+        for check_in in check_ins:
+            location_info = f" from {check_in.get('location', '')}" if check_in.get('location') else ""
+            weather_info = f" | WX: {check_in.get('weather_observation', '')}" if check_in.get('weather_observation') else ""
+            
+            log_entries.append({
+                'time': check_in.get('time', ''),
+                'from_station': check_in.get('callsign', ''),
+                'to_station': 'NET',
+                'message': f"Check-in{location_info}{weather_info}"
+            })
+        
+        # Add chat messages (non-system messages only for cleaner log)
+        if chat_messages:
+            for msg in chat_messages:
+                callsign = msg.get('callsign', 'Unknown')
+                if callsign != 'System':  # Skip system messages in ICS-309
+                    log_entries.append({
+                        'time': msg.get('timestamp', ''),
+                        'from_station': callsign,
+                        'to_station': 'NET',
+                        'message': msg.get('message', '')
+                    })
+        
+        # Sort all entries by time
+        log_entries.sort(key=lambda x: x.get('time', ''))
+        
+        html_content = html_template.render(
+            app_name=settings.app_name,
+            net_name=net_name,
+            ncs_name=ncs_name,
+            ncs_callsign=ncs_callsign,
+            started_at=started_at,
+            closed_at=closed_at,
+            frequencies=freq_list,
+            log_entries=log_entries,
+            check_in_count=len(check_ins),
+            message_count=len(chat_messages) if chat_messages else 0
+        )
+        
+        # Generate ICS-309 CSV format
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        # ICS-309 header info
+        writer.writerow(["ICS-309 COMMUNICATIONS LOG"])
+        writer.writerow([""])
+        writer.writerow(["1. Incident Name:", net_name])
+        writer.writerow(["2. Operational Period:", f"{started_at} to {closed_at}"])
+        writer.writerow(["3. Radio Operator:", f"{ncs_name} / {ncs_callsign}"])
+        writer.writerow(["4. Channel/Frequency:", freq_list])
+        writer.writerow([""])
+        writer.writerow(["TIME", "FROM", "TO", "SUBJECT/MESSAGE"])
+        
+        for entry in log_entries:
+            writer.writerow([
+                entry.get('time', ''),
+                entry.get('from_station', ''),
+                entry.get('to_station', ''),
+                entry.get('message', '')
+            ])
+        
+        writer.writerow([""])
+        writer.writerow(["9. Prepared By:", f"{settings.app_name} - Automated Log"])
+        writer.writerow(["10. Date/Time:", closed_at])
+        
+        csv_data = output.getvalue()
+        csv_filename = f"ICS309_{net_name.replace(' ', '_')}_{closed_at.split()[0]}.csv"
+        
+        # Also generate detailed check-in CSV
+        detail_output = io.StringIO()
+        detail_writer = csv.writer(detail_output)
+        detail_writer.writerow([
+            "Check-in Time", "Callsign", "Name", "Location", 
+            "Spotter #", "Weather Observation", "Power Src", "Power",
+            "Feedback", "Notes", "Status"
+        ])
+        
+        for check_in in check_ins:
+            detail_writer.writerow([
+                check_in.get('time', ''),
+                check_in.get('callsign', ''),
+                check_in.get('name', ''),
+                check_in.get('location', ''),
+                check_in.get('skywarn_number', ''),
+                check_in.get('weather_observation', ''),
+                check_in.get('power_source', ''),
+                check_in.get('power', ''),
+                check_in.get('feedback', ''),
+                check_in.get('notes', ''),
+                check_in.get('status', '')
+            ])
+        
+        detail_csv_data = detail_output.getvalue()
+        detail_csv_filename = f"{net_name.replace(' ', '_')}_{closed_at.split()[0]}_checkins.csv"
+        
+        attachments = [
+            (csv_data, csv_filename, "text/csv"),
+            (detail_csv_data, detail_csv_filename, "text/csv")
+        ]
+        
+        await EmailService.send_email_with_attachments(
+            to_email=email,
+            subject=f"📋 ICS-309 Communications Log: {net_name}",
+            html_content=html_content,
+            attachments=attachments
+        )

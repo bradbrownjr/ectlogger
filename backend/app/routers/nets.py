@@ -519,11 +519,12 @@ async def close_net(
         })
     
     # Build list of email recipients (owner + subscribers who want close notifications)
-    emails_to_send = []
+    # Store as list of (email, user) tuples to check preferences
+    recipients_to_notify = []
     
     # Add owner if they have notifications enabled
     if owner and owner.email and owner.email_notifications and owner.notify_net_close:
-        emails_to_send.append(owner.email)
+        recipients_to_notify.append((owner.email, owner))
     
     # Add subscribers who want close notifications
     if net.template_id:
@@ -536,25 +537,52 @@ async def close_net(
             .where(User.notify_net_close == True)
         )
         subscribers = result.scalars().all()
+        existing_emails = {r[0] for r in recipients_to_notify}
         for subscriber in subscribers:
-            if subscriber.email and subscriber.email not in emails_to_send:
-                emails_to_send.append(subscriber.email)
+            if subscriber.email and subscriber.email not in existing_emails:
+                recipients_to_notify.append((subscriber.email, subscriber))
     
-    # Send log email to all recipients
-    ncs_name = owner.callsign or owner.name or owner.email if owner else "Unknown"
-    for email in emails_to_send:
+    # Format frequencies for ICS-309
+    freq_strings = []
+    for freq in net.frequencies:
+        if freq.frequency:
+            freq_strings.append(f"{freq.frequency} {freq.mode or ''}".strip())
+        elif freq.network:
+            freq_strings.append(f"{freq.network} TG{freq.talkgroup or ''}")
+    
+    # Send log email to all recipients based on their preference
+    ncs_callsign = owner.callsign if owner else "Unknown"
+    ncs_name = owner.name or owner.callsign or owner.email if owner else "Unknown"
+    
+    for email, recipient in recipients_to_notify:
         try:
             email_service = EmailService()
-            await email_service.send_net_log(
-                email=email,
-                net_name=net.name,
-                net_description=net.description or "",
-                ncs_name=ncs_name,
-                check_ins=check_ins_data,
-                started_at=net.started_at.strftime("%Y-%m-%d %H:%M:%S") if net.started_at else "N/A",
-                closed_at=net.closed_at.strftime("%Y-%m-%d %H:%M:%S") if net.closed_at else "N/A",
-                chat_messages=chat_messages_data if chat_messages_data else None
-            )
+            
+            # Check if user prefers ICS-309 format
+            if getattr(recipient, 'notify_ics309', False):
+                await email_service.send_ics309_log(
+                    email=email,
+                    net_name=net.name,
+                    net_description=net.description or "",
+                    ncs_name=ncs_name,
+                    ncs_callsign=ncs_callsign,
+                    check_ins=check_ins_data,
+                    started_at=net.started_at.strftime("%Y-%m-%d %H:%M:%S") if net.started_at else "N/A",
+                    closed_at=net.closed_at.strftime("%Y-%m-%d %H:%M:%S") if net.closed_at else "N/A",
+                    chat_messages=chat_messages_data if chat_messages_data else None,
+                    frequencies=freq_strings
+                )
+            else:
+                await email_service.send_net_log(
+                    email=email,
+                    net_name=net.name,
+                    net_description=net.description or "",
+                    ncs_name=ncs_name,
+                    check_ins=check_ins_data,
+                    started_at=net.started_at.strftime("%Y-%m-%d %H:%M:%S") if net.started_at else "N/A",
+                    closed_at=net.closed_at.strftime("%Y-%m-%d %H:%M:%S") if net.closed_at else "N/A",
+                    chat_messages=chat_messages_data if chat_messages_data else None
+                )
         except Exception as e:
             # Log error but don't fail the close operation
             print(f"Failed to send net log email to {email}: {e}")

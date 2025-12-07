@@ -59,6 +59,7 @@ class UserUpdate(BaseModel):
     notify_net_start: Optional[bool] = None
     notify_net_close: Optional[bool] = None
     notify_net_reminder: Optional[bool] = None
+    notify_ics309: Optional[bool] = None
     show_activity_in_chat: Optional[bool] = None
     location_awareness: Optional[bool] = None
     sms_gateway: Optional[str] = Field(None, max_length=100)
@@ -90,6 +91,7 @@ class UserResponse(UserBase):
     notify_net_start: bool = True
     notify_net_close: bool = True
     notify_net_reminder: bool = False
+    notify_ics309: bool = False
     show_activity_in_chat: bool = True
     location_awareness: bool = False
     gmrs_callsign: Optional[str] = None
