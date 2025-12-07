@@ -201,9 +201,10 @@ class NetResponse(NetBase):
     created_at: datetime
     frequencies: List[FrequencyResponse] = []
     check_in_count: Optional[int] = None
+    can_manage: bool = False  # True if current user can edit (owner, admin, or NCS)
 
     @classmethod
-    def from_orm(cls, net, owner_callsign: str = None, owner_name: str = None, check_in_count: int = None):
+    def from_orm(cls, net, owner_callsign: str = None, owner_name: str = None, check_in_count: int = None, can_manage: bool = False):
         import json
         data = {
             'id': net.id,
@@ -222,7 +223,8 @@ class NetResponse(NetBase):
             'closed_at': net.closed_at,
             'created_at': net.created_at,
             'frequencies': [FrequencyResponse.model_validate(f) for f in net.frequencies],
-            'check_in_count': check_in_count
+            'check_in_count': check_in_count,
+            'can_manage': can_manage
         }
         return cls(**data)
 

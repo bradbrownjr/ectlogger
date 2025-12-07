@@ -133,20 +133,43 @@ async def list_nets(
     else:
         check_in_counts = {}
     
-    return [
-        NetResponse.from_orm(
+    # Get NCS roles for current user if authenticated
+    user_ncs_net_ids = set()
+    if current_user and net_ids:
+        ncs_result = await db.execute(
+            select(NetRole.net_id)
+            .where(NetRole.net_id.in_(net_ids))
+            .where(NetRole.user_id == current_user.id)
+            .where(NetRole.role == "NCS")
+        )
+        user_ncs_net_ids = set(row[0] for row in ncs_result.fetchall())
+    
+    responses = []
+    for net in nets:
+        # Check if user can manage this net
+        can_manage = False
+        if current_user:
+            is_owner = net.owner_id == current_user.id
+            is_admin = current_user.role.value == "admin"
+            is_ncs = net.id in user_ncs_net_ids
+            can_manage = is_owner or is_admin or is_ncs
+        
+        responses.append(NetResponse.from_orm(
             net,
             owner_callsign=net.owner.callsign if net.owner else None,
             owner_name=net.owner.name if net.owner else None,
-            check_in_count=check_in_counts.get(net.id, 0)
-        ) for net in nets
-    ]
+            check_in_count=check_in_counts.get(net.id, 0),
+            can_manage=can_manage
+        ))
+    
+    return responses
 
 
 @router.get("/{net_id}", response_model=NetResponse)
 async def get_net(
     net_id: int,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_optional)
 ):
     """Get net by ID"""
     result = await db.execute(
@@ -160,10 +183,27 @@ async def get_net(
     if not net:
         raise HTTPException(status_code=404, detail="Net not found")
     
+    # Compute can_manage for this user
+    can_manage = False
+    if current_user:
+        is_owner = net.owner_id == current_user.id
+        is_admin = current_user.role.value == "admin"
+        # Check if user is NCS for this net
+        ncs_result = await db.execute(
+            select(NetRole).where(
+                NetRole.net_id == net_id,
+                NetRole.user_id == current_user.id,
+                NetRole.role == "NCS"
+            )
+        )
+        is_ncs = ncs_result.scalar_one_or_none() is not None
+        can_manage = is_owner or is_admin or is_ncs
+    
     return NetResponse.from_orm(
         net,
         owner_callsign=net.owner.callsign if net.owner else None,
-        owner_name=net.owner.name if net.owner else None
+        owner_name=net.owner.name if net.owner else None,
+        can_manage=can_manage
     )
 
 

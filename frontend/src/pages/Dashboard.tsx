@@ -65,6 +65,7 @@ interface Net {
   created_at: string;
   frequencies: any[];
   check_in_count?: number;
+  can_manage?: boolean;
 }
 
 const Dashboard: React.FC = () => {
@@ -406,7 +407,7 @@ const Dashboard: React.FC = () => {
                       </Tooltip>
                     )}
                     {/* Draft net actions */}
-                    {net.status === 'draft' && (user?.id === net.owner_id || user?.role === 'admin') && (
+                    {net.status === 'draft' && net.can_manage && (
                       <>
                         <Tooltip title="Edit net">
                           <IconButton
@@ -429,7 +430,7 @@ const Dashboard: React.FC = () => {
                     )}
                     
                     {/* Closed net actions */}
-                    {net.status === 'closed' && (user?.id === net.owner_id || user?.role === 'admin') && (
+                    {net.status === 'closed' && net.can_manage && (
                       <>
                         <Tooltip title="Net statistics">
                           <IconButton
