@@ -342,6 +342,9 @@ const NetView: React.FC = () => {
         if (message.data?.user_id && user?.id === message.data.user_id) {
           fetchCheckIns();
         }
+      } else if (message.type === 'check_in_deleted') {
+        // Remove deleted check-in from local state
+        setCheckIns(prev => prev.filter(ci => ci.id !== message.data?.id));
       } else if (message.type === 'net_started') {
         // Net has been started - refresh everything first, then highlight check-in
         // Use a small delay to ensure the net status update renders before highlighting
@@ -1004,10 +1007,21 @@ const NetView: React.FC = () => {
           : [...prev, frequencyId]
       );
     } else if (canManageCheckIns && userNetRole?.role === 'NCS') {
-      // NCS clicking: claim this frequency
+      // NCS clicking: claim this frequency and add to their available frequencies
       try {
         await netRoleApi.claimFrequency(Number(netId), userNetRole.id, frequencyId);
+        // Also add this frequency to the NCS's check-in available_frequencies
+        const ncsCheckIn = checkIns.find((ci: CheckIn) => ci.user_id === user?.id && ci.status !== 'checked_out');
+        if (ncsCheckIn) {
+          const currentFreqs = ncsCheckIn.available_frequencies || [];
+          if (!currentFreqs.includes(frequencyId)) {
+            await checkInApi.update(ncsCheckIn.id, {
+              available_frequency_ids: [...currentFreqs, frequencyId]
+            });
+          }
+        }
         await fetchNetRoles();
+        await fetchCheckIns();
         // Show reminder toast if multiple frequencies
         if (net.frequencies.length > 1) {
           setToastMessage('You are now monitoring this frequency. Other NCS operators can claim different frequencies.');
@@ -1036,6 +1050,10 @@ const NetView: React.FC = () => {
     
     // Then apply frequency filter (if any frequencies are selected)
     if (filteredFrequencyIds.length > 0) {
+      // Always show NCS operators regardless of frequency filter
+      const isNcsUser = ncsRoles.some((r: any) => r.user_id === checkIn.user_id);
+      if (isNcsUser) return true;
+      
       // Check if the check-in has any of the filtered frequencies in available_frequencies
       const checkInFreqs = checkIn.available_frequencies || [];
       const hasMatchingFreq = filteredFrequencyIds.some(fid => checkInFreqs.includes(fid));
@@ -1144,10 +1162,15 @@ const NetView: React.FC = () => {
                       const ncsCallsign = getNcsForFrequency(freq.id);
                       const isFiltered = filteredFrequencyIds.includes(freq.id);
                       const isActive = freq.id === net.active_frequency_id;
+                      // Check if current user is the NCS who claimed this frequency
+                      const isMyFrequency = userNetRole?.role === 'NCS' && userNetRole?.active_frequency_id === freq.id;
+                      const myNcsColor = isMyFrequency && user?.id ? getNcsColor(user.id) : null;
                       
                       // Build tooltip text
                       let tooltipText = '';
-                      if (ncsCallsign) {
+                      if (isMyFrequency) {
+                        tooltipText = '⭐ YOUR claimed frequency\n';
+                      } else if (ncsCallsign) {
                         tooltipText = `${ncsCallsign} is monitoring this frequency\n`;
                       }
                       if (canManageCheckIns) {
@@ -1175,8 +1198,23 @@ const NetView: React.FC = () => {
                               height: 24,
                               cursor: 'pointer',
                               fontWeight: isActive ? 'bold' : 'normal',
-                              // Apply NCS color if assigned
-                              ...(ncsColor && {
+                              // Highlight current user's claimed frequency with thick ring
+                              ...(isMyFrequency && myNcsColor && {
+                                backgroundColor: myNcsColor.bg,
+                                borderColor: myNcsColor.border,
+                                borderWidth: 3,
+                                boxShadow: `0 0 8px ${myNcsColor.border}`,
+                                '& .MuiChip-label': {
+                                  color: myNcsColor.text,
+                                  fontWeight: 'bold',
+                                },
+                                '&:hover': {
+                                  backgroundColor: myNcsColor.bg,
+                                  opacity: 0.9,
+                                },
+                              }),
+                              // Apply NCS color if assigned (but not current user)
+                              ...(!isMyFrequency && ncsColor && {
                                 backgroundColor: ncsColor.bg,
                                 borderColor: ncsColor.border,
                                 '& .MuiChip-label': {
@@ -1588,6 +1626,9 @@ const NetView: React.FC = () => {
                     const isOnActiveFrequency = net.active_frequency_id && 
                       checkIn.available_frequencies && 
                       checkIn.available_frequencies.includes(net.active_frequency_id);
+                    // Get NCS color if this user is an NCS
+                    const ncsColor = checkIn.user_id ? getNcsColor(checkIn.user_id) : null;
+                    const isNcsUser = ncsRoles.some((r: any) => r.user_id === checkIn.user_id);
                     
                     // Calculate column count for frequency chip row colspan
                     const hasFrequencyChips = net.frequencies && net.frequencies.length > 1 && checkIn.available_frequencies && checkIn.available_frequencies.length > 0;
@@ -1611,12 +1652,17 @@ const NetView: React.FC = () => {
                           ? (theme) => theme.palette.mode === 'dark' ? theme.palette.success.dark : theme.palette.success.light
                           : checkIn.status === 'checked_out' 
                           ? 'action.disabledBackground' 
+                          : isNcsUser && ncsColor ? ncsColor.bg
                           : isOnActiveFrequency
                           ? (theme) => theme.palette.mode === 'dark' ? 'rgba(25, 118, 210, 0.15)' : 'rgba(25, 118, 210, 0.08)'
                           : 'transparent',
                         opacity: checkIn.status === 'checked_out' ? 0.6 : 1,
                         border: checkIn.id === activeSpeakerId ? 2 : 0,
                         borderColor: checkIn.id === activeSpeakerId ? 'success.main' : 'transparent',
+                        // Add left border for NCS users
+                        ...(isNcsUser && ncsColor && checkIn.status !== 'checked_out' && {
+                          borderLeft: `3px solid ${ncsColor.border}`,
+                        }),
                         '& td, & th': {
                           ...(checkIn.id === activeSpeakerId ? { fontWeight: 'bold' } : {}),
                           verticalAlign: 'middle',
@@ -1763,24 +1809,47 @@ const NetView: React.FC = () => {
                           ? (theme) => theme.palette.mode === 'dark' ? theme.palette.success.dark : theme.palette.success.light
                           : checkIn.status === 'checked_out' 
                           ? 'action.disabledBackground' 
+                          : isNcsUser && ncsColor ? ncsColor.bg
                           : isOnActiveFrequency
                           ? (theme) => theme.palette.mode === 'dark' ? 'rgba(25, 118, 210, 0.15)' : 'rgba(25, 118, 210, 0.08)'
                           : 'transparent',
                         opacity: checkIn.status === 'checked_out' ? 0.6 : 1,
+                        // Add left border for NCS users
+                        ...(isNcsUser && ncsColor && checkIn.status !== 'checked_out' && {
+                          borderLeft: `3px solid ${ncsColor.border}`,
+                        }),
                       }}>
                         <TableCell colSpan={columnCount} sx={{ pt: 0, pb: 0.5, borderBottom: 1, borderColor: 'divider' }}>
                           <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', pl: 4 }}>
                             {checkIn.available_frequencies!.map((freqId: number) => {
                               const freq = net.frequencies.find((f: any) => f.id === freqId);
                               const isActive = freqId === checkIn.frequency_id;
+                              // Get NCS color for this frequency
+                              const freqNcsColor = getNcsColorForFrequency(freqId);
                               return freq ? (
                                 <Chip 
                                   key={freqId}
                                   label={isActive ? `📡 ${formatFrequencyDisplay(freq)}` : formatFrequencyDisplay(freq)}
                                   size="small"
-                                  variant={isActive ? "filled" : "outlined"}
-                                  color={isActive ? "primary" : "default"}
-                                  sx={{ height: 18, fontSize: '0.7rem' }}
+                                  variant="filled"
+                                  sx={{ 
+                                    height: 18, 
+                                    fontSize: '0.7rem',
+                                    // Use NCS color if available, otherwise default styling
+                                    ...(freqNcsColor ? {
+                                      backgroundColor: freqNcsColor.bg,
+                                      borderColor: freqNcsColor.border,
+                                      border: `1px solid ${freqNcsColor.border}`,
+                                      '& .MuiChip-label': {
+                                        color: freqNcsColor.text,
+                                      },
+                                    } : isActive ? {
+                                      backgroundColor: 'primary.main',
+                                      '& .MuiChip-label': { color: 'white' },
+                                    } : {
+                                      backgroundColor: 'action.selected',
+                                    }),
+                                  }}
                                 />
                               ) : null;
                             })}
@@ -2491,6 +2560,9 @@ const NetView: React.FC = () => {
                   <TableBody>
                     {filteredCheckIns.map((checkIn, index) => {
                       const isOnActiveFrequency = net.active_frequency_id && checkIn.available_frequencies?.includes(net.active_frequency_id);
+                      // Get NCS color if this user is an NCS
+                      const ncsColor = checkIn.user_id ? getNcsColor(checkIn.user_id) : null;
+                      const isNcsUser = ncsRoles.some((r: any) => r.user_id === checkIn.user_id);
                       return (
                         <TableRow 
                           key={checkIn.id}
@@ -2498,8 +2570,13 @@ const NetView: React.FC = () => {
                             backgroundColor: checkIn.id === activeSpeakerId 
                               ? (thm) => thm.palette.mode === 'dark' ? thm.palette.success.dark : thm.palette.success.light
                               : checkIn.status === 'checked_out' ? 'action.disabledBackground' 
+                              : isNcsUser && ncsColor ? ncsColor.bg
                               : isOnActiveFrequency ? (thm) => thm.palette.mode === 'dark' ? 'rgba(25, 118, 210, 0.15)' : 'rgba(25, 118, 210, 0.08)' : 'inherit',
                             opacity: checkIn.status === 'checked_out' ? 0.6 : 1,
+                            // Add left border for NCS users
+                            ...(isNcsUser && ncsColor && checkIn.status !== 'checked_out' && {
+                              borderLeft: `3px solid ${ncsColor.border}`,
+                            }),
                           }}
                         >
                           <TableCell>{index + 1}</TableCell>

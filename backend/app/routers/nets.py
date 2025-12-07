@@ -1141,23 +1141,22 @@ async def list_net_roles(
     db: AsyncSession = Depends(get_db)
 ):
     """List all roles for a net"""
+    # Use eager loading to avoid N+1 queries
     result = await db.execute(
-        select(NetRole).where(NetRole.net_id == net_id)
+        select(NetRole).options(selectinload(NetRole.user)).where(NetRole.net_id == net_id)
     )
     roles = result.scalars().all()
     
-    # Get user details for each role
+    # Build role list using eagerly loaded user data
     role_list = []
     for role in roles:
-        result = await db.execute(select(User).where(User.id == role.user_id))
-        user = result.scalar_one_or_none()
-        if user:
+        if role.user:
             role_list.append({
                 "id": role.id,
-                "user_id": user.id,
-                "email": user.email,
-                "name": user.name,
-                "callsign": user.callsign,
+                "user_id": role.user.id,
+                "email": role.user.email,
+                "name": role.user.name,
+                "callsign": role.user.callsign,
                 "role": role.role,
                 "active_frequency_id": role.active_frequency_id,
                 "assigned_at": role.assigned_at

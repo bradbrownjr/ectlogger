@@ -64,19 +64,32 @@ ectlogger/
 - Multi-frequency support with active frequency tracking
 - Net status tracking (Draft, Scheduled, Active, Closed)
 - NCS, logger, and relay role assignments
+- Net templates for reusable configurations
+- ICS-309 communication log mode
+
+### Multi-NCS Operations
+- Multiple NCS operators per net
+- Per-NCS frequency claiming (`NetRole.active_frequency_id`)
+- NCS color coding (unique colors for each NCS)
+- Visual hierarchy (👑 primary NCS, 🤴 secondary NCS)
+- Automatic frequency assignment when NCS creates check-ins
 
 ### Check-ins
 - Create check-ins with required and optional fields
 - Recheck tracking (stations checking in multiple times)
 - Real-time updates via WebSocket
 - Status tracking (Checked In, Listening, Available, Away, Checked Out)
-- Frequency tracking per check-in
+- Frequency tracking per check-in (`frequency_id` and `available_frequency_ids`)
+- Bulk check-in for multiple stations
+- Search and filter by callsign, name, location, or frequency
 
 ### Real-time Features
 - WebSocket connections for live net updates
 - Instant check-in notifications
 - Real-time frequency changes
-- Live chat functionality (backend ready, frontend can be extended)
+- Check-in deletion broadcasts
+- Live chat functionality
+- Online user tracking
 
 ### Email Notifications
 - Magic link authentication emails
@@ -103,18 +116,28 @@ ectlogger/
 ### Nets (`/nets`)
 - `POST /nets/` - Create net
 - `GET /nets/` - List nets (with status filter)
-- `GET /nets/{net_id}` - Get net details
+- `GET /nets/{net_id}` - Get net details (includes `can_manage` permission flag)
+- `GET /nets/{net_id}/stats` - Get net statistics and online users
 - `PUT /nets/{net_id}` - Update net
 - `POST /nets/{net_id}/start` - Start net
 - `POST /nets/{net_id}/close` - Close net
 - `DELETE /nets/{net_id}` - Delete net
+- `GET /nets/{net_id}/export/csv` - Export check-ins as CSV
+- `GET /nets/{net_id}/export/ics309` - Export as ICS-309 communication log
+
+### Net Roles (`/nets/{net_id}/roles`)
+- `GET /nets/{net_id}/roles` - List roles for a net
+- `POST /nets/{net_id}/roles` - Assign role to user
+- `DELETE /nets/{net_id}/roles/{role_id}` - Remove role
+- `PUT /nets/{net_id}/roles/{role_id}/frequency/{frequency_id}` - Claim frequency as NCS
+- `DELETE /nets/{net_id}/roles/{role_id}/frequency` - Release claimed frequency
 
 ### Check-ins (`/check-ins`)
 - `POST /check-ins/nets/{net_id}/check-ins` - Create check-in
 - `GET /check-ins/nets/{net_id}/check-ins` - List check-ins
 - `GET /check-ins/check-ins/{check_in_id}` - Get check-in
 - `PUT /check-ins/check-ins/{check_in_id}` - Update check-in
-- `DELETE /check-ins/check-ins/{check_in_id}` - Delete check-in
+- `DELETE /check-ins/check-ins/{check_in_id}` - Delete check-in (broadcasts via WebSocket)
 
 ### Frequencies (`/frequencies`)
 - `POST /frequencies/` - Create frequency
@@ -122,8 +145,19 @@ ectlogger/
 - `GET /frequencies/{frequency_id}` - Get frequency
 - `DELETE /frequencies/{frequency_id}` - Delete frequency
 
+### Templates (`/templates`)
+- `GET /templates/` - List net templates
+- `POST /templates/` - Create template from net
+- `GET /templates/{template_id}` - Get template
+- `DELETE /templates/{template_id}` - Delete template
+
+### Statistics (`/statistics`)
+- `GET /statistics/platform` - Platform-wide statistics
+- `GET /statistics/user/{user_id}` - User participation statistics
+
 ### WebSocket
-- `WS /ws/nets/{net_id}` - Real-time net updates
+- `WS /ws/nets/{net_id}?token={jwt}` - Real-time net updates
+  - Message types: `check_in`, `check_in_deleted`, `status_change`, `role_change`, `active_frequency`, `chat_message`, `net_started`, `active_speaker`
 
 ## Database Models
 

@@ -64,6 +64,11 @@ After checking in, you can update your status:
 3. Configure check-in fields (required and optional)
 4. Save as **Draft** or **Start** immediately
 
+### Starting a Net
+
+- Click the green **▶ Play** button on the Dashboard or NetView page
+- A toast notification will remind you to start if you're viewing a draft/scheduled net
+
 ### Managing Check-ins
 
 As NCS, you can:
@@ -72,17 +77,41 @@ As NCS, you can:
 - Update station status
 - Track which frequency each station is on
 
+### Multi-NCS Operations
+
+For nets with multiple frequencies, you can have multiple NCS operators:
+
+1. **Assign NCS Role** — Promote other users to NCS via the status dropdown
+2. **Claim a Frequency** — Click a frequency chip to claim it as your monitored frequency
+3. **Color Coding** — Each NCS is assigned a unique color:
+   - 👑 **Crown** — Primary NCS (net owner)
+   - 🤴 **Prince Crown** — Secondary NCS operators
+   - Frequency chips and check-in rows are colored to match the monitoring NCS
+4. **Check-ins** — When you check in a station, they're automatically assigned to your claimed frequency
+
 ### Assigning Roles
 
 Delegate responsibilities:
+- **NCS** — Full net control, can manage check-ins and claim frequencies
 - **Logger** — Can log check-ins
 - **Relay** — Can check in stations they can hear but you can't
+
+### Filtering by Frequency
+
+- **Ctrl+Click** a frequency chip to filter the check-in list
+- NCS operators always remain visible regardless of filter
+- Click **Show All** to clear the filter
 
 ### Closing the Net
 
 1. Click **Close Net**
 2. A complete log is generated and emailed to you
 3. The net is archived for future reference
+
+### Exporting Logs
+
+- **CSV Export** — Download check-ins as a spreadsheet
+- **ICS-309 Export** — Official FEMA communication log format (enable in net settings)
 
 ## Statistics
 

@@ -6,7 +6,7 @@ from typing import List
 from datetime import datetime, UTC
 import json
 from app.database import get_db
-from app.models import CheckIn, Net, NetStatus, User, StationStatus
+from app.models import CheckIn, Net, NetStatus, User, StationStatus, NetRole
 from app.schemas import CheckInCreate, CheckInUpdate, CheckInResponse
 from app.dependencies import get_current_user
 
@@ -36,8 +36,25 @@ async def create_check_in(
         raise HTTPException(status_code=400, detail="Net is not active")
     
     # Validate and process frequency_id
-    if check_in_data.frequency_id is None and net.active_frequency_id:
-        check_in_data.frequency_id = net.active_frequency_id
+    # First check if current user is NCS with a claimed frequency
+    if check_in_data.frequency_id is None:
+        ncs_role_result = await db.execute(
+            select(NetRole).where(
+                NetRole.net_id == net_id,
+                NetRole.user_id == current_user.id,
+                NetRole.role == "NCS"
+            )
+        )
+        ncs_role = ncs_role_result.scalar_one_or_none()
+        if ncs_role and ncs_role.active_frequency_id:
+            check_in_data.frequency_id = ncs_role.active_frequency_id
+            # Also set available_frequency_ids if not provided
+            if not check_in_data.available_frequency_ids:
+                check_in_data.available_frequency_ids = [ncs_role.active_frequency_id]
+        elif net.active_frequency_id:
+            check_in_data.frequency_id = net.active_frequency_id
+            if not check_in_data.available_frequency_ids:
+                check_in_data.available_frequency_ids = [net.active_frequency_id]
     
     # Validate available_frequency_ids against net's prescribed frequencies
     available_freq_ids = check_in_data.available_frequency_ids or []
@@ -290,7 +307,23 @@ async def delete_check_in(
     if net.owner_id != current_user.id and current_user.role.value != "admin":
         raise HTTPException(status_code=403, detail="Not authorized")
     
+    # Store net_id before deletion for broadcast
+    net_id = check_in.net_id
+    check_in_id = check_in.id
+    
     await db.delete(check_in)
     await db.commit()
+    
+    # Broadcast deletion via WebSocket
+    from app.main import manager
+    import datetime
+    await manager.broadcast({
+        "type": "check_in_deleted",
+        "data": {
+            "id": check_in_id,
+            "net_id": net_id
+        },
+        "timestamp": datetime.datetime.utcnow().isoformat()
+    }, net_id)
     
     return None
