@@ -104,6 +104,7 @@ class Net(Base):
     active_frequency_id = Column(Integer, ForeignKey("frequencies.id"), nullable=True)
     template_id = Column(Integer, ForeignKey("net_templates.id"), nullable=True)
     field_config = Column(Text, default='{"name": {"enabled": true, "required": false}, "location": {"enabled": true, "required": false}, "skywarn_number": {"enabled": false, "required": false}, "weather_observation": {"enabled": false, "required": false}, "power_source": {"enabled": false, "required": false}, "power": {"enabled": false, "required": false}, "feedback": {"enabled": false, "required": false}, "notes": {"enabled": false, "required": false}}')  # JSON config for check-in fields
+    ics309_enabled = Column(Boolean, default=False)  # Generate ICS-309 format on close
     started_at = Column(DateTime(timezone=True))
     closed_at = Column(DateTime(timezone=True))
     created_at = Column(DateTime(timezone=True), server_default=func.now())

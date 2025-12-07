@@ -558,8 +558,10 @@ async def close_net(
         try:
             email_service = EmailService()
             
-            # Check if user prefers ICS-309 format
-            if getattr(recipient, 'notify_ics309', False):
+            # Use ICS-309 if net has it enabled OR user prefers it
+            use_ics309 = net.ics309_enabled or getattr(recipient, 'notify_ics309', False)
+            
+            if use_ics309:
                 await email_service.send_ics309_log(
                     email=email,
                     net_name=net.name,
@@ -668,6 +670,130 @@ async def export_net_csv(
     # Prepare response
     output.seek(0)
     filename = f"{net.name.replace(' ', '_')}_{net.started_at.strftime('%Y%m%d') if net.started_at else 'draft'}.csv"
+    
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
+@router.get("/{net_id}/export/ics309")
+async def export_net_ics309(
+    net_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Export net as ICS-309 Communications Log CSV"""
+    # Get net with check-ins, frequencies, and owner
+    result = await db.execute(
+        select(Net).options(
+            selectinload(Net.frequencies),
+            selectinload(Net.check_ins).selectinload(CheckIn.frequency),
+            selectinload(Net.owner)
+        ).where(Net.id == net_id)
+    )
+    net = result.scalar_one_or_none()
+    
+    if not net:
+        raise HTTPException(status_code=404, detail="Net not found")
+    
+    # Check permissions - anyone can export a net they have access to
+    if not await check_net_permission(db, net, current_user):
+        raise HTTPException(status_code=403, detail="Not authorized to export this net")
+    
+    # Build frequency lookup map
+    freq_map = {f.id: f for f in net.frequencies}
+    
+    # Helper to format frequency
+    def format_freq(freq):
+        if freq.frequency:
+            return f"{freq.frequency} {freq.mode or ''}".strip()
+        elif freq.network:
+            return f"{freq.network} TG{freq.talkgroup or ''}"
+        return ""
+    
+    # Format frequencies list
+    freq_strings = [format_freq(f) for f in net.frequencies]
+    freq_list = ", ".join(freq_strings) if freq_strings else "Multiple"
+    
+    # Get NCS info
+    ncs_callsign = net.owner.callsign if net.owner else "Unknown"
+    ncs_name = net.owner.name or net.owner.callsign or "Unknown" if net.owner else "Unknown"
+    
+    # Format times
+    started_at = net.started_at.strftime("%Y-%m-%d %H:%M:%S") if net.started_at else "N/A"
+    closed_at = net.closed_at.strftime("%Y-%m-%d %H:%M:%S") if net.closed_at else "N/A"
+    
+    # Get chat messages
+    from app.models import ChatMessage
+    chat_result = await db.execute(
+        select(ChatMessage)
+        .options(selectinload(ChatMessage.user))
+        .where(ChatMessage.net_id == net_id)
+        .order_by(ChatMessage.created_at.asc())
+    )
+    chat_messages = chat_result.scalars().all()
+    
+    # Build log entries combining check-ins and chat
+    log_entries = []
+    
+    # Add check-ins
+    for check_in in sorted(net.check_ins, key=lambda x: x.checked_in_at):
+        location_info = f" from {check_in.location}" if check_in.location else ""
+        weather_info = f" | WX: {check_in.weather_observation}" if check_in.weather_observation else ""
+        
+        log_entries.append({
+            'time': format_time_for_net(check_in.checked_in_at, net.started_at, net.closed_at),
+            'from_station': check_in.callsign,
+            'to_station': 'NET',
+            'message': f"Check-in{location_info}{weather_info}"
+        })
+    
+    # Add chat messages (non-system)
+    for msg in chat_messages:
+        callsign = msg.user.callsign if msg.user and msg.user.callsign else ('System' if msg.is_system else 'Unknown')
+        if callsign != 'System':
+            log_entries.append({
+                'time': format_time_for_net(msg.created_at, net.started_at, net.closed_at),
+                'from_station': callsign,
+                'to_station': 'NET',
+                'message': msg.message
+            })
+    
+    # Sort by time
+    log_entries.sort(key=lambda x: x.get('time', ''))
+    
+    # Create ICS-309 CSV
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    # ICS-309 header info
+    writer.writerow(["ICS-309 COMMUNICATIONS LOG"])
+    writer.writerow([""])
+    writer.writerow(["1. Incident Name:", net.name])
+    writer.writerow(["2. Operational Period:", f"{started_at} to {closed_at}"])
+    writer.writerow(["3. Radio Operator:", f"{ncs_name} / {ncs_callsign}"])
+    writer.writerow(["4. Channel/Frequency:", freq_list])
+    writer.writerow([""])
+    writer.writerow(["TIME", "FROM", "TO", "SUBJECT/MESSAGE"])
+    
+    for entry in log_entries:
+        writer.writerow([
+            entry.get('time', ''),
+            entry.get('from_station', ''),
+            entry.get('to_station', ''),
+            entry.get('message', '')
+        ])
+    
+    writer.writerow([""])
+    writer.writerow(["9. Prepared By:", "ECTLogger - Automated Log"])
+    writer.writerow(["10. Date/Time:", closed_at])
+    
+    # Prepare response
+    output.seek(0)
+    date_str = net.started_at.strftime('%Y%m%d') if net.started_at else 'draft'
+    filename = f"ICS309_{net.name.replace(' ', '_')}_{date_str}.csv"
     
     return StreamingResponse(
         iter([output.getvalue()]),

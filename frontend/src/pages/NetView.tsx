@@ -32,6 +32,8 @@ import {
   Tooltip,
   useTheme,
   CircularProgress,
+  Switch,
+  FormControlLabel,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -69,6 +71,7 @@ interface Net {
   status: string;
   owner_id: number;
   active_frequency_id?: number;
+  ics309_enabled?: boolean;
   field_config?: {
     [key: string]: {
       enabled: boolean;
@@ -465,6 +468,37 @@ const NetView: React.FC = () => {
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Failed to export CSV:', error);
+    }
+  };
+
+  const handleExportICS309 = async () => {
+    try {
+      const response = await api.get(`/nets/${netId}/export/ics309`, {
+        responseType: 'blob',
+      });
+      
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `ICS309_${net?.name.replace(/ /g, '_')}_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Failed to export ICS-309:', error);
+    }
+  };
+
+  const handleToggleICS309 = async () => {
+    try {
+      const newValue = !net?.ics309_enabled;
+      await api.patch(`/nets/${netId}`, { ics309_enabled: newValue });
+      setNet(prev => prev ? { ...prev, ics309_enabled: newValue } : null);
+      setToastMessage(newValue ? 'ICS-309 format enabled for this net' : 'ICS-309 format disabled');
+    } catch (error) {
+      console.error('Failed to toggle ICS-309:', error);
     }
   };
 
@@ -1048,9 +1082,16 @@ const NetView: React.FC = () => {
               <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', alignItems: 'center', justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
                 {canManage && (net.status === 'draft' || net.status === 'scheduled') && (
                   <>
-                    <Button size="small" variant="outlined" onClick={() => navigate(`/nets/${netId}/edit`)}>
-                      Edit
-                    </Button>
+                    <Tooltip title="Edit net settings">
+                      <Button 
+                        size="small" 
+                        variant="outlined" 
+                        onClick={() => navigate(`/nets/${netId}/edit`)}
+                        sx={{ minWidth: 'auto', px: 1 }}
+                      >
+                        <EditIcon fontSize="small" />
+                      </Button>
+                    </Tooltip>
                     <Tooltip title="Assign NCS and logger roles (any assigned NCS can start the net)">
                       <Button 
                         size="small" 
@@ -1163,6 +1204,19 @@ const NetView: React.FC = () => {
                         <GroupIcon fontSize="small" />
                       </Button>
                     </Tooltip>
+                    <Tooltip title="Enable ICS-309 format for net close emails (ARES/RACES/EmComm)">
+                      <FormControlLabel
+                        control={
+                          <Switch
+                            size="small"
+                            checked={net.ics309_enabled || false}
+                            onChange={handleToggleICS309}
+                          />
+                        }
+                        label={<Typography variant="caption">ICS-309</Typography>}
+                        sx={{ ml: 0.5, mr: 0 }}
+                      />
+                    </Tooltip>
                     {!hasNCS && (
                       <Button 
                         size="small" 
@@ -1267,6 +1321,16 @@ const NetView: React.FC = () => {
                         sx={{ minWidth: 'auto', px: 1 }}
                       >
                         <DownloadIcon fontSize="small" />
+                      </Button>
+                    </Tooltip>
+                    <Tooltip title="Download ICS-309 Communications Log">
+                      <Button 
+                        size="small"
+                        variant="outlined" 
+                        onClick={handleExportICS309}
+                        sx={{ minWidth: 'auto', px: 1 }}
+                      >
+                        <DescriptionIcon fontSize="small" />
                       </Button>
                     </Tooltip>
                     {canManage && (

@@ -161,6 +161,7 @@ class NetBase(BaseModel):
     info_url: Optional[str] = Field(None, max_length=500)
     script: Optional[str] = Field(None, max_length=50000)
     field_config: Optional[dict] = None
+    ics309_enabled: Optional[bool] = False
 
 
 class NetCreate(NetBase):
@@ -176,6 +177,7 @@ class NetUpdate(BaseModel):
     active_frequency_id: Optional[int] = None
     frequency_ids: Optional[List[int]] = Field(None, max_length=50)
     field_config: Optional[dict] = None
+    ics309_enabled: Optional[bool] = None
     
     @field_validator('frequency_ids')
     @classmethod
@@ -193,6 +195,7 @@ class NetResponse(NetBase):
     owner_name: Optional[str] = None
     active_frequency_id: Optional[int] = None
     field_config: Optional[dict] = None
+    ics309_enabled: bool = False
     started_at: Optional[datetime] = None
     closed_at: Optional[datetime] = None
     created_at: datetime
@@ -214,6 +217,7 @@ class NetResponse(NetBase):
             'owner_name': owner_name,
             'active_frequency_id': net.active_frequency_id,
             'field_config': json.loads(net.field_config) if net.field_config else None,
+            'ics309_enabled': net.ics309_enabled or False,
             'started_at': net.started_at,
             'closed_at': net.closed_at,
             'created_at': net.created_at,
