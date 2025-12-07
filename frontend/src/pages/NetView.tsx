@@ -48,6 +48,7 @@ import GroupIcon from '@mui/icons-material/Group';
 import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
 import CloseIcon from '@mui/icons-material/Close';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import LanguageIcon from '@mui/icons-material/Language';
 import InfoIcon from '@mui/icons-material/Info';
@@ -149,7 +150,7 @@ const NCS_COLORS = [
   { bg: 'rgba(0, 188, 212, 0.15)', border: '#00bcd4', text: '#00bcd4' },   // Cyan
 ];
 
-// Pulse animation for highlighting the check-in button
+// Pulse animation for highlighting the check-in button (blue)
 const pulseAnimation = keyframes`
   0% {
     box-shadow: 0 0 0 0 rgba(25, 118, 210, 0.7);
@@ -159,6 +160,19 @@ const pulseAnimation = keyframes`
   }
   100% {
     box-shadow: 0 0 0 0 rgba(25, 118, 210, 0);
+  }
+`;
+
+// Pulse animation for highlighting the start net button (green)
+const pulseAnimationGreen = keyframes`
+  0% {
+    box-shadow: 0 0 0 0 rgba(46, 125, 50, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(46, 125, 50, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(46, 125, 50, 0);
   }
 `;
 
@@ -191,6 +205,7 @@ const NetView: React.FC = () => {
   const [startingNet, setStartingNet] = useState(false);
   const [scriptOpen, setScriptOpen] = useState(false);
   const [highlightCheckIn, setHighlightCheckIn] = useState(false);
+  const [highlightStartNet, setHighlightStartNet] = useState(false);
   const [checkInListDetached, setCheckInListDetached] = useState(() => {
     return localStorage.getItem('floatingWindow_checkInList_detached') === 'true';
   });
@@ -865,6 +880,20 @@ const NetView: React.FC = () => {
   // NCS can start/manage the net even if they're not the owner
   const canStartNet = canManage || isNCS;
   
+  // Show start net reminder when viewing a draft/scheduled net that user can start
+  useEffect(() => {
+    if (net && canStartNet && (net.status === 'draft' || net.status === 'scheduled')) {
+      // Small delay to ensure page is rendered
+      const timer = setTimeout(() => {
+        setToastMessage('Ready to start? Click the green play button to begin the net!');
+        setHighlightStartNet(true);
+        // Remove highlight after 10 seconds
+        setTimeout(() => setHighlightStartNet(false), 10000);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [net?.id, net?.status, canStartNet]);
+  
   // Check if net has any NCS assigned
   const hasNCS = netRoles.some((role: any) => role.role === 'NCS');
 
@@ -1106,6 +1135,31 @@ const NetView: React.FC = () => {
             </Grid>
             <Grid item xs={12} md={4} sx={{ pl: { md: 0.5 } }}>
               <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', alignItems: 'center', justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
+                {/* Start Net button - prominent, green, leftmost */}
+                {canStartNet && (net.status === 'draft' || net.status === 'scheduled') && (
+                  <Tooltip title="Start the net">
+                    <Button 
+                      size="small" 
+                      variant="contained" 
+                      color="success"
+                      onClick={handleStartNet} 
+                      disabled={startingNet}
+                      sx={{ 
+                        minWidth: 'auto', 
+                        px: 1,
+                        ...(highlightStartNet && {
+                          animation: `${pulseAnimationGreen} 1s infinite`,
+                        })
+                      }}
+                    >
+                      {startingNet ? (
+                        <CircularProgress size={16} color="inherit" />
+                      ) : (
+                        <PlayArrowIcon fontSize="small" />
+                      )}
+                    </Button>
+                  </Tooltip>
+                )}
                 {canManage && (net.status === 'draft' || net.status === 'scheduled') && (
                   <>
                     <Tooltip title="Edit net settings">
@@ -1132,18 +1186,6 @@ const NetView: React.FC = () => {
                       </Button>
                     </Tooltip>
                   </>
-                )}
-                {canStartNet && (net.status === 'draft' || net.status === 'scheduled') && (
-                  <Button size="small" variant="contained" onClick={handleStartNet} disabled={startingNet}>
-                    {startingNet ? (
-                      <>
-                        <CircularProgress size={16} color="inherit" sx={{ mr: 1 }} />
-                        Starting...
-                      </>
-                    ) : (
-                      'Start Net'
-                    )}
-                  </Button>
                 )}
                 {net.status === 'active' && checkIns.length > 0 && (
                   <Tooltip title="Bulk add multiple check-ins">
