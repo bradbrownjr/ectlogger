@@ -272,27 +272,24 @@ const NetView: React.FC = () => {
   }, [chatDetached]);
 
   // Show start net reminder when viewing a draft/scheduled net that user can start
-  // Note: We check netRoles to determine if user is NCS/owner
+  // Only runs once when net data is first loaded
   useEffect(() => {
     if (!net || !user) return;
+    if (net.status !== 'draft' && net.status !== 'scheduled') return;
     
     const isOwner = net.owner_id === user.id;
     const isAdmin = user.role === 'admin';
-    const userRole = netRoles.find((role: any) => role.user_id === user.id);
-    const isNCS = userRole && userRole.role === 'NCS';
-    const canStart = isOwner || isAdmin || isNCS;
     
-    if (canStart && (net.status === 'draft' || net.status === 'scheduled')) {
-      // Small delay to ensure page is rendered
+    // Only show reminder for owner/admin (NCS check would require netRoles which causes re-renders)
+    if (isOwner || isAdmin) {
       const timer = setTimeout(() => {
         setToastMessage('Ready to start? Click the green play button to begin the net!');
         setHighlightStartNet(true);
-        // Remove highlight after 10 seconds
         setTimeout(() => setHighlightStartNet(false), 10000);
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [net?.id, net?.status, net?.owner_id, user?.id, user?.role, netRoles]);
+  }, [net?.id]); // Only depend on net.id to run once
 
   const handleDetachCheckInList = () => setCheckInListDetached(true);
   const handleAttachCheckInList = () => setCheckInListDetached(false);
@@ -788,6 +785,26 @@ const NetView: React.FC = () => {
       case 'checked_out': return 'Checked out of net';
       default: return 'Checked in and available';
     }
+  };
+
+  // Helper to get the NCS icon for a specific check-in (primary crown or secondary prince)
+  const getNcsIcon = (checkIn: CheckIn) => {
+    // Owner is always primary
+    if (net?.owner_id === checkIn.user_id) return '👑';
+    
+    // Check if owner is checked in - if so, all other NCS are secondary
+    const ownerCheckedIn = net?.owner_id && checkIns.some(c => c.user_id === net.owner_id && c.status !== 'checked_out');
+    if (ownerCheckedIn) return '🤴';
+    
+    // Owner not present - check if this is first NCS in the list
+    const ncsIndex = ncsRoles.findIndex((r: any) => r.user_id === checkIn.user_id);
+    if (ncsIndex > 0) {
+      const primaryNCS = ncsRoles[0];
+      const primaryCheckedIn = checkIns.some(c => c.user_id === primaryNCS.user_id && c.status !== 'checked_out');
+      if (primaryCheckedIn) return '🤴';
+    }
+    
+    return '👑';
   };
 
   const formatFrequencyDisplay = (freq: any) => {
@@ -1649,7 +1666,7 @@ const NetView: React.FC = () => {
                                 }}
                               >
                                 {/* Always render the current value as an option to prevent MUI errors */}
-                                {((canManageCheckIns || selectValue === 'ncs') && <MenuItem value="ncs">👑</MenuItem>)}
+                                {((canManageCheckIns || selectValue === 'ncs') && <MenuItem value="ncs">{getNcsIcon(checkIn)}</MenuItem>)}
                                 {((canManageCheckIns || selectValue === 'logger') && <MenuItem value="logger">📋</MenuItem>)}
                                 <MenuItem value="checked_in">{checkIn.is_recheck ? '🔄' : '✅'}</MenuItem>
                                 <MenuItem value="listening">👂</MenuItem>
@@ -1868,7 +1885,7 @@ const NetView: React.FC = () => {
                                 disabled={owner?.id === checkIn.user_id}
                                 MenuProps={{ disableScrollLock: true }}
                               >
-                                {((canManageCheckIns || selectValue === 'ncs') && <MenuItem value="ncs">👑</MenuItem>)}
+                                {((canManageCheckIns || selectValue === 'ncs') && <MenuItem value="ncs">{getNcsIcon(checkIn)}</MenuItem>)}
                                 {((canManageCheckIns || selectValue === 'logger') && <MenuItem value="logger">📋</MenuItem>)}
                                 <MenuItem value="checked_in">{checkIn.is_recheck ? '🔄' : '✅'}</MenuItem>
                                 <MenuItem value="listening">👂</MenuItem>
@@ -2505,7 +2522,7 @@ const NetView: React.FC = () => {
                                     disabled={owner?.id === checkIn.user_id}
                                     MenuProps={{ disableScrollLock: true }}
                                   >
-                                    {((canManageCheckIns || selectValue === 'ncs') && <MenuItem value="ncs">👑</MenuItem>)}
+                                    {((canManageCheckIns || selectValue === 'ncs') && <MenuItem value="ncs">{getNcsIcon(checkIn)}</MenuItem>)}
                                     {((canManageCheckIns || selectValue === 'logger') && <MenuItem value="logger">📋</MenuItem>)}
                                     <MenuItem value="checked_in">{checkIn.is_recheck ? '🔄' : '✅'}</MenuItem>
                                     <MenuItem value="listening">👂</MenuItem>
