@@ -702,17 +702,26 @@ const NetView: React.FC = () => {
   const getStatusIcon = (status: string, checkIn?: CheckIn) => {
     // Show role icons for users with active roles
     if (checkIn) {
+      // Owner always gets the primary crown
       if (owner?.id === checkIn.user_id) return '👑';
+      
       const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
       if (userRole?.role?.toUpperCase() === 'NCS') {
-        // Check if this is a secondary NCS (not first in the sorted list)
+        // Check if owner is checked in - if so, this NCS is secondary
+        const ownerCheckedIn = owner && checkIns.some(c => c.user_id === owner.id && c.status !== 'checked_out');
+        if (ownerCheckedIn) {
+          // Owner is present - all other NCS are secondary
+          return '🤴';
+        }
+        
+        // Owner not present - check if this is first NCS in the list (acting primary)
         const ncsIndex = ncsRoles.findIndex((r: any) => r.user_id === checkIn.user_id);
         if (ncsIndex > 0) {
           // This is a secondary NCS - check if primary NCS is checked in
           const primaryNCS = ncsRoles[0];
           const primaryCheckedIn = checkIns.some(c => c.user_id === primaryNCS.user_id && c.status !== 'checked_out');
           if (primaryCheckedIn) {
-            // Primary is present - show prince crown for secondary
+            // Primary NCS is present - show 2nd crown for secondary
             return '🤴';
           }
         }
@@ -746,14 +755,19 @@ const NetView: React.FC = () => {
       if (owner?.id === checkIn.user_id) return 'Net Control Station - manages the net';
       const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
       if (userRole?.role?.toUpperCase() === 'NCS') {
-        // Check if this is a secondary NCS
+        // Check if owner is checked in - if so, this NCS is secondary
+        const ownerCheckedIn = owner && checkIns.some(c => c.user_id === owner.id && c.status !== 'checked_out');
+        if (ownerCheckedIn) {
+          return '2nd NCS - assists primary Net Control Station';
+        }
+        
+        // Check if this is a secondary NCS (not first in the list)
         const ncsIndex = ncsRoles.findIndex((r: any) => r.user_id === checkIn.user_id);
         if (ncsIndex > 0) {
-          // This is a secondary NCS - check if primary NCS is checked in
           const primaryNCS = ncsRoles[0];
           const primaryCheckedIn = checkIns.some(c => c.user_id === primaryNCS.user_id && c.status !== 'checked_out');
           if (primaryCheckedIn) {
-            return 'Backup NCS - assists primary Net Control Station';
+            return '2nd NCS - assists primary Net Control Station';
           }
         }
         return 'Net Control Station - manages the net';
@@ -1913,7 +1927,7 @@ const NetView: React.FC = () => {
               <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center' }}>
                 <Typography variant="caption" sx={{ fontWeight: 'bold' }}>Legend:</Typography>
                 <Tooltip title="Net Control Station - manages the net" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>👑 NCS</Typography></Tooltip>
-                <Tooltip title="Backup NCS - assists primary Net Control Station" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>🤴 Backup</Typography></Tooltip>
+                <Tooltip title="2nd NCS - assists primary Net Control Station" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>🤴 2nd NCS</Typography></Tooltip>
                 <Tooltip title="Logger - assists NCS with logging" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>📋 Logger</Typography></Tooltip>
                 <Tooltip title="Checked in and available" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>✅ Standard</Typography></Tooltip>
                 <Tooltip title="Re-checked into the net" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>🔄 Recheck</Typography></Tooltip>
@@ -2554,7 +2568,7 @@ const NetView: React.FC = () => {
                 <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center' }}>
                   <Typography variant="caption" sx={{ fontWeight: 'bold' }}>Legend:</Typography>
                   <Tooltip title="Net Control Station" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>👑 NCS</Typography></Tooltip>
-                  <Tooltip title="Backup NCS" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>🤴 Backup</Typography></Tooltip>
+                  <Tooltip title="2nd NCS" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>🤴 2nd NCS</Typography></Tooltip>
                   <Tooltip title="Logger" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>📋 Logger</Typography></Tooltip>
                   <Tooltip title="Checked in" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>✅ Standard</Typography></Tooltip>
                   <Tooltip title="Re-check" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>🔄 Recheck</Typography></Tooltip>
