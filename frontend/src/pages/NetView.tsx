@@ -704,7 +704,21 @@ const NetView: React.FC = () => {
     if (checkIn) {
       if (owner?.id === checkIn.user_id) return '👑';
       const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
-      if (userRole?.role?.toUpperCase() === 'NCS') return '👑';
+      if (userRole?.role?.toUpperCase() === 'NCS') {
+        // Check if this is a secondary NCS (not first in the sorted list)
+        const ncsIndex = ncsRoles.findIndex((r: any) => r.user_id === checkIn.user_id);
+        if (ncsIndex > 0) {
+          // This is a secondary NCS - check if primary NCS is checked in
+          const primaryNCS = ncsRoles[0];
+          const primaryCheckedIn = checkIns.some(c => c.user_id === primaryNCS.user_id && c.status !== 'checked_out');
+          if (primaryCheckedIn) {
+            // Primary is present - show prince crown for secondary
+            return '🤴';
+          }
+        }
+        // Primary NCS or acting primary (primary not present)
+        return '👑';
+      }
       if (userRole?.role?.toUpperCase() === 'LOGGER') return '📋';
       if (userRole?.role?.toUpperCase() === 'RELAY') return '📡';
       
@@ -731,7 +745,19 @@ const NetView: React.FC = () => {
     if (checkIn) {
       if (owner?.id === checkIn.user_id) return 'Net Control Station - manages the net';
       const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
-      if (userRole?.role?.toUpperCase() === 'NCS') return 'Net Control Station - manages the net';
+      if (userRole?.role?.toUpperCase() === 'NCS') {
+        // Check if this is a secondary NCS
+        const ncsIndex = ncsRoles.findIndex((r: any) => r.user_id === checkIn.user_id);
+        if (ncsIndex > 0) {
+          // This is a secondary NCS - check if primary NCS is checked in
+          const primaryNCS = ncsRoles[0];
+          const primaryCheckedIn = checkIns.some(c => c.user_id === primaryNCS.user_id && c.status !== 'checked_out');
+          if (primaryCheckedIn) {
+            return 'Backup NCS - assists primary Net Control Station';
+          }
+        }
+        return 'Net Control Station - manages the net';
+      }
       if (userRole?.role?.toUpperCase() === 'LOGGER') return 'Logger - assists NCS with logging';
       if (userRole?.role?.toUpperCase() === 'RELAY') return 'Relay - checks in stations on behalf of NCS';
       if (checkIn.is_recheck && status === 'checked_in') return 'Re-checked into the net';
@@ -1887,6 +1913,7 @@ const NetView: React.FC = () => {
               <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center' }}>
                 <Typography variant="caption" sx={{ fontWeight: 'bold' }}>Legend:</Typography>
                 <Tooltip title="Net Control Station - manages the net" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>👑 NCS</Typography></Tooltip>
+                <Tooltip title="Backup NCS - assists primary Net Control Station" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>🤴 Backup</Typography></Tooltip>
                 <Tooltip title="Logger - assists NCS with logging" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>📋 Logger</Typography></Tooltip>
                 <Tooltip title="Checked in and available" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>✅ Standard</Typography></Tooltip>
                 <Tooltip title="Re-checked into the net" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>🔄 Recheck</Typography></Tooltip>
@@ -2527,6 +2554,7 @@ const NetView: React.FC = () => {
                 <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center' }}>
                   <Typography variant="caption" sx={{ fontWeight: 'bold' }}>Legend:</Typography>
                   <Tooltip title="Net Control Station" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>👑 NCS</Typography></Tooltip>
+                  <Tooltip title="Backup NCS" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>🤴 Backup</Typography></Tooltip>
                   <Tooltip title="Logger" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>📋 Logger</Typography></Tooltip>
                   <Tooltip title="Checked in" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>✅ Standard</Typography></Tooltip>
                   <Tooltip title="Re-check" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>🔄 Recheck</Typography></Tooltip>
