@@ -4,7 +4,7 @@ from sqlalchemy import select, func, delete
 from sqlalchemy.orm import selectinload
 from typing import List
 from app.database import get_db
-from app.models import NetTemplate, NetTemplateSubscription, User, net_template_frequencies, Frequency, Net, NetStatus
+from app.models import NetTemplate, NetTemplateSubscription, User, net_template_frequencies, Frequency, Net, NetStatus, NCSRotationMember, NetRole
 from app.schemas import NetTemplateCreate, NetTemplateUpdate, NetTemplateResponse, NetTemplateSubscriptionResponse, NetResponse
 from app.dependencies import get_current_user, get_current_user_optional
 import json
@@ -368,10 +368,13 @@ async def create_net_from_template(
     db: AsyncSession = Depends(get_db)
 ):
     """Create a new net from a template"""
-    # Load template with frequencies
+    # Load template with frequencies and NCS rotation members
     result = await db.execute(
         select(NetTemplate)
-        .options(selectinload(NetTemplate.frequencies))
+        .options(
+            selectinload(NetTemplate.frequencies),
+            selectinload(NetTemplate.rotation_members)
+        )
         .where(NetTemplate.id == template_id)
     )
     template = result.scalar_one_or_none()
@@ -401,6 +404,15 @@ async def create_net_from_template(
         await db.execute(
             net_freq_table.insert().values(net_id=net.id, frequency_id=freq.id)
         )
+    
+    # Copy NCS rotation members as NetRoles
+    for member in template.rotation_members:
+        net_role = NetRole(
+            net_id=net.id,
+            user_id=member.user_id,
+            role="NCS"
+        )
+        db.add(net_role)
     
     await db.commit()
     
