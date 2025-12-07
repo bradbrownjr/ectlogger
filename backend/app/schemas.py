@@ -237,6 +237,7 @@ class NetTemplateBase(BaseModel):
 
 class NetTemplateCreate(NetTemplateBase):
     frequency_ids: Optional[List[int]] = []
+    owner_id: Optional[int] = None  # Admin can assign to another user
 
 
 class NetTemplateUpdate(BaseModel):

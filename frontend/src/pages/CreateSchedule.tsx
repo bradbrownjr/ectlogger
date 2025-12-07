@@ -695,8 +695,11 @@ const CreateSchedule: React.FC = () => {
       schedule_config: scheduleConfig,
     };
     
-    // Include owner_id if changed (only for edit mode)
+    // Include owner_id if changed (for both create and edit)
     if (isEdit && ownerId && ownerId !== originalOwnerId) {
+      ScheduleData.owner_id = ownerId;
+    } else if (!isEdit && ownerId && ownerId !== currentUser?.id) {
+      // Admin creating for another user
       ScheduleData.owner_id = ownerId;
     }
 
@@ -992,7 +995,11 @@ const CreateSchedule: React.FC = () => {
               <Autocomplete
                 options={isEdit 
                   ? availableUsersForRotation 
-                  : users.filter(u => !pendingNCSUsers.some(p => p.id === u.id))}
+                  : users.filter(u => {
+                      // Filter out pending users and the owner
+                      const effectiveOwnerId = ownerId || currentUser?.id;
+                      return u.id !== effectiveOwnerId && !pendingNCSUsers.some(p => p.id === u.id);
+                    })}
                 getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
                 value={selectedUserForRotation}
                 onChange={(_: any, value: User | null) => setSelectedUserForRotation(value)}
@@ -1019,48 +1026,90 @@ const CreateSchedule: React.FC = () => {
               </Button>
             </Box>
 
-            {/* For NEW schedules - show pending users */}
+            {/* For NEW schedules - show owner first, then pending users */}
             {!isEdit && (
-              pendingNCSUsers.length === 0 ? (
-                <Typography color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
-                  No additional NCS operators added. The schedule owner can start nets from this schedule.
-                </Typography>
-              ) : (
-                <List>
-                  {pendingNCSUsers.map((user, index) => (
-                    <ListItem
-                      key={user.id}
-                      sx={{
-                        border: 1,
-                        borderColor: 'divider',
-                        borderRadius: 1,
-                        mb: 1,
-                      }}
-                    >
-                      <ListItemText
-                        primary={
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Typography fontWeight="bold">{user.callsign}</Typography>
-                            {user.name && (
-                              <Typography color="text.secondary">({user.name})</Typography>
-                            )}
-                          </Box>
-                        }
-                      />
-                      <ListItemSecondaryAction>
-                        <IconButton
-                          type="button"
-                          edge="end"
-                          onClick={() => setPendingNCSUsers(pendingNCSUsers.filter(u => u.id !== user.id))}
-                          color="error"
-                        >
-                          <DeleteIcon />
-                        </IconButton>
-                      </ListItemSecondaryAction>
-                    </ListItem>
-                  ))}
-                </List>
-              )
+              <>
+                {/* Owner display and selector */}
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="subtitle2" sx={{ mb: 1 }}>Schedule Owner</Typography>
+                  {currentUser?.role === 'admin' ? (
+                    <Autocomplete
+                      options={users}
+                      getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
+                      value={users.find((u: User) => u.id === (ownerId || currentUser?.id)) || null}
+                      onChange={(_: any, value: User | null) => setOwnerId(value?.id || null)}
+                      renderInput={(params: any) => (
+                        <TextField 
+                          {...params} 
+                          size="small"
+                          helperText="Admin: You can assign this schedule to another user"
+                        />
+                      )}
+                    />
+                  ) : (
+                    <Box sx={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: 1, 
+                      p: 1.5, 
+                      bgcolor: 'action.hover', 
+                      borderRadius: 1,
+                      border: 1,
+                      borderColor: 'primary.main'
+                    }}>
+                      <Typography fontWeight="bold">{currentUser?.callsign}</Typography>
+                      {currentUser?.name && (
+                        <Typography color="text.secondary">({currentUser.name})</Typography>
+                      )}
+                      <Chip label="Owner" size="small" color="primary" />
+                    </Box>
+                  )}
+                </Box>
+
+                <Divider sx={{ my: 2 }} />
+                
+                <Typography variant="subtitle2" sx={{ mb: 1 }}>Additional NCS Operators</Typography>
+                {pendingNCSUsers.length === 0 ? (
+                  <Typography color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
+                    No additional NCS operators added yet.
+                  </Typography>
+                ) : (
+                  <List>
+                    {pendingNCSUsers.map((user, index) => (
+                      <ListItem
+                        key={user.id}
+                        sx={{
+                          border: 1,
+                          borderColor: 'divider',
+                          borderRadius: 1,
+                          mb: 1,
+                        }}
+                      >
+                        <ListItemText
+                          primary={
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Typography fontWeight="bold">{user.callsign}</Typography>
+                              {user.name && (
+                                <Typography color="text.secondary">({user.name})</Typography>
+                              )}
+                            </Box>
+                          }
+                        />
+                        <ListItemSecondaryAction>
+                          <IconButton
+                            type="button"
+                            edge="end"
+                            onClick={() => setPendingNCSUsers(pendingNCSUsers.filter(u => u.id !== user.id))}
+                            color="error"
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </ListItemSecondaryAction>
+                      </ListItem>
+                    ))}
+                  </List>
+                )}
+              </>
             )}
 
             {/* For EDIT mode - show existing rotation members with full controls */}

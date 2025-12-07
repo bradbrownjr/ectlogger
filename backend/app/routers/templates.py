@@ -23,12 +23,20 @@ async def create_template(
     field_config_json = json.dumps(template_data.field_config) if template_data.field_config else None
     schedule_config_json = json.dumps(template_data.schedule_config) if template_data.schedule_config else '{}'
     
+    # Determine owner - admin can assign to another user
+    owner_id = current_user.id
+    if template_data.owner_id and current_user.role == "admin":
+        # Verify the target user exists
+        target_user = await db.execute(select(User).where(User.id == template_data.owner_id))
+        if target_user.scalar_one_or_none():
+            owner_id = template_data.owner_id
+    
     template = NetTemplate(
         name=template_data.name,
         description=template_data.description,
         info_url=template_data.info_url,
         script=template_data.script,
-        owner_id=current_user.id,
+        owner_id=owner_id,
         field_config=field_config_json,
         schedule_type=template_data.schedule_type,
         schedule_config=schedule_config_json
