@@ -851,7 +851,15 @@ const CreateSchedule: React.FC = () => {
               helperText="Optional URL for net, club or organization info"
             />
 
-            <Box sx={{ mt: 2 }}>
+            {/* ARES & EmComm Features */}
+            <Typography variant="subtitle1" sx={{ mt: 3, mb: 1, fontWeight: 'bold' }}>
+              ARES &amp; EmComm Features
+            </Typography>
+            <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
+              Features for emergency communications and formal net operations.
+            </Typography>
+
+            <Box sx={{ ml: 1 }}>
               <FormControlLabel
                 control={
                   <Switch
