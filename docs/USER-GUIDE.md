@@ -102,6 +102,31 @@ Delegate responsibilities:
 - NCS operators always remain visible regardless of filter
 - Click **Show All** to clear the filter
 
+### Community Net Features
+
+For casual nets and roundtables, ECTLogger offers engagement tools:
+
+#### Topic of the Week
+
+Ask participants a discussion question:
+
+1. In the net settings (Topic & Poll button), enter a **Topic Question**
+2. When checking in, participants see the question and can type their response
+3. Responses appear in the check-in list's "Topic" column
+4. All responses are included in the emailed net log
+
+#### Participant Poll
+
+Run a quick poll with predefined options:
+
+1. In the net settings (Topic & Poll button), enter a **Poll Question**
+2. Add up to 5 **Poll Options** (e.g., "Yes", "No", "Maybe")
+3. Participants select their answer via dropdown when checking in
+4. Poll results are shown in the "Poll" column
+5. The emailed net log includes a bar chart of poll results with percentages
+
+Both Topic and Poll columns are only visible when configured for the net. System messages in chat announce when participants submit answers.
+
 ### Closing the Net
 
 1. Click **Close Net**

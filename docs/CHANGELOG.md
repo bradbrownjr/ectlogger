@@ -4,6 +4,29 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# December 8, 2025
+
+## New Features
+
+* **Topic of the Week** - Ask participants a discussion question during check-in; responses appear in the check-in list and emailed net log
+* **Participant Poll** - Run quick polls with up to 5 predefined options; results include bar chart with percentages in the emailed net log
+* **Poll/Topic System Messages** - Chat now shows system messages when participants submit poll or topic answers
+* **Dialog Enter Key Support** - Close Net, Topic & Poll, Frequencies, and Check-In dialogs now submit when pressing Enter
+
+## Improvements
+
+* **Toast Notification Duration** - Increased from 3 seconds to 6 seconds for better readability
+* **Email Net Log Enhancements** - Now includes poll results bar chart, topic/poll columns respect field configuration, chat log includes poll question and results summary
+* **CSV Export** - Includes Topic Response and Poll Response columns when those fields are configured
+
+## Bug Fixes
+
+* **Poll Column Not Appearing** - Fixed poll/topic columns missing from all three check-in table views (desktop, mobile, detached)
+* **Poll/Topic Not Saving** - Fixed backend not saving topic_response and poll_response on check-in creation and rechecks
+* **Poll Autocomplete Premature Submit** - Fixed Enter key in poll dropdown causing form submission before selection was complete
+
+---
+
 # December 7, 2025
 
 ## New Features
