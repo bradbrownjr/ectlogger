@@ -98,6 +98,10 @@ MICROSOFT_CLIENT_ID=your-microsoft-client-id
 MICROSOFT_CLIENT_SECRET=your-microsoft-client-secret
 GITHUB_CLIENT_ID=your-github-client-id
 GITHUB_CLIENT_SECRET=your-github-client-secret
+
+# Frontend Serving (Production only)
+# Set to true when using Caddy/Nginx to serve static files from frontend/dist/
+# SKIP_VITE=true
 ```
 
 **Important Notes:**

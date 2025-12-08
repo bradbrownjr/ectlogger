@@ -91,6 +91,13 @@ Before first use, configure email settings using the interactive wizard:
 .\configure.ps1
 ```
 
+The configuration wizard will:
+- Generate a secure secret key
+- Configure your email (SMTP) settings
+- Set frontend and backend URLs
+- **Auto-detect Caddy/Nginx** and configure frontend serving appropriately
+- For production setups with HTTPS, automatically set `SKIP_VITE=true` so Caddy/Nginx serves the frontend
+
 Or manually:
 1. Copy `.env.example` to `backend/.env`
 2. Edit `backend/.env` and set your email credentials

@@ -61,8 +61,16 @@ After checking in, you can update your status:
    - **Name** — Net name (e.g., "Monday Evening SKYWARN Net")
    - **Description** — Purpose and any special instructions
    - **Frequencies** — Add one or more frequencies/modes
+   - **Scheduled Start Time** — Optional. If set, a countdown timer will display
 3. Configure check-in fields (required and optional)
 4. Save as **Draft** or **Start** immediately
+
+### Net Timers
+
+The net header displays helpful timing information:
+
+- **Countdown Timer** — For scheduled nets, shows time until start (e.g., "Starts in 2h 15m")
+- **Duration Timer** — For active nets, shows elapsed time (e.g., "Duration: 1:23:45")
 
 ### Starting a Net
 

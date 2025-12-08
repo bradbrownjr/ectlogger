@@ -111,7 +111,11 @@ VITE_API_URL=https://ectlogger.example.com/api
 FRONTEND_URL=https://ectlogger.example.com
 # If port 8000 is in use by another service, change this:
 BACKEND_PORT=8000
+# Tell start.sh that Caddy serves the frontend (skip Vite dev server)
+SKIP_VITE=true
 ```
+
+> **Note:** The `SKIP_VITE=true` setting tells `start.sh` to NOT start the Vite development server. In production, Caddy serves the pre-built static files from `frontend/dist/`. If you run `./configure.sh`, this is automatically set when Caddy is detected.
 
 **Rebuild frontend after changing .env:**
 ```bash

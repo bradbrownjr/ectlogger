@@ -12,18 +12,24 @@ All notable changes to ECTLogger are documented here.
 * **Participant Poll** - Run quick polls with up to 5 predefined options; results include bar chart with percentages in the emailed net log
 * **Poll/Topic System Messages** - Chat now shows system messages when participants submit poll or topic answers
 * **Dialog Enter Key Support** - Close Net, Topic & Poll, Frequencies, and Check-In dialogs now submit when pressing Enter
+* **Countdown Timer** - Nets with a scheduled start time display a countdown timer (e.g., "Starts in 2h 15m 30s")
+* **Duration Timer** - Active nets display elapsed time since the net started (e.g., "Duration: 1:23:45")
+* **Scheduled Start Time** - Set a scheduled start time when creating a net for countdown display
 
 ## Improvements
 
 * **Toast Notification Duration** - Increased from 3 seconds to 6 seconds for better readability
 * **Email Net Log Enhancements** - Now includes poll results bar chart, topic/poll columns respect field configuration, chat log includes poll question and results summary
 * **CSV Export** - Includes Topic Response and Poll Response columns when those fields are configured
+* **Reverse Proxy Auto-Detection** - `configure.sh` now auto-detects Caddy or Nginx and sets `SKIP_VITE` appropriately
+* **Production Frontend Serving** - `SKIP_VITE=true` setting allows Caddy/Nginx to serve static frontend files instead of Vite dev server
 
 ## Bug Fixes
 
 * **Poll Column Not Appearing** - Fixed poll/topic columns missing from all three check-in table views (desktop, mobile, detached)
 * **Poll/Topic Not Saving** - Fixed backend not saving topic_response and poll_response on check-in creation and rechecks
 * **Poll Autocomplete Premature Submit** - Fixed Enter key in poll dropdown causing form submission before selection was complete
+* **Beta Server Frontend Not Loading** - Fixed start.sh assuming all service mode deployments have Caddy; now uses SKIP_VITE env var
 
 ---
 
