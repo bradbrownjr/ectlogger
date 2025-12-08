@@ -38,6 +38,9 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
+import SaveIcon from '@mui/icons-material/Save';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
@@ -1479,25 +1482,29 @@ This concludes tonight's net. 73 to all."
           {/* Navigation buttons */}
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3, pt: 2, borderTop: 1, borderColor: 'divider' }}>
             <Box sx={{ display: 'flex', gap: 2 }}>
+              <Button type="button" variant="outlined" onClick={() => navigate('/scheduler')} startIcon={<CloseIcon />}>
+                Cancel
+              </Button>
               {activeTab > 0 && (
-                <Button type="button" variant="outlined" onClick={() => setActiveTab(activeTab - 1)}>
+                <Button type="button" variant="outlined" onClick={() => setActiveTab(activeTab - 1)} startIcon={<ArrowBackIcon />}>
                   Previous
                 </Button>
               )}
               {activeTab < 5 && (
-                <Button type="button" variant="outlined" onClick={handleNextTab}>
+                <Button type="button" variant="outlined" onClick={handleNextTab} endIcon={<ArrowForwardIcon />}>
                   Next
                 </Button>
               )}
             </Box>
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <Button type="button" variant="outlined" onClick={() => navigate('/scheduler')}>
-                Cancel
-              </Button>
-              <Button type="submit" variant="contained" color="primary" disabled={isTransitioning}>
-                {isEdit ? 'Save Changes' : 'Create Schedule'}
-              </Button>
-            </Box>
+            <Button 
+              type="submit" 
+              variant="contained" 
+              color="primary" 
+              disabled={isTransitioning || !name || selectedFrequencyIds.length === 0}
+              startIcon={<SaveIcon />}
+            >
+              {isEdit ? 'Save Changes' : 'Create Schedule'}
+            </Button>
           </Box>
         </Box>
       </Paper>

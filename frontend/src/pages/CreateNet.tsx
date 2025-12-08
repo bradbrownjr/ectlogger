@@ -36,6 +36,9 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
+import SaveIcon from '@mui/icons-material/Save';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import FormatBoldIcon from '@mui/icons-material/FormatBold';
 import FormatItalicIcon from '@mui/icons-material/FormatItalic';
@@ -1216,31 +1219,34 @@ This is **[CALLSIGN]**, closing the net at [TIME]. 73 to all.`}
         {/* Action Buttons - Always visible */}
         <Box sx={{ mt: 4, pt: 2, borderTop: 1, borderColor: 'divider', display: 'flex', gap: 2, justifyContent: 'space-between' }}>
           <Box sx={{ display: 'flex', gap: 2 }}>
+            <Button 
+              variant="outlined" 
+              onClick={() => navigate(isEditMode || isInfoMode ? `/nets/${netId}` : '/dashboard')}
+              startIcon={<CloseIcon />}
+            >
+              {isInfoMode ? 'Back' : 'Cancel'}
+            </Button>
             {activeTab > 0 && (
-              <Button variant="outlined" onClick={() => setActiveTab(activeTab - 1)}>
+              <Button variant="outlined" onClick={() => setActiveTab(activeTab - 1)} startIcon={<ArrowBackIcon />}>
                 Previous
               </Button>
             )}
             {!isInfoMode && activeTab < 4 && (
-              <Button variant="outlined" onClick={() => setActiveTab(activeTab + 1)}>
+              <Button variant="outlined" onClick={() => setActiveTab(activeTab + 1)} endIcon={<ArrowForwardIcon />}>
                 Next
               </Button>
             )}
           </Box>
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <Button variant="outlined" onClick={() => navigate(isEditMode || isInfoMode ? `/nets/${netId}` : '/dashboard')}>
-              {isInfoMode ? 'Back' : 'Cancel'}
+          {!isInfoMode && (
+            <Button
+              variant="contained"
+              onClick={handleCreateNet}
+              disabled={!name || selectedFrequencies.length === 0}
+              startIcon={<SaveIcon />}
+            >
+              {isEditMode ? 'Save Changes' : 'Create Net'}
             </Button>
-            {!isInfoMode && (
-              <Button
-                variant="contained"
-                onClick={handleCreateNet}
-                disabled={!name || selectedFrequencies.length === 0}
-              >
-                {isEditMode ? 'Save Changes' : 'Create Net'}
-              </Button>
-            )}
-          </Box>
+          )}
         </Box>
       </Paper>
     </Container>
