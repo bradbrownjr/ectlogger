@@ -134,6 +134,10 @@ const CreateSchedule: React.FC = () => {
   const [infoUrl, setInfoUrl] = useState('');
   const [script, setScript] = useState('');
   const [ics309Enabled, setIcs309Enabled] = useState(false);
+  const [topicOfWeekEnabled, setTopicOfWeekEnabled] = useState(false);
+  const [topicOfWeekPrompt, setTopicOfWeekPrompt] = useState('');
+  const [pollEnabled, setPollEnabled] = useState(false);
+  const [pollQuestion, setPollQuestion] = useState('');
   const [frequencies, setFrequencies] = useState<Frequency[]>([]);
   const [selectedFrequencyIds, setSelectedFrequencyIds] = useState<number[]>([]);
   const [newFrequency, setNewFrequency] = useState({ frequency: '', mode: 'FM', network: '', talkgroup: '', description: '' });
@@ -552,6 +556,10 @@ const CreateSchedule: React.FC = () => {
       setInfoUrl(Schedule.info_url || '');
       setScript(Schedule.script || '');
       setIcs309Enabled(Schedule.ics309_enabled || false);
+      setTopicOfWeekEnabled(Schedule.topic_of_week_enabled || false);
+      setTopicOfWeekPrompt(Schedule.topic_of_week_prompt || '');
+      setPollEnabled(Schedule.poll_enabled || false);
+      setPollQuestion(Schedule.poll_question || '');
       setSelectedFrequencyIds(Schedule.frequencies.map((f: any) => f.id));
       // Set owner info
       setOwnerId(Schedule.owner_id);
@@ -705,6 +713,10 @@ const CreateSchedule: React.FC = () => {
       schedule_type: scheduleType,
       schedule_config: scheduleConfig,
       ics309_enabled: ics309Enabled,
+      topic_of_week_enabled: topicOfWeekEnabled,
+      topic_of_week_prompt: topicOfWeekPrompt || null,
+      poll_enabled: pollEnabled,
+      poll_question: pollQuestion || null,
     };
     
     // Include owner_id if changed (for both create and edit)
@@ -852,6 +864,64 @@ const CreateSchedule: React.FC = () => {
               <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
                 When enabled, net close emails will use the official ICS-309 format used by ARES, RACES, and EmComm organizations.
               </Typography>
+            </Box>
+
+            {/* Community Net Features */}
+            <Typography variant="subtitle1" sx={{ mt: 3, mb: 1, fontWeight: 'bold' }}>
+              Community Net Features
+            </Typography>
+            <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
+              Optional features to encourage participation in informal community nets.
+            </Typography>
+
+            <Box sx={{ ml: 1 }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={topicOfWeekEnabled}
+                    onChange={(e) => setTopicOfWeekEnabled(e.target.checked)}
+                  />
+                }
+                label="Topic of the Week"
+              />
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5, mb: 1 }}>
+                Adds a topic response field to check-ins. Great for icebreaker questions.
+              </Typography>
+              {topicOfWeekEnabled && (
+                <TextField
+                  fullWidth
+                  label="Default Topic Prompt"
+                  value={topicOfWeekPrompt}
+                  onChange={(e) => setTopicOfWeekPrompt(e.target.value)}
+                  placeholder="e.g., What's your favorite radio memory?"
+                  helperText="This can be changed when starting each net"
+                  sx={{ mt: 1, mb: 2, ml: 4.5, width: 'calc(100% - 36px)' }}
+                />
+              )}
+
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={pollEnabled}
+                    onChange={(e) => setPollEnabled(e.target.checked)}
+                  />
+                }
+                label="Participant Poll"
+              />
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5, mb: 1 }}>
+                Adds a poll question to check-ins with auto-complete for consistent answers.
+              </Typography>
+              {pollEnabled && (
+                <TextField
+                  fullWidth
+                  label="Default Poll Question"
+                  value={pollQuestion}
+                  onChange={(e) => setPollQuestion(e.target.value)}
+                  placeholder="e.g., What band do you operate most?"
+                  helperText="This can be changed when starting each net"
+                  sx={{ mt: 1, mb: 2, ml: 4.5, width: 'calc(100% - 36px)' }}
+                />
+              )}
             </Box>
 
             {/* Owner selector - only show when editing and user is owner or admin */}
