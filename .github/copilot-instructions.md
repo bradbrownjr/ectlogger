@@ -92,13 +92,24 @@ Copy `.env.example` to `backend/.env`:
 - **Host**: `ectlogger@app.ectlogger.us`
 - **Python**: 3.11.2
 - **Path**: `~/ectlogger`
-- **Deploy**: Push to `main` branch triggers deployment
+- **Deploy from GitHub**:
+  ```bash
+  # Pull latest from GitHub (preferred method)
+  ssh ectlogger@app.ectlogger.us "cd ~/ectlogger && git pull origin main"
+  
+  # Build frontend
+  ssh ectlogger@app.ectlogger.us "cd ~/ectlogger/frontend && npm run build"
+  
+  # Restart backend (requires interactive sudo)
+  ssh ectlogger@app.ectlogger.us
+  sudo systemctl restart ectlogger
+  ```
 
 ### Beta (ectbeta.lynwood.us)
 - **Host**: `bradb@10.6.26.3`
 - **Python**: 3.13
 - **Path**: `/home/bradb/ectlogger`
-- **Deploy manually**:
+- **Deploy manually** (for rapid iteration without committing):
   ```bash
   # Copy backend files
   scp backend/app/routers/*.py bradb@10.6.26.3:/home/bradb/ectlogger/backend/app/routers/
@@ -113,7 +124,6 @@ Copy `.env.example` to `backend/.env`:
   sudo systemctl restart ectlogger
   ```
 - **Database**: SQLite at `/home/bradb/ectlogger/backend/ectlogger.db`
-- **Run migrations**: `ssh bradb@10.6.26.3 "cd /home/bradb/ectlogger && bash migrate.sh"`
 
 ### Alpha (10.6.26.6)
 - **Host**: `bradb@10.6.26.6`
@@ -125,3 +135,22 @@ Copy `.env.example` to `backend/.env`:
 - **Frontend**: `http://localhost:3000` (Vite dev server)
 - **Backend**: `http://localhost:8000` (uvicorn)
 - **API Docs**: `http://localhost:8000/docs`
+
+## Database Migrations
+
+Migrations are individual Python scripts in `backend/migrations/`. Run each one separately:
+
+```bash
+# On production (needs venv for some migrations)
+ssh ectlogger@app.ectlogger.us "cd ~/ectlogger && python3 backend/migrations/006_add_netrole_active_frequency.py"
+
+# If migration uses SQLAlchemy, activate venv first
+ssh ectlogger@app.ectlogger.us "cd ~/ectlogger/backend && source venv/bin/activate && python migrations/010_add_template_ics309.py"
+
+# On beta
+ssh bradb@10.6.26.3 "cd /home/bradb/ectlogger && python3 backend/migrations/006_add_netrole_active_frequency.py"
+```
+
+**Note**: `migrate.sh` is for URL configuration, NOT database migrations. Don't use it for schema changes.
+
+Fresh installations don't need migrations - they get the current schema from `models.py`.
