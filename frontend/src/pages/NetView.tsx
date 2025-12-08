@@ -237,6 +237,9 @@ const NetView: React.FC = () => {
   const [topicPollDialogOpen, setTopicPollDialogOpen] = useState(false);
   const [tempTopicPrompt, setTempTopicPrompt] = useState('');
   const [tempPollQuestion, setTempPollQuestion] = useState('');
+  // Inline editing state
+  const [inlineEditingId, setInlineEditingId] = useState<number | null>(null);
+  const [inlineEditValues, setInlineEditValues] = useState<Partial<CheckIn>>({});
   const [checkInListDetached, setCheckInListDetached] = useState(() => {
     return localStorage.getItem('floatingWindow_checkInList_detached') === 'true';
   });
@@ -1092,6 +1095,101 @@ const NetView: React.FC = () => {
     }
   };
 
+  // ========== INLINE EDITING HANDLERS ==========
+  // Start inline editing when a row is clicked (except on certain elements)
+  const handleStartInlineEdit = (checkIn: CheckIn) => {
+    if (!canManageCheckIns) return;
+    setInlineEditingId(checkIn.id);
+    setInlineEditValues({
+      callsign: checkIn.callsign,
+      name: checkIn.name || '',
+      location: checkIn.location || '',
+      skywarn_number: checkIn.skywarn_number || '',
+      weather_observation: checkIn.weather_observation || '',
+      power_source: checkIn.power_source || '',
+      power: checkIn.power || '',
+      notes: checkIn.notes || '',
+      relayed_by: checkIn.relayed_by || '',
+      topic_response: checkIn.topic_response || '',
+      poll_response: checkIn.poll_response || '',
+      custom_fields: checkIn.custom_fields || {},
+    });
+  };
+
+  // Save inline edit
+  const handleSaveInlineEdit = async () => {
+    if (!inlineEditingId) return;
+    
+    const checkIn = checkIns.find((c: CheckIn) => c.id === inlineEditingId);
+    if (!checkIn) return;
+    
+    try {
+      await checkInApi.update(inlineEditingId, {
+        callsign: inlineEditValues.callsign || checkIn.callsign,
+        name: inlineEditValues.name,
+        location: inlineEditValues.location,
+        skywarn_number: inlineEditValues.skywarn_number,
+        weather_observation: inlineEditValues.weather_observation,
+        power_source: inlineEditValues.power_source,
+        power: inlineEditValues.power,
+        notes: inlineEditValues.notes,
+        relayed_by: inlineEditValues.relayed_by,
+        topic_response: inlineEditValues.topic_response,
+        poll_response: inlineEditValues.poll_response,
+        custom_fields: inlineEditValues.custom_fields,
+        // Keep existing frequency settings
+        available_frequency_ids: checkIn.available_frequencies || [],
+      });
+      setInlineEditingId(null);
+      setInlineEditValues({});
+      fetchCheckIns();
+      // Refresh poll responses in case a new answer was added
+      if (net?.poll_enabled) {
+        fetchPollResponses();
+      }
+    } catch (error) {
+      console.error('Failed to update check-in:', error);
+      alert('Failed to update check-in');
+    }
+  };
+
+  // Cancel inline edit
+  const handleCancelInlineEdit = () => {
+    setInlineEditingId(null);
+    setInlineEditValues({});
+  };
+
+  // Handle inline field change
+  const handleInlineFieldChange = (field: string, value: string) => {
+    if (field.startsWith('custom_')) {
+      const customFieldName = field.replace('custom_', '');
+      setInlineEditValues(prev => ({
+        ...prev,
+        custom_fields: {
+          ...prev.custom_fields,
+          [customFieldName]: value,
+        },
+      }));
+    } else {
+      setInlineEditValues(prev => ({
+        ...prev,
+        [field]: value,
+      }));
+    }
+  };
+
+  // Handle key press in inline edit (Enter to save, Escape to cancel)
+  const handleInlineKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSaveInlineEdit();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      handleCancelInlineEdit();
+    }
+  };
+
+  // Legacy dialog-based edit (keeping for backwards compatibility / edge cases)
   const handleEditCheckIn = (checkIn: CheckIn) => {
     setEditingCheckIn(checkIn);
     setEditCheckInDialogOpen(true);
@@ -1916,9 +2014,23 @@ const NetView: React.FC = () => {
                     if (hasAnyRelayedBy) columnCount++;
                     if (canManage) columnCount++;
                     
+                    // Check if this row is being inline edited
+                    const isInlineEditing = inlineEditingId === checkIn.id;
+                    
                     return (
                     <React.Fragment key={checkIn.id}>
                     <TableRow
+                      onClick={(e) => {
+                        // Don't start editing if clicking on interactive elements
+                        const target = e.target as HTMLElement;
+                        if (target.closest('button, select, input, .MuiSelect-root, .MuiIconButton-root')) return;
+                        // Don't start editing if already editing this row
+                        if (isInlineEditing) return;
+                        // Start inline editing
+                        if (canManageCheckIns && checkIn.status !== 'checked_out') {
+                          handleStartInlineEdit(checkIn);
+                        }
+                      }}
                       sx={{ 
                         backgroundColor: checkIn.id === activeSpeakerId 
                           ? (theme) => theme.palette.mode === 'dark' ? theme.palette.success.dark : theme.palette.success.light
@@ -1935,6 +2047,13 @@ const NetView: React.FC = () => {
                         ...(isNcsUser && ncsColor && checkIn.status !== 'checked_out' && {
                           borderLeft: `3px solid ${ncsColor.border}`,
                         }),
+                        // Cursor pointer when row is editable
+                        cursor: canManageCheckIns && checkIn.status !== 'checked_out' && !isInlineEditing ? 'pointer' : 'default',
+                        // Highlight row being edited
+                        ...(isInlineEditing && {
+                          outline: '2px solid',
+                          outlineColor: 'primary.main',
+                        }),
                         '& td, & th': {
                           ...(checkIn.id === activeSpeakerId ? { fontWeight: 'bold' } : {}),
                           verticalAlign: 'middle',
@@ -1945,7 +2064,7 @@ const NetView: React.FC = () => {
                       }}
                     >
                       <TableCell sx={{ width: 35 }}>{index + 1}</TableCell>
-                      <TableCell sx={{ width: 75 }}>
+                      <TableCell sx={{ width: 75 }} onClick={(e) => e.stopPropagation()}>
                         {net.status === 'active' && checkIn.status !== 'checked_out' && (canManageCheckIns || checkIn.user_id === user?.id) ? (() => {
                           // Calculate value once
 
@@ -2003,51 +2122,226 @@ const NetView: React.FC = () => {
                           </Tooltip>
                         )}
                       </TableCell>
+                      {/* Callsign cell - inline editable */}
                       <TableCell sx={{ width: 140 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                          {checkIn.user_id && onlineUserIds.includes(checkIn.user_id) && (
-                            <Box 
-                              sx={{ 
-                                width: 8, 
-                                height: 8, 
-                                borderRadius: '50%', 
-                                backgroundColor: 'success.main',
-                                flexShrink: 0
-                              }} 
-                              title="Online"
-                            />
-                          )}
-                          <Box sx={{ fontWeight: 500 }}>
-                            {checkIn.callsign}
+                        {isInlineEditing ? (
+                          <TextField
+                            size="small"
+                            value={inlineEditValues.callsign || ''}
+                            onChange={(e) => handleInlineFieldChange('callsign', e.target.value.toUpperCase())}
+                            onKeyDown={handleInlineKeyDown}
+                            onBlur={handleSaveInlineEdit}
+                            autoFocus
+                            inputProps={{ style: { textTransform: 'uppercase', padding: '4px 8px' } }}
+                            sx={{ width: '100%' }}
+                          />
+                        ) : (
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            {checkIn.user_id && onlineUserIds.includes(checkIn.user_id) && (
+                              <Box 
+                                sx={{ 
+                                  width: 8, 
+                                  height: 8, 
+                                  borderRadius: '50%', 
+                                  backgroundColor: 'success.main',
+                                  flexShrink: 0
+                                }} 
+                                title="Online"
+                              />
+                            )}
+                            <Box sx={{ fontWeight: 500 }}>
+                              {checkIn.callsign}
+                            </Box>
+                            {checkIn.relayed_by && (
+                              <Tooltip title={`Relayed by ${checkIn.relayed_by}`} arrow>
+                                <span style={{ cursor: 'help' }}>📡</span>
+                              </Tooltip>
+                            )}
                           </Box>
-                          {checkIn.relayed_by && (
-                            <Tooltip title={`Relayed by ${checkIn.relayed_by}`} arrow>
-                              <span style={{ cursor: 'help' }}>📡</span>
-                            </Tooltip>
-                          )}
-                        </Box>
+                        )}
                       </TableCell>
-                      {net?.field_config?.name?.enabled && <TableCell>{checkIn.name}</TableCell>}
-                      {net?.field_config?.location?.enabled && <TableCell>{checkIn.location}</TableCell>}
-                      {net?.field_config?.skywarn_number?.enabled && <TableCell sx={{ width: 70 }}>{checkIn.skywarn_number}</TableCell>}
-                      {net?.field_config?.weather_observation?.enabled && <TableCell>{checkIn.weather_observation}</TableCell>}
-                      {net?.field_config?.power_source?.enabled && <TableCell sx={{ width: 70 }}>{checkIn.power_source}</TableCell>}
-                      {net?.field_config?.power?.enabled && <TableCell sx={{ width: 70 }}>{checkIn.power}</TableCell>}
-                      {net?.field_config?.notes?.enabled && <TableCell>{checkIn.notes}</TableCell>}
-                      {/* Custom field values */}
+                      {/* Name cell - inline editable */}
+                      {net?.field_config?.name?.enabled && (
+                        <TableCell>
+                          {isInlineEditing ? (
+                            <TextField
+                              size="small"
+                              value={inlineEditValues.name || ''}
+                              onChange={(e) => handleInlineFieldChange('name', e.target.value)}
+                              onKeyDown={handleInlineKeyDown} 
+                              onBlur={handleSaveInlineEdit}
+                              inputProps={{ style: { padding: '4px 8px' } }}
+                              sx={{ width: '100%' }}
+                            />
+                          ) : checkIn.name}
+                        </TableCell>
+                      )}
+                      {/* Location cell - inline editable */}
+                      {net?.field_config?.location?.enabled && (
+                        <TableCell>
+                          {isInlineEditing ? (
+                            <TextField
+                              size="small"
+                              value={inlineEditValues.location || ''}
+                              onChange={(e) => handleInlineFieldChange('location', e.target.value)}
+                              onKeyDown={handleInlineKeyDown}
+                              onBlur={handleSaveInlineEdit}
+                              inputProps={{ style: { padding: '4px 8px' } }}
+                              sx={{ width: '100%' }}
+                            />
+                          ) : checkIn.location}
+                        </TableCell>
+                      )}
+                      {/* Skywarn Number - inline editable */}
+                      {net?.field_config?.skywarn_number?.enabled && (
+                        <TableCell sx={{ width: 70 }}>
+                          {isInlineEditing ? (
+                            <TextField
+                              size="small"
+                              value={inlineEditValues.skywarn_number || ''}
+                              onChange={(e) => handleInlineFieldChange('skywarn_number', e.target.value)}
+                              onKeyDown={handleInlineKeyDown}
+                              onBlur={handleSaveInlineEdit}
+                              inputProps={{ style: { padding: '4px 8px' } }}
+                              sx={{ width: '100%' }}
+                            />
+                          ) : checkIn.skywarn_number}
+                        </TableCell>
+                      )}
+                      {/* Weather Observation - inline editable */}
+                      {net?.field_config?.weather_observation?.enabled && (
+                        <TableCell>
+                          {isInlineEditing ? (
+                            <TextField
+                              size="small"
+                              value={inlineEditValues.weather_observation || ''}
+                              onChange={(e) => handleInlineFieldChange('weather_observation', e.target.value)}
+                              onKeyDown={handleInlineKeyDown}
+                              onBlur={handleSaveInlineEdit}
+                              inputProps={{ style: { padding: '4px 8px' } }}
+                              sx={{ width: '100%' }}
+                            />
+                          ) : checkIn.weather_observation}
+                        </TableCell>
+                      )}
+                      {/* Power Source - inline editable */}
+                      {net?.field_config?.power_source?.enabled && (
+                        <TableCell sx={{ width: 70 }}>
+                          {isInlineEditing ? (
+                            <TextField
+                              size="small"
+                              value={inlineEditValues.power_source || ''}
+                              onChange={(e) => handleInlineFieldChange('power_source', e.target.value)}
+                              onKeyDown={handleInlineKeyDown}
+                              onBlur={handleSaveInlineEdit}
+                              inputProps={{ style: { padding: '4px 8px' } }}
+                              sx={{ width: '100%' }}
+                            />
+                          ) : checkIn.power_source}
+                        </TableCell>
+                      )}
+                      {/* Power - inline editable */}
+                      {net?.field_config?.power?.enabled && (
+                        <TableCell sx={{ width: 70 }}>
+                          {isInlineEditing ? (
+                            <TextField
+                              size="small"
+                              value={inlineEditValues.power || ''}
+                              onChange={(e) => handleInlineFieldChange('power', e.target.value)}
+                              onKeyDown={handleInlineKeyDown}
+                              onBlur={handleSaveInlineEdit}
+                              inputProps={{ style: { padding: '4px 8px' } }}
+                              sx={{ width: '100%' }}
+                            />
+                          ) : checkIn.power}
+                        </TableCell>
+                      )}
+                      {/* Notes - inline editable */}
+                      {net?.field_config?.notes?.enabled && (
+                        <TableCell>
+                          {isInlineEditing ? (
+                            <TextField
+                              size="small"
+                              value={inlineEditValues.notes || ''}
+                              onChange={(e) => handleInlineFieldChange('notes', e.target.value)}
+                              onKeyDown={handleInlineKeyDown}
+                              onBlur={handleSaveInlineEdit}
+                              inputProps={{ style: { padding: '4px 8px' } }}
+                              sx={{ width: '100%' }}
+                            />
+                          ) : checkIn.notes}
+                        </TableCell>
+                      )}
+                      {/* Custom field values - inline editable */}
                       {getEnabledCustomFields().map((field) => (
                         <TableCell key={field.name}>
-                          {checkIn.custom_fields?.[field.name] || ''}
+                          {isInlineEditing ? (
+                            <TextField
+                              size="small"
+                              value={inlineEditValues.custom_fields?.[field.name] || ''}
+                              onChange={(e) => handleInlineFieldChange(`custom_${field.name}`, e.target.value)}
+                              onKeyDown={handleInlineKeyDown}
+                              onBlur={handleSaveInlineEdit}
+                              inputProps={{ style: { padding: '4px 8px' } }}
+                              sx={{ width: '100%' }}
+                            />
+                          ) : checkIn.custom_fields?.[field.name] || ''}
                         </TableCell>
                       ))}
-                      {net?.topic_of_week_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.topic_response || ''}</TableCell>}
-                      {net?.poll_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.poll_response || ''}</TableCell>}
-                      {hasAnyRelayedBy && <TableCell sx={{ width: 80 }}>{checkIn.relayed_by || ''}</TableCell>}
+                      {/* Topic response - inline editable */}
+                      {net?.topic_of_week_enabled && (
+                        <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                          {isInlineEditing ? (
+                            <TextField
+                              size="small"
+                              value={inlineEditValues.topic_response || ''}
+                              onChange={(e) => handleInlineFieldChange('topic_response', e.target.value)}
+                              onKeyDown={handleInlineKeyDown}
+                              onBlur={handleSaveInlineEdit}
+                              inputProps={{ style: { padding: '4px 8px' } }}
+                              sx={{ width: '100%' }}
+                            />
+                          ) : checkIn.topic_response || ''}
+                        </TableCell>
+                      )}
+                      {/* Poll response - inline editable */}
+                      {net?.poll_enabled && (
+                        <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                          {isInlineEditing ? (
+                            <TextField
+                              size="small"
+                              value={inlineEditValues.poll_response || ''}
+                              onChange={(e) => handleInlineFieldChange('poll_response', e.target.value)}
+                              onKeyDown={handleInlineKeyDown}
+                              onBlur={handleSaveInlineEdit}
+                              inputProps={{ style: { padding: '4px 8px' } }}
+                              sx={{ width: '100%' }}
+                            />
+                          ) : checkIn.poll_response || ''}
+                        </TableCell>
+                      )}
+                      {/* Relayed By - inline editable */}
+                      {hasAnyRelayedBy && (
+                        <TableCell sx={{ width: 80 }}>
+                          {isInlineEditing ? (
+                            <TextField
+                              size="small"
+                              value={inlineEditValues.relayed_by || ''}
+                              onChange={(e) => handleInlineFieldChange('relayed_by', e.target.value.toUpperCase())}
+                              onKeyDown={handleInlineKeyDown}
+                              onBlur={handleSaveInlineEdit}
+                              inputProps={{ style: { textTransform: 'uppercase', padding: '4px 8px' } }}
+                              sx={{ width: '100%' }}
+                            />
+                          ) : checkIn.relayed_by || ''}
+                        </TableCell>
+                      )}
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>
                         {formatTimeWithDate(checkIn.checked_in_at, user?.prefer_utc || false, net?.started_at)}
                       </TableCell>
+                      {/* Actions column - remove edit pencil, keep active speaker and delete */}
                       {canManage && (
-                      <TableCell sx={{ width: 100 }}>
+                      <TableCell sx={{ width: 70 }} onClick={(e) => e.stopPropagation()}>
                         {net.status === 'active' && checkIn.status !== 'checked_out' && (
                           <IconButton
                             size="small"
@@ -2058,13 +2352,6 @@ const NetView: React.FC = () => {
                             🗣️
                           </IconButton>
                         )}
-                        <IconButton
-                          size="small"
-                          onClick={() => handleEditCheckIn(checkIn)}
-                          title="Edit check-in"
-                        >
-                          <EditIcon fontSize="small" />
-                        </IconButton>
                         <IconButton
                           size="small"
                           onClick={() => handleDeleteCheckIn(checkIn.id)}
@@ -2277,7 +2564,6 @@ const NetView: React.FC = () => {
                         <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatTimeWithDate(checkIn.checked_in_at, user?.prefer_utc || false, net?.started_at)}</TableCell>
                         {canManage && (
                           <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                            <IconButton size="small" onClick={() => handleEditCheckIn(checkIn)}><EditIcon fontSize="small" /></IconButton>
                             <IconButton size="small" onClick={() => handleDeleteCheckIn(checkIn.id)}><DeleteIcon fontSize="small" /></IconButton>
                           </TableCell>
                         )}
@@ -3027,7 +3313,6 @@ const NetView: React.FC = () => {
                               {net.status === 'active' && checkIn.status !== 'checked_out' && (
                                 <IconButton size="small" onClick={() => handleSetActiveSpeaker(checkIn.id)} color={checkIn.id === activeSpeakerId ? 'primary' : 'default'} title="Mark as active speaker">🗣️</IconButton>
                               )}
-                              <IconButton size="small" onClick={() => handleEditCheckIn(checkIn)} title="Edit"><EditIcon fontSize="small" /></IconButton>
                               <IconButton size="small" onClick={() => handleDeleteCheckIn(checkIn.id)} title="Delete"><DeleteIcon fontSize="small" /></IconButton>
                             </TableCell>
                           )}
