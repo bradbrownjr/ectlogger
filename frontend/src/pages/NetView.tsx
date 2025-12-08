@@ -52,6 +52,7 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import LanguageIcon from '@mui/icons-material/Language';
 import InfoIcon from '@mui/icons-material/Info';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import { netApi, checkInApi, userApi, netRoleApi } from '../services/api';
 import api from '../services/api';
 import { formatTimeWithDate } from '../utils/dateUtils';
@@ -183,6 +184,19 @@ const pulseAnimationGreen = keyframes`
   }
 `;
 
+// Yellow shimmer animation for topic/poll config needed indicator
+const shimmerYellow = keyframes`
+  0% {
+    background-color: rgba(255, 193, 7, 0.3);
+  }
+  50% {
+    background-color: rgba(255, 193, 7, 0.7);
+  }
+  100% {
+    background-color: rgba(255, 193, 7, 0.3);
+  }
+`;
+
 const NetView: React.FC = () => {
   const { netId } = useParams<{ netId: string }>();
   const theme = useTheme();
@@ -213,6 +227,10 @@ const NetView: React.FC = () => {
   const [scriptOpen, setScriptOpen] = useState(false);
   const [highlightCheckIn, setHighlightCheckIn] = useState(false);
   const [highlightStartNet, setHighlightStartNet] = useState(false);
+  // Topic/Poll configuration dialog state
+  const [topicPollDialogOpen, setTopicPollDialogOpen] = useState(false);
+  const [tempTopicPrompt, setTempTopicPrompt] = useState('');
+  const [tempPollQuestion, setTempPollQuestion] = useState('');
   const [checkInListDetached, setCheckInListDetached] = useState(() => {
     return localStorage.getItem('floatingWindow_checkInList_detached') === 'true';
   });
@@ -310,7 +328,19 @@ const NetView: React.FC = () => {
     // Only show reminder for owner/admin (NCS check would require netRoles which causes re-renders)
     if (isOwner || isAdmin) {
       const timer = setTimeout(() => {
-        setToastMessage('Ready to start? Click the green play button to begin the net!');
+        // Build reminder message with topic/poll hints
+        let message = 'Ready to start? Click the green play button to begin the net!';
+        const needsConfig: string[] = [];
+        if (net.topic_of_week_enabled && !net.topic_of_week_prompt) {
+          needsConfig.push('topic');
+        }
+        if (net.poll_enabled && !net.poll_question) {
+          needsConfig.push('poll question');
+        }
+        if (needsConfig.length > 0) {
+          message += ` Don't forget to set the ${needsConfig.join(' and ')}!`;
+        }
+        setToastMessage(message);
         setHighlightStartNet(true);
         setTimeout(() => setHighlightStartNet(false), 10000);
       }, 500);
@@ -535,6 +565,45 @@ const NetView: React.FC = () => {
     } catch (error) {
       console.error('Failed to remove role:', error);
       alert('Failed to remove role');
+    }
+  };
+
+  // Check if topic/poll config is needed before starting
+  const needsTopicPollConfig = () => {
+    if (!net) return false;
+    const needsTopic = net.topic_of_week_enabled && !net.topic_of_week_prompt;
+    const needsPoll = net.poll_enabled && !net.poll_question;
+    return needsTopic || needsPoll;
+  };
+
+  const handleStartNetClick = () => {
+    if (needsTopicPollConfig()) {
+      // Open dialog to configure topic/poll
+      setTempTopicPrompt(net?.topic_of_week_prompt || '');
+      setTempPollQuestion(net?.poll_question || '');
+      setTopicPollDialogOpen(true);
+    } else {
+      handleStartNet();
+    }
+  };
+
+  const handleTopicPollSaveAndStart = async () => {
+    // Save the topic/poll configuration first
+    try {
+      const updates: any = {};
+      if (net?.topic_of_week_enabled) {
+        updates.topic_of_week_prompt = tempTopicPrompt || null;
+      }
+      if (net?.poll_enabled) {
+        updates.poll_question = tempPollQuestion || null;
+      }
+      await netApi.update(Number(netId), updates);
+      setTopicPollDialogOpen(false);
+      // Then start the net
+      handleStartNet();
+    } catch (error) {
+      console.error('Failed to save topic/poll config:', error);
+      alert('Failed to save configuration');
     }
   };
 
@@ -1313,28 +1382,50 @@ const NetView: React.FC = () => {
               <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', alignItems: 'center', justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
                 {/* Start Net button - prominent, green, leftmost */}
                 {canStartNet && (net.status === 'draft' || net.status === 'scheduled') && (
-                  <Tooltip title="Start the net">
-                    <Button 
-                      size="small" 
-                      variant="contained" 
-                      color="success"
-                      onClick={handleStartNet} 
-                      disabled={startingNet}
-                      sx={{ 
-                        minWidth: 'auto', 
-                        px: 1,
-                        ...(highlightStartNet && {
-                          animation: `${pulseAnimationGreen} 1s infinite`,
-                        })
-                      }}
-                    >
-                      {startingNet ? (
-                        <CircularProgress size={16} color="inherit" />
-                      ) : (
-                        <PlayArrowIcon fontSize="small" />
-                      )}
-                    </Button>
-                  </Tooltip>
+                  <>
+                    <Tooltip title="Start the net">
+                      <Button 
+                        size="small" 
+                        variant="contained" 
+                        color="success"
+                        onClick={handleStartNetClick} 
+                        disabled={startingNet}
+                        sx={{ 
+                          minWidth: 'auto', 
+                          px: 1,
+                          ...(highlightStartNet && {
+                            animation: `${pulseAnimationGreen} 1s infinite`,
+                          })
+                        }}
+                      >
+                        {startingNet ? (
+                          <CircularProgress size={16} color="inherit" />
+                        ) : (
+                          <PlayArrowIcon fontSize="small" />
+                        )}
+                      </Button>
+                    </Tooltip>
+                    {/* Show yellow shimmer ? icon if topic/poll needs configuration */}
+                    {needsTopicPollConfig() && (
+                      <Tooltip title="Topic or poll question needs to be set before starting">
+                        <IconButton
+                          size="small"
+                          onClick={() => {
+                            setTempTopicPrompt(net?.topic_of_week_prompt || '');
+                            setTempPollQuestion(net?.poll_question || '');
+                            setTopicPollDialogOpen(true);
+                          }}
+                          sx={{
+                            p: 0.5,
+                            borderRadius: '50%',
+                            animation: `${shimmerYellow} 2s ease-in-out infinite`,
+                          }}
+                        >
+                          <HelpOutlineIcon fontSize="small" sx={{ color: 'warning.dark' }} />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                  </>
                 )}
                 {canManage && (net.status === 'draft' || net.status === 'scheduled') && (
                   <>
@@ -2926,6 +3017,45 @@ const NetView: React.FC = () => {
           <Button onClick={() => setCloseNetDialogOpen(false)}>Cancel</Button>
           <Button onClick={handleCloseNet} variant="contained" color="error">
             Close Net
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Topic/Poll Configuration Dialog */}
+      <Dialog open={topicPollDialogOpen} onClose={() => setTopicPollDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Configure Community Net Features</DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Set the topic and/or poll question for this net session. These prompts will be shown to participants during check-in.
+            </Typography>
+            {net?.topic_of_week_enabled && (
+              <TextField
+                fullWidth
+                label="Topic of the Week"
+                value={tempTopicPrompt}
+                onChange={(e) => setTempTopicPrompt(e.target.value)}
+                placeholder="e.g., What's your favorite radio memory?"
+                helperText="What would you like participants to share?"
+                sx={{ mb: 3 }}
+              />
+            )}
+            {net?.poll_enabled && (
+              <TextField
+                fullWidth
+                label="Poll Question"
+                value={tempPollQuestion}
+                onChange={(e) => setTempPollQuestion(e.target.value)}
+                placeholder="e.g., What band do you operate most?"
+                helperText="Answers will be tracked and displayed as a chart"
+              />
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setTopicPollDialogOpen(false)}>Cancel</Button>
+          <Button onClick={handleTopicPollSaveAndStart} variant="contained" color="success">
+            Save & Start Net
           </Button>
         </DialogActions>
       </Dialog>

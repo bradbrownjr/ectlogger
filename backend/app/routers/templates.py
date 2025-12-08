@@ -120,7 +120,12 @@ async def create_template(
         owner_id=owner_id,
         field_config=field_config_json,
         schedule_type=template_data.schedule_type,
-        schedule_config=schedule_config_json
+        schedule_config=schedule_config_json,
+        ics309_enabled=template_data.ics309_enabled or False,
+        topic_of_week_enabled=template_data.topic_of_week_enabled or False,
+        topic_of_week_prompt=template_data.topic_of_week_prompt,
+        poll_enabled=template_data.poll_enabled or False,
+        poll_question=template_data.poll_question
     )
     db.add(template)
     await db.flush()
@@ -300,6 +305,16 @@ async def update_template(
         template.schedule_type = template_data.schedule_type
     if template_data.schedule_config is not None:
         template.schedule_config = json.dumps(template_data.schedule_config)
+    if template_data.ics309_enabled is not None:
+        template.ics309_enabled = template_data.ics309_enabled
+    if template_data.topic_of_week_enabled is not None:
+        template.topic_of_week_enabled = template_data.topic_of_week_enabled
+    if template_data.topic_of_week_prompt is not None:
+        template.topic_of_week_prompt = template_data.topic_of_week_prompt
+    if template_data.poll_enabled is not None:
+        template.poll_enabled = template_data.poll_enabled
+    if template_data.poll_question is not None:
+        template.poll_question = template_data.poll_question
     
     # Update owner if provided (only owner or admin can transfer ownership)
     if template_data.owner_id is not None and template_data.owner_id != template.owner_id:

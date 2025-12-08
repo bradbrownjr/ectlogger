@@ -108,6 +108,8 @@ Copy `.env.example` to `backend/.env`:
 ### Beta (ectbeta.lynwood.us)
 - **Host**: `bradb@10.6.26.3`
 - **Python**: 3.13
+- **Purpose**: Testing new features before production deployment
+- **Note**: Deploy new/incomplete features to beta ONLY until tested and confirmed working
 - **Path**: `/home/bradb/ectlogger`
 - **Deploy manually** (for rapid iteration without committing):
   ```bash
