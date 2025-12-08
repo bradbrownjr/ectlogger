@@ -112,6 +112,7 @@ class Net(Base):
     poll_enabled = Column(Boolean, default=False)
     poll_question = Column(String(500))  # The poll question, e.g., "What mode do you use most?"
     
+    scheduled_start_time = Column(DateTime(timezone=True))  # When the net is scheduled to start
     started_at = Column(DateTime(timezone=True))
     closed_at = Column(DateTime(timezone=True))
     created_at = Column(DateTime(timezone=True), server_default=func.now())

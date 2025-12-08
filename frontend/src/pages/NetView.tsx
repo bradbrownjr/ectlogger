@@ -53,6 +53,8 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import LanguageIcon from '@mui/icons-material/Language';
 import InfoIcon from '@mui/icons-material/Info';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import TimerIcon from '@mui/icons-material/Timer';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import { netApi, checkInApi, userApi, netRoleApi } from '../services/api';
 import api from '../services/api';
 import { formatTimeWithDate } from '../utils/dateUtils';
@@ -227,6 +229,9 @@ const NetView: React.FC = () => {
   const [scriptOpen, setScriptOpen] = useState(false);
   const [highlightCheckIn, setHighlightCheckIn] = useState(false);
   const [highlightStartNet, setHighlightStartNet] = useState(false);
+  // Countdown and duration timer state
+  const [countdownTime, setCountdownTime] = useState<string | null>(null);
+  const [durationTime, setDurationTime] = useState<string | null>(null);
   // Topic/Poll configuration dialog state
   const [topicPollDialogOpen, setTopicPollDialogOpen] = useState(false);
   const [tempTopicPrompt, setTempTopicPrompt] = useState('');
@@ -347,6 +352,66 @@ const NetView: React.FC = () => {
       return () => clearTimeout(timer);
     }
   }, [net?.id]); // Only depend on net.id to run once
+
+  // Countdown and duration timer effect - updates every second
+  useEffect(() => {
+    if (!net) return;
+    
+    const updateTimers = () => {
+      const now = new Date();
+      
+      // Countdown timer: show time until scheduled start (only for draft/scheduled nets)
+      if (net.scheduled_start_time && (net.status === 'draft' || net.status === 'scheduled')) {
+        const scheduledTime = new Date(net.scheduled_start_time);
+        const diff = scheduledTime.getTime() - now.getTime();
+        
+        if (diff > 0) {
+          const hours = Math.floor(diff / (1000 * 60 * 60));
+          const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+          const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+          
+          if (hours > 0) {
+            setCountdownTime(`${hours}h ${minutes}m ${seconds}s`);
+          } else if (minutes > 0) {
+            setCountdownTime(`${minutes}m ${seconds}s`);
+          } else {
+            setCountdownTime(`${seconds}s`);
+          }
+        } else {
+          // Past scheduled time - show "Starting soon" or similar
+          setCountdownTime('Starting soon');
+        }
+      } else {
+        setCountdownTime(null);
+      }
+      
+      // Duration timer: show elapsed time since net started (only for active nets)
+      if (net.started_at && net.status === 'active') {
+        const startTime = new Date(net.started_at);
+        const diff = now.getTime() - startTime.getTime();
+        
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+        
+        if (hours > 0) {
+          setDurationTime(`${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+        } else {
+          setDurationTime(`${minutes}:${seconds.toString().padStart(2, '0')}`);
+        }
+      } else {
+        setDurationTime(null);
+      }
+    };
+    
+    // Update immediately
+    updateTimers();
+    
+    // Update every second
+    const interval = setInterval(updateTimers, 1000);
+    
+    return () => clearInterval(interval);
+  }, [net?.scheduled_start_time, net?.started_at, net?.status]);
 
   const handleDetachCheckInList = () => setCheckInListDetached(true);
   const handleAttachCheckInList = () => setCheckInListDetached(false);
@@ -1274,9 +1339,31 @@ const NetView: React.FC = () => {
               </Box>
               {/* Stats and Frequency chips row */}
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', mb: 0.5, gap: 0.5 }}>
-                {/* Left side: Status and stats */}
+                {/* Left side: Status, timers, and stats */}
                 <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexWrap: 'wrap' }}>
                   <Chip label={net.status} size="small" color={net.status === 'active' ? 'success' : 'default'} />
+                  {/* Countdown timer - shows time until scheduled start */}
+                  {countdownTime && (
+                    <Chip 
+                      icon={<TimerIcon />}
+                      label={countdownTime === 'Starting soon' ? countdownTime : `Starts in ${countdownTime}`}
+                      size="small" 
+                      color="warning" 
+                      variant="outlined"
+                      sx={{ fontFamily: 'monospace' }}
+                    />
+                  )}
+                  {/* Duration timer - shows elapsed time since net started */}
+                  {durationTime && (
+                    <Chip 
+                      icon={<AccessTimeIcon />}
+                      label={`Duration: ${durationTime}`}
+                      size="small" 
+                      color="info" 
+                      variant="outlined"
+                      sx={{ fontFamily: 'monospace' }}
+                    />
+                  )}
                   {netStats && (
                     <>
                       <Chip label={`${netStats.total_check_ins} Check-ins`} size="small" color="primary" variant="outlined" />

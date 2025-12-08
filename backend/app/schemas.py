@@ -167,6 +167,8 @@ class NetBase(BaseModel):
     topic_of_week_prompt: Optional[str] = Field(None, max_length=500)
     poll_enabled: Optional[bool] = False
     poll_question: Optional[str] = Field(None, max_length=500)
+    # Scheduled start time for countdown display
+    scheduled_start_time: Optional[datetime] = None
 
 
 class NetCreate(NetBase):
@@ -188,6 +190,8 @@ class NetUpdate(BaseModel):
     topic_of_week_prompt: Optional[str] = Field(None, max_length=500)
     poll_enabled: Optional[bool] = None
     poll_question: Optional[str] = Field(None, max_length=500)
+    # Scheduled start time for countdown display
+    scheduled_start_time: Optional[datetime] = None
     
     @field_validator('frequency_ids')
     @classmethod
@@ -206,6 +210,7 @@ class NetResponse(NetBase):
     active_frequency_id: Optional[int] = None
     field_config: Optional[dict] = None
     ics309_enabled: bool = False
+    scheduled_start_time: Optional[datetime] = None
     started_at: Optional[datetime] = None
     closed_at: Optional[datetime] = None
     created_at: datetime
@@ -233,6 +238,7 @@ class NetResponse(NetBase):
             'topic_of_week_prompt': net.topic_of_week_prompt,
             'poll_enabled': net.poll_enabled or False,
             'poll_question': net.poll_question,
+            'scheduled_start_time': net.scheduled_start_time,
             'started_at': net.started_at,
             'closed_at': net.closed_at,
             'created_at': net.created_at,

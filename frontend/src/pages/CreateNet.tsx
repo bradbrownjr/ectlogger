@@ -124,6 +124,8 @@ const CreateNet: React.FC = () => {
   const [topicOfWeekPrompt, setTopicOfWeekPrompt] = useState('');
   const [pollEnabled, setPollEnabled] = useState(false);
   const [pollQuestion, setPollQuestion] = useState('');
+  // Scheduled start time for countdown timer
+  const [scheduledStartTime, setScheduledStartTime] = useState<string>('');
   const [frequencies, setFrequencies] = useState<Frequency[]>([]);
   const [selectedFrequencies, setSelectedFrequencies] = useState<number[]>([]);
   const [newFrequency, setNewFrequency] = useState({ frequency: '', mode: 'FM', network: '', talkgroup: '', description: '' });
@@ -207,6 +209,11 @@ const CreateNet: React.FC = () => {
       setTopicOfWeekPrompt(response.data.topic_of_week_prompt || '');
       setPollEnabled(response.data.poll_enabled || false);
       setPollQuestion(response.data.poll_question || '');
+      // Convert ISO string to local datetime-local format for input
+      if (response.data.scheduled_start_time) {
+        const dt = new Date(response.data.scheduled_start_time);
+        setScheduledStartTime(dt.toISOString().slice(0, 16));
+      }
       setSelectedFrequencies(response.data.frequencies.map((f: Frequency) => f.id!));
       if (response.data.field_config) {
         const mergedConfig: Record<string, { enabled: boolean; required: boolean }> = {};
@@ -413,6 +420,9 @@ const CreateNet: React.FC = () => {
 
   const handleCreateNet = async () => {
     try {
+      // Convert local datetime to ISO string for API
+      const scheduledStartTimeISO = scheduledStartTime ? new Date(scheduledStartTime).toISOString() : null;
+      
       if (isEditMode) {
         const response = await netApi.update(parseInt(netId!), {
           name,
@@ -426,6 +436,7 @@ const CreateNet: React.FC = () => {
           topic_of_week_prompt: topicOfWeekPrompt || null,
           poll_enabled: pollEnabled,
           poll_question: pollQuestion || null,
+          scheduled_start_time: scheduledStartTimeISO,
         });
         navigate(`/nets/${response.data.id}`);
       } else {
@@ -441,6 +452,7 @@ const CreateNet: React.FC = () => {
           topic_of_week_prompt: topicOfWeekPrompt || null,
           poll_enabled: pollEnabled,
           poll_question: pollQuestion || null,
+          scheduled_start_time: scheduledStartTimeISO,
         });
         
         // Assign pending NCS users to the newly created net
@@ -734,6 +746,20 @@ const CreateNet: React.FC = () => {
             helperText={isInfoMode && infoUrl ? <a href={infoUrl} target="_blank" rel="noopener noreferrer">Open link</a> : "Optional link to club, organization, or net information page"}
             InputProps={{ readOnly: isInfoMode }}
           />
+
+          {/* Scheduled Start Time - for countdown timer display */}
+          {!isInfoMode && (
+            <TextField
+              fullWidth
+              label="Scheduled Start Time"
+              type="datetime-local"
+              value={scheduledStartTime}
+              onChange={(e: any) => setScheduledStartTime(e.target.value)}
+              margin="normal"
+              InputLabelProps={{ shrink: true }}
+              helperText="Optional. If set, a countdown timer will be displayed before the net starts."
+            />
+          )}
 
           {!isInfoMode && (
             <Box sx={{ mt: 2 }}>
