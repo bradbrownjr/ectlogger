@@ -135,7 +135,7 @@ Copy `.env.example` to `backend/.env`:
 - **Host**: `ectlogger@app.ectlogger.us`
 - **Python**: 3.11.2
 - **Path**: `~/ectlogger`
-- **Frontend**: Static files in `frontend/dist/` served by **Caddy** (NOT Vite)
+- **Frontend**: Static files in `frontend/dist/` served by **Caddy**
 - **Backend**: uvicorn on port 8001 (no auto-reload)
 - **Reverse Proxy**: Caddy handles HTTPS, routes `/api/*` and `/ws/*` to backend
 - **Deploy from GitHub**:
@@ -157,16 +157,14 @@ Copy `.env.example` to `backend/.env`:
 - **Purpose**: Testing new features before production deployment
 - **Note**: Deploy new/incomplete features to beta ONLY until tested and confirmed working
 - **Path**: `/home/bradb/ectlogger`
-- **Frontend**: Static files served by Caddy (same as production)
+- **Frontend**: Vite dev server on port 3000
+- **Backend**: uvicorn on port 8000 (with auto-reload)
 - **Deploy from GitHub** (preferred):
   ```bash
   # First commit and push locally, then pull on beta
   ssh bradb@10.6.26.3 "cd /home/bradb/ectlogger && git pull origin main"
   
-  # Build frontend
-  ssh bradb@10.6.26.3 "cd /home/bradb/ectlogger/frontend && npm run build"
-  
-  # Restart backend (requires sudo - SSH in interactively)
+  # Restart service (requires sudo - SSH in interactively)
   ssh bradb@10.6.26.3
   sudo systemctl restart ectlogger
   ```
@@ -177,12 +175,12 @@ Copy `.env.example` to `backend/.env`:
 - **Python**: 3.13
 - **Path**: `/home/bradb/ectlogger`
 - **Purpose**: Feature testing before beta
+- **Frontend**: Vite dev server on port 3000
+- **Backend**: uvicorn on port 8000 (with auto-reload)
 
 ### Local Development
-- **Frontend**: `http://localhost:3000` (Vite dev server with hot reload)
-- **Backend**: `http://localhost:8000` (uvicorn with auto-reload)
-- **API Docs**: `http://localhost:8000/docs`
-- **Note**: Only local dev uses Vite dev server; all deployed environments use static builds
+- Local machine is the IDE with SSH access to the 3 environments above
+- No servers run locally; all testing done on alpha/beta/production
 
 ## Database Migrations
 
