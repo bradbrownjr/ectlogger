@@ -196,6 +196,19 @@ async def create_check_in(
         else:
             await post_system_message(net_id, f"{check_in_data.callsign} has checked in", db)
     
+    # Post system messages for poll/topic responses (if newly added)
+    if check_in_data.topic_response and net.topic_of_week_enabled:
+        # Only post if this is a new response (not on recheck with same answer)
+        old_topic = existing_check_in.topic_response if existing_check_in else None
+        if check_in_data.topic_response != old_topic:
+            await post_system_message(net_id, f"{check_in_data.callsign} shared: {check_in_data.topic_response}", db)
+    
+    if check_in_data.poll_response and net.poll_enabled:
+        # Only post if this is a new response (not on recheck with same answer)
+        old_poll = existing_check_in.poll_response if existing_check_in else None
+        if check_in_data.poll_response != old_poll:
+            await post_system_message(net_id, f"{check_in_data.callsign} answered the poll: {check_in_data.poll_response}", db)
+    
     return CheckInResponse.from_orm(check_in)
 
 
@@ -248,6 +261,14 @@ async def update_check_in(
     if not check_in:
         raise HTTPException(status_code=404, detail="Check-in not found")
     
+    # Store old values for comparison
+    old_topic_response = check_in.topic_response
+    old_poll_response = check_in.poll_response
+    
+    # Get the net to check if poll/topic is enabled
+    result = await db.execute(select(Net).where(Net.id == check_in.net_id))
+    net = result.scalar_one_or_none()
+    
     # Update fields
     update_data = check_in_update.dict(exclude_unset=True)
     
@@ -273,6 +294,15 @@ async def update_check_in(
     if 'status' in check_in_update.dict(exclude_unset=True):
         status_text = check_in.status.replace('_', ' ').lower() if check_in.status else 'updated'
         await post_system_message(check_in.net_id, f"{check_in.callsign} is now {status_text}", db)
+    
+    # Post system messages for poll/topic responses (if newly added or changed)
+    if net and net.topic_of_week_enabled and check_in.topic_response:
+        if check_in.topic_response != old_topic_response:
+            await post_system_message(check_in.net_id, f"{check_in.callsign} shared: {check_in.topic_response}", db)
+    
+    if net and net.poll_enabled and check_in.poll_response:
+        if check_in.poll_response != old_poll_response:
+            await post_system_message(check_in.net_id, f"{check_in.callsign} answered the poll: {check_in.poll_response}", db)
     
     # Broadcast status change via WebSocket
     from app.main import manager
