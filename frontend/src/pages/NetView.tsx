@@ -3583,7 +3583,7 @@ const NetView: React.FC = () => {
 
       <Snackbar
         open={toastMessage !== ''}
-        autoHideDuration={3000}
+        autoHideDuration={6000}
         onClose={() => setToastMessage('')}
         message={toastMessage}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
