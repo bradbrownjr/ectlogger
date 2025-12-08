@@ -162,6 +162,11 @@ class NetBase(BaseModel):
     script: Optional[str] = Field(None, max_length=50000)
     field_config: Optional[dict] = None
     ics309_enabled: Optional[bool] = False
+    # Topic of the Week / Poll features
+    topic_of_week_enabled: Optional[bool] = False
+    topic_of_week_prompt: Optional[str] = Field(None, max_length=500)
+    poll_enabled: Optional[bool] = False
+    poll_question: Optional[str] = Field(None, max_length=500)
 
 
 class NetCreate(NetBase):
@@ -178,6 +183,11 @@ class NetUpdate(BaseModel):
     frequency_ids: Optional[List[int]] = Field(None, max_length=50)
     field_config: Optional[dict] = None
     ics309_enabled: Optional[bool] = None
+    # Topic of the Week / Poll features
+    topic_of_week_enabled: Optional[bool] = None
+    topic_of_week_prompt: Optional[str] = Field(None, max_length=500)
+    poll_enabled: Optional[bool] = None
+    poll_question: Optional[str] = Field(None, max_length=500)
     
     @field_validator('frequency_ids')
     @classmethod
@@ -219,6 +229,10 @@ class NetResponse(NetBase):
             'active_frequency_id': net.active_frequency_id,
             'field_config': json.loads(net.field_config) if net.field_config else None,
             'ics309_enabled': net.ics309_enabled or False,
+            'topic_of_week_enabled': net.topic_of_week_enabled or False,
+            'topic_of_week_prompt': net.topic_of_week_prompt,
+            'poll_enabled': net.poll_enabled or False,
+            'poll_question': net.poll_question,
             'started_at': net.started_at,
             'closed_at': net.closed_at,
             'created_at': net.created_at,
@@ -242,6 +256,11 @@ class NetTemplateBase(BaseModel):
     schedule_type: Optional[str] = Field(default='ad_hoc')  # ad_hoc, daily, weekly, monthly
     schedule_config: Optional[dict] = Field(default_factory=dict)  # {day_of_week, week_of_month, time}
     ics309_enabled: bool = False  # Enable ICS-309 format for net close emails
+    # Topic of the Week / Poll features
+    topic_of_week_enabled: Optional[bool] = False
+    topic_of_week_prompt: Optional[str] = Field(None, max_length=500)
+    poll_enabled: Optional[bool] = False
+    poll_question: Optional[str] = Field(None, max_length=500)
 
 
 class NetTemplateCreate(NetTemplateBase):
@@ -261,6 +280,11 @@ class NetTemplateUpdate(BaseModel):
     schedule_config: Optional[dict] = None
     owner_id: Optional[int] = None  # Allow changing the owner (admin only or current owner)
     ics309_enabled: Optional[bool] = None
+    # Topic of the Week / Poll features
+    topic_of_week_enabled: Optional[bool] = None
+    topic_of_week_prompt: Optional[str] = Field(None, max_length=500)
+    poll_enabled: Optional[bool] = None
+    poll_question: Optional[str] = Field(None, max_length=500)
 
 
 class NetTemplateResponse(NetTemplateBase):
@@ -291,6 +315,10 @@ class NetTemplateResponse(NetTemplateBase):
             'schedule_type': template.schedule_type,
             'schedule_config': json.loads(template.schedule_config) if template.schedule_config else {},
             'ics309_enabled': template.ics309_enabled or False,
+            'topic_of_week_enabled': template.topic_of_week_enabled or False,
+            'topic_of_week_prompt': template.topic_of_week_prompt,
+            'poll_enabled': template.poll_enabled or False,
+            'poll_question': template.poll_question,
             'is_active': template.is_active,
             'created_at': template.created_at,
             'frequencies': [FrequencyResponse.model_validate(f) for f in template.frequencies],
@@ -326,6 +354,9 @@ class CheckInBase(BaseModel):
     feedback: Optional[str] = Field(None, max_length=1000)
     notes: Optional[str] = Field(None, max_length=2000)
     relayed_by: Optional[str] = Field(None, max_length=50)
+    # Topic of the Week / Poll responses
+    topic_response: Optional[str] = Field(None, max_length=2000)
+    poll_response: Optional[str] = Field(None, max_length=255)
     
     @field_validator('callsign')
     @classmethod
@@ -371,6 +402,9 @@ class CheckInUpdate(BaseModel):
     relayed_by: Optional[str] = Field(None, max_length=50)
     available_frequency_ids: Optional[List[int]] = None
     custom_fields: Optional[dict] = None
+    # Topic of the Week / Poll responses
+    topic_response: Optional[str] = Field(None, max_length=2000)
+    poll_response: Optional[str] = Field(None, max_length=255)
 
 
 class CheckInResponse(CheckInBase):

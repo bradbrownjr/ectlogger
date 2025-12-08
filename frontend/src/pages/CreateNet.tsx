@@ -119,6 +119,11 @@ const CreateNet: React.FC = () => {
   const [infoUrl, setInfoUrl] = useState('');
   const [script, setScript] = useState('');
   const [ics309Enabled, setIcs309Enabled] = useState(false);
+  // Topic of the Week / Poll features
+  const [topicOfWeekEnabled, setTopicOfWeekEnabled] = useState(false);
+  const [topicOfWeekPrompt, setTopicOfWeekPrompt] = useState('');
+  const [pollEnabled, setPollEnabled] = useState(false);
+  const [pollQuestion, setPollQuestion] = useState('');
   const [frequencies, setFrequencies] = useState<Frequency[]>([]);
   const [selectedFrequencies, setSelectedFrequencies] = useState<number[]>([]);
   const [newFrequency, setNewFrequency] = useState({ frequency: '', mode: 'FM', network: '', talkgroup: '', description: '' });
@@ -198,6 +203,10 @@ const CreateNet: React.FC = () => {
       setInfoUrl(response.data.info_url || '');
       setScript(response.data.script || '');
       setIcs309Enabled(response.data.ics309_enabled || false);
+      setTopicOfWeekEnabled(response.data.topic_of_week_enabled || false);
+      setTopicOfWeekPrompt(response.data.topic_of_week_prompt || '');
+      setPollEnabled(response.data.poll_enabled || false);
+      setPollQuestion(response.data.poll_question || '');
       setSelectedFrequencies(response.data.frequencies.map((f: Frequency) => f.id!));
       if (response.data.field_config) {
         const mergedConfig: Record<string, { enabled: boolean; required: boolean }> = {};
@@ -413,6 +422,10 @@ const CreateNet: React.FC = () => {
           frequency_ids: selectedFrequencies,
           field_config: fieldConfig,
           ics309_enabled: ics309Enabled,
+          topic_of_week_enabled: topicOfWeekEnabled,
+          topic_of_week_prompt: topicOfWeekPrompt || null,
+          poll_enabled: pollEnabled,
+          poll_question: pollQuestion || null,
         });
         navigate(`/nets/${response.data.id}`);
       } else {
@@ -424,6 +437,10 @@ const CreateNet: React.FC = () => {
           frequency_ids: selectedFrequencies,
           field_config: fieldConfig,
           ics309_enabled: ics309Enabled,
+          topic_of_week_enabled: topicOfWeekEnabled,
+          topic_of_week_prompt: topicOfWeekPrompt || null,
+          poll_enabled: pollEnabled,
+          poll_question: pollQuestion || null,
         });
         
         // Assign pending NCS users to the newly created net
@@ -733,6 +750,75 @@ const CreateNet: React.FC = () => {
                 When enabled, net close emails will use the official ICS-309 format used by ARES, RACES, and EmComm organizations.
               </Typography>
             </Box>
+          )}
+
+          {/* Community Net Features */}
+          {!isInfoMode && (
+            <>
+              <Divider sx={{ my: 3 }} />
+              <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold' }}>
+                Community Net Features
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Optional features for informal community nets to increase engagement and collect fun responses from participants.
+              </Typography>
+
+              {/* Topic of the Week */}
+              <Box sx={{ mt: 2 }}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={topicOfWeekEnabled}
+                      onChange={(e) => setTopicOfWeekEnabled(e.target.checked)}
+                    />
+                  }
+                  label="Topic of the Week"
+                />
+                <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
+                  Ask participants a question during check-in. Responses are collected and can be exported for club newsletters or blogs.
+                </Typography>
+                {topicOfWeekEnabled && (
+                  <TextField
+                    fullWidth
+                    label="Topic Question"
+                    value={topicOfWeekPrompt}
+                    onChange={(e) => setTopicOfWeekPrompt(e.target.value)}
+                    margin="normal"
+                    placeholder="e.g., What's your favorite radio or antenna?"
+                    helperText="The question to ask participants during check-in"
+                    sx={{ ml: 4.5, width: 'calc(100% - 36px)' }}
+                  />
+                )}
+              </Box>
+
+              {/* Poll */}
+              <Box sx={{ mt: 2 }}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={pollEnabled}
+                      onChange={(e) => setPollEnabled(e.target.checked)}
+                    />
+                  }
+                  label="Participant Poll"
+                />
+                <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
+                  Run a quick poll during the net. Answers are auto-completed to ensure consistent tracking and results are shown as a chart.
+                </Typography>
+                {pollEnabled && (
+                  <TextField
+                    fullWidth
+                    label="Poll Question"
+                    value={pollQuestion}
+                    onChange={(e) => setPollQuestion(e.target.value)}
+                    margin="normal"
+                    placeholder="e.g., What mode do you use most: SSB, FM, or Digital?"
+                    helperText="The poll question - NCS will enter responses with autocomplete to ensure consistency"
+                    sx={{ ml: 4.5, width: 'calc(100% - 36px)' }}
+                  />
+                )}
+              </Box>
+            </>
           )}
         </TabPanel>
 

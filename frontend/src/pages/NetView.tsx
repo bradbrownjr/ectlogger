@@ -74,6 +74,11 @@ interface Net {
   owner_id: number;
   active_frequency_id?: number;
   ics309_enabled?: boolean;
+  // Topic of the Week / Poll features
+  topic_of_week_enabled?: boolean;
+  topic_of_week_prompt?: string;
+  poll_enabled?: boolean;
+  poll_question?: string;
   field_config?: {
     [key: string]: {
       enabled: boolean;
@@ -107,6 +112,8 @@ interface CheckIn {
   notes?: string;
   custom_fields?: Record<string, string>;
   relayed_by?: string;
+  topic_response?: string;
+  poll_response?: string;
   status: string;
   is_recheck: boolean;
   checked_in_at: string;
@@ -232,7 +239,16 @@ const NetView: React.FC = () => {
     relayed_by: '',
     available_frequency_ids: [] as number[],
     custom_fields: {} as Record<string, string>,
+    topic_response: '',
+    poll_response: '',
   });
+  
+  // Poll autocomplete responses
+  const [pollResponses, setPollResponses] = useState<string[]>([]);
+  
+  // Poll results and topic responses for display
+  const [pollResults, setPollResults] = useState<{ question: string | null, results: { response: string, count: number }[] }>({ question: null, results: [] });
+  const [topicResponses, setTopicResponses] = useState<{ prompt: string | null, responses: { callsign: string, name: string, response: string }[] }>({ prompt: null, responses: [] });
 
   useEffect(() => {
     if (netId) {
@@ -260,7 +276,18 @@ const NetView: React.FC = () => {
     if (net?.owner_id) {
       fetchOwner();
     }
-  }, [net?.owner_id]);
+    // Fetch poll responses if poll is enabled
+    if (net?.poll_enabled) {
+      fetchPollResponses();
+    }
+    // Fetch poll results and topic responses for summary display (any status, shown for closed/archived)
+    if (net?.poll_enabled) {
+      fetchPollResults();
+    }
+    if (net?.topic_of_week_enabled) {
+      fetchTopicResponses();
+    }
+  }, [net?.owner_id, net?.poll_enabled, net?.topic_of_week_enabled]);
 
   // Persist detached panel states to localStorage
   useEffect(() => {
@@ -391,6 +418,36 @@ const NetView: React.FC = () => {
       console.error('Failed to fetch field definitions:', error);
     }
   };
+  
+  const fetchPollResponses = async () => {
+    if (!netId) return;
+    try {
+      const response = await api.get(`/nets/${netId}/poll-responses`);
+      setPollResponses(response.data);
+    } catch (error) {
+      console.error('Failed to fetch poll responses:', error);
+    }
+  };
+  
+  const fetchPollResults = async () => {
+    if (!netId) return;
+    try {
+      const response = await api.get(`/nets/${netId}/poll-results`);
+      setPollResults(response.data);
+    } catch (error) {
+      console.error('Failed to fetch poll results:', error);
+    }
+  };
+  
+  const fetchTopicResponses = async () => {
+    if (!netId) return;
+    try {
+      const response = await api.get(`/nets/${netId}/topic-responses`);
+      setTopicResponses(response.data);
+    } catch (error) {
+      console.error('Failed to fetch topic responses:', error);
+    }
+  };
 
   const fetchCheckIns = async () => {
     try {
@@ -499,7 +556,11 @@ const NetView: React.FC = () => {
         power: '',
         feedback: '',
         notes: '',
+        relayed_by: '',
         available_frequency_ids: [],
+        custom_fields: {},
+        topic_response: '',
+        poll_response: '',
       });
     } catch (error) {
       console.error('Failed to start net:', error);
@@ -675,9 +736,16 @@ const NetView: React.FC = () => {
         relayed_by: '',
         available_frequency_ids: [],
         custom_fields: {},
+        topic_response: '',
+        poll_response: '',
       });
       
       fetchCheckIns();
+      
+      // Refresh poll responses after new check-in (in case new response was added)
+      if (net?.poll_enabled) {
+        fetchPollResponses();
+      }
       
       // Focus back on callsign field
       setTimeout(() => {
@@ -1439,7 +1507,11 @@ const NetView: React.FC = () => {
                               power: '',
                               feedback: '',
                               notes: '',
+                              relayed_by: '',
                               available_frequency_ids: [],
+                              custom_fields: {},
+                              topic_response: '',
+                              poll_response: '',
                             });
                           }
                           if (canManageCheckIns) {
@@ -1904,6 +1976,8 @@ const NetView: React.FC = () => {
                         {field.label} {isFieldRequired(field.name) && '*'}
                       </TableCell>
                     ))}
+                    {net?.topic_of_week_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Topic</TableCell>}
+                    {net?.poll_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Poll</TableCell>}
                     {hasAnyRelayedBy && <TableCell sx={{ whiteSpace: 'nowrap' }}>Relayed By</TableCell>}
                     <TableCell sx={{ whiteSpace: 'nowrap' }}>Time</TableCell>
                     {canManage && <TableCell sx={{ whiteSpace: 'nowrap' }}>Actions</TableCell>}
@@ -1993,6 +2067,8 @@ const NetView: React.FC = () => {
                         {getEnabledCustomFields().map((field) => (
                           <TableCell key={field.name} sx={{ whiteSpace: 'nowrap' }}>{checkIn.custom_fields?.[field.name] || ''}</TableCell>
                         ))}
+                        {net?.topic_of_week_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.topic_response || ''}</TableCell>}
+                        {net?.poll_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.poll_response || ''}</TableCell>}
                         {hasAnyRelayedBy && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.relayed_by || ''}</TableCell>}
                         <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatTimeWithDate(checkIn.checked_in_at, user?.prefer_utc || false, net?.started_at)}</TableCell>
                         {canManage && (
@@ -2032,6 +2108,58 @@ const NetView: React.FC = () => {
                 )}
               </Box>
             </Box>
+            
+            {/* Poll Results and Topic Responses Summary - shown for closed/archived nets */}
+            {(net.status === 'closed' || net.status === 'archived') && (net.poll_enabled || net.topic_of_week_enabled) && (
+              <Box sx={{ border: 1, borderColor: 'divider', borderTop: 0, p: 2, backgroundColor: 'background.paper' }}>
+                <Grid container spacing={2}>
+                  {/* Poll Results */}
+                  {net.poll_enabled && pollResults.question && pollResults.results.length > 0 && (
+                    <Grid item xs={12} md={net.topic_of_week_enabled ? 6 : 12}>
+                      <Typography variant="subtitle2" gutterBottom>📊 Poll Results: {pollResults.question}</Typography>
+                      <Box sx={{ mt: 1 }}>
+                        {pollResults.results.map((result, idx) => {
+                          const totalVotes = pollResults.results.reduce((sum, r) => sum + r.count, 0);
+                          const percentage = totalVotes > 0 ? (result.count / totalVotes) * 100 : 0;
+                          return (
+                            <Box key={idx} sx={{ mb: 1 }}>
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                                <Typography variant="body2">{result.response}</Typography>
+                                <Typography variant="body2" color="text.secondary">{result.count} ({percentage.toFixed(0)}%)</Typography>
+                              </Box>
+                              <Box sx={{ width: '100%', backgroundColor: 'action.hover', borderRadius: 1, height: 8 }}>
+                                <Box sx={{ width: `${percentage}%`, backgroundColor: 'primary.main', borderRadius: 1, height: '100%' }} />
+                              </Box>
+                            </Box>
+                          );
+                        })}
+                      </Box>
+                    </Grid>
+                  )}
+                  
+                  {/* Topic Responses */}
+                  {net.topic_of_week_enabled && topicResponses.prompt && topicResponses.responses.length > 0 && (
+                    <Grid item xs={12} md={net.poll_enabled ? 6 : 12}>
+                      <Typography variant="subtitle2" gutterBottom>💬 Topic of the Week: {topicResponses.prompt}</Typography>
+                      <List dense sx={{ maxHeight: 200, overflow: 'auto' }}>
+                        {topicResponses.responses.map((resp, idx) => (
+                          <ListItem key={idx} sx={{ py: 0.5 }}>
+                            <ListItemText
+                              primary={
+                                <Typography variant="body2">
+                                  <strong>{resp.callsign}</strong>
+                                  {resp.name && ` (${resp.name})`}: {resp.response}
+                                </Typography>
+                              }
+                            />
+                          </ListItem>
+                        ))}
+                      </List>
+                    </Grid>
+                  )}
+                </Grid>
+              </Box>
+            )}
             
             {/* New check-in form - desktop only */}
             {net.status === 'active' && canManageCheckIns && (
@@ -2244,6 +2372,54 @@ const NetView: React.FC = () => {
                         )}
                       </TableCell>
                     ))}
+                    {/* Topic of the Week input */}
+                    {net?.topic_of_week_enabled && (
+                      <TableCell>
+                        <TextField
+                          size="small"
+                          value={checkInForm.topic_response}
+                          onChange={(e) => setCheckInForm({ ...checkInForm, topic_response: e.target.value })}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleCheckIn();
+                            }
+                          }}
+                          placeholder="Topic response"
+                          inputProps={{ style: { fontSize: '0.875rem' } }}
+                          fullWidth
+                          multiline
+                          maxRows={2}
+                        />
+                      </TableCell>
+                    )}
+                    {/* Poll response input with autocomplete */}
+                    {net?.poll_enabled && (
+                      <TableCell>
+                        <Autocomplete
+                          freeSolo
+                          size="small"
+                          options={pollResponses}
+                          value={checkInForm.poll_response}
+                          onChange={(_, newValue) => setCheckInForm({ ...checkInForm, poll_response: newValue || '' })}
+                          onInputChange={(_, newInputValue) => setCheckInForm({ ...checkInForm, poll_response: newInputValue })}
+                          renderInput={(params) => (
+                            <TextField
+                              {...params}
+                              placeholder="Poll answer"
+                              inputProps={{ ...params.inputProps, style: { fontSize: '0.875rem' } }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.defaultPrevented) {
+                                  e.preventDefault();
+                                  handleCheckIn();
+                                }
+                              }}
+                            />
+                          )}
+                          sx={{ minWidth: 120 }}
+                        />
+                      </TableCell>
+                    )}
                     <TableCell>
                       <TextField
                         size="small"
