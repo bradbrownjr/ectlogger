@@ -264,6 +264,87 @@ case $db_choice in
         ;;
 esac
 
+# ============================================
+# STEP 4: Reverse Proxy / Frontend Serving
+# ============================================
+echo ""
+echo "🌐 Frontend Serving Configuration"
+echo "=================================="
+echo ""
+
+# Auto-detect if Caddy or Nginx is installed
+HAS_CADDY=false
+HAS_NGINX=false
+if command -v caddy &> /dev/null || systemctl is-active --quiet caddy 2>/dev/null; then
+    HAS_CADDY=true
+fi
+if command -v nginx &> /dev/null || systemctl is-active --quiet nginx 2>/dev/null; then
+    HAS_NGINX=true
+fi
+
+# Determine if this looks like a production setup (https URL without port)
+IS_PRODUCTION=false
+if [[ "$frontend_url" == https://* ]] && [[ ! "$frontend_url" =~ :[0-9]+$ ]]; then
+    IS_PRODUCTION=true
+fi
+
+if [ "$IS_PRODUCTION" = true ]; then
+    echo "Production setup detected (HTTPS URL without port)."
+    echo ""
+    if [ "$HAS_CADDY" = true ]; then
+        echo "✓ Caddy detected - will serve static frontend files"
+        SKIP_VITE="true"
+    elif [ "$HAS_NGINX" = true ]; then
+        echo "✓ Nginx detected - will serve static frontend files"
+        SKIP_VITE="true"
+    else
+        echo "No reverse proxy detected (Caddy or Nginx)."
+        echo ""
+        echo "For production, you'll need a reverse proxy to:"
+        echo "  - Serve static frontend files from frontend/dist/"
+        echo "  - Proxy /api/* and /ws/* to the backend"
+        echo "  - Handle HTTPS/TLS certificates"
+        echo ""
+        echo "Will your reverse proxy serve the frontend static files? (Y/n)"
+        read -r proxy_serves_frontend
+        if [[ "$proxy_serves_frontend" =~ ^[Nn]$ ]]; then
+            echo "⚠️  Vite dev server will be used (not recommended for production)"
+            SKIP_VITE="false"
+        else
+            SKIP_VITE="true"
+        fi
+    fi
+else
+    echo "Development setup detected."
+    echo "Vite dev server will be used for hot-reload during development."
+    SKIP_VITE="false"
+fi
+
+# Update .env file with SKIP_VITE setting
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    # Check if SKIP_VITE already exists
+    if grep -q "^SKIP_VITE=" backend/.env; then
+        sed -i '' "s|SKIP_VITE=.*|SKIP_VITE=$SKIP_VITE|" backend/.env
+    else
+        echo "SKIP_VITE=$SKIP_VITE" >> backend/.env
+    fi
+else
+    if grep -q "^SKIP_VITE=" backend/.env; then
+        sed -i "s|SKIP_VITE=.*|SKIP_VITE=$SKIP_VITE|" backend/.env
+    else
+        echo "SKIP_VITE=$SKIP_VITE" >> backend/.env
+    fi
+fi
+
+if [ "$SKIP_VITE" = "true" ]; then
+    echo ""
+    echo "✓ SKIP_VITE=true - Frontend served by reverse proxy"
+    echo "  Remember to build frontend: cd frontend && npm run build"
+else
+    echo ""
+    echo "✓ SKIP_VITE=false - Vite dev server will start with the app"
+fi
+
 echo ""
 echo "================================="
 echo "✓ Configuration complete!"
