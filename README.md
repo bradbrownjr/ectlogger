@@ -32,6 +32,7 @@ ECTLogger is a production-ready, web-based net logging application designed spec
 - **📝 Complete Net Logs** — Automatic log generation and email delivery
 - **📊 Poll Questions** — Add poll questions to nets with real-time results chart
 - **💬 Topic of the Week** — Prompt participants to share on a topic during check-in
+- **✏️ Inline Editing** — NCS/Loggers can click any check-in row to edit fields directly
 
 ### Location & Mapping
 - **🗺️ Station Mapping** — View check-in locations on OpenStreetMap

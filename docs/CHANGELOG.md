@@ -15,6 +15,7 @@ All notable changes to ECTLogger are documented here.
 * **Countdown Timer** - Nets with a scheduled start time display a countdown timer (e.g., "Starts in 2h 15m 30s")
 * **Duration Timer** - Active nets display elapsed time since the net started (e.g., "Duration: 1:23:45")
 * **Scheduled Start Time** - Set a scheduled start time when creating a net for countdown display
+* **Inline Check-In Editing** - NCS and Loggers can now click any row in the check-in list to edit fields directly inline, eliminating the separate edit dialog
 
 ## Improvements
 
@@ -23,6 +24,7 @@ All notable changes to ECTLogger are documented here.
 * **CSV Export** - Includes Topic Response and Poll Response columns when those fields are configured
 * **Reverse Proxy Auto-Detection** - `configure.sh` now auto-detects Caddy or Nginx and sets `SKIP_VITE` appropriately
 * **Production Frontend Serving** - `SKIP_VITE=true` setting allows Caddy/Nginx to serve static frontend files instead of Vite dev server
+* **Inline Edit Discoverability** - Legend now shows "💡 Click row to edit" hint for NCS/Loggers on active nets
 
 ## Bug Fixes
 
@@ -30,6 +32,7 @@ All notable changes to ECTLogger are documented here.
 * **Poll/Topic Not Saving** - Fixed backend not saving topic_response and poll_response on check-in creation and rechecks
 * **Poll Autocomplete Premature Submit** - Fixed Enter key in poll dropdown causing form submission before selection was complete
 * **Beta Server Frontend Not Loading** - Fixed start.sh assuming all service mode deployments have Caddy; now uses SKIP_VITE env var
+* **Timer Showing Negative Values** - Fixed countdown/duration timers showing negative values due to UTC timezone parsing issue
 
 ---
 
