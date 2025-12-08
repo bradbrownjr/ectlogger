@@ -42,6 +42,9 @@ class Settings(BaseSettings):
     app_name: str = "ECTLogger"
     app_env: str = "development"
     
+    # Deployment (used by start.sh, not the app itself)
+    skip_vite: bool = False  # Set to true when Caddy serves static files
+    
     class Config:
         env_file = ".env"
         case_sensitive = False
