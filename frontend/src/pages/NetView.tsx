@@ -1034,11 +1034,18 @@ const NetView: React.FC = () => {
         power_source: editingCheckIn.power_source,
         power: editingCheckIn.power,
         notes: editingCheckIn.notes,
+        relayed_by: editingCheckIn.relayed_by,
+        topic_response: editingCheckIn.topic_response,
+        poll_response: editingCheckIn.poll_response,
         available_frequency_ids: editingCheckIn.available_frequencies || [],
       });
       setEditCheckInDialogOpen(false);
       setEditingCheckIn(null);
       fetchCheckIns();
+      // Refresh poll responses in case a new answer was added
+      if (net?.poll_enabled) {
+        fetchPollResponses();
+      }
     } catch (error) {
       console.error('Failed to update check-in:', error);
       alert('Failed to update check-in');
@@ -3195,6 +3202,12 @@ const NetView: React.FC = () => {
         maxWidth="md" 
         fullWidth
         disableRestoreFocus
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleSaveEditCheckIn();
+          }
+        }}
       >
         <DialogTitle>Edit Check-In</DialogTitle>
         <DialogContent>
