@@ -549,6 +549,8 @@ async def close_net(
             'power': check_in.power or '',
             'feedback': check_in.feedback or '',
             'notes': check_in.notes or '',
+            'topic_response': check_in.topic_response or '',
+            'poll_response': check_in.poll_response or '',
             'status': check_in.status.value if check_in.status else ''
         })
     
@@ -633,7 +635,12 @@ async def close_net(
                     check_ins=check_ins_data,
                     started_at=net.started_at.strftime("%Y-%m-%d %H:%M:%S") if net.started_at else "N/A",
                     closed_at=net.closed_at.strftime("%Y-%m-%d %H:%M:%S") if net.closed_at else "N/A",
-                    chat_messages=chat_messages_data if chat_messages_data else None
+                    chat_messages=chat_messages_data if chat_messages_data else None,
+                    field_config=net.field_config,
+                    topic_of_week_enabled=net.topic_of_week_enabled,
+                    topic_of_week_prompt=net.topic_of_week_prompt,
+                    poll_enabled=net.poll_enabled,
+                    poll_question=net.poll_question
                 )
         except Exception as e:
             # Log error but don't fail the close operation

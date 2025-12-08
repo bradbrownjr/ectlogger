@@ -636,8 +636,43 @@ This is an automated message, please do not reply.
         )
 
     @staticmethod
-    async def send_net_log(email: str, net_name: str, net_description: str, ncs_name: str, check_ins: list, started_at: str, closed_at: str, chat_messages: list = None):
+    async def send_net_log(
+        email: str, 
+        net_name: str, 
+        net_description: str, 
+        ncs_name: str, 
+        check_ins: list, 
+        started_at: str, 
+        closed_at: str, 
+        chat_messages: list = None,
+        field_config: dict = None,
+        topic_of_week_enabled: bool = False,
+        topic_of_week_prompt: str = None,
+        poll_enabled: bool = False,
+        poll_question: str = None
+    ):
         """Send net log after net is closed with check-ins table, CSV attachment, and chat log"""
+        
+        # Parse field_config to determine which fields are enabled
+        fc = field_config or {}
+        # Helper to check if a field is enabled (default enabled if not in config)
+        def is_enabled(field_name):
+            if not fc:
+                return True  # Default behavior if no config
+            field = fc.get(field_name, {})
+            return field.get('enabled', False)
+        
+        # Calculate poll results if poll is enabled
+        poll_results = []
+        if poll_enabled:
+            poll_counts = {}
+            for c in check_ins:
+                response = c.get('poll_response', '')
+                if response:
+                    poll_counts[response] = poll_counts.get(response, 0) + 1
+            # Sort by count descending
+            poll_results = sorted(poll_counts.items(), key=lambda x: -x[1])
+        
         html_template = Template("""
         <!DOCTYPE html>
         <html>
@@ -646,6 +681,11 @@ This is an automated message, please do not reply.
                 body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
                 .container { max-width: 900px; margin: 0 auto; padding: 20px; }
                 .summary { background-color: #e3f2fd; padding: 15px; border-radius: 4px; margin: 20px 0; }
+                .poll-section { background-color: #fff3e0; padding: 15px; border-radius: 4px; margin: 20px 0; }
+                .poll-bar-container { background-color: #e0e0e0; border-radius: 4px; margin: 5px 0; height: 24px; position: relative; }
+                .poll-bar { background-color: #ff9800; height: 100%; border-radius: 4px; }
+                .poll-label { position: absolute; left: 8px; top: 2px; font-size: 14px; }
+                .poll-count { position: absolute; right: 8px; top: 2px; font-size: 14px; }
                 table { width: 100%; border-collapse: collapse; margin: 20px 0; }
                 th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
                 th { background-color: #1976d2; color: white; }
@@ -666,19 +706,37 @@ This is an automated message, please do not reply.
                     <p><strong>Total Check-ins:</strong> {{ check_in_count }}</p>
                 </div>
 
+                {% if poll_enabled and poll_results %}
+                <div class="poll-section">
+                    <h3>📊 Poll Results</h3>
+                    <p><strong>Question:</strong> {{ poll_question }}</p>
+                    {% for response, count in poll_results %}
+                    <div class="poll-bar-container">
+                        <div class="poll-bar" style="width: {{ (count / total_poll_responses * 100)|round|int }}%;"></div>
+                        <span class="poll-label">{{ response }}</span>
+                        <span class="poll-count">{{ count }} ({{ (count / total_poll_responses * 100)|round|int }}%)</span>
+                    </div>
+                    {% endfor %}
+                    <p style="font-size: 12px; color: #666; margin-top: 10px;">Total responses: {{ total_poll_responses }}</p>
+                </div>
+                {% endif %}
+
                 <h3>Check-ins</h3>
                 <table>
                     <thead>
                         <tr>
                             <th>Time</th>
                             <th>Callsign</th>
-                            <th>Name</th>
-                            <th>Location</th>
+                            {% if show_name %}<th>Name</th>{% endif %}
+                            {% if show_location %}<th>Location</th>{% endif %}
                             {% if has_frequencies %}<th>Frequencies</th>{% endif %}
-                            {% if has_skywarn %}<th>Spotter #</th>{% endif %}
-                            {% if has_weather %}<th>Weather</th>{% endif %}
-                            {% if has_power_source %}<th>Power Src</th>{% endif %}
-                            {% if has_power %}<th>Power</th>{% endif %}
+                            {% if show_skywarn %}<th>Spotter #</th>{% endif %}
+                            {% if show_weather %}<th>Weather</th>{% endif %}
+                            {% if show_power_source %}<th>Power Src</th>{% endif %}
+                            {% if show_power %}<th>Power</th>{% endif %}
+                            {% if show_notes %}<th>Notes</th>{% endif %}
+                            {% if topic_enabled %}<th>Topic</th>{% endif %}
+                            {% if poll_enabled %}<th>Poll</th>{% endif %}
                         </tr>
                     </thead>
                     <tbody>
@@ -686,13 +744,16 @@ This is an automated message, please do not reply.
                         <tr>
                             <td>{{ check_in.time }}</td>
                             <td><strong>{{ check_in.callsign }}</strong></td>
-                            <td>{{ check_in.name }}</td>
-                            <td>{{ check_in.location }}</td>
+                            {% if show_name %}<td>{{ check_in.name }}</td>{% endif %}
+                            {% if show_location %}<td>{{ check_in.location }}</td>{% endif %}
                             {% if has_frequencies %}<td>{{ check_in.frequencies }}</td>{% endif %}
-                            {% if has_skywarn %}<td>{{ check_in.skywarn_number }}</td>{% endif %}
-                            {% if has_weather %}<td>{{ check_in.weather_observation }}</td>{% endif %}
-                            {% if has_power_source %}<td>{{ check_in.power_source }}</td>{% endif %}
-                            {% if has_power %}<td>{{ check_in.power }}</td>{% endif %}
+                            {% if show_skywarn %}<td>{{ check_in.skywarn_number }}</td>{% endif %}
+                            {% if show_weather %}<td>{{ check_in.weather_observation }}</td>{% endif %}
+                            {% if show_power_source %}<td>{{ check_in.power_source }}</td>{% endif %}
+                            {% if show_power %}<td>{{ check_in.power }}</td>{% endif %}
+                            {% if show_notes %}<td>{{ check_in.notes }}</td>{% endif %}
+                            {% if topic_enabled %}<td>{{ check_in.topic_response }}</td>{% endif %}
+                            {% if poll_enabled %}<td>{{ check_in.poll_response }}</td>{% endif %}
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -707,12 +768,11 @@ This is an automated message, please do not reply.
         </html>
         """)
         
-        # Check which optional fields have data
+        # Check which optional fields have data (only show if enabled AND has data)
         has_frequencies = any(c.get('frequencies') for c in check_ins)
-        has_skywarn = any(c.get('skywarn_number') for c in check_ins)
-        has_weather = any(c.get('weather_observation') for c in check_ins)
-        has_power_source = any(c.get('power_source') for c in check_ins)
-        has_power = any(c.get('power') for c in check_ins)
+        
+        # Calculate total poll responses for percentage
+        total_poll_responses = sum(count for _, count in poll_results) if poll_results else 0
         
         html_content = html_template.render(
             app_name=settings.app_name,
@@ -724,35 +784,75 @@ This is an automated message, please do not reply.
             check_in_count=len(check_ins),
             check_ins=check_ins,
             has_frequencies=has_frequencies,
-            has_skywarn=has_skywarn,
-            has_weather=has_weather,
-            has_power_source=has_power_source,
-            has_power=has_power
+            show_name=is_enabled('name'),
+            show_location=is_enabled('location'),
+            show_skywarn=is_enabled('skywarn_number'),
+            show_weather=is_enabled('weather_observation'),
+            show_power_source=is_enabled('power_source'),
+            show_power=is_enabled('power'),
+            show_notes=is_enabled('notes'),
+            topic_enabled=topic_of_week_enabled,
+            topic_prompt=topic_of_week_prompt,
+            poll_enabled=poll_enabled,
+            poll_question=poll_question or "Poll",
+            poll_results=poll_results,
+            total_poll_responses=total_poll_responses
         )
         
-        # Generate CSV
+        # Generate CSV with only enabled columns
         output = io.StringIO()
         writer = csv.writer(output)
-        writer.writerow([
-            "Check-in Time", "Callsign", "Name", "Location", 
-            "Spotter #", "Weather Observation", "Power Src", "Power",
-            "Feedback", "Notes", "Status"
-        ])
+        
+        # Build header row based on enabled fields
+        headers = ["Check-in Time", "Callsign"]
+        if is_enabled('name'):
+            headers.append("Name")
+        if is_enabled('location'):
+            headers.append("Location")
+        if has_frequencies:
+            headers.append("Frequencies")
+        if is_enabled('skywarn_number'):
+            headers.append("Spotter #")
+        if is_enabled('weather_observation'):
+            headers.append("Weather Observation")
+        if is_enabled('power_source'):
+            headers.append("Power Src")
+        if is_enabled('power'):
+            headers.append("Power")
+        if is_enabled('notes'):
+            headers.append("Notes")
+        if topic_of_week_enabled:
+            headers.append(topic_of_week_prompt or "Topic")
+        if poll_enabled:
+            headers.append(poll_question or "Poll")
+        headers.append("Status")
+        
+        writer.writerow(headers)
         
         for check_in in check_ins:
-            writer.writerow([
-                check_in.get('time', ''),
-                check_in.get('callsign', ''),
-                check_in.get('name', ''),
-                check_in.get('location', ''),
-                check_in.get('skywarn_number', ''),
-                check_in.get('weather_observation', ''),
-                check_in.get('power_source', ''),
-                check_in.get('power', ''),
-                check_in.get('feedback', ''),
-                check_in.get('notes', ''),
-                check_in.get('status', '')
-            ])
+            row = [check_in.get('time', ''), check_in.get('callsign', '')]
+            if is_enabled('name'):
+                row.append(check_in.get('name', ''))
+            if is_enabled('location'):
+                row.append(check_in.get('location', ''))
+            if has_frequencies:
+                row.append(check_in.get('frequencies', ''))
+            if is_enabled('skywarn_number'):
+                row.append(check_in.get('skywarn_number', ''))
+            if is_enabled('weather_observation'):
+                row.append(check_in.get('weather_observation', ''))
+            if is_enabled('power_source'):
+                row.append(check_in.get('power_source', ''))
+            if is_enabled('power'):
+                row.append(check_in.get('power', ''))
+            if is_enabled('notes'):
+                row.append(check_in.get('notes', ''))
+            if topic_of_week_enabled:
+                row.append(check_in.get('topic_response', ''))
+            if poll_enabled:
+                row.append(check_in.get('poll_response', ''))
+            row.append(check_in.get('status', ''))
+            writer.writerow(row)
         
         csv_data = output.getvalue()
         csv_filename = f"{net_name.replace(' ', '_')}_{closed_at.split()[0]}.csv"
@@ -765,11 +865,27 @@ This is an automated message, please do not reply.
             chat_output.write(f"Chat Log for {net_name}\n")
             chat_output.write(f"{'='*60}\n\n")
             
+            # Add poll question at the top if enabled
+            if poll_enabled and poll_question:
+                chat_output.write(f"📊 Poll Question: {poll_question}\n")
+                chat_output.write(f"{'-'*40}\n\n")
+            
             for msg in chat_messages:
                 timestamp = msg.get('timestamp', '')
                 callsign = msg.get('callsign', 'Unknown')
                 message = msg.get('message', '')
                 chat_output.write(f"[{timestamp}] {callsign}: {message}\n")
+            
+            # Add poll results summary at the end if enabled
+            if poll_enabled and poll_results:
+                chat_output.write(f"\n{'='*60}\n")
+                chat_output.write(f"📊 Poll Results Summary\n")
+                chat_output.write(f"Question: {poll_question}\n")
+                chat_output.write(f"{'-'*40}\n")
+                for response, count in poll_results:
+                    pct = (count / total_poll_responses * 100) if total_poll_responses else 0
+                    chat_output.write(f"  {response}: {count} ({pct:.0f}%)\n")
+                chat_output.write(f"Total responses: {total_poll_responses}\n")
             
             chat_data = chat_output.getvalue()
             chat_filename = f"{net_name.replace(' ', '_')}_{closed_at.split()[0]}_chat.txt"
