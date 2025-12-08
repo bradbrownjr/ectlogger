@@ -107,6 +107,28 @@ Copy `.env.example` to `backend/.env`:
 - `SMTP_*` - Email config for magic links
 - `DATABASE_URL` - defaults to `sqlite:///./ectlogger.db`
 
+## Git Workflow
+
+**IMPORTANT: Always commit and push changes to GitHub before deploying to any server.**
+
+### Development Workflow
+1. Make changes locally
+2. Test locally if possible
+3. **Commit and push to GitHub**:
+   ```bash
+   git add -A
+   git commit -m "Brief description of changes"
+   git push origin main
+   ```
+4. Deploy to beta via `git pull`
+5. Test on beta
+6. When confirmed working, deploy to production via `git pull`
+
+### Why This Matters
+- Direct SCP to servers causes drift between repo and deployed code
+- Production deploys via `git pull` - if repo is stale, wrong code gets deployed
+- Keeps full history of changes for rollback if needed
+
 ## Deployment Environments
 
 ### Production (app.ectlogger.us)
@@ -132,18 +154,16 @@ Copy `.env.example` to `backend/.env`:
 - **Purpose**: Testing new features before production deployment
 - **Note**: Deploy new/incomplete features to beta ONLY until tested and confirmed working
 - **Path**: `/home/bradb/ectlogger`
-- **Deploy manually** (for rapid iteration without committing):
+- **Deploy from GitHub** (preferred):
   ```bash
-  # Copy backend files
-  scp backend/app/routers/*.py bradb@10.6.26.3:/home/bradb/ectlogger/backend/app/routers/
-  
-  # Copy frontend files
-  scp frontend/src/pages/*.tsx bradb@10.6.26.3:/home/bradb/ectlogger/frontend/src/pages/
+  # First commit and push locally, then pull on beta
+  ssh bradb@10.6.26.3 "cd /home/bradb/ectlogger && git pull origin main"
   
   # Build frontend
   ssh bradb@10.6.26.3 "cd /home/bradb/ectlogger/frontend && npm run build"
   
-  # Restart backend (requires sudo)
+  # Restart backend (requires sudo - SSH in interactively)
+  ssh bradb@10.6.26.3
   sudo systemctl restart ectlogger
   ```
 - **Database**: SQLite at `/home/bradb/ectlogger/backend/ectlogger.db`
