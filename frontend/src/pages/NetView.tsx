@@ -3273,6 +3273,34 @@ const NetView: React.FC = () => {
                 inputProps={{ style: { textTransform: 'uppercase' } }}
                 helperText="Callsign of station who relayed this check-in"
               />
+              {/* Topic of the Week response */}
+              {net?.topic_of_week_enabled && (
+                <TextField
+                  label={net.topic_of_week_prompt || "Topic of the Week"}
+                  value={editingCheckIn.topic_response || ''}
+                  onChange={(e) => setEditingCheckIn({ ...editingCheckIn, topic_response: e.target.value })}
+                  fullWidth
+                  multiline
+                  rows={2}
+                />
+              )}
+              {/* Poll response with autocomplete */}
+              {net?.poll_enabled && (
+                <Autocomplete
+                  freeSolo
+                  options={pollResponses}
+                  value={editingCheckIn.poll_response || ''}
+                  onChange={(_, newValue) => setEditingCheckIn({ ...editingCheckIn, poll_response: newValue || '' })}
+                  onInputChange={(_, newInputValue) => setEditingCheckIn({ ...editingCheckIn, poll_response: newInputValue })}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label={net.poll_question || "Poll Response"}
+                      helperText="Type or select from previous answers"
+                    />
+                  )}
+                />
+              )}
               {net?.frequencies && net.frequencies.length > 1 && (
                 <Autocomplete
                   multiple
