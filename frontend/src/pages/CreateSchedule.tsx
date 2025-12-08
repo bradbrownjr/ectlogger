@@ -1479,25 +1479,24 @@ This concludes tonight's net. 73 to all."
           {/* Navigation buttons */}
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3, pt: 2, borderTop: 1, borderColor: 'divider' }}>
             <Box sx={{ display: 'flex', gap: 2 }}>
-              <Button type="button" variant="outlined" onClick={() => navigate('/scheduler')}>
-                Cancel
-              </Button>
               {activeTab > 0 && (
                 <Button type="button" variant="outlined" onClick={() => setActiveTab(activeTab - 1)}>
                   Previous
                 </Button>
               )}
-            </Box>
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              {activeTab < 5 ? (
-                <Button type="button" variant="contained" onClick={handleNextTab}>
+              {activeTab < 5 && (
+                <Button type="button" variant="outlined" onClick={handleNextTab}>
                   Next
                 </Button>
-              ) : (
-                <Button type="submit" variant="contained" color="primary" disabled={isTransitioning}>
-                  {isEdit ? 'Save Changes' : 'Create Schedule'}
-                </Button>
               )}
+            </Box>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Button type="button" variant="outlined" onClick={() => navigate('/scheduler')}>
+                Cancel
+              </Button>
+              <Button type="submit" variant="contained" color="primary" disabled={isTransitioning}>
+                {isEdit ? 'Save Changes' : 'Create Schedule'}
+              </Button>
             </Box>
           </Box>
         </Box>
