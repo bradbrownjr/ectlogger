@@ -519,7 +519,11 @@ async def create_net_from_template(
         template_id=template_id,
         field_config=template.field_config,
         status=NetStatus.DRAFT,
-        ics309_enabled=template.ics309_enabled or False
+        ics309_enabled=template.ics309_enabled or False,
+        topic_of_week_enabled=template.topic_of_week_enabled or False,
+        topic_of_week_prompt=template.topic_of_week_prompt,
+        poll_enabled=template.poll_enabled or False,
+        poll_question=template.poll_question
     )
     db.add(net)
     await db.flush()
