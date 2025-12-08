@@ -30,10 +30,7 @@ import {
   Autocomplete,
   Grid,
   Tooltip,
-  useTheme,
   CircularProgress,
-  Switch,
-  FormControlLabel,
 } from '@mui/material';
 import { keyframes } from '@mui/system';
 import EditIcon from '@mui/icons-material/Edit';
@@ -202,7 +199,6 @@ const shimmerYellow = keyframes`
 
 const NetView: React.FC = () => {
   const { netId } = useParams<{ netId: string }>();
-  const theme = useTheme();
   const [net, setNet] = useState<Net | null>(null);
   const [checkIns, setCheckIns] = useState<CheckIn[]>([]);
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
@@ -214,8 +210,6 @@ const NetView: React.FC = () => {
   const [activeSpeakerId, setActiveSpeakerId] = useState<number | null>(null);
   const [toastMessage, setToastMessage] = useState<string>('');
   const [ws, setWs] = useState<WebSocket | null>(null);
-  const [editCheckInDialogOpen, setEditCheckInDialogOpen] = useState(false);
-  const [editingCheckIn, setEditingCheckIn] = useState<CheckIn | null>(null);
   const [checkInDialogOpen, setCheckInDialogOpen] = useState(false);
   const [onlineUserIds, setOnlineUserIds] = useState<number[]>([]);
   const [netStats, setNetStats] = useState<{total_check_ins: number, online_count: number, guest_count: number} | null>(null);
@@ -766,17 +760,6 @@ const NetView: React.FC = () => {
     }
   };
 
-  const handleToggleICS309 = async () => {
-    try {
-      const newValue = !net?.ics309_enabled;
-      await api.patch(`/nets/${netId}`, { ics309_enabled: newValue });
-      setNet(prev => prev ? { ...prev, ics309_enabled: newValue } : null);
-      setToastMessage(newValue ? 'ICS-309 format enabled for this net' : 'ICS-309 format disabled');
-    } catch (error) {
-      console.error('Failed to toggle ICS-309:', error);
-    }
-  };
-
   const handleArchive = async () => {
     if (!confirm('Archive this net? It will be hidden from the main dashboard.')) return;
     try {
@@ -1186,43 +1169,6 @@ const NetView: React.FC = () => {
     } else if (e.key === 'Escape') {
       e.preventDefault();
       handleCancelInlineEdit();
-    }
-  };
-
-  // Legacy dialog-based edit (keeping for backwards compatibility / edge cases)
-  const handleEditCheckIn = (checkIn: CheckIn) => {
-    setEditingCheckIn(checkIn);
-    setEditCheckInDialogOpen(true);
-  };
-
-  const handleSaveEditCheckIn = async () => {
-    if (!editingCheckIn) return;
-    
-    try {
-      await checkInApi.update(editingCheckIn.id, {
-        callsign: editingCheckIn.callsign,
-        name: editingCheckIn.name,
-        location: editingCheckIn.location,
-        skywarn_number: editingCheckIn.skywarn_number,
-        weather_observation: editingCheckIn.weather_observation,
-        power_source: editingCheckIn.power_source,
-        power: editingCheckIn.power,
-        notes: editingCheckIn.notes,
-        relayed_by: editingCheckIn.relayed_by,
-        topic_response: editingCheckIn.topic_response,
-        poll_response: editingCheckIn.poll_response,
-        available_frequency_ids: editingCheckIn.available_frequencies || [],
-      });
-      setEditCheckInDialogOpen(false);
-      setEditingCheckIn(null);
-      fetchCheckIns();
-      // Refresh poll responses in case a new answer was added
-      if (net?.poll_enabled) {
-        fetchPollResponses();
-      }
-    } catch (error) {
-      console.error('Failed to update check-in:', error);
-      alert('Failed to update check-in');
     }
   };
 
@@ -2596,6 +2542,14 @@ const NetView: React.FC = () => {
                     </Typography>
                   </Tooltip>
                 )}
+                {/* Inline edit hint - only shown to NCS/Loggers when net is active */}
+                {net.status === 'active' && canManageCheckIns && (
+                  <Tooltip title="Click any row to edit check-in details inline" placement="top" arrow>
+                    <Typography variant="caption" sx={{ cursor: 'help', color: 'primary.main', fontStyle: 'italic' }}>
+                      💡 Click row to edit
+                    </Typography>
+                  </Tooltip>
+                )}
               </Box>
             </Box>
             
@@ -3338,6 +3292,14 @@ const NetView: React.FC = () => {
                   <Tooltip title="Has traffic" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>🚨 Traffic</Typography></Tooltip>
                   <Tooltip title="Has announcements" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>📢 Announce</Typography></Tooltip>
                   <Tooltip title="Checked out" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>👋 Out</Typography></Tooltip>
+                  {/* Inline edit hint - only shown to NCS/Loggers when net is active */}
+                  {net.status === 'active' && canManageCheckIns && (
+                    <Tooltip title="Click any row to edit check-in details inline" placement="top" arrow>
+                      <Typography variant="caption" sx={{ cursor: 'help', color: 'primary.main', fontStyle: 'italic' }}>
+                        💡 Click row to edit
+                      </Typography>
+                    </Tooltip>
+                  )}
                 </Box>
               </Box>
               
@@ -3638,170 +3600,6 @@ const NetView: React.FC = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setFrequencyDialogOpen(false)}>Done</Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Edit Check-In Dialog */}
-      <Dialog 
-        open={editCheckInDialogOpen} 
-        onClose={() => setEditCheckInDialogOpen(false)} 
-        maxWidth="md" 
-        fullWidth
-        disableRestoreFocus
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            handleSaveEditCheckIn();
-          }
-        }}
-      >
-        <DialogTitle>Edit Check-In</DialogTitle>
-        <DialogContent>
-          {editingCheckIn && (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-              <TextField
-                label="Callsign"
-                value={editingCheckIn.callsign}
-                onChange={(e) => setEditingCheckIn({ ...editingCheckIn, callsign: e.target.value.toUpperCase() })}
-                fullWidth
-                required
-              />
-              {net?.field_config?.name?.enabled && (
-                <TextField
-                  label="Name"
-                  value={editingCheckIn.name || ''}
-                  onChange={(e) => setEditingCheckIn({ ...editingCheckIn, name: e.target.value })}
-                  fullWidth
-                />
-              )}
-              {net?.field_config?.location?.enabled && (
-                <TextField
-                  label="Location"
-                  value={editingCheckIn.location || ''}
-                  onChange={(e) => setEditingCheckIn({ ...editingCheckIn, location: e.target.value })}
-                  fullWidth
-                />
-              )}
-              {net?.field_config?.skywarn_number?.enabled && (
-                <TextField
-                  label="Spotter #"
-                  value={editingCheckIn.skywarn_number || ''}
-                  onChange={(e) => setEditingCheckIn({ ...editingCheckIn, skywarn_number: e.target.value })}
-                  fullWidth
-                />
-              )}
-              {net?.field_config?.weather_observation?.enabled && (
-                <TextField
-                  label="Weather Observation"
-                  value={editingCheckIn.weather_observation || ''}
-                  onChange={(e) => setEditingCheckIn({ ...editingCheckIn, weather_observation: e.target.value })}
-                  fullWidth
-                />
-              )}
-              {net?.field_config?.power_source?.enabled && (
-                <TextField
-                  label="Power Src"
-                  value={editingCheckIn.power_source || ''}
-                  onChange={(e) => setEditingCheckIn({ ...editingCheckIn, power_source: e.target.value })}
-                  fullWidth
-                />
-              )}
-              {net?.field_config?.power?.enabled && (
-                <TextField
-                  label="Power"
-                  value={editingCheckIn.power || ''}
-                  onChange={(e) => setEditingCheckIn({ ...editingCheckIn, power: e.target.value })}
-                  fullWidth
-                />
-              )}
-              {net?.field_config?.notes?.enabled && (
-                <TextField
-                  label="Notes"
-                  value={editingCheckIn.notes || ''}
-                  onChange={(e) => setEditingCheckIn({ ...editingCheckIn, notes: e.target.value })}
-                  fullWidth
-                  multiline
-                  rows={2}
-                />
-              )}
-              <TextField
-                label="Relayed By"
-                value={editingCheckIn.relayed_by || ''}
-                onChange={(e) => setEditingCheckIn({ ...editingCheckIn, relayed_by: e.target.value.toUpperCase() })}
-                fullWidth
-                inputProps={{ style: { textTransform: 'uppercase' } }}
-                helperText="Callsign of station who relayed this check-in"
-              />
-              {/* Topic of the Week response */}
-              {net?.topic_of_week_enabled && (
-                <TextField
-                  label={net.topic_of_week_prompt || "Topic of the Week"}
-                  value={editingCheckIn.topic_response || ''}
-                  onChange={(e) => setEditingCheckIn({ ...editingCheckIn, topic_response: e.target.value })}
-                  fullWidth
-                  multiline
-                  rows={2}
-                />
-              )}
-              {/* Poll response with autocomplete */}
-              {net?.poll_enabled && (
-                <Autocomplete
-                  freeSolo
-                  options={pollResponses}
-                  value={editingCheckIn.poll_response || ''}
-                  onChange={(_, newValue) => setEditingCheckIn({ ...editingCheckIn, poll_response: newValue || '' })}
-                  onInputChange={(_, newInputValue) => setEditingCheckIn({ ...editingCheckIn, poll_response: newInputValue })}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      label={net.poll_question || "Poll Response"}
-                      helperText="Type or select from previous answers"
-                    />
-                  )}
-                />
-              )}
-              {net?.frequencies && net.frequencies.length > 1 && (
-                <Autocomplete
-                  multiple
-                  options={net.frequencies || []}
-                  getOptionLabel={(option: any) => formatFrequencyDisplay(option)}
-                  value={net.frequencies.filter((f: any) => (editingCheckIn.available_frequencies || []).includes(f.id))}
-                  onChange={(_, newValue: any[]) => {
-                    setEditingCheckIn({
-                      ...editingCheckIn,
-                      available_frequencies: newValue.map(f => f.id)
-                    });
-                  }}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      label="Available Frequencies"
-                      helperText="Select all frequencies this station can monitor"
-                    />
-                  )}
-                  renderTags={(value: any[], getTagProps) =>
-                    value.map((option: any, index: number) => {
-                      const { key, ...tagProps } = getTagProps({ index });
-                      return (
-                        <Chip
-                          key={key}
-                          {...tagProps}
-                          label={formatFrequencyDisplay(option)}
-                          size="small"
-                        />
-                      );
-                    })
-                  }
-                />
-              )}
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setEditCheckInDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleSaveEditCheckIn} variant="contained" color="primary">
-            Save
-          </Button>
         </DialogActions>
       </Dialog>
 
