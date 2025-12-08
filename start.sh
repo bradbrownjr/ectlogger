@@ -171,24 +171,39 @@ export VITE_BACKEND_PORT=$BACKEND_PORT
 echo "📡 Starting backend server on http://localhost:$BACKEND_PORT"
 cd backend
 . venv/bin/activate
-uvicorn app.main:app --reload --host 0.0.0.0 --port $BACKEND_PORT &
+if [ "$SERVICE_MODE" = true ]; then
+    # Production mode: no auto-reload, better performance
+    uvicorn app.main:app --host 0.0.0.0 --port $BACKEND_PORT &
+else
+    # Development mode: enable auto-reload
+    uvicorn app.main:app --reload --host 0.0.0.0 --port $BACKEND_PORT &
+fi
 BACKEND_PID=$!
 cd ..
 
 # Wait a moment for backend to start
 sleep 3
 
-# Start frontend in background
-echo "🌐 Starting frontend server on http://localhost:3000"
-cd frontend
-npm run dev -- --host 0.0.0.0 &
-FRONTEND_PID=$!
-cd ..
+# Only start Vite dev server in development mode
+# In production/service mode, Caddy serves static files from frontend/dist
+if [ "$SERVICE_MODE" = false ]; then
+    # Start frontend in background (development only)
+    echo "🌐 Starting frontend dev server on http://localhost:3000"
+    cd frontend
+    npm run dev -- --host 0.0.0.0 &
+    FRONTEND_PID=$!
+    cd ..
+else
+    echo "📁 Frontend served from static build (frontend/dist)"
+    FRONTEND_PID=""
+fi
 
 echo ""
 echo "✓ ECTLogger is starting!"
 echo ""
-echo "🌐 Frontend: http://localhost:3000"
+if [ "$SERVICE_MODE" = false ]; then
+    echo "🌐 Frontend: http://localhost:3000"
+fi
 echo "📡 Backend:  http://localhost:$BACKEND_PORT"
 echo "📚 API Docs: http://localhost:$BACKEND_PORT/docs"
 echo ""
@@ -215,7 +230,9 @@ cleanup() {
     echo ""
     echo "Stopping servers..."
     kill $BACKEND_PID 2>/dev/null
-    kill $FRONTEND_PID 2>/dev/null
+    if [ -n "$FRONTEND_PID" ]; then
+        kill $FRONTEND_PID 2>/dev/null
+    fi
     exit 0
 }
 
