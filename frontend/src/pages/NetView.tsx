@@ -3050,7 +3050,16 @@ const NetView: React.FC = () => {
       </Paper>
 
       {/* Close Net Confirmation Dialog */}
-      <Dialog open={closeNetDialogOpen} onClose={() => setCloseNetDialogOpen(false)}>
+      <Dialog 
+        open={closeNetDialogOpen} 
+        onClose={() => setCloseNetDialogOpen(false)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            handleCloseNet();
+          }
+        }}
+      >
         <DialogTitle>Close Net?</DialogTitle>
         <DialogContent>
           <Typography>
@@ -3066,7 +3075,18 @@ const NetView: React.FC = () => {
       </Dialog>
 
       {/* Topic/Poll Configuration Dialog */}
-      <Dialog open={topicPollDialogOpen} onClose={() => setTopicPollDialogOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog 
+        open={topicPollDialogOpen} 
+        onClose={() => setTopicPollDialogOpen(false)} 
+        maxWidth="sm" 
+        fullWidth
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleTopicPollSaveAndStart();
+          }
+        }}
+      >
         <DialogTitle>Configure Community Net Features</DialogTitle>
         <DialogContent>
           <Box sx={{ pt: 2 }}>
@@ -3190,6 +3210,12 @@ const NetView: React.FC = () => {
         onClose={() => setFrequencyDialogOpen(false)} 
         maxWidth="sm" 
         fullWidth
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            setFrequencyDialogOpen(false);
+          }
+        }}
       >
         <DialogTitle>Available Frequencies</DialogTitle>
         <DialogContent>
@@ -3403,6 +3429,13 @@ const NetView: React.FC = () => {
         maxWidth="md" 
         fullWidth
         disableRestoreFocus
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleCheckIn();
+            setCheckInDialogOpen(false);
+          }
+        }}
       >
         <DialogTitle>Check In to {net?.name}</DialogTitle>
         <DialogContent>
