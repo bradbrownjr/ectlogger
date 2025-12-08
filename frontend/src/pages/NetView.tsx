@@ -1368,7 +1368,7 @@ const NetView: React.FC = () => {
                   {durationTime && (
                     <Chip 
                       icon={<AccessTimeIcon />}
-                      label={durationTime}
+                      label={`Duration: ${durationTime}`}
                       size="small" 
                       color="info" 
                       variant="outlined"
