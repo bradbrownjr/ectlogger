@@ -2500,6 +2500,8 @@ const NetView: React.FC = () => {
                       </TableCell>
                     )}
                     {/* Poll response input with autocomplete */}
+                    {/* NOTE: No onKeyDown Enter handler here - selecting from dropdown would submit prematurely */}
+                    {/* User should press Enter in another field or click Add button */}
                     {net?.poll_enabled && (
                       <TableCell>
                         <Autocomplete
@@ -2509,15 +2511,6 @@ const NetView: React.FC = () => {
                           value={checkInForm.poll_response}
                           onChange={(_, newValue) => setCheckInForm({ ...checkInForm, poll_response: newValue || '' })}
                           onInputChange={(_, newInputValue) => setCheckInForm({ ...checkInForm, poll_response: newInputValue })}
-                          onKeyDown={(e) => {
-                            // Only submit on Enter if no option is highlighted (dropdown closed or typing new value)
-                            if (e.key === 'Enter') {
-                              // Small delay to let Autocomplete handle selection first
-                              setTimeout(() => {
-                                if (checkInForm.callsign) handleCheckIn();
-                              }, 50);
-                            }
-                          }}
                           renderInput={(params) => (
                             <TextField
                               {...params}
