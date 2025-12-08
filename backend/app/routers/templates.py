@@ -509,6 +509,65 @@ async def create_net_from_template(
     if not template.is_active:
         raise HTTPException(status_code=400, detail="Template is not active")
     
+    # Calculate scheduled_start_time based on template's schedule config
+    scheduled_start_time = None
+    if template.schedule_type != 'ad_hoc' and template.schedule_config:
+        try:
+            config = json.loads(template.schedule_config) if isinstance(template.schedule_config, str) else template.schedule_config
+            time_str = config.get('time', '19:00')
+            hour, minute = map(int, time_str.split(':'))
+            
+            # Get timezone from config (default to America/New_York if not specified)
+            tz_name = config.get('timezone', 'America/New_York')
+            try:
+                import zoneinfo
+                local_tz = zoneinfo.ZoneInfo(tz_name)
+            except:
+                # Fallback if zoneinfo not available
+                local_tz = None
+            
+            # Calculate the next occurrence based on schedule type
+            now = datetime.now(timezone.utc)
+            if local_tz:
+                now_local = now.astimezone(local_tz)
+            else:
+                now_local = now
+            
+            if template.schedule_type == 'daily':
+                # For daily nets, scheduled time is today at the specified time
+                # If that time has passed, it's tomorrow
+                scheduled_local = now_local.replace(hour=hour, minute=minute, second=0, microsecond=0)
+                if scheduled_local <= now_local:
+                    scheduled_local = scheduled_local + timedelta(days=1)
+            elif template.schedule_type == 'weekly':
+                # For weekly nets, find the next occurrence of the specified day
+                day_of_week = config.get('day_of_week', 0)  # 0 = Sunday in our config
+                # Convert to Python weekday (0 = Monday)
+                python_weekday = (day_of_week - 1) % 7 if day_of_week > 0 else 6
+                days_ahead = python_weekday - now_local.weekday()
+                if days_ahead < 0 or (days_ahead == 0 and now_local.hour * 60 + now_local.minute >= hour * 60 + minute):
+                    days_ahead += 7
+                scheduled_local = (now_local + timedelta(days=days_ahead)).replace(hour=hour, minute=minute, second=0, microsecond=0)
+            elif template.schedule_type == 'monthly':
+                # For monthly nets, use the next scheduled date from calculate_schedule_dates
+                # For now, just use today's date with the time - the NCS rotation handles the complex logic
+                scheduled_local = now_local.replace(hour=hour, minute=minute, second=0, microsecond=0)
+                if scheduled_local <= now_local:
+                    scheduled_local = scheduled_local + timedelta(days=1)
+            else:
+                scheduled_local = None
+            
+            # Convert back to UTC for storage
+            if scheduled_local and local_tz:
+                scheduled_start_time = scheduled_local.astimezone(timezone.utc)
+            elif scheduled_local:
+                scheduled_start_time = scheduled_local.replace(tzinfo=timezone.utc)
+        except Exception as e:
+            # Log error but don't fail net creation
+            import logging
+            logging.warning(f"Failed to calculate scheduled_start_time: {e}")
+            scheduled_start_time = None
+    
     # Create net from template
     from app.routers.nets import net_frequencies as net_freq_table
     
@@ -523,7 +582,8 @@ async def create_net_from_template(
         topic_of_week_enabled=template.topic_of_week_enabled or False,
         topic_of_week_prompt=template.topic_of_week_prompt,
         poll_enabled=template.poll_enabled or False,
-        poll_question=template.poll_question
+        poll_question=template.poll_question,
+        scheduled_start_time=scheduled_start_time
     )
     db.add(net)
     await db.flush()
