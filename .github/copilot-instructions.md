@@ -85,3 +85,43 @@ Copy `.env.example` to `backend/.env`:
 - `SECRET_KEY` - JWT signing key (required)
 - `SMTP_*` - Email config for magic links
 - `DATABASE_URL` - defaults to `sqlite:///./ectlogger.db`
+
+## Deployment Environments
+
+### Production (app.ectlogger.us)
+- **Host**: `ectlogger@app.ectlogger.us`
+- **Python**: 3.11.2
+- **Path**: `~/ectlogger`
+- **Deploy**: Push to `main` branch triggers deployment
+
+### Beta (ectbeta.lynwood.us)
+- **Host**: `bradb@10.6.26.3`
+- **Python**: 3.13
+- **Path**: `/home/bradb/ectlogger`
+- **Deploy manually**:
+  ```bash
+  # Copy backend files
+  scp backend/app/routers/*.py bradb@10.6.26.3:/home/bradb/ectlogger/backend/app/routers/
+  
+  # Copy frontend files
+  scp frontend/src/pages/*.tsx bradb@10.6.26.3:/home/bradb/ectlogger/frontend/src/pages/
+  
+  # Build frontend
+  ssh bradb@10.6.26.3 "cd /home/bradb/ectlogger/frontend && npm run build"
+  
+  # Restart backend (requires sudo)
+  sudo systemctl restart ectlogger
+  ```
+- **Database**: SQLite at `/home/bradb/ectlogger/backend/ectlogger.db`
+- **Run migrations**: `ssh bradb@10.6.26.3 "cd /home/bradb/ectlogger && bash migrate.sh"`
+
+### Alpha (10.6.26.6)
+- **Host**: `bradb@10.6.26.6`
+- **Python**: 3.13
+- **Path**: `/home/bradb/ectlogger`
+- **Purpose**: Feature testing before beta
+
+### Local Development
+- **Frontend**: `http://localhost:3000` (Vite dev server)
+- **Backend**: `http://localhost:8000` (uvicorn)
+- **API Docs**: `http://localhost:8000/docs`
