@@ -89,6 +89,7 @@ interface Net {
     };
   };
   frequencies: Frequency[];
+  scheduled_start_time?: string;  // Scheduled start time for countdown timer
   started_at?: string;
   closed_at?: string;
   created_at: string;
@@ -390,14 +391,20 @@ const NetView: React.FC = () => {
         const startTime = new Date(net.started_at);
         const diff = now.getTime() - startTime.getTime();
         
-        const hours = Math.floor(diff / (1000 * 60 * 60));
-        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-        
-        if (hours > 0) {
-          setDurationTime(`${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+        // Only show duration if it's positive (started_at is in the past)
+        if (diff > 0) {
+          const hours = Math.floor(diff / (1000 * 60 * 60));
+          const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+          const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+          
+          if (hours > 0) {
+            setDurationTime(`${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+          } else {
+            setDurationTime(`${minutes}:${seconds.toString().padStart(2, '0')}`);
+          }
         } else {
-          setDurationTime(`${minutes}:${seconds.toString().padStart(2, '0')}`);
+          // Edge case: started_at is in the future (shouldn't happen, but handle gracefully)
+          setDurationTime(null);
         }
       } else {
         setDurationTime(null);
@@ -1357,7 +1364,7 @@ const NetView: React.FC = () => {
                   {durationTime && (
                     <Chip 
                       icon={<AccessTimeIcon />}
-                      label={`Duration: ${durationTime}`}
+                      label={durationTime}
                       size="small" 
                       color="info" 
                       variant="outlined"
