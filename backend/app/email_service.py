@@ -156,7 +156,7 @@ This is an automated message, please do not reply.
                 body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
                 .container { max-width: 600px; margin: 0 auto; padding: 20px; }
                 .button { display: inline-block; padding: 12px 24px; background-color: #1976d2; 
-                         color: white; text-decoration: none; border-radius: 4px; margin: 20px 0; }
+                         color: #ffffff !important; text-decoration: none; border-radius: 4px; margin: 20px 0; font-weight: bold; }
                 .alert { background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 12px; margin: 20px 0; }
                 .info { font-size: 12px; color: #666; margin-top: 20px; }
             </style>
@@ -168,7 +168,7 @@ This is an automated message, please do not reply.
                     <strong>A net you're subscribed to has started!</strong>
                 </div>
                 <p>The <strong>{{ net_name }}</strong> net is now active and ready for check-ins.</p>
-                <a href="{{ join_url }}" class="button">Join Net</a>
+                <a href="{{ join_url }}" class="button" style="color: #ffffff;">Join Net</a>
                 <p>Click the button above to view the net and check in. You'll be automatically signed in.</p>
                 <p class="info">This link is unique to you and will sign you in automatically. Do not share it.</p>
             </div>
@@ -209,7 +209,7 @@ This is an automated message, please do not reply.
                 body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
                 .container { max-width: 600px; margin: 0 auto; padding: 20px; }
                 .button { display: inline-block; padding: 12px 24px; background-color: #1976d2; 
-                         color: white; text-decoration: none; border-radius: 4px; margin: 20px 0; }
+                         color: #ffffff !important; text-decoration: none; border-radius: 4px; margin: 20px 0; font-weight: bold; }
             </style>
         </head>
         <body>
@@ -217,7 +217,7 @@ This is an automated message, please do not reply.
                 <h2>You're Invited to Join a Net</h2>
                 <p><strong>{{ inviter_name }}</strong> has invited you to join the <strong>{{ net_name }}</strong> net.</p>
                 <p>Accept this invitation to receive notifications when this net starts.</p>
-                <a href="{{ invite_url }}" class="button">Accept Invitation</a>
+                <a href="{{ invite_url }}" class="button" style="color: #ffffff;">Accept Invitation</a>
             </div>
         </body>
         </html>
