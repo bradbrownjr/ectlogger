@@ -1755,6 +1755,8 @@ const NetView: React.FC = () => {
                   },
                 },
               }}>
+                {/* ========== CHECK-IN LIST TABLE 1: Desktop Inline (attached) ========== */}
+                {/* This table displays when check-in list is NOT detached, on medium+ screens */}
                 <Table size="small" sx={{ borderCollapse: 'collapse' }}>
                   <TableHead sx={{ position: 'sticky', top: 0, backgroundColor: 'background.paper', zIndex: 1 }}>
                     <TableRow>
@@ -1774,6 +1776,8 @@ const NetView: React.FC = () => {
                           {field.label} {isFieldRequired(field.name) && '*'}
                         </TableCell>
                       ))}
+                      {net?.topic_of_week_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Topic</TableCell>}
+                      {net?.poll_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Poll</TableCell>}
                       {hasAnyRelayedBy && <TableCell sx={{ whiteSpace: 'nowrap' }}>Relayed By</TableCell>}
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>Time</TableCell>
                       {canManage && <TableCell sx={{ whiteSpace: 'nowrap' }}>Actions</TableCell>}
@@ -1938,6 +1942,8 @@ const NetView: React.FC = () => {
                           {checkIn.custom_fields?.[field.name] || ''}
                         </TableCell>
                       ))}
+                      {net?.topic_of_week_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.topic_response || ''}</TableCell>}
+                      {net?.poll_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.poll_response || ''}</TableCell>}
                       {hasAnyRelayedBy && <TableCell sx={{ width: 80 }}>{checkIn.relayed_by || ''}</TableCell>}
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>
                         {formatTimeWithDate(checkIn.checked_in_at, user?.prefer_utc || false, net?.started_at)}
@@ -2056,6 +2062,8 @@ const NetView: React.FC = () => {
                 },
               },
             }}>
+              {/* ========== CHECK-IN LIST TABLE 2: Mobile View ========== */}
+              {/* This table displays on small screens (xs) only */}
               <Table size="small">
                 <TableHead sx={{ position: 'sticky', top: 0, backgroundColor: 'background.paper', zIndex: 1 }}>
                   <TableRow>
@@ -2501,17 +2509,20 @@ const NetView: React.FC = () => {
                           value={checkInForm.poll_response}
                           onChange={(_, newValue) => setCheckInForm({ ...checkInForm, poll_response: newValue || '' })}
                           onInputChange={(_, newInputValue) => setCheckInForm({ ...checkInForm, poll_response: newInputValue })}
+                          onKeyDown={(e) => {
+                            // Only submit on Enter if no option is highlighted (dropdown closed or typing new value)
+                            if (e.key === 'Enter') {
+                              // Small delay to let Autocomplete handle selection first
+                              setTimeout(() => {
+                                if (checkInForm.callsign) handleCheckIn();
+                              }, 50);
+                            }
+                          }}
                           renderInput={(params) => (
                             <TextField
                               {...params}
                               placeholder="Poll answer"
                               inputProps={{ ...params.inputProps, style: { fontSize: '0.875rem' } }}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter' && !e.defaultPrevented) {
-                                  e.preventDefault();
-                                  handleCheckIn();
-                                }
-                              }}
                             />
                           )}
                           sx={{ minWidth: 120 }}
@@ -2798,7 +2809,8 @@ const NetView: React.FC = () => {
             storageKey="checkInList"
           >
             <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-              {/* Table */}
+              {/* ========== CHECK-IN LIST TABLE 3: Detached Floating Window ========== */}
+              {/* This table displays when check-in list is popped out into a floating window */}
               <TableContainer sx={{ 
                 flex: 1, 
                 overflow: 'auto', 
@@ -2826,6 +2838,8 @@ const NetView: React.FC = () => {
                       {getEnabledCustomFields().map((field) => (
                         <TableCell key={field.name} sx={{ whiteSpace: 'nowrap' }}>{field.label}</TableCell>
                       ))}
+                      {net?.topic_of_week_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Topic</TableCell>}
+                      {net?.poll_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Poll</TableCell>}
                       {hasAnyRelayedBy && <TableCell sx={{ whiteSpace: 'nowrap' }}>Relayed By</TableCell>}
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>Time</TableCell>
                       {canManage && <TableCell sx={{ whiteSpace: 'nowrap' }}>Actions</TableCell>}
@@ -2913,6 +2927,8 @@ const NetView: React.FC = () => {
                           {getEnabledCustomFields().map((field) => (
                             <TableCell key={field.name}>{checkIn.custom_fields?.[field.name] || ''}</TableCell>
                           ))}
+                          {net?.topic_of_week_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.topic_response || ''}</TableCell>}
+                          {net?.poll_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.poll_response || ''}</TableCell>}
                           {hasAnyRelayedBy && <TableCell>{checkIn.relayed_by || ''}</TableCell>}
                           <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatTimeWithDate(checkIn.checked_in_at, user?.prefer_utc || false, net?.started_at)}</TableCell>
                           {canManage && (
@@ -2975,6 +2991,34 @@ const NetView: React.FC = () => {
                     )}
                     {net?.field_config?.notes?.enabled && (
                       <TextField size="small" value={checkInForm.notes} onChange={(e) => setCheckInForm({ ...checkInForm, notes: e.target.value })} placeholder="Notes" sx={{ flex: 1, minWidth: 150 }} />
+                    )}
+                    {net?.topic_of_week_enabled && (
+                      <Autocomplete
+                        freeSolo
+                        size="small"
+                        options={topicResponses}
+                        value={checkInForm.topic_response || ''}
+                        onChange={(_, newValue) => setCheckInForm({ ...checkInForm, topic_response: newValue || '' })}
+                        onInputChange={(_, newInputValue) => setCheckInForm({ ...checkInForm, topic_response: newInputValue })}
+                        renderInput={(params) => (
+                          <TextField {...params} placeholder={net?.topic_of_week_prompt?.substring(0, 15) + '...' || 'Topic...'} sx={{ width: 120 }} />
+                        )}
+                        sx={{ width: 120 }}
+                      />
+                    )}
+                    {net?.poll_enabled && (
+                      <Autocomplete
+                        freeSolo
+                        size="small"
+                        options={pollResponses}
+                        value={checkInForm.poll_response || ''}
+                        onChange={(_, newValue) => setCheckInForm({ ...checkInForm, poll_response: newValue || '' })}
+                        onInputChange={(_, newInputValue) => setCheckInForm({ ...checkInForm, poll_response: newInputValue })}
+                        renderInput={(params) => (
+                          <TextField {...params} placeholder={net?.poll_question?.substring(0, 15) + '...' || 'Poll...'} sx={{ width: 120 }} />
+                        )}
+                        sx={{ width: 120 }}
+                      />
                     )}
                     <TextField
                       size="small"

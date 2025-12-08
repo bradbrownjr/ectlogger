@@ -79,6 +79,27 @@ if not await check_net_permission(db, net, user, required_roles=["ncs", "logger"
 - Pages: PascalCase (`NetView.tsx`, `CreateNet.tsx`)  
 - API routes: `/check-ins/nets/{net_id}/check-ins`
 
+## Code Comments
+
+**Always add clear comments** to improve maintainability:
+
+- **Section headers**: Use `// ========== SECTION NAME ==========` for major UI sections (tables, forms, modals)
+- **Conditional rendering**: Comment what triggers the condition (e.g., `{/* Shows when detached */}`)
+- **Complex logic**: Explain business rules, especially permission checks and state transitions
+- **API endpoints**: Document expected request/response in docstrings
+- **Duplicate structures**: When similar code exists in multiple places (e.g., mobile vs desktop views), clearly label each instance
+
+Example for repeated UI components:
+```tsx
+{/* ========== CHECK-IN LIST TABLE 1: Desktop Inline (attached) ========== */}
+{/* This table displays when check-in list is NOT detached, on medium+ screens */}
+<Table>...</Table>
+
+{/* ========== CHECK-IN LIST TABLE 2: Mobile View ========== */}
+{/* This table displays on small screens (xs) only */}
+<Table>...</Table>
+```
+
 ## Environment Setup
 
 Copy `.env.example` to `backend/.env`:
