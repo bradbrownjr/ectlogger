@@ -184,18 +184,30 @@ cd ..
 # Wait a moment for backend to start
 sleep 3
 
-# Only start Vite dev server in development mode
-# In production/service mode, Caddy serves static files from frontend/dist
-if [ "$SERVICE_MODE" = false ]; then
-    # Start frontend in background (development only)
+# Determine if we should run Vite dev server
+# In service mode, check for SKIP_VITE env var or presence of working static build with reverse proxy
+# If neither, fall back to Vite dev server for beta/dev environments
+SKIP_VITE=false
+if [ "$SERVICE_MODE" = true ]; then
+    # Check for explicit SKIP_VITE setting in .env (for production with Caddy)
+    if [ -f "backend/.env" ]; then
+        ENV_SKIP_VITE=$(grep "^SKIP_VITE=" backend/.env | cut -d'=' -f2)
+        if [ "$ENV_SKIP_VITE" = "true" ]; then
+            SKIP_VITE=true
+        fi
+    fi
+fi
+
+if [ "$SKIP_VITE" = true ]; then
+    echo "📁 Frontend served from static build (frontend/dist)"
+    FRONTEND_PID=""
+else
+    # Start frontend in background
     echo "🌐 Starting frontend dev server on http://localhost:3000"
     cd frontend
     npm run dev -- --host 0.0.0.0 &
     FRONTEND_PID=$!
     cd ..
-else
-    echo "📁 Frontend served from static build (frontend/dist)"
-    FRONTEND_PID=""
 fi
 
 echo ""
