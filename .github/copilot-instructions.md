@@ -135,12 +135,15 @@ Copy `.env.example` to `backend/.env`:
 - **Host**: `ectlogger@app.ectlogger.us`
 - **Python**: 3.11.2
 - **Path**: `~/ectlogger`
+- **Frontend**: Static files in `frontend/dist/` served by **Caddy** (NOT Vite)
+- **Backend**: uvicorn on port 8001 (no auto-reload)
+- **Reverse Proxy**: Caddy handles HTTPS, routes `/api/*` and `/ws/*` to backend
 - **Deploy from GitHub**:
   ```bash
   # Pull latest from GitHub (preferred method)
   ssh ectlogger@app.ectlogger.us "cd ~/ectlogger && git pull origin main"
   
-  # Build frontend
+  # Build frontend (required after frontend changes)
   ssh ectlogger@app.ectlogger.us "cd ~/ectlogger/frontend && npm run build"
   
   # Restart backend (requires interactive sudo)
@@ -154,6 +157,7 @@ Copy `.env.example` to `backend/.env`:
 - **Purpose**: Testing new features before production deployment
 - **Note**: Deploy new/incomplete features to beta ONLY until tested and confirmed working
 - **Path**: `/home/bradb/ectlogger`
+- **Frontend**: Static files served by Caddy (same as production)
 - **Deploy from GitHub** (preferred):
   ```bash
   # First commit and push locally, then pull on beta
@@ -175,9 +179,10 @@ Copy `.env.example` to `backend/.env`:
 - **Purpose**: Feature testing before beta
 
 ### Local Development
-- **Frontend**: `http://localhost:3000` (Vite dev server)
-- **Backend**: `http://localhost:8000` (uvicorn)
+- **Frontend**: `http://localhost:3000` (Vite dev server with hot reload)
+- **Backend**: `http://localhost:8000` (uvicorn with auto-reload)
 - **API Docs**: `http://localhost:8000/docs`
+- **Note**: Only local dev uses Vite dev server; all deployed environments use static builds
 
 ## Database Migrations
 
