@@ -1215,10 +1215,15 @@ This is **[CALLSIGN]**, closing the net at [TIME]. 73 to all.`}
 
         {/* Action Buttons - Always visible */}
         <Box sx={{ mt: 4, pt: 2, borderTop: 1, borderColor: 'divider', display: 'flex', gap: 2, justifyContent: 'space-between' }}>
-          <Box>
+          <Box sx={{ display: 'flex', gap: 2 }}>
             {activeTab > 0 && (
               <Button variant="outlined" onClick={() => setActiveTab(activeTab - 1)}>
                 Previous
+              </Button>
+            )}
+            {!isInfoMode && activeTab < 4 && (
+              <Button variant="outlined" onClick={() => setActiveTab(activeTab + 1)}>
+                Next
               </Button>
             )}
           </Box>
@@ -1227,19 +1232,13 @@ This is **[CALLSIGN]**, closing the net at [TIME]. 73 to all.`}
               {isInfoMode ? 'Back' : 'Cancel'}
             </Button>
             {!isInfoMode && (
-              activeTab < 4 ? (
-                <Button variant="contained" onClick={() => setActiveTab(activeTab + 1)}>
-                  Next
-                </Button>
-              ) : (
-                <Button
-                  variant="contained"
-                  onClick={handleCreateNet}
-                  disabled={!name || selectedFrequencies.length === 0}
-                >
-                  {isEditMode ? 'Save Changes' : 'Create Net'}
-                </Button>
-              )
+              <Button
+                variant="contained"
+                onClick={handleCreateNet}
+                disabled={!name || selectedFrequencies.length === 0}
+              >
+                {isEditMode ? 'Save Changes' : 'Create Net'}
+              </Button>
             )}
           </Box>
         </Box>
