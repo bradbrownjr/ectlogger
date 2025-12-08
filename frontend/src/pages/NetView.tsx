@@ -363,7 +363,9 @@ const NetView: React.FC = () => {
       
       // Countdown timer: show time until scheduled start (only for draft/scheduled nets)
       if (net.scheduled_start_time && (net.status === 'draft' || net.status === 'scheduled')) {
-        const scheduledTime = new Date(net.scheduled_start_time);
+        // Ensure the timestamp is parsed as UTC (backend stores UTC without 'Z' suffix)
+        const scheduledTimeStr = net.scheduled_start_time.endsWith('Z') ? net.scheduled_start_time : net.scheduled_start_time + 'Z';
+        const scheduledTime = new Date(scheduledTimeStr);
         const diff = scheduledTime.getTime() - now.getTime();
         
         if (diff > 0) {
@@ -388,7 +390,9 @@ const NetView: React.FC = () => {
       
       // Duration timer: show elapsed time since net started (only for active nets)
       if (net.started_at && net.status === 'active') {
-        const startTime = new Date(net.started_at);
+        // Ensure the timestamp is parsed as UTC (backend stores UTC without 'Z' suffix)
+        const startTimeStr = net.started_at.endsWith('Z') ? net.started_at : net.started_at + 'Z';
+        const startTime = new Date(startTimeStr);
         const diff = now.getTime() - startTime.getTime();
         
         // Only show duration if it's positive (started_at is in the past)
