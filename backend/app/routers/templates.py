@@ -510,8 +510,9 @@ async def create_net_from_template(
         raise HTTPException(status_code=400, detail="Template is not active")
     
     # Calculate scheduled_start_time based on template's schedule config
+    # Only for recurring schedules (daily, weekly, monthly) - not for one_time or ad_hoc
     scheduled_start_time = None
-    if template.schedule_type != 'ad_hoc' and template.schedule_config:
+    if template.schedule_type in ('daily', 'weekly', 'monthly') and template.schedule_config:
         try:
             config = json.loads(template.schedule_config) if isinstance(template.schedule_config, str) else template.schedule_config
             time_str = config.get('time', '19:00')
