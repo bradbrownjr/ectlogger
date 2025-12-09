@@ -89,8 +89,11 @@ const Dashboard: React.FC = () => {
   const [archiveDateTo, setArchiveDateTo] = useState('');
   const [archiveSortField, setArchiveSortField] = useState<'name' | 'owner' | 'check_ins' | 'closed'>('closed');
   const [archiveSortDirection, setArchiveSortDirection] = useState<'asc' | 'desc'>('desc');
-  // View mode and filter state
-  const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
+  // View mode and filter state - persist view preference
+  const [viewMode, setViewMode] = useState<'card' | 'list'>(() => {
+    const saved = localStorage.getItem('dashboard-view-mode');
+    return (saved === 'list' || saved === 'card') ? saved : 'card';
+  });
   const [showFilter, setShowFilter] = useState(false);
   const [netFilter, setNetFilter] = useState('');
   const navigate = useNavigate();
@@ -622,7 +625,12 @@ const Dashboard: React.FC = () => {
           <ToggleButtonGroup
             value={viewMode}
             exclusive
-            onChange={(_, newMode) => newMode && setViewMode(newMode)}
+            onChange={(_, newMode) => {
+              if (newMode) {
+                setViewMode(newMode);
+                localStorage.setItem('dashboard-view-mode', newMode);
+              }
+            }}
             size="small"
           >
             <ToggleButton value="card" aria-label="card view">

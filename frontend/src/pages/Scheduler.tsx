@@ -127,8 +127,11 @@ const Scheduler: React.FC = () => {
   const [currentSchedule, setCurrentSchedule] = useState<Schedule | null>(null);
   const [rotationModalOpen, setRotationModalOpen] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null);
-  // View mode and filter state
-  const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
+  // View mode and filter state - persist view preference
+  const [viewMode, setViewMode] = useState<'card' | 'list'>(() => {
+    const saved = localStorage.getItem('scheduler-view-mode');
+    return (saved === 'list' || saved === 'card') ? saved : 'card';
+  });
   const [showFilter, setShowFilter] = useState(false);
   const [scheduleFilter, setScheduleFilter] = useState('');
   const navigate = useNavigate();
@@ -552,7 +555,12 @@ const Scheduler: React.FC = () => {
           <ToggleButtonGroup
             value={viewMode}
             exclusive
-            onChange={(_, newMode) => newMode && setViewMode(newMode)}
+            onChange={(_, newMode) => {
+              if (newMode) {
+                setViewMode(newMode);
+                localStorage.setItem('scheduler-view-mode', newMode);
+              }
+            }}
             size="small"
           >
             <ToggleButton value="card" aria-label="card view">
