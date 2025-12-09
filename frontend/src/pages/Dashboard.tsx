@@ -342,12 +342,19 @@ const Dashboard: React.FC = () => {
                   }).filter((s: string) => s).join(', ')}
                 </Typography>
               </TableCell>
-              <TableCell align="right" onClick={(e) => e.stopPropagation()}>
+              <TableCell align="right" sx={{ whiteSpace: 'nowrap' }} onClick={(e) => e.stopPropagation()}>
                 <Tooltip title="View net">
                   <IconButton size="small" onClick={() => navigate(`/nets/${net.id}`)}>
                     <SearchIcon fontSize="small" />
                   </IconButton>
                 </Tooltip>
+                {/* Net staff - always visible */}
+                <Tooltip title="Net staff">
+                  <IconButton size="small" onClick={() => { setSelectedNet(net); setStaffModalOpen(true); }}>
+                    <GroupsIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+                {/* Active net actions */}
                 {net.status === 'active' && (
                   <Tooltip title="Statistics">
                     <IconButton size="small" onClick={() => navigate(`/statistics/nets/${net.id}`)}>
@@ -355,6 +362,7 @@ const Dashboard: React.FC = () => {
                     </IconButton>
                   </Tooltip>
                 )}
+                {/* Draft net actions */}
                 {net.status === 'draft' && net.can_manage && (
                   <>
                     <Tooltip title="Edit">
@@ -367,6 +375,37 @@ const Dashboard: React.FC = () => {
                         <PlayArrowIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
+                  </>
+                )}
+                {/* Closed net actions */}
+                {net.status === 'closed' && (
+                  <>
+                    <Tooltip title="Statistics">
+                      <IconButton size="small" onClick={() => navigate(`/statistics/nets/${net.id}`)}>
+                        <BarChartIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    {net.can_manage && (
+                      <>
+                        <Tooltip title="Export log">
+                          <IconButton size="small" onClick={() => handleExportCSV(net)}>
+                            <DownloadIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Archive">
+                          <IconButton size="small" onClick={() => handleArchiveNet(net.id)}>
+                            <ArchiveIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        {user?.role === 'admin' && (
+                          <Tooltip title="Delete">
+                            <IconButton size="small" color="error" onClick={() => handleDeleteClick(net)}>
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </>
+                    )}
                   </>
                 )}
               </TableCell>

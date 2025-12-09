@@ -308,7 +308,7 @@ const Scheduler: React.FC = () => {
               <TableCell align="center">
                 <Chip label={schedule.subscriber_count} size="small" variant="outlined" />
               </TableCell>
-              <TableCell align="right">
+              <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
                 {isAuthenticated && (
                   <Tooltip title="Create Net">
                     <IconButton size="small" color="success" onClick={() => handleCreateNetFromSchedule(schedule.id)}>
