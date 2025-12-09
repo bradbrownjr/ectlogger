@@ -29,6 +29,9 @@ import {
   InputAdornment,
   useMediaQuery,
   useTheme,
+  ToggleButton,
+  ToggleButtonGroup,
+  Collapse,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
@@ -45,6 +48,10 @@ import LanguageIcon from '@mui/icons-material/Language';
 import InfoIcon from '@mui/icons-material/Info';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import GroupsIcon from '@mui/icons-material/Groups';
+import ViewModuleIcon from '@mui/icons-material/ViewModule';
+import ViewListIcon from '@mui/icons-material/ViewList';
+import FilterListIcon from '@mui/icons-material/FilterList';
+import ClearIcon from '@mui/icons-material/Clear';
 import { netApi } from '../services/api';
 import NCSStaffModal from '../components/NCSStaffModal';
 import api from '../services/api';
@@ -82,6 +89,10 @@ const Dashboard: React.FC = () => {
   const [archiveDateTo, setArchiveDateTo] = useState('');
   const [archiveSortField, setArchiveSortField] = useState<'name' | 'owner' | 'check_ins' | 'closed'>('closed');
   const [archiveSortDirection, setArchiveSortDirection] = useState<'asc' | 'desc'>('desc');
+  // View mode and filter state
+  const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
+  const [showFilter, setShowFilter] = useState(false);
+  const [netFilter, setNetFilter] = useState('');
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const theme = useTheme();
@@ -258,23 +269,368 @@ const Dashboard: React.FC = () => {
       return archiveSortDirection === 'asc' ? comparison : -comparison;
     });
 
+  // ========== ACTIVE NETS FILTERING ==========
+  const filteredNets = nets.filter((net) => {
+    if (!netFilter) return true;
+    const searchTerm = netFilter.toLowerCase();
+    return (
+      net.name.toLowerCase().includes(searchTerm) ||
+      (net.description?.toLowerCase() || '').includes(searchTerm) ||
+      (net.owner_callsign?.toLowerCase() || '').includes(searchTerm) ||
+      (net.owner_name?.toLowerCase() || '').includes(searchTerm) ||
+      net.frequencies.some((f: any) => 
+        (f.frequency?.toLowerCase() || '').includes(searchTerm) ||
+        (f.network?.toLowerCase() || '').includes(searchTerm) ||
+        (f.talkgroup?.toLowerCase() || '').includes(searchTerm)
+      )
+    );
+  });
+
+  // ========== CARD VIEW RENDERER ==========
+  const renderCardView = () => (
+    <Grid container spacing={3} sx={{ alignItems: 'stretch' }}>
+      {filteredNets.map((net: Net) => (
+        <Grid item xs={12} sm={6} md={4} key={net.id} sx={{ display: 'flex' }}>
+          {renderNetCard(net)}
+        </Grid>
+      ))}
+    </Grid>
+  );
+
+  // ========== LIST VIEW RENDERER ==========
+  const renderListView = () => (
+    <TableContainer component={Paper}>
+      <Table size="small">
+        <TableHead>
+          <TableRow>
+            <TableCell>Name</TableCell>
+            <TableCell>Status</TableCell>
+            <TableCell>NCS</TableCell>
+            <TableCell>Frequencies</TableCell>
+            <TableCell align="right">Actions</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {filteredNets.map((net: Net) => (
+            <TableRow key={net.id} hover sx={{ cursor: 'pointer' }} onClick={() => navigate(`/nets/${net.id}`)}>
+              <TableCell>
+                <Typography variant="body2" fontWeight="medium">{net.name}</Typography>
+                {net.description && (
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                    {net.description.length > 50 ? `${net.description.substring(0, 50)}...` : net.description}
+                  </Typography>
+                )}
+              </TableCell>
+              <TableCell>
+                <Chip label={net.status} color={getStatusColor(net.status)} size="small" />
+              </TableCell>
+              <TableCell>
+                {net.owner_callsign && (
+                  <Typography variant="body2">
+                    {net.owner_callsign}
+                    {net.owner_name && <Typography component="span" variant="caption" color="text.secondary"> ({net.owner_name})</Typography>}
+                  </Typography>
+                )}
+              </TableCell>
+              <TableCell>
+                <Typography variant="body2" color="text.secondary">
+                  {net.frequencies.map((f: any) => {
+                    if (f.frequency) return f.frequency;
+                    if (f.network && f.talkgroup) return `${f.network} TG${f.talkgroup}`;
+                    if (f.network) return f.network;
+                    return '';
+                  }).filter((s: string) => s).join(', ')}
+                </Typography>
+              </TableCell>
+              <TableCell align="right" onClick={(e) => e.stopPropagation()}>
+                <Tooltip title="View net">
+                  <IconButton size="small" onClick={() => navigate(`/nets/${net.id}`)}>
+                    <SearchIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+                {net.status === 'active' && (
+                  <Tooltip title="Statistics">
+                    <IconButton size="small" onClick={() => navigate(`/statistics/nets/${net.id}`)}>
+                      <BarChartIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                )}
+                {net.status === 'draft' && net.can_manage && (
+                  <>
+                    <Tooltip title="Edit">
+                      <IconButton size="small" onClick={() => navigate(`/nets/${net.id}/edit`)}>
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Start">
+                      <IconButton size="small" color="success" onClick={() => handleStartNet(net.id)}>
+                        <PlayArrowIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </>
+                )}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </TableContainer>
+  );
+
+  // ========== NET CARD COMPONENT ==========
+  const renderNetCard = (net: Net) => (
+    <Card sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+      <CardContent sx={{ flex: 1 }}>
+        {/* Title with Status */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
+          <Typography variant="h6" component="h2">
+            {net.name}
+          </Typography>
+          <Chip 
+            label={net.status} 
+            color={getStatusColor(net.status)} 
+            size="small"
+          />
+        </Box>
+        
+        {/* Description */}
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+          {net.description || 'No description'}
+        </Typography>
+        
+        {/* Info List */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+          {/* Time info based on status */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <AccessTimeIcon fontSize="small" color="action" />
+            <Typography variant="body2" color="text.secondary">
+              {net.status === 'closed' && net.closed_at && (
+                <>Closed: {formatDateTime(net.closed_at, user?.prefer_utc || false)}</>
+              )}
+              {net.status === 'active' && net.started_at && (
+                <>Started: {formatDateTime(net.started_at, user?.prefer_utc || false)}</>
+              )}
+              {(net.status === 'draft' || net.status === 'scheduled') && (
+                <>Created: {formatDateTime(net.created_at, user?.prefer_utc || false)}</>
+              )}
+            </Typography>
+          </Box>
+          
+          {/* Frequencies */}
+          {net.frequencies.length > 0 && (
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+              <RadioIcon fontSize="small" color="action" sx={{ mt: 0.25 }} />
+              <Typography variant="body2" color="text.secondary">
+                {net.frequencies.map((f: any) => {
+                  if (f.frequency) {
+                    return f.frequency;
+                  } else if (f.network && f.talkgroup) {
+                    return `${f.network} TG${f.talkgroup}`;
+                  } else if (f.network) {
+                    return f.network;
+                  }
+                  return '';
+                }).filter((s: string) => s).join(', ')}
+              </Typography>
+            </Box>
+          )}
+          
+          {/* Host/NCS */}
+          {net.owner_callsign && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <PersonIcon fontSize="small" color="action" />
+              <Typography variant="body2" color="text.secondary">
+                <strong>NCS:</strong> {net.owner_callsign}
+                {net.owner_name && ` (${net.owner_name})`}
+              </Typography>
+            </Box>
+          )}
+        </Box>
+      </CardContent>
+      <CardActions sx={{ justifyContent: 'space-between' }}>
+        {/* View - always available, left side */}
+        <Box>
+          <Tooltip title="View net">
+            <IconButton
+              size="small"
+              color="primary"
+              onClick={() => navigate(`/nets/${net.id}`)}
+            >
+              <SearchIcon />
+            </IconButton>
+          </Tooltip>
+        </Box>
+        
+        <Box>
+          {/* Net staff - always visible */}
+          <Tooltip title="View net staff">
+            <IconButton
+              size="small"
+              onClick={() => {
+                setSelectedNet(net);
+                setStaffModalOpen(true);
+              }}
+            >
+              <GroupsIcon />
+            </IconButton>
+          </Tooltip>
+          {/* Active net - show stats on right side */}
+          {net.status === 'active' && (
+            <Tooltip title="Net statistics">
+              <IconButton
+                size="small"
+                onClick={() => navigate(`/statistics/nets/${net.id}`)}
+              >
+                <BarChartIcon />
+              </IconButton>
+            </Tooltip>
+          )}
+          {net.info_url && (
+            <Tooltip title="Net/Club info">
+              <IconButton
+                size="small"
+                onClick={() => window.open(net.info_url, '_blank')}
+              >
+                <LanguageIcon />
+              </IconButton>
+            </Tooltip>
+          )}
+          {/* Draft net actions */}
+          {net.status === 'draft' && net.can_manage && (
+            <>
+              <Tooltip title="Edit net">
+                <IconButton
+                  size="small"
+                  onClick={() => navigate(`/nets/${net.id}/edit`)}
+                >
+                  <EditIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Start net">
+                <IconButton
+                  size="small"
+                  color="success"
+                  onClick={() => handleStartNet(net.id)}
+                >
+                  <PlayArrowIcon />
+                </IconButton>
+              </Tooltip>
+            </>
+          )}
+          
+          {/* Closed net actions */}
+          {net.status === 'closed' && net.can_manage && (
+            <>
+              <Tooltip title="Net statistics">
+                <IconButton
+                  size="small"
+                  onClick={() => navigate(`/statistics/nets/${net.id}`)}
+                >
+                  <BarChartIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Export log">
+                <IconButton
+                  size="small"
+                  onClick={() => handleExportCSV(net)}
+                >
+                  <DownloadIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Archive net">
+                <IconButton
+                  size="small"
+                  onClick={() => handleArchiveNet(net.id)}
+                >
+                  <ArchiveIcon />
+                </IconButton>
+              </Tooltip>
+              {user?.role === 'admin' && (
+                <Tooltip title="Delete net">
+                  <IconButton
+                    size="small"
+                    color="error"
+                    onClick={() => handleDeleteClick(net)}
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                </Tooltip>
+              )}
+            </>
+          )}
+        </Box>
+      </CardActions>
+    </Card>
+  );
+
   return (
     <Container maxWidth="lg" sx={{ mt: { xs: 2, sm: 4 }, mb: 4, px: { xs: 1, sm: 3 } }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 1 }}>
+      {/* ========== HEADER WITH VIEW TOGGLE ========== */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
         <Typography variant={isMobile ? "h5" : "h4"} component="h1">
           📻 {isMobile ? 'Active' : 'Active Nets'}
         </Typography>
-        {!isMobile && (
-          <Typography variant="body1" color="text.secondary">
-            {isAuthenticated ? (
-              `Welcome, ${user?.callsign || user?.name || user?.email}`
-            ) : (
-              "Welcome! Feel free to look around, and set up an account if you'd like to participate."
-            )}
-          </Typography>
-        )}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          {!isMobile && (
+            <Typography variant="body2" color="text.secondary">
+              {isAuthenticated ? (
+                `Welcome, ${user?.callsign || user?.name || user?.email}`
+              ) : (
+                "Welcome! Feel free to look around."
+              )}
+            </Typography>
+          )}
+          <ToggleButtonGroup
+            value={viewMode}
+            exclusive
+            onChange={(_, newMode) => newMode && setViewMode(newMode)}
+            size="small"
+          >
+            <ToggleButton value="card" aria-label="card view">
+              <Tooltip title="Card view">
+                <ViewModuleIcon fontSize="small" />
+              </Tooltip>
+            </ToggleButton>
+            <ToggleButton value="list" aria-label="list view">
+              <Tooltip title="List view">
+                <ViewListIcon fontSize="small" />
+              </Tooltip>
+            </ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
       </Box>
 
+      {/* ========== FILTER BAR (COLLAPSIBLE) ========== */}
+      <Collapse in={showFilter}>
+        <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+          <TextField
+            size="small"
+            placeholder="Filter by name, description, NCS, or frequency..."
+            value={netFilter}
+            onChange={(e) => setNetFilter(e.target.value)}
+            sx={{ flexGrow: 1, maxWidth: 500 }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon color="action" fontSize="small" />
+                </InputAdornment>
+              ),
+              endAdornment: netFilter && (
+                <InputAdornment position="end">
+                  <IconButton size="small" onClick={() => setNetFilter('')}>
+                    <ClearIcon fontSize="small" />
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+          />
+          <Typography variant="body2" color="text.secondary">
+            {filteredNets.length} of {nets.length}
+          </Typography>
+        </Box>
+      </Collapse>
+
+      {/* ========== NETS DISPLAY ========== */}
       {loading ? (
         <Typography>Loading nets...</Typography>
       ) : nets.length === 0 ? (
@@ -286,199 +642,35 @@ const Dashboard: React.FC = () => {
             Create your first net to get started
           </Typography>
         </Box>
+      ) : filteredNets.length === 0 ? (
+        <Box sx={{ textAlign: 'center', mt: 8 }}>
+          <Typography variant="h6" color="text.secondary" gutterBottom>
+            No nets match your filter
+          </Typography>
+          <Button variant="text" onClick={() => setNetFilter('')}>
+            Clear filter
+          </Button>
+        </Box>
+      ) : viewMode === 'card' ? (
+        renderCardView()
       ) : (
-        <Grid container spacing={3} sx={{ alignItems: 'stretch' }}>
-          {nets.map((net: Net) => (
-            <Grid item xs={12} sm={6} md={4} key={net.id} sx={{ display: 'flex' }}>
-              <Card sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-                <CardContent sx={{ flex: 1 }}>
-                  {/* Title with Status */}
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
-                    <Typography variant="h6" component="h2">
-                      {net.name}
-                    </Typography>
-                    <Chip 
-                      label={net.status} 
-                      color={getStatusColor(net.status)} 
-                      size="small"
-                    />
-                  </Box>
-                  
-                  {/* Description */}
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-                    {net.description || 'No description'}
-                  </Typography>
-                  
-                  {/* Info List */}
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-                    {/* Time info based on status */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <AccessTimeIcon fontSize="small" color="action" />
-                      <Typography variant="body2" color="text.secondary">
-                        {net.status === 'closed' && net.closed_at && (
-                          <>Closed: {formatDateTime(net.closed_at, user?.prefer_utc || false)}</>
-                        )}
-                        {net.status === 'active' && net.started_at && (
-                          <>Started: {formatDateTime(net.started_at, user?.prefer_utc || false)}</>
-                        )}
-                        {(net.status === 'draft' || net.status === 'scheduled') && (
-                          <>Created: {formatDateTime(net.created_at, user?.prefer_utc || false)}</>
-                        )}
-                      </Typography>
-                    </Box>
-                    
-                    {/* Frequencies */}
-                    {net.frequencies.length > 0 && (
-                      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-                        <RadioIcon fontSize="small" color="action" sx={{ mt: 0.25 }} />
-                        <Typography variant="body2" color="text.secondary">
-                          {net.frequencies.map((f: any) => {
-                            if (f.frequency) {
-                              return f.frequency;
-                            } else if (f.network && f.talkgroup) {
-                              return `${f.network} TG${f.talkgroup}`;
-                            } else if (f.network) {
-                              return f.network;
-                            }
-                            return '';
-                          }).filter((s: string) => s).join(', ')}
-                        </Typography>
-                      </Box>
-                    )}
-                    
-                    {/* Host/NCS */}
-                    {net.owner_callsign && (
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <PersonIcon fontSize="small" color="action" />
-                        <Typography variant="body2" color="text.secondary">
-                          <strong>NCS:</strong> {net.owner_callsign}
-                          {net.owner_name && ` (${net.owner_name})`}
-                        </Typography>
-                      </Box>
-                    )}
-                  </Box>
-                </CardContent>
-                <CardActions sx={{ justifyContent: 'space-between' }}>
-                  {/* View - always available, left side */}
-                  <Box>
-                    <Tooltip title="View net">
-                      <IconButton
-                        size="small"
-                        color="primary"
-                        onClick={() => navigate(`/nets/${net.id}`)}
-                      >
-                        <SearchIcon />
-                      </IconButton>
-                    </Tooltip>
-                  </Box>
-                  
-                  <Box>
-                    {/* Net staff - always visible */}
-                    <Tooltip title="View net staff">
-                      <IconButton
-                        size="small"
-                        onClick={() => {
-                          setSelectedNet(net);
-                          setStaffModalOpen(true);
-                        }}
-                      >
-                        <GroupsIcon />
-                      </IconButton>
-                    </Tooltip>
-                    {/* Active net - show stats on right side */}
-                    {net.status === 'active' && (
-                      <Tooltip title="Net statistics">
-                        <IconButton
-                          size="small"
-                          onClick={() => navigate(`/statistics/nets/${net.id}`)}
-                        >
-                          <BarChartIcon />
-                        </IconButton>
-                      </Tooltip>
-                    )}
-                    {net.info_url && (
-                      <Tooltip title="Net/Club info">
-                        <IconButton
-                          size="small"
-                          onClick={() => window.open(net.info_url, '_blank')}
-                        >
-                          <LanguageIcon />
-                        </IconButton>
-                      </Tooltip>
-                    )}
-                    {/* Draft net actions */}
-                    {net.status === 'draft' && net.can_manage && (
-                      <>
-                        <Tooltip title="Edit net">
-                          <IconButton
-                            size="small"
-                            onClick={() => navigate(`/nets/${net.id}/edit`)}
-                          >
-                            <EditIcon />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Start net">
-                          <IconButton
-                            size="small"
-                            color="success"
-                            onClick={() => handleStartNet(net.id)}
-                          >
-                            <PlayArrowIcon />
-                          </IconButton>
-                        </Tooltip>
-                      </>
-                    )}
-                    
-                    {/* Closed net actions */}
-                    {net.status === 'closed' && net.can_manage && (
-                      <>
-                        <Tooltip title="Net statistics">
-                          <IconButton
-                            size="small"
-                            onClick={() => navigate(`/statistics/nets/${net.id}`)}
-                          >
-                            <BarChartIcon />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Export log">
-                          <IconButton
-                            size="small"
-                            onClick={() => handleExportCSV(net)}
-                          >
-                            <DownloadIcon />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Archive net">
-                          <IconButton
-                            size="small"
-                            onClick={() => handleArchiveNet(net.id)}
-                          >
-                            <ArchiveIcon />
-                          </IconButton>
-                        </Tooltip>
-                        {user?.role === 'admin' && (
-                          <Tooltip title="Delete net">
-                            <IconButton
-                              size="small"
-                              color="error"
-                              onClick={() => handleDeleteClick(net)}
-                            >
-                              <DeleteIcon />
-                            </IconButton>
-                          </Tooltip>
-                        )}
-                      </>
-                    )}
-                  </Box>
-                </CardActions>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+        renderListView()
       )}
 
+      {/* ========== FLOATING ACTION BUTTONS ========== */}
       {isAuthenticated && (
         <>
+          <Tooltip title={showFilter ? "Hide filter" : "Filter nets"}>
+            <Fab
+              color={showFilter ? "primary" : "default"}
+              aria-label="filter"
+              sx={{ position: 'fixed', bottom: 16, right: 144 }}
+              onClick={() => setShowFilter(!showFilter)}
+              size="medium"
+            >
+              <FilterListIcon />
+            </Fab>
+          </Tooltip>
           <Tooltip title="View archived nets">
             <Fab
               color="default"

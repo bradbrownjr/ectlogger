@@ -22,6 +22,17 @@ import {
   useMediaQuery,
   useTheme,
   Tooltip,
+  ToggleButton,
+  ToggleButtonGroup,
+  Collapse,
+  InputAdornment,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -35,6 +46,11 @@ import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import RadioIcon from '@mui/icons-material/Radio';
 import LanguageIcon from '@mui/icons-material/Language';
 import BarChartIcon from '@mui/icons-material/BarChart';
+import ViewModuleIcon from '@mui/icons-material/ViewModule';
+import ViewListIcon from '@mui/icons-material/ViewList';
+import FilterListIcon from '@mui/icons-material/FilterList';
+import SearchIcon from '@mui/icons-material/Search';
+import ClearIcon from '@mui/icons-material/Clear';
 import { templateApi, netApi, ncsRotationApi } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import NCSStaffModal from '../components/NCSStaffModal';
@@ -111,6 +127,10 @@ const Scheduler: React.FC = () => {
   const [currentSchedule, setCurrentSchedule] = useState<Schedule | null>(null);
   const [rotationModalOpen, setRotationModalOpen] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null);
+  // View mode and filter state
+  const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
+  const [showFilter, setShowFilter] = useState(false);
+  const [scheduleFilter, setScheduleFilter] = useState('');
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const theme = useTheme();
@@ -201,24 +221,385 @@ const Scheduler: React.FC = () => {
   const isOwner = (schedule: Schedule) => user?.id === schedule.owner_id;
   const isAdmin = user?.role === 'admin';
 
+  // ========== SCHEDULE FILTERING ==========
+  const filteredSchedules = schedules.filter((schedule) => {
+    if (!scheduleFilter) return true;
+    const searchTerm = scheduleFilter.toLowerCase();
+    return (
+      schedule.name.toLowerCase().includes(searchTerm) ||
+      (schedule.description?.toLowerCase() || '').includes(searchTerm) ||
+      (schedule.owner_callsign?.toLowerCase() || '').includes(searchTerm) ||
+      (schedule.owner_name?.toLowerCase() || '').includes(searchTerm) ||
+      (schedule.nextNCS?.user_callsign?.toLowerCase() || '').includes(searchTerm) ||
+      schedule.frequencies.some((f: any) => 
+        (f.frequency?.toLowerCase() || '').includes(searchTerm) ||
+        (f.network?.toLowerCase() || '').includes(searchTerm) ||
+        (f.talkgroup?.toLowerCase() || '').includes(searchTerm)
+      )
+    );
+  });
+
+  // ========== CARD VIEW RENDERER ==========
+  const renderCardView = () => (
+    <Grid container spacing={3} sx={{ alignItems: 'stretch' }}>
+      {filteredSchedules.map((schedule: Schedule) => (
+        <Grid item xs={12} sm={6} md={4} key={schedule.id} sx={{ display: 'flex' }}>
+          {renderScheduleCard(schedule)}
+        </Grid>
+      ))}
+    </Grid>
+  );
+
+  // ========== LIST VIEW RENDERER ==========
+  const renderListView = () => (
+    <TableContainer component={Paper}>
+      <Table size="small">
+        <TableHead>
+          <TableRow>
+            <TableCell>Name</TableCell>
+            <TableCell>Schedule</TableCell>
+            <TableCell>NCS/Host</TableCell>
+            <TableCell>Frequencies</TableCell>
+            <TableCell align="center">Subscribers</TableCell>
+            <TableCell align="right">Actions</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {filteredSchedules.map((schedule: Schedule) => (
+            <TableRow key={schedule.id} hover>
+              <TableCell>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="body2" fontWeight="medium">{schedule.name}</Typography>
+                  {!schedule.is_active && <Chip label="Inactive" size="small" />}
+                </Box>
+                {schedule.description && (
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                    {schedule.description.length > 40 ? `${schedule.description.substring(0, 40)}...` : schedule.description}
+                  </Typography>
+                )}
+              </TableCell>
+              <TableCell>
+                <Typography variant="body2" color="text.secondary">
+                  {formatSchedule(schedule)}
+                </Typography>
+              </TableCell>
+              <TableCell>
+                <Typography variant="body2">
+                  {schedule.nextNCS ? (
+                    <>
+                      {schedule.nextNCS.user_callsign}
+                      <Typography component="span" variant="caption" color="text.secondary"> (next)</Typography>
+                    </>
+                  ) : (
+                    schedule.owner_callsign || 'Unknown'
+                  )}
+                </Typography>
+              </TableCell>
+              <TableCell>
+                <Typography variant="body2" color="text.secondary">
+                  {schedule.frequencies.map((f: any) => {
+                    if (f.frequency) return f.frequency;
+                    if (f.network && f.talkgroup) return `${f.network} TG${f.talkgroup}`;
+                    if (f.network) return f.network;
+                    return '';
+                  }).filter((s: string) => s).join(', ')}
+                </Typography>
+              </TableCell>
+              <TableCell align="center">
+                <Chip label={schedule.subscriber_count} size="small" variant="outlined" />
+              </TableCell>
+              <TableCell align="right">
+                {isAuthenticated && (
+                  <Tooltip title="Create Net">
+                    <IconButton size="small" color="success" onClick={() => handleCreateNetFromSchedule(schedule.id)}>
+                      <PlayArrowIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                )}
+                <Tooltip title="Statistics">
+                  <IconButton size="small" onClick={() => navigate(`/statistics/schedules/${schedule.id}`)}>
+                    <BarChartIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Net Staff">
+                  <IconButton size="small" onClick={() => handleOpenRotationModal(schedule)}>
+                    <GroupsIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+                {isAuthenticated && (
+                  schedule.is_subscribed ? (
+                    <Tooltip title="Unsubscribe">
+                      <IconButton size="small" color="primary" onClick={() => handleUnsubscribe(schedule.id)}>
+                        <NotificationsActiveIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  ) : (
+                    <Tooltip title="Subscribe">
+                      <IconButton size="small" onClick={() => handleSubscribe(schedule.id)}>
+                        <NotificationsOffIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  )
+                )}
+                {(schedule.can_manage || isAdmin) && (
+                  <>
+                    <Tooltip title="Edit">
+                      <IconButton size="small" onClick={() => navigate(`/scheduler/${schedule.id}/edit`)}>
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Delete">
+                      <IconButton size="small" color="error" onClick={() => handleDelete(schedule.id)}>
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </>
+                )}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </TableContainer>
+  );
+
+  // ========== SCHEDULE CARD COMPONENT ==========
+  const renderScheduleCard = (schedule: Schedule) => (
+    <Card sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+      <CardContent sx={{ flex: 1 }}>
+        {/* Title */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
+          <Typography variant="h6" component="h2">
+            {schedule.name}
+          </Typography>
+          {!schedule.is_active && (
+            <Chip label="Inactive" color="default" size="small" />
+          )}
+        </Box>
+        
+        {/* Description */}
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+          {schedule.description || 'No description'}
+        </Typography>
+        
+        {/* Info List */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+          {/* Schedule */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <CalendarMonthIcon fontSize="small" color="action" />
+            <Typography variant="body2" color="text.secondary">
+              {formatSchedule(schedule)}
+            </Typography>
+          </Box>
+          
+          {/* Frequencies */}
+          {schedule.frequencies.length > 0 && (
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+              <RadioIcon fontSize="small" color="action" sx={{ mt: 0.25 }} />
+              <Typography variant="body2" color="text.secondary">
+                {schedule.frequencies.map((f: any) => {
+                  if (f.frequency) {
+                    return f.frequency;
+                  } else if (f.network && f.talkgroup) {
+                    return `${f.network} TG${f.talkgroup}`;
+                  } else if (f.network) {
+                    return f.network;
+                  }
+                  return '';
+                }).filter((s: string) => s).join(', ')}
+              </Typography>
+            </Box>
+          )}
+          
+          {/* Host / Next NCS */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <PersonIcon fontSize="small" color="action" />
+            <Typography variant="body2" color="text.secondary">
+              {schedule.nextNCS ? (
+                <>
+                  <strong>Next NCS:</strong> {schedule.nextNCS.user_callsign}
+                  {schedule.nextNCS.user_name && ` (${schedule.nextNCS.user_name})`}
+                  {' - '}
+                  {new Date(schedule.nextNCS.date).toLocaleDateString(undefined, { 
+                    weekday: 'short', 
+                    month: 'short', 
+                    day: 'numeric' 
+                  })}
+                </>
+              ) : (
+                <>
+                  <strong>Host:</strong> {schedule.owner_callsign || 'Unknown'}
+                  {schedule.owner_name && ` (${schedule.owner_name})`}
+                </>
+              )}
+            </Typography>
+          </Box>
+          
+          {/* Subscribers */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <NotificationsActiveIcon fontSize="small" color="action" />
+            <Typography variant="body2" color="text.secondary">
+              {schedule.subscriber_count} subscriber{schedule.subscriber_count !== 1 ? 's' : ''}
+            </Typography>
+          </Box>
+        </Box>
+      </CardContent>
+      
+      <CardActions sx={{ justifyContent: 'space-between', flexWrap: 'wrap' }}>
+        <Box>
+          {isAuthenticated && (
+            <Button
+              size="small"
+              startIcon={<PlayArrowIcon />}
+              onClick={() => handleCreateNetFromSchedule(schedule.id)}
+            >
+              Create Net
+            </Button>
+          )}
+        </Box>
+        <Box>
+          {schedule.info_url && (
+            <Tooltip title="Net/Club info">
+              <IconButton
+                size="small"
+                onClick={() => window.open(schedule.info_url, '_blank')}
+              >
+                <LanguageIcon />
+              </IconButton>
+            </Tooltip>
+          )}
+          <Tooltip title="Schedule statistics">
+            <IconButton
+              size="small"
+              onClick={() => navigate(`/statistics/schedules/${schedule.id}`)}
+            >
+              <BarChartIcon />
+            </IconButton>
+          </Tooltip>
+          {/* Net Staff - always visible */}
+          <Tooltip title="View net staff">
+            <IconButton
+              size="small"
+              onClick={() => handleOpenRotationModal(schedule)}
+            >
+              <GroupsIcon />
+            </IconButton>
+          </Tooltip>
+          {/* Notifications - auth required */}
+          {isAuthenticated && (
+            schedule.is_subscribed ? (
+              <Tooltip title="Unsubscribe from notifications">
+                <IconButton
+                  size="small"
+                  color="primary"
+                  onClick={() => handleUnsubscribe(schedule.id)}
+                >
+                  <NotificationsActiveIcon />
+                </IconButton>
+              </Tooltip>
+            ) : (
+              <Tooltip title="Subscribe to notifications">
+                <IconButton
+                  size="small"
+                  onClick={() => handleSubscribe(schedule.id)}
+                >
+                  <NotificationsOffIcon />
+                </IconButton>
+              </Tooltip>
+            )
+          )}
+          
+          {/* Edit & Delete for owners, admins, or NCS rotation members */}
+          {(schedule.can_manage || isAdmin) && (
+            <>
+              <Tooltip title="Edit schedule">
+                <IconButton
+                  size="small"
+                  onClick={() => navigate(`/scheduler/${schedule.id}/edit`)}
+                >
+                  <EditIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Delete schedule">
+                <IconButton
+                  size="small"
+                  color="error"
+                  onClick={() => handleDelete(schedule.id)}
+                >
+                  <DeleteIcon />
+                </IconButton>
+              </Tooltip>
+            </>
+          )}
+        </Box>
+      </CardActions>
+    </Card>
+  );
+
   return (
     <Container maxWidth="lg" sx={{ mt: { xs: 2, sm: 4 }, mb: 4, px: { xs: 1, sm: 3 } }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 1 }}>
-        <Typography variant={isMobile ? "h5" : "h4"} component="h1" gutterBottom>
+      {/* ========== HEADER WITH VIEW TOGGLE ========== */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
+        <Typography variant={isMobile ? "h5" : "h4"} component="h1">
           📅 {isMobile ? 'Schedule' : 'Net Schedule'}
         </Typography>
-        <Box sx={{ textAlign: 'right' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           {!isMobile && (
-            <Typography variant="body1" color="text.secondary">
-              Create recurring net schedules and subscribe to notifications
+            <Typography variant="caption" color="text.secondary">
+              Times in {Intl.DateTimeFormat().resolvedOptions().timeZone}
             </Typography>
           )}
-          <Typography variant="caption" color="text.secondary">
-            Times shown in {Intl.DateTimeFormat().resolvedOptions().timeZone}
-          </Typography>
+          <ToggleButtonGroup
+            value={viewMode}
+            exclusive
+            onChange={(_, newMode) => newMode && setViewMode(newMode)}
+            size="small"
+          >
+            <ToggleButton value="card" aria-label="card view">
+              <Tooltip title="Card view">
+                <ViewModuleIcon fontSize="small" />
+              </Tooltip>
+            </ToggleButton>
+            <ToggleButton value="list" aria-label="list view">
+              <Tooltip title="List view">
+                <ViewListIcon fontSize="small" />
+              </Tooltip>
+            </ToggleButton>
+          </ToggleButtonGroup>
         </Box>
       </Box>
 
+      {/* ========== FILTER BAR (COLLAPSIBLE) ========== */}
+      <Collapse in={showFilter}>
+        <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+          <TextField
+            size="small"
+            placeholder="Filter by name, description, NCS, or frequency..."
+            value={scheduleFilter}
+            onChange={(e) => setScheduleFilter(e.target.value)}
+            sx={{ flexGrow: 1, maxWidth: 500 }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon color="action" fontSize="small" />
+                </InputAdornment>
+              ),
+              endAdornment: scheduleFilter && (
+                <InputAdornment position="end">
+                  <IconButton size="small" onClick={() => setScheduleFilter('')}>
+                    <ClearIcon fontSize="small" />
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+          />
+          <Typography variant="body2" color="text.secondary">
+            {filteredSchedules.length} of {schedules.length}
+          </Typography>
+        </Box>
+      </Collapse>
+
+      {/* ========== SCHEDULES DISPLAY ========== */}
       {loading ? (
         <Typography>Loading Nets...</Typography>
       ) : schedules.length === 0 ? (
@@ -230,193 +611,46 @@ const Scheduler: React.FC = () => {
             Create your first schedule to get started
           </Typography>
         </Box>
+      ) : filteredSchedules.length === 0 ? (
+        <Box sx={{ textAlign: 'center', mt: 8 }}>
+          <Typography variant="h6" color="text.secondary" gutterBottom>
+            No schedules match your filter
+          </Typography>
+          <Button variant="text" onClick={() => setScheduleFilter('')}>
+            Clear filter
+          </Button>
+        </Box>
+      ) : viewMode === 'card' ? (
+        renderCardView()
       ) : (
-        <Grid container spacing={3} sx={{ alignItems: 'stretch' }}>
-          {schedules.map((schedule: Schedule) => (
-            <Grid item xs={12} sm={6} md={4} key={schedule.id} sx={{ display: 'flex' }}>
-              <Card sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-                <CardContent sx={{ flex: 1 }}>
-                  {/* Title */}
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
-                    <Typography variant="h6" component="h2">
-                      {schedule.name}
-                    </Typography>
-                    {!schedule.is_active && (
-                      <Chip label="Inactive" color="default" size="small" />
-                    )}
-                  </Box>
-                  
-                  {/* Description */}
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-                    {schedule.description || 'No description'}
-                  </Typography>
-                  
-                  {/* Info List */}
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-                    {/* Schedule */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <CalendarMonthIcon fontSize="small" color="action" />
-                      <Typography variant="body2" color="text.secondary">
-                        {formatSchedule(schedule)}
-                      </Typography>
-                    </Box>
-                    
-                    {/* Frequencies */}
-                    {schedule.frequencies.length > 0 && (
-                      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-                        <RadioIcon fontSize="small" color="action" sx={{ mt: 0.25 }} />
-                        <Typography variant="body2" color="text.secondary">
-                          {schedule.frequencies.map((f: any) => {
-                            if (f.frequency) {
-                              return f.frequency;
-                            } else if (f.network && f.talkgroup) {
-                              return `${f.network} TG${f.talkgroup}`;
-                            } else if (f.network) {
-                              return f.network;
-                            }
-                            return '';
-                          }).filter((s: string) => s).join(', ')}
-                        </Typography>
-                      </Box>
-                    )}
-                    
-                    {/* Host / Next NCS */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <PersonIcon fontSize="small" color="action" />
-                      <Typography variant="body2" color="text.secondary">
-                        {schedule.nextNCS ? (
-                          <>
-                            <strong>Next NCS:</strong> {schedule.nextNCS.user_callsign}
-                            {schedule.nextNCS.user_name && ` (${schedule.nextNCS.user_name})`}
-                            {' - '}
-                            {new Date(schedule.nextNCS.date).toLocaleDateString(undefined, { 
-                              weekday: 'short', 
-                              month: 'short', 
-                              day: 'numeric' 
-                            })}
-                          </>
-                        ) : (
-                          <>
-                            <strong>Host:</strong> {schedule.owner_callsign || 'Unknown'}
-                            {schedule.owner_name && ` (${schedule.owner_name})`}
-                          </>
-                        )}
-                      </Typography>
-                    </Box>
-                    
-                    {/* Subscribers */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <NotificationsActiveIcon fontSize="small" color="action" />
-                      <Typography variant="body2" color="text.secondary">
-                        {schedule.subscriber_count} subscriber{schedule.subscriber_count !== 1 ? 's' : ''}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </CardContent>
-                
-                <CardActions sx={{ justifyContent: 'space-between', flexWrap: 'wrap' }}>
-                  <Box>
-                    {isAuthenticated && (
-                      <Button
-                        size="small"
-                        startIcon={<PlayArrowIcon />}
-                        onClick={() => handleCreateNetFromSchedule(schedule.id)}
-                      >
-                        Create Net
-                      </Button>
-                    )}
-                  </Box>
-                  <Box>
-                    {schedule.info_url && (
-                      <Tooltip title="Net/Club info">
-                        <IconButton
-                          size="small"
-                          onClick={() => window.open(schedule.info_url, '_blank')}
-                        >
-                          <LanguageIcon />
-                        </IconButton>
-                      </Tooltip>
-                    )}
-                    <Tooltip title="Schedule statistics">
-                      <IconButton
-                        size="small"
-                        onClick={() => navigate(`/statistics/schedules/${schedule.id}`)}
-                      >
-                        <BarChartIcon />
-                      </IconButton>
-                    </Tooltip>
-                    {/* Net Staff - always visible */}
-                    <Tooltip title="View net staff">
-                      <IconButton
-                        size="small"
-                        onClick={() => handleOpenRotationModal(schedule)}
-                      >
-                        <GroupsIcon />
-                      </IconButton>
-                    </Tooltip>
-                    {/* Notifications - auth required */}
-                    {isAuthenticated && (
-                      schedule.is_subscribed ? (
-                        <Tooltip title="Unsubscribe from notifications">
-                          <IconButton
-                            size="small"
-                            color="primary"
-                            onClick={() => handleUnsubscribe(schedule.id)}
-                          >
-                            <NotificationsActiveIcon />
-                          </IconButton>
-                        </Tooltip>
-                      ) : (
-                        <Tooltip title="Subscribe to notifications">
-                          <IconButton
-                            size="small"
-                            onClick={() => handleSubscribe(schedule.id)}
-                          >
-                            <NotificationsOffIcon />
-                          </IconButton>
-                        </Tooltip>
-                      )
-                    )}
-                    
-                    {/* Edit & Delete for owners, admins, or NCS rotation members */}
-                    {(schedule.can_manage || isAdmin) && (
-                      <>
-                        <Tooltip title="Edit schedule">
-                          <IconButton
-                            size="small"
-                            onClick={() => navigate(`/scheduler/${schedule.id}/edit`)}
-                          >
-                            <EditIcon />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Delete schedule">
-                          <IconButton
-                            size="small"
-                            color="error"
-                            onClick={() => handleDelete(schedule.id)}
-                          >
-                            <DeleteIcon />
-                          </IconButton>
-                        </Tooltip>
-                      </>
-                    )}
-                  </Box>
-                </CardActions>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+        renderListView()
       )}
 
+      {/* ========== FLOATING ACTION BUTTONS ========== */}
       {isAuthenticated && (
-        <Fab
-          color="primary"
-          aria-label="create schedule"
-          sx={{ position: 'fixed', bottom: 16, right: 16 }}
-          onClick={() => navigate('/scheduler/create')}
-        >
-          <AddIcon />
-        </Fab>
+        <>
+          <Tooltip title={showFilter ? "Hide filter" : "Filter schedules"}>
+            <Fab
+              color={showFilter ? "primary" : "default"}
+              aria-label="filter"
+              sx={{ position: 'fixed', bottom: 16, right: 80 }}
+              onClick={() => setShowFilter(!showFilter)}
+              size="medium"
+            >
+              <FilterListIcon />
+            </Fab>
+          </Tooltip>
+          <Tooltip title="Create new schedule">
+            <Fab
+              color="primary"
+              aria-label="create schedule"
+              sx={{ position: 'fixed', bottom: 16, right: 16 }}
+              onClick={() => navigate('/scheduler/create')}
+            >
+              <AddIcon />
+            </Fab>
+          </Tooltip>
+        </>
       )}
 
       {/* NCS Staff Modal */}
