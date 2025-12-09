@@ -136,7 +136,7 @@ type SortDirection = 'asc' | 'desc';
 type UserSortField = 'email' | 'name' | 'callsign' | 'role' | 'status' | 'created_at';
 
 // Field sorting types
-type FieldSortField = 'name' | 'label' | 'type' | 'status';
+type FieldSortField = 'name' | 'label' | 'type' | 'default_enabled' | 'default_required' | 'status';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -474,6 +474,14 @@ const Admin: React.FC = () => {
         aVal = a.field_type;
         bVal = b.field_type;
         break;
+      case 'default_enabled':
+        aVal = a.default_enabled ? 1 : 0;
+        bVal = b.default_enabled ? 1 : 0;
+        break;
+      case 'default_required':
+        aVal = a.default_required ? 1 : 0;
+        bVal = b.default_required ? 1 : 0;
+        break;
       case 'status':
         // Sort order: Built-in, Custom, Archived
         aVal = a.is_builtin ? 0 : a.is_archived ? 2 : 1;
@@ -481,7 +489,7 @@ const Admin: React.FC = () => {
         break;
     }
     
-    if (fieldSortField === 'status') {
+    if (fieldSortField === 'status' || fieldSortField === 'default_enabled' || fieldSortField === 'default_required') {
       return fieldSortDirection === 'asc' 
         ? (aVal as number) - (bVal as number)
         : (bVal as number) - (aVal as number);
@@ -1070,8 +1078,24 @@ const Admin: React.FC = () => {
                         Type
                       </TableSortLabel>
                     </TableCell>
-                    <TableCell align="center">Default Enabled</TableCell>
-                    <TableCell align="center">Default Required</TableCell>
+                    <TableCell align="center" sortDirection={fieldSortField === 'default_enabled' ? fieldSortDirection : false}>
+                      <TableSortLabel
+                        active={fieldSortField === 'default_enabled'}
+                        direction={fieldSortField === 'default_enabled' ? fieldSortDirection : 'asc'}
+                        onClick={() => handleFieldSort('default_enabled')}
+                      >
+                        Default Enabled
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell align="center" sortDirection={fieldSortField === 'default_required' ? fieldSortDirection : false}>
+                      <TableSortLabel
+                        active={fieldSortField === 'default_required'}
+                        direction={fieldSortField === 'default_required' ? fieldSortDirection : 'asc'}
+                        onClick={() => handleFieldSort('default_required')}
+                      >
+                        Default Required
+                      </TableSortLabel>
+                    </TableCell>
                     <TableCell sortDirection={fieldSortField === 'status' ? fieldSortDirection : false}>
                       <TableSortLabel
                         active={fieldSortField === 'status'}
