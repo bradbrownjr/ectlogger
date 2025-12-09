@@ -56,8 +56,10 @@ import InfoIcon from '@mui/icons-material/Info';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
 import HistoryIcon from '@mui/icons-material/History';
+import RadioIcon from '@mui/icons-material/Radio';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
+import { frequencyApi } from '../services/api';
 
 interface User {
   id: number;
@@ -111,6 +113,16 @@ interface SecurityInfo {
   recent_auth_events: SecurityLogEntry[];
 }
 
+interface Frequency {
+  id: number;
+  frequency?: string;
+  mode: string;
+  network?: string;
+  talkgroup?: string;
+  description?: string;
+  created_at: string;
+  net_count: number;
+}
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
@@ -178,6 +190,22 @@ const Admin: React.FC = () => {
   const [securityInfo, setSecurityInfo] = useState<SecurityInfo | null>(null);
   const [securityLoading, setSecurityLoading] = useState(false);
   
+  // Frequencies state
+  const [frequencies, setFrequencies] = useState<Frequency[]>([]);
+  const [frequenciesLoading, setFrequenciesLoading] = useState(false);
+  const [frequencyDialogOpen, setFrequencyDialogOpen] = useState(false);
+  const [editingFrequency, setEditingFrequency] = useState<Frequency | null>(null);
+  const [frequencyForm, setFrequencyForm] = useState({
+    frequency: '',
+    mode: 'FM',
+    network: '',
+    talkgroup: '',
+    description: '',
+  });
+  const [frequencySaving, setFrequencySaving] = useState(false);
+  const [deleteFrequencyDialogOpen, setDeleteFrequencyDialogOpen] = useState(false);
+  const [frequencyToDelete, setFrequencyToDelete] = useState<Frequency | null>(null);
+  
   // Schedule creation limits state
   const [scheduleSettings, setScheduleSettings] = useState({
     schedule_min_account_age_days: 7,
@@ -204,6 +232,7 @@ const Admin: React.FC = () => {
     fetchFields();
     fetchSecurityInfo();
     fetchScheduleSettings();
+    fetchFrequencies();
   }, [currentUser, navigate]);
 
   useEffect(() => {
@@ -240,6 +269,18 @@ const Admin: React.FC = () => {
       console.error('Failed to fetch security info:', error);
     } finally {
       setSecurityLoading(false);
+    }
+  };
+
+  const fetchFrequencies = async () => {
+    setFrequenciesLoading(true);
+    try {
+      const response = await frequencyApi.listWithUsage();
+      setFrequencies(response.data);
+    } catch (error) {
+      console.error('Failed to fetch frequencies:', error);
+    } finally {
+      setFrequenciesLoading(false);
     }
   };
 
@@ -375,6 +416,86 @@ const Admin: React.FC = () => {
     }
   };
 
+  // Frequency handlers
+  const handleOpenFrequencyDialog = (frequency?: Frequency) => {
+    if (frequency) {
+      setEditingFrequency(frequency);
+      setFrequencyForm({
+        frequency: frequency.frequency || '',
+        mode: frequency.mode,
+        network: frequency.network || '',
+        talkgroup: frequency.talkgroup || '',
+        description: frequency.description || '',
+      });
+    } else {
+      setEditingFrequency(null);
+      setFrequencyForm({
+        frequency: '',
+        mode: 'FM',
+        network: '',
+        talkgroup: '',
+        description: '',
+      });
+    }
+    setFrequencyDialogOpen(true);
+  };
+
+  const handleSaveFrequency = async () => {
+    // Validate: must have either frequency or network
+    if (!frequencyForm.frequency && !frequencyForm.network) {
+      setSnackbar({ open: true, message: 'Either frequency or network is required', severity: 'error' });
+      return;
+    }
+    
+    setFrequencySaving(true);
+    try {
+      const payload = {
+        frequency: frequencyForm.frequency || null,
+        mode: frequencyForm.mode,
+        network: frequencyForm.network || null,
+        talkgroup: frequencyForm.talkgroup || null,
+        description: frequencyForm.description || null,
+      };
+      
+      if (editingFrequency) {
+        await frequencyApi.update(editingFrequency.id, payload);
+        setSnackbar({ open: true, message: 'Frequency updated successfully', severity: 'success' });
+      } else {
+        await frequencyApi.create(payload);
+        setSnackbar({ open: true, message: 'Frequency created successfully', severity: 'success' });
+      }
+      setFrequencyDialogOpen(false);
+      fetchFrequencies();
+    } catch (error: any) {
+      console.error('Failed to save frequency:', error);
+      const message = error.response?.data?.detail || 'Failed to save frequency';
+      setSnackbar({ open: true, message, severity: 'error' });
+    } finally {
+      setFrequencySaving(false);
+    }
+  };
+
+  const handleDeleteFrequencyClick = (frequency: Frequency) => {
+    setFrequencyToDelete(frequency);
+    setDeleteFrequencyDialogOpen(true);
+  };
+
+  const handleDeleteFrequency = async () => {
+    if (!frequencyToDelete) return;
+    
+    try {
+      await frequencyApi.delete(frequencyToDelete.id);
+      setSnackbar({ open: true, message: 'Frequency deleted successfully', severity: 'success' });
+      setDeleteFrequencyDialogOpen(false);
+      setFrequencyToDelete(null);
+      fetchFrequencies();
+    } catch (error: any) {
+      console.error('Failed to delete frequency:', error);
+      const message = error.response?.data?.detail || 'Failed to delete frequency';
+      setSnackbar({ open: true, message, severity: 'error' });
+    }
+  };
+
   const handleBanUser = async (userId: number) => {
     if (!confirm('Are you sure you want to ban this user?')) return;
     
@@ -485,7 +606,8 @@ const Admin: React.FC = () => {
         <Tabs value={tabValue} onChange={(_, newValue) => setTabValue(newValue)} sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <Tab label="Users" id="admin-tab-0" aria-controls="admin-tabpanel-0" icon={<PersonAddIcon />} iconPosition="start" />
           <Tab label="Check-in Fields" id="admin-tab-1" aria-controls="admin-tabpanel-1" icon={<EditIcon />} iconPosition="start" />
-          <Tab label="Security" id="admin-tab-2" aria-controls="admin-tabpanel-2" icon={<SecurityIcon />} iconPosition="start" />
+          <Tab label="Frequencies" id="admin-tab-2" aria-controls="admin-tabpanel-2" icon={<RadioIcon />} iconPosition="start" />
+          <Tab label="Security" id="admin-tab-3" aria-controls="admin-tabpanel-3" icon={<SecurityIcon />} iconPosition="start" />
         </Tabs>
 
         {/* Users Tab */}
@@ -689,8 +811,87 @@ const Admin: React.FC = () => {
           )}
         </TabPanel>
 
-        {/* Security Tab */}
+        {/* Frequencies Tab */}
         <TabPanel value={tabValue} index={2}>
+          <Alert severity="info" sx={{ mb: 3 }}>
+            Manage global frequencies available for all nets. Pre-populate common frequencies, DMR talkgroups, and digital modes.
+          </Alert>
+
+          {frequenciesLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <TableContainer>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Frequency</TableCell>
+                    <TableCell>Mode</TableCell>
+                    <TableCell>Network</TableCell>
+                    <TableCell>Talkgroup</TableCell>
+                    <TableCell>Description</TableCell>
+                    <TableCell align="center">Nets Using</TableCell>
+                    <TableCell>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {frequencies.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
+                        <Typography color="text.secondary">
+                          No frequencies defined. Click the + button to add one.
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    frequencies.map((freq) => (
+                      <TableRow key={freq.id}>
+                        <TableCell>{freq.frequency || '-'}</TableCell>
+                        <TableCell>
+                          <Chip label={freq.mode} size="small" variant="outlined" />
+                        </TableCell>
+                        <TableCell>{freq.network || '-'}</TableCell>
+                        <TableCell>{freq.talkgroup || '-'}</TableCell>
+                        <TableCell>{freq.description || '-'}</TableCell>
+                        <TableCell align="center">
+                          <Chip 
+                            label={freq.net_count} 
+                            size="small" 
+                            color={freq.net_count > 0 ? 'primary' : 'default'}
+                            variant={freq.net_count > 0 ? 'filled' : 'outlined'}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Tooltip title="Edit frequency">
+                            <IconButton size="small" onClick={() => handleOpenFrequencyDialog(freq)}>
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title={freq.net_count > 0 ? 'Cannot delete: frequency is in use' : 'Delete frequency'}>
+                            <span>
+                              <IconButton 
+                                size="small" 
+                                onClick={() => handleDeleteFrequencyClick(freq)}
+                                disabled={freq.net_count > 0}
+                                color="error"
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </TabPanel>
+
+        {/* Security Tab */}
+        <TabPanel value={tabValue} index={3}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
             <Typography variant="h6">
               <SecurityIcon sx={{ verticalAlign: 'middle', mr: 1 }} />
@@ -1177,6 +1378,112 @@ const Admin: React.FC = () => {
         </DialogActions>
       </Dialog>
 
+      {/* Frequency Dialog */}
+      <Dialog open={frequencyDialogOpen} onClose={() => setFrequencyDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>{editingFrequency ? 'Edit Frequency' : 'Add Frequency'}</DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+            <TextField
+              label="Frequency"
+              value={frequencyForm.frequency}
+              onChange={(e) => setFrequencyForm({ ...frequencyForm, frequency: e.target.value })}
+              placeholder="e.g., 146.520 MHz"
+              helperText="Leave blank for digital-only modes"
+              fullWidth
+            />
+            <FormControl fullWidth>
+              <InputLabel>Mode</InputLabel>
+              <Select
+                value={frequencyForm.mode}
+                label="Mode"
+                onChange={(e) => setFrequencyForm({ ...frequencyForm, mode: e.target.value })}
+              >
+                <MenuItem value="FM">FM</MenuItem>
+                <MenuItem value="AM">AM</MenuItem>
+                <MenuItem value="SSB">SSB</MenuItem>
+                <MenuItem value="CW">CW</MenuItem>
+                <MenuItem value="DMR">DMR</MenuItem>
+                <MenuItem value="D-STAR">D-STAR</MenuItem>
+                <MenuItem value="YSF">YSF (Fusion)</MenuItem>
+                <MenuItem value="P25">P25</MenuItem>
+                <MenuItem value="NXDN">NXDN</MenuItem>
+                <MenuItem value="M17">M17</MenuItem>
+                <MenuItem value="VARA">VARA</MenuItem>
+                <MenuItem value="Winlink">Winlink</MenuItem>
+                <MenuItem value="Other">Other</MenuItem>
+              </Select>
+            </FormControl>
+            <TextField
+              label="Network"
+              value={frequencyForm.network}
+              onChange={(e) => setFrequencyForm({ ...frequencyForm, network: e.target.value })}
+              placeholder="e.g., Brandmeister, Wires-X, REF030C"
+              helperText="For digital modes: network or reflector name"
+              fullWidth
+            />
+            <TextField
+              label="Talkgroup/Room"
+              value={frequencyForm.talkgroup}
+              onChange={(e) => setFrequencyForm({ ...frequencyForm, talkgroup: e.target.value })}
+              placeholder="e.g., 31665, Room 12345"
+              helperText="For digital modes: talkgroup ID or room number"
+              fullWidth
+            />
+            <TextField
+              label="Description"
+              value={frequencyForm.description}
+              onChange={(e) => setFrequencyForm({ ...frequencyForm, description: e.target.value })}
+              placeholder="e.g., Local repeater, SKYWARN net"
+              fullWidth
+              multiline
+              rows={2}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setFrequencyDialogOpen(false)}>Cancel</Button>
+          <Button 
+            onClick={handleSaveFrequency} 
+            variant="contained"
+            disabled={frequencySaving || (!frequencyForm.frequency && !frequencyForm.network)}
+            startIcon={frequencySaving ? <CircularProgress size={20} color="inherit" /> : null}
+          >
+            {editingFrequency ? 'Update' : 'Create'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Frequency Confirmation Dialog */}
+      <Dialog open={deleteFrequencyDialogOpen} onClose={() => setDeleteFrequencyDialogOpen(false)}>
+        <DialogTitle>Delete Frequency</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to delete this frequency?
+          </Typography>
+          {frequencyToDelete && (
+            <Box sx={{ mt: 2, p: 2, bgcolor: 'action.hover', borderRadius: 1 }}>
+              <Typography variant="body2">
+                <strong>Frequency:</strong> {frequencyToDelete.frequency || '-'}
+              </Typography>
+              <Typography variant="body2">
+                <strong>Mode:</strong> {frequencyToDelete.mode}
+              </Typography>
+              {frequencyToDelete.network && (
+                <Typography variant="body2">
+                  <strong>Network:</strong> {frequencyToDelete.network}
+                </Typography>
+              )}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteFrequencyDialogOpen(false)}>Cancel</Button>
+          <Button onClick={handleDeleteFrequency} variant="contained" color="error">
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {/* Snackbar */}
       <Snackbar
         open={snackbar.open}
@@ -1205,6 +1512,18 @@ const Admin: React.FC = () => {
             aria-label="add field"
             sx={{ position: 'fixed', bottom: 16, right: 16 }}
             onClick={() => handleOpenFieldDialog()}
+          >
+            <AddIcon />
+          </Fab>
+        </Tooltip>
+      )}
+      {tabValue === 2 && (
+        <Tooltip title="Add frequency">
+          <Fab
+            color="primary"
+            aria-label="add frequency"
+            sx={{ position: 'fixed', bottom: 16, right: 16 }}
+            onClick={() => handleOpenFrequencyDialog()}
           >
             <AddIcon />
           </Fab>

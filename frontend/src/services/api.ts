@@ -107,6 +107,7 @@ export const templateApi = {
 export const frequencyApi = {
   create: (data: any) => api.post('/frequencies', data),
   list: () => api.get('/frequencies'),
+  listWithUsage: () => api.get('/frequencies/admin/with-usage'),
   update: (id: number, data: any) => api.put(`/frequencies/${id}`, data),
   delete: (id: number) => api.delete(`/frequencies/${id}`),
 };

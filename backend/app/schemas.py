@@ -154,6 +154,16 @@ class FrequencyResponse(FrequencyBase):
         from_attributes = True
 
 
+class FrequencyWithUsageResponse(FrequencyBase):
+    """Frequency response with net usage count for admin view"""
+    id: int
+    created_at: datetime
+    net_count: int = 0
+
+    class Config:
+        from_attributes = True
+
+
 # Net Schemas
 class NetBase(BaseModel):
     name: str = Field(max_length=200, min_length=1)

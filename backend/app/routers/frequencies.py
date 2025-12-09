@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
+from sqlalchemy.orm import selectinload
 from typing import List
 from app.database import get_db
-from app.models import Frequency, User
-from app.schemas import FrequencyCreate, FrequencyResponse
-from app.dependencies import get_current_user
+from app.models import Frequency, User, net_frequencies
+from app.schemas import FrequencyCreate, FrequencyResponse, FrequencyWithUsageResponse
+from app.dependencies import get_current_user, get_current_admin_user
 
 router = APIRouter(prefix="/frequencies", tags=["frequencies"])
 
@@ -45,6 +46,40 @@ async def list_frequencies(
     frequencies = result.scalars().all()
     
     return [FrequencyResponse.from_orm(freq) for freq in frequencies]
+
+
+@router.get("/admin/with-usage", response_model=List[FrequencyWithUsageResponse])
+async def list_frequencies_with_usage(
+    current_user: User = Depends(get_current_admin_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """List all frequencies with net usage count (admin only)"""
+    # Get frequencies with count of nets using each
+    result = await db.execute(
+        select(
+            Frequency,
+            func.count(net_frequencies.c.net_id).label('net_count')
+        )
+        .outerjoin(net_frequencies, Frequency.id == net_frequencies.c.frequency_id)
+        .group_by(Frequency.id)
+        .order_by(Frequency.frequency)
+    )
+    
+    frequencies_with_counts = result.all()
+    
+    return [
+        FrequencyWithUsageResponse(
+            id=freq.id,
+            frequency=freq.frequency,
+            mode=freq.mode,
+            network=freq.network,
+            talkgroup=freq.talkgroup,
+            description=freq.description,
+            created_at=freq.created_at,
+            net_count=count
+        )
+        for freq, count in frequencies_with_counts
+    ]
 
 
 @router.get("/{frequency_id}", response_model=FrequencyResponse)
