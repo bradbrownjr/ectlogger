@@ -1,14 +1,78 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, and_, or_
 from sqlalchemy.orm import selectinload
-from typing import List
+from typing import List, Optional
 from app.database import get_db
 from app.models import Frequency, User, net_frequencies
 from app.schemas import FrequencyCreate, FrequencyResponse, FrequencyWithUsageResponse
 from app.dependencies import get_current_user, get_admin_user
 
 router = APIRouter(prefix="/frequencies", tags=["frequencies"])
+
+
+async def check_duplicate_frequency(
+    db: AsyncSession,
+    frequency: Optional[str],
+    mode: str,
+    network: Optional[str],
+    talkgroup: Optional[str],
+    exclude_id: Optional[int] = None
+) -> Optional[Frequency]:
+    """
+    Check if a duplicate frequency already exists.
+    A duplicate is defined as matching: frequency + mode + network + talkgroup
+    (since the same frequency could be used by different repeaters across the country,
+    we need all 4 fields to match to be considered a true duplicate)
+    """
+    # Build conditions for the query
+    conditions = [
+        # Handle None vs empty string - treat them as equal for comparison
+        or_(
+            and_(Frequency.frequency == frequency, frequency is not None),
+            and_(Frequency.frequency.is_(None), frequency is None),
+            and_(Frequency.frequency == '', frequency == ''),
+            and_(Frequency.frequency.is_(None), frequency == ''),
+            and_(Frequency.frequency == '', frequency is None)
+        ),
+        Frequency.mode == mode,
+        or_(
+            and_(Frequency.network == network, network is not None),
+            and_(Frequency.network.is_(None), network is None),
+            and_(Frequency.network == '', network == ''),
+            and_(Frequency.network.is_(None), network == ''),
+            and_(Frequency.network == '', network is None)
+        ),
+        or_(
+            and_(Frequency.talkgroup == talkgroup, talkgroup is not None),
+            and_(Frequency.talkgroup.is_(None), talkgroup is None),
+            and_(Frequency.talkgroup == '', talkgroup == ''),
+            and_(Frequency.talkgroup.is_(None), talkgroup == ''),
+            and_(Frequency.talkgroup == '', talkgroup is None)
+        ),
+    ]
+    
+    # Exclude a specific ID (for updates)
+    if exclude_id is not None:
+        conditions.append(Frequency.id != exclude_id)
+    
+    result = await db.execute(
+        select(Frequency).where(and_(*conditions))
+    )
+    return result.scalar_one_or_none()
+
+
+def format_duplicate_error(freq: Frequency) -> str:
+    """Format a user-friendly error message for duplicate frequency"""
+    parts = []
+    if freq.frequency:
+        parts.append(freq.frequency)
+    parts.append(freq.mode)
+    if freq.network:
+        parts.append(f"on {freq.network}")
+    if freq.talkgroup:
+        parts.append(f"TG {freq.talkgroup}")
+    return f"A frequency with these details already exists: {' '.join(parts)}"
 
 
 @router.post("", response_model=FrequencyResponse, status_code=status.HTTP_201_CREATED)
@@ -18,6 +82,20 @@ async def create_frequency(
     db: AsyncSession = Depends(get_db)
 ):
     """Create a new frequency"""
+    # Check for duplicates
+    existing = await check_duplicate_frequency(
+        db,
+        frequency=frequency_data.frequency,
+        mode=frequency_data.mode,
+        network=frequency_data.network,
+        talkgroup=frequency_data.talkgroup
+    )
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=format_duplicate_error(existing)
+        )
+    
     frequency = Frequency(
         frequency=frequency_data.frequency,
         mode=frequency_data.mode,
@@ -114,6 +192,21 @@ async def update_frequency(
     
     if not frequency:
         raise HTTPException(status_code=404, detail="Frequency not found")
+    
+    # Check for duplicates (excluding this frequency)
+    existing = await check_duplicate_frequency(
+        db,
+        frequency=frequency_data.frequency,
+        mode=frequency_data.mode,
+        network=frequency_data.network,
+        talkgroup=frequency_data.talkgroup,
+        exclude_id=frequency_id
+    )
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=format_duplicate_error(existing)
+        )
     
     # Update fields
     frequency.frequency = frequency_data.frequency

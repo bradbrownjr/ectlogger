@@ -11,6 +11,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TableSortLabel,
   Button,
   IconButton,
   Chip,
@@ -39,6 +40,7 @@ import {
   ListItemText,
   ListItemIcon,
   Divider,
+  InputAdornment,
 } from '@mui/material';
 import BlockIcon from '@mui/icons-material/Block';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -57,6 +59,8 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
 import HistoryIcon from '@mui/icons-material/History';
 import RadioIcon from '@mui/icons-material/Radio';
+import SearchIcon from '@mui/icons-material/Search';
+import ClearIcon from '@mui/icons-material/Clear';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import { frequencyApi } from '../services/api';
@@ -123,6 +127,11 @@ interface Frequency {
   created_at: string;
   net_count: number;
 }
+
+// Frequency sorting types
+type FrequencySortField = 'frequency' | 'mode' | 'network' | 'talkgroup' | 'description' | 'net_count';
+type SortDirection = 'asc' | 'desc';
+
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
@@ -205,6 +214,10 @@ const Admin: React.FC = () => {
   const [frequencySaving, setFrequencySaving] = useState(false);
   const [deleteFrequencyDialogOpen, setDeleteFrequencyDialogOpen] = useState(false);
   const [frequencyToDelete, setFrequencyToDelete] = useState<Frequency | null>(null);
+  // Frequency filtering and sorting
+  const [frequencyFilter, setFrequencyFilter] = useState('');
+  const [frequencySortField, setFrequencySortField] = useState<FrequencySortField>('frequency');
+  const [frequencySortDirection, setFrequencySortDirection] = useState<SortDirection>('asc');
   
   // Schedule creation limits state
   const [scheduleSettings, setScheduleSettings] = useState({
@@ -281,6 +294,76 @@ const Admin: React.FC = () => {
       console.error('Failed to fetch frequencies:', error);
     } finally {
       setFrequenciesLoading(false);
+    }
+  };
+
+  // ========== FREQUENCY FILTERING & SORTING ==========
+  // Filter frequencies by search term (matches any field)
+  const filteredFrequencies = frequencies.filter((freq) => {
+    if (!frequencyFilter) return true;
+    const searchTerm = frequencyFilter.toLowerCase();
+    return (
+      (freq.frequency?.toLowerCase().includes(searchTerm)) ||
+      (freq.mode?.toLowerCase().includes(searchTerm)) ||
+      (freq.network?.toLowerCase().includes(searchTerm)) ||
+      (freq.talkgroup?.toLowerCase().includes(searchTerm)) ||
+      (freq.description?.toLowerCase().includes(searchTerm))
+    );
+  });
+
+  // Sort filtered frequencies
+  const sortedFrequencies = [...filteredFrequencies].sort((a, b) => {
+    let aVal: string | number = '';
+    let bVal: string | number = '';
+    
+    switch (frequencySortField) {
+      case 'frequency':
+        aVal = a.frequency || '';
+        bVal = b.frequency || '';
+        break;
+      case 'mode':
+        aVal = a.mode || '';
+        bVal = b.mode || '';
+        break;
+      case 'network':
+        aVal = a.network || '';
+        bVal = b.network || '';
+        break;
+      case 'talkgroup':
+        aVal = a.talkgroup || '';
+        bVal = b.talkgroup || '';
+        break;
+      case 'description':
+        aVal = a.description || '';
+        bVal = b.description || '';
+        break;
+      case 'net_count':
+        aVal = a.net_count;
+        bVal = b.net_count;
+        break;
+    }
+    
+    // Handle numeric comparison for net_count
+    if (frequencySortField === 'net_count') {
+      return frequencySortDirection === 'asc' 
+        ? (aVal as number) - (bVal as number)
+        : (bVal as number) - (aVal as number);
+    }
+    
+    // String comparison for other fields
+    const comparison = (aVal as string).localeCompare(bVal as string, undefined, { numeric: true, sensitivity: 'base' });
+    return frequencySortDirection === 'asc' ? comparison : -comparison;
+  });
+
+  // Handle sort click
+  const handleFrequencySort = (field: FrequencySortField) => {
+    if (frequencySortField === field) {
+      // Toggle direction if same field
+      setFrequencySortDirection(frequencySortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // New field, start with ascending
+      setFrequencySortField(field);
+      setFrequencySortDirection('asc');
     }
   };
 
@@ -817,6 +900,34 @@ const Admin: React.FC = () => {
             Manage global frequencies available for all nets. Pre-populate common frequencies, DMR talkgroups, and digital modes.
           </Alert>
 
+          {/* ========== FREQUENCY FILTER INPUT ========== */}
+          <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+            <TextField
+              size="small"
+              placeholder="Filter by frequency, mode, network, talkgroup, or description..."
+              value={frequencyFilter}
+              onChange={(e) => setFrequencyFilter(e.target.value)}
+              sx={{ flexGrow: 1, maxWidth: 500 }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon color="action" />
+                  </InputAdornment>
+                ),
+                endAdornment: frequencyFilter && (
+                  <InputAdornment position="end">
+                    <IconButton size="small" onClick={() => setFrequencyFilter('')}>
+                      <ClearIcon fontSize="small" />
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <Typography variant="body2" color="text.secondary">
+              {filteredFrequencies.length} of {frequencies.length} frequencies
+            </Typography>
+          </Box>
+
           {frequenciesLoading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
               <CircularProgress />
@@ -824,28 +935,79 @@ const Admin: React.FC = () => {
           ) : (
             <TableContainer>
               <Table size="small">
+                {/* ========== SORTABLE TABLE HEADERS ========== */}
                 <TableHead>
                   <TableRow>
-                    <TableCell>Frequency</TableCell>
-                    <TableCell>Mode</TableCell>
-                    <TableCell>Network</TableCell>
-                    <TableCell>Talkgroup</TableCell>
-                    <TableCell>Description</TableCell>
-                    <TableCell align="center">Nets Using</TableCell>
+                    <TableCell sortDirection={frequencySortField === 'frequency' ? frequencySortDirection : false}>
+                      <TableSortLabel
+                        active={frequencySortField === 'frequency'}
+                        direction={frequencySortField === 'frequency' ? frequencySortDirection : 'asc'}
+                        onClick={() => handleFrequencySort('frequency')}
+                      >
+                        Frequency
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell sortDirection={frequencySortField === 'mode' ? frequencySortDirection : false}>
+                      <TableSortLabel
+                        active={frequencySortField === 'mode'}
+                        direction={frequencySortField === 'mode' ? frequencySortDirection : 'asc'}
+                        onClick={() => handleFrequencySort('mode')}
+                      >
+                        Mode
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell sortDirection={frequencySortField === 'network' ? frequencySortDirection : false}>
+                      <TableSortLabel
+                        active={frequencySortField === 'network'}
+                        direction={frequencySortField === 'network' ? frequencySortDirection : 'asc'}
+                        onClick={() => handleFrequencySort('network')}
+                      >
+                        Network
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell sortDirection={frequencySortField === 'talkgroup' ? frequencySortDirection : false}>
+                      <TableSortLabel
+                        active={frequencySortField === 'talkgroup'}
+                        direction={frequencySortField === 'talkgroup' ? frequencySortDirection : 'asc'}
+                        onClick={() => handleFrequencySort('talkgroup')}
+                      >
+                        Talkgroup
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell sortDirection={frequencySortField === 'description' ? frequencySortDirection : false}>
+                      <TableSortLabel
+                        active={frequencySortField === 'description'}
+                        direction={frequencySortField === 'description' ? frequencySortDirection : 'asc'}
+                        onClick={() => handleFrequencySort('description')}
+                      >
+                        Description
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell align="center" sortDirection={frequencySortField === 'net_count' ? frequencySortDirection : false}>
+                      <TableSortLabel
+                        active={frequencySortField === 'net_count'}
+                        direction={frequencySortField === 'net_count' ? frequencySortDirection : 'asc'}
+                        onClick={() => handleFrequencySort('net_count')}
+                      >
+                        Nets Using
+                      </TableSortLabel>
+                    </TableCell>
                     <TableCell>Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {frequencies.length === 0 ? (
+                  {sortedFrequencies.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
                         <Typography color="text.secondary">
-                          No frequencies defined. Click the + button to add one.
+                          {frequencies.length === 0 
+                            ? 'No frequencies defined. Click the + button to add one.'
+                            : 'No frequencies match your filter.'}
                         </Typography>
                       </TableCell>
                     </TableRow>
                   ) : (
-                    frequencies.map((freq) => (
+                    sortedFrequencies.map((freq) => (
                       <TableRow key={freq.id}>
                         <TableCell>{freq.frequency || '-'}</TableCell>
                         <TableCell>
