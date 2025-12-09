@@ -19,6 +19,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TableSortLabel,
   IconButton,
   Autocomplete,
   InputLabel,
@@ -33,6 +34,7 @@ import {
   Chip,
   Tooltip,
   Divider,
+  InputAdornment,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -50,6 +52,8 @@ import FormatItalicIcon from '@mui/icons-material/FormatItalic';
 import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
 import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
 import HorizontalRuleIcon from '@mui/icons-material/HorizontalRule';
+import SearchIcon from '@mui/icons-material/Search';
+import ClearIcon from '@mui/icons-material/Clear';
 import { templateApi, frequencyApi, userApi, ncsRotationApi } from '../services/api';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -79,6 +83,10 @@ interface Frequency {
   talkgroup?: string;
   description?: string;
 }
+
+// Frequency sorting types
+type FrequencySortField = 'mode' | 'frequency' | 'talkgroup' | 'description';
+type SortDirection = 'asc' | 'desc';
 
 interface FieldDefinition {
   id: number;
@@ -146,6 +154,10 @@ const CreateSchedule: React.FC = () => {
   const [newFrequency, setNewFrequency] = useState({ frequency: '', mode: 'FM', network: '', talkgroup: '', description: '' });
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<Frequency | null>(null);
+  // Frequency filtering and sorting
+  const [frequencyFilter, setFrequencyFilter] = useState('');
+  const [frequencySortField, setFrequencySortField] = useState<FrequencySortField>('mode');
+  const [frequencySortDirection, setFrequencySortDirection] = useState<SortDirection>('asc');
   const [fieldDefinitions, setFieldDefinitions] = useState<FieldDefinition[]>([]);
   const [fieldConfig, setFieldConfig] = useState<Record<string, { enabled: boolean; required: boolean }>>({});
   const [isActive, setIsActive] = useState(true);
@@ -790,11 +802,57 @@ const CreateSchedule: React.FC = () => {
     });
   };
 
-  // Sort frequencies by mode for display
-  const sortedFrequencies = [...frequencies].sort((a, b) => {
-    const modeOrder = ['FM', 'GMRS', 'SSB', 'DMR', 'D-STAR', 'YSF', 'P25'];
-    return modeOrder.indexOf(a.mode) - modeOrder.indexOf(b.mode);
+  // ========== FREQUENCY FILTERING & SORTING ==========
+  // Filter frequencies by search term (matches any field)
+  const filteredFrequencies = frequencies.filter((freq) => {
+    if (!frequencyFilter) return true;
+    const searchTerm = frequencyFilter.toLowerCase();
+    return (
+      (freq.frequency?.toLowerCase().includes(searchTerm)) ||
+      (freq.mode?.toLowerCase().includes(searchTerm)) ||
+      (freq.network?.toLowerCase().includes(searchTerm)) ||
+      (freq.talkgroup?.toLowerCase().includes(searchTerm)) ||
+      (freq.description?.toLowerCase().includes(searchTerm))
+    );
   });
+
+  // Sort filtered frequencies
+  const sortedFrequencies = [...filteredFrequencies].sort((a, b) => {
+    let aVal: string = '';
+    let bVal: string = '';
+    
+    switch (frequencySortField) {
+      case 'mode':
+        aVal = a.mode || '';
+        bVal = b.mode || '';
+        break;
+      case 'frequency':
+        aVal = a.frequency || a.network || '';
+        bVal = b.frequency || b.network || '';
+        break;
+      case 'talkgroup':
+        aVal = a.talkgroup || '';
+        bVal = b.talkgroup || '';
+        break;
+      case 'description':
+        aVal = a.description || '';
+        bVal = b.description || '';
+        break;
+    }
+    
+    const comparison = aVal.localeCompare(bVal, undefined, { numeric: true, sensitivity: 'base' });
+    return frequencySortDirection === 'asc' ? comparison : -comparison;
+  });
+
+  // Handle sort click
+  const handleFrequencySort = (field: FrequencySortField) => {
+    if (frequencySortField === field) {
+      setFrequencySortDirection(frequencySortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setFrequencySortField(field);
+      setFrequencySortDirection('asc');
+    }
+  };
 
   return (
     <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
@@ -1305,15 +1363,76 @@ const CreateSchedule: React.FC = () => {
               Check the boxes to select frequencies for this schedule. Press Enter in any field to add a new frequency.
             </Typography>
 
+            {/* ========== FREQUENCY FILTER INPUT ========== */}
+            <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+              <TextField
+                size="small"
+                placeholder="Filter frequencies..."
+                value={frequencyFilter}
+                onChange={(e) => setFrequencyFilter(e.target.value)}
+                sx={{ flexGrow: 1, maxWidth: 400 }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon color="action" fontSize="small" />
+                    </InputAdornment>
+                  ),
+                  endAdornment: frequencyFilter && (
+                    <InputAdornment position="end">
+                      <IconButton size="small" onClick={() => setFrequencyFilter('')}>
+                        <ClearIcon fontSize="small" />
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              <Typography variant="body2" color="text.secondary">
+                {filteredFrequencies.length} of {frequencies.length}
+              </Typography>
+            </Box>
+
             <TableContainer>
               <Table size="small">
+                {/* ========== SORTABLE TABLE HEADERS ========== */}
                 <TableHead>
                   <TableRow>
                     <TableCell padding="checkbox">Use</TableCell>
-                    <TableCell>Mode</TableCell>
-                    <TableCell>Frequency/Network</TableCell>
-                    <TableCell>TG/Room</TableCell>
-                    <TableCell>Description</TableCell>
+                    <TableCell sortDirection={frequencySortField === 'mode' ? frequencySortDirection : false}>
+                      <TableSortLabel
+                        active={frequencySortField === 'mode'}
+                        direction={frequencySortField === 'mode' ? frequencySortDirection : 'asc'}
+                        onClick={() => handleFrequencySort('mode')}
+                      >
+                        Mode
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell sortDirection={frequencySortField === 'frequency' ? frequencySortDirection : false}>
+                      <TableSortLabel
+                        active={frequencySortField === 'frequency'}
+                        direction={frequencySortField === 'frequency' ? frequencySortDirection : 'asc'}
+                        onClick={() => handleFrequencySort('frequency')}
+                      >
+                        Frequency/Network
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell sortDirection={frequencySortField === 'talkgroup' ? frequencySortDirection : false}>
+                      <TableSortLabel
+                        active={frequencySortField === 'talkgroup'}
+                        direction={frequencySortField === 'talkgroup' ? frequencySortDirection : 'asc'}
+                        onClick={() => handleFrequencySort('talkgroup')}
+                      >
+                        TG/Room
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell sortDirection={frequencySortField === 'description' ? frequencySortDirection : false}>
+                      <TableSortLabel
+                        active={frequencySortField === 'description'}
+                        direction={frequencySortField === 'description' ? frequencySortDirection : 'asc'}
+                        onClick={() => handleFrequencySort('description')}
+                      >
+                        Description
+                      </TableSortLabel>
+                    </TableCell>
                     <TableCell>Actions</TableCell>
                   </TableRow>
                 </TableHead>
