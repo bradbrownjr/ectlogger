@@ -6,7 +6,7 @@ from typing import List
 from app.database import get_db
 from app.models import Frequency, User, net_frequencies
 from app.schemas import FrequencyCreate, FrequencyResponse, FrequencyWithUsageResponse
-from app.dependencies import get_current_user, get_current_admin_user
+from app.dependencies import get_current_user, get_admin_user
 
 router = APIRouter(prefix="/frequencies", tags=["frequencies"])
 
@@ -50,7 +50,7 @@ async def list_frequencies(
 
 @router.get("/admin/with-usage", response_model=List[FrequencyWithUsageResponse])
 async def list_frequencies_with_usage(
-    current_user: User = Depends(get_current_admin_user),
+    current_user: User = Depends(get_admin_user),
     db: AsyncSession = Depends(get_db)
 ):
     """List all frequencies with net usage count (admin only)"""
