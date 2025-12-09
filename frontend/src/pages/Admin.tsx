@@ -132,6 +132,12 @@ interface Frequency {
 type FrequencySortField = 'frequency' | 'mode' | 'network' | 'talkgroup' | 'description' | 'net_count';
 type SortDirection = 'asc' | 'desc';
 
+// User sorting types
+type UserSortField = 'email' | 'name' | 'callsign' | 'role' | 'status' | 'created_at';
+
+// Field sorting types
+type FieldSortField = 'name' | 'label' | 'type' | 'status';
+
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
@@ -218,6 +224,16 @@ const Admin: React.FC = () => {
   const [frequencyFilter, setFrequencyFilter] = useState('');
   const [frequencySortField, setFrequencySortField] = useState<FrequencySortField>('frequency');
   const [frequencySortDirection, setFrequencySortDirection] = useState<SortDirection>('asc');
+  
+  // User filtering and sorting
+  const [userFilter, setUserFilter] = useState('');
+  const [userSortField, setUserSortField] = useState<UserSortField>('callsign');
+  const [userSortDirection, setUserSortDirection] = useState<SortDirection>('asc');
+  
+  // Field filtering and sorting
+  const [fieldFilter, setFieldFilter] = useState('');
+  const [fieldSortField, setFieldSortField] = useState<FieldSortField>('name');
+  const [fieldSortDirection, setFieldSortDirection] = useState<SortDirection>('asc');
   
   // Schedule creation limits state
   const [scheduleSettings, setScheduleSettings] = useState({
@@ -364,6 +380,123 @@ const Admin: React.FC = () => {
       // New field, start with ascending
       setFrequencySortField(field);
       setFrequencySortDirection('asc');
+    }
+  };
+
+  // ========== USER FILTERING & SORTING ==========
+  const filteredUsers = users.filter((user) => {
+    if (!userFilter) return true;
+    const searchTerm = userFilter.toLowerCase();
+    return (
+      user.email.toLowerCase().includes(searchTerm) ||
+      (user.name?.toLowerCase().includes(searchTerm)) ||
+      (user.callsign?.toLowerCase().includes(searchTerm)) ||
+      user.role.toLowerCase().includes(searchTerm)
+    );
+  });
+
+  const sortedUsers = [...filteredUsers].sort((a, b) => {
+    let aVal: string | number | boolean = '';
+    let bVal: string | number | boolean = '';
+    
+    switch (userSortField) {
+      case 'email':
+        aVal = a.email;
+        bVal = b.email;
+        break;
+      case 'name':
+        aVal = a.name || '';
+        bVal = b.name || '';
+        break;
+      case 'callsign':
+        aVal = a.callsign || '';
+        bVal = b.callsign || '';
+        break;
+      case 'role':
+        aVal = a.role;
+        bVal = b.role;
+        break;
+      case 'status':
+        aVal = a.is_active ? 1 : 0;
+        bVal = b.is_active ? 1 : 0;
+        break;
+      case 'created_at':
+        aVal = new Date(a.created_at).getTime();
+        bVal = new Date(b.created_at).getTime();
+        break;
+    }
+    
+    // Handle numeric comparison
+    if (userSortField === 'status' || userSortField === 'created_at') {
+      return userSortDirection === 'asc' 
+        ? (aVal as number) - (bVal as number)
+        : (bVal as number) - (aVal as number);
+    }
+    
+    const comparison = (aVal as string).localeCompare(bVal as string, undefined, { numeric: true, sensitivity: 'base' });
+    return userSortDirection === 'asc' ? comparison : -comparison;
+  });
+
+  const handleUserSort = (field: UserSortField) => {
+    if (userSortField === field) {
+      setUserSortDirection(userSortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setUserSortField(field);
+      setUserSortDirection('asc');
+    }
+  };
+
+  // ========== FIELD FILTERING & SORTING ==========
+  const filteredFields = fields.filter((field) => {
+    if (!fieldFilter) return true;
+    const searchTerm = fieldFilter.toLowerCase();
+    return (
+      field.name.toLowerCase().includes(searchTerm) ||
+      field.label.toLowerCase().includes(searchTerm) ||
+      field.field_type.toLowerCase().includes(searchTerm)
+    );
+  });
+
+  const sortedFields = [...filteredFields].sort((a, b) => {
+    let aVal: string | number = '';
+    let bVal: string | number = '';
+    
+    switch (fieldSortField) {
+      case 'name':
+        aVal = a.name;
+        bVal = b.name;
+        break;
+      case 'label':
+        aVal = a.label;
+        bVal = b.label;
+        break;
+      case 'type':
+        aVal = a.field_type;
+        bVal = b.field_type;
+        break;
+      case 'status':
+        // Sort order: Built-in, Custom, Archived
+        aVal = a.is_builtin ? 0 : a.is_archived ? 2 : 1;
+        bVal = b.is_builtin ? 0 : b.is_archived ? 2 : 1;
+        break;
+    }
+    
+    if (fieldSortField === 'status') {
+      return fieldSortDirection === 'asc' 
+        ? (aVal as number) - (bVal as number)
+        : (bVal as number) - (aVal as number);
+    }
+    
+    const comparison = (aVal as string).localeCompare(bVal as string, undefined, { numeric: true, sensitivity: 'base' });
+    return fieldSortDirection === 'asc' ? comparison : -comparison;
+  });
+
+  const handleFieldSort = (field: FieldSortField) => {
+    if (fieldSortField === field) {
+      setFieldSortDirection(fieldSortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setFieldSortField(field);
+      setFieldSortDirection('asc');
     }
   };
 
@@ -699,21 +832,97 @@ const Admin: React.FC = () => {
             Manage user accounts, change roles, and ban/unban users.
           </Alert>
 
+          {/* ========== USER FILTER INPUT ========== */}
+          <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+            <TextField
+              size="small"
+              placeholder="Filter by email, name, callsign, or role..."
+              value={userFilter}
+              onChange={(e) => setUserFilter(e.target.value)}
+              sx={{ flexGrow: 1, maxWidth: 500 }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon color="action" />
+                  </InputAdornment>
+                ),
+                endAdornment: userFilter && (
+                  <InputAdornment position="end">
+                    <IconButton size="small" onClick={() => setUserFilter('')}>
+                      <ClearIcon fontSize="small" />
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <Typography variant="body2" color="text.secondary">
+              {filteredUsers.length} of {users.length} users
+            </Typography>
+          </Box>
+
           <TableContainer>
-            <Table>
+            <Table size="small">
               <TableHead>
                 <TableRow>
-                  <TableCell>Email</TableCell>
-                  <TableCell>Name</TableCell>
-                  <TableCell>Callsign</TableCell>
-                  <TableCell>Role</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Created</TableCell>
+                  <TableCell sortDirection={userSortField === 'email' ? userSortDirection : false}>
+                    <TableSortLabel
+                      active={userSortField === 'email'}
+                      direction={userSortField === 'email' ? userSortDirection : 'asc'}
+                      onClick={() => handleUserSort('email')}
+                    >
+                      Email
+                    </TableSortLabel>
+                  </TableCell>
+                  <TableCell sortDirection={userSortField === 'name' ? userSortDirection : false}>
+                    <TableSortLabel
+                      active={userSortField === 'name'}
+                      direction={userSortField === 'name' ? userSortDirection : 'asc'}
+                      onClick={() => handleUserSort('name')}
+                    >
+                      Name
+                    </TableSortLabel>
+                  </TableCell>
+                  <TableCell sortDirection={userSortField === 'callsign' ? userSortDirection : false}>
+                    <TableSortLabel
+                      active={userSortField === 'callsign'}
+                      direction={userSortField === 'callsign' ? userSortDirection : 'asc'}
+                      onClick={() => handleUserSort('callsign')}
+                    >
+                      Callsign
+                    </TableSortLabel>
+                  </TableCell>
+                  <TableCell sortDirection={userSortField === 'role' ? userSortDirection : false}>
+                    <TableSortLabel
+                      active={userSortField === 'role'}
+                      direction={userSortField === 'role' ? userSortDirection : 'asc'}
+                      onClick={() => handleUserSort('role')}
+                    >
+                      Role
+                    </TableSortLabel>
+                  </TableCell>
+                  <TableCell sortDirection={userSortField === 'status' ? userSortDirection : false}>
+                    <TableSortLabel
+                      active={userSortField === 'status'}
+                      direction={userSortField === 'status' ? userSortDirection : 'asc'}
+                      onClick={() => handleUserSort('status')}
+                    >
+                      Status
+                    </TableSortLabel>
+                  </TableCell>
+                  <TableCell sortDirection={userSortField === 'created_at' ? userSortDirection : false}>
+                    <TableSortLabel
+                      active={userSortField === 'created_at'}
+                      direction={userSortField === 'created_at' ? userSortDirection : 'asc'}
+                      onClick={() => handleUserSort('created_at')}
+                    >
+                      Created
+                    </TableSortLabel>
+                  </TableCell>
                   <TableCell>Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {users.map((user) => (
+                {sortedUsers.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>{user.name || '-'}</TableCell>
@@ -787,7 +996,29 @@ const Admin: React.FC = () => {
             Configure check-in fields available when creating nets. Custom fields can be added and archived (but not deleted to preserve historical data).
           </Alert>
 
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          {/* ========== FIELD FILTER INPUT ========== */}
+          <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+            <TextField
+              size="small"
+              placeholder="Filter by name, label, or type..."
+              value={fieldFilter}
+              onChange={(e) => setFieldFilter(e.target.value)}
+              sx={{ flexGrow: 1, maxWidth: 400 }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon color="action" />
+                  </InputAdornment>
+                ),
+                endAdornment: fieldFilter && (
+                  <InputAdornment position="end">
+                    <IconButton size="small" onClick={() => setFieldFilter('')}>
+                      <ClearIcon fontSize="small" />
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Switch
                 checked={showArchived}
@@ -795,9 +1026,12 @@ const Admin: React.FC = () => {
                 size="small"
               />
               <Typography variant="body2" color="text.secondary">
-                Show archived fields
+                Show archived
               </Typography>
             </Box>
+            <Typography variant="body2" color="text.secondary">
+              {sortedFields.filter(f => showArchived || !f.is_archived).length} of {fields.length} fields
+            </Typography>
           </Box>
 
           {fieldsLoading ? (
@@ -806,20 +1040,52 @@ const Admin: React.FC = () => {
             </Box>
           ) : (
             <TableContainer>
-              <Table>
+              <Table size="small">
                 <TableHead>
                   <TableRow>
-                    <TableCell>Name</TableCell>
-                    <TableCell>Label</TableCell>
-                    <TableCell>Type</TableCell>
+                    <TableCell sortDirection={fieldSortField === 'name' ? fieldSortDirection : false}>
+                      <TableSortLabel
+                        active={fieldSortField === 'name'}
+                        direction={fieldSortField === 'name' ? fieldSortDirection : 'asc'}
+                        onClick={() => handleFieldSort('name')}
+                      >
+                        Name
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell sortDirection={fieldSortField === 'label' ? fieldSortDirection : false}>
+                      <TableSortLabel
+                        active={fieldSortField === 'label'}
+                        direction={fieldSortField === 'label' ? fieldSortDirection : 'asc'}
+                        onClick={() => handleFieldSort('label')}
+                      >
+                        Label
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell sortDirection={fieldSortField === 'type' ? fieldSortDirection : false}>
+                      <TableSortLabel
+                        active={fieldSortField === 'type'}
+                        direction={fieldSortField === 'type' ? fieldSortDirection : 'asc'}
+                        onClick={() => handleFieldSort('type')}
+                      >
+                        Type
+                      </TableSortLabel>
+                    </TableCell>
                     <TableCell align="center">Default Enabled</TableCell>
                     <TableCell align="center">Default Required</TableCell>
-                    <TableCell>Status</TableCell>
+                    <TableCell sortDirection={fieldSortField === 'status' ? fieldSortDirection : false}>
+                      <TableSortLabel
+                        active={fieldSortField === 'status'}
+                        direction={fieldSortField === 'status' ? fieldSortDirection : 'asc'}
+                        onClick={() => handleFieldSort('status')}
+                      >
+                        Status
+                      </TableSortLabel>
+                    </TableCell>
                     <TableCell>Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {fields.map((field) => (
+                  {sortedFields.filter(f => showArchived || !f.is_archived).map((field) => (
                     <TableRow 
                       key={field.id}
                       sx={{ 
