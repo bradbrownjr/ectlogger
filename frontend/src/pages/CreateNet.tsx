@@ -33,6 +33,7 @@ import {
   FormControlLabel,
   Switch,
   InputAdornment,
+  Snackbar,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -148,6 +149,9 @@ const CreateNet: React.FC = () => {
   const [frequencySortDirection, setFrequencySortDirection] = useState<SortDirection>('asc');
   const [fieldDefinitions, setFieldDefinitions] = useState<FieldDefinition[]>([]);
   const [fieldConfig, setFieldConfig] = useState<Record<string, { enabled: boolean; required: boolean }>>({});
+  // Toast notification for field messages
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scriptTextAreaRef = useRef<HTMLTextAreaElement>(null);
   const navigate = useNavigate();
@@ -1286,6 +1290,54 @@ This is **[CALLSIGN]**, closing the net at [TIME]. 73 to all.`}
                 </TableRow>
               </TableHead>
               <TableBody>
+                {/* Poll Question field - shown if poll is enabled on Net Details tab */}
+                {pollEnabled && (
+                  <TableRow sx={{ backgroundColor: 'action.hover' }}>
+                    <TableCell>
+                      <Typography>Poll Response</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Answer to the poll question (enabled on Net Details tab)
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="center">
+                      <Checkbox
+                        checked={true}
+                        disabled
+                        onClick={() => {
+                          setToastMessage('Poll Response is required when Poll is enabled. Disable the poll on the Net Details tab to remove this field.');
+                          setToastOpen(true);
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell align="center">
+                      <Checkbox checked={true} disabled />
+                    </TableCell>
+                  </TableRow>
+                )}
+                {/* Topic of the Week field - shown if topic is enabled on Net Details tab */}
+                {topicOfWeekEnabled && (
+                  <TableRow sx={{ backgroundColor: 'action.hover' }}>
+                    <TableCell>
+                      <Typography>Topic Response</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Answer to the topic of the week (enabled on Net Details tab)
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="center">
+                      <Checkbox
+                        checked={true}
+                        disabled
+                        onClick={() => {
+                          setToastMessage('Topic Response is required when Topic of the Week is enabled. Disable the topic on the Net Details tab to remove this field.');
+                          setToastOpen(true);
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell align="center">
+                      <Checkbox checked={true} disabled />
+                    </TableCell>
+                  </TableRow>
+                )}
                 {fieldDefinitions.map((field) => {
                   const config = fieldConfig[field.name] || { enabled: false, required: false };
                   return (
@@ -1366,6 +1418,18 @@ This is **[CALLSIGN]**, closing the net at [TIME]. 73 to all.`}
           )}
         </Box>
       </Paper>
+
+      {/* Toast notification for field messages */}
+      <Snackbar
+        open={toastOpen}
+        autoHideDuration={5000}
+        onClose={() => setToastOpen(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={() => setToastOpen(false)} severity="info" sx={{ width: '100%' }}>
+          {toastMessage}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };

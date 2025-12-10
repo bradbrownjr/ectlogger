@@ -1,41 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import {
-  Container,
-  Paper,
-  TextField,
-  Button,
-  Typography,
-  Box,
-  FormControl,
-  Select,
-  MenuItem,
-  Checkbox,
-  FormControlLabel,
-  FormGroup,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TableSortLabel,
-  IconButton,
-  Autocomplete,
-  InputLabel,
-  Tabs,
-  Tab,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  ListItemSecondaryAction,
-  Switch,
-  Chip,
-  Tooltip,
-  Divider,
-  InputAdornment,
-} from '@mui/material';
+import {\n  Container,\n  Paper,\n  TextField,\n  Button,\n  Typography,\n  Box,\n  FormControl,\n  Select,\n  MenuItem,\n  Checkbox,\n  FormControlLabel,\n  FormGroup,\n  Table,\n  TableBody,\n  TableCell,\n  TableContainer,\n  TableHead,\n  TableRow,\n  TableSortLabel,\n  IconButton,\n  Autocomplete,\n  InputLabel,\n  Tabs,\n  Tab,\n  List,\n  ListItem,\n  ListItemText,\n  ListItemIcon,\n  ListItemSecondaryAction,\n  Switch,\n  Chip,\n  Tooltip,\n  Divider,\n  InputAdornment,\n  Snackbar,\n  Alert,\n} from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import CheckIcon from '@mui/icons-material/Check';
@@ -160,6 +125,9 @@ const CreateSchedule: React.FC = () => {
   const [frequencySortDirection, setFrequencySortDirection] = useState<SortDirection>('asc');
   const [fieldDefinitions, setFieldDefinitions] = useState<FieldDefinition[]>([]);
   const [fieldConfig, setFieldConfig] = useState<Record<string, { enabled: boolean; required: boolean }>>({});
+  // Toast notification for field messages
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
   const [isActive, setIsActive] = useState(true);
   
   // Script file upload
@@ -1593,6 +1561,48 @@ This concludes tonight's net. 73 to all."
                       </TableRow>
                     );
                   })}
+                  {/* Poll Response row - shown when poll is enabled */}
+                  {pollEnabled && (
+                    <TableRow>
+                      <TableCell>
+                        <Typography>Poll Response</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Responses to the poll question configured on the first tab
+                        </Typography>
+                      </TableCell>
+                      <TableCell align="center">
+                        <Checkbox
+                          checked={true}
+                          disabled={true}
+                          onClick={() => setToastMessage('Poll Response is automatically enabled when Poll feature is turned on')}
+                        />
+                      </TableCell>
+                      <TableCell align="center">
+                        <Checkbox checked={false} disabled={true} />
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {/* Topic of the Week Response row - shown when topic is enabled */}
+                  {topicOfWeekEnabled && (
+                    <TableRow>
+                      <TableCell>
+                        <Typography>Topic of the Week Response</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Responses to the topic of the week configured on the first tab
+                        </Typography>
+                      </TableCell>
+                      <TableCell align="center">
+                        <Checkbox
+                          checked={true}
+                          disabled={true}
+                          onClick={() => setToastMessage('Topic of the Week Response is automatically enabled when the feature is turned on')}
+                        />
+                      </TableCell>
+                      <TableCell align="center">
+                        <Checkbox checked={false} disabled={true} />
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </TableContainer>
@@ -1636,6 +1646,18 @@ This concludes tonight's net. 73 to all."
         title={blockingAlert.title}
         severity={blockingAlert.severity}
       />
+
+      {/* Toast message for locked fields */}
+      <Snackbar
+        open={!!toastMessage}
+        autoHideDuration={4000}
+        onClose={() => setToastMessage('')}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={() => setToastMessage('')} severity="info" sx={{ width: '100%' }}>
+          {toastMessage}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };
