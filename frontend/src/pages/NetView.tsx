@@ -715,6 +715,9 @@ const NetView: React.FC = () => {
       await netApi.close(Number(netId));
       setCloseNetDialogOpen(false);
       fetchNet();
+      // Fetch poll results and topic responses for display after closing
+      fetchPollResults();
+      fetchTopicResponses();
     } catch (error) {
       console.error('Failed to close net:', error);
     }
