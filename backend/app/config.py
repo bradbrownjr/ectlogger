@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     # Security
     secret_key: str
     algorithm: str = "HS256"
-    access_token_expire_minutes: int = 30
+    access_token_expire_minutes: int = 1440  # 24 hours
     magic_link_expire_days: int = 30  # Magic link validity period
     
     # Logging
