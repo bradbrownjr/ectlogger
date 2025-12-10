@@ -714,10 +714,16 @@ const NetView: React.FC = () => {
     try {
       await netApi.close(Number(netId));
       setCloseNetDialogOpen(false);
-      fetchNet();
-      // Fetch poll results and topic responses for display after closing
-      fetchPollResults();
-      fetchTopicResponses();
+      // fetchNet will trigger the useEffect that fetches poll results/topic responses
+      // based on whether those features are enabled
+      await fetchNet();
+      // Explicitly fetch poll/topic data if features are enabled
+      if (net?.poll_enabled) {
+        fetchPollResults();
+      }
+      if (net?.topic_of_week_enabled) {
+        fetchTopicResponses();
+      }
     } catch (error) {
       console.error('Failed to close net:', error);
     }
