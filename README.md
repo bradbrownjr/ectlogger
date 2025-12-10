@@ -19,11 +19,12 @@ ECTLogger is a production-ready, web-based net logging application designed spec
 
 ### Core Capabilities
 - **🔐 Secure Authentication** — Frictionless sign-in with magic link email authentication + OAuth (Google, Microsoft, GitHub)
-- **📻 Multi-Frequency Support** — Track stations across multiple frequencies and modes
-- **⚡ Real-Time Updates** — WebSocket-powered live check-ins and status updates
+- **⚡ Real-Time Updates** — WebSocket-powered live check-ins, status updates, and chat messages
 - **👥 Role-Based Access** — Admin, NCS, Logger, User, and Guest roles
-- **📧 Email Notifications** — Automatic net start notifications and invitations
+- **📧 Email Notifications** — Automatic net reminders, start notifications, and invitations
 - **📱 Mobile Responsive** — Works seamlessly on phones, tablets, and desktops
+- **📻 Multi-Frequency Support** — Track stations across multiple frequencies and modes
+- **👥 Multi-NCS Support** - Multiple NCS operators can check in and track stations across multiple frequencies and modes simultaneously
 
 ### Net Management
 - **🔄 Recheck Tracking** — Automatically track stations checking in multiple times
@@ -38,10 +39,12 @@ ECTLogger is a production-ready, web-based net logging application designed spec
 
 ### Location & Mapping
 - **🗺️ Station Mapping** — View check-in locations on OpenStreetMap
-- **📍 Location Awareness** — Auto-fill Maidenhead grid square from browser location
-- **🌐 Multiple Formats** — GPS, Maidenhead, UTM, MGRS coordinate support
+- **🌐 Multiple Formats** — GPS, Maidenhead, UTM, MGRS coordinate support in Location check-in field
+- **📍 Location Awareness** — Auto-fill Maidenhead grid square from browser location, if enabled by the end user
 
-### Analytics
+### Analytics & Reporting
+- **📧 Emailed net closure reports** - Net participants can receive chat logs, check-in logs, topic answers, and poll results
+- **📃 ICS-309 Communications Log** - For ARES and ECT nets, ICS-309 documents can be downloaded and emailed from closed nets
 - **📈 Statistics & Analytics** — Track participation trends, operator activity, and net performance with interactive charts
 
 ---
@@ -73,13 +76,6 @@ Any registered user can run their own nets without needing admin privileges!
 
 ## 🎯 Key Capabilities
 
-### Multi-Frequency Net Support
-ECT and SKYWARN nets often move between frequencies to meet participants where they are. ECTLogger tracks:
-- Multiple frequencies per net
-- Active frequency indication
-- Per-station frequency tracking
-- Real-time frequency change notifications
-
 ### Station Status Tracking
 Visual indicators for station status:
 - ✅ Checked In
@@ -94,7 +90,14 @@ Streamline check-ins with automatic location detection:
 - **Maidenhead Grid Square** — Users see their 6-character grid square in the navbar
 - **Auto-Fill on Check-In** — Location field automatically populated with current grid square
 - **NCS Auto-Fill** — Enter a callsign and auto-fill name, location, and SKYWARN number
-- **Privacy Respecting** — Location only shared when explicitly enabled
+- **Privacy Respecting** — Location only shared when explicitly enabled by each user
+
+### Multi-Frequency Net Support
+ECT and SKYWARN nets often move between frequencies to meet participants where they are. ECTLogger tracks:
+- Multiple frequencies per net
+- Active frequency indication
+- Per-station frequency tracking
+- Real-time frequency change notifications
 
 ---
 
