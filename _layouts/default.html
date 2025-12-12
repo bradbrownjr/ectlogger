@@ -278,6 +278,25 @@
       blockquote {
         background-color: rgba(144, 202, 249, 0.08);
       }
+
+      /* Hide light-mode images in dark mode */
+      .light-only {
+        display: none !important;
+      }
+
+      /* Show dark-mode images in dark mode */
+      .dark-only {
+        display: block !important;
+      }
+    }
+
+    /* Light/dark mode image switching */
+    .dark-only {
+      display: none;
+    }
+
+    .light-only {
+      display: block;
     }
   </style>
 </head>

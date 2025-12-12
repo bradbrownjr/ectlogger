@@ -10,11 +10,12 @@ Built with modern technology, it provides real-time check-in tracking, multi-fre
 
 **🌐 Try it now at [app.ectlogger.us](https://app.ectlogger.us)** — No installation required!
 
-<a href="assets/screenshots/Check-in%20Log.png">
-  <img src="assets/screenshots/Check-in%20Log.png" alt="Check-in Log" width="100%">
-</a>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/check-in-log-dark.png">
+  <img src="assets/screenshots/check-in-log-light.png" alt="Check-in Log" width="100%">
+</picture>
 
-*Multi-frequency/band check-ins, in dark and light mode!* — [📷 More screenshots](assets/screenshots/README.md)
+*Multi-frequency/band check-ins — automatically shows dark or light mode based on your system preference!* — [📷 More screenshots](assets/screenshots/README.md)
 
 ---
 
