@@ -251,9 +251,9 @@
       h2 { font-size: 1.25rem; }
     }
 
-    /* Dark mode support */
+    /* Dark mode support - via media query (system preference) */
     @media (prefers-color-scheme: dark) {
-      :root {
+      :root:not(.light-mode) {
         --primary: #90caf9;
         --primary-dark: #42a5f5;
         --background: #121212;
@@ -263,31 +263,66 @@
         --border: rgba(255, 255, 255, 0.12);
       }
 
-      header {
+      :root:not(.light-mode) header {
         background: #1e1e1e;
       }
 
-      code {
+      :root:not(.light-mode) code {
         background-color: rgba(255, 255, 255, 0.08);
       }
 
-      tr:hover {
+      :root:not(.light-mode) tr:hover {
         background-color: rgba(255, 255, 255, 0.04);
       }
 
-      blockquote {
+      :root:not(.light-mode) blockquote {
         background-color: rgba(144, 202, 249, 0.08);
       }
 
       /* Hide light-mode images in dark mode */
-      .light-only {
+      :root:not(.light-mode) .light-only {
         display: none !important;
       }
 
       /* Show dark-mode images in dark mode */
-      .dark-only {
+      :root:not(.light-mode) .dark-only {
         display: block !important;
       }
+    }
+
+    /* Dark mode support - via manual toggle (.dark-mode class) */
+    :root.dark-mode {
+      --primary: #90caf9;
+      --primary-dark: #42a5f5;
+      --background: #121212;
+      --surface: #1e1e1e;
+      --text-primary: rgba(255, 255, 255, 0.87);
+      --text-secondary: rgba(255, 255, 255, 0.6);
+      --border: rgba(255, 255, 255, 0.12);
+    }
+
+    :root.dark-mode header {
+      background: #1e1e1e;
+    }
+
+    :root.dark-mode code {
+      background-color: rgba(255, 255, 255, 0.08);
+    }
+
+    :root.dark-mode tr:hover {
+      background-color: rgba(255, 255, 255, 0.04);
+    }
+
+    :root.dark-mode blockquote {
+      background-color: rgba(144, 202, 249, 0.08);
+    }
+
+    :root.dark-mode .light-only {
+      display: none !important;
+    }
+
+    :root.dark-mode .dark-only {
+      display: block !important;
     }
 
     /* Light/dark mode image switching */
@@ -297,6 +332,33 @@
 
     .light-only {
       display: block;
+    }
+
+    /* Theme toggle button */
+    .theme-toggle {
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.2s, border-color 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .theme-toggle:hover {
+      border-color: white;
+      background-color: rgba(255, 255, 255, 0.08);
+    }
+
+    /* Dark mode theme toggle styling */
+    [data-theme="dark"] .theme-toggle,
+    .dark-mode .theme-toggle {
+      border-color: rgba(255, 255, 255, 0.3);
     }
   </style>
 </head>
@@ -308,6 +370,10 @@
         <a href="{{ '/' | relative_url }}" class="btn-outlined">Home</a>
         <a href="https://github.com/{{ site.repository }}" class="btn-outlined">GitHub</a>
         <a href="https://app.ectlogger.us" class="btn-outlined">Open App</a>
+        <button class="theme-toggle" id="theme-toggle" title="Toggle theme">
+          <span id="theme-icon">🌙</span>
+          <span id="theme-label">Dark</span>
+        </button>
       </div>
     </div>
   </header>
@@ -322,5 +388,77 @@
     <p>{{ site.title }} is maintained by <a href="https://github.com/{{ site.repository | split: '/' | first }}">{{ site.repository | split: '/' | first }}</a></p>
     <p>📻 73 and stay safe!</p>
   </footer>
+
+  <script>
+    // Theme toggle functionality - cycles through: system -> light -> dark -> system
+    (function() {
+      const toggle = document.getElementById('theme-toggle');
+      const icon = document.getElementById('theme-icon');
+      const label = document.getElementById('theme-label');
+      const root = document.documentElement;
+      
+      // Get saved theme or default to 'system'
+      let currentTheme = localStorage.getItem('theme') || 'system';
+      
+      function getSystemTheme() {
+        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+      
+      function applyTheme(theme) {
+        const effectiveTheme = theme === 'system' ? getSystemTheme() : theme;
+        
+        // Remove existing theme classes
+        root.classList.remove('light-mode', 'dark-mode');
+        root.removeAttribute('data-theme');
+        
+        // Apply theme
+        if (effectiveTheme === 'dark') {
+          root.classList.add('dark-mode');
+          root.setAttribute('data-theme', 'dark');
+        } else {
+          root.classList.add('light-mode');
+          root.setAttribute('data-theme', 'light');
+        }
+        
+        // Update button to show NEXT theme option
+        if (theme === 'system') {
+          icon.textContent = '💻';
+          label.textContent = 'Auto';
+          toggle.title = 'Theme: System (click for Light)';
+        } else if (theme === 'light') {
+          icon.textContent = '☀️';
+          label.textContent = 'Light';
+          toggle.title = 'Theme: Light (click for Dark)';
+        } else {
+          icon.textContent = '🌙';
+          label.textContent = 'Dark';
+          toggle.title = 'Theme: Dark (click for System)';
+        }
+      }
+      
+      function cycleTheme() {
+        if (currentTheme === 'system') {
+          currentTheme = 'light';
+        } else if (currentTheme === 'light') {
+          currentTheme = 'dark';
+        } else {
+          currentTheme = 'system';
+        }
+        localStorage.setItem('theme', currentTheme);
+        applyTheme(currentTheme);
+      }
+      
+      // Listen for system theme changes
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+        if (currentTheme === 'system') {
+          applyTheme('system');
+        }
+      });
+      
+      // Initialize
+      applyTheme(currentTheme);
+      toggle.addEventListener('click', cycleTheme);
+    })();
+  </script>
 </body>
 </html>
