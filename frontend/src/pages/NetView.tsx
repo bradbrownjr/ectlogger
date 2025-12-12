@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -234,6 +234,8 @@ const NetView: React.FC = () => {
   // Inline editing state
   const [inlineEditingId, setInlineEditingId] = useState<number | null>(null);
   const [inlineEditValues, setInlineEditValues] = useState<Partial<CheckIn>>({});
+  const [inlineEditFocusField, setInlineEditFocusField] = useState<string | null>(null);
+  const inlineEditRowRef = useRef<HTMLTableRowElement | null>(null);
   const [checkInListDetached, setCheckInListDetached] = useState(() => {
     return localStorage.getItem('floatingWindow_checkInList_detached') === 'true';
   });
@@ -1089,9 +1091,11 @@ const NetView: React.FC = () => {
 
   // ========== INLINE EDITING HANDLERS ==========
   // Start inline editing when a row is clicked (except on certain elements)
-  const handleStartInlineEdit = (checkIn: CheckIn) => {
+  // focusField: the field name to focus (e.g., 'callsign', 'name', 'location', etc.)
+  const handleStartInlineEdit = (checkIn: CheckIn, focusField: string = 'callsign') => {
     if (!canManageCheckIns) return;
     setInlineEditingId(checkIn.id);
+    setInlineEditFocusField(focusField);
     setInlineEditValues({
       callsign: checkIn.callsign,
       name: checkIn.name || '',
@@ -1134,6 +1138,7 @@ const NetView: React.FC = () => {
       });
       setInlineEditingId(null);
       setInlineEditValues({});
+      setInlineEditFocusField(null);
       fetchCheckIns();
       // Refresh poll responses in case a new answer was added
       if (net?.poll_enabled) {
@@ -1149,6 +1154,7 @@ const NetView: React.FC = () => {
   const handleCancelInlineEdit = () => {
     setInlineEditingId(null);
     setInlineEditValues({});
+    setInlineEditFocusField(null);
   };
 
   // Handle inline field change
@@ -1170,7 +1176,7 @@ const NetView: React.FC = () => {
     }
   };
 
-  // Handle key press in inline edit (Enter to save, Escape to cancel)
+  // Handle key press in inline edit (Enter to save, Escape to cancel, Tab to navigate)
   const handleInlineKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -1179,6 +1185,22 @@ const NetView: React.FC = () => {
       e.preventDefault();
       handleCancelInlineEdit();
     }
+    // Tab is handled naturally by the browser - don't prevent it
+  };
+
+  // Handle blur on inline edit fields - only save if focus leaves the editing row entirely
+  const handleInlineBlur = (e: React.FocusEvent) => {
+    // Use setTimeout to allow the new focus target to be set before checking
+    setTimeout(() => {
+      // Check if focus moved to another element within the same editing row
+      const activeElement = document.activeElement;
+      if (inlineEditRowRef.current && inlineEditRowRef.current.contains(activeElement)) {
+        // Focus is still within the editing row, don't save
+        return;
+      }
+      // Focus left the row, save the edit
+      handleSaveInlineEdit();
+    }, 0);
   };
 
   const handleSetActiveSpeaker = (checkInId: number | null) => {
@@ -1975,15 +1997,19 @@ const NetView: React.FC = () => {
                     return (
                     <React.Fragment key={checkIn.id}>
                     <TableRow
+                      ref={isInlineEditing ? inlineEditRowRef : undefined}
                       onClick={(e) => {
                         // Don't start editing if clicking on interactive elements
                         const target = e.target as HTMLElement;
                         if (target.closest('button, select, input, .MuiSelect-root, .MuiIconButton-root')) return;
                         // Don't start editing if already editing this row
                         if (isInlineEditing) return;
+                        // Determine which field was clicked based on the cell's data-field attribute
+                        const cell = target.closest('td[data-field]') as HTMLElement | null;
+                        const focusField = cell?.dataset.field || 'callsign';
                         // Start inline editing
                         if (canManageCheckIns && checkIn.status !== 'checked_out') {
-                          handleStartInlineEdit(checkIn);
+                          handleStartInlineEdit(checkIn, focusField);
                         }
                       }}
                       sx={{ 
@@ -2078,15 +2104,15 @@ const NetView: React.FC = () => {
                         )}
                       </TableCell>
                       {/* Callsign cell - inline editable */}
-                      <TableCell sx={{ width: 140 }}>
+                      <TableCell data-field="callsign" sx={{ width: 140 }}>
                         {isInlineEditing ? (
                           <TextField
                             size="small"
                             value={inlineEditValues.callsign || ''}
                             onChange={(e) => handleInlineFieldChange('callsign', e.target.value.toUpperCase())}
                             onKeyDown={handleInlineKeyDown}
-                            onBlur={handleSaveInlineEdit}
-                            autoFocus
+                            onBlur={handleInlineBlur}
+                            autoFocus={inlineEditFocusField === 'callsign'}
                             inputProps={{ style: { textTransform: 'uppercase', padding: '4px 8px' } }}
                             sx={{ width: '100%' }}
                           />
@@ -2117,14 +2143,15 @@ const NetView: React.FC = () => {
                       </TableCell>
                       {/* Name cell - inline editable */}
                       {net?.field_config?.name?.enabled && (
-                        <TableCell>
+                        <TableCell data-field="name">
                           {isInlineEditing ? (
                             <TextField
                               size="small"
                               value={inlineEditValues.name || ''}
                               onChange={(e) => handleInlineFieldChange('name', e.target.value)}
                               onKeyDown={handleInlineKeyDown} 
-                              onBlur={handleSaveInlineEdit}
+                              onBlur={handleInlineBlur}
+                              autoFocus={inlineEditFocusField === 'name'}
                               inputProps={{ style: { padding: '4px 8px' } }}
                               sx={{ width: '100%' }}
                             />
@@ -2133,14 +2160,15 @@ const NetView: React.FC = () => {
                       )}
                       {/* Location cell - inline editable */}
                       {net?.field_config?.location?.enabled && (
-                        <TableCell>
+                        <TableCell data-field="location">
                           {isInlineEditing ? (
                             <TextField
                               size="small"
                               value={inlineEditValues.location || ''}
                               onChange={(e) => handleInlineFieldChange('location', e.target.value)}
                               onKeyDown={handleInlineKeyDown}
-                              onBlur={handleSaveInlineEdit}
+                              onBlur={handleInlineBlur}
+                              autoFocus={inlineEditFocusField === 'location'}
                               inputProps={{ style: { padding: '4px 8px' } }}
                               sx={{ width: '100%' }}
                             />
@@ -2149,14 +2177,15 @@ const NetView: React.FC = () => {
                       )}
                       {/* Skywarn Number - inline editable */}
                       {net?.field_config?.skywarn_number?.enabled && (
-                        <TableCell sx={{ width: 70 }}>
+                        <TableCell data-field="skywarn_number" sx={{ width: 70 }}>
                           {isInlineEditing ? (
                             <TextField
                               size="small"
                               value={inlineEditValues.skywarn_number || ''}
                               onChange={(e) => handleInlineFieldChange('skywarn_number', e.target.value)}
                               onKeyDown={handleInlineKeyDown}
-                              onBlur={handleSaveInlineEdit}
+                              onBlur={handleInlineBlur}
+                              autoFocus={inlineEditFocusField === 'skywarn_number'}
                               inputProps={{ style: { padding: '4px 8px' } }}
                               sx={{ width: '100%' }}
                             />
@@ -2165,14 +2194,15 @@ const NetView: React.FC = () => {
                       )}
                       {/* Weather Observation - inline editable */}
                       {net?.field_config?.weather_observation?.enabled && (
-                        <TableCell>
+                        <TableCell data-field="weather_observation">
                           {isInlineEditing ? (
                             <TextField
                               size="small"
                               value={inlineEditValues.weather_observation || ''}
                               onChange={(e) => handleInlineFieldChange('weather_observation', e.target.value)}
                               onKeyDown={handleInlineKeyDown}
-                              onBlur={handleSaveInlineEdit}
+                              onBlur={handleInlineBlur}
+                              autoFocus={inlineEditFocusField === 'weather_observation'}
                               inputProps={{ style: { padding: '4px 8px' } }}
                               sx={{ width: '100%' }}
                             />
@@ -2181,14 +2211,15 @@ const NetView: React.FC = () => {
                       )}
                       {/* Power Source - inline editable */}
                       {net?.field_config?.power_source?.enabled && (
-                        <TableCell sx={{ width: 70 }}>
+                        <TableCell data-field="power_source" sx={{ width: 70 }}>
                           {isInlineEditing ? (
                             <TextField
                               size="small"
                               value={inlineEditValues.power_source || ''}
                               onChange={(e) => handleInlineFieldChange('power_source', e.target.value)}
                               onKeyDown={handleInlineKeyDown}
-                              onBlur={handleSaveInlineEdit}
+                              onBlur={handleInlineBlur}
+                              autoFocus={inlineEditFocusField === 'power_source'}
                               inputProps={{ style: { padding: '4px 8px' } }}
                               sx={{ width: '100%' }}
                             />
@@ -2197,14 +2228,15 @@ const NetView: React.FC = () => {
                       )}
                       {/* Power - inline editable */}
                       {net?.field_config?.power?.enabled && (
-                        <TableCell sx={{ width: 70 }}>
+                        <TableCell data-field="power" sx={{ width: 70 }}>
                           {isInlineEditing ? (
                             <TextField
                               size="small"
                               value={inlineEditValues.power || ''}
                               onChange={(e) => handleInlineFieldChange('power', e.target.value)}
                               onKeyDown={handleInlineKeyDown}
-                              onBlur={handleSaveInlineEdit}
+                              onBlur={handleInlineBlur}
+                              autoFocus={inlineEditFocusField === 'power'}
                               inputProps={{ style: { padding: '4px 8px' } }}
                               sx={{ width: '100%' }}
                             />
@@ -2213,14 +2245,15 @@ const NetView: React.FC = () => {
                       )}
                       {/* Notes - inline editable */}
                       {net?.field_config?.notes?.enabled && (
-                        <TableCell>
+                        <TableCell data-field="notes">
                           {isInlineEditing ? (
                             <TextField
                               size="small"
                               value={inlineEditValues.notes || ''}
                               onChange={(e) => handleInlineFieldChange('notes', e.target.value)}
                               onKeyDown={handleInlineKeyDown}
-                              onBlur={handleSaveInlineEdit}
+                              onBlur={handleInlineBlur}
+                              autoFocus={inlineEditFocusField === 'notes'}
                               inputProps={{ style: { padding: '4px 8px' } }}
                               sx={{ width: '100%' }}
                             />
@@ -2229,14 +2262,15 @@ const NetView: React.FC = () => {
                       )}
                       {/* Custom field values - inline editable */}
                       {getEnabledCustomFields().map((field) => (
-                        <TableCell key={field.name}>
+                        <TableCell key={field.name} data-field={`custom_${field.name}`}>
                           {isInlineEditing ? (
                             <TextField
                               size="small"
                               value={inlineEditValues.custom_fields?.[field.name] || ''}
                               onChange={(e) => handleInlineFieldChange(`custom_${field.name}`, e.target.value)}
                               onKeyDown={handleInlineKeyDown}
-                              onBlur={handleSaveInlineEdit}
+                              onBlur={handleInlineBlur}
+                              autoFocus={inlineEditFocusField === `custom_${field.name}`}
                               inputProps={{ style: { padding: '4px 8px' } }}
                               sx={{ width: '100%' }}
                             />
@@ -2245,14 +2279,15 @@ const NetView: React.FC = () => {
                       ))}
                       {/* Topic response - inline editable */}
                       {net?.topic_of_week_enabled && (
-                        <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                        <TableCell data-field="topic_response" sx={{ whiteSpace: 'nowrap' }}>
                           {isInlineEditing ? (
                             <TextField
                               size="small"
                               value={inlineEditValues.topic_response || ''}
                               onChange={(e) => handleInlineFieldChange('topic_response', e.target.value)}
                               onKeyDown={handleInlineKeyDown}
-                              onBlur={handleSaveInlineEdit}
+                              onBlur={handleInlineBlur}
+                              autoFocus={inlineEditFocusField === 'topic_response'}
                               inputProps={{ style: { padding: '4px 8px' } }}
                               sx={{ width: '100%' }}
                             />
@@ -2261,14 +2296,15 @@ const NetView: React.FC = () => {
                       )}
                       {/* Poll response - inline editable */}
                       {net?.poll_enabled && (
-                        <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                        <TableCell data-field="poll_response" sx={{ whiteSpace: 'nowrap' }}>
                           {isInlineEditing ? (
                             <TextField
                               size="small"
                               value={inlineEditValues.poll_response || ''}
                               onChange={(e) => handleInlineFieldChange('poll_response', e.target.value)}
                               onKeyDown={handleInlineKeyDown}
-                              onBlur={handleSaveInlineEdit}
+                              onBlur={handleInlineBlur}
+                              autoFocus={inlineEditFocusField === 'poll_response'}
                               inputProps={{ style: { padding: '4px 8px' } }}
                               sx={{ width: '100%' }}
                             />
@@ -2277,14 +2313,15 @@ const NetView: React.FC = () => {
                       )}
                       {/* Relayed By - inline editable */}
                       {hasAnyRelayedBy && (
-                        <TableCell sx={{ width: 80 }}>
+                        <TableCell data-field="relayed_by" sx={{ width: 80 }}>
                           {isInlineEditing ? (
                             <TextField
                               size="small"
                               value={inlineEditValues.relayed_by || ''}
                               onChange={(e) => handleInlineFieldChange('relayed_by', e.target.value.toUpperCase())}
                               onKeyDown={handleInlineKeyDown}
-                              onBlur={handleSaveInlineEdit}
+                              onBlur={handleInlineBlur}
+                              autoFocus={inlineEditFocusField === 'relayed_by'}
                               inputProps={{ style: { textTransform: 'uppercase', padding: '4px 8px' } }}
                               sx={{ width: '100%' }}
                             />
