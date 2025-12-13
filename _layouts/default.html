@@ -367,13 +367,12 @@
     <div class="header-content">
       <h1><a href="{{ '/' | relative_url }}">📻 {{ site.title }}</a></h1>
       <div class="header-links">
+        <button class="theme-toggle" id="theme-toggle" title="Toggle theme">
+          <span id="theme-icon">🌙</span>
+        </button>
         <a href="{{ '/' | relative_url }}" class="btn-outlined">Home</a>
         <a href="https://github.com/{{ site.repository }}" class="btn-outlined">GitHub</a>
         <a href="https://app.ectlogger.us" class="btn-outlined">Open App</a>
-        <button class="theme-toggle" id="theme-toggle" title="Toggle theme">
-          <span id="theme-icon">🌙</span>
-          <span id="theme-label">Dark</span>
-        </button>
       </div>
     </div>
   </header>
@@ -394,7 +393,6 @@
     (function() {
       const toggle = document.getElementById('theme-toggle');
       const icon = document.getElementById('theme-icon');
-      const label = document.getElementById('theme-label');
       const root = document.documentElement;
       
       // Get saved theme or default to 'system'
@@ -420,19 +418,16 @@
           root.setAttribute('data-theme', 'light');
         }
         
-        // Update button to show NEXT theme option
+        // Update button icon and tooltip
         if (theme === 'system') {
           icon.textContent = '💻';
-          label.textContent = 'Auto';
-          toggle.title = 'Theme: System (click for Light)';
+          toggle.title = 'Theme: Auto (click for Light)';
         } else if (theme === 'light') {
           icon.textContent = '☀️';
-          label.textContent = 'Light';
           toggle.title = 'Theme: Light (click for Dark)';
         } else {
           icon.textContent = '🌙';
-          label.textContent = 'Dark';
-          toggle.title = 'Theme: Dark (click for System)';
+          toggle.title = 'Theme: Dark (click for Auto)';
         }
       }
       
