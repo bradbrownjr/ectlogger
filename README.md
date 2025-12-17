@@ -10,10 +10,9 @@ Built with modern technology, it provides real-time check-in tracking, multi-fre
 
 **🌐 Try it now at [app.ectlogger.us](https://app.ectlogger.us)** — No installation required!
 
-<img src="assets/screenshots/check-in-log-light.png#gh-light-mode-only" alt="Check-in Log" width="100%">
-<img src="assets/screenshots/check-in-log-dark.png#gh-dark-mode-only" alt="Check-in Log" width="100%">
+<img src="assets/screenshots/check-in-log-light.png" alt="Check-in Log" width="100%">
 
-*Multi-frequency/band check-ins — automatically shows dark or light mode based on your system preference!* — [📷 More screenshots](assets/screenshots/README.md)
+*Multi-frequency/band check-ins, shown in dark and light mode!* — [📷 More screenshots](assets/screenshots/README.md)
 
 ---
 
