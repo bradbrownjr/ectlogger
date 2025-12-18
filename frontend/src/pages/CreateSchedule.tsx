@@ -637,23 +637,54 @@ const CreateSchedule: React.FC = () => {
   };
 
   // Markdown formatting helper
-  const insertMarkdown = (prefix: string, suffix: string = '', placeholder: string = '') => {
+  const insertMarkdown = (prefix: string, suffix: string = '', placeholder: string = '', isLinePrefix: boolean = false) => {
     const textarea = scriptTextAreaRef.current;
     if (!textarea) return;
     
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
-    const selectedText = script.substring(start, end);
-    const textToInsert = selectedText || placeholder;
+    const scrollTop = textarea.scrollTop; // Save scroll position
     
-    const newText = script.substring(0, start) + prefix + textToInsert + suffix + script.substring(end);
+    let newText: string;
+    let newCursorStart: number;
+    let newCursorEnd: number;
+    
+    if (isLinePrefix) {
+      // For headings/lists: add prefix to beginning of line(s)
+      const lineStart = script.lastIndexOf('\n', start - 1) + 1;
+      const lineEnd = script.indexOf('\n', end);
+      const actualLineEnd = lineEnd === -1 ? script.length : lineEnd;
+      const lineContent = script.substring(lineStart, actualLineEnd);
+      
+      // Just add the prefix to the beginning of the line
+      newText = script.substring(0, lineStart) + prefix + lineContent + script.substring(actualLineEnd);
+      newCursorStart = lineStart + prefix.length;
+      newCursorEnd = newCursorStart + lineContent.length;
+    } else {
+      // For wrap formatting (bold, italic): wrap selected text or insert placeholder
+      const selectedText = script.substring(start, end);
+      const textToInsert = selectedText || placeholder;
+      
+      newText = script.substring(0, start) + prefix + textToInsert + suffix + script.substring(end);
+      
+      if (selectedText) {
+        // Keep selection around the formatted text
+        newCursorStart = start + prefix.length;
+        newCursorEnd = newCursorStart + selectedText.length;
+      } else {
+        // Position cursor after inserted text
+        newCursorStart = start + prefix.length + textToInsert.length + suffix.length;
+        newCursorEnd = newCursorStart;
+      }
+    }
+    
     setScript(newText);
     
-    // Set cursor position after the operation
+    // Restore cursor position and scroll position after React re-render
     setTimeout(() => {
-      textarea.focus();
-      const newCursorPos = start + prefix.length + textToInsert.length + suffix.length;
-      textarea.setSelectionRange(newCursorPos, newCursorPos);
+      textarea.focus({ preventScroll: true }); // Prevent scroll on focus
+      textarea.setSelectionRange(newCursorStart, newCursorEnd);
+      textarea.scrollTop = scrollTop; // Restore scroll position
     }, 0);
   };
 
@@ -1466,17 +1497,17 @@ const CreateSchedule: React.FC = () => {
             {/* Formatting Toolbar */}
             <Box sx={{ display: 'flex', gap: 0.5, mb: 1, p: 1, bgcolor: 'action.hover', borderRadius: 1 }}>
               <Tooltip title="Heading 1">
-                <IconButton type="button" size="small" onClick={() => insertMarkdown('# ', '', 'Heading')} sx={{ fontWeight: 'bold', fontSize: '0.85rem' }}>
+                <IconButton type="button" size="small" onClick={() => insertMarkdown('# ', '', '', true)} sx={{ fontWeight: 'bold', fontSize: '0.85rem' }}>
                   H1
                 </IconButton>
               </Tooltip>
               <Tooltip title="Heading 2">
-                <IconButton type="button" size="small" onClick={() => insertMarkdown('## ', '', 'Heading')} sx={{ fontWeight: 'bold', fontSize: '0.8rem' }}>
+                <IconButton type="button" size="small" onClick={() => insertMarkdown('## ', '', '', true)} sx={{ fontWeight: 'bold', fontSize: '0.8rem' }}>
                   H2
                 </IconButton>
               </Tooltip>
               <Tooltip title="Heading 3">
-                <IconButton type="button" size="small" onClick={() => insertMarkdown('### ', '', 'Heading')} sx={{ fontWeight: 'bold', fontSize: '0.75rem' }}>
+                <IconButton type="button" size="small" onClick={() => insertMarkdown('### ', '', '', true)} sx={{ fontWeight: 'bold', fontSize: '0.75rem' }}>
                   H3
                 </IconButton>
               </Tooltip>
@@ -1493,12 +1524,12 @@ const CreateSchedule: React.FC = () => {
               </Tooltip>
               <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
               <Tooltip title="Bulleted List">
-                <IconButton type="button" size="small" onClick={() => insertMarkdown('- ', '', 'List item')}>
+                <IconButton type="button" size="small" onClick={() => insertMarkdown('- ', '', '', true)}>
                   <FormatListBulletedIcon fontSize="small" />
                 </IconButton>
               </Tooltip>
               <Tooltip title="Numbered List">
-                <IconButton type="button" size="small" onClick={() => insertMarkdown('1. ', '', 'List item')}>
+                <IconButton type="button" size="small" onClick={() => insertMarkdown('1. ', '', '', true)}>
                   <FormatListNumberedIcon fontSize="small" />
                 </IconButton>
               </Tooltip>
