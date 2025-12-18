@@ -32,6 +32,8 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   Collapse,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
@@ -105,6 +107,8 @@ const Dashboard: React.FC = () => {
   const [emailNet, setEmailNet] = useState<Net | null>(null);
   const [emailForm, setEmailForm] = useState({ subject: '', message: '' });
   const [emailSending, setEmailSending] = useState(false);
+  // Snackbar state for toast notifications
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' | 'info' }>({ open: false, message: '', severity: 'info' });
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const theme = useTheme();
@@ -232,14 +236,14 @@ const Dashboard: React.FC = () => {
         subject: emailForm.subject,
         message: emailForm.message,
       });
-      alert(`Email sent to ${response.data.sent} subscriber(s)`);
+      setSnackbar({ open: true, message: `Email sent to ${response.data.sent} subscriber(s)`, severity: 'success' });
       setEmailDialogOpen(false);
       setEmailNet(null);
       setEmailForm({ subject: '', message: '' });
     } catch (error: any) {
       console.error('Failed to send email:', error);
       const message = error.response?.data?.detail || 'Failed to send email';
-      alert(message);
+      setSnackbar({ open: true, message, severity: 'error' });
     } finally {
       setEmailSending(false);
     }
@@ -1057,6 +1061,18 @@ const Dashboard: React.FC = () => {
         } : null}
         onUpdate={fetchNets}
       />
+
+      {/* Snackbar for toast notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };
