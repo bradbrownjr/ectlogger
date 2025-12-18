@@ -70,6 +70,7 @@ interface Net {
   started_at?: string;
   closed_at?: string;
   created_at: string;
+  scheduled_start_time?: string;
   frequencies: any[];
   check_in_count?: number;
   can_manage?: boolean;
@@ -452,7 +453,10 @@ const Dashboard: React.FC = () => {
               {net.status === 'active' && net.started_at && (
                 <>Started: {formatDateTime(net.started_at, user?.prefer_utc || false)}</>
               )}
-              {(net.status === 'draft' || net.status === 'scheduled') && (
+              {(net.status === 'draft' || net.status === 'scheduled') && net.scheduled_start_time && (
+                <>Scheduled: {formatDateTime(net.scheduled_start_time, user?.prefer_utc || false)}</>
+              )}
+              {(net.status === 'draft' || net.status === 'scheduled') && !net.scheduled_start_time && (
                 <>Created: {formatDateTime(net.created_at, user?.prefer_utc || false)}</>
               )}
             </Typography>
