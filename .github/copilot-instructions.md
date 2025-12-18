@@ -111,10 +111,19 @@ Copy `.env.example` to `backend/.env`:
 
 **IMPORTANT: Always commit and push changes to GitHub before deploying to any server.**
 
+### Documentation Requirements
+
+When adding or changing features, **always update relevant documentation**:
+- `README.md` — Update feature list if adding new user-facing functionality
+- `docs/USER-GUIDE.md` — Document how users interact with the feature
+- `docs/CHANGELOG.md` — Add entry describing the change
+- `docs/DEVELOPMENT.md` — Update if adding new technical patterns or APIs
+
 ### Development Workflow
 1. Make changes locally
 2. Test locally if possible
-3. **Commit and push to GitHub**:
+3. **Update documentation** (README, USER-GUIDE, CHANGELOG as appropriate)
+4. **Commit and push to GitHub**:
    ```bash
    git add -A
    git commit -m "Brief description of changes"
