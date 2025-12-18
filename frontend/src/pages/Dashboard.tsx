@@ -403,8 +403,8 @@ const Dashboard: React.FC = () => {
                     </IconButton>
                   </Tooltip>
                 )}
-                {/* Draft net actions */}
-                {net.status === 'draft' && net.can_manage && (
+                {/* Draft/Scheduled net actions */}
+                {(net.status === 'draft' || net.status === 'scheduled') && net.can_manage && (
                   <>
                     {/* Email subscribers - only if net has a template */}
                     {net.template_id && (
@@ -592,8 +592,8 @@ const Dashboard: React.FC = () => {
               </IconButton>
             </Tooltip>
           )}
-          {/* Draft net actions */}
-          {net.status === 'draft' && net.can_manage && (
+          {/* Draft/Scheduled net actions */}
+          {(net.status === 'draft' || net.status === 'scheduled') && net.can_manage && (
             <>
               {/* Email subscribers - only if net has a template */}
               {net.template_id && (
