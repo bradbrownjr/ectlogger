@@ -36,21 +36,30 @@ The responsive interface works beautifully on any device — from a phone in the
 
 ### Net Management
 
-- **🔄 Recheck Tracking** — Automatically track stations checking in multiple times
-- **📊 Custom Fields** — Admins can create custom fields for specific net requirements
 - **📅 Scheduling** — Schedule recurring nets with automatic NCS rotation
-- **📝 Complete Net Logs** — Automatic log generation and email delivery
-- **📊 Poll Questions** — Add poll questions to nets with real-time results chart
-- **💬 Topic of the Week** — Prompt participants to share on a topic during check-in
 - **✏️ Inline Editing** — NCS/Loggers can click any check-in row to edit fields directly
+- **🔄 Recheck Tracking** — Track stations as they check in and out, on different frequencies if needed
+- **📊 Custom Fields** — Admins can create custom fields for specific net requirements
+- **📊 Poll Questions** — Add poll questions to nets with real-time results chart
+- **💬 Topic of the Week** — Prompt participants to share on a topic during check-in and track their answers
 - **🔍 Filter & Sort** — Search and sort nets, schedules, frequencies, users, and fields
 - **📋 Card/List Views** — Toggle between card and list views on Dashboard and Scheduler
+- **📝 Complete Net Logs** — Automatic log generation and email delivery
 
 ### Location & Mapping
 
 - **🗺️ Station Mapping** — View check-in locations on OpenStreetMap
-- **🌐 Multiple Formats** — GPS, Maidenhead, UTM, MGRS coordinate support in Location check-in field
+- **🌐 Multiple Formats** — Town & state, GPS, Maidenhead, UTM, MGRS coordinate support in Location check-in field
 - **📍 Location Awareness** — Auto-fill Maidenhead grid square from browser location, if enabled by the end user
+
+### Multi-Frequency Net Support
+
+ECT and SKYWARN nets often move between frequencies to meet participants where they are. ECTLogger tracks:
+
+- **Multiple frequencies per net** - Nets can support multiple active channels, frequencies, and modes
+- **Active frequency indication** - Users can see which frequency each NCS is active on so that they may follow
+- **Per-station frequency tracking** - Each station can check or re-check into more than one operating frequency
+- **Real-time frequency change notifications** - Freqency changes are updated to all users in real-time
 
 ### Analytics & Reporting
 
@@ -66,6 +75,7 @@ ECTLogger has two types of roles: **global roles** (system-wide) and **net roles
 
 ### Global Roles
 
+ECTLogger provides the following types of users:
 
 | Role          | Description                                                                 |
 | --------------- | ----------------------------------------------------------------------------- |
@@ -84,11 +94,7 @@ When a user creates a net, they automatically become its **NCS (Net Control Stat
 | 📋**Logger** | Log check-ins and manage station status                       |
 | 📡**Relay**  | Check in stations on behalf of others                         |
 
-Any registered user can run their own nets without needing admin privileges!
-
----
-
-## 🎯 Key Capabilities
+Any registered user can run their own nets!
 
 ### Station Status Tracking
 
@@ -101,23 +107,7 @@ Visual indicators for station status:
 - 👋 Checked Out
 - 🔄 Recheck (returning stations)
 
-### Location Awareness
-
-Streamline check-ins with automatic location detection:
-
-- **Maidenhead Grid Square** — Users see their 6-character grid square in the navbar
-- **Auto-Fill on Check-In** — Location field automatically populated with current grid square
-- **NCS Auto-Fill** — Enter a callsign and auto-fill name, location, and SKYWARN number
-- **Privacy Respecting** — Location only shared when explicitly enabled by each user
-
-### Multi-Frequency Net Support
-
-ECT and SKYWARN nets often move between frequencies to meet participants where they are. ECTLogger tracks:
-
-- Multiple frequencies per net
-- Active frequency indication
-- Per-station frequency tracking
-- Real-time frequency change notifications
+A legend at the base of the check-in list identifies each status icon.
 
 ---
 
@@ -189,21 +179,6 @@ ECTLogger can be self-hosted on your own server. See the self-hosting documentat
 | Document                                     | Description                         |
 | ---------------------------------------------- | ------------------------------------- |
 | **[Development Guide](docs/DEVELOPMENT.md)** | Architecture, API, and contributing |
-
----
-
-## 🔒 Security
-
-ECTLogger implements comprehensive security measures:
-
-- **Input Validation** — Strict length limits and format checking
-- **XSS Protection** — HTML sanitization and security headers
-- **SQL Injection Prevention** — Parameterized queries via SQLAlchemy ORM
-- **Rate Limiting** — 200 requests/minute per IP
-- **Authenticated WebSockets** — JWT token required for real-time connections
-- **OWASP Top 10** — Protected against critical web security risks
-
-See **[Security Documentation](docs/SECURITY.md)** for complete details.
 
 ---
 
