@@ -56,7 +56,7 @@ import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
 import HorizontalRuleIcon from '@mui/icons-material/HorizontalRule';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
-import { templateApi, frequencyApi, userApi, ncsRotationApi } from '../services/api';
+import { templateApi, frequencyApi, userApi, ncsRotationApi, templateStaffApi } from '../services/api';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import BlockingAlert from '../components/BlockingAlert';
@@ -786,15 +786,12 @@ const CreateSchedule: React.FC = () => {
         const response = await templateApi.create(ScheduleData);
         const newScheduleId = response.data.id;
         
-        // Add pending NCS users to the new schedule
+        // Add pending NCS users to the new schedule's staff list
         for (const user of pendingNCSUsers) {
           try {
-            await ncsRotationApi.addMember(newScheduleId, {
-              user_id: user.id,
-              position: pendingNCSUsers.indexOf(user) + 1
-            });
+            await templateStaffApi.add(newScheduleId, { user_id: user.id });
           } catch (err) {
-            console.error(`Failed to add NCS ${user.callsign}:`, err);
+            console.error(`Failed to add staff ${user.callsign}:`, err);
           }
         }
         
@@ -1193,8 +1190,8 @@ const CreateSchedule: React.FC = () => {
           <TabPanel value={activeTab} index={2}>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
               {isEdit 
-                ? 'Manage NCS operators for this schedule. Any operator listed here can start and run nets. Use the arrows to set the rotation order - the system will automatically cycle through operators for each scheduled net.'
-                : 'Add NCS operators who can start and run nets from this schedule. The order you add them determines the rotation schedule - the system will automatically assign operators in order for each scheduled net.'}
+                ? 'Manage NCS operators for this schedule. Any operator listed here can start and run nets. Use the Manage Rotation tab (in the Net Staff modal) to set up automatic rotation.'
+                : 'Add NCS operators who can start and run nets from this schedule. After creating the schedule, you can set up automatic NCS rotation from the Net Staff modal.'}
             </Typography>
 
             {/* For NEW schedules - show owner first, then add input, then pending users */}
