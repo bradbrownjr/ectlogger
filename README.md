@@ -39,6 +39,7 @@ The responsive interface works beautifully on any device — from a phone in the
 - **📅 Scheduling** — Schedule recurring nets with automatic NCS rotation
 - **📜 Net Scripts** — Create formatted scripts for NCS operators to follow during nets
 - **✏️ Inline Editing** — NCS/Loggers can click any check-in row to edit fields directly
+- **🦔 Speed Entry** - Hit the ⏩ button to enter a string of check-ins in fast-moving nets
 - **🔄 Recheck Tracking** — Track stations as they check in and out, on different frequencies if needed
 - **📊 Custom Fields** — Admins can create custom fields for specific net requirements
 - **📊 Poll Questions** — Add poll questions to nets with real-time results chart

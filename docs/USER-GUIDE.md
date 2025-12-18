@@ -191,6 +191,30 @@ As NCS, you can:
 - Update station status
 - Track which frequency each station is on
 
+#### Speed Entry (Bulk Check-In)
+
+For fast-moving nets, use the ⏩ Speed Entry button to check in multiple stations at once:
+
+1. Click the **⏩** button next to the check-in form
+2. Enter multiple check-ins separated by semicolons
+3. Format: `CALLSIGN, Name, Location; CALLSIGN2, Name2, Location2`
+4. Press **Enter** or click Submit to process all at once
+
+**Status shortcuts** — Append a colon and shortcut to set status:
+- `:jl` — Just Listening
+- `:r` — Relay
+- `:t` — Has Traffic
+- `:a` — Announcements
+- `:m` — Mobile
+- `:o` — Checked Out
+
+**Examples:**
+```
+KC1ABC, John, Portland ME; N1XYZ, Jane, Boston MA:jl; W1DEF, Bob, Bangor ME:m
+```
+
+This checks in KC1ABC (normal), N1XYZ (listening status), and W1DEF (mobile status) in one operation.
+
 #### Inline Editing
 
 NCS and Loggers can edit check-in details directly in the table:
