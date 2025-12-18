@@ -4,9 +4,15 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-ECTLogger is a web-based net logging application designed to suit the needs of standard amateur radio net control operations, as well as the specialized needs of ARES, Emergency Communications Teams, and SKYWARN spotter nets. A net can be as simple or as complex as needed.
+Whether you're running a casual weekly club net or coordinating a multi-agency emergency response, ECTLogger adapts to your needs. Start simple and grow into advanced features as your operations demand.
 
-Built with modern technology, it provides real-time check-in tracking, multi-frequency support, and comprehensive net management capabilities.
+**For community nets**, keep things fun and engaging. Add a Topic of the Week to spark conversation, run polls to gather opinions, and let participants chat in real-time alongside the check-in log. The clean, modern interface makes logging effortless—no more wrestling with clunky desktop apps or decade-old web interfaces.
+
+**For SKYWARN and weather nets**, capture what matters. Enable spotter number and weather observation fields to collect critical data from trained spotters. View check-in locations on an interactive map supporting entry of town and state, GPS coordinates, Maidenhead grid squares, UTM, and MGRS formats in the check-in's Location field — perfect for situational awareness during severe weather events.
+
+**For ARES and emergency communications**, ECTLogger handles the complexity. Multiple NCS operators can work different frequencies simultaneously, with check-ins intelligently separated by band but logged together in one unified view. When the incident wraps up, generate ICS-309 Communications Logs with a single click for your after-action reports.
+
+The responsive interface works beautifully on any device — from a phone in the field to a multi-monitor EOC workstation. Pop out the check-in list or chat into detachable windows within the browser to customize your workspace. Dark mode keeps things easy on the eyes during those long operational periods.
 
 **🌐 Try it now at [app.ectlogger.us](https://app.ectlogger.us)** — No installation required!
 
