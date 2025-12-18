@@ -134,7 +134,7 @@ type FrequencySortField = 'frequency' | 'mode' | 'network' | 'talkgroup' | 'desc
 type SortDirection = 'asc' | 'desc';
 
 // User sorting types
-type UserSortField = 'email' | 'name' | 'callsign' | 'role' | 'status' | 'created_at';
+type UserSortField = 'email' | 'name' | 'callsign' | 'role' | 'status' | 'last_active' | 'created_at';
 
 // Field sorting types
 type FieldSortField = 'name' | 'label' | 'type' | 'default_enabled' | 'default_required' | 'status';
@@ -421,6 +421,10 @@ const Admin: React.FC = () => {
         aVal = a.is_active ? 1 : 0;
         bVal = b.is_active ? 1 : 0;
         break;
+      case 'last_active':
+        aVal = a.last_active ? new Date(a.last_active).getTime() : 0;
+        bVal = b.last_active ? new Date(b.last_active).getTime() : 0;
+        break;
       case 'created_at':
         aVal = new Date(a.created_at).getTime();
         bVal = new Date(b.created_at).getTime();
@@ -428,7 +432,7 @@ const Admin: React.FC = () => {
     }
     
     // Handle numeric comparison
-    if (userSortField === 'status' || userSortField === 'created_at') {
+    if (userSortField === 'status' || userSortField === 'last_active' || userSortField === 'created_at') {
       return userSortDirection === 'asc' 
         ? (aVal as number) - (bVal as number)
         : (bVal as number) - (aVal as number);
@@ -939,6 +943,15 @@ const Admin: React.FC = () => {
                       Status
                     </TableSortLabel>
                   </TableCell>
+                  <TableCell sortDirection={userSortField === 'last_active' ? userSortDirection : false}>
+                    <TableSortLabel
+                      active={userSortField === 'last_active'}
+                      direction={userSortField === 'last_active' ? userSortDirection : 'asc'}
+                      onClick={() => handleUserSort('last_active')}
+                    >
+                      Last Active
+                    </TableSortLabel>
+                  </TableCell>
                   <TableCell sortDirection={userSortField === 'created_at' ? userSortDirection : false}>
                     <TableSortLabel
                       active={userSortField === 'created_at'}
@@ -987,7 +1000,18 @@ const Admin: React.FC = () => {
                       />
                     </TableCell>
                     <TableCell>
-                      {new Date(user.created_at).toLocaleDateString()}
+                      {user.last_active ? (
+                        <Tooltip title={new Date(user.last_active).toLocaleString()}>
+                          <span>{new Date(user.last_active).toLocaleDateString()}</span>
+                        </Tooltip>
+                      ) : (
+                        '-'
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Tooltip title={new Date(user.created_at).toLocaleString()}>
+                        <span>{new Date(user.created_at).toLocaleDateString()}</span>
+                      </Tooltip>
                     </TableCell>
                     <TableCell>
                       <IconButton 
