@@ -4,6 +4,7 @@ import {
   IconButton,
   Box,
   Typography,
+  useTheme,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import MinimizeIcon from '@mui/icons-material/Minimize';
@@ -27,6 +28,8 @@ const NetScript: React.FC<NetScriptProps> = ({
   netName,
   netId
 }) => {
+  const theme = useTheme();
+  const isDarkMode = theme.palette.mode === 'dark';
   const [minimized, setMinimized] = useState(false);
 
   // Window position and size state
@@ -161,8 +164,8 @@ const NetScript: React.FC<NetScriptProps> = ({
             justifyContent: 'space-between',
             px: 2,
             py: 1,
-            bgcolor: 'primary.main',
-            color: 'primary.contrastText',
+            bgcolor: isDarkMode ? '#1565c0' : 'primary.main',
+            color: '#ffffff',
             cursor: 'move',
             flexShrink: 0,
           }}
