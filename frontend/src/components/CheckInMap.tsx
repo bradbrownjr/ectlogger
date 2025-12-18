@@ -135,8 +135,24 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Create a stable key for checkIns to prevent unnecessary re-runs
+  // Only re-process when the actual data changes, not on every render
+  const checkInsKey = checkIns
+    .filter(c => c.location && c.status !== 'checked_out')
+    .map(c => `${c.id}:${c.location}:${c.status}`)
+    .join('|');
+
+  // Track if we've already processed this set of checkIns
+  const processedKeyRef = useRef<string>('');
+
   useEffect(() => {
     if (!open) return;
+    
+    // Skip if we've already processed this exact set of checkIns
+    if (processedKeyRef.current === checkInsKey && mappedCheckIns.length > 0) {
+      return;
+    }
 
     const processLocations = async () => {
       setLoading(true);
@@ -157,25 +173,28 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
         }
       }
 
-      // Second pass: geocode addresses (with rate limiting)
+      // Second pass: geocode addresses (backend handles rate limiting)
       for (const { checkIn, parsed } of addressesToGeocode) {
-        const coords = await geocodeAddress(parsed.original);
-        if (coords) {
-          results.push({
-            ...checkIn,
-            parsedLocation: { ...parsed, lat: coords.lat, lon: coords.lon }
-          });
+        try {
+          const coords = await geocodeAddress(parsed.original);
+          if (coords) {
+            results.push({
+              ...checkIn,
+              parsedLocation: { ...parsed, lat: coords.lat, lon: coords.lon }
+            });
+          }
+        } catch (error) {
+          console.error(`Failed to geocode ${parsed.original}:`, error);
         }
-        // Rate limit: Nominatim requests 1 request per second
-        await new Promise(resolve => setTimeout(resolve, 1100));
       }
 
+      processedKeyRef.current = checkInsKey;
       setMappedCheckIns(results);
       setLoading(false);
     };
 
     processLocations();
-  }, [open, checkIns]);
+  }, [open, checkInsKey]);
 
   // Invalidate map size after resize
   const handleResizeStop = () => {

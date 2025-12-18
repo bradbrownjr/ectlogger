@@ -193,26 +193,22 @@ export function parseLocation(location: string): ParsedLocation | null {
 }
 
 /**
- * Geocode an address using Nominatim (OpenStreetMap)
+ * Geocode an address using our backend proxy to Nominatim (OpenStreetMap).
+ * The proxy handles CORS issues and rate limiting.
  */
 export async function geocodeAddress(address: string): Promise<{ lat: number; lon: number } | null> {
   try {
     const response = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`,
-      {
-        headers: {
-          'User-Agent': 'ECTLogger/1.0 (Emergency Communications Team Logger)'
-        }
-      }
+      `/api/geocode?q=${encodeURIComponent(address)}`
     );
 
     if (!response.ok) return null;
 
     const data = await response.json();
-    if (data && data.length > 0) {
+    if (data && data.lat && data.lon) {
       return {
-        lat: parseFloat(data[0].lat),
-        lon: parseFloat(data[0].lon)
+        lat: data.lat,
+        lon: data.lon
       };
     }
   } catch (error) {
