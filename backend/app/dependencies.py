@@ -3,6 +3,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import Optional
+from datetime import datetime, timezone
 from app.database import get_db
 from app.models import User, UserRole
 from app.auth import verify_token
@@ -67,6 +68,10 @@ async def get_current_user(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Inactive user"
         )
+    
+    # Update last_active timestamp for online tracking
+    user.last_active = datetime.now(timezone.utc)
+    await db.commit()
     
     return user
 

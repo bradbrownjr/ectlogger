@@ -98,6 +98,7 @@ class UserResponse(UserBase):
     skywarn_number: Optional[str] = None
     location: Optional[str] = None
     prefer_utc: bool = False
+    last_active: Optional[datetime] = None
     created_at: datetime
 
     class Config:

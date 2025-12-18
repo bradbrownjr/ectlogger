@@ -80,6 +80,7 @@ class User(Base):
     live_location = Column(String(50))  # GPS-derived grid square (updated automatically)
     live_location_updated = Column(DateTime(timezone=True))  # When live_location was last updated
     prefer_utc = Column(Boolean, default=False)  # Display times in UTC instead of local time
+    last_active = Column(DateTime(timezone=True))  # Last API request timestamp for online tracking
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

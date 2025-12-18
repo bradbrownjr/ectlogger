@@ -72,6 +72,7 @@ interface User {
   callsign?: string;
   role: string;
   is_active: boolean;
+  last_active?: string;
   created_at: string;
 }
 
@@ -816,6 +817,17 @@ const Admin: React.FC = () => {
     }
   };
 
+  // Check if user is online (active within last 5 minutes)
+  const isUserOnline = (user: User): boolean => {
+    if (!user.last_active) return false;
+    const lastActive = new Date(user.last_active);
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    return lastActive > fiveMinutesAgo;
+  };
+
+  // Count online users
+  const onlineUserCount = users.filter(isUserOnline).length;
+
   if (currentUser?.role !== 'admin') {
     return null;
   }
@@ -865,6 +877,15 @@ const Admin: React.FC = () => {
             />
             <Typography variant="body2" color="text.secondary">
               {filteredUsers.length} of {users.length} users
+              {onlineUserCount > 0 && (
+                <Chip
+                  size="small"
+                  label={`${onlineUserCount} online`}
+                  color="success"
+                  variant="outlined"
+                  sx={{ ml: 2 }}
+                />
+              )}
             </Typography>
           </Box>
 
@@ -934,7 +955,24 @@ const Admin: React.FC = () => {
                   <TableRow key={user.id}>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>{user.name || '-'}</TableCell>
-                    <TableCell>{user.callsign || '-'}</TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        {isUserOnline(user) && (
+                          <Tooltip title="Online now">
+                            <Box
+                              sx={{
+                                width: 8,
+                                height: 8,
+                                borderRadius: '50%',
+                                bgcolor: 'success.main',
+                                flexShrink: 0,
+                              }}
+                            />
+                          </Tooltip>
+                        )}
+                        {user.callsign || '-'}
+                      </Box>
+                    </TableCell>
                     <TableCell>
                       <Chip 
                         label={user.role.toUpperCase()} 
