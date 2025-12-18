@@ -85,15 +85,53 @@ After checking in, you can update your status:
 
 ### Creating a Net
 
-1. Click **Create Net** from the dashboard
-2. Fill in the net details:
-   - **Name** — Net name (e.g., "Monday Evening SKYWARN Net")
-   - **Description** — Purpose and any special instructions
-   - **Frequencies** — Add one or more frequencies/modes
-   - **Scheduled Start Time** — Optional. If set, a countdown timer will display
-3. Configure check-in fields (required and optional)
-4. (Optional) Add a **Net Script** — formatted text NCS can reference during the net
-5. Save as **Draft** or **Start** immediately
+The Create Net form has five tabs to configure your net:
+
+#### Tab 1: Basic Info
+
+- **Name** — Net name (e.g., "Monday Evening SKYWARN Net")
+- **Description** — Purpose, scope, and any special instructions
+- **Info URL** — Optional link to your club or organization's website
+- **Scheduled Start Time** — Optional. If set, a countdown timer displays before the net starts
+- **Enable ICS-309 format** — Use official FEMA communications log format for net closure emails
+
+**Community Net Features** (optional):
+- **Topic of the Week** — Ask participants a discussion question during check-in (responses collected in log)
+- **Participant Poll** — Run a poll with predefined options; results shown as a chart in the net log
+
+#### Tab 2: Net Staff
+
+Pre-assign staff roles before the net starts:
+- **NCS** — Net Control Station operators
+- **Logger** — Can log check-ins for other stations
+- **Relay** — Can check in stations they can hear
+
+Search for users by callsign or name and assign roles.
+
+#### Tab 3: Communication Plan
+
+Add the frequencies and modes for your net:
+- **Analog frequencies** — Enter frequency (e.g., "146.520") and mode (FM, SSB, CW, etc.)
+- **Digital talkgroups** — Select network (DMR, D-STAR, etc.), enter talkgroup ID, and description
+
+Nets can have multiple frequencies for split operations or cross-band coordination.
+
+#### Tab 4: Net Script
+
+Enter a formatted script for NCS operators to follow. Supports Markdown formatting:
+- Use the toolbar for bold, italic, lists, and horizontal rules
+- Upload a .txt or .md file with an existing script
+- Script appears in a floating, resizable window during the net
+
+#### Tab 5: Check-In Fields
+
+Configure which fields appear on the check-in form:
+- **Enabled** — Show the field on the check-in form
+- **Required** — Make the field mandatory (only applies if enabled)
+
+Standard fields include: Name, Location, Status, Remarks, etc. If Topic or Poll are enabled on Tab 1, those fields automatically appear here.
+
+After configuring all tabs, click **Create Net** to save as a draft, or start immediately.
 
 ### Recurring Schedules
 
