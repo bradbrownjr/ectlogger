@@ -6,6 +6,7 @@ import {
   Typography,
   CircularProgress,
   Chip,
+  useTheme,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import MinimizeIcon from '@mui/icons-material/Minimize';
@@ -93,6 +94,9 @@ const FitBounds: React.FC<{ positions: [number, number][] }> = ({ positions }) =
 };
 
 const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netName, ncsUserIds = [], loggerUserIds = [], relayUserIds = [] }) => {
+  const theme = useTheme();
+  const isDarkMode = theme.palette.mode === 'dark';
+  
   const [mappedCheckIns, setMappedCheckIns] = useState<MappedCheckIn[]>([]);
   const [loading, setLoading] = useState(true);
   const [minimized, setMinimized] = useState(false);
@@ -100,6 +104,14 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
   const [preMaximizeState, setPreMaximizeState] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
   const [mapKey, setMapKey] = useState(0);
   const mapRef = useRef<L.Map | null>(null);
+
+  // Tile layer URLs - dark mode uses CartoDB Dark Matter
+  const tileUrl = isDarkMode 
+    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+    : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+  const tileAttribution = isDarkMode
+    ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+    : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
   // Window position and size state - responsive for mobile
   const isMobile = window.innerWidth < 768;
@@ -377,8 +389,8 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
                   ref={mapRef}
                 >
                   <TileLayer
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    attribution={tileAttribution}
+                    url={tileUrl}
                   />
                   <FitBounds positions={positions} />
                   {mappedCheckIns.map((checkIn) => (
@@ -419,7 +431,7 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
                     position: 'absolute',
                     bottom: 32,
                     right: 8,
-                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    backgroundColor: isDarkMode ? 'rgba(30, 30, 30, 0.9)' : 'rgba(255, 255, 255, 0.9)',
                     borderRadius: 1,
                     px: 1,
                     py: 0.5,
@@ -446,7 +458,7 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
                             boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
                           }}
                         />
-                        <Typography variant="caption" sx={{ fontSize: '0.65rem', lineHeight: 1.2, color: '#333' }}>
+                        <Typography variant="caption" sx={{ fontSize: '0.65rem', lineHeight: 1.2, color: isDarkMode ? '#eee' : '#333' }}>
                           {item.label}
                         </Typography>
                       </Box>
@@ -609,8 +621,8 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
                 ref={mapRef}
               >
                 <TileLayer
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  attribution={tileAttribution}
+                  url={tileUrl}
                 />
                 <FitBounds positions={positions} />
                 {mappedCheckIns.map((checkIn) => (
@@ -651,7 +663,7 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
                   position: 'absolute',
                   bottom: 32,
                   right: 8,
-                  backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                  backgroundColor: isDarkMode ? 'rgba(30, 30, 30, 0.9)' : 'rgba(255, 255, 255, 0.9)',
                   borderRadius: 1,
                   px: 1,
                   py: 0.5,
@@ -678,7 +690,7 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
                           boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
                         }}
                       />
-                      <Typography variant="caption" sx={{ fontSize: '0.65rem', lineHeight: 1.2, color: '#333' }}>
+                      <Typography variant="caption" sx={{ fontSize: '0.65rem', lineHeight: 1.2, color: isDarkMode ? '#eee' : '#333' }}>
                         {item.label}
                       </Typography>
                     </Box>
