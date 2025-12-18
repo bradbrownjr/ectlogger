@@ -247,3 +247,85 @@ async def delete_user(
     await db.delete(user)
     await db.commit()
     return None
+
+
+@router.post("/email-all", status_code=status.HTTP_200_OK)
+async def email_all_users(
+    email_data: dict,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Send a platform notice email to all users with email notifications enabled (admin only)"""
+    from app.email_service import EmailService
+    from jinja2 import Template
+    
+    subject = email_data.get('subject', '').strip()
+    message = email_data.get('message', '').strip()
+    
+    if not subject or not message:
+        raise HTTPException(status_code=400, detail="Subject and message are required")
+    
+    # Get all active users with email notifications enabled
+    result = await db.execute(
+        select(User).where(
+            User.is_active == True,
+            User.email_notifications == True
+        )
+    )
+    users = result.scalars().all()
+    
+    if not users:
+        raise HTTPException(status_code=400, detail="No users with email notifications enabled")
+    
+    # Create HTML email template
+    html_template = Template("""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background-color: #1976d2; color: white; padding: 20px; text-align: center; }
+            .content { padding: 20px; background-color: #f5f5f5; }
+            .message { white-space: pre-wrap; background-color: white; padding: 15px; border-radius: 4px; }
+            .footer { padding: 20px; text-align: center; font-size: 12px; color: #666; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h2>{{ subject }}</h2>
+            </div>
+            <div class="content">
+                <div class="message">{{ message }}</div>
+            </div>
+            <div class="footer">
+                <p>This is a platform notice from ECTLogger.</p>
+                <p>You're receiving this because you have email notifications enabled.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """)
+    
+    html_content = html_template.render(subject=subject, message=message)
+    
+    # Send emails
+    sent_count = 0
+    failed_count = 0
+    
+    for user in users:
+        try:
+            await EmailService.send_email(user.email, f"[ECTLogger] {subject}", html_content)
+            sent_count += 1
+        except Exception as e:
+            failed_count += 1
+            # Log error but continue sending to other users
+            print(f"Failed to send email to {user.email}: {e}")
+    
+    return {
+        "sent": sent_count,
+        "failed": failed_count,
+        "total_recipients": len(users)
+    }
+

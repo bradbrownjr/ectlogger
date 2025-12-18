@@ -58,6 +58,7 @@ import InfoIcon from '@mui/icons-material/Info';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
 import HistoryIcon from '@mui/icons-material/History';
+import EmailIcon from '@mui/icons-material/Email';
 import RadioIcon from '@mui/icons-material/Radio';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
@@ -183,6 +184,11 @@ const Admin: React.FC = () => {
     role: 'user',
   });
   const [addUserSaving, setAddUserSaving] = useState(false);
+  
+  // Email users dialog state
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [emailForm, setEmailForm] = useState({ subject: '', message: '' });
+  const [emailSending, setEmailSending] = useState(false);
   
   // Field definitions state
   const [fields, setFields] = useState<FieldDefinition[]>([]);
@@ -795,6 +801,34 @@ const Admin: React.FC = () => {
       setSnackbar({ open: true, message, severity: 'error' });
     } finally {
       setAddUserSaving(false);
+    }
+  };
+
+  const handleSendPlatformEmail = async () => {
+    if (!emailForm.subject.trim() || !emailForm.message.trim()) {
+      setSnackbar({ open: true, message: 'Subject and message are required', severity: 'error' });
+      return;
+    }
+    
+    setEmailSending(true);
+    try {
+      const response = await api.post('/users/email-all', {
+        subject: emailForm.subject,
+        message: emailForm.message,
+      });
+      setEmailDialogOpen(false);
+      setEmailForm({ subject: '', message: '' });
+      setSnackbar({ 
+        open: true, 
+        message: `Email sent to ${response.data.sent} users`, 
+        severity: 'success' 
+      });
+    } catch (error: any) {
+      console.error('Failed to send email:', error);
+      const message = error.response?.data?.detail || 'Failed to send email';
+      setSnackbar({ open: true, message, severity: 'error' });
+    } finally {
+      setEmailSending(false);
     }
   };
 
@@ -1797,6 +1831,42 @@ const Admin: React.FC = () => {
         </DialogActions>
       </Dialog>
 
+      {/* ========== EMAIL USERS DIALOG ========== */}
+      <Dialog open={emailDialogOpen} onClose={() => setEmailDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Send Platform Notice</DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <TextField
+              label="Subject"
+              value={emailForm.subject}
+              onChange={(e) => setEmailForm({ ...emailForm, subject: e.target.value })}
+              required
+              fullWidth
+            />
+            <TextField
+              label="Message"
+              value={emailForm.message}
+              onChange={(e) => setEmailForm({ ...emailForm, message: e.target.value })}
+              required
+              multiline
+              rows={6}
+              fullWidth
+              helperText="This message will be sent to all users who have email notifications enabled."
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEmailDialogOpen(false)}>Cancel</Button>
+          <Button 
+            onClick={handleSendPlatformEmail} 
+            variant="contained" 
+            disabled={!emailForm.subject || !emailForm.message || emailSending}
+          >
+            {emailSending ? <CircularProgress size={24} /> : 'Send to All Users'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {/* Field Edit/Create Dialog */}
       <Dialog open={fieldDialogOpen} onClose={() => setFieldDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>{editingField ? 'Edit Field' : 'Add New Field'}</DialogTitle>
@@ -2007,16 +2077,28 @@ const Admin: React.FC = () => {
 
       {/* Floating Action Buttons */}
       {tabValue === 0 && (
-        <Tooltip title="Add user">
-          <Fab
-            color="primary"
-            aria-label="add user"
-            sx={{ position: 'fixed', bottom: 16, right: 16 }}
-            onClick={handleOpenAddUserDialog}
-          >
-            <PersonAddIcon />
-          </Fab>
-        </Tooltip>
+        <>
+          <Tooltip title="Email all users">
+            <Fab
+              color="secondary"
+              aria-label="email users"
+              sx={{ position: 'fixed', bottom: 16, right: 80 }}
+              onClick={() => setEmailDialogOpen(true)}
+            >
+              <EmailIcon />
+            </Fab>
+          </Tooltip>
+          <Tooltip title="Add user">
+            <Fab
+              color="primary"
+              aria-label="add user"
+              sx={{ position: 'fixed', bottom: 16, right: 16 }}
+              onClick={handleOpenAddUserDialog}
+            >
+              <PersonAddIcon />
+            </Fab>
+          </Tooltip>
+        </>
       )}
       {tabValue === 1 && (
         <Tooltip title="Add field">
