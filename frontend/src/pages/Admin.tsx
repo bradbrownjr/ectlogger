@@ -893,6 +893,7 @@ const Admin: React.FC = () => {
             <Table size="small">
               <TableHead>
                 <TableRow>
+                  <TableCell padding="checkbox" sx={{ width: 24 }}></TableCell>
                   <TableCell sortDirection={userSortField === 'email' ? userSortDirection : false}>
                     <TableSortLabel
                       active={userSortField === 'email'}
@@ -953,26 +954,24 @@ const Admin: React.FC = () => {
               <TableBody>
                 {sortedUsers.map((user) => (
                   <TableRow key={user.id}>
+                    <TableCell padding="checkbox">
+                      {isUserOnline(user) && (
+                        <Tooltip title="Online now">
+                          <Box
+                            sx={{
+                              width: 8,
+                              height: 8,
+                              borderRadius: '50%',
+                              bgcolor: 'success.main',
+                              mx: 'auto',
+                            }}
+                          />
+                        </Tooltip>
+                      )}
+                    </TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>{user.name || '-'}</TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        {isUserOnline(user) && (
-                          <Tooltip title="Online now">
-                            <Box
-                              sx={{
-                                width: 8,
-                                height: 8,
-                                borderRadius: '50%',
-                                bgcolor: 'success.main',
-                                flexShrink: 0,
-                              }}
-                            />
-                          </Tooltip>
-                        )}
-                        {user.callsign || '-'}
-                      </Box>
-                    </TableCell>
+                    <TableCell>{user.callsign || '-'}</TableCell>
                     <TableCell>
                       <Chip 
                         label={user.role.toUpperCase()} 
