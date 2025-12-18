@@ -15,15 +15,44 @@ That's it! No password to remember.
 
 ### Setting Up Your Profile
 
-After signing in, complete your profile:
+After signing in, complete your profile by clicking your name in the top-right corner and selecting **Profile**. The profile page has two tabs: **Settings** and **Activity**.
 
-1. Click your name in the top-right corner
-2. Select **Profile**
-3. Fill in your information:
-   - **Name** — Your name as it should appear in net logs
-   - **Callsign** — Your amateur radio callsign
-   - **SKYWARN Number** — Your spotter ID (if applicable)
-   - **Location Awareness** — Enable to auto-fill your grid square on check-ins
+#### Settings Tab
+
+**Basic Information**
+
+- **Name** — Your full name or preferred display name (required)
+- **Amateur Radio Call Sign** — Your FCC amateur radio callsign (e.g., KC1JMH)
+- **GMRS Call Sign** — Your FCC GMRS callsign (e.g., WROP123) for GMRS frequency nets
+- **SKYWARN Spotter Number** — Your NWS spotter ID (e.g., DFW-1234) — auto-fills when checking into SKYWARN nets
+- **Default Location** — Your home location or Maidenhead grid square (e.g., FN43pp) — auto-fills when NCS checks you in
+
+**Additional Callsigns**
+
+Add other callsigns you use (tactical callsigns, club calls, etc.). Type a callsign and press Enter or click Add. These appear as chips you can remove by clicking the X.
+
+**Display Preferences**
+
+- **Display times in UTC** — Show all timestamps in UTC instead of your local timezone. Useful for operators who work across time zones.
+- **Show activity in chat** — Display check-in/out and net events as system messages in chat (IRC-style activity feed)
+- **Enable location awareness** — Allows ECTLogger to use your browser's location to determine your Maidenhead grid square. Shows your grid in the navbar and auto-fills it on check-ins. Your browser will prompt for permission.
+
+**Email Notifications**
+
+Control which emails you receive for nets you're subscribed to:
+
+- **Enable email notifications** — Master switch for all notifications (except login links)
+- **Net start notifications** — Receive an email when a subscribed net goes active
+- **Net close notifications (with log)** — Receive the net log when a subscribed net closes
+  - **Use ICS-309 format** — Format net logs as ICS-309 Communications Log (FEMA standard) instead of the regular format
+- **Net reminder (1 hour before)** — Receive a reminder email 1 hour before scheduled nets start
+
+#### Activity Tab
+
+View your participation statistics:
+- Total check-ins, nets participated in, and NCS sessions
+- Last 30 days activity
+- Your favorite (most frequented) nets
 
 ## Joining a Net
 
@@ -63,7 +92,46 @@ After checking in, you can update your status:
    - **Frequencies** — Add one or more frequencies/modes
    - **Scheduled Start Time** — Optional. If set, a countdown timer will display
 3. Configure check-in fields (required and optional)
-4. Save as **Draft** or **Start** immediately
+4. (Optional) Add a **Net Script** — formatted text NCS can reference during the net
+5. Save as **Draft** or **Start** immediately
+
+### Recurring Schedules
+
+For nets that run regularly (weekly club nets, SKYWARN practice nets, etc.), create a schedule:
+
+1. Click **Create Schedule** from the dashboard or Scheduler page
+2. Configure the net details (same as creating a one-time net)
+3. Set the **Recurrence Pattern**:
+   - Day of the week (e.g., every Tuesday)
+   - Start time
+   - Timezone
+4. (Optional) Set up **NCS Rotation** — assign multiple operators to take turns running the net
+5. The system automatically creates draft nets according to your schedule
+
+**NCS Rotation features:**
+- Add multiple operators to the rotation pool
+- View upcoming NCS assignments on the rotation calendar
+- Request coverage or swap dates with other operators
+- Override specific dates when needed
+
+### Net Script
+
+Create a standardized script for NCS operators to follow:
+
+1. In the **Create Net** or **Create Schedule** form, go to the **Net Script** tab
+2. Enter your script using the formatting toolbar (headings, bold, lists, etc.)
+3. During the net, click the **📜 Script** button to open the script viewer
+
+The script viewer is a floating window that can be:
+- Resized and moved
+- Minimized to save screen space
+- Opened in a new browser tab for printing or larger display
+
+Example uses:
+- Preamble and ID script
+- Weather safety messaging (SKYWARN)
+- Emergency procedures and frequencies
+- Traffic handling protocols
 
 ### Net Timers
 
@@ -85,6 +153,34 @@ As NCS, you can:
 - Update station status
 - Track which frequency each station is on
 
+#### Inline Editing
+
+NCS and Loggers can edit check-in details directly in the table:
+
+1. Click anywhere on a check-in row to enter edit mode
+2. The row highlights and fields become editable text boxes
+3. Click on the specific field you want to edit — it will auto-focus
+4. Press **Tab** to move between fields within the same row
+5. Press **Enter** to save changes, or **Escape** to cancel
+6. Click outside the row to save and exit edit mode
+
+This eliminates the need for a separate edit dialog for quick corrections.
+
+### Detachable Windows
+
+For multi-monitor setups or larger screens, you can pop out components into separate floating windows:
+
+- **Check-in List** — Click the pop-out icon (↗) in the check-in table header
+- **Chat** — Click the pop-out icon in the chat panel header
+
+Detached windows can be:
+- Resized by dragging edges or corners
+- Moved anywhere on screen
+- Minimized to a title bar
+- Reattached by clicking the attach icon or closing the window
+
+Your detach preferences are saved and restored when you return to the net.
+
 ### Multi-NCS Operations
 
 For nets with multiple frequencies, you can have multiple NCS operators:
@@ -103,6 +199,21 @@ Delegate responsibilities:
 - **NCS** — Full net control, can manage check-ins and claim frequencies
 - **Logger** — Can log check-ins
 - **Relay** — Can check in stations they can hear but you can't
+
+### Real-time Chat
+
+Each net has a built-in chat for coordination between participants:
+
+- **Send messages** — Type in the chat input and press Enter or click Send
+- **System messages** — See when stations check in/out (enable "Show activity in chat" in Profile settings)
+- **Pop-out chat** — Detach the chat window to keep it visible while managing the net
+- **Persistent history** — Chat messages are saved and visible to participants who join later
+
+Chat is useful for:
+- Coordinating between NCS operators on multi-frequency nets
+- Quick questions or comments from participants
+- Relaying traffic details without tying up voice frequencies
+- Backup coordination during contests or emergency activations
 
 ### Filtering by Frequency
 
@@ -151,19 +262,53 @@ Both Topic and Poll columns are only visible when configured for the net. System
 View participation statistics:
 - **Platform Stats** — Overall system activity
 - **Net Stats** — Per-net participation trends
-- **Your Activity** — Personal check-in history
+- **Your Activity** — Personal check-in history (also available in your Profile)
 
 ## Tips & Tricks
 
 ### Keyboard Shortcuts
+
+**Check-in Form:**
 - Press **Tab** to move between fields
 - Press **Enter** to submit a check-in
 
+**Inline Editing:**
+- Press **Tab** to move between fields in the same row
+- Press **Enter** to save changes
+- Press **Escape** to cancel without saving
+
+### Dark Mode
+
+ECTLogger automatically follows your system's light/dark mode preference. If your device is set to dark mode, ECTLogger will display in dark mode — easier on the eyes during those late-night nets!
+
 ### Mobile Use
-ECTLogger works great on mobile devices. Use your phone or tablet in the field!
+
+ECTLogger is fully responsive and works great on mobile devices. Use your phone or tablet in the field! The interface adapts to smaller screens while keeping all functionality accessible.
 
 ### Location Awareness
-Enable location awareness in your profile to automatically fill in your Maidenhead grid square when checking in. This is especially useful for mobile operations.
+
+Enable location awareness in your profile to automatically fill in your Maidenhead grid square when checking in. This is especially useful for:
+- Mobile operations where your location changes
+- Field Day and portable setups
+- SKYWARN spotters reporting from various locations
+
+Your browser will ask for permission before sharing location data.
+
+### Searching and Filtering
+
+**Search Bar:** Type in the search field to filter check-ins by callsign, name, or location.
+
+**Frequency Filtering:** If a net has multiple frequencies:
+- **Ctrl+click** a frequency chip to filter the check-in list to only stations on that frequency
+- Click again to remove the filter
+- A "Clear Filter" chip appears when filtering is active
+- NCS operators are always shown regardless of filter
+
+This is handy for NCS operating split frequencies — focus on stations monitoring your frequency!
+
+### Subscribing to Nets
+
+Subscribe to nets you regularly participate in to receive email notifications when they start, close, or are about to begin. Click the bell icon on any net to toggle subscription.
 
 ## Getting Help
 
