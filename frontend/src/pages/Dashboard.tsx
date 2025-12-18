@@ -52,6 +52,8 @@ import ViewModuleIcon from '@mui/icons-material/ViewModule';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import ClearIcon from '@mui/icons-material/Clear';
+import EmailIcon from '@mui/icons-material/Email';
+import CircularProgress from '@mui/material/CircularProgress';
 import { netApi } from '../services/api';
 import NCSStaffModal from '../components/NCSStaffModal';
 import api from '../services/api';
@@ -67,6 +69,7 @@ interface Net {
   owner_id: number;
   owner_callsign?: string | null;
   owner_name?: string | null;
+  template_id?: number | null;  // ID of the template this net was created from
   started_at?: string;
   closed_at?: string;
   created_at: string;
@@ -97,6 +100,11 @@ const Dashboard: React.FC = () => {
   });
   const [showFilter, setShowFilter] = useState(false);
   const [netFilter, setNetFilter] = useState('');
+  // Email subscribers dialog state
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [emailNet, setEmailNet] = useState<Net | null>(null);
+  const [emailForm, setEmailForm] = useState({ subject: '', message: '' });
+  const [emailSending, setEmailSending] = useState(false);
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const theme = useTheme();
@@ -205,6 +213,35 @@ const Dashboard: React.FC = () => {
     } finally {
       setDeleteConfirmOpen(false);
       setNetToDelete(null);
+    }
+  };
+
+  // ========== EMAIL SUBSCRIBERS HANDLERS ==========
+  const handleEmailClick = (net: Net) => {
+    setEmailNet(net);
+    setEmailForm({ subject: '', message: '' });
+    setEmailDialogOpen(true);
+  };
+
+  const handleSendEmail = async () => {
+    if (!emailNet || !emailForm.subject.trim() || !emailForm.message.trim()) return;
+    
+    setEmailSending(true);
+    try {
+      const response = await api.post(`/nets/${emailNet.id}/email-subscribers`, {
+        subject: emailForm.subject,
+        message: emailForm.message,
+      });
+      alert(`Email sent to ${response.data.sent} subscriber(s)`);
+      setEmailDialogOpen(false);
+      setEmailNet(null);
+      setEmailForm({ subject: '', message: '' });
+    } catch (error: any) {
+      console.error('Failed to send email:', error);
+      const message = error.response?.data?.detail || 'Failed to send email';
+      alert(message);
+    } finally {
+      setEmailSending(false);
     }
   };
 
@@ -369,6 +406,14 @@ const Dashboard: React.FC = () => {
                 {/* Draft net actions */}
                 {net.status === 'draft' && net.can_manage && (
                   <>
+                    {/* Email subscribers - only if net has a template */}
+                    {net.template_id && (
+                      <Tooltip title="Email subscribers">
+                        <IconButton size="small" onClick={() => handleEmailClick(net)}>
+                          <EmailIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    )}
                     <Tooltip title="Edit">
                       <IconButton size="small" onClick={() => navigate(`/nets/${net.id}/edit`)}>
                         <EditIcon fontSize="small" />
@@ -377,6 +422,12 @@ const Dashboard: React.FC = () => {
                     <Tooltip title="Start">
                       <IconButton size="small" color="success" onClick={() => handleStartNet(net.id)}>
                         <PlayArrowIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    {/* Delete scheduled net (cancel this instance) */}
+                    <Tooltip title="Cancel this net">
+                      <IconButton size="small" color="error" onClick={() => handleDeleteClick(net)}>
+                        <DeleteIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
                   </>
@@ -544,6 +595,17 @@ const Dashboard: React.FC = () => {
           {/* Draft net actions */}
           {net.status === 'draft' && net.can_manage && (
             <>
+              {/* Email subscribers - only if net has a template */}
+              {net.template_id && (
+                <Tooltip title="Email subscribers">
+                  <IconButton
+                    size="small"
+                    onClick={() => handleEmailClick(net)}
+                  >
+                    <EmailIcon />
+                  </IconButton>
+                </Tooltip>
+              )}
               <Tooltip title="Edit net">
                 <IconButton
                   size="small"
@@ -559,6 +621,16 @@ const Dashboard: React.FC = () => {
                   onClick={() => handleStartNet(net.id)}
                 >
                   <PlayArrowIcon />
+                </IconButton>
+              </Tooltip>
+              {/* Cancel this net instance */}
+              <Tooltip title="Cancel this net">
+                <IconButton
+                  size="small"
+                  color="error"
+                  onClick={() => handleDeleteClick(net)}
+                >
+                  <DeleteIcon />
                 </IconButton>
               </Tooltip>
             </>
@@ -926,6 +998,44 @@ const Dashboard: React.FC = () => {
           <Button onClick={() => setDeleteConfirmOpen(false)}>Cancel</Button>
           <Button onClick={handleDeleteConfirm} color="error" variant="contained">
             Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ========== EMAIL SUBSCRIBERS DIALOG ========== */}
+      <Dialog open={emailDialogOpen} onClose={() => setEmailDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Email Subscribers - {emailNet?.name}</DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <TextField
+              label="Subject"
+              value={emailForm.subject}
+              onChange={(e) => setEmailForm({ ...emailForm, subject: e.target.value })}
+              required
+              fullWidth
+              placeholder="e.g., Net Cancelled for Dec 25"
+            />
+            <TextField
+              label="Message"
+              value={emailForm.message}
+              onChange={(e) => setEmailForm({ ...emailForm, message: e.target.value })}
+              required
+              multiline
+              rows={6}
+              fullWidth
+              placeholder="Enter your message to subscribers..."
+              helperText="This will be sent to all users subscribed to this net's template who have email notifications enabled."
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEmailDialogOpen(false)}>Cancel</Button>
+          <Button 
+            onClick={handleSendEmail} 
+            variant="contained" 
+            disabled={!emailForm.subject || !emailForm.message || emailSending}
+          >
+            {emailSending ? <CircularProgress size={24} /> : 'Send Email'}
           </Button>
         </DialogActions>
       </Dialog>

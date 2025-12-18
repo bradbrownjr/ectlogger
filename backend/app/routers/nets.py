@@ -1391,3 +1391,112 @@ async def clear_ncs_frequency(
     }, net_id)
     
     return {"message": "Frequency cleared"}
+
+
+@router.post("/{net_id}/email-subscribers", status_code=200)
+async def email_net_subscribers(
+    net_id: int,
+    email_data: dict,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Send an email to all subscribers of the net's template (NCS/owner/admin only).
+    
+    Used to notify subscribers about cancellations, schedule changes, etc.
+    """
+    from app.email_service import EmailService
+    from app.models import NetTemplateSubscription
+    from jinja2 import Template
+    
+    result = await db.execute(
+        select(Net).options(selectinload(Net.frequencies)).where(Net.id == net_id)
+    )
+    net = result.scalar_one_or_none()
+    
+    if not net:
+        raise HTTPException(status_code=404, detail="Net not found")
+    
+    # Check permissions - NCS, Logger, owner, or admin
+    if not await check_net_permission(db, net, current_user, ["NCS", "Logger"]):
+        raise HTTPException(status_code=403, detail="Not authorized to send emails for this net")
+    
+    # Net must have a template to have subscribers
+    if not net.template_id:
+        raise HTTPException(status_code=400, detail="This net has no template - no subscribers to email")
+    
+    subject = email_data.get('subject', '').strip()
+    message = email_data.get('message', '').strip()
+    
+    if not subject or not message:
+        raise HTTPException(status_code=400, detail="Subject and message are required")
+    
+    # Get all subscribers who have email notifications enabled
+    result = await db.execute(
+        select(User)
+        .join(NetTemplateSubscription, NetTemplateSubscription.user_id == User.id)
+        .where(NetTemplateSubscription.template_id == net.template_id)
+        .where(User.email_notifications == True)
+        .where(User.is_active == True)
+    )
+    subscribers = result.scalars().all()
+    
+    if not subscribers:
+        raise HTTPException(status_code=400, detail="No subscribers with email notifications enabled")
+    
+    # Create HTML email template
+    html_template = Template("""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background-color: #1976d2; color: white; padding: 20px; text-align: center; }
+            .content { padding: 20px; background-color: #f5f5f5; }
+            .net-name { font-weight: bold; color: #1976d2; }
+            .message { white-space: pre-wrap; background-color: white; padding: 15px; border-radius: 4px; margin-top: 10px; }
+            .footer { padding: 20px; text-align: center; font-size: 12px; color: #666; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h2>{{ subject }}</h2>
+            </div>
+            <div class="content">
+                <p>Regarding: <span class="net-name">{{ net_name }}</span></p>
+                <div class="message">{{ message }}</div>
+            </div>
+            <div class="footer">
+                <p>You're receiving this because you subscribed to this net.</p>
+                <p>Sent by: {{ sender_callsign }}</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """)
+    
+    html_content = html_template.render(
+        subject=subject,
+        net_name=net.name,
+        message=message,
+        sender_callsign=current_user.callsign or current_user.email
+    )
+    
+    # Send emails
+    sent_count = 0
+    failed_count = 0
+    
+    for subscriber in subscribers:
+        try:
+            await EmailService.send_email(subscriber.email, f"[{net.name}] {subject}", html_content)
+            sent_count += 1
+        except Exception as e:
+            failed_count += 1
+            print(f"Failed to send email to {subscriber.email}: {e}")
+    
+    return {
+        "sent": sent_count,
+        "failed": failed_count,
+        "total_recipients": len(subscribers)
+    }

@@ -218,6 +218,7 @@ class NetResponse(NetBase):
     owner_id: int
     owner_callsign: Optional[str] = None
     owner_name: Optional[str] = None
+    template_id: Optional[int] = None  # ID of the template this net was created from
     active_frequency_id: Optional[int] = None
     field_config: Optional[dict] = None
     ics309_enabled: bool = False
@@ -242,6 +243,7 @@ class NetResponse(NetBase):
             'owner_id': net.owner_id,
             'owner_callsign': owner_callsign,
             'owner_name': owner_name,
+            'template_id': net.template_id,
             'active_frequency_id': net.active_frequency_id,
             'field_config': json.loads(net.field_config) if net.field_config else None,
             'ics309_enabled': net.ics309_enabled or False,
