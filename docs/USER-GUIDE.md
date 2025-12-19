@@ -180,8 +180,26 @@ The net header displays helpful timing information:
 
 ### Starting a Net
 
-- Click the green **▶ Play** button on the Dashboard or NetView page
-- A toast notification will remind you to start if you're viewing a draft/scheduled net
+Click the green **▶ Play** button on the Dashboard or NetView page to start a net.
+
+**Lobby Mode** — If you start a net before its scheduled start time, the net enters "Lobby" mode:
+- Check-ins and chat are fully functional
+- A countdown shows until the scheduled start time
+- Status shows as "LOBBY" with a warning (orange) color
+- Click **Go Live** when ready to officially begin the net
+
+This is useful for opening check-ins early while operators are gathering, before the net officially starts on the air.
+
+### Canceling a Scheduled Net
+
+To cancel a specific net instance (e.g., Christmas Day):
+1. Find the draft or scheduled net on the Dashboard
+2. Click the red **🗑️ Delete** icon
+3. Confirm the deletion
+
+This deletes only that net instance — the recurring schedule continues for future dates.
+
+**Email Subscribers** — Before canceling, you can notify subscribers by clicking the **✉️ Email** icon and sending a custom message.
 
 ### Managing Check-ins
 
@@ -197,8 +215,8 @@ For fast-moving nets, use the ⏩ Speed Entry button to check in multiple statio
 
 1. Click the **⏩** button next to the check-in form
 2. Enter multiple check-ins separated by semicolons
-3. Format: `CALLSIGN, Name, Location; CALLSIGN2, Name2, Location2`
-4. Press **Enter** or click Submit to process all at once
+3. Format: `CALLSIGN, Name, Location, Notes; CALLSIGN2, Name2, Location2`
+4. Press **Ctrl+Enter** or click the Add button to process all at once
 
 **Status shortcuts** — Append a colon and shortcut to set status:
 - `:jl` — Just Listening
@@ -214,6 +232,8 @@ KC1ABC, John, Portland ME; N1XYZ, Jane, Boston MA:jl; W1DEF, Bob, Bangor ME:m
 ```
 
 This checks in KC1ABC (normal), N1XYZ (listening status), and W1DEF (mobile status) in one operation.
+
+> **Note:** The field order matches your net's enabled fields (shown in the format hint). If "Power Source" is enabled, the format becomes: `CALLSIGN, Name, Location, Power, Notes`.
 
 #### Inline Editing
 

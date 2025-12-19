@@ -4,6 +4,29 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# December 18, 2025
+
+## New Features
+
+* **Lobby Mode** - NCS can start a net before the scheduled time, entering "Lobby" status where check-ins and chat are enabled but a countdown shows until the official start time. Click "Go Live" to transition to active status.
+* **Email Subscribers** - NCS can send custom emails to all subscribers of a scheduled/draft net (e.g., to announce cancellations)
+* **Cancel Net Instance** - Delete button added to draft/scheduled nets on the Dashboard to cancel a specific net instance without affecting the recurring schedule
+* **Net Script Button** - Added script viewer button (article icon) to the net toolbar between map and edit buttons
+
+## Improvements
+
+* **Ctrl+Enter Shortcuts** - Speed Entry (bulk check-in), Dashboard email, and Admin email dialogs now submit with Ctrl+Enter
+* **Net Creation Permissions** - Only admins, template owners, or designated NCS staff can create nets from schedules (prevents unauthorized users from starting nets)
+* **Delete Button Style** - Changed DELETE button in NetView to icon-only with tooltip, matching other toolbar buttons
+* **Speed Entry Simplification** - Removed preview chips from bulk check-in dialog; count now shows inline near submit button
+
+## Bug Fixes
+
+* **Bulk Check-In Notes Field** - Fixed notes not being populated when using Speed Entry (was using hardcoded field positions instead of dynamic enabled fields)
+* **Mobile/Announcements Status Crash** - Fixed page going blank when setting status to "Mobile" or "Announcements" (added missing enum values to backend)
+
+---
+
 # December 8, 2025
 
 ## New Features
