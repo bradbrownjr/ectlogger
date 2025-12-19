@@ -21,6 +21,7 @@ import {
   TableRow,
   useTheme,
   Button,
+  CircularProgress,
 } from '@mui/material';
 import {
   ArrowBack,
@@ -29,6 +30,7 @@ import {
   Refresh,
   TrendingUp,
   Radio,
+  PictureAsPdf,
 } from '@mui/icons-material';
 import {
   BarChart,
@@ -46,6 +48,7 @@ import {
 import { statisticsApi } from '../services/api';
 import { formatDateTime } from '../utils/dateUtils';
 import { useAuth } from '../contexts/AuthContext';
+import { exportElementToPdf } from '../utils/pdfExport';
 
 interface TimeSeriesDataPoint {
   label: string;
@@ -82,6 +85,25 @@ const NetStatistics: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<NetStats | null>(null);
+  const [exporting, setExporting] = useState(false);
+
+  // Handle PDF export
+  const handleExportPdf = async () => {
+    setExporting(true);
+    try {
+      const filename = stats?.net_name 
+        ? `${stats.net_name.replace(/[^a-zA-Z0-9]/g, '_')}_Statistics`
+        : 'Net_Statistics';
+      await exportElementToPdf('net-stats-content', {
+        filename,
+        orientation: 'landscape',
+      });
+    } catch (err) {
+      console.error('Failed to export PDF:', err);
+    } finally {
+      setExporting(false);
+    }
+  };
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -194,6 +216,16 @@ const NetStatistics: React.FC = () => {
             )}
           </Box>
         </Box>
+        <Tooltip title="Export to PDF">
+          <Button
+            variant="outlined"
+            onClick={handleExportPdf}
+            disabled={exporting}
+            startIcon={exporting ? <CircularProgress size={16} /> : <PictureAsPdf />}
+          >
+            {exporting ? 'Exporting...' : 'PDF'}
+          </Button>
+        </Tooltip>
         <Button
           variant="outlined"
           startIcon={<Radio />}
@@ -203,11 +235,13 @@ const NetStatistics: React.FC = () => {
         </Button>
       </Box>
 
-      {/* Summary Cards */}
-      <Grid container spacing={2} sx={{ mb: 4 }}>
-        <Grid item xs={6} sm={3}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
+      {/* Content wrapper for PDF export */}
+      <Box id="net-stats-content">
+        {/* Summary Cards */}
+        <Grid container spacing={2} sx={{ mb: 4 }}>
+          <Grid item xs={6} sm={3}>
+            <Card>
+              <CardContent sx={{ textAlign: 'center' }}>
               <TrendingUp color="primary" sx={{ fontSize: 32 }} />
               <Typography variant="h4" fontWeight="bold">
                 {stats.total_check_ins}
@@ -357,6 +391,7 @@ const NetStatistics: React.FC = () => {
           </Paper>
         </Grid>
       </Grid>
+      </Box>
     </Container>
   );
 };

@@ -133,7 +133,7 @@ const Statistics: React.FC = () => {
     try {
       await exportElementToPdf('stats-content', {
         filename: 'ECTLogger_Statistics',
-        orientation: 'portrait',
+        orientation: 'landscape',
       });
     } catch (err) {
       console.error('Failed to export PDF:', err);

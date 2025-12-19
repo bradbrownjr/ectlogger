@@ -32,8 +32,10 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import SettingsIcon from '@mui/icons-material/Settings';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import { useAuth } from '../contexts/AuthContext';
 import api, { statisticsApi } from '../services/api';
+import { exportElementToPdf } from '../utils/pdfExport';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -66,6 +68,23 @@ const Profile: React.FC = () => {
   const [userStats, setUserStats] = useState<any>(null);
   const [statsLoading, setStatsLoading] = useState(true);
   const [tabValue, setTabValue] = useState(0);
+  const [exportingPdf, setExportingPdf] = useState(false);
+
+  // Handle PDF export for activity stats
+  const handleExportActivityPdf = async () => {
+    setExportingPdf(true);
+    try {
+      const callsign = user?.callsign || user?.name || 'User';
+      await exportElementToPdf('activity-stats-content', {
+        filename: `${callsign.replace(/[^a-zA-Z0-9]/g, '_')}_Activity_Stats`,
+        orientation: 'landscape',
+      });
+    } catch (err) {
+      console.error('Failed to export PDF:', err);
+    } finally {
+      setExportingPdf(false);
+    }
+  };
   
   const [formData, setFormData] = useState({
     name: user?.name || '',
@@ -439,21 +458,35 @@ const Profile: React.FC = () => {
             </Box>
           ) : userStats ? (
             <>
-              <Grid container spacing={2} sx={{ mb: 3 }}>
-                <Grid item xs={6} sm={3}>
-                  <Card variant="outlined">
-                    <CardContent sx={{ textAlign: 'center' }}>
-                      <Typography variant="h4" color="primary">
-                        {userStats.total_check_ins}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Total Check-ins
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
-                <Grid item xs={6} sm={3}>
-                  <Card variant="outlined">
+              {/* PDF Export Button */}
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+                <Button
+                  variant="outlined"
+                  onClick={handleExportActivityPdf}
+                  disabled={exportingPdf}
+                  startIcon={exportingPdf ? <CircularProgress size={16} /> : <PictureAsPdfIcon />}
+                >
+                  {exportingPdf ? 'Exporting...' : 'PDF'}
+                </Button>
+              </Box>
+              
+              {/* Content wrapper for PDF export */}
+              <Box id="activity-stats-content">
+                <Grid container spacing={2} sx={{ mb: 3 }}>
+                  <Grid item xs={6} sm={3}>
+                    <Card variant="outlined">
+                      <CardContent sx={{ textAlign: 'center' }}>
+                        <Typography variant="h4" color="primary">
+                          {userStats.total_check_ins}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Total Check-ins
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={6} sm={3}>
+                    <Card variant="outlined">
                     <CardContent sx={{ textAlign: 'center' }}>
                       <Typography variant="h4" color="primary">
                         {userStats.nets_participated}
@@ -536,6 +569,7 @@ const Profile: React.FC = () => {
                   </TableContainer>
                 </>
               )}
+              </Box>
             </>
           ) : (
             <Typography color="text.secondary">
