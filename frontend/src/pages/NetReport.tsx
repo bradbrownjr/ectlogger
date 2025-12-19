@@ -245,7 +245,7 @@ const NetReport: React.FC = () => {
 
     // Create a stable key for checkIns to prevent unnecessary re-runs
     const checkInsKey = checkIns
-      .filter(c => c.location && c.status !== 'checked_out')
+      .filter(c => c.location && c.status.toUpperCase() !== 'CHECKED_OUT')
       .map(c => `${c.id}:${c.location}:${c.status}`)
       .join('|');
 
@@ -261,7 +261,7 @@ const NetReport: React.FC = () => {
 
       // First pass: parse all locations
       for (const checkIn of checkIns) {
-        if (!checkIn.location || checkIn.status === 'checked_out') continue;
+        if (!checkIn.location || checkIn.status.toUpperCase() === 'CHECKED_OUT') continue;
 
         const parsed = parseLocation(checkIn.location);
         if (parsed) {
@@ -300,15 +300,15 @@ const NetReport: React.FC = () => {
     processLocations();
   }, [checkIns]);
 
-  // Get marker color based on status
+  // Get marker color based on status (handle UPPERCASE database values)
   const getStatusColor = (status: string): string => {
-    switch (status) {
-      case 'checked_in': return theme.palette.success.main;
-      case 'has_traffic': return theme.palette.error.main;
-      case 'tactical': return theme.palette.warning.main;
-      case 'monitoring': return theme.palette.info.main;
-      case 'listening': return theme.palette.info.main;
-      case 'checking_out': return theme.palette.error.light;
+    switch (status.toUpperCase()) {
+      case 'CHECKED_IN': return theme.palette.success.main;
+      case 'HAS_TRAFFIC': return theme.palette.error.main;
+      case 'TACTICAL': return theme.palette.warning.main;
+      case 'MONITORING': return theme.palette.info.main;
+      case 'LISTENING': return theme.palette.info.main;
+      case 'CHECKING_OUT': return theme.palette.error.light;
       default: return theme.palette.grey[500];
     }
   };
@@ -461,7 +461,28 @@ const NetReport: React.FC = () => {
       </Box>
 
       {/* ========== PDF CONTENT WRAPPER ========== */}
-      <Box id="net-report-content" sx={{ backgroundColor: theme.palette.background.paper, p: 2, borderRadius: 1 }}>
+      <Box 
+        id="net-report-content" 
+        sx={{ 
+          backgroundColor: theme.palette.background.paper, 
+          p: 2, 
+          borderRadius: 1,
+          // Prevent table rows from breaking across pages in print/PDF
+          '& table': {
+            pageBreakInside: 'auto',
+          },
+          '& tr': {
+            pageBreakInside: 'avoid',
+            pageBreakAfter: 'auto',
+          },
+          '& thead': {
+            display: 'table-header-group',
+          },
+          '& tfoot': {
+            display: 'table-footer-group',
+          },
+        }}
+      >
         
         {/* ========== REPORT TITLE HEADER ========== */}
         <Box sx={{ textAlign: 'center', mb: 3, pb: 2, borderBottom: 2, borderColor: 'primary.main' }}>
@@ -685,10 +706,10 @@ const NetReport: React.FC = () => {
                             {mapped.checkIn.location}
                           </Typography>
                           <Chip
-                            label={mapped.checkIn.status.replace('_', ' ')}
+                            label={mapped.checkIn.status.toLowerCase().replace('_', ' ')}
                             size="small"
-                            color={mapped.checkIn.status === 'checked_in' ? 'success' : mapped.checkIn.status === 'tactical' ? 'warning' : 'default'}
-                            sx={{ mt: 0.5 }}
+                            color={mapped.checkIn.status.toUpperCase() === 'CHECKED_IN' ? 'success' : mapped.checkIn.status.toUpperCase() === 'TACTICAL' ? 'warning' : 'default'}
+                            sx={{ mt: 0.5, textTransform: 'capitalize' }}
                           />
                         </Box>
                       </Popup>
