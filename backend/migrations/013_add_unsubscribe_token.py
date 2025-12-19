@@ -40,9 +40,17 @@ def migrate():
         
         if 'unsubscribe_token' not in columns:
             print("Adding unsubscribe_token column to users table...")
+            # SQLite doesn't support adding UNIQUE constraint in ALTER TABLE
+            # Add column first, then create unique index
             cursor.execute("""
                 ALTER TABLE users 
-                ADD COLUMN unsubscribe_token VARCHAR(64) UNIQUE
+                ADD COLUMN unsubscribe_token VARCHAR(64)
+            """)
+            
+            # Create unique index for the column
+            cursor.execute("""
+                CREATE UNIQUE INDEX IF NOT EXISTS ix_users_unsubscribe_token 
+                ON users (unsubscribe_token)
             """)
             
             # Generate tokens for existing users
