@@ -55,21 +55,26 @@ const DefaultIcon = L.icon({
 L.Marker.prototype.options.icon = DefaultIcon;
 
 // Custom marker colors based on status
+// Uses SVG for better html2canvas PDF export compatibility
 const createColoredIcon = (color: string) => {
+  // Create an SVG marker that renders properly in PDF export
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="32" viewBox="0 0 24 32">
+      <path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 20 12 20s12-11 12-20c0-6.6-5.4-12-12-12z" 
+            fill="${color}" 
+            stroke="#333333" 
+            stroke-width="2"/>
+      <circle cx="12" cy="12" r="4" fill="white"/>
+    </svg>
+  `;
+  const encodedSvg = encodeURIComponent(svg);
+  
   return L.divIcon({
     className: 'custom-marker',
-    html: `<div style="
-      background-color: ${color};
-      width: 24px;
-      height: 24px;
-      border-radius: 50% 50% 50% 0;
-      transform: rotate(-45deg);
-      border: 2px solid white;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-    "></div>`,
-    iconSize: [24, 24],
-    iconAnchor: [12, 24],
-    popupAnchor: [0, -24],
+    html: `<img src="data:image/svg+xml,${encodedSvg}" width="24" height="32" style="display: block;" />`,
+    iconSize: [24, 32],
+    iconAnchor: [12, 32],
+    popupAnchor: [0, -32],
   });
 };
 
