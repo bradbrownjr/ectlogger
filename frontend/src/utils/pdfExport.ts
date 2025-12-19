@@ -147,17 +147,20 @@ export const exportToPdf = async (
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       const imgData = canvas.toDataURL('image/png');
 
-      let heightLeft = imgHeight;
-      let position = margin;
-
-      pdf.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight);
-      heightLeft -= contentHeight;
-
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight + margin;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight);
-        heightLeft -= contentHeight;
+      // Calculate how many pages we need
+      const totalPages = Math.ceil(imgHeight / contentHeight);
+      
+      for (let page = 0; page < totalPages; page++) {
+        if (page > 0) {
+          pdf.addPage();
+        }
+        
+        // Calculate the Y offset for this page's slice of the image
+        // We position the image so that the correct portion shows within the page margins
+        const yOffset = margin - (page * contentHeight);
+        
+        // Add the full image, but positioned so only the relevant portion shows
+        pdf.addImage(imgData, 'PNG', margin, yOffset, imgWidth, imgHeight);
       }
     }
 
