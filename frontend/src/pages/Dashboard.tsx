@@ -1027,12 +1027,18 @@ const Dashboard: React.FC = () => {
               label="Message"
               value={emailForm.message}
               onChange={(e) => setEmailForm({ ...emailForm, message: e.target.value })}
+              onKeyDown={(e: React.KeyboardEvent) => {
+                if (e.key === 'Enter' && e.ctrlKey && emailForm.subject && emailForm.message && !emailSending) {
+                  e.preventDefault();
+                  handleSendEmail();
+                }
+              }}
               required
               multiline
               rows={6}
               fullWidth
               placeholder="Enter your message to subscribers..."
-              helperText="This will be sent to all users subscribed to this net's template who have email notifications enabled."
+              helperText="Ctrl+Enter to send. This will be sent to all users subscribed to this net's template who have email notifications enabled."
             />
           </Box>
         </DialogContent>

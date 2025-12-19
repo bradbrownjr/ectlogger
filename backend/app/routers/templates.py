@@ -151,7 +151,7 @@ async def create_template(
     )
     template = result.scalar_one()
     
-    return NetTemplateResponse.from_orm(template, subscriber_count=0, is_subscribed=False)
+    return NetTemplateResponse.from_orm(template, subscriber_count=0, is_subscribed=False, can_manage=True, can_create_net=True)
 
 
 @router.get("/", response_model=List[NetTemplateResponse])
@@ -222,7 +222,8 @@ async def list_templates(
             is_subscribed=is_subscribed,
             owner_callsign=template.owner.callsign if template.owner else None,
             owner_name=template.owner.name if template.owner else None,
-            can_manage=can_manage
+            can_manage=can_manage,
+            can_create_net=can_manage  # Same permission - owner, admin, or NCS staff
         ))
     
     return template_responses
@@ -265,7 +266,7 @@ async def get_template(
     # Check if user can manage
     can_manage = await check_template_permission(db, template, current_user)
     
-    return NetTemplateResponse.from_orm(template, subscriber_count=subscriber_count, is_subscribed=is_subscribed, can_manage=can_manage)
+    return NetTemplateResponse.from_orm(template, subscriber_count=subscriber_count, is_subscribed=is_subscribed, can_manage=can_manage, can_create_net=can_manage)
 
 
 @router.put("/{template_id}", response_model=NetTemplateResponse)
@@ -369,7 +370,7 @@ async def update_template(
     )
     is_subscribed = subscription_result.scalar_one_or_none() is not None
     
-    return NetTemplateResponse.from_orm(template, subscriber_count=subscriber_count, is_subscribed=is_subscribed)
+    return NetTemplateResponse.from_orm(template, subscriber_count=subscriber_count, is_subscribed=is_subscribed, can_manage=True, can_create_net=True)
 
 
 @router.delete("/{template_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -508,6 +509,18 @@ async def create_net_from_template(
     
     if not template.is_active:
         raise HTTPException(status_code=400, detail="Template is not active")
+    
+    # Check if user has permission to create a net from this template
+    # Must be: admin, template owner, or NCS staff member for this template
+    is_admin = current_user.role == UserRole.ADMIN
+    is_owner = template.owner_id == current_user.id
+    is_ncs_staff = any(member.user_id == current_user.id for member in template.rotation_members)
+    
+    if not (is_admin or is_owner or is_ncs_staff):
+        raise HTTPException(
+            status_code=403, 
+            detail="Only admins, template owners, or designated NCS staff can create nets from this template"
+        )
     
     # Calculate scheduled_start_time based on template's schedule config
     # Only for recurring schedules (daily, weekly, monthly) - not for one_time or ad_hoc

@@ -1901,15 +1901,17 @@ const NetView: React.FC = () => {
                   </>
                 )}
                 {canManage && (net.status === 'draft' || net.status === 'archived') && (
-                  <Button 
-                    size="small"
-                    variant="outlined" 
-                    color="error"
-                    startIcon={<DeleteIcon fontSize="small" />} 
-                    onClick={handleDelete}
-                  >
-                    Delete
-                  </Button>
+                  <Tooltip title="Delete net">
+                    <Button 
+                      size="small"
+                      variant="outlined" 
+                      color="error"
+                      onClick={handleDelete}
+                      sx={{ minWidth: 'auto', px: 1 }}
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </Button>
+                  </Tooltip>
                 )}
               </Box>
             </Grid>

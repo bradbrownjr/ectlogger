@@ -9,7 +9,6 @@ import {
   Alert,
   Snackbar,
   CircularProgress,
-  Chip,
   useTheme,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
@@ -144,12 +143,18 @@ const BulkCheckIn: React.FC<BulkCheckInProps> = ({ open, onClose, netId, onCheck
         status: status || 'checked_in',
       };
       
-      // Parse remaining fields - they're positional:
-      // callsign, name, location, power_source, notes
-      if (fields.length > 1 && fields[1]) checkIn.name = fields[1];
-      if (fields.length > 2 && fields[2]) checkIn.location = fields[2];
-      if (fields.length > 3 && fields[3]) checkIn.power_source = fields[3];
-      if (fields.length > 4 && fields[4]) checkIn.notes = fields[4];
+      // Parse remaining fields dynamically based on enabledFields
+      // enabledFields includes 'callsign' at index 0, so we start from index 1
+      for (let i = 1; i < enabledFields.length && i < fields.length; i++) {
+        const fieldName = enabledFields[i];
+        const value = fields[i];
+        if (value) {
+          if (fieldName === 'name') checkIn.name = value;
+          else if (fieldName === 'location') checkIn.location = value;
+          else if (fieldName === 'power') checkIn.power_source = value;
+          else if (fieldName === 'notes') checkIn.notes = value;
+        }
+      }
       
       // Validate callsign format (basic check)
       if (!/^[A-Z0-9\/]+$/i.test(checkIn.callsign)) {
@@ -207,7 +212,8 @@ const BulkCheckIn: React.FC<BulkCheckInProps> = ({ open, onClose, netId, onCheck
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    // Ctrl+Enter to submit
+    if (e.key === 'Enter' && e.ctrlKey) {
       e.preventDefault();
       handleSubmit();
     }
@@ -319,27 +325,10 @@ const BulkCheckIn: React.FC<BulkCheckInProps> = ({ open, onClose, netId, onCheck
                 </Typography>
               </Box>
 
-              {/* Preview */}
-              {preview.length > 0 && (
-                <Box sx={{ flex: 1, overflow: 'auto', mb: 1, p: 1, bgcolor: 'action.hover', borderRadius: 1 }}>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                    Preview ({preview.length} check-in{preview.length !== 1 ? 's' : ''}):
-                  </Typography>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                    {preview.map((ci, idx) => (
-                      <Chip
-                        key={idx}
-                        size="small"
-                        label={`${ci.callsign}${ci.status !== 'checked_in' ? ` (${ci.status})` : ''}`}
-                        color={ci.error ? 'error' : 'default'}
-                        variant="outlined"
-                      />
-                    ))}
-                  </Box>
-                </Box>
-              )}
-
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 1 }}>
+                <Typography variant="caption" color="text.secondary">
+                  {preview.length > 0 && `${preview.length} check-in${preview.length !== 1 ? 's' : ''} • `}Ctrl+Enter to submit
+                </Typography>
                 <Button onClick={onClose} disabled={processing}>
                   Cancel
                 </Button>
@@ -349,7 +338,7 @@ const BulkCheckIn: React.FC<BulkCheckInProps> = ({ open, onClose, netId, onCheck
                   disabled={!bulkText.trim() || processing}
                   startIcon={processing ? <CircularProgress size={16} /> : null}
                 >
-                  {processing ? 'Adding...' : `Add ${preview.length} Check-in${preview.length !== 1 ? 's' : ''}`}
+                  {processing ? 'Adding...' : `Add${preview.length > 0 ? ` ${preview.length}` : ''}`}
                 </Button>
               </Box>
             </Box>

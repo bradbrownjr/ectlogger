@@ -1847,11 +1847,17 @@ const Admin: React.FC = () => {
               label="Message"
               value={emailForm.message}
               onChange={(e) => setEmailForm({ ...emailForm, message: e.target.value })}
+              onKeyDown={(e: React.KeyboardEvent) => {
+                if (e.key === 'Enter' && e.ctrlKey && emailForm.subject && emailForm.message && !emailSending) {
+                  e.preventDefault();
+                  handleSendPlatformEmail();
+                }
+              }}
               required
               multiline
               rows={6}
               fullWidth
-              helperText="This message will be sent to all users who have email notifications enabled."
+              helperText="Ctrl+Enter to send. This message will be sent to all users who have email notifications enabled."
             />
           </Box>
         </DialogContent>

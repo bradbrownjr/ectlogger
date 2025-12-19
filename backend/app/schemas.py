@@ -317,9 +317,10 @@ class NetTemplateResponse(NetTemplateBase):
     subscriber_count: int = 0
     is_subscribed: bool = False
     can_manage: bool = False  # True if current user can edit this template
+    can_create_net: bool = False  # True if current user can create a net from this template (admin, owner, or NCS staff)
 
     @classmethod
-    def from_orm(cls, template, subscriber_count: int = 0, is_subscribed: bool = False, owner_callsign: str = None, owner_name: str = None, can_manage: bool = False):
+    def from_orm(cls, template, subscriber_count: int = 0, is_subscribed: bool = False, owner_callsign: str = None, owner_name: str = None, can_manage: bool = False, can_create_net: bool = False):
         import json
         data = {
             'id': template.id,
@@ -343,7 +344,8 @@ class NetTemplateResponse(NetTemplateBase):
             'frequencies': [FrequencyResponse.model_validate(f) for f in template.frequencies],
             'subscriber_count': subscriber_count,
             'is_subscribed': is_subscribed,
-            'can_manage': can_manage
+            'can_manage': can_manage,
+            'can_create_net': can_create_net
         }
         return cls(**data)
 

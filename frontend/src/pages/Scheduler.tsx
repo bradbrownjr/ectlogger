@@ -312,7 +312,7 @@ const Scheduler: React.FC = () => {
                 <Chip label={schedule.subscriber_count} size="small" variant="outlined" />
               </TableCell>
               <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
-                {isAuthenticated && (
+                {schedule.can_create_net && (
                   <Tooltip title="Create Net">
                     <IconButton size="small" color="success" onClick={() => handleCreateNetFromSchedule(schedule.id)}>
                       <PlayArrowIcon fontSize="small" />
@@ -450,7 +450,7 @@ const Scheduler: React.FC = () => {
       
       <CardActions sx={{ justifyContent: 'space-between', flexWrap: 'wrap' }}>
         <Box>
-          {isAuthenticated && (
+          {schedule.can_create_net && (
             <Button
               size="small"
               startIcon={<PlayArrowIcon />}

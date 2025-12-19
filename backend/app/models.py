@@ -52,6 +52,8 @@ class StationStatus(str, enum.Enum):
     LISTENING = "listening"
     RELAY = "relay"
     AWAY = "away"
+    ANNOUNCEMENTS = "announcements"
+    MOBILE = "mobile"
     CHECKED_OUT = "checked_out"
 
 
