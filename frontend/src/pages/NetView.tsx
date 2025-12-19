@@ -360,8 +360,8 @@ const NetView: React.FC = () => {
     const updateTimers = () => {
       const now = new Date();
       
-      // Countdown timer: show time until scheduled start (only for draft/scheduled nets)
-      if (net.scheduled_start_time && (net.status === 'draft' || net.status === 'scheduled')) {
+      // Countdown timer: show time until scheduled start (for draft/scheduled/lobby nets)
+      if (net.scheduled_start_time && (net.status === 'draft' || net.status === 'scheduled' || net.status === 'lobby')) {
         // Ensure the timestamp is parsed as UTC (backend stores UTC without 'Z' suffix)
         const scheduledTimeStr = net.scheduled_start_time.endsWith('Z') ? net.scheduled_start_time : net.scheduled_start_time + 'Z';
         const scheduledTime = new Date(scheduledTimeStr);
@@ -728,6 +728,20 @@ const NetView: React.FC = () => {
       }
     } catch (error) {
       console.error('Failed to close net:', error);
+    }
+  };
+
+  // Go Live: Transition from LOBBY to ACTIVE mode
+  const handleGoLive = async () => {
+    try {
+      await api.post(`/nets/${netId}/go-live`);
+      await fetchNet();
+      setSnackbarMessage('Net is now LIVE! Subscribers have been notified.');
+      setSnackbarOpen(true);
+    } catch (error: any) {
+      console.error('Failed to go live:', error);
+      setSnackbarMessage(error.response?.data?.detail || 'Failed to go live');
+      setSnackbarOpen(true);
     }
   };
 
@@ -1427,7 +1441,7 @@ const NetView: React.FC = () => {
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', mb: 0.5, gap: 0.5 }}>
                 {/* Left side: Status, timers, and stats */}
                 <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <Chip label={net.status} size="small" color={net.status === 'active' ? 'success' : 'default'} />
+                  <Chip label={net.status === 'lobby' ? 'LOBBY' : net.status} size="small" color={net.status === 'active' ? 'success' : net.status === 'lobby' ? 'warning' : 'default'} />
                   {/* Countdown timer - shows time until scheduled start */}
                   {countdownTime && (
                     <Chip 
@@ -1634,7 +1648,7 @@ const NetView: React.FC = () => {
                     </Tooltip>
                   </>
                 )}
-                {net.status === 'active' && checkIns.length > 0 && (
+                {(net.status === 'active' || net.status === 'lobby') && checkIns.length > 0 && (
                   <Tooltip title="Bulk add multiple check-ins">
                     <Button 
                       size="small" 
@@ -1694,7 +1708,7 @@ const NetView: React.FC = () => {
                     </Button>
                   </Tooltip>
                 )}
-                {canManage && net.status === 'active' ? (
+                {canManage && (net.status === 'active' || net.status === 'lobby') ? (
                   <>
                     <Tooltip title="Edit net settings">
                       <Button 
@@ -1742,7 +1756,7 @@ const NetView: React.FC = () => {
                     </Button>
                   </Tooltip>
                 )}
-                {isAuthenticated && net.status === 'active' && (
+                {isAuthenticated && (net.status === 'active' || net.status === 'lobby') && (
                   userActiveCheckIn ? (
                     <Tooltip title="Check out of net">
                       <Button 
@@ -1810,7 +1824,20 @@ const NetView: React.FC = () => {
                     </Tooltip>
                   )
                 )}
-                {canManage && net.status === 'active' && (
+                {canManage && net.status === 'lobby' && (
+                  <Tooltip title="Go live - Start the net officially and notify subscribers">
+                    <Button 
+                      size="small" 
+                      variant="contained" 
+                      color="success" 
+                      onClick={handleGoLive}
+                      sx={{ minWidth: 'auto', px: 1 }}
+                    >
+                      <PlayArrowIcon fontSize="small" />
+                    </Button>
+                  </Tooltip>
+                )}
+                {canManage && (net.status === 'active' || net.status === 'lobby') && (
                   <Tooltip title="Close net">
                     <Button 
                       size="small" 
@@ -1888,7 +1915,7 @@ const NetView: React.FC = () => {
           </Grid>
         </Box>
 
-        {(net.status === 'active' || net.status === 'closed' || net.status === 'archived') && (
+        {(net.status === 'active' || net.status === 'lobby' || net.status === 'closed' || net.status === 'archived') && (
           <Grid container spacing={0} sx={{ mt: 0.5, flex: { xs: 'none', md: 1 }, minHeight: 0 }}>
             {/* Check-in list - hide Grid if detached */}
             {!checkInListDetached && (
@@ -2046,7 +2073,7 @@ const NetView: React.FC = () => {
                     >
                       <TableCell sx={{ width: 35 }}>{index + 1}</TableCell>
                       <TableCell sx={{ width: 75 }} onClick={(e) => e.stopPropagation()}>
-                        {net.status === 'active' && checkIn.status !== 'checked_out' && (canManageCheckIns || checkIn.user_id === user?.id) ? (() => {
+                        {(net.status === 'active' || net.status === 'lobby') && checkIn.status !== 'checked_out' && (canManageCheckIns || checkIn.user_id === user?.id) ? (() => {
                           // Calculate value once
 
                           // Ensure selectValue matches MenuItem values exactly
@@ -2334,7 +2361,7 @@ const NetView: React.FC = () => {
                       {/* Actions column - remove edit pencil, keep active speaker and delete */}
                       {canManage && (
                       <TableCell sx={{ width: 70 }} onClick={(e) => e.stopPropagation()}>
-                        {net.status === 'active' && checkIn.status !== 'checked_out' && (
+                        {(net.status === 'active' || net.status === 'lobby') && checkIn.status !== 'checked_out' && (
                           <IconButton
                             size="small"
                             onClick={() => handleSetActiveSpeaker(checkIn.id)}
@@ -2488,7 +2515,7 @@ const NetView: React.FC = () => {
                       }}>
                         <TableCell sx={{ whiteSpace: 'nowrap' }}>{index + 1}</TableCell>
                         <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                          {net.status === 'active' && checkIn.status !== 'checked_out' && (canManageCheckIns || checkIn.user_id === user?.id) ? (() => {
+                          {(net.status === 'active' || net.status === 'lobby') && checkIn.status !== 'checked_out' && (canManageCheckIns || checkIn.user_id === user?.id) ? (() => {
                             const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
                             let selectValue = checkIn.status.toLowerCase();
                             if (userRole && ['ncs', 'logger'].includes(userRole.role.toLowerCase())) {
@@ -2588,8 +2615,8 @@ const NetView: React.FC = () => {
                     </Typography>
                   </Tooltip>
                 )}
-                {/* Inline edit hint - only shown to NCS/Loggers when net is active */}
-                {net.status === 'active' && canManageCheckIns && (
+                {/* Inline edit hint - only shown to NCS/Loggers when net is active or in lobby */}
+                {(net.status === 'active' || net.status === 'lobby') && canManageCheckIns && (
                   <Tooltip title="Click any row to edit check-in details inline" placement="top" arrow>
                     <Typography variant="caption" sx={{ cursor: 'help', color: 'primary.main', fontStyle: 'italic' }}>
                       💡 Click row to edit
@@ -2652,7 +2679,7 @@ const NetView: React.FC = () => {
             )}
             
             {/* New check-in form - desktop only */}
-            {net.status === 'active' && canManageCheckIns && (
+            {(net.status === 'active' || net.status === 'lobby') && canManageCheckIns && (
               <Paper sx={{ border: 1, borderColor: 'divider', borderTop: 0, borderRadius: '0 0 4px 4px', p: 1, flexShrink: 0, display: { xs: 'none', md: 'block' } }}>
                 <Table size="small">
                   <TableBody>
@@ -2952,7 +2979,7 @@ const NetView: React.FC = () => {
             )}
             
             {/* Mobile check-in form - full version */}
-            {net.status === 'active' && canManageCheckIns && (
+            {(net.status === 'active' || net.status === 'lobby') && canManageCheckIns && (
               <Paper sx={{ p: 1.5, mt: 1, display: { xs: 'block', md: 'none' } }}>
                 <Typography variant="subtitle2" sx={{ mb: 1.5 }}>New Check-in</Typography>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
@@ -3173,7 +3200,7 @@ const NetView: React.FC = () => {
         )}
 
         {/* Floating Check-in List when detached - renders same content as docked version */}
-        {checkInListDetached && (net.status === 'active' || net.status === 'closed' || net.status === 'archived') && (
+        {checkInListDetached && (net.status === 'active' || net.status === 'lobby' || net.status === 'closed' || net.status === 'archived') && (
           <FloatingWindow
             title="Check-in List"
             isDetached={true}
@@ -3246,7 +3273,7 @@ const NetView: React.FC = () => {
                         >
                           <TableCell>{index + 1}</TableCell>
                           <TableCell>
-                            {net.status === 'active' && checkIn.status !== 'checked_out' && (canManageCheckIns || checkIn.user_id === user?.id) ? (() => {
+                            {(net.status === 'active' || net.status === 'lobby') && checkIn.status !== 'checked_out' && (canManageCheckIns || checkIn.user_id === user?.id) ? (() => {
                               const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
                               let selectValue = checkIn.status.toLowerCase();
                               if (userRole && ['ncs', 'logger'].includes(userRole.role.toLowerCase())) {
@@ -3310,7 +3337,7 @@ const NetView: React.FC = () => {
                           <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatTimeWithDate(checkIn.checked_in_at, user?.prefer_utc || false, net?.started_at)}</TableCell>
                           {canManage && (
                             <TableCell>
-                              {net.status === 'active' && checkIn.status !== 'checked_out' && (
+                              {(net.status === 'active' || net.status === 'lobby') && checkIn.status !== 'checked_out' && (
                                 <IconButton size="small" onClick={() => handleSetActiveSpeaker(checkIn.id)} color={checkIn.id === activeSpeakerId ? 'primary' : 'default'} title="Mark as active speaker">🗣️</IconButton>
                               )}
                               <IconButton size="small" onClick={() => handleDeleteCheckIn(checkIn.id)} title="Delete"><DeleteIcon fontSize="small" /></IconButton>
@@ -3338,8 +3365,8 @@ const NetView: React.FC = () => {
                   <Tooltip title="Has traffic" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>🚨 Traffic</Typography></Tooltip>
                   <Tooltip title="Has announcements" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>📢 Announce</Typography></Tooltip>
                   <Tooltip title="Checked out" placement="top" arrow><Typography variant="caption" sx={{ cursor: 'help' }}>👋 Out</Typography></Tooltip>
-                  {/* Inline edit hint - only shown to NCS/Loggers when net is active */}
-                  {net.status === 'active' && canManageCheckIns && (
+                  {/* Inline edit hint - only shown to NCS/Loggers when net is active or in lobby */}
+                  {(net.status === 'active' || net.status === 'lobby') && canManageCheckIns && (
                     <Tooltip title="Click any row to edit check-in details inline" placement="top" arrow>
                       <Typography variant="caption" sx={{ cursor: 'help', color: 'primary.main', fontStyle: 'italic' }}>
                         💡 Click row to edit
@@ -3350,7 +3377,7 @@ const NetView: React.FC = () => {
               </Box>
               
               {/* Check-in form */}
-              {net.status === 'active' && canManageCheckIns && (
+              {(net.status === 'active' || net.status === 'lobby') && canManageCheckIns && (
                 <Paper sx={{ border: 1, borderColor: 'divider', borderTop: 0, borderRadius: '0 0 4px 4px', p: 1, flexShrink: 0 }}>
                   <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
                     <TextField
@@ -3423,7 +3450,7 @@ const NetView: React.FC = () => {
         )}
 
         {/* Floating Chat when detached */}
-        {chatDetached && (net.status === 'active' || net.status === 'closed' || net.status === 'archived') && (
+        {chatDetached && (net.status === 'active' || net.status === 'lobby' || net.status === 'closed' || net.status === 'archived') && (
           <FloatingWindow
             title="Chat"
             isDetached={true}

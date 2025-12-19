@@ -181,6 +181,7 @@ const Dashboard: React.FC = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active': return 'success';
+      case 'lobby': return 'warning';  // Yellow/orange for pre-net lobby mode
       case 'closed': return 'default';
       case 'scheduled': return 'info';
       default: return 'default';
@@ -400,7 +401,7 @@ const Dashboard: React.FC = () => {
                   </IconButton>
                 </Tooltip>
                 {/* Active net actions */}
-                {net.status === 'active' && (
+                {(net.status === 'active' || net.status === 'lobby') && (
                   <Tooltip title="Statistics">
                     <IconButton size="small" onClick={() => navigate(`/statistics/nets/${net.id}`)}>
                       <BarChartIcon fontSize="small" />
@@ -508,6 +509,9 @@ const Dashboard: React.FC = () => {
               {net.status === 'active' && net.started_at && (
                 <>Started: {formatDateTime(net.started_at, user?.prefer_utc || false)}</>
               )}
+              {net.status === 'lobby' && net.scheduled_start_time && (
+                <>Starts at: {formatDateTime(net.scheduled_start_time, user?.prefer_utc || false)}</>
+              )}
               {(net.status === 'draft' || net.status === 'scheduled') && net.scheduled_start_time && (
                 <>Scheduled: {formatDateTime(net.scheduled_start_time, user?.prefer_utc || false)}</>
               )}
@@ -575,8 +579,8 @@ const Dashboard: React.FC = () => {
               <GroupsIcon />
             </IconButton>
           </Tooltip>
-          {/* Active net - show stats on right side */}
-          {net.status === 'active' && (
+          {/* Active/Lobby net - show stats on right side */}
+          {(net.status === 'active' || net.status === 'lobby') && (
             <Tooltip title="Net statistics">
               <IconButton
                 size="small"

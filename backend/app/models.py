@@ -40,6 +40,7 @@ class UserRole(str, enum.Enum):
 class NetStatus(str, enum.Enum):
     DRAFT = "draft"
     SCHEDULED = "scheduled"
+    LOBBY = "lobby"  # Pre-net mode: check-ins and chat allowed, countdown to official start
     ACTIVE = "active"
     CLOSED = "closed"
     ARCHIVED = "archived"

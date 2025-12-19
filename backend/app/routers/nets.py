@@ -296,7 +296,11 @@ async def start_net(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """Start a net and notify subscribers"""
+    """Start a net - enters LOBBY mode if before scheduled time, otherwise goes straight to ACTIVE.
+    
+    LOBBY mode allows check-ins and chat while showing a countdown to the official start time.
+    Use the /go-live endpoint to transition from LOBBY to ACTIVE.
+    """
     result = await db.execute(
         select(Net).options(selectinload(Net.frequencies)).where(Net.id == net_id)
     )
@@ -312,8 +316,28 @@ async def start_net(
     if net.status == NetStatus.ACTIVE:
         raise HTTPException(status_code=400, detail="Net is already active")
     
-    net.status = NetStatus.ACTIVE
-    net.started_at = datetime.utcnow()
+    if net.status == NetStatus.LOBBY:
+        raise HTTPException(status_code=400, detail="Net is already in lobby mode")
+    
+    # Determine if we should go to LOBBY or ACTIVE
+    # Go to LOBBY if there's a scheduled_start_time in the future
+    now = datetime.utcnow()
+    go_to_lobby = False
+    if net.scheduled_start_time:
+        # Handle timezone-aware vs naive datetimes
+        scheduled = net.scheduled_start_time
+        if scheduled.tzinfo is not None:
+            from datetime import timezone
+            now = datetime.now(timezone.utc)
+        if scheduled > now:
+            go_to_lobby = True
+    
+    if go_to_lobby:
+        net.status = NetStatus.LOBBY
+        # Don't set started_at yet - that's for when it goes ACTIVE
+    else:
+        net.status = NetStatus.ACTIVE
+        net.started_at = datetime.utcnow()
     
     await db.commit()
     await db.refresh(net, ['frequencies'])
@@ -346,21 +370,104 @@ async def start_net(
     db.add(ncs_check_in)
     await db.commit()
     
-    # Post system message for net start
+    # Post system message
     from app.main import post_system_message, manager
-    await post_system_message(net_id, f"Net has been started by {current_user.callsign or current_user.email}", db)
+    if go_to_lobby:
+        await post_system_message(net_id, f"Net lobby opened by {current_user.callsign or current_user.email}. Official start at scheduled time.", db)
+    else:
+        await post_system_message(net_id, f"Net has been started by {current_user.callsign or current_user.email}", db)
     
-    # Broadcast net_started event so all connected clients refresh
+    # Broadcast event so all connected clients refresh
+    await manager.broadcast({
+        "type": "net_started" if not go_to_lobby else "net_lobby_opened",
+        "data": {
+            "net_id": net_id,
+            "started_by": current_user.callsign or current_user.email,
+            "status": net.status.value,
+            "started_at": net.started_at.isoformat() if net.started_at else None,
+            "scheduled_start_time": net.scheduled_start_time.isoformat() if net.scheduled_start_time else None
+        }
+    }, net_id)
+    
+    # Only send email notifications when going ACTIVE (not LOBBY)
+    if not go_to_lobby:
+        try:
+            emails_to_notify = []
+            
+            # Add net owner (if they have notifications enabled)
+            result = await db.execute(select(User).where(User.id == net.owner_id))
+            owner = result.scalar_one_or_none()
+            if owner and owner.email and owner.email_notifications and owner.notify_net_start:
+                emails_to_notify.append(owner.email)
+            
+            # If net was created from template, add all subscribers who want start notifications
+            if net.template_id:
+                from app.models import NetTemplateSubscription
+                result = await db.execute(
+                    select(User)
+                    .join(NetTemplateSubscription, NetTemplateSubscription.user_id == User.id)
+                    .where(NetTemplateSubscription.template_id == net.template_id)
+                    .where(User.email_notifications == True)
+                    .where(User.notify_net_start == True)
+                )
+                subscribers = result.scalars().all()
+                for subscriber in subscribers:
+                    if subscriber.email and subscriber.email not in emails_to_notify:
+                        emails_to_notify.append(subscriber.email)
+            
+            # Send notifications
+            if emails_to_notify:
+                await EmailService.send_net_notification(emails_to_notify, net.name, net.id)
+        except Exception as e:
+            print(f"Failed to send net start notification: {e}")
+    
+    return NetResponse.from_orm(net)
+
+
+@router.post("/{net_id}/go-live", response_model=NetResponse)
+async def go_live(
+    net_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Transition a net from LOBBY to ACTIVE mode. This sends out the start notifications."""
+    result = await db.execute(
+        select(Net).options(selectinload(Net.frequencies)).where(Net.id == net_id)
+    )
+    net = result.scalar_one_or_none()
+    
+    if not net:
+        raise HTTPException(status_code=404, detail="Net not found")
+    
+    # Check permissions - owner, admin, or NCS can go live
+    if not await check_net_permission(db, net, current_user, ["NCS"]):
+        raise HTTPException(status_code=403, detail="Not authorized to start this net")
+    
+    if net.status != NetStatus.LOBBY:
+        raise HTTPException(status_code=400, detail="Net must be in lobby mode to go live")
+    
+    net.status = NetStatus.ACTIVE
+    net.started_at = datetime.utcnow()
+    
+    await db.commit()
+    await db.refresh(net, ['frequencies'])
+    
+    # Post system message
+    from app.main import post_system_message, manager
+    await post_system_message(net_id, f"Net is now LIVE! Started by {current_user.callsign or current_user.email}", db)
+    
+    # Broadcast net_started event
     await manager.broadcast({
         "type": "net_started",
         "data": {
             "net_id": net_id,
             "started_by": current_user.callsign or current_user.email,
+            "status": "active",
             "started_at": net.started_at.isoformat() if net.started_at else None
         }
     }, net_id)
     
-    # Send email notification to net owner and template subscribers
+    # Send email notifications now that we're going live
     try:
         emails_to_notify = []
         
