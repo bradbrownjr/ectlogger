@@ -419,6 +419,39 @@ This is handy for NCS operating split frequencies — focus on stations monitori
 
 Subscribe to nets you regularly participate in to receive email notifications when they start, close, or are about to begin. Click the bell icon on any net to toggle subscription.
 
+---
+
+## Administration (Admin Role Only)
+
+Users with the Admin role have access to additional management features via the Admin page.
+
+### User Management
+
+The Users tab shows all registered users with online presence indicators:
+
+**Presence Indicators (colored dots):**
+- 🟢 **Green** — Online now (active within 5 minutes)
+- 🟡 **Yellow** — Away (5-15 minutes since last activity)
+- 🔴 **Red** — Offline (15+ minutes since last activity)
+
+**Default Sort:** Users are sorted by online status (online first), then alphabetically by name.
+
+**Available Actions:**
+- Change user roles (user, ncs, admin)
+- Ban/unban users
+- Delete users
+
+**Column Order:** Name, Callsign, Email, Role, Status, Last Active, Created, Actions
+
+### Additional Admin Features
+
+- **Check-In Fields** — Configure default check-in form fields
+- **Frequency Library** — Manage shared frequency presets
+- **Security** — View fail2ban status and recent authentication events
+- **Site Settings** — Configure schedule creation limits
+
+---
+
 ## Getting Help
 
 - **Issues**: [GitHub Issues](https://github.com/bradbrownjr/ectlogger/issues)

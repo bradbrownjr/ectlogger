@@ -65,6 +65,7 @@ import ClearIcon from '@mui/icons-material/Clear';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import { frequencyApi } from '../services/api';
+import { formatDateTime } from '../utils/dateUtils';
 
 interface User {
   id: number;
@@ -134,8 +135,8 @@ interface Frequency {
 type FrequencySortField = 'frequency' | 'mode' | 'network' | 'talkgroup' | 'description' | 'net_count';
 type SortDirection = 'asc' | 'desc';
 
-// User sorting types
-type UserSortField = 'email' | 'name' | 'callsign' | 'role' | 'status' | 'last_active' | 'created_at';
+// User sorting types - 'online' sorts by presence status then by name
+type UserSortField = 'online' | 'email' | 'name' | 'callsign' | 'role' | 'status' | 'last_active' | 'created_at';
 
 // Field sorting types
 type FieldSortField = 'name' | 'label' | 'type' | 'default_enabled' | 'default_required' | 'status';
@@ -234,8 +235,8 @@ const Admin: React.FC = () => {
   
   // User filtering and sorting
   const [userFilter, setUserFilter] = useState('');
-  const [userSortField, setUserSortField] = useState<UserSortField>('callsign');
-  const [userSortDirection, setUserSortDirection] = useState<SortDirection>('asc');
+  const [userSortField, setUserSortField] = useState<UserSortField>('online');
+  const [userSortDirection, setUserSortDirection] = useState<SortDirection>('desc');
   
   // Field filtering and sorting
   const [fieldFilter, setFieldFilter] = useState('');
@@ -402,11 +403,35 @@ const Admin: React.FC = () => {
     );
   });
 
+  // Helper to get online status score for sorting (higher = more online)
+  const getOnlineStatusScore = (user: User): number => {
+    if (!user.last_active) return 0;
+    const normalizedTimestamp = user.last_active.endsWith('Z') ? user.last_active : user.last_active + 'Z';
+    const lastActive = new Date(normalizedTimestamp);
+    const now = Date.now();
+    const minutesAgo = (now - lastActive.getTime()) / (60 * 1000);
+    
+    if (minutesAgo < 5) return 3;   // Online
+    if (minutesAgo < 15) return 2;  // Away
+    return 1;                        // Offline but has been active
+  };
+
   const sortedUsers = [...filteredUsers].sort((a, b) => {
     let aVal: string | number | boolean = '';
     let bVal: string | number | boolean = '';
     
     switch (userSortField) {
+      case 'online':
+        // Sort by online status (desc = online first), then by name
+        const aScore = getOnlineStatusScore(a);
+        const bScore = getOnlineStatusScore(b);
+        if (aScore !== bScore) {
+          return userSortDirection === 'desc' 
+            ? bScore - aScore  // Online first when desc
+            : aScore - bScore;
+        }
+        // Secondary sort by name
+        return (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' });
       case 'email':
         aVal = a.email;
         bVal = b.email;
@@ -428,12 +453,15 @@ const Admin: React.FC = () => {
         bVal = b.is_active ? 1 : 0;
         break;
       case 'last_active':
-        aVal = a.last_active ? new Date(a.last_active).getTime() : 0;
-        bVal = b.last_active ? new Date(b.last_active).getTime() : 0;
+        // Fix timestamp parsing - append 'Z' if missing
+        const aTime = a.last_active ? new Date(a.last_active.endsWith('Z') ? a.last_active : a.last_active + 'Z').getTime() : 0;
+        const bTime = b.last_active ? new Date(b.last_active.endsWith('Z') ? b.last_active : b.last_active + 'Z').getTime() : 0;
+        aVal = aTime;
+        bVal = bTime;
         break;
       case 'created_at':
-        aVal = new Date(a.created_at).getTime();
-        bVal = new Date(b.created_at).getTime();
+        aVal = new Date(a.created_at.endsWith('Z') ? a.created_at : a.created_at + 'Z').getTime();
+        bVal = new Date(b.created_at.endsWith('Z') ? b.created_at : b.created_at + 'Z').getTime();
         break;
     }
     
@@ -453,7 +481,8 @@ const Admin: React.FC = () => {
       setUserSortDirection(userSortDirection === 'asc' ? 'desc' : 'asc');
     } else {
       setUserSortField(field);
-      setUserSortDirection('asc');
+      // Default to desc for 'online' sort (online users first)
+      setUserSortDirection(field === 'online' ? 'desc' : 'asc');
     }
   };
 
@@ -855,15 +884,46 @@ const Admin: React.FC = () => {
     }
   };
 
-  // Check if user is online (active within last 5 minutes)
-  const isUserOnline = (user: User): boolean => {
-    if (!user.last_active) return false;
-    const lastActive = new Date(user.last_active);
-    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-    return lastActive > fiveMinutesAgo;
+  // Get user online status: 'online' (green, <5min), 'away' (yellow, 5-15min), 'offline' (red/none, >15min)
+  type OnlineStatus = 'online' | 'away' | 'offline';
+  
+  const getUserOnlineStatus = (user: User): OnlineStatus => {
+    if (!user.last_active) return 'offline';
+    // Normalize the timestamp - backend sends UTC without 'Z' suffix
+    const normalizedTimestamp = user.last_active.endsWith('Z') ? user.last_active : user.last_active + 'Z';
+    const lastActive = new Date(normalizedTimestamp);
+    const now = Date.now();
+    const minutesAgo = (now - lastActive.getTime()) / (60 * 1000);
+    
+    if (minutesAgo < 5) return 'online';
+    if (minutesAgo < 15) return 'away';
+    return 'offline';
   };
 
-  // Count online users
+  // For backward compatibility - check if user is online (green dot)
+  const isUserOnline = (user: User): boolean => {
+    return getUserOnlineStatus(user) === 'online';
+  };
+
+  // Get status color for the presence indicator
+  const getStatusColor = (status: OnlineStatus): string => {
+    switch (status) {
+      case 'online': return 'success.main';  // Green
+      case 'away': return 'warning.main';    // Yellow
+      case 'offline': return 'error.main';   // Red
+    }
+  };
+
+  // Get status tooltip text
+  const getStatusTooltip = (status: OnlineStatus): string => {
+    switch (status) {
+      case 'online': return 'Online now';
+      case 'away': return 'Away (5-15 min)';
+      case 'offline': return 'Offline (15+ min)';
+    }
+  };
+
+  // Count online users (green status only)
   const onlineUserCount = users.filter(isUserOnline).length;
 
   if (currentUser?.role !== 'admin') {
@@ -931,14 +991,15 @@ const Admin: React.FC = () => {
             <Table size="small">
               <TableHead>
                 <TableRow>
-                  <TableCell padding="checkbox" sx={{ width: 24 }}></TableCell>
-                  <TableCell sortDirection={userSortField === 'email' ? userSortDirection : false}>
+                  {/* Online status indicator column - sortable */}
+                  <TableCell padding="checkbox" sx={{ width: 24 }} sortDirection={userSortField === 'online' ? userSortDirection : false}>
                     <TableSortLabel
-                      active={userSortField === 'email'}
-                      direction={userSortField === 'email' ? userSortDirection : 'asc'}
-                      onClick={() => handleUserSort('email')}
+                      active={userSortField === 'online'}
+                      direction={userSortField === 'online' ? userSortDirection : 'desc'}
+                      onClick={() => handleUserSort('online')}
+                      title="Sort by online status"
                     >
-                      Email
+                      {/* Empty label - just the sort arrow */}
                     </TableSortLabel>
                   </TableCell>
                   <TableCell sortDirection={userSortField === 'name' ? userSortDirection : false}>
@@ -957,6 +1018,15 @@ const Admin: React.FC = () => {
                       onClick={() => handleUserSort('callsign')}
                     >
                       Callsign
+                    </TableSortLabel>
+                  </TableCell>
+                  <TableCell sortDirection={userSortField === 'email' ? userSortDirection : false}>
+                    <TableSortLabel
+                      active={userSortField === 'email'}
+                      direction={userSortField === 'email' ? userSortDirection : 'asc'}
+                      onClick={() => handleUserSort('email')}
+                    >
+                      Email
                     </TableSortLabel>
                   </TableCell>
                   <TableCell sortDirection={userSortField === 'role' ? userSortDirection : false}>
@@ -999,26 +1069,30 @@ const Admin: React.FC = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {sortedUsers.map((user) => (
+                {sortedUsers.map((user) => {
+                  const onlineStatus = getUserOnlineStatus(user);
+                  return (
                   <TableRow key={user.id}>
+                    {/* Online status indicator - three-tier: green/yellow/red */}
                     <TableCell padding="checkbox">
-                      {isUserOnline(user) && (
-                        <Tooltip title="Online now">
+                      {user.last_active && (
+                        <Tooltip title={getStatusTooltip(onlineStatus)}>
                           <Box
                             sx={{
                               width: 8,
                               height: 8,
                               borderRadius: '50%',
-                              bgcolor: 'success.main',
+                              bgcolor: getStatusColor(onlineStatus),
                               mx: 'auto',
                             }}
                           />
                         </Tooltip>
                       )}
                     </TableCell>
-                    <TableCell>{user.email}</TableCell>
+                    {/* Reordered columns: Name, Callsign, Email */}
                     <TableCell>{user.name || '-'}</TableCell>
                     <TableCell>{user.callsign || '-'}</TableCell>
+                    <TableCell>{user.email}</TableCell>
                     <TableCell>
                       <Chip 
                         label={user.role.toUpperCase()} 
@@ -1033,18 +1107,20 @@ const Admin: React.FC = () => {
                         size="small"
                       />
                     </TableCell>
+                    {/* Last Active - use formatDateTime with user's UTC preference */}
                     <TableCell>
                       {user.last_active ? (
-                        <Tooltip title={new Date(user.last_active).toLocaleString()}>
-                          <span>{new Date(user.last_active).toLocaleDateString()}</span>
+                        <Tooltip title={formatDateTime(user.last_active, currentUser?.prefer_utc || false)}>
+                          <span>{formatDateTime(user.last_active, currentUser?.prefer_utc || false)}</span>
                         </Tooltip>
                       ) : (
                         '-'
                       )}
                     </TableCell>
+                    {/* Created - use formatDateTime with user's UTC preference */}
                     <TableCell>
-                      <Tooltip title={new Date(user.created_at).toLocaleString()}>
-                        <span>{new Date(user.created_at).toLocaleDateString()}</span>
+                      <Tooltip title={formatDateTime(user.created_at, currentUser?.prefer_utc || false)}>
+                        <span>{formatDateTime(user.created_at, currentUser?.prefer_utc || false)}</span>
                       </Tooltip>
                     </TableCell>
                     <TableCell>
@@ -1087,7 +1163,8 @@ const Admin: React.FC = () => {
                       </IconButton>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </TableContainer>

@@ -4,6 +4,27 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# December 19, 2025
+
+## Improvements
+
+* **Admin Users List - Three-Tier Online Status** - Presence indicator now shows:
+  - Green dot: Online (active within 5 minutes)
+  - Yellow dot: Away (5-15 minutes inactive)
+  - Red dot: Offline (15+ minutes inactive)
+* **Admin Users List - Column Reorder** - Columns now ordered: Name, Callsign, Email (moved Email after Callsign)
+* **Admin Users List - Default Sort** - Default sort is now by online status (online users first), then alphabetically by name
+* **Admin Users List - Sortable Online Column** - Click the status column header to sort by online/away/offline status
+
+## Bug Fixes
+
+* **Admin Users Timestamp Fix** - Fixed "Last Active" and "Created" timestamps showing incorrectly (2-5 hours off) by properly parsing UTC timestamps from backend
+* **Admin Users Timezone Preference** - Timestamps now respect the admin's UTC/local time preference from their profile settings
+* **PDF Export - Light Mode** - PDF reports now force light mode styling regardless of current theme, saving printer ink/toner
+* **PDF Export - Page Break Fix** - Fixed content duplicating/repeating at page breaks by using proper canvas slicing
+
+---
+
 # December 18, 2025
 
 ## New Features
