@@ -6,6 +6,16 @@ All notable changes to ECTLogger are documented here.
 
 # December 19, 2025
 
+## New Features
+
+* **Email Unsubscribe Compliance** - All notification emails now include:
+  - One-click unsubscribe link in the email footer
+  - `List-Unsubscribe` header for email client "unsubscribe" buttons
+  - `List-Unsubscribe-Post` header for RFC 8058 one-click compliance
+  - Links to manage notification preferences in profile settings
+  - Dedicated `/unsubscribe` page that processes tokens and allows re-subscribing
+* **Subscription Prompt After Check-in** - When a scheduled net closes, users who checked in are prompted to subscribe to receive notifications for future instances of that net (if not already subscribed)
+
 ## Improvements
 
 * **Admin Users List - Three-Tier Online Status** - Presence indicator now shows:

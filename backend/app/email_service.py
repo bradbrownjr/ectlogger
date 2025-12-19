@@ -12,8 +12,28 @@ import csv
 
 
 class EmailService:
+    
     @staticmethod
-    async def send_email(to_email: str, subject: str, html_content: str):
+    def get_unsubscribe_url(unsubscribe_token: str) -> str:
+        """Generate the unsubscribe URL for a user"""
+        return f"{settings.frontend_url}/unsubscribe?token={unsubscribe_token}"
+    
+    @staticmethod
+    def get_unsubscribe_footer(unsubscribe_token: str) -> str:
+        """Generate HTML footer with unsubscribe link for email compliance"""
+        if not unsubscribe_token:
+            return ""
+        unsubscribe_url = EmailService.get_unsubscribe_url(unsubscribe_token)
+        return f'''
+        <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; text-align: center;">
+            <p>You received this email because you have an account on {settings.app_name}.</p>
+            <p><a href="{unsubscribe_url}" style="color: #666;">Unsubscribe from all email notifications</a></p>
+            <p>To manage your notification preferences, visit your <a href="{settings.frontend_url}/profile" style="color: #666;">profile settings</a>.</p>
+        </div>
+        '''
+    
+    @staticmethod
+    async def send_email(to_email: str, subject: str, html_content: str, unsubscribe_token: str = None):
         """Send an email using SMTP"""
         logger.info("EMAIL", f"Sending email to {to_email}")
         logger.debug("EMAIL", f"Subject: {subject}")
@@ -29,7 +49,14 @@ class EmailService:
         # Add headers to improve deliverability and reduce spam score
         message["Message-ID"] = f"<{hash(to_email + subject)}.ectlogger@{settings.smtp_host}>"
         message["X-Mailer"] = "ECTLogger"
-        message["List-Unsubscribe"] = f"<mailto:{settings.smtp_from_email}?subject=unsubscribe>"
+        
+        # Add List-Unsubscribe header - use token-based URL if available, otherwise mailto
+        if unsubscribe_token:
+            unsubscribe_url = EmailService.get_unsubscribe_url(unsubscribe_token)
+            message["List-Unsubscribe"] = f"<{unsubscribe_url}>"
+            message["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click"
+        else:
+            message["List-Unsubscribe"] = f"<mailto:{settings.smtp_from_email}?subject=unsubscribe>"
 
         # Add plain text version to reduce spam score
         plain_text = f"""
@@ -43,6 +70,9 @@ If you cannot view this email properly, please enable HTML in your email client.
 {settings.app_name}
 This is an automated message, please do not reply.
 """
+        if unsubscribe_token:
+            plain_text += f"\nTo unsubscribe: {EmailService.get_unsubscribe_url(unsubscribe_token)}"
+            
         text_part = MIMEText(plain_text, "plain")
         html_part = MIMEText(html_content, "html")
         
@@ -77,6 +107,7 @@ This is an automated message, please do not reply.
             logger.error("EMAIL", f"Unexpected error: {type(e).__name__}: {str(e)}")
             logger.debug("EMAIL", f"Check network connectivity to {settings.smtp_host}")
             raise
+
 
     @staticmethod
     async def send_magic_link(email: str, token: str, expire_days: int = 30):
@@ -144,8 +175,15 @@ This is an automated message, please do not reply.
         )
 
     @staticmethod
-    async def send_net_notification(emails: List[str], net_name: str, net_id: int):
-        """Send notification that a net has started, with magic link for instant login"""
+    async def send_net_notification(emails: List[str], net_name: str, net_id: int, unsubscribe_tokens: dict = None):
+        """Send notification that a net has started, with magic link for instant login
+        
+        Args:
+            emails: List of email addresses to notify
+            net_name: Name of the net
+            net_id: ID of the net
+            unsubscribe_tokens: Optional dict mapping email -> unsubscribe_token
+        """
         from app.auth import create_magic_link_token
         
         html_template = Template("""
@@ -171,10 +209,14 @@ This is an automated message, please do not reply.
                 <a href="{{ join_url }}" class="button" style="color: #ffffff;">Join Net</a>
                 <p>Click the button above to view the net and check in. You'll be automatically signed in.</p>
                 <p class="info">This link is unique to you and will sign you in automatically. Do not share it.</p>
+                
+                {{ unsubscribe_footer }}
             </div>
         </body>
         </html>
         """)
+        
+        unsubscribe_tokens = unsubscribe_tokens or {}
         
         for email in emails:
             try:
@@ -183,15 +225,20 @@ This is an automated message, please do not reply.
                 # URL that logs them in and redirects to the net
                 join_url = f"{settings.frontend_url}/auth/verify?token={token}&redirect=/nets/{net_id}"
                 
+                # Get unsubscribe token for this email
+                unsub_token = unsubscribe_tokens.get(email)
+                
                 html_content = html_template.render(
                     net_name=net_name,
-                    join_url=join_url
+                    join_url=join_url,
+                    unsubscribe_footer=EmailService.get_unsubscribe_footer(unsub_token)
                 )
                 
                 await EmailService.send_email(
                     to_email=email,
                     subject=f"📻 Net Active: {net_name}",
-                    html_content=html_content
+                    html_content=html_content,
+                    unsubscribe_token=unsub_token
                 )
             except Exception as e:
                 print(f"Failed to send notification to {email}: {e}")
@@ -236,7 +283,7 @@ This is an automated message, please do not reply.
         )
 
     @staticmethod
-    async def send_email_with_attachment(to_email: str, subject: str, html_content: str, attachment_data: str, attachment_filename: str, attachment_type: str = "text/csv"):
+    async def send_email_with_attachment(to_email: str, subject: str, html_content: str, attachment_data: str, attachment_filename: str, attachment_type: str = "text/csv", unsubscribe_token: str = None):
         """Send an email with an attachment"""
         logger.info("EMAIL", f"Sending email with attachment to {to_email}")
         
@@ -247,6 +294,14 @@ This is an automated message, please do not reply.
         message["Reply-To"] = settings.smtp_from_email
         message["Message-ID"] = f"<{hash(to_email + subject)}.ectlogger@{settings.smtp_host}>"
         message["X-Mailer"] = "ECTLogger"
+        
+        # Add List-Unsubscribe header
+        if unsubscribe_token:
+            unsubscribe_url = EmailService.get_unsubscribe_url(unsubscribe_token)
+            message["List-Unsubscribe"] = f"<{unsubscribe_url}>"
+            message["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click"
+        else:
+            message["List-Unsubscribe"] = f"<mailto:{settings.smtp_from_email}?subject=unsubscribe>"
 
         # Create the HTML part
         html_part = MIMEText(html_content, "html")
@@ -276,7 +331,7 @@ This is an automated message, please do not reply.
             raise
 
     @staticmethod
-    async def send_email_with_attachments(to_email: str, subject: str, html_content: str, attachments: list):
+    async def send_email_with_attachments(to_email: str, subject: str, html_content: str, attachments: list, unsubscribe_token: str = None):
         """Send an email with multiple attachments
         attachments: list of tuples (data, filename, mime_type)
         """
@@ -289,6 +344,14 @@ This is an automated message, please do not reply.
         message["Reply-To"] = settings.smtp_from_email
         message["Message-ID"] = f"<{hash(to_email + subject)}.ectlogger@{settings.smtp_host}>"
         message["X-Mailer"] = "ECTLogger"
+        
+        # Add List-Unsubscribe header
+        if unsubscribe_token:
+            unsubscribe_url = EmailService.get_unsubscribe_url(unsubscribe_token)
+            message["List-Unsubscribe"] = f"<{unsubscribe_url}>"
+            message["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click"
+        else:
+            message["List-Unsubscribe"] = f"<mailto:{settings.smtp_from_email}?subject=unsubscribe>"
 
         # Create the HTML part
         html_part = MIMEText(html_content, "html")
@@ -328,7 +391,8 @@ This is an automated message, please do not reply.
         net_time: str,
         frequencies: list,
         hours_until: int,
-        scheduler_url: str
+        scheduler_url: str,
+        unsubscribe_token: str = None
     ):
         """Send NCS duty reminder email"""
         logger.info("EMAIL", f"Sending NCS reminder to {to_email} for {net_name} on {net_date}")
@@ -408,6 +472,8 @@ This is an automated message, please do not reply.
                     <p>This is an automated reminder from {{ app_name }}.</p>
                     <p>If you need to swap your NCS duty, please use the scheduler to arrange a swap.</p>
                 </div>
+                
+                {{ unsubscribe_footer }}
             </div>
         </body>
         </html>
@@ -423,13 +489,15 @@ This is an automated message, please do not reply.
             urgency=urgency,
             urgency_style=urgency_style,
             scheduler_url=scheduler_url,
-            app_name=settings.app_name
+            app_name=settings.app_name,
+            unsubscribe_footer=EmailService.get_unsubscribe_footer(unsubscribe_token)
         )
         
         await EmailService.send_email(
             to_email=to_email,
             subject=f"📻 NCS Reminder: {net_name} - {net_date}",
-            html_content=html_content
+            html_content=html_content,
+            unsubscribe_token=unsubscribe_token
         )
 
     @staticmethod
@@ -442,7 +510,8 @@ This is an automated message, please do not reply.
         net_time: str,
         reason: str | None,
         is_ncs: bool = False,
-        scheduler_url: str = None
+        scheduler_url: str = None,
+        unsubscribe_token: str = None
     ):
         """Send net cancellation notification"""
         logger.info("EMAIL", f"Sending cancellation notice to {to_email} for {net_name} on {net_date}")
@@ -510,6 +579,8 @@ This is an automated message, please do not reply.
                 <div class="footer">
                     <p>This is an automated notification from {{ app_name }}.</p>
                 </div>
+                
+                {{ unsubscribe_footer }}
             </div>
         </body>
         </html>
@@ -525,13 +596,15 @@ This is an automated message, please do not reply.
             reason=reason,
             intro_text=intro_text,
             scheduler_url=scheduler_url,
-            app_name=settings.app_name
+            app_name=settings.app_name,
+            unsubscribe_footer=EmailService.get_unsubscribe_footer(unsubscribe_token)
         )
         
         await EmailService.send_email(
             to_email=to_email,
             subject=f"{subject_prefix}: {net_name} - {net_date}",
-            html_content=html_content
+            html_content=html_content,
+            unsubscribe_token=unsubscribe_token
         )
 
     @staticmethod
@@ -543,7 +616,8 @@ This is an automated message, please do not reply.
         net_date: str,
         net_time: str,
         frequencies: list,
-        net_url: str
+        net_url: str,
+        unsubscribe_token: str = None
     ):
         """Send net reminder to subscriber 1 hour before net starts"""
         logger.info("EMAIL", f"Sending subscriber reminder to {to_email} for {net_name}")
@@ -613,6 +687,8 @@ This is an automated message, please do not reply.
                     <p>This is an automated reminder from {{ app_name }}.</p>
                     <p>You can disable these reminders in your profile settings.</p>
                 </div>
+                
+                {{ unsubscribe_footer }}
             </div>
         </body>
         </html>
@@ -626,13 +702,15 @@ This is an automated message, please do not reply.
             net_time=net_time,
             freq_list=freq_list,
             net_url=net_url,
-            app_name=settings.app_name
+            app_name=settings.app_name,
+            unsubscribe_footer=EmailService.get_unsubscribe_footer(unsubscribe_token)
         )
         
         await EmailService.send_email(
             to_email=to_email,
             subject=f"📻 Reminder: {net_name} starting soon - {net_time}",
-            html_content=html_content
+            html_content=html_content,
+            unsubscribe_token=unsubscribe_token
         )
 
     @staticmethod
@@ -649,7 +727,8 @@ This is an automated message, please do not reply.
         topic_of_week_enabled: bool = False,
         topic_of_week_prompt: str = None,
         poll_enabled: bool = False,
-        poll_question: str = None
+        poll_question: str = None,
+        unsubscribe_token: str = None
     ):
         """Send net log after net is closed with check-ins table, CSV attachment, and chat log"""
         
@@ -763,6 +842,8 @@ This is an automated message, please do not reply.
                     <p>A CSV file with the complete log is attached to this email.</p>
                     <p>This is an automated message from {{ app_name }}.</p>
                 </div>
+                
+                {{ unsubscribe_footer }}
             </div>
         </body>
         </html>
@@ -796,7 +877,8 @@ This is an automated message, please do not reply.
             poll_enabled=poll_enabled,
             poll_question=poll_question or "Poll",
             poll_results=poll_results,
-            total_poll_responses=total_poll_responses
+            total_poll_responses=total_poll_responses,
+            unsubscribe_footer=EmailService.get_unsubscribe_footer(unsubscribe_token)
         )
         
         # Generate CSV with only enabled columns
@@ -897,7 +979,8 @@ This is an automated message, please do not reply.
                 to_email=email,
                 subject=f"📻 Net Log: {net_name}",
                 html_content=html_content,
-                attachments=attachments
+                attachments=attachments,
+                unsubscribe_token=unsubscribe_token
             )
         else:
             await EmailService.send_email_with_attachment(
@@ -905,7 +988,8 @@ This is an automated message, please do not reply.
                 subject=f"📻 Net Log: {net_name}",
                 html_content=html_content,
                 attachment_data=csv_data,
-                attachment_filename=csv_filename
+                attachment_filename=csv_filename,
+                unsubscribe_token=unsubscribe_token
             )
 
     @staticmethod
@@ -919,7 +1003,8 @@ This is an automated message, please do not reply.
         started_at: str, 
         closed_at: str, 
         chat_messages: list = None,
-        frequencies: list = None
+        frequencies: list = None,
+        unsubscribe_token: str = None
     ):
         """Send ICS-309 Communications Log format after net is closed"""
         
@@ -1052,6 +1137,8 @@ This is an automated message, please do not reply.
                     <p>Total Check-ins: {{ check_in_count }} | Total Messages: {{ message_count }}</p>
                     <p>A CSV file with detailed check-in data is attached.</p>
                 </div>
+                
+                {{ unsubscribe_footer }}
             </div>
         </body>
         </html>
@@ -1097,7 +1184,8 @@ This is an automated message, please do not reply.
             frequencies=freq_list,
             log_entries=log_entries,
             check_in_count=len(check_ins),
-            message_count=len(chat_messages) if chat_messages else 0
+            message_count=len(chat_messages) if chat_messages else 0,
+            unsubscribe_footer=EmailService.get_unsubscribe_footer(unsubscribe_token)
         )
         
         # Generate ICS-309 CSV format
@@ -1165,5 +1253,6 @@ This is an automated message, please do not reply.
             to_email=email,
             subject=f"📋 ICS-309 Communications Log: {net_name}",
             html_content=html_content,
-            attachments=attachments
+            attachments=attachments,
+            unsubscribe_token=unsubscribe_token
         )

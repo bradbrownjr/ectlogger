@@ -19,6 +19,7 @@ import Statistics from './pages/Statistics';
 import NetStatistics from './pages/NetStatistics';
 import NetReport from './pages/NetReport';
 import ScheduleStatistics from './pages/ScheduleStatistics';
+import Unsubscribe from './pages/Unsubscribe';
 import Navbar from './components/Navbar';
 import ProfileSetupDialog from './components/ProfileSetupDialog';
 
@@ -91,6 +92,7 @@ const AppRoutes: React.FC = () => {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/auth/verify" element={<VerifyMagicLink />} />
+          <Route path="/unsubscribe" element={<Unsubscribe />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route
             path="/nets/create"

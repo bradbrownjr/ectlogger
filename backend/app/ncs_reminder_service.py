@@ -206,7 +206,8 @@ class NCSReminderService:
                 net_time=scheduled_dt.strftime("%I:%M %p"),
                 frequencies=frequencies,
                 hours_until=hours_until,
-                scheduler_url=scheduler_url
+                scheduler_url=scheduler_url,
+                unsubscribe_token=user.unsubscribe_token
             )
             
             # Log that we sent this reminder
@@ -347,7 +348,8 @@ class NCSReminderService:
             net_date=scheduled_dt.strftime("%A, %B %d, %Y"),
             net_time=scheduled_dt.strftime("%I:%M %p"),
             frequencies=frequencies,
-            net_url=net_url
+            net_url=net_url,
+            unsubscribe_token=user.unsubscribe_token
         )
         
         # Log that we sent this reminder

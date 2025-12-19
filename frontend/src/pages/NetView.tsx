@@ -56,7 +56,7 @@ import InfoIcon from '@mui/icons-material/Info';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import TimerIcon from '@mui/icons-material/Timer';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
-import { netApi, checkInApi, userApi, netRoleApi } from '../services/api';
+import { netApi, checkInApi, userApi, netRoleApi, templateApi } from '../services/api';
 import api from '../services/api';
 import { formatTimeWithDate } from '../utils/dateUtils';
 import { useAuth } from '../contexts/AuthContext';
@@ -76,6 +76,7 @@ interface Net {
   script?: string;
   status: string;
   owner_id: number;
+  template_id?: number;  // ID of the template this net was created from (for scheduled nets)
   active_frequency_id?: number;
   ics309_enabled?: boolean;
   // Topic of the Week / Poll features
@@ -224,6 +225,8 @@ const NetView: React.FC = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [closeNetDialogOpen, setCloseNetDialogOpen] = useState(false);
+  const [subscribeDialogOpen, setSubscribeDialogOpen] = useState(false);  // Prompt to subscribe after net closes
+  const [subscribing, setSubscribing] = useState(false);
   const [startingNet, setStartingNet] = useState(false);
   const [scriptOpen, setScriptOpen] = useState(false);
   const [highlightCheckIn, setHighlightCheckIn] = useState(false);
@@ -718,6 +721,10 @@ const NetView: React.FC = () => {
 
   const handleCloseNet = async () => {
     try {
+      // Capture values before closing since net state will change
+      const templateId = net?.template_id;
+      const currentCheckIns = [...checkIns];
+      
       await netApi.close(Number(netId));
       setCloseNetDialogOpen(false);
       // fetchNet will trigger the useEffect that fetches poll results/topic responses
@@ -730,9 +737,54 @@ const NetView: React.FC = () => {
       if (net?.topic_of_week_enabled) {
         fetchTopicResponses();
       }
+      
+      // ========== SUBSCRIPTION PROMPT ==========
+      // If net was created from a schedule (has template_id), user is logged in,
+      // and user checked in to this net, ask if they want to subscribe
+      if (templateId && user && isAuthenticated) {
+        // Check if current user checked in to this net
+        const userCheckedIn = currentCheckIns.some(ci => ci.user_id === user.id);
+        
+        if (userCheckedIn) {
+          // Check if user is already subscribed to this template
+          try {
+            const templateResponse = await templateApi.get(templateId);
+            const isAlreadySubscribed = templateResponse.data.is_subscribed;
+            
+            if (!isAlreadySubscribed) {
+              // Show subscription dialog
+              setSubscribeDialogOpen(true);
+            }
+          } catch (err) {
+            // Template might not exist anymore, skip the prompt
+            console.log('Could not check subscription status:', err);
+          }
+        }
+      }
     } catch (error) {
       console.error('Failed to close net:', error);
     }
+  };
+  
+  // Handle subscribing to the schedule template
+  const handleSubscribe = async () => {
+    if (!net?.template_id) return;
+    
+    setSubscribing(true);
+    try {
+      await templateApi.subscribe(net.template_id);
+      setSubscribeDialogOpen(false);
+      setToastMessage('Subscribed! You will receive notifications for future instances of this net.');
+    } catch (error: any) {
+      console.error('Failed to subscribe:', error);
+      setToastMessage(error.response?.data?.detail || 'Failed to subscribe');
+    } finally {
+      setSubscribing(false);
+    }
+  };
+  
+  const handleSkipSubscribe = () => {
+    setSubscribeDialogOpen(false);
   };
 
   // Go Live: Transition from LOBBY to ACTIVE mode
@@ -3600,6 +3652,42 @@ const NetView: React.FC = () => {
           <Button onClick={() => setCloseNetDialogOpen(false)}>Cancel</Button>
           <Button onClick={handleCloseNet} variant="contained" color="error">
             Close Net
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ========== SUBSCRIBE TO SCHEDULE DIALOG ========== */}
+      {/* Shown after a net closes if user checked in and isn't already subscribed */}
+      <Dialog 
+        open={subscribeDialogOpen} 
+        onClose={handleSkipSubscribe}
+        maxWidth="sm"
+      >
+        <DialogTitle>
+          📬 Subscribe to Future Nets?
+        </DialogTitle>
+        <DialogContent>
+          <Typography sx={{ mb: 2 }}>
+            Thanks for checking in to <strong>{net?.name}</strong>!
+          </Typography>
+          <Typography>
+            Would you like to receive email notifications when future instances of this net are scheduled or go active?
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+            You can manage your subscriptions and notification preferences in your profile settings.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleSkipSubscribe} color="inherit">
+            No Thanks
+          </Button>
+          <Button 
+            onClick={handleSubscribe} 
+            variant="contained" 
+            disabled={subscribing}
+            startIcon={subscribing ? <CircularProgress size={16} /> : null}
+          >
+            {subscribing ? 'Subscribing...' : 'Subscribe'}
           </Button>
         </DialogActions>
       </Dialog>

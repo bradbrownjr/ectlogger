@@ -13,8 +13,15 @@ from app.config import settings
 from app.logger import logger
 from app.security import get_client_ip
 from datetime import timedelta
+import secrets
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
+
+
+def generate_unsubscribe_token() -> str:
+    """Generate a secure random token for email unsubscribe links"""
+    return secrets.token_hex(32)  # 64 character hex string
+
 
 # OAuth Configuration
 oauth = OAuth()
@@ -59,6 +66,11 @@ async def get_or_create_user(db: AsyncSession, email: str, name: str, provider: 
     user = result.scalar_one_or_none()
     
     if user:
+        # Ensure user has an unsubscribe token (for users created before this feature)
+        if not user.unsubscribe_token:
+            user.unsubscribe_token = generate_unsubscribe_token()
+            await db.commit()
+            await db.refresh(user)
         return user
     
     # Check if user exists by email
@@ -69,6 +81,9 @@ async def get_or_create_user(db: AsyncSession, email: str, name: str, provider: 
         # Update OAuth info
         user.oauth_provider = provider
         user.oauth_id = provider_id
+        # Ensure user has an unsubscribe token
+        if not user.unsubscribe_token:
+            user.unsubscribe_token = generate_unsubscribe_token()
         await db.commit()
         await db.refresh(user)
         return user
@@ -77,13 +92,14 @@ async def get_or_create_user(db: AsyncSession, email: str, name: str, provider: 
     result = await db.execute(select(User))
     user_count = len(result.scalars().all())
     
-    # Create new user
+    # Create new user with unsubscribe token
     user = User(
         email=email,
         name=name,
         oauth_provider=provider,
         oauth_id=provider_id,
-        role=UserRole.ADMIN if user_count == 0 else UserRole.USER
+        role=UserRole.ADMIN if user_count == 0 else UserRole.USER,
+        unsubscribe_token=generate_unsubscribe_token()
     )
     db.add(user)
     await db.commit()
@@ -230,3 +246,73 @@ async def get_current_user_info(
 ):
     """Get current authenticated user information"""
     return UserResponse.from_orm(current_user)
+
+
+@router.get("/unsubscribe")
+async def unsubscribe_from_emails(
+    token: str,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    One-click email unsubscribe endpoint.
+    Disables all email notifications for the user with the matching token.
+    This endpoint does not require authentication for CAN-SPAM compliance.
+    """
+    if not token:
+        raise HTTPException(status_code=400, detail="Unsubscribe token is required")
+    
+    # Find user by unsubscribe token
+    result = await db.execute(
+        select(User).where(User.unsubscribe_token == token)
+    )
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="Invalid or expired unsubscribe token")
+    
+    # Disable email notifications
+    user.email_notifications = False
+    await db.commit()
+    
+    logger.info("API", f"User {user.email} unsubscribed from emails via one-click link")
+    
+    return {
+        "success": True,
+        "message": "You have been unsubscribed from all email notifications.",
+        "email": user.email
+    }
+
+
+@router.post("/resubscribe")
+async def resubscribe_to_emails(
+    token: str,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Re-enable email notifications for a user.
+    Used from the unsubscribe landing page if user wants to undo.
+    """
+    if not token:
+        raise HTTPException(status_code=400, detail="Token is required")
+    
+    # Find user by unsubscribe token
+    result = await db.execute(
+        select(User).where(User.unsubscribe_token == token)
+    )
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="Invalid token")
+    
+    # Re-enable email notifications
+    user.email_notifications = True
+    await db.commit()
+    
+    logger.info("API", f"User {user.email} re-subscribed to emails")
+    
+    return {
+        "success": True,
+        "message": "Email notifications have been re-enabled.",
+        "email": user.email
+    }
+

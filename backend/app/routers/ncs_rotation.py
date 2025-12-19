@@ -514,7 +514,8 @@ async def create_schedule_override(
                 net_time=net_time,
                 reason=override_data.reason,
                 is_ncs=True,
-                scheduler_url=scheduler_url
+                scheduler_url=scheduler_url,
+                unsubscribe_token=original_user.unsubscribe_token
             )
             logger.info("NCS_ROTATION", f"Queued cancellation notice to NCS {original_user.callsign}")
         
@@ -531,7 +532,8 @@ async def create_schedule_override(
                     net_time=net_time,
                     reason=override_data.reason,
                     is_ncs=False,
-                    scheduler_url=scheduler_url
+                    scheduler_url=scheduler_url,
+                    unsubscribe_token=sub.user.unsubscribe_token
                 )
         
         subscriber_count = len([s for s in subscriptions if s.user_id != original_user_id])

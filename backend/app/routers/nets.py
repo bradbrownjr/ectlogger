@@ -393,12 +393,15 @@ async def start_net(
     if not go_to_lobby:
         try:
             emails_to_notify = []
+            unsubscribe_tokens = {}  # Map email -> unsubscribe_token
             
             # Add net owner (if they have notifications enabled)
             result = await db.execute(select(User).where(User.id == net.owner_id))
             owner = result.scalar_one_or_none()
             if owner and owner.email and owner.email_notifications and owner.notify_net_start:
                 emails_to_notify.append(owner.email)
+                if owner.unsubscribe_token:
+                    unsubscribe_tokens[owner.email] = owner.unsubscribe_token
             
             # If net was created from template, add all subscribers who want start notifications
             if net.template_id:
@@ -414,10 +417,12 @@ async def start_net(
                 for subscriber in subscribers:
                     if subscriber.email and subscriber.email not in emails_to_notify:
                         emails_to_notify.append(subscriber.email)
+                        if subscriber.unsubscribe_token:
+                            unsubscribe_tokens[subscriber.email] = subscriber.unsubscribe_token
             
             # Send notifications
             if emails_to_notify:
-                await EmailService.send_net_notification(emails_to_notify, net.name, net.id)
+                await EmailService.send_net_notification(emails_to_notify, net.name, net.id, unsubscribe_tokens)
         except Exception as e:
             print(f"Failed to send net start notification: {e}")
     
@@ -470,12 +475,15 @@ async def go_live(
     # Send email notifications now that we're going live
     try:
         emails_to_notify = []
+        unsubscribe_tokens = {}  # Map email -> unsubscribe_token
         
         # Add net owner (if they have notifications enabled)
         result = await db.execute(select(User).where(User.id == net.owner_id))
         owner = result.scalar_one_or_none()
         if owner and owner.email and owner.email_notifications and owner.notify_net_start:
             emails_to_notify.append(owner.email)
+            if owner.unsubscribe_token:
+                unsubscribe_tokens[owner.email] = owner.unsubscribe_token
         
         # If net was created from template, add all subscribers who want start notifications
         if net.template_id:
@@ -491,10 +499,12 @@ async def go_live(
             for subscriber in subscribers:
                 if subscriber.email and subscriber.email not in emails_to_notify:
                     emails_to_notify.append(subscriber.email)
+                    if subscriber.unsubscribe_token:
+                        unsubscribe_tokens[subscriber.email] = subscriber.unsubscribe_token
         
         # Send notifications
         if emails_to_notify:
-            await EmailService.send_net_notification(emails_to_notify, net.name, net.id)
+            await EmailService.send_net_notification(emails_to_notify, net.name, net.id, unsubscribe_tokens)
     except Exception as e:
         print(f"Failed to send net start notification: {e}")
     
@@ -720,6 +730,9 @@ async def close_net(
             # Use ICS-309 if net has it enabled OR user prefers it
             use_ics309 = net.ics309_enabled or getattr(recipient, 'notify_ics309', False)
             
+            # Get unsubscribe token for compliance
+            unsub_token = getattr(recipient, 'unsubscribe_token', None)
+            
             if use_ics309:
                 await email_service.send_ics309_log(
                     email=email,
@@ -731,7 +744,8 @@ async def close_net(
                     started_at=net.started_at.strftime("%Y-%m-%d %H:%M:%S") if net.started_at else "N/A",
                     closed_at=net.closed_at.strftime("%Y-%m-%d %H:%M:%S") if net.closed_at else "N/A",
                     chat_messages=chat_messages_data if chat_messages_data else None,
-                    frequencies=freq_strings
+                    frequencies=freq_strings,
+                    unsubscribe_token=unsub_token
                 )
             else:
                 await email_service.send_net_log(
@@ -747,7 +761,8 @@ async def close_net(
                     topic_of_week_enabled=net.topic_of_week_enabled,
                     topic_of_week_prompt=net.topic_of_week_prompt,
                     poll_enabled=net.poll_enabled,
-                    poll_question=net.poll_question
+                    poll_question=net.poll_question,
+                    unsubscribe_token=unsub_token
                 )
         except Exception as e:
             # Log error but don't fail the close operation
