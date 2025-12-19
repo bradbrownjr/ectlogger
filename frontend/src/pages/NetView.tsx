@@ -43,6 +43,7 @@ import BarChartIcon from '@mui/icons-material/BarChart';
 import FastForwardIcon from '@mui/icons-material/FastForward';
 import SearchIcon from '@mui/icons-material/Search';
 import DescriptionIcon from '@mui/icons-material/Description';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import ArticleIcon from '@mui/icons-material/Article';
 import GroupIcon from '@mui/icons-material/Group';
 import LoginIcon from '@mui/icons-material/Login';
@@ -1923,6 +1924,16 @@ const NetView: React.FC = () => {
                         <DescriptionIcon fontSize="small" />
                       </Button>
                     </Tooltip>
+                    <Tooltip title="Generate comprehensive net report (PDF)">
+                      <Button 
+                        size="small"
+                        variant="outlined" 
+                        onClick={() => navigate(`/nets/${netId}/report`)}
+                        sx={{ minWidth: 'auto', px: 1 }}
+                      >
+                        <PictureAsPdfIcon fontSize="small" />
+                      </Button>
+                    </Tooltip>
                     {canManage && (
                       <Tooltip title="Archive net">
                         <Button 
@@ -1971,6 +1982,16 @@ const NetView: React.FC = () => {
                         sx={{ minWidth: 'auto', px: 1 }}
                       >
                         <DescriptionIcon fontSize="small" />
+                      </Button>
+                    </Tooltip>
+                    <Tooltip title="Generate comprehensive net report (PDF)">
+                      <Button 
+                        size="small"
+                        variant="outlined" 
+                        onClick={() => navigate(`/nets/${netId}/report`)}
+                        sx={{ minWidth: 'auto', px: 1 }}
+                      >
+                        <PictureAsPdfIcon fontSize="small" />
                       </Button>
                     </Tooltip>
                     {canManage && (
