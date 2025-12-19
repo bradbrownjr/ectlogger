@@ -96,7 +96,7 @@ const NetStatistics: React.FC = () => {
         : 'Net_Statistics';
       await exportElementToPdf('net-stats-content', {
         filename,
-        orientation: 'landscape',
+        orientation: 'portrait',
       });
     } catch (err) {
       console.error('Failed to export PDF:', err);
