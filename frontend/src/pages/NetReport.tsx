@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -30,7 +30,62 @@ import {
   Radio,
   Chat as ChatIcon,
   Assignment,
+  Map as MapIcon,
 } from '@mui/icons-material';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import { parseLocation, geocodeAddress, ParsedLocation } from '../utils/locationParser';
+
+// Fix for default marker icons in webpack/vite
+import icon from 'leaflet/dist/images/marker-icon.png';
+import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+import iconRetina from 'leaflet/dist/images/marker-icon-2x.png';
+
+const DefaultIcon = L.icon({
+  iconUrl: icon,
+  iconRetinaUrl: iconRetina,
+  shadowUrl: iconShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+L.Marker.prototype.options.icon = DefaultIcon;
+
+// Custom marker colors based on status
+const createColoredIcon = (color: string) => {
+  return L.divIcon({
+    className: 'custom-marker',
+    html: `<div style="
+      background-color: ${color};
+      width: 24px;
+      height: 24px;
+      border-radius: 50% 50% 50% 0;
+      transform: rotate(-45deg);
+      border: 2px solid white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    "></div>`,
+    iconSize: [24, 24],
+    iconAnchor: [12, 24],
+    popupAnchor: [0, -24],
+  });
+};
+
+// Component to fit map bounds to markers
+const FitBounds: React.FC<{ positions: [number, number][] }> = ({ positions }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    if (positions.length > 0) {
+      const bounds = L.latLngBounds(positions.map(p => L.latLng(p[0], p[1])));
+      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 10 });
+    }
+  }, [map, positions]);
+
+  return null;
+};
 import {
   BarChart,
   Bar,
@@ -128,6 +183,15 @@ const NetReport: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
 
+  // State for mapped locations
+  interface MappedCheckIn {
+    checkIn: CheckIn;
+    parsedLocation: ParsedLocation;
+  }
+  const [mappedCheckIns, setMappedCheckIns] = useState<MappedCheckIn[]>([]);
+  const [mapLoading, setMapLoading] = useState(false);
+  const processedKeyRef = useRef<string>('');
+
   // Colors for pie chart
   const COLORS = [
     theme.palette.success.main,
@@ -172,6 +236,80 @@ const NetReport: React.FC = () => {
 
     fetchAllData();
   }, [netId]);
+
+  // ========== LOCATION PROCESSING FOR MAP ==========
+
+  // Process check-in locations for map display
+  useEffect(() => {
+    if (checkIns.length === 0) return;
+
+    // Create a stable key for checkIns to prevent unnecessary re-runs
+    const checkInsKey = checkIns
+      .filter(c => c.location && c.status !== 'checked_out')
+      .map(c => `${c.id}:${c.location}:${c.status}`)
+      .join('|');
+
+    // Skip if we've already processed this exact set of checkIns
+    if (processedKeyRef.current === checkInsKey && mappedCheckIns.length > 0) {
+      return;
+    }
+
+    const processLocations = async () => {
+      setMapLoading(true);
+      const results: MappedCheckIn[] = [];
+      const addressesToGeocode: { checkIn: CheckIn; parsed: ParsedLocation }[] = [];
+
+      // First pass: parse all locations
+      for (const checkIn of checkIns) {
+        if (!checkIn.location || checkIn.status === 'checked_out') continue;
+
+        const parsed = parseLocation(checkIn.location);
+        if (parsed) {
+          if (parsed.type === 'address') {
+            // Need to geocode this address
+            addressesToGeocode.push({ checkIn, parsed });
+          } else {
+            // Already have coordinates
+            results.push({ checkIn, parsedLocation: parsed });
+          }
+        }
+      }
+
+      // Geocode addresses (limit to prevent too many API calls)
+      const geocodeLimit = 10;
+      for (let i = 0; i < Math.min(addressesToGeocode.length, geocodeLimit); i++) {
+        const { checkIn, parsed } = addressesToGeocode[i];
+        const geocoded = await geocodeAddress(parsed.original);
+        if (geocoded) {
+          results.push({ 
+            checkIn, 
+            parsedLocation: { 
+              ...geocoded, 
+              type: 'address', 
+              original: parsed.original 
+            } 
+          });
+        }
+      }
+
+      processedKeyRef.current = checkInsKey;
+      setMappedCheckIns(results);
+      setMapLoading(false);
+    };
+
+    processLocations();
+  }, [checkIns]);
+
+  // Get marker color based on status
+  const getStatusColor = (status: string): string => {
+    switch (status) {
+      case 'checked_in': return theme.palette.success.main;
+      case 'tactical': return theme.palette.warning.main;
+      case 'monitoring': return theme.palette.info.main;
+      case 'checking_out': return theme.palette.error.light;
+      default: return theme.palette.grey[500];
+    }
+  };
 
   // ========== HELPERS ==========
 
@@ -507,7 +645,81 @@ const NetReport: React.FC = () => {
           )}
         </Grid>
 
-        {/* ========== SECTION 3: CHECK-IN LOG ========== */}
+        {/* ========== SECTION 3: CHECK-IN MAP (if locations available) ========== */}
+        {mappedCheckIns.length > 0 && (
+          <>
+            <Typography variant="h6" sx={{ mt: 3, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <MapIcon /> Check-in Map ({mappedCheckIns.length} locations)
+            </Typography>
+            
+            <Paper variant="outlined" sx={{ mb: 3, overflow: 'hidden' }}>
+              <Box sx={{ height: 400, width: '100%' }}>
+                <MapContainer
+                  center={[39.8283, -98.5795]} // US center
+                  zoom={4}
+                  style={{ height: '100%', width: '100%' }}
+                  scrollWheelZoom={false}
+                >
+                  <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
+                  <FitBounds positions={mappedCheckIns.map(m => [m.parsedLocation.lat, m.parsedLocation.lon] as [number, number])} />
+                  {mappedCheckIns.map((mapped) => (
+                    <Marker
+                      key={mapped.checkIn.id}
+                      position={[mapped.parsedLocation.lat, mapped.parsedLocation.lon]}
+                      icon={createColoredIcon(getStatusColor(mapped.checkIn.status))}
+                    >
+                      <Popup>
+                        <Box sx={{ minWidth: 150 }}>
+                          <Typography variant="subtitle2" fontWeight="bold">
+                            {mapped.checkIn.callsign}
+                          </Typography>
+                          {mapped.checkIn.name && (
+                            <Typography variant="body2">{mapped.checkIn.name}</Typography>
+                          )}
+                          <Typography variant="body2" color="text.secondary">
+                            {mapped.checkIn.location}
+                          </Typography>
+                          <Chip
+                            label={mapped.checkIn.status.replace('_', ' ')}
+                            size="small"
+                            color={mapped.checkIn.status === 'checked_in' ? 'success' : mapped.checkIn.status === 'tactical' ? 'warning' : 'default'}
+                            sx={{ mt: 0.5 }}
+                          />
+                        </Box>
+                      </Popup>
+                    </Marker>
+                  ))}
+                </MapContainer>
+              </Box>
+              {/* Map Legend */}
+              <Box sx={{ p: 1, display: 'flex', gap: 2, flexWrap: 'wrap', borderTop: `1px solid ${theme.palette.divider}` }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: theme.palette.success.main }} />
+                  <Typography variant="caption">Checked In</Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: theme.palette.warning.main }} />
+                  <Typography variant="caption">Tactical</Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: theme.palette.info.main }} />
+                  <Typography variant="caption">Monitoring</Typography>
+                </Box>
+              </Box>
+            </Paper>
+          </>
+        )}
+        {mapLoading && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+            <CircularProgress size={16} />
+            <Typography variant="body2" color="text.secondary">Loading map locations...</Typography>
+          </Box>
+        )}
+
+        {/* ========== SECTION 4: CHECK-IN LOG ========== */}
         <Typography variant="h6" sx={{ mt: 3, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
           <Assignment /> Check-in Log ({checkIns.length} entries)
         </Typography>
@@ -574,7 +786,7 @@ const NetReport: React.FC = () => {
           </Table>
         </TableContainer>
 
-        {/* ========== SECTION 4: CHAT LOG (if there are messages) ========== */}
+        {/* ========== SECTION 5: CHAT LOG (if there are messages) ========== */}
         {allChatMessages.length > 0 && (
           <>
             <Typography variant="h6" sx={{ mt: 3, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -619,7 +831,7 @@ const NetReport: React.FC = () => {
           </>
         )}
 
-        {/* ========== SECTION 5: ICS-309 FORMAT (if enabled) ========== */}
+        {/* ========== SECTION 6: ICS-309 FORMAT (if enabled) ========== */}
         {net.ics309_enabled && (
           <>
             <Typography variant="h6" sx={{ mt: 3, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
