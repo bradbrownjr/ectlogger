@@ -313,6 +313,35 @@ const NetReport: React.FC = () => {
     }
   };
 
+  // Get status label formatted nicely
+  const getStatusLabel = (status: string): string => {
+    const normalized = status.toLowerCase().replace('_', ' ');
+    return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+  };
+
+  // PDF-friendly status badge (html2canvas doesn't render MUI Chip text properly)
+  const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
+    const color = getStatusColor(status);
+    const label = getStatusLabel(status);
+    return (
+      <span
+        style={{
+          display: 'inline-block',
+          padding: '2px 8px',
+          borderRadius: '12px',
+          backgroundColor: color,
+          color: '#ffffff',
+          fontSize: '0.7rem',
+          fontWeight: 500,
+          textTransform: 'capitalize',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {label}
+      </span>
+    );
+  };
+
   // ========== HELPERS ==========
 
   const formatDuration = (minutes: number) => {
@@ -705,12 +734,9 @@ const NetReport: React.FC = () => {
                           <Typography variant="body2" color="text.secondary">
                             {mapped.checkIn.location}
                           </Typography>
-                          <Chip
-                            label={mapped.checkIn.status.toLowerCase().replace('_', ' ')}
-                            size="small"
-                            color={mapped.checkIn.status.toUpperCase() === 'CHECKED_IN' ? 'success' : mapped.checkIn.status.toUpperCase() === 'TACTICAL' ? 'warning' : 'default'}
-                            sx={{ mt: 0.5, textTransform: 'capitalize' }}
-                          />
+                          <Box sx={{ mt: 0.5 }}>
+                            <StatusBadge status={mapped.checkIn.status} />
+                          </Box>
                         </Box>
                       </Popup>
                     </Marker>
@@ -774,7 +800,15 @@ const NetReport: React.FC = () => {
                         {checkIn.callsign}
                       </Typography>
                       {checkIn.is_recheck && (
-                        <Chip label="R" size="small" sx={{ height: 16, fontSize: '0.65rem' }} />
+                        <span style={{ 
+                          display: 'inline-block',
+                          padding: '0 4px', 
+                          borderRadius: '8px', 
+                          backgroundColor: theme.palette.grey[400],
+                          color: '#ffffff',
+                          fontSize: '0.6rem',
+                          fontWeight: 600,
+                        }}>R</span>
                       )}
                     </Box>
                   </TableCell>
@@ -783,18 +817,7 @@ const NetReport: React.FC = () => {
                     {checkIn.location || '—'}
                   </TableCell>
                   <TableCell>
-                    <Chip 
-                      label={checkIn.status.toLowerCase().replace('_', ' ')} 
-                      size="small" 
-                      color={
-                        checkIn.status.toUpperCase() === 'CHECKED_IN' ? 'success' : 
-                        checkIn.status.toUpperCase() === 'CHECKED_OUT' ? 'default' : 
-                        checkIn.status.toUpperCase() === 'HAS_TRAFFIC' ? 'error' :
-                        checkIn.status.toUpperCase() === 'LISTENING' ? 'info' :
-                        'warning'
-                      }
-                      sx={{ height: 20, fontSize: '0.7rem', textTransform: 'capitalize' }}
-                    />
+                    <StatusBadge status={checkIn.status} />
                   </TableCell>
                   <TableCell sx={{ fontSize: '0.75rem' }}>
                     {getFrequencyById(checkIn.frequency_id)}
