@@ -7,6 +7,7 @@ import {
   CircularProgress,
   Chip,
   useTheme,
+  Tooltip,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import MinimizeIcon from '@mui/icons-material/Minimize';
@@ -14,11 +15,13 @@ import CropSquareIcon from '@mui/icons-material/CropSquare';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
 import MapIcon from '@mui/icons-material/Map';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import { Rnd } from 'react-rnd';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { parseLocation, geocodeAddress, ParsedLocation } from '../utils/locationParser';
+import { exportToPdf } from '../utils/pdfExport';
 
 // Fix for default marker icons in webpack/vite
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -103,7 +106,31 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
   const [maximized, setMaximized] = useState(false);
   const [preMaximizeState, setPreMaximizeState] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
   const [mapKey, setMapKey] = useState(0);
+  const [exporting, setExporting] = useState(false);
   const mapRef = useRef<L.Map | null>(null);
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
+
+  // Handle PDF export of the map
+  const handleExportPdf = async () => {
+    const mapElement = document.getElementById('check-in-map-content');
+    if (!mapElement) return;
+    
+    setExporting(true);
+    try {
+      // Wait a moment for any pending tile loads
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      await exportToPdf(mapElement, {
+        filename: `${netName.replace(/[^a-zA-Z0-9]/g, '_')}_Map`,
+        orientation: 'landscape',
+        scale: 2,
+      });
+    } catch (err) {
+      console.error('Failed to export map PDF:', err);
+    } finally {
+      setExporting(false);
+    }
+  };
 
   // Tile layer URLs - dark mode uses CartoDB Dark Matter
   const tileUrl = isDarkMode 
@@ -330,6 +357,16 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
               <Typography variant="subtitle2">Check-In Map</Typography>
             </Box>
             <Box>
+              <Tooltip title="Export to PDF">
+                <IconButton 
+                  size="small" 
+                  onClick={handleExportPdf}
+                  disabled={exporting || loading}
+                  sx={{ color: 'inherit' }}
+                >
+                  {exporting ? <CircularProgress size={16} color="inherit" /> : <PictureAsPdfIcon fontSize="small" />}
+                </IconButton>
+              </Tooltip>
               <IconButton 
                 size="small" 
                 onClick={toggleMaximize}
@@ -350,7 +387,7 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
           </Box>
           
           {/* Map content */}
-          <Box sx={{ flexGrow: 1, position: 'relative', overflow: 'hidden' }}>
+          <Box id="check-in-map-content" sx={{ flexGrow: 1, position: 'relative', overflow: 'hidden' }}>
             {loading ? (
               <Box sx={{ 
                 display: 'flex', 
@@ -546,6 +583,17 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
             />
           </Box>
           <Box sx={{ display: 'flex', gap: 0.5 }} onTouchStart={(e) => e.stopPropagation()}>
+            <Tooltip title="Export to PDF">
+              <IconButton
+                size="small"
+                onClick={handleExportPdf}
+                onTouchEnd={(e) => { e.preventDefault(); e.stopPropagation(); handleExportPdf(); }}
+                disabled={exporting || loading || minimized}
+                sx={{ color: 'inherit', p: 0.5 }}
+              >
+                {exporting ? <CircularProgress size={16} color="inherit" /> : <PictureAsPdfIcon fontSize="small" />}
+              </IconButton>
+            </Tooltip>
             <IconButton
               size="small"
               onClick={() => setMinimized(!minimized)}
@@ -578,7 +626,7 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
 
         {/* Map Content - Only show when not minimized */}
         {!minimized && (
-          <Box sx={{ flexGrow: 1, position: 'relative', overflow: 'hidden' }}>
+          <Box id="check-in-map-content" sx={{ flexGrow: 1, position: 'relative', overflow: 'hidden' }}>
             {loading ? (
               <Box sx={{ 
                 display: 'flex', 
