@@ -12,6 +12,7 @@ All notable changes to ECTLogger are documented here.
 * **Email Subscribers** - NCS can send custom emails to all subscribers of a scheduled/draft net (e.g., to announce cancellations)
 * **Cancel Net Instance** - Delete button added to draft/scheduled nets on the Dashboard to cancel a specific net instance without affecting the recurring schedule
 * **Net Script Button** - Added script viewer button (article icon) to the net toolbar between map and edit buttons
+* **Unarchive Nets** - Archived nets can now be unarchived (restored to closed status) via the unarchive button in the net toolbar
 
 ## Improvements
 
@@ -19,6 +20,9 @@ All notable changes to ECTLogger are documented here.
 * **Net Creation Permissions** - Only admins, template owners, or designated NCS staff can create nets from schedules (prevents unauthorized users from starting nets)
 * **Delete Button Style** - Changed DELETE button in NetView to icon-only with tooltip, matching other toolbar buttons
 * **Speed Entry Simplification** - Removed preview chips from bulk check-in dialog; count now shows inline near submit button
+* **Archive with Undo** - Archiving a net now shows a toast with UNDO button for 5 seconds before the archive is finalized
+* **Download Logs from Archived Nets** - CSV and ICS-309 download buttons are now available when viewing archived nets
+* **Frequency Chips View-Only on Closed/Archived** - Frequency chips no longer attempt to set active frequency or claim frequencies on closed/archived nets (Ctrl+click filtering still works)
 
 ## Bug Fixes
 

@@ -1121,6 +1121,35 @@ async def archive_net(
     return NetResponse.from_orm(net)
 
 
+@router.post("/{net_id}/unarchive", response_model=NetResponse)
+async def unarchive_net(
+    net_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Unarchive an archived net back to closed status"""
+    result = await db.execute(
+        select(Net).options(selectinload(Net.frequencies)).where(Net.id == net_id)
+    )
+    net = result.scalar_one_or_none()
+    
+    if not net:
+        raise HTTPException(status_code=404, detail="Net not found")
+    
+    # Check permissions
+    if net.owner_id != current_user.id and current_user.role.value != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized to unarchive this net")
+    
+    if net.status != NetStatus.ARCHIVED:
+        raise HTTPException(status_code=400, detail="Only archived nets can be unarchived")
+    
+    net.status = NetStatus.CLOSED
+    await db.commit()
+    await db.refresh(net, ['frequencies'])
+    
+    return NetResponse.from_orm(net)
+
+
 @router.post("/{net_id}/clone", response_model=NetResponse)
 async def clone_net(
     net_id: int,

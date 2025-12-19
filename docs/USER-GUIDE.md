@@ -332,7 +332,13 @@ Both Topic and Poll columns are only visible when configured for the net. System
 
 1. Click **Close Net**
 2. A complete log is generated and emailed to you
-3. The net is archived for future reference
+3. The net can be archived or remain in closed status
+
+### Archiving and Unarchiving
+
+- **Archive** — From a closed net, click the archive icon to hide it from the main dashboard. A 5-second UNDO toast lets you cancel if clicked accidentally.
+- **Unarchive** — From an archived net view, click the unarchive icon to restore it to closed status.
+- **Download Logs** — Both closed and archived nets have download buttons (CSV and ICS-309) available in the toolbar.
 
 ### Exporting Logs
 

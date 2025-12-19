@@ -37,6 +37,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DownloadIcon from '@mui/icons-material/Download';
 import ArchiveIcon from '@mui/icons-material/Archive';
+import UnarchiveIcon from '@mui/icons-material/Unarchive';
 import MapIcon from '@mui/icons-material/Map';
 import FastForwardIcon from '@mui/icons-material/FastForward';
 import SearchIcon from '@mui/icons-material/Search';
@@ -786,14 +787,46 @@ const NetView: React.FC = () => {
     }
   };
 
+  // State for archive undo functionality
+  const [pendingArchive, setPendingArchive] = React.useState<boolean>(false);
+  const archiveTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
   const handleArchive = async () => {
-    if (!confirm('Archive this net? It will be hidden from the main dashboard.')) return;
+    // Show actionable toast with undo option
+    setPendingArchive(true);
+    setToastMessage('Net archived. Click UNDO to restore.');
+    
+    // Set timeout to actually perform archive after 5 seconds
+    archiveTimeoutRef.current = setTimeout(async () => {
+      try {
+        await api.post(`/nets/${netId}/archive`);
+        setPendingArchive(false);
+        navigate('/dashboard');
+      } catch (error) {
+        console.error('Failed to archive net:', error);
+        setPendingArchive(false);
+        setToastMessage('Failed to archive net');
+      }
+    }, 5000);
+  };
+
+  const handleUndoArchive = () => {
+    if (archiveTimeoutRef.current) {
+      clearTimeout(archiveTimeoutRef.current);
+      archiveTimeoutRef.current = null;
+    }
+    setPendingArchive(false);
+    setToastMessage('Archive cancelled');
+  };
+
+  const handleUnarchive = async () => {
     try {
-      await api.post(`/nets/${netId}/archive`);
-      navigate('/dashboard');
+      await api.post(`/nets/${netId}/unarchive`);
+      setToastMessage('Net unarchived and moved back to closed status');
+      fetchNet(); // Refresh net data to update status
     } catch (error) {
-      console.error('Failed to archive net:', error);
-      alert('Failed to archive net');
+      console.error('Failed to unarchive net:', error);
+      setToastMessage('Failed to unarchive net');
     }
   };
 
@@ -1308,14 +1341,18 @@ const NetView: React.FC = () => {
   };
 
   // Handle frequency chip click - NCS claims frequency, or Ctrl+click filters
+  // For closed/archived nets, only allow Ctrl+click filtering (no claiming/setting active)
   const handleFrequencyChipClick = async (frequencyId: number, event: React.MouseEvent) => {
     if (event.ctrlKey || event.metaKey) {
-      // Ctrl+click: toggle frequency filter
+      // Ctrl+click: toggle frequency filter (always allowed)
       setFilteredFrequencyIds(prev => 
         prev.includes(frequencyId) 
           ? prev.filter(id => id !== frequencyId)
           : [...prev, frequencyId]
       );
+    } else if (net?.status === 'closed' || net?.status === 'archived') {
+      // For closed/archived nets, regular clicks do nothing (chips are view-only)
+      return;
     } else if (canManageCheckIns && userNetRole?.role === 'NCS') {
       // NCS clicking: claim this frequency and add to their available frequencies
       try {
@@ -1497,6 +1534,8 @@ const NetView: React.FC = () => {
                       // Check if current user is the NCS who claimed this frequency
                       const isMyFrequency = userNetRole?.role === 'NCS' && userNetRole?.active_frequency_id === freq.id;
                       const myNcsColor = isMyFrequency && user?.id ? getNcsColor(user.id) : null;
+                      // For closed/archived nets, chips are view-only except Ctrl+click filter
+                      const isInactiveNet = net.status === 'closed' || net.status === 'archived';
                       
                       // Build tooltip text
                       let tooltipText = '';
@@ -1505,7 +1544,7 @@ const NetView: React.FC = () => {
                       } else if (ncsCallsign) {
                         tooltipText = `${ncsCallsign} is monitoring this frequency\n`;
                       }
-                      if (canManageCheckIns) {
+                      if (!isInactiveNet && canManageCheckIns) {
                         if (userNetRole?.role === 'NCS') {
                           tooltipText += 'Click to claim • ';
                         } else {
@@ -1900,6 +1939,44 @@ const NetView: React.FC = () => {
                     )}
                   </>
                 )}
+                {/* ========== ARCHIVED NET TOOLBAR BUTTONS ========== */}
+                {net.status === 'archived' && (
+                  <>
+                    <Tooltip title="Export check-ins to CSV">
+                      <Button 
+                        size="small"
+                        variant="outlined" 
+                        onClick={handleExportCSV}
+                        sx={{ minWidth: 'auto', px: 1 }}
+                      >
+                        <DownloadIcon fontSize="small" />
+                      </Button>
+                    </Tooltip>
+                    <Tooltip title="Download ICS-309 Communications Log">
+                      <Button 
+                        size="small"
+                        variant="outlined" 
+                        onClick={handleExportICS309}
+                        sx={{ minWidth: 'auto', px: 1 }}
+                      >
+                        <DescriptionIcon fontSize="small" />
+                      </Button>
+                    </Tooltip>
+                    {canManage && (
+                      <Tooltip title="Unarchive net - restore to closed status">
+                        <Button 
+                          size="small"
+                          variant="outlined" 
+                          onClick={handleUnarchive}
+                          sx={{ minWidth: 'auto', px: 1 }}
+                        >
+                          <UnarchiveIcon fontSize="small" />
+                        </Button>
+                      </Tooltip>
+                    )}
+                  </>
+                )}
+                {/* ========== DELETE BUTTON FOR DRAFT/ARCHIVED NETS ========== */}
                 {canManage && (net.status === 'draft' || net.status === 'archived') && (
                   <Tooltip title="Delete net">
                     <Button 
@@ -3873,10 +3950,17 @@ const NetView: React.FC = () => {
 
       <Snackbar
         open={toastMessage !== ''}
-        autoHideDuration={6000}
-        onClose={() => setToastMessage('')}
+        autoHideDuration={pendingArchive ? null : 6000}
+        onClose={() => {
+          if (!pendingArchive) setToastMessage('');
+        }}
         message={toastMessage}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        action={pendingArchive ? (
+          <Button color="secondary" size="small" onClick={handleUndoArchive}>
+            UNDO
+          </Button>
+        ) : undefined}
       />
     </Container>
   );
