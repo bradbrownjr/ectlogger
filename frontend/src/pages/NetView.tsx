@@ -41,6 +41,7 @@ import MapIcon from '@mui/icons-material/Map';
 import FastForwardIcon from '@mui/icons-material/FastForward';
 import SearchIcon from '@mui/icons-material/Search';
 import DescriptionIcon from '@mui/icons-material/Description';
+import ArticleIcon from '@mui/icons-material/Article';
 import GroupIcon from '@mui/icons-material/Group';
 import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -1682,19 +1683,19 @@ const NetView: React.FC = () => {
                         <MapIcon fontSize="small" />
                       </Button>
                     </Tooltip>
+                    {net.script && (
+                      <Tooltip title="View net script">
+                        <Button 
+                          size="small" 
+                          variant="outlined" 
+                          onClick={() => setScriptOpen(true)}
+                          sx={{ minWidth: 'auto', px: 1 }}
+                        >
+                          <ArticleIcon fontSize="small" />
+                        </Button>
+                      </Tooltip>
+                    )}
                   </>
-                )}
-                {net.script && (
-                  <Tooltip title="View net script">
-                    <Button 
-                      size="small" 
-                      variant="outlined" 
-                      onClick={() => setScriptOpen(true)}
-                      sx={{ minWidth: 'auto', px: 1 }}
-                    >
-                      <DescriptionIcon fontSize="small" />
-                    </Button>
-                  </Tooltip>
                 )}
                 {net.info_url && (
                   <Tooltip title="Net/Club info">
