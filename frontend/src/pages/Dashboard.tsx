@@ -44,6 +44,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import ArchiveIcon from '@mui/icons-material/Archive';
 import DownloadIcon from '@mui/icons-material/Download';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CloseIcon from '@mui/icons-material/Close';
 import LanguageIcon from '@mui/icons-material/Language';
@@ -452,6 +453,11 @@ const Dashboard: React.FC = () => {
                             <DownloadIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
+                        <Tooltip title="Net report (PDF)">
+                          <IconButton size="small" onClick={() => navigate(`/nets/${net.id}/report`)}>
+                            <PictureAsPdfIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
                         <Tooltip title="Archive">
                           <IconButton size="small" onClick={() => handleArchiveNet(net.id)}>
                             <ArchiveIcon fontSize="small" />
@@ -661,6 +667,14 @@ const Dashboard: React.FC = () => {
                   onClick={() => handleExportCSV(net)}
                 >
                   <DownloadIcon />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Net report (PDF)">
+                <IconButton
+                  size="small"
+                  onClick={() => navigate(`/nets/${net.id}/report`)}
+                >
+                  <PictureAsPdfIcon />
                 </IconButton>
               </Tooltip>
               <Tooltip title="Archive net">
@@ -968,6 +982,14 @@ const Dashboard: React.FC = () => {
                             onClick={() => handleExportCSV(net)}
                           >
                             <DownloadIcon />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Net report (PDF)">
+                          <IconButton
+                            size="small"
+                            onClick={() => navigate(`/nets/${net.id}/report`)}
+                          >
+                            <PictureAsPdfIcon />
                           </IconButton>
                         </Tooltip>
                         {user?.role === 'admin' && (
