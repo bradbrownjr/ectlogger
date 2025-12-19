@@ -65,7 +65,7 @@ import ClearIcon from '@mui/icons-material/Clear';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import { frequencyApi } from '../services/api';
-import { formatDateTime } from '../utils/dateUtils';
+import { formatDateTime, formatDate } from '../utils/dateUtils';
 
 interface User {
   id: number;
@@ -1107,20 +1107,20 @@ const Admin: React.FC = () => {
                         size="small"
                       />
                     </TableCell>
-                    {/* Last Active - use formatDateTime with user's UTC preference */}
+                    {/* Last Active - show date only, full datetime on hover */}
                     <TableCell>
                       {user.last_active ? (
                         <Tooltip title={formatDateTime(user.last_active, currentUser?.prefer_utc || false)}>
-                          <span>{formatDateTime(user.last_active, currentUser?.prefer_utc || false)}</span>
+                          <span>{formatDate(user.last_active, currentUser?.prefer_utc || false)}</span>
                         </Tooltip>
                       ) : (
                         '-'
                       )}
                     </TableCell>
-                    {/* Created - use formatDateTime with user's UTC preference */}
+                    {/* Created - show date only, full datetime on hover */}
                     <TableCell>
                       <Tooltip title={formatDateTime(user.created_at, currentUser?.prefer_utc || false)}>
-                        <span>{formatDateTime(user.created_at, currentUser?.prefer_utc || false)}</span>
+                        <span>{formatDate(user.created_at, currentUser?.prefer_utc || false)}</span>
                       </Tooltip>
                     </TableCell>
                     <TableCell>

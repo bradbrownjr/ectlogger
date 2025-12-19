@@ -17,6 +17,27 @@ export const formatDateTime = (dateString: string, preferUtc: boolean = false): 
   return `${date.toLocaleString()} ${shortTimeZone}`;
 };
 
+/**
+ * Format just the date portion (for compact display with full datetime on hover)
+ */
+export const formatDate = (dateString: string, preferUtc: boolean = false): string => {
+  // Backend sends UTC times without 'Z' suffix - append it so JavaScript parses correctly
+  const normalizedDateString = dateString.endsWith('Z') ? dateString : dateString + 'Z';
+  const date = new Date(normalizedDateString);
+  
+  if (preferUtc) {
+    // Format as "Dec 19, 2025" in UTC
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric',
+      timeZone: 'UTC'
+    });
+  }
+  
+  return date.toLocaleDateString();
+};
+
 export const formatTime = (dateString: string, preferUtc: boolean = false): string => {
   // Backend sends UTC times without 'Z' suffix - append it so JavaScript parses correctly
   const normalizedDateString = dateString.endsWith('Z') ? dateString : dateString + 'Z';
