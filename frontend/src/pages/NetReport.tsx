@@ -490,25 +490,38 @@ const NetReport: React.FC = () => {
       </Box>
 
       {/* ========== PDF CONTENT WRAPPER ========== */}
+      {/* Force light mode styling for print-friendly PDF export */}
       <Box 
         id="net-report-content" 
         sx={{ 
-          backgroundColor: theme.palette.background.paper, 
+          backgroundColor: '#ffffff !important',
+          color: '#000000 !important', 
           p: 2, 
           borderRadius: 1,
-          // Prevent table rows from breaking across pages in print/PDF
-          '& table': {
-            pageBreakInside: 'auto',
+          // Force all text to be dark for printing
+          '& *': {
+            colorAdjust: 'exact',
+            WebkitPrintColorAdjust: 'exact',
+            printColorAdjust: 'exact',
           },
-          '& tr': {
-            pageBreakInside: 'avoid',
-            pageBreakAfter: 'auto',
+          '& .MuiTypography-root': {
+            color: '#000000 !important',
           },
-          '& thead': {
-            display: 'table-header-group',
+          '& .MuiTypography-colorTextSecondary': {
+            color: '#666666 !important',
           },
-          '& tfoot': {
-            display: 'table-footer-group',
+          '& .MuiPaper-root': {
+            backgroundColor: '#ffffff !important',
+          },
+          '& .MuiTableCell-root': {
+            color: '#000000 !important',
+            borderColor: '#e0e0e0 !important',
+          },
+          '& .MuiCard-root': {
+            backgroundColor: '#ffffff !important',
+          },
+          '& .MuiCardContent-root': {
+            backgroundColor: '#ffffff !important',
           },
         }}
       >
