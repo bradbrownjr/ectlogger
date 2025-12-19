@@ -98,7 +98,7 @@ interface NetStats {
   closed_at: string | null;
   status_counts: Record<string, number>;
   check_ins_by_frequency: Record<string, number>;
-  top_operators: { callsign: string; check_in_count: number }[];
+  top_operators: { callsign: string; check_in_count: number; first_check_in: string }[];
 }
 
 interface NetRole {

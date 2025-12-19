@@ -68,6 +68,7 @@ ECT and SKYWARN nets often move between frequencies to meet participants where t
 - **📧 Emailed net closure reports** - Net participants can receive chat logs, check-in logs, topic answers, and poll results
 - **📃 ICS-309 Communications Log** - For ARES and ECT nets, ICS-309 documents can be downloaded and emailed from closed nets
 - **📈 Statistics & Analytics** — Track participation trends, operator activity, and net performance with interactive charts
+- **📄 Net Report (PDF)** — Generate comprehensive multi-page PDF reports for closed nets including statistics, check-in logs, chat, and ICS-309 sections
 
 ---
 

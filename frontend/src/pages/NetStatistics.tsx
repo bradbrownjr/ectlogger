@@ -59,6 +59,7 @@ interface TimeSeriesDataPoint {
 interface TopOperator {
   callsign: string;
   check_in_count: number;
+  first_check_in: string;  // ISO datetime - used for tie-breaking
 }
 
 interface NetStats {

@@ -13,6 +13,19 @@ All notable changes to ECTLogger are documented here.
 * **Cancel Net Instance** - Delete button added to draft/scheduled nets on the Dashboard to cancel a specific net instance without affecting the recurring schedule
 * **Net Script Button** - Added script viewer button (article icon) to the net toolbar between map and edit buttons
 * **Unarchive Nets** - Archived nets can now be unarchived (restored to closed status) via the unarchive button in the net toolbar
+* **Net Report (PDF)** - Comprehensive multi-page PDF report for closed/archived nets including:
+  - ECTLogger branded header with site URL
+  - Net info (name, description, frequencies, NCS operators, duration)
+  - Statistics summary with charts (status breakdown, check-ins by frequency)
+  - Complete check-in log table
+  - Chat log (user messages only)
+  - ICS-309 Communications Log section (if enabled)
+  - Each section on its own page for easy printing
+* **PDF Export for Statistics** - Added PDF export buttons to:
+  - Platform-wide Statistics page (landscape)
+  - Per-net Statistics page (portrait)
+  - User Profile Activity tab (landscape)
+  - Check-in Map (landscape)
 
 ## Improvements
 
@@ -23,11 +36,16 @@ All notable changes to ECTLogger are documented here.
 * **Archive with Undo** - Archiving a net now shows a toast with UNDO button for 5 seconds before the archive is finalized
 * **Download Logs from Archived Nets** - CSV and ICS-309 download buttons are now available when viewing archived nets
 * **Frequency Chips View-Only on Closed/Archived** - Frequency chips no longer attempt to set active frequency or claim frequencies on closed/archived nets (Ctrl+click filtering still works)
+* **Session Timeout Extended** - Production session timeout increased from 30 minutes to 24 hours to prevent mid-net logouts
+* **Stats Button in NetView** - Added statistics button to net toolbar for quick access to net statistics
+* **PDF Button on Dashboard** - Added PDF report button to closed/archived nets on Dashboard (both list and card views)
+* **Top Operators Tie-Breaking** - When operators have the same number of check-ins, the one who checked in first gets the higher medal ranking
 
 ## Bug Fixes
 
 * **Bulk Check-In Notes Field** - Fixed notes not being populated when using Speed Entry (was using hardcoded field positions instead of dynamic enabled fields)
 * **Mobile/Announcements Status Crash** - Fixed page going blank when setting status to "Mobile" or "Announcements" (added missing enum values to backend)
+* **Pie Chart Labels in PDF** - Fixed pie chart labels overlapping in PDF exports by using external labels with colored text
 
 ---
 

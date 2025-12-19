@@ -775,9 +775,10 @@ class TimeSeriesDataPoint(BaseModel):
 
 
 class TopOperator(BaseModel):
-    """Top operator by check-in count"""
+    """Top operator by check-in count, with tie-breaking by earliest check-in"""
     callsign: str
     check_in_count: int
+    first_check_in: datetime  # Used for tie-breaking - earlier check-in wins
 
 
 class NetParticipation(BaseModel):

@@ -220,13 +220,33 @@ async def get_net_statistics(
             ))
     
     # Top operators (most check-ins including rechecks)
-    callsign_counts = {}
+    # Track both count and first check-in time for tie-breaking
+    callsign_data = {}  # callsign -> {count: int, first_check_in: datetime}
     for checkin in net.check_ins:
-        callsign_counts[checkin.callsign] = callsign_counts.get(checkin.callsign, 0) + 1
+        cs = checkin.callsign
+        if cs not in callsign_data:
+            callsign_data[cs] = {
+                'count': 0,
+                'first_check_in': checkin.checked_in_at
+            }
+        callsign_data[cs]['count'] += 1
+        # Track earliest check-in time
+        if checkin.checked_in_at < callsign_data[cs]['first_check_in']:
+            callsign_data[cs]['first_check_in'] = checkin.checked_in_at
+    
+    # Sort by count (descending), then by first_check_in (ascending) for tie-breaking
+    sorted_operators = sorted(
+        callsign_data.items(),
+        key=lambda x: (-x[1]['count'], x[1]['first_check_in'])
+    )[:10]
     
     top_operators = [
-        TopOperator(callsign=cs, check_in_count=count)
-        for cs, count in sorted(callsign_counts.items(), key=lambda x: -x[1])[:10]
+        TopOperator(
+            callsign=cs,
+            check_in_count=data['count'],
+            first_check_in=data['first_check_in']
+        )
+        for cs, data in sorted_operators
     ]
     
     # Check-ins by frequency

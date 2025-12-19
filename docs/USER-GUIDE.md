@@ -345,12 +345,33 @@ Both Topic and Poll columns are only visible when configured for the net. System
 - **CSV Export** — Download check-ins as a spreadsheet
 - **ICS-309 Export** — Official FEMA communication log format (enable in net settings)
 
+### Net Report (PDF)
+
+Generate a comprehensive multi-page PDF report for closed or archived nets:
+
+1. **Access** — Click the **📄 PDF** icon in the net toolbar (for closed/archived nets), or on the Dashboard next to the download button
+2. **View Report** — Review the report page with all sections displayed
+3. **Export** — Click **Export PDF** to download the report
+
+**Report Sections** (each on its own page):
+
+- **ECTLogger Header** — Branded title with site URL for attribution
+- **Net Info** — Name, description, frequencies, NCS operators, start/end times, duration
+- **Statistics Summary** — Cards showing total check-ins, unique operators, rechecks, duration; plus charts for status breakdown and check-ins by frequency
+- **Check-in Log** — Complete table of all check-ins with time, callsign, name, location, status, frequency, and notes
+- **Chat Log** — All user messages (system messages excluded) with timestamps
+- **ICS-309** — Official communications log format (only if ICS-309 is enabled for the net)
+
+The PDF is ideal for after-action reports, club records, or emergency management documentation.
+
 ## Statistics
 
 View participation statistics:
-- **Platform Stats** — Overall system activity
-- **Net Stats** — Per-net participation trends
-- **Your Activity** — Personal check-in history (also available in your Profile)
+- **Platform Stats** — Overall system activity (with PDF export)
+- **Net Stats** — Per-net participation trends (with PDF export)
+- **Your Activity** — Personal check-in history (also available in your Profile, with PDF export)
+
+**Top Operators Ranking** — In statistics, the top operators are ranked by check-in count. When operators are tied with the same count, the one who checked in earliest gets the higher medal (🥇🥈🥉) ranking.
 
 ## Tips & Tricks
 
