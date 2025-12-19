@@ -39,6 +39,7 @@ import DownloadIcon from '@mui/icons-material/Download';
 import ArchiveIcon from '@mui/icons-material/Archive';
 import UnarchiveIcon from '@mui/icons-material/Unarchive';
 import MapIcon from '@mui/icons-material/Map';
+import BarChartIcon from '@mui/icons-material/BarChart';
 import FastForwardIcon from '@mui/icons-material/FastForward';
 import SearchIcon from '@mui/icons-material/Search';
 import DescriptionIcon from '@mui/icons-material/Description';
@@ -1720,6 +1721,16 @@ const NetView: React.FC = () => {
                         sx={{ minWidth: 'auto', px: 1 }}
                       >
                         <MapIcon fontSize="small" />
+                      </Button>
+                    </Tooltip>
+                    <Tooltip title="Net statistics">
+                      <Button 
+                        size="small" 
+                        variant="outlined" 
+                        onClick={() => navigate(`/statistics/nets/${netId}`)}
+                        sx={{ minWidth: 'auto', px: 1 }}
+                      >
+                        <BarChartIcon fontSize="small" />
                       </Button>
                     </Tooltip>
                     {net.script && (
