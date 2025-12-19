@@ -217,6 +217,7 @@ const NetReport: React.FC = () => {
         orientation: 'portrait',
         scale: 1.5, // Higher quality for dense content
         margin: 10,
+        usePageBreaks: true, // Each section on its own page
       });
     } catch (err) {
       console.error('Failed to export PDF:', err);
@@ -387,6 +388,8 @@ const NetReport: React.FC = () => {
         </Paper>
 
         {/* ========== SECTION 2: STATISTICS SUMMARY ========== */}
+        {/* Page break before statistics */}
+        <Box sx={{ pageBreakBefore: 'always', pt: 2 }}>
         <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
           <TrendingUp /> Statistics Summary
         </Typography>
@@ -493,8 +496,11 @@ const NetReport: React.FC = () => {
             </Grid>
           )}
         </Grid>
+        </Box>
 
         {/* ========== SECTION 3: CHECK-IN LOG ========== */}
+        {/* Page break before check-in log */}
+        <Box sx={{ pageBreakBefore: 'always', pt: 2 }}>
         <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
           <Assignment /> Check-in Log ({checkIns.length} entries)
         </Typography>
@@ -560,10 +566,11 @@ const NetReport: React.FC = () => {
             </TableBody>
           </Table>
         </TableContainer>
+        </Box>
 
         {/* ========== SECTION 4: CHAT LOG (if there are user messages) ========== */}
         {userChatMessages.length > 0 && (
-          <>
+          <Box sx={{ pageBreakBefore: 'always', pt: 2 }}>
             <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
               <ChatIcon /> Chat Log ({userChatMessages.length} messages)
             </Typography>
@@ -594,12 +601,12 @@ const NetReport: React.FC = () => {
                 </TableBody>
               </Table>
             </TableContainer>
-          </>
+          </Box>
         )}
 
-        {/* ========== SECTION 5: ICS-309 FORMAT (if enabled) ========== */}
+        {/* ========== SECTION 5: ICS-309 FORMAT (if enabled) ========== */}}
         {net.ics309_enabled && (
-          <>
+          <Box sx={{ pageBreakBefore: 'always', pt: 2 }}>
             <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
               <Assignment /> ICS-309 Communications Log
             </Typography>
@@ -675,7 +682,7 @@ const NetReport: React.FC = () => {
                 </Grid>
               </Grid>
             </Paper>
-          </>
+          </Box>
         )}
 
         {/* ========== FOOTER ========== */}
