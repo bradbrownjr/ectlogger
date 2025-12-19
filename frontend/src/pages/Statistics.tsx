@@ -14,6 +14,9 @@ import {
   Chip,
   useTheme,
   useMediaQuery,
+  Button,
+  Tooltip,
+  CircularProgress,
 } from '@mui/material';
 import {
   BarChart as BarChartIcon,
@@ -23,6 +26,7 @@ import {
   Today,
   DateRange,
   CalendarMonth,
+  PictureAsPdf,
 } from '@mui/icons-material';
 import {
   LineChart,
@@ -32,12 +36,13 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
+  Tooltip as RechartsTooltip,
   ResponsiveContainer,
   AreaChart,
   Area,
 } from 'recharts';
 import { statisticsApi } from '../services/api';
+import { exportElementToPdf } from '../utils/pdfExport';
 
 interface TimeSeriesDataPoint {
   label: string;
@@ -120,6 +125,22 @@ const Statistics: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<GlobalStats | null>(null);
   const [chartTab, setChartTab] = useState(0);
+  const [exporting, setExporting] = useState(false);
+
+  // Handle PDF export
+  const handleExportPdf = async () => {
+    setExporting(true);
+    try {
+      await exportElementToPdf('stats-content', {
+        filename: 'ECTLogger_Statistics',
+        orientation: 'portrait',
+      });
+    } catch (err) {
+      console.error('Failed to export PDF:', err);
+    } finally {
+      setExporting(false);
+    }
+  };
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -180,23 +201,37 @@ const Statistics: React.FC = () => {
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
-      {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
-        <BarChartIcon sx={{ fontSize: 40, color: 'primary.main' }} />
-        <Box>
-          <Typography variant="h4" fontWeight="bold">
-            ECTLogger Statistics
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Platform activity and usage trends
-          </Typography>
+      {/* Header with PDF export button */}
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <BarChartIcon sx={{ fontSize: 40, color: 'primary.main' }} />
+          <Box>
+            <Typography variant="h4" fontWeight="bold">
+              ECTLogger Statistics
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Platform activity and usage trends
+            </Typography>
+          </Box>
         </Box>
+        <Tooltip title="Export to PDF">
+          <Button
+            variant="outlined"
+            onClick={handleExportPdf}
+            disabled={exporting}
+            startIcon={exporting ? <CircularProgress size={16} /> : <PictureAsPdf />}
+          >
+            {exporting ? 'Exporting...' : 'PDF'}
+          </Button>
+        </Tooltip>
       </Box>
 
-      {/* Summary Stats Cards */}
-      <Grid container spacing={2} sx={{ mb: 4 }}>
-        <Grid item xs={6} sm={4} md={2}>
-          <StatCard
+      {/* Content wrapper for PDF export */}
+      <Box id="stats-content">
+        {/* Summary Stats Cards */}
+        <Grid container spacing={2} sx={{ mb: 4 }}>
+          <Grid item xs={6} sm={4} md={2}>
+            <StatCard
             title="Total Nets"
             value={stats.total_nets}
             icon={<Radio sx={{ fontSize: 32 }} />}
@@ -468,6 +503,7 @@ const Statistics: React.FC = () => {
           </Box>
         )}
       </Paper>
+      </Box>
     </Container>
   );
 };
