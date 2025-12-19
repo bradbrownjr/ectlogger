@@ -200,8 +200,8 @@ const NetReport: React.FC = () => {
     return freq ? getFrequencyLabel(freq) : '—';
   };
 
-  // Filter non-system chat messages for the report
-  const userChatMessages = chatMessages.filter(m => !m.is_system);
+  // All chat messages for the report (including system messages)
+  const allChatMessages = chatMessages;
 
   // ========== PDF EXPORT ==========
 
@@ -574,11 +574,11 @@ const NetReport: React.FC = () => {
           </Table>
         </TableContainer>
 
-        {/* ========== SECTION 4: CHAT LOG (if there are user messages) ========== */}
-        {userChatMessages.length > 0 && (
+        {/* ========== SECTION 4: CHAT LOG (if there are messages) ========== */}
+        {allChatMessages.length > 0 && (
           <>
             <Typography variant="h6" sx={{ mt: 3, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-              <ChatIcon /> Chat Log ({userChatMessages.length} messages)
+              <ChatIcon /> Chat Log ({allChatMessages.length} messages)
             </Typography>
             
             <TableContainer component={Paper} variant="outlined" sx={{ mb: 3 }}>
@@ -591,17 +591,26 @@ const NetReport: React.FC = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {userChatMessages.map((msg: ChatMessage) => (
-                    <TableRow key={msg.id}>
+                  {allChatMessages.map((msg: ChatMessage) => (
+                    <TableRow 
+                      key={msg.id}
+                      sx={msg.is_system ? { backgroundColor: theme.palette.action.hover } : {}}
+                    >
                       <TableCell sx={{ whiteSpace: 'nowrap', fontSize: '0.75rem' }}>
                         {formatTimeWithDate(msg.created_at, user?.prefer_utc || false)}
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2" fontWeight="medium">
-                          {msg.callsign || 'Unknown'}
+                        <Typography 
+                          variant="body2" 
+                          fontWeight="medium"
+                          sx={msg.is_system ? { fontStyle: 'italic', color: 'text.secondary' } : {}}
+                        >
+                          {msg.is_system ? 'System' : (msg.callsign || 'Unknown')}
                         </Typography>
                       </TableCell>
-                      <TableCell>{msg.message}</TableCell>
+                      <TableCell sx={msg.is_system ? { fontStyle: 'italic', color: 'text.secondary' } : {}}>
+                        {msg.message}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
