@@ -48,7 +48,7 @@ class NetStatus(str, enum.Enum):
 
 class StationStatus(str, enum.Enum):
     CHECKED_IN = "checked_in"
-    AVAILABLE = "available"
+    HAS_TRAFFIC = "has_traffic"
     LISTENING = "listening"
     RELAY = "relay"
     AWAY = "away"

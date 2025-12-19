@@ -304,8 +304,10 @@ const NetReport: React.FC = () => {
   const getStatusColor = (status: string): string => {
     switch (status) {
       case 'checked_in': return theme.palette.success.main;
+      case 'has_traffic': return theme.palette.error.main;
       case 'tactical': return theme.palette.warning.main;
       case 'monitoring': return theme.palette.info.main;
+      case 'listening': return theme.palette.info.main;
       case 'checking_out': return theme.palette.error.light;
       default: return theme.palette.grey[500];
     }

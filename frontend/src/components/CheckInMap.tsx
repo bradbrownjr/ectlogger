@@ -275,7 +275,7 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
       case 'checked_in': return '#4caf50'; // green - standard check-in
       case 'listening': return '#9c27b0'; // purple - monitoring
       case 'away': return '#ff9800'; // orange - temporarily away
-      case 'available': return '#f44336'; // red - has traffic
+      case 'has_traffic': return '#f44336'; // red - has traffic
       case 'announcements': return '#00bcd4'; // cyan - has announcements
       case 'tactical': return '#795548'; // brown - tactical station
       case 'mobile': return '#607d8b'; // blue-gray - mobile station

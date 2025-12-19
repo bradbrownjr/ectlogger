@@ -46,7 +46,7 @@ interface ParsedCheckIn {
 const STATUS_SHORTCUTS: Record<string, string> = {
   'jl': 'listening',      // Just Listening
   'r': 'relay',           // Relay
-  't': 'available',       // Traffic (has traffic to report)
+  't': 'has_traffic',     // Traffic (has traffic to report)
   'a': 'announcements',   // Announcements
   'm': 'mobile',          // Mobile (may only be available briefly)
   'o': 'checked_out',     // Out / Checked Out
