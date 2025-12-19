@@ -1660,18 +1660,6 @@ const NetView: React.FC = () => {
                     </Button>
                   </Tooltip>
                 )}
-                {net.script && canManage && (
-                  <Tooltip title="View net script">
-                    <Button 
-                      size="small" 
-                      variant="outlined" 
-                      onClick={() => setScriptOpen(true)}
-                      sx={{ minWidth: 'auto', px: 1 }}
-                    >
-                      <DescriptionIcon fontSize="small" />
-                    </Button>
-                  </Tooltip>
-                )}
                 {checkIns.length > 0 && (
                   <>
                     <Tooltip title="Search check-ins">
@@ -1695,6 +1683,18 @@ const NetView: React.FC = () => {
                       </Button>
                     </Tooltip>
                   </>
+                )}
+                {net.script && (
+                  <Tooltip title="View net script">
+                    <Button 
+                      size="small" 
+                      variant="outlined" 
+                      onClick={() => setScriptOpen(true)}
+                      sx={{ minWidth: 'auto', px: 1 }}
+                    >
+                      <DescriptionIcon fontSize="small" />
+                    </Button>
+                  </Tooltip>
                 )}
                 {net.info_url && (
                   <Tooltip title="Net/Club info">
