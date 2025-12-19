@@ -301,23 +301,41 @@ const NetStatistics: React.FC = () => {
               <Typography variant="h6" gutterBottom>
                 Check-in Status
               </Typography>
-              <ResponsiveContainer width="100%" height={250}>
+              <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie
                     data={statusData}
                     cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    outerRadius={80}
+                    cy="45%"
+                    outerRadius={90}
                     fill="#8884d8"
                     dataKey="value"
-                    label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                    label={({ name, percent, x, y, midAngle }) => {
+                      // Position labels outside the pie with offset based on angle
+                      const RADIAN = Math.PI / 180;
+                      const radius = 110;
+                      const cx2 = x + (radius - 90) * Math.cos(-midAngle * RADIAN);
+                      const cy2 = y + (radius - 90) * Math.sin(-midAngle * RADIAN);
+                      return (
+                        <text
+                          x={cx2}
+                          y={cy2}
+                          fill={COLORS[statusData.findIndex(d => d.name === name) % COLORS.length]}
+                          textAnchor={cx2 > x ? 'start' : 'end'}
+                          dominantBaseline="central"
+                          fontSize={12}
+                        >
+                          {`${name} (${(percent * 100).toFixed(0)}%)`}
+                        </text>
+                      );
+                    }}
+                    labelLine={{ stroke: '#666', strokeWidth: 1 }}
                   >
                     {statusData.map((_, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Legend />
+                  <Legend verticalAlign="bottom" height={36} />
                 </PieChart>
               </ResponsiveContainer>
             </Paper>
