@@ -763,10 +763,16 @@ const NetReport: React.FC = () => {
                   </TableCell>
                   <TableCell>
                     <Chip 
-                      label={checkIn.status.replace('_', ' ')} 
+                      label={checkIn.status.toLowerCase().replace('_', ' ')} 
                       size="small" 
-                      color={checkIn.status === 'checked_in' ? 'success' : checkIn.status === 'checked_out' ? 'default' : 'warning'}
-                      sx={{ height: 20, fontSize: '0.7rem' }}
+                      color={
+                        checkIn.status.toUpperCase() === 'CHECKED_IN' ? 'success' : 
+                        checkIn.status.toUpperCase() === 'CHECKED_OUT' ? 'default' : 
+                        checkIn.status.toUpperCase() === 'HAS_TRAFFIC' ? 'error' :
+                        checkIn.status.toUpperCase() === 'LISTENING' ? 'info' :
+                        'warning'
+                      }
+                      sx={{ height: 20, fontSize: '0.7rem', textTransform: 'capitalize' }}
                     />
                   </TableCell>
                   <TableCell sx={{ fontSize: '0.75rem' }}>
