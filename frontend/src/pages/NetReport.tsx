@@ -324,6 +324,19 @@ const NetReport: React.FC = () => {
       {/* ========== PDF CONTENT WRAPPER ========== */}
       <Box id="net-report-content" sx={{ backgroundColor: theme.palette.background.paper, p: 2, borderRadius: 1 }}>
         
+        {/* ========== REPORT TITLE HEADER ========== */}
+        <Box sx={{ textAlign: 'center', mb: 3, pb: 2, borderBottom: 2, borderColor: 'primary.main' }}>
+          <Typography variant="h3" fontWeight="bold" color="primary" gutterBottom>
+            📻 ECTLogger
+          </Typography>
+          <Typography variant="h5" fontWeight="medium" gutterBottom>
+            Net Report
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {window.location.origin}
+          </Typography>
+        </Box>
+
         {/* ========== SECTION 1: NET INFO HEADER ========== */}
         <Paper sx={{ p: 3, mb: 3 }}>
           <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
@@ -604,7 +617,7 @@ const NetReport: React.FC = () => {
           </Box>
         )}
 
-        {/* ========== SECTION 5: ICS-309 FORMAT (if enabled) ========== */}}
+        {/* ========== SECTION 5: ICS-309 FORMAT (if enabled) ========== */}
         {net.ics309_enabled && (
           <Box sx={{ pageBreakBefore: 'always', pt: 2 }}>
             <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
