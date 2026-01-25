@@ -13,6 +13,7 @@ All notable changes to ECTLogger are documented here.
 * **Prior Topics Log** - Track previously used "Topic of the Week" prompts to avoid repetition. When a net closes with a topic enabled, the topic is automatically logged to history. A history icon button appears in the net toolbar (for nets created from templates) to view all past topics with dates. Helps NCS staff rotate topics and avoid reusing recent ones.
 
 * **Audio Stream URL** - Nets can now include a direct audio stream URL (Shoutcast, Broadcastify, etc.). A speaker icon appears in the net toolbar for easy listening. Works for both authenticated users and guests.
+* **Per-user Chat System Messages Toggle** - Users can now hide or show system (activity) messages in the chat using a toolbar icon located to the left of the pop-out button; the preference is saved to the user's profile and persists across sessions.
 * **Unarchive from Archived List** - Added unarchive button directly to the Archived Nets dialog on the Dashboard (no need to open the net first)
 * **In-App Changelog** - New floating info button shows recent changes with unread indicator
 

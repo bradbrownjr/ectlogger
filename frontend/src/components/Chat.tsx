@@ -18,7 +18,10 @@ import {
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { chatApi, ChatMessage } from '../api/chat';
+import { userApi } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { formatTimeWithDate } from '../utils/dateUtils';
 
@@ -32,7 +35,8 @@ interface ChatProps {
 }
 
 const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery, onNewMessage, onDetach }) => {
-  const { user } = useAuth();
+  const { user, login } = useAuth();
+  const [showSystemMessagesLocal, setShowSystemMessagesLocal] = useState<boolean>(user?.show_activity_in_chat ?? true);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
@@ -66,6 +70,11 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
     };
   }, [user?.id]);
 
+  // Sync local toggle state when user changes
+  useEffect(() => {
+    setShowSystemMessagesLocal(user?.show_activity_in_chat ?? true);
+  }, [user?.show_activity_in_chat]);
+
   const scrollToBottom = () => {
     if (messagesContainerRef.current) {
       messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
@@ -82,10 +91,10 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
 
   // Filter messages based on user preference for system messages AND search query
   const filteredMessages = messages.filter(m => {
-    // First filter by system message preference
-    if (user?.show_activity_in_chat === false && m.is_system) {
-      return false;
-    }
+      // First filter by system message preference (local state for immediate UI response)
+      if (showSystemMessagesLocal === false && m.is_system) {
+        return false;
+      }
     // Then filter by search query if present
     if (searchQuery && searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
@@ -171,15 +180,44 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   Chat
                   {onDetach && (
-                    <IconButton
-                      size="small"
-                      onClick={onDetach}
-                      title="Detach to floating window"
-                      sx={{ p: 0.25, display: { xs: 'none', lg: 'inline-flex' } }}
-                    >
-                      <OpenInNewIcon sx={{ fontSize: 14 }} />
-                    </IconButton>
+                    <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
+                      <IconButton
+                        size="small"
+                        onClick={handleToggleSystemMessages}
+                        title={showSystemMessagesLocal ? 'Hide system messages' : 'Show system messages'}
+                        sx={{ p: 0.25, display: { xs: 'none', lg: 'inline-flex' } }}
+                      >
+                        {showSystemMessagesLocal ? (
+                          <VisibilityIcon sx={{ fontSize: 14 }} />
+                        ) : (
+                          <VisibilityOffIcon sx={{ fontSize: 14 }} />
+                        )}
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        onClick={onDetach}
+                        title="Detach to floating window"
+                        sx={{ p: 0.25, display: { xs: 'none', lg: 'inline-flex' } }}
+                      >
+                        <OpenInNewIcon sx={{ fontSize: 14 }} />
+                      </IconButton>
+                    </Box>
                   )}
+          const handleToggleSystemMessages = async () => {
+            const newVal = !showSystemMessagesLocal;
+            // Optimistically update UI
+            setShowSystemMessagesLocal(newVal);
+            try {
+              await userApi.updateProfile({ show_activity_in_chat: newVal });
+              // Refresh user data by re-fetching via login (uses fetchUser)
+              const token = localStorage.getItem('token') || '';
+              if (token) await login(token);
+            } catch (err) {
+              console.error('Failed to update preference:', err);
+              // Revert local UI state on failure
+              setShowSystemMessagesLocal(!newVal);
+            }
+          };
                 </Box>
               </TableCell>
             </TableRow>

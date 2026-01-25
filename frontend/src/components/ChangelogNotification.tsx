@@ -43,7 +43,7 @@ const pulseAnimation = keyframes`
 // The version number triggers the unread notification for users.
 // Mark entries with `userImpact: true` to highlight them in the UI.
 
-const CHANGELOG_VERSION = '2026.01.25d';
+const CHANGELOG_VERSION = '2026.01.25e';
 
 interface ChangelogEntry {
   version: string;
@@ -59,6 +59,19 @@ interface ChangelogEntry {
 }
 
 const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '2026.01.25e',
+    date: 'January 25, 2026',
+    sections: [
+      {
+        title: 'New Features',
+        type: 'feature',
+        items: [
+          { text: 'Per-user Chat System Messages Toggle — users can now hide or show system (activity) messages from the chat via a toolbar icon (left of the pop-out button). Preference is saved to your profile and persists across sessions.', userImpact: true },
+        ],
+      },
+    ],
+  },
   {
     version: '2026.01.25d',
     date: 'January 25, 2026',
