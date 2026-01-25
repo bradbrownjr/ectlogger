@@ -43,6 +43,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import EditIcon from '@mui/icons-material/Edit';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import ArchiveIcon from '@mui/icons-material/Archive';
+import UnarchiveIcon from '@mui/icons-material/Unarchive';
 import DownloadIcon from '@mui/icons-material/Download';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -227,6 +228,21 @@ const Dashboard: React.FC = () => {
     setEmailNet(net);
     setEmailForm({ subject: '', message: '' });
     setEmailDialogOpen(true);
+  };
+
+  // ========== UNARCHIVE HANDLER ==========
+  const handleUnarchive = async (net: Net) => {
+    try {
+      await netApi.unarchive(net.id);
+      // Refresh both lists
+      fetchNets();
+      fetchArchivedNets();
+      setSnackbar({ open: true, message: `"${net.name}" has been unarchived`, severity: 'success' });
+    } catch (error: any) {
+      console.error('Failed to unarchive net:', error);
+      const message = error.response?.data?.detail || 'Failed to unarchive net';
+      setSnackbar({ open: true, message, severity: 'error' });
+    }
   };
 
   const handleSendEmail = async () => {
@@ -992,6 +1008,17 @@ const Dashboard: React.FC = () => {
                             <PictureAsPdfIcon />
                           </IconButton>
                         </Tooltip>
+                        {(user?.role === 'admin' || net.can_manage) && (
+                          <Tooltip title="Unarchive net">
+                            <IconButton
+                              size="small"
+                              color="warning"
+                              onClick={() => handleUnarchive(net)}
+                            >
+                              <UnarchiveIcon />
+                            </IconButton>
+                          </Tooltip>
+                        )}
                         {user?.role === 'admin' && (
                           <Tooltip title="Delete net">
                             <IconButton

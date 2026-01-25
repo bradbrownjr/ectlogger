@@ -70,6 +70,7 @@ export const netApi = {
   start: (id: number) => api.post(`/nets/${id}/start`),
   close: (id: number) => api.post(`/nets/${id}/close`),
   archive: (id: number) => api.post(`/nets/${id}/archive`),
+  unarchive: (id: number) => api.post(`/nets/${id}/unarchive`),
   delete: (id: number) => api.delete(`/nets/${id}`),
   setActiveFrequency: (netId: number, frequencyId: number) => 
     api.put(`/nets/${netId}/active-frequency/${frequencyId}`),

@@ -1161,8 +1161,8 @@ async def unarchive_net(
     if not net:
         raise HTTPException(status_code=404, detail="Net not found")
     
-    # Check permissions
-    if net.owner_id != current_user.id and current_user.role.value != "admin":
+    # Check permissions - owner, admin, or NCS can unarchive
+    if not await check_net_permission(db, net, current_user, ["NCS"]):
         raise HTTPException(status_code=403, detail="Not authorized to unarchive this net")
     
     if net.status != NetStatus.ARCHIVED:
