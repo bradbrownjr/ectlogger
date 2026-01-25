@@ -619,8 +619,18 @@ async def close_net(
     
     await db.commit()
     
+    # Broadcast net status change so all clients update immediately
+    from app.main import post_system_message, manager
+    await manager.broadcast({
+        "type": "net_status_change",
+        "data": {
+            "net_id": net_id,
+            "status": "closed",
+            "closed_at": net.closed_at.isoformat() if net.closed_at else None
+        }
+    }, net_id)
+    
     # Post system message for net close
-    from app.main import post_system_message
     await post_system_message(net_id, f"Net has been closed by {current_user.callsign or current_user.email}", db)
     
     # Get owner/NCS information
@@ -1247,7 +1257,7 @@ async def assign_net_role(
     await db.commit()
 
     # Broadcast role change via WebSocket
-    from app.main import manager
+    from app.main import manager, post_system_message
     import datetime
     await manager.broadcast({
         "type": "role_change",
@@ -1259,6 +1269,13 @@ async def assign_net_role(
         },
         "timestamp": datetime.datetime.utcnow().isoformat()
     }, net_id)
+
+    # Log role assignment in chat
+    await post_system_message(
+        net_id,
+        f"{user.callsign or user.name or user.email} assigned as {role}",
+        db
+    )
 
     return {"message": f"Role {role} assigned to user {user_id}"}
 
@@ -1302,23 +1319,36 @@ async def remove_net_role(
                 detail="Cannot remove the last NCS from an active net. Assign another NCS first."
             )
     
+    # Get user info for system message before deleting
+    result = await db.execute(select(User).where(User.id == role.user_id))
+    user_to_remove = result.scalar_one_or_none()
+    role_name = role.role
+    
     await db.delete(role)
     await db.commit()
 
     # Broadcast role removal via WebSocket
-    from app.main import manager
+    from app.main import manager, post_system_message
     import datetime
     await manager.broadcast({
         "type": "role_change",
         "data": {
             "net_id": net_id,
             "user_id": role.user_id,
-            "role": role.role,
+            "role": role_name,
             "removed": True,
             "removed_at": datetime.datetime.utcnow().isoformat()
         },
         "timestamp": datetime.datetime.utcnow().isoformat()
     }, net_id)
+
+    # Log role removal in chat
+    if user_to_remove:
+        await post_system_message(
+            net_id,
+            f"{user_to_remove.callsign or user_to_remove.name or user_to_remove.email} removed from {role_name} role",
+            db
+        )
 
     return None
 

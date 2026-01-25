@@ -497,6 +497,11 @@ const NetView: React.FC = () => {
           // Remove highlight after 10 seconds
           setTimeout(() => setHighlightCheckIn(false), 10000);
         }, 500);
+      } else if (message.type === 'net_status_change') {
+        // Net status changed (e.g., closed) - refresh net data immediately
+        console.log('Net status changed:', message.data);
+        fetchNet();
+        fetchNetStats();
       }
     };
 
@@ -507,6 +512,14 @@ const NetView: React.FC = () => {
     websocket.onclose = (event) => {
       if (event.code === 1008) {
         console.error('WebSocket authentication failed');
+      } else if (event.code !== 1000) {
+        // Abnormal close - attempt reconnection after 3 seconds
+        console.log('WebSocket disconnected unexpectedly, reconnecting in 3s...');
+        setTimeout(() => {
+          if (netId && token) {
+            connectWebSocket();
+          }
+        }, 3000);
       }
     };
 
@@ -2284,7 +2297,7 @@ const NetView: React.FC = () => {
                                 <MenuItem value="has_traffic">🚨</MenuItem>
                                 <MenuItem value="announcements">📢</MenuItem>
                                 <MenuItem value="mobile">🚗</MenuItem>
-                                {canManageCheckIns && <MenuItem value="checked_out">👋</MenuItem>}
+                                {(canManageCheckIns || checkIn.user_id === user?.id) && <MenuItem value="checked_out">👋</MenuItem>}
                               </Select>
                             </Tooltip>
                           );
@@ -2711,7 +2724,7 @@ const NetView: React.FC = () => {
                                 <MenuItem value="has_traffic">🚨</MenuItem>
                                 <MenuItem value="announcements">📢</MenuItem>
                                 <MenuItem value="mobile">🚗</MenuItem>
-                                {canManageCheckIns && <MenuItem value="checked_out">👋</MenuItem>}
+                                {(canManageCheckIns || checkIn.user_id === user?.id) && <MenuItem value="checked_out">👋</MenuItem>}
                               </Select>
                             );
                           })() : (
@@ -3464,7 +3477,7 @@ const NetView: React.FC = () => {
                                     <MenuItem value="has_traffic">🚨</MenuItem>
                                     <MenuItem value="announcements">📢</MenuItem>
                                     <MenuItem value="mobile">🚗</MenuItem>
-                                    {canManageCheckIns && <MenuItem value="checked_out">👋</MenuItem>}
+                                    {(canManageCheckIns || checkIn.user_id === user?.id) && <MenuItem value="checked_out">👋</MenuItem>}
                                   </Select>
                                 </Tooltip>
                               );

@@ -104,12 +104,27 @@ class ConnectionManager:
         return set(user_id for _, user_id in self.active_connections[net_id])
     
     async def broadcast(self, message: dict, net_id: int):
-        if net_id in self.active_connections:
-            for connection, _ in self.active_connections[net_id]:
-                try:
-                    await connection.send_json(message)
-                except:
-                    pass
+        """Broadcast message to all connections for a net, cleaning up dead connections"""
+        if net_id not in self.active_connections:
+            return
+        
+        dead_connections = []
+        for connection, user_id in self.active_connections[net_id]:
+            try:
+                await connection.send_json(message)
+            except Exception as e:
+                # Log failure and mark for removal
+                print(f"WebSocket send failed for user {user_id} on net {net_id}: {e}")
+                dead_connections.append(connection)
+        
+        # Clean up dead connections after iteration completes
+        if dead_connections:
+            self.active_connections[net_id] = [
+                (ws, uid) for ws, uid in self.active_connections[net_id]
+                if ws not in dead_connections
+            ]
+            if not self.active_connections[net_id]:
+                del self.active_connections[net_id]
 
 
 manager = ConnectionManager()
