@@ -75,6 +75,22 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
     setShowSystemMessagesLocal(user?.show_activity_in_chat ?? true);
   }, [user?.show_activity_in_chat]);
 
+  const handleToggleSystemMessages = async () => {
+    const newVal = !showSystemMessagesLocal;
+    // Optimistically update UI
+    setShowSystemMessagesLocal(newVal);
+    try {
+      await userApi.updateProfile({ show_activity_in_chat: newVal });
+      // Refresh user data by re-fetching via login (uses fetchUser)
+      const token = localStorage.getItem('token') || '';
+      if (token) await login(token);
+    } catch (err) {
+      console.error('Failed to update preference:', err);
+      // Revert local UI state on failure
+      setShowSystemMessagesLocal(!newVal);
+    }
+  };
+
   const scrollToBottom = () => {
     if (messagesContainerRef.current) {
       messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
@@ -203,21 +219,6 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
                       </IconButton>
                     </Box>
                   )}
-          const handleToggleSystemMessages = async () => {
-            const newVal = !showSystemMessagesLocal;
-            // Optimistically update UI
-            setShowSystemMessagesLocal(newVal);
-            try {
-              await userApi.updateProfile({ show_activity_in_chat: newVal });
-              // Refresh user data by re-fetching via login (uses fetchUser)
-              const token = localStorage.getItem('token') || '';
-              if (token) await login(token);
-            } catch (err) {
-              console.error('Failed to update preference:', err);
-              // Revert local UI state on failure
-              setShowSystemMessagesLocal(!newVal);
-            }
-          };
                 </Box>
               </TableCell>
             </TableRow>
