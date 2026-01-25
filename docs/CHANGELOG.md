@@ -4,6 +4,28 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# January 25, 2026
+
+## New Features
+
+* **Unarchive from Archived List** - Added unarchive button directly to the Archived Nets dialog on the Dashboard (no need to open the net first)
+* **Staff Can Create Nets** - Net Staff members (not just rotation members) can now create and start nets from schedules
+* **In-App Changelog** - New floating info button shows recent changes with unread indicator
+
+## Improvements
+
+* **Map PDF Export** - Improved reliability of map PDF exports by preventing zoom resets during export
+
+## Bug Fixes
+
+* **WebSocket Auto-Reconnect** - Connections now automatically reconnect if disconnected unexpectedly
+* **Self-Checkout** - Users can now check out their own check-in (previously only NCS/Logger could)
+* **Role Change Logging** - Role assignments (NCS, Logger, Relay) are now logged in chat
+* **Net Close Broadcast** - Net closure now immediately updates all connected clients
+* **Dead Connection Cleanup** - Fixed dead WebSocket connections being kept in memory
+
+---
+
 # December 19, 2025
 
 ## New Features

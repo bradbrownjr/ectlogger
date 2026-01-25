@@ -47,12 +47,21 @@ const CHANGELOG: ChangelogEntry[] = [
     date: 'January 25, 2026',
     sections: [
       {
+        title: 'New Features',
+        type: 'feature',
+        items: [
+          { text: 'Unarchive button added directly to the Archived Nets list', userImpact: true },
+          { text: 'Staff members can now create and start nets (not just rotation members)', userImpact: true },
+        ],
+      },
+      {
         title: 'Bug Fixes',
         type: 'bugfix',
         items: [
           { text: 'WebSocket connections now auto-reconnect if disconnected unexpectedly', userImpact: true },
           { text: 'Users can now check out their own check-in (previously only NCS/Logger could)', userImpact: true },
           { text: 'Role assignments (NCS, Logger, Relay) are now logged in chat', userImpact: true },
+          { text: 'Improved map PDF export reliability', userImpact: true },
           { text: 'Net closure now immediately updates all connected clients', userImpact: false },
           { text: 'Fixed dead WebSocket connections being kept in memory', userImpact: false },
         ],
