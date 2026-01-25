@@ -14,12 +14,24 @@ router = APIRouter(prefix="/templates", tags=["templates"])
 
 
 async def check_template_permission(db: AsyncSession, template: NetTemplate, user: User) -> bool:
-    """Check if user has permission to manage a template (owner, admin, or NCS rotation member)"""
+    """Check if user has permission to manage a template (owner, admin, staff, or NCS rotation member)"""
     # Owner and admin always have permission
     if template.owner_id == user.id or user.role == UserRole.ADMIN:
         return True
     
-    # Check if user is in the NCS rotation for this template
+    # Check if user is in the staff list for this template
+    from app.models import TemplateStaff
+    staff_result = await db.execute(
+        select(TemplateStaff).where(
+            TemplateStaff.template_id == template.id,
+            TemplateStaff.user_id == user.id,
+            TemplateStaff.is_active == True
+        )
+    )
+    if staff_result.scalar_one_or_none():
+        return True
+    
+    # Check if user is in the NCS rotation for this template (also grants permission)
     result = await db.execute(
         select(NCSRotationMember).where(
             NCSRotationMember.template_id == template.id,
@@ -511,15 +523,28 @@ async def create_net_from_template(
         raise HTTPException(status_code=400, detail="Template is not active")
     
     # Check if user has permission to create a net from this template
-    # Must be: admin, template owner, or NCS staff member for this template
+    # Must be: admin, template owner, staff member, or NCS rotation member
     is_admin = current_user.role == UserRole.ADMIN
     is_owner = template.owner_id == current_user.id
-    is_ncs_staff = any(member.user_id == current_user.id for member in template.rotation_members)
+    is_rotation_member = any(member.user_id == current_user.id for member in template.rotation_members)
     
-    if not (is_admin or is_owner or is_ncs_staff):
+    # Check staff table
+    is_staff = False
+    if not (is_admin or is_owner or is_rotation_member):
+        from app.models import TemplateStaff
+        staff_result = await db.execute(
+            select(TemplateStaff).where(
+                TemplateStaff.template_id == template.id,
+                TemplateStaff.user_id == current_user.id,
+                TemplateStaff.is_active == True
+            )
+        )
+        is_staff = staff_result.scalar_one_or_none() is not None
+    
+    if not (is_admin or is_owner or is_rotation_member or is_staff):
         raise HTTPException(
             status_code=403, 
-            detail="Only admins, template owners, or designated NCS staff can create nets from this template"
+            detail="Only admins, template owners, or designated staff can create nets from this template"
         )
     
     # Calculate scheduled_start_time based on template's schedule config
