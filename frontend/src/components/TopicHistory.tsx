@@ -12,8 +12,13 @@ import {
   Box,
   CircularProgress,
   Alert,
+  TextField,
+  IconButton,
+  Collapse,
 } from '@mui/material';
 import HistoryIcon from '@mui/icons-material/History';
+import AddIcon from '@mui/icons-material/Add';
+import CloseIcon from '@mui/icons-material/Close';
 import api from '../services/api';
 
 interface TopicHistoryEntry {
@@ -39,6 +44,10 @@ const TopicHistory: React.FC<TopicHistoryProps> = ({
   const [topics, setTopics] = useState<TopicHistoryEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newTopic, setNewTopic] = useState('');
+  const [newTopicDate, setNewTopicDate] = useState(new Date().toISOString().split('T')[0]);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (open && templateId) {
@@ -69,6 +78,28 @@ const TopicHistory: React.FC<TopicHistoryProps> = ({
     });
   };
 
+  const handleAddTopic = async () => {
+    if (!newTopic.trim()) return;
+    
+    setSaving(true);
+    setError(null);
+    try {
+      await api.post(`/templates/${templateId}/topic-history`, {
+        topic: newTopic,
+        used_date: new Date(newTopicDate).toISOString(),
+      });
+      setNewTopic('');
+      setNewTopicDate(new Date().toISOString().split('T')[0]);
+      setShowAddForm(false);
+      await loadTopicHistory();
+    } catch (err: any) {
+      console.error('Failed to add topic:', err);
+      setError(err.response?.data?.detail || 'Failed to add topic');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <Dialog
       open={open}
@@ -77,14 +108,69 @@ const TopicHistory: React.FC<TopicHistoryProps> = ({
       fullWidth
     >
       <DialogTitle>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <HistoryIcon />
-          <Typography variant="h6">
-            Prior Topics - {templateName}
-          </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <HistoryIcon />
+            <Typography variant="h6">
+              Prior Topics - {templateName}
+            </Typography>
+          </Box>
+          <Button
+            startIcon={<AddIcon />}
+            size="small"
+            onClick={() => setShowAddForm(!showAddForm)}
+            variant={showAddForm ? 'contained' : 'outlined'}
+          >
+            Add Historical Topic
+          </Button>
         </Box>
       </DialogTitle>
       <DialogContent dividers>
+        <Collapse in={showAddForm}>
+          <Box sx={{ mb: 3, p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
+            <Typography variant="subtitle2" gutterBottom>
+              Add a historical topic (for nets run before ECTLogger)
+            </Typography>
+            <TextField
+              fullWidth
+              label="Topic"
+              value={newTopic}
+              onChange={(e) => setNewTopic(e.target.value)}
+              placeholder="What was your favorite radio moment this year?"
+              sx={{ mt: 1, mb: 2 }}
+              multiline
+              rows={2}
+            />
+            <TextField
+              type="date"
+              label="Date Used"
+              value={newTopicDate}
+              onChange={(e) => setNewTopicDate(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+              sx={{ mb: 2 }}
+            />
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Button
+                onClick={handleAddTopic}
+                disabled={!newTopic.trim() || saving}
+                variant="contained"
+                size="small"
+              >
+                {saving ? 'Adding...' : 'Add Topic'}
+              </Button>
+              <Button
+                onClick={() => {
+                  setShowAddForm(false);
+                  setNewTopic('');
+                  setError(null);
+                }}
+                size="small"
+              >
+                Cancel
+              </Button>
+            </Box>
+          </Box>
+        </Collapse>
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
             <CircularProgress />

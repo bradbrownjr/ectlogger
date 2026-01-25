@@ -136,6 +136,8 @@ const CreateNet: React.FC = () => {
   // Topic of the Week / Poll features
   const [topicOfWeekEnabled, setTopicOfWeekEnabled] = useState(false);
   const [topicOfWeekPrompt, setTopicOfWeekPrompt] = useState('');
+  const [topicHistory, setTopicHistory] = useState<string[]>([]);
+  const [templateId, setTemplateId] = useState<number | null>(null);
   const [pollEnabled, setPollEnabled] = useState(false);
   const [pollQuestion, setPollQuestion] = useState('');
   // Scheduled start time for countdown timer
@@ -230,6 +232,13 @@ const CreateNet: React.FC = () => {
       setIcs309Enabled(response.data.ics309_enabled || false);
       setTopicOfWeekEnabled(response.data.topic_of_week_enabled || false);
       setTopicOfWeekPrompt(response.data.topic_of_week_prompt || '');
+      
+      // Load template ID and topic history if available
+      if (response.data.template_id) {
+        setTemplateId(response.data.template_id);
+        loadTopicHistory(response.data.template_id);
+      }
+      
       setPollEnabled(response.data.poll_enabled || false);
       setPollQuestion(response.data.poll_question || '');
       // Convert ISO string to local datetime-local format for input
@@ -251,6 +260,16 @@ const CreateNet: React.FC = () => {
     } catch (error) {
       console.error('Failed to fetch net:', error);
       alert('Failed to load net data');
+    }
+  };
+
+  const loadTopicHistory = async (templateIdToLoad: number) => {
+    try {
+      const response = await api.get(`/templates/${templateIdToLoad}/topic-history`);
+      const topics = response.data.map((entry: any) => entry.topic);
+      setTopicHistory(topics);
+    } catch (error) {
+      console.error('Error loading topic history:', error);
     }
   };
 
@@ -887,14 +906,21 @@ const CreateNet: React.FC = () => {
                   Ask participants a question during check-in. Responses are collected and can be exported for club newsletters or blogs.
                 </Typography>
                 {topicOfWeekEnabled && (
-                  <TextField
-                    fullWidth
-                    label="Topic Question"
+                  <Autocomplete
+                    freeSolo
+                    options={topicHistory}
                     value={topicOfWeekPrompt}
-                    onChange={(e) => setTopicOfWeekPrompt(e.target.value)}
-                    margin="normal"
-                    placeholder="e.g., What's your favorite radio or antenna?"
-                    helperText="The question to ask participants during check-in"
+                    onChange={(_, newValue) => setTopicOfWeekPrompt(newValue || '')}
+                    onInputChange={(_, newInputValue) => setTopicOfWeekPrompt(newInputValue)}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Topic Question"
+                        margin="normal"
+                        placeholder="e.g., What's your favorite radio or antenna?"
+                        helperText={topicHistory.length > 0 ? "Select from prior topics or enter a new one" : "The question to ask participants during check-in"}
+                      />
+                    )}
                     sx={{ ml: 4.5, width: 'calc(100% - 36px)' }}
                   />
                 )}
