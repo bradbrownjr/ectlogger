@@ -46,6 +46,8 @@ import SearchIcon from '@mui/icons-material/Search';
 import DescriptionIcon from '@mui/icons-material/Description';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import ArticleIcon from '@mui/icons-material/Article';
+import CampaignIcon from '@mui/icons-material/Campaign';
+import HistoryIcon from '@mui/icons-material/History';
 import GroupIcon from '@mui/icons-material/Group';
 import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -67,6 +69,8 @@ import CheckInMap from '../components/CheckInMap';
 import BulkCheckIn from '../components/BulkCheckIn';
 import SearchCheckIns from '../components/SearchCheckIns';
 import NetScript from '../components/NetScript';
+import Announcements from '../components/Announcements';
+import TopicHistory from '../components/TopicHistory';
 import FloatingWindow from '../components/FloatingWindow';
 
 interface Net {
@@ -76,6 +80,7 @@ interface Net {
   info_url?: string;
   stream_url?: string;
   script?: string;
+  announcements?: string;
   status: string;
   owner_id: number;
   template_id?: number;  // ID of the template this net was created from (for scheduled nets)
@@ -231,6 +236,8 @@ const NetView: React.FC = () => {
   const [subscribing, setSubscribing] = useState(false);
   const [startingNet, setStartingNet] = useState(false);
   const [scriptOpen, setScriptOpen] = useState(false);
+  const [announcementsOpen, setAnnouncementsOpen] = useState(false);
+  const [topicHistoryOpen, setTopicHistoryOpen] = useState(false);
   const [highlightCheckIn, setHighlightCheckIn] = useState(false);
   const [highlightStartNet, setHighlightStartNet] = useState(false);
   // Countdown and duration timer state
@@ -1822,6 +1829,30 @@ const NetView: React.FC = () => {
                           sx={{ minWidth: 'auto', px: 1 }}
                         >
                           <ArticleIcon fontSize="small" />
+                        </Button>
+                      </Tooltip>
+                    )}
+                    {net.announcements && (
+                      <Tooltip title="View announcements / general traffic">
+                        <Button 
+                          size="small" 
+                          variant="outlined" 
+                          onClick={() => setAnnouncementsOpen(true)}
+                          sx={{ minWidth: 'auto', px: 1 }}
+                        >
+                          <CampaignIcon fontSize="small" />
+                        </Button>
+                      </Tooltip>
+                    )}
+                    {net.template_id && (
+                      <Tooltip title="View prior topics">
+                        <Button 
+                          size="small" 
+                          variant="outlined" 
+                          onClick={() => setTopicHistoryOpen(true)}
+                          sx={{ minWidth: 'auto', px: 1 }}
+                        >
+                          <HistoryIcon fontSize="small" />
                         </Button>
                       </Tooltip>
                     )}
@@ -4094,6 +4125,25 @@ const NetView: React.FC = () => {
         netName={net?.name || 'Net'}
         netId={Number(netId)}
       />
+
+      {/* Announcements / General Traffic Viewer */}
+      <Announcements
+        open={announcementsOpen}
+        onClose={() => setAnnouncementsOpen(false)}
+        announcements={net?.announcements || ''}
+        netName={net?.name || 'Net'}
+        netId={Number(netId)}
+      />
+
+      {/* Topic History Dialog */}
+      {net?.template_id && (
+        <TopicHistory
+          open={topicHistoryOpen}
+          onClose={() => setTopicHistoryOpen(false)}
+          templateId={net.template_id}
+          templateName={net.name}
+        />
+      )}
 
       <Snackbar
         open={toastMessage !== ''}

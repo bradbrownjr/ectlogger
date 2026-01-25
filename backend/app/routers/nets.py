@@ -617,6 +617,17 @@ async def close_net(
     net.status = NetStatus.CLOSED
     net.closed_at = datetime.utcnow()
     
+    # Log topic to history if topic was used and template is set
+    if net.topic_of_week_enabled and net.topic_of_week_prompt and net.template_id:
+        from app.models import TopicHistory
+        topic_entry = TopicHistory(
+            template_id=net.template_id,
+            topic=net.topic_of_week_prompt,
+            used_date=datetime.utcnow(),
+            net_id=net.id
+        )
+        db.add(topic_entry)
+    
     await db.commit()
     
     # Broadcast net status change so all clients update immediately

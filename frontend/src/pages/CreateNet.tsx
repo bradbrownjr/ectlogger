@@ -131,6 +131,7 @@ const CreateNet: React.FC = () => {
   const [infoUrl, setInfoUrl] = useState('');
   const [streamUrl, setStreamUrl] = useState('');
   const [script, setScript] = useState('');
+  const [announcements, setAnnouncements] = useState('');
   const [ics309Enabled, setIcs309Enabled] = useState(false);
   // Topic of the Week / Poll features
   const [topicOfWeekEnabled, setTopicOfWeekEnabled] = useState(false);
@@ -225,6 +226,7 @@ const CreateNet: React.FC = () => {
       setInfoUrl(response.data.info_url || '');
       setStreamUrl(response.data.stream_url || '');
       setScript(response.data.script || '');
+      setAnnouncements(response.data.announcements || '');
       setIcs309Enabled(response.data.ics309_enabled || false);
       setTopicOfWeekEnabled(response.data.topic_of_week_enabled || false);
       setTopicOfWeekPrompt(response.data.topic_of_week_prompt || '');
@@ -451,6 +453,7 @@ const CreateNet: React.FC = () => {
           info_url: infoUrl || null,
           stream_url: streamUrl || null,
           script,
+          announcements,
           frequency_ids: selectedFrequencies,
           field_config: fieldConfig,
           ics309_enabled: ics309Enabled,
@@ -468,6 +471,7 @@ const CreateNet: React.FC = () => {
           info_url: infoUrl || null,
           stream_url: streamUrl || null,
           script,
+          announcements,
           frequency_ids: selectedFrequencies,
           field_config: fieldConfig,
           ics309_enabled: ics309Enabled,
@@ -767,6 +771,7 @@ const CreateNet: React.FC = () => {
             <Tab label="Net Staff" />
             <Tab label="Communication Plan" />
             <Tab label="Net Script" />
+            <Tab label="Announcements" />
             <Tab label="Check-In Fields" />
           </Tabs>
         </Box>
@@ -1285,8 +1290,51 @@ This is **[CALLSIGN]**, closing the net at [TIME]. 73 to all.`}
           </Box>
         </TabPanel>
 
-        {/* Tab 5: Check-In Fields */}
+        {/* Tab 5: Announcements / General Traffic */}
         <TabPanel value={activeTab} index={4}>
+          <Typography variant="h6" gutterBottom>
+            Announcements / General Traffic
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            List announcements and general traffic items for NCS to reference during the net.
+            This is visible to all users viewing the net. Markdown formatting is supported.
+          </Typography>
+
+          <TextField
+            fullWidth
+            multiline
+            rows={15}
+            value={announcements}
+            onChange={(e: any) => setAnnouncements(e.target.value)}
+            placeholder={`## Upcoming Events
+- **January 30, 2026** - Weekly training session at 7:00 PM
+- **February 15, 2026** - Emergency preparedness drill
+
+## General Traffic
+- Reminder: Monthly dues are due by end of month
+- New repeater installed on Mt. Washington - 146.520 MHz
+
+## Announcements
+- Weather alert: Winter storm watch in effect
+- Club meeting next Tuesday at the community center`}
+            sx={{
+              '& .MuiInputBase-input': {
+                fontFamily: 'monospace',
+                fontSize: '0.95rem',
+                lineHeight: 1.6,
+              },
+            }}
+          />
+
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
+            <Typography variant="caption" color="text.secondary">
+              {announcements.length} characters • Supports Markdown formatting
+            </Typography>
+          </Box>
+        </TabPanel>
+
+        {/* Tab 6: Check-In Fields */}
+        <TabPanel value={activeTab} index={5}>
           <Typography variant="h6" gutterBottom>
             Check-In Fields
           </Typography>

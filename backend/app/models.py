@@ -105,6 +105,7 @@ class Net(Base):
     info_url = Column(String(500))  # URL for net, club, or organization info
     stream_url = Column(String(500))  # Audio stream URL (Shoutcast, Broadcastify, etc.)
     script = Column(Text)  # Net script for NCS to follow during net operations
+    announcements = Column(Text)  # General traffic/announcements for NCS to reference during net
     status = Column(Enum(NetStatus), default=NetStatus.DRAFT)
     owner_id = Column(Integer, ForeignKey("users.id"))
     active_frequency_id = Column(Integer, ForeignKey("frequencies.id"), nullable=True)
@@ -169,6 +170,7 @@ class NetTemplate(Base):
     staff = relationship("TemplateStaff", back_populates="template", cascade="all, delete-orphan")
     rotation_members = relationship("NCSRotationMember", back_populates="template", cascade="all, delete-orphan", order_by="NCSRotationMember.position")
     schedule_overrides = relationship("NCSScheduleOverride", back_populates="template", cascade="all, delete-orphan")
+    topic_history = relationship("TopicHistory", back_populates="template", cascade="all, delete-orphan")
 
 
 class NetTemplateSubscription(Base):
@@ -197,6 +199,20 @@ class Frequency(Base):
 
     # Relationships
     nets = relationship("Net", secondary=net_frequencies, back_populates="frequencies")
+
+
+class TopicHistory(Base):
+    __tablename__ = "topic_history"
+
+    id = Column(Integer, primary_key=True, index=True)
+    template_id = Column(Integer, ForeignKey("net_templates.id", ondelete="CASCADE"))
+    topic = Column(Text, nullable=False)
+    used_date = Column(DateTime(timezone=True), nullable=False)
+    net_id = Column(Integer, ForeignKey("nets.id", ondelete="SET NULL"), nullable=True)
+    
+    # Relationships
+    template = relationship("NetTemplate", back_populates="topic_history")
+    net = relationship("Net")
 
 
 class NetRole(Base):

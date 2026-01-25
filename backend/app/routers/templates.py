@@ -7,6 +7,7 @@ from datetime import datetime, timedelta, timezone
 from app.database import get_db
 from app.models import NetTemplate, NetTemplateSubscription, User, net_template_frequencies, Frequency, Net, NetStatus, NCSRotationMember, NetRole, CheckIn, AppSettings, UserRole
 from app.schemas import NetTemplateCreate, NetTemplateUpdate, NetTemplateResponse, NetTemplateSubscriptionResponse, NetResponse
+from app import schemas
 from app.dependencies import get_current_user, get_current_user_optional
 import json
 
@@ -653,3 +654,32 @@ async def create_net_from_template(
     net = result.scalar_one()
     
     return NetResponse.from_orm(net)
+
+
+
+@router.get("/{template_id}/topic-history", response_model=List[schemas.TopicHistoryResponse])
+async def get_topic_history(
+    template_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get topic history for a template (visible to all authenticated users)"""
+    # Verify template exists
+    result = await db.execute(
+        select(NetTemplate).where(NetTemplate.id == template_id)
+    )
+    template = result.scalar_one_or_none()
+    
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+    
+    # Get topic history ordered by most recent first
+    from app.models import TopicHistory
+    result = await db.execute(
+        select(TopicHistory)
+        .where(TopicHistory.template_id == template_id)
+        .order_by(TopicHistory.used_date.desc())
+    )
+    topics = result.scalars().all()
+    
+    return topics

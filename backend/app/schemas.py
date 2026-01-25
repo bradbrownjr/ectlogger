@@ -172,6 +172,7 @@ class NetBase(BaseModel):
     info_url: Optional[str] = Field(None, max_length=500)
     stream_url: Optional[str] = Field(None, max_length=500)
     script: Optional[str] = Field(None, max_length=50000)
+    announcements: Optional[str] = Field(None, max_length=50000)
     field_config: Optional[dict] = None
     ics309_enabled: Optional[bool] = False
     # Topic of the Week / Poll features
@@ -193,6 +194,7 @@ class NetUpdate(BaseModel):
     info_url: Optional[str] = Field(None, max_length=500)
     stream_url: Optional[str] = Field(None, max_length=500)
     script: Optional[str] = Field(None, max_length=50000)
+    announcements: Optional[str] = Field(None, max_length=50000)
     status: Optional[NetStatus] = None
     active_frequency_id: Optional[int] = None
     frequency_ids: Optional[List[int]] = Field(None, max_length=50)
@@ -876,3 +878,25 @@ class UserStatsResponse(BaseModel):
     
     # New field for recurring net participation
     frequent_nets: List[FrequentNetStats] = []  # Recurring nets with participation rates
+
+
+
+# ========== Topic History Schemas ==========
+
+class TopicHistoryBase(BaseModel):
+    topic: str = Field(max_length=500)
+    used_date: datetime
+
+
+class TopicHistoryCreate(TopicHistoryBase):
+    template_id: int
+    net_id: Optional[int] = None
+
+
+class TopicHistoryResponse(TopicHistoryBase):
+    id: int
+    template_id: int
+    net_id: Optional[int] = None
+    
+    class Config:
+        from_attributes = True
