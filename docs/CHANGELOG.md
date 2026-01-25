@@ -9,7 +9,6 @@ All notable changes to ECTLogger are documented here.
 ## New Features
 
 * **Unarchive from Archived List** - Added unarchive button directly to the Archived Nets dialog on the Dashboard (no need to open the net first)
-* **Staff Can Create Nets** - Net Staff members (not just rotation members) can now create and start nets from schedules
 * **In-App Changelog** - New floating info button shows recent changes with unread indicator
 
 ## Improvements
@@ -18,6 +17,7 @@ All notable changes to ECTLogger are documented here.
 
 ## Bug Fixes
 
+* **Net Staff Permissions** - Net staff members can now create and start nets (not just rotation members)
 * **WebSocket Auto-Reconnect** - Connections now automatically reconnect if disconnected unexpectedly
 * **Self-Checkout** - Users can now check out their own check-in (previously only NCS/Logger could)
 * **Role Change Logging** - Role assignments (NCS, Logger, Relay) are now logged in chat

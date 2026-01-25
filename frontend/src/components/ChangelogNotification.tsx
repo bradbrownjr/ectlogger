@@ -26,7 +26,7 @@ import BuildIcon from '@mui/icons-material/Build';
 // The version number triggers the unread notification for users.
 // Mark entries with `userImpact: true` to highlight them in the UI.
 
-const CHANGELOG_VERSION = '2026.01.25';
+const CHANGELOG_VERSION = '2026.01.25b';
 
 interface ChangelogEntry {
   version: string;
@@ -43,7 +43,7 @@ interface ChangelogEntry {
 
 const CHANGELOG: ChangelogEntry[] = [
   {
-    version: '2026.01.25',
+    version: '2026.01.25b',
     date: 'January 25, 2026',
     sections: [
       {
@@ -51,13 +51,13 @@ const CHANGELOG: ChangelogEntry[] = [
         type: 'feature',
         items: [
           { text: 'Unarchive button added directly to the Archived Nets list', userImpact: true },
-          { text: 'Staff members can now create and start nets (not just rotation members)', userImpact: true },
         ],
       },
       {
         title: 'Bug Fixes',
         type: 'bugfix',
         items: [
+          { text: 'Net staff members can now create and start nets (not just rotation members)', userImpact: true },
           { text: 'WebSocket connections now auto-reconnect if disconnected unexpectedly', userImpact: true },
           { text: 'Users can now check out their own check-in (previously only NCS/Logger could)', userImpact: true },
           { text: 'Role assignments (NCS, Logger, Relay) are now logged in chat', userImpact: true },
