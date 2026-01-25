@@ -43,7 +43,7 @@ const pulseAnimation = keyframes`
 // The version number triggers the unread notification for users.
 // Mark entries with `userImpact: true` to highlight them in the UI.
 
-const CHANGELOG_VERSION = '2026.01.25c';
+const CHANGELOG_VERSION = '2026.01.26';
 
 interface ChangelogEntry {
   version: string;
@@ -59,6 +59,20 @@ interface ChangelogEntry {
 }
 
 const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '2026.01.26',
+    date: 'January 26, 2026',
+    sections: [
+      {
+        title: 'New Features',
+        type: 'feature',
+        items: [
+          { text: 'Announcements / General Traffic - Separate field from net script for listing upcoming events and announcements. Visible to all via megaphone icon. Supports Markdown.', userImpact: true },
+          { text: 'Prior Topics Log - Tracks previously used "Topic of the Week" prompts to avoid repetition. View via history icon for template-based nets.', userImpact: true },
+        ],
+      },
+    ],
+  },
   {
     version: '2026.01.25c',
     date: 'January 25, 2026',
