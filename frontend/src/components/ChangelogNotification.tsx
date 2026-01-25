@@ -68,26 +68,15 @@ const CHANGELOG: ChangelogEntry[] = [
         type: 'feature',
         items: [
           { text: 'Per-user Chat System Messages Toggle — users can now hide or show system (activity) messages from the chat via a toolbar icon (left of the pop-out button). Preference is saved to your profile and persists across sessions.', userImpact: true },
-        ],
-      },
-    ],
-  },
-  {
-    version: '2026.01.25d',
-    date: 'January 25, 2026',
-    sections: [
-      {
-        title: 'New Features',
-        type: 'feature',
-        items: [
           { text: 'Announcements / General Traffic - Separate field from net script for listing upcoming events and announcements. Visible to all via megaphone icon. Supports Markdown.', userImpact: true },
           { text: 'Prior Topics Log - Tracks previously used "Topic of the Week" prompts to avoid repetition. View via history icon for template-based nets.', userImpact: true },
           { text: 'Audio Stream URL - Add Shoutcast/Broadcastify stream links to nets for in-browser listening', userImpact: true },
           { text: 'Unarchive button added directly to the Archived Nets list', userImpact: true },
+          { text: 'In-App Changelog floating button (Whats New) with unread indicator', userImpact: true },
         ],
       },
       {
-        title: 'Bug Fixes',
+        title: 'Bug Fixes & Improvements',
         type: 'bugfix',
         items: [
           { text: 'Net staff members can now create and start nets (not just rotation members)', userImpact: true },
