@@ -320,12 +320,12 @@ const Scheduler: React.FC = () => {
                   </Tooltip>
                 )}
                 <Tooltip title="Statistics">
-                  <IconButton size="small" onClick={() => navigate(`/statistics/schedules/${schedule.id}`)}>
+                  <IconButton size="small" sx={{ color: '#ff9800' }} onClick={() => navigate(`/statistics/schedules/${schedule.id}`)}>
                     <BarChartIcon fontSize="small" />
                   </IconButton>
                 </Tooltip>
                 <Tooltip title="Net Staff">
-                  <IconButton size="small" onClick={() => handleOpenRotationModal(schedule)}>
+                  <IconButton size="small" sx={{ color: '#9c27b0' }} onClick={() => handleOpenRotationModal(schedule)}>
                     <GroupsIcon fontSize="small" />
                   </IconButton>
                 </Tooltip>
@@ -465,6 +465,7 @@ const Scheduler: React.FC = () => {
             <Tooltip title="Net/Club info">
               <IconButton
                 size="small"
+                color="primary"
                 onClick={() => window.open(schedule.info_url, '_blank')}
               >
                 <LanguageIcon />
@@ -474,6 +475,7 @@ const Scheduler: React.FC = () => {
           <Tooltip title="Schedule statistics">
             <IconButton
               size="small"
+              sx={{ color: '#ff9800' }}
               onClick={() => navigate(`/statistics/schedules/${schedule.id}`)}
             >
               <BarChartIcon />
@@ -483,6 +485,7 @@ const Scheduler: React.FC = () => {
           <Tooltip title="View net staff">
             <IconButton
               size="small"
+              sx={{ color: '#9c27b0' }}
               onClick={() => handleOpenRotationModal(schedule)}
             >
               <GroupsIcon />

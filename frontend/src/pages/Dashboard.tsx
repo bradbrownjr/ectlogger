@@ -407,20 +407,20 @@ const Dashboard: React.FC = () => {
               </TableCell>
               <TableCell align="right" sx={{ whiteSpace: 'nowrap' }} onClick={(e) => e.stopPropagation()}>
                 <Tooltip title="View net">
-                  <IconButton size="small" onClick={() => navigate(`/nets/${net.id}`)}>
+                  <IconButton size="small" color="primary" onClick={() => navigate(`/nets/${net.id}`)}>
                     <SearchIcon fontSize="small" />
                   </IconButton>
                 </Tooltip>
                 {/* Net staff - always visible */}
                 <Tooltip title="Net staff">
-                  <IconButton size="small" onClick={() => { setSelectedNet(net); setStaffModalOpen(true); }}>
+                  <IconButton size="small" sx={{ color: '#9c27b0' }} onClick={() => { setSelectedNet(net); setStaffModalOpen(true); }}>
                     <GroupsIcon fontSize="small" />
                   </IconButton>
                 </Tooltip>
                 {/* Active net actions */}
                 {(net.status === 'active' || net.status === 'lobby') && (
                   <Tooltip title="Statistics">
-                    <IconButton size="small" onClick={() => navigate(`/statistics/nets/${net.id}`)}>
+                    <IconButton size="small" sx={{ color: '#ff9800' }} onClick={() => navigate(`/statistics/nets/${net.id}`)}>
                       <BarChartIcon fontSize="small" />
                     </IconButton>
                   </Tooltip>
@@ -458,19 +458,19 @@ const Dashboard: React.FC = () => {
                 {net.status === 'closed' && (
                   <>
                     <Tooltip title="Statistics">
-                      <IconButton size="small" onClick={() => navigate(`/statistics/nets/${net.id}`)}>
+                      <IconButton size="small" sx={{ color: '#ff9800' }} onClick={() => navigate(`/statistics/nets/${net.id}`)}>
                         <BarChartIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
                     {net.can_manage && (
                       <>
                         <Tooltip title="Export log">
-                          <IconButton size="small" onClick={() => handleExportCSV(net)}>
+                          <IconButton size="small" sx={{ color: '#4caf50' }} onClick={() => handleExportCSV(net)}>
                             <DownloadIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
                         <Tooltip title="Net report (PDF)">
-                          <IconButton size="small" onClick={() => navigate(`/nets/${net.id}/report`)}>
+                          <IconButton size="small" sx={{ color: '#4caf50' }} onClick={() => navigate(`/nets/${net.id}/report`)}>
                             <PictureAsPdfIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
@@ -593,6 +593,7 @@ const Dashboard: React.FC = () => {
           <Tooltip title="View net staff">
             <IconButton
               size="small"
+              sx={{ color: '#9c27b0' }}
               onClick={() => {
                 setSelectedNet(net);
                 setStaffModalOpen(true);
@@ -606,6 +607,7 @@ const Dashboard: React.FC = () => {
             <Tooltip title="Net statistics">
               <IconButton
                 size="small"
+                sx={{ color: '#ff9800' }}
                 onClick={() => navigate(`/statistics/nets/${net.id}`)}
               >
                 <BarChartIcon />
@@ -672,6 +674,7 @@ const Dashboard: React.FC = () => {
               <Tooltip title="Net statistics">
                 <IconButton
                   size="small"
+                  sx={{ color: '#ff9800' }}
                   onClick={() => navigate(`/statistics/nets/${net.id}`)}
                 >
                   <BarChartIcon />
@@ -680,6 +683,7 @@ const Dashboard: React.FC = () => {
               <Tooltip title="Export log">
                 <IconButton
                   size="small"
+                  sx={{ color: '#4caf50' }}
                   onClick={() => handleExportCSV(net)}
                 >
                   <DownloadIcon />
@@ -688,6 +692,7 @@ const Dashboard: React.FC = () => {
               <Tooltip title="Net report (PDF)">
                 <IconButton
                   size="small"
+                  sx={{ color: '#4caf50' }}
                   onClick={() => navigate(`/nets/${net.id}/report`)}
                 >
                   <PictureAsPdfIcon />

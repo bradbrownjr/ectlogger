@@ -43,7 +43,7 @@ const pulseAnimation = keyframes`
 // The version number triggers the unread notification for users.
 // Mark entries with `userImpact: true` to highlight them in the UI.
 
-const CHANGELOG_VERSION = '2026.01.25e';
+const CHANGELOG_VERSION = '2026.01.25f';
 
 interface ChangelogEntry {
   version: string;
@@ -60,7 +60,7 @@ interface ChangelogEntry {
 
 const CHANGELOG: ChangelogEntry[] = [
   {
-    version: '2026.01.25e',
+    version: '2026.01.25f',
     date: 'January 25, 2026',
     sections: [
       {
@@ -73,6 +73,7 @@ const CHANGELOG: ChangelogEntry[] = [
           { text: 'Audio Stream URL - Add Shoutcast/Broadcastify stream links to nets for in-browser listening', userImpact: true },
           { text: 'Unarchive button added directly to the Archived Nets list', userImpact: true },
           { text: 'In-App Changelog floating button (Whats New) with unread indicator', userImpact: true },
+          { text: 'Consistent Action Button Colors - All buttons now use consistent colors throughout the UI (blue for view/search, purple for people/staff, orange for stats, green for exports, teal for ICS-309, red for delete/close) making them easier to find', userImpact: true },
         ],
       },
       {

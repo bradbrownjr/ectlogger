@@ -1782,6 +1782,7 @@ const NetView: React.FC = () => {
                       <Button 
                         size="small" 
                         variant={searchQuery ? "contained" : "outlined"}
+                        color="primary"
                         onClick={() => setSearchOpen(true)}
                         sx={{ minWidth: 'auto', px: 1 }}
                       >
@@ -1792,6 +1793,7 @@ const NetView: React.FC = () => {
                       <Button 
                         size="small" 
                         variant="outlined" 
+                        color="primary"
                         onClick={() => setMapOpen(true)}
                         sx={{ minWidth: 'auto', px: 1 }}
                       >
@@ -1804,7 +1806,7 @@ const NetView: React.FC = () => {
                           size="small" 
                           variant="outlined" 
                           onClick={() => window.open(net.stream_url, '_blank')}
-                          sx={{ minWidth: 'auto', px: 1 }}
+                          sx={{ minWidth: 'auto', px: 1, color: '#9c27b0', borderColor: '#9c27b0', '&:hover': { borderColor: '#9c27b0', backgroundColor: 'rgba(156, 39, 176, 0.08)' } }}
                         >
                           <VolumeUpIcon fontSize="small" />
                         </Button>
@@ -1815,7 +1817,7 @@ const NetView: React.FC = () => {
                         size="small" 
                         variant="outlined" 
                         onClick={() => navigate(`/statistics/nets/${netId}`)}
-                        sx={{ minWidth: 'auto', px: 1 }}
+                        sx={{ minWidth: 'auto', px: 1, color: '#ff9800', borderColor: '#ff9800', '&:hover': { borderColor: '#ff9800', backgroundColor: 'rgba(255, 152, 0, 0.08)' } }}
                       >
                         <BarChartIcon fontSize="small" />
                       </Button>
@@ -1826,7 +1828,7 @@ const NetView: React.FC = () => {
                           size="small" 
                           variant="outlined" 
                           onClick={() => setScriptOpen(true)}
-                          sx={{ minWidth: 'auto', px: 1 }}
+                          sx={{ minWidth: 'auto', px: 1, borderColor: 'grey.400' }}
                         >
                           <ArticleIcon fontSize="small" />
                         </Button>
@@ -1838,7 +1840,7 @@ const NetView: React.FC = () => {
                           size="small" 
                           variant="outlined" 
                           onClick={() => setAnnouncementsOpen(true)}
-                          sx={{ minWidth: 'auto', px: 1 }}
+                          sx={{ minWidth: 'auto', px: 1, borderColor: 'grey.400' }}
                         >
                           <CampaignIcon fontSize="small" />
                         </Button>
@@ -1850,7 +1852,7 @@ const NetView: React.FC = () => {
                           size="small" 
                           variant="outlined" 
                           onClick={() => setTopicHistoryOpen(true)}
-                          sx={{ minWidth: 'auto', px: 1 }}
+                          sx={{ minWidth: 'auto', px: 1, borderColor: 'grey.400' }}
                         >
                           <HistoryIcon fontSize="small" />
                         </Button>
@@ -1863,6 +1865,7 @@ const NetView: React.FC = () => {
                     <Button 
                       size="small" 
                       variant="outlined" 
+                      color="primary"
                       onClick={() => window.open(net.info_url, '_blank')}
                       sx={{ minWidth: 'auto', px: 1 }}
                     >
@@ -1877,7 +1880,7 @@ const NetView: React.FC = () => {
                         size="small" 
                         variant="outlined" 
                         onClick={() => navigate(`/nets/${netId}/edit`)}
-                        sx={{ minWidth: 'auto', px: 1 }}
+                        sx={{ minWidth: 'auto', px: 1, borderColor: 'grey.400' }}
                       >
                         <EditIcon fontSize="small" />
                       </Button>
@@ -1890,7 +1893,7 @@ const NetView: React.FC = () => {
                           fetchAllUsers();
                           setRoleDialogOpen(true);
                         }}
-                        sx={{ minWidth: 'auto', px: 1 }}
+                        sx={{ minWidth: 'auto', px: 1, color: '#9c27b0', borderColor: '#9c27b0', '&:hover': { borderColor: '#9c27b0', backgroundColor: 'rgba(156, 39, 176, 0.08)' } }}
                       >
                         <GroupIcon fontSize="small" />
                       </Button>
@@ -1911,6 +1914,7 @@ const NetView: React.FC = () => {
                     <Button 
                       size="small" 
                       variant="outlined" 
+                      color="primary"
                       onClick={() => navigate(`/nets/${netId}/info`)}
                       sx={{ minWidth: 'auto', px: 1 }}
                     >
@@ -2019,7 +2023,7 @@ const NetView: React.FC = () => {
                         size="small"
                         variant="outlined" 
                         onClick={handleExportCSV}
-                        sx={{ minWidth: 'auto', px: 1 }}
+                        sx={{ minWidth: 'auto', px: 1, color: '#4caf50', borderColor: '#4caf50', '&:hover': { borderColor: '#4caf50', backgroundColor: 'rgba(76, 175, 80, 0.08)' } }}
                       >
                         <DownloadIcon fontSize="small" />
                       </Button>
@@ -2029,7 +2033,7 @@ const NetView: React.FC = () => {
                         size="small"
                         variant="outlined" 
                         onClick={handleExportICS309}
-                        sx={{ minWidth: 'auto', px: 1 }}
+                        sx={{ minWidth: 'auto', px: 1, color: '#009688', borderColor: '#009688', '&:hover': { borderColor: '#009688', backgroundColor: 'rgba(0, 150, 136, 0.08)' } }}
                       >
                         <DescriptionIcon fontSize="small" />
                       </Button>
@@ -2039,7 +2043,7 @@ const NetView: React.FC = () => {
                         size="small"
                         variant="outlined" 
                         onClick={() => navigate(`/nets/${netId}/report`)}
-                        sx={{ minWidth: 'auto', px: 1 }}
+                        sx={{ minWidth: 'auto', px: 1, color: '#4caf50', borderColor: '#4caf50', '&:hover': { borderColor: '#4caf50', backgroundColor: 'rgba(76, 175, 80, 0.08)' } }}
                       >
                         <PictureAsPdfIcon fontSize="small" />
                       </Button>
@@ -2050,7 +2054,7 @@ const NetView: React.FC = () => {
                           size="small"
                           variant="outlined" 
                           onClick={handleArchive}
-                          sx={{ minWidth: 'auto', px: 1 }}
+                          sx={{ minWidth: 'auto', px: 1, borderColor: 'grey.400' }}
                         >
                           <ArchiveIcon fontSize="small" />
                         </Button>
@@ -2079,7 +2083,7 @@ const NetView: React.FC = () => {
                         size="small"
                         variant="outlined" 
                         onClick={handleExportCSV}
-                        sx={{ minWidth: 'auto', px: 1 }}
+                        sx={{ minWidth: 'auto', px: 1, color: '#4caf50', borderColor: '#4caf50', '&:hover': { borderColor: '#4caf50', backgroundColor: 'rgba(76, 175, 80, 0.08)' } }}
                       >
                         <DownloadIcon fontSize="small" />
                       </Button>
@@ -2089,7 +2093,7 @@ const NetView: React.FC = () => {
                         size="small"
                         variant="outlined" 
                         onClick={handleExportICS309}
-                        sx={{ minWidth: 'auto', px: 1 }}
+                        sx={{ minWidth: 'auto', px: 1, color: '#009688', borderColor: '#009688', '&:hover': { borderColor: '#009688', backgroundColor: 'rgba(0, 150, 136, 0.08)' } }}
                       >
                         <DescriptionIcon fontSize="small" />
                       </Button>
@@ -2099,7 +2103,7 @@ const NetView: React.FC = () => {
                         size="small"
                         variant="outlined" 
                         onClick={() => navigate(`/nets/${netId}/report`)}
-                        sx={{ minWidth: 'auto', px: 1 }}
+                        sx={{ minWidth: 'auto', px: 1, color: '#4caf50', borderColor: '#4caf50', '&:hover': { borderColor: '#4caf50', backgroundColor: 'rgba(76, 175, 80, 0.08)' } }}
                       >
                         <PictureAsPdfIcon fontSize="small" />
                       </Button>
@@ -2110,7 +2114,7 @@ const NetView: React.FC = () => {
                           size="small"
                           variant="outlined" 
                           onClick={handleUnarchive}
-                          sx={{ minWidth: 'auto', px: 1 }}
+                          sx={{ minWidth: 'auto', px: 1, borderColor: 'grey.400' }}
                         >
                           <UnarchiveIcon fontSize="small" />
                         </Button>
