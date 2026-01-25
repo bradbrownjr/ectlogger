@@ -159,7 +159,7 @@ const ChangelogNotification: React.FC = () => {
         sx={{
           position: 'fixed',
           bottom: 16,
-          right: 16,
+          left: 16,
           zIndex: 1000,
         }}
         aria-label="What's new"
