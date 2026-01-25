@@ -26,7 +26,7 @@ import BuildIcon from '@mui/icons-material/Build';
 // The version number triggers the unread notification for users.
 // Mark entries with `userImpact: true` to highlight them in the UI.
 
-const CHANGELOG_VERSION = '2026.01.25b';
+const CHANGELOG_VERSION = '2026.01.25c';
 
 interface ChangelogEntry {
   version: string;
@@ -43,13 +43,14 @@ interface ChangelogEntry {
 
 const CHANGELOG: ChangelogEntry[] = [
   {
-    version: '2026.01.25b',
+    version: '2026.01.25c',
     date: 'January 25, 2026',
     sections: [
       {
         title: 'New Features',
         type: 'feature',
         items: [
+          { text: 'Audio Stream URL - Add Shoutcast/Broadcastify stream links to nets for in-browser listening', userImpact: true },
           { text: 'Unarchive button added directly to the Archived Nets list', userImpact: true },
         ],
       },

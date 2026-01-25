@@ -8,6 +8,7 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
+* **Audio Stream URL** - Nets can now include a direct audio stream URL (Shoutcast, Broadcastify, etc.). A speaker icon appears in the net toolbar for easy listening. Works for both authenticated users and guests.
 * **Unarchive from Archived List** - Added unarchive button directly to the Archived Nets dialog on the Dashboard (no need to open the net first)
 * **In-App Changelog** - New floating info button shows recent changes with unread indicator
 
