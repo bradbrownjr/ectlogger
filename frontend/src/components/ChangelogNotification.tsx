@@ -181,6 +181,22 @@ const ChangelogNotification: React.FC = () => {
             '& .MuiBadge-badge': {
               right: -3,
               top: -3,
+              // Pulse animation to draw attention
+              animation: hasUnread ? 'pulse 1.5s ease-in-out infinite' : 'none',
+              '@keyframes pulse': {
+                '0%': {
+                  transform: 'scale(1)',
+                  boxShadow: '0 0 0 0 rgba(244, 67, 54, 0.7)',
+                },
+                '50%': {
+                  transform: 'scale(1.2)',
+                  boxShadow: '0 0 0 6px rgba(244, 67, 54, 0)',
+                },
+                '100%': {
+                  transform: 'scale(1)',
+                  boxShadow: '0 0 0 0 rgba(244, 67, 54, 0)',
+                },
+              },
             },
           }}
         >
