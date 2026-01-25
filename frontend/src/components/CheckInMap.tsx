@@ -83,15 +83,15 @@ interface MappedCheckIn extends CheckIn {
 }
 
 // Component to fit map bounds to markers
-const FitBounds: React.FC<{ positions: [number, number][] }> = ({ positions }) => {
+const FitBounds: React.FC<{ positions: [number, number][]; disabled?: boolean }> = ({ positions, disabled }) => {
   const map = useMap();
 
   useEffect(() => {
-    if (positions.length > 0) {
+    if (positions.length > 0 && !disabled) {
       const bounds = L.latLngBounds(positions.map(p => L.latLng(p[0], p[1])));
       map.fitBounds(bounds, { padding: [50, 50], maxZoom: 12 });
     }
-  }, [map, positions]);
+  }, [map, positions, disabled]);
 
   return null;
 };
@@ -109,16 +109,72 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
   const [exporting, setExporting] = useState(false);
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
 
   // Handle PDF export of the map
   const handleExportPdf = async () => {
     const mapElement = document.getElementById('check-in-map-content');
-    if (!mapElement) return;
+    if (!mapElement || !mapRef.current) return;
     
     setExporting(true);
+    setIsExporting(true);  // Prevent FitBounds from triggering during export
+    
     try {
-      // Wait a moment for any pending tile loads
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const map = mapRef.current;
+      
+      // Force a redraw
+      map.invalidateSize();
+      
+      // Wait for tiles to fully load - use tileload events
+      await new Promise<void>((resolve) => {
+        let tilesLoading = 0;
+        let resolved = false;
+        
+        const checkComplete = () => {
+          if (!resolved && tilesLoading <= 0) {
+            resolved = true;
+            resolve();
+          }
+        };
+        
+        // Listen for tile load events on the map container
+        const container = map.getContainer();
+        const tiles = container.querySelectorAll('.leaflet-tile');
+        
+        // Check if all visible tiles are loaded
+        let allLoaded = true;
+        tiles.forEach((tile) => {
+          const img = tile as HTMLImageElement;
+          if (!img.complete) {
+            allLoaded = false;
+            tilesLoading++;
+            img.addEventListener('load', () => {
+              tilesLoading--;
+              checkComplete();
+            }, { once: true });
+            img.addEventListener('error', () => {
+              tilesLoading--;
+              checkComplete();
+            }, { once: true });
+          }
+        });
+        
+        // If all tiles already loaded or no tiles, resolve after brief delay
+        if (allLoaded) {
+          setTimeout(resolve, 500);
+        }
+        
+        // Safety timeout
+        setTimeout(() => {
+          if (!resolved) {
+            resolved = true;
+            resolve();
+          }
+        }, 3000);
+      });
+      
+      // Additional wait for rendering to complete
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       await exportToPdf(mapElement, {
         filename: `${netName.replace(/[^a-zA-Z0-9]/g, '_')}_Map`,
@@ -129,6 +185,7 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
       console.error('Failed to export map PDF:', err);
     } finally {
       setExporting(false);
+      setIsExporting(false);
     }
   };
 
@@ -429,7 +486,7 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
                     attribution={tileAttribution}
                     url={tileUrl}
                   />
-                  <FitBounds positions={positions} />
+                  <FitBounds positions={positions} disabled={isExporting} />
                   {mappedCheckIns.map((checkIn) => (
                     checkIn.parsedLocation.lat !== 0 && checkIn.parsedLocation.lon !== 0 && (
                       <Marker
@@ -672,7 +729,7 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
                   attribution={tileAttribution}
                   url={tileUrl}
                 />
-                <FitBounds positions={positions} />
+                <FitBounds positions={positions} disabled={isExporting} />
                 {mappedCheckIns.map((checkIn) => (
                   checkIn.parsedLocation.lat !== 0 && checkIn.parsedLocation.lon !== 0 && (
                     <Marker

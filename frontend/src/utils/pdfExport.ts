@@ -150,12 +150,20 @@ export const exportToPdf = async (
       const contentHeight = pageHeight - (margin * 2);
 
       // Capture the cloned element with light mode styles
+      // Note: Map tiles may not capture due to CORS restrictions
+      // html2canvas with useCORS and allowTaint helps but isn't guaranteed
       const canvas = await html2canvas(clone, {
         scale,
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#ffffff',
         logging: false,
+        // Wait for images to load
+        imageTimeout: 5000,
+        // Capture even problematic cross-origin content
+        foreignObjectRendering: false,
+        // Remove proxies - direct capture
+        removeContainer: true,
       });
 
       // Calculate dimensions
