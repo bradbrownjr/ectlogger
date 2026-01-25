@@ -119,6 +119,20 @@ When adding or changing features, **always update relevant documentation**:
 - `docs/CHANGELOG.md` — Add entry describing the change
 - `docs/DEVELOPMENT.md` — Update if adding new technical patterns or APIs
 
+### Changelog Notification (User-Impacting Changes)
+
+When making **user-impacting changes** (new features, workflow changes, UI changes), update the in-app changelog:
+
+1. Edit `frontend/src/components/ChangelogNotification.tsx`
+2. Increment `CHANGELOG_VERSION` (format: `YYYY.MM.DD`)
+3. Add entry to the `CHANGELOG` array with:
+   - `version`: Same as CHANGELOG_VERSION
+   - `date`: Human-readable date
+   - `sections`: Array of { title, type: 'feature'|'improvement'|'bugfix', items }
+   - Mark `userImpact: true` on items that directly affect user workflow
+
+Users see a red badge on the info icon (lower-right) until they view the changelog. User-impacting items are highlighted in the dialog.
+
 ### Development Workflow
 1. Make changes locally
 2. Test locally if possible

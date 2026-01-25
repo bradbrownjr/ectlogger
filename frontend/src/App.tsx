@@ -22,6 +22,7 @@ import ScheduleStatistics from './pages/ScheduleStatistics';
 import Unsubscribe from './pages/Unsubscribe';
 import Navbar from './components/Navbar';
 import ProfileSetupDialog from './components/ProfileSetupDialog';
+import ChangelogNotification from './components/ChangelogNotification';
 
 const getDesignTokens = (mode: PaletteMode) => ({
   palette: {
@@ -88,6 +89,7 @@ const AppRoutes: React.FC = () => {
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
       <Navbar />
       {isAuthenticated && <ProfileSetupDialog />}
+      <ChangelogNotification />
       <Box component="main" sx={{ flexGrow: 1, bgcolor: 'background.default', display: 'flex', flexDirection: 'column', overflow: 'auto', minHeight: 0 }}>
         <Routes>
           <Route path="/login" element={<Login />} />
