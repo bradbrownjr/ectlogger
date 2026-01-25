@@ -69,18 +69,6 @@ const CHANGELOG: ChangelogEntry[] = [
         items: [
           { text: 'Announcements / General Traffic - Separate field from net script for listing upcoming events and announcements. Visible to all via megaphone icon. Supports Markdown.', userImpact: true },
           { text: 'Prior Topics Log - Tracks previously used "Topic of the Week" prompts to avoid repetition. View via history icon for template-based nets.', userImpact: true },
-        ],
-      },
-    ],
-  },
-  {
-    version: '2026.01.25c',
-    date: 'January 25, 2026',
-    sections: [
-      {
-        title: 'New Features',
-        type: 'feature',
-        items: [
           { text: 'Audio Stream URL - Add Shoutcast/Broadcastify stream links to nets for in-browser listening', userImpact: true },
           { text: 'Unarchive button added directly to the Archived Nets list', userImpact: true },
         ],
