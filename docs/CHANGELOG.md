@@ -4,7 +4,7 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
-# January 26, 2026
+# January 25, 2026
 
 ## New Features
 
@@ -12,28 +12,9 @@ All notable changes to ECTLogger are documented here.
 
 * **Prior Topics Log** - Track previously used "Topic of the Week" prompts to avoid repetition. When a net closes with a topic enabled, the topic is automatically logged to history. A history icon button appears in the net toolbar (for nets created from templates) to view all past topics with dates. Helps NCS staff rotate topics and avoid reusing recent ones.
 
----
-
-# January 25, 2026
-
-## New Features
-
 * **Audio Stream URL** - Nets can now include a direct audio stream URL (Shoutcast, Broadcastify, etc.). A speaker icon appears in the net toolbar for easy listening. Works for both authenticated users and guests.
 * **Unarchive from Archived List** - Added unarchive button directly to the Archived Nets dialog on the Dashboard (no need to open the net first)
 * **In-App Changelog** - New floating info button shows recent changes with unread indicator
-
-## Improvements
-
-* **Map PDF Export** - Improved reliability of map PDF exports by preventing zoom resets during export
-
-## Bug Fixes
-
-* **Net Staff Permissions** - Net staff members can now create and start nets (not just rotation members)
-* **WebSocket Auto-Reconnect** - Connections now automatically reconnect if disconnected unexpectedly
-* **Self-Checkout** - Users can now check out their own check-in (previously only NCS/Logger could)
-* **Role Change Logging** - Role assignments (NCS, Logger, Relay) are now logged in chat
-* **Net Close Broadcast** - Net closure now immediately updates all connected clients
-* **Dead Connection Cleanup** - Fixed dead WebSocket connections being kept in memory
 
 ---
 

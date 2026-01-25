@@ -43,7 +43,7 @@ const pulseAnimation = keyframes`
 // The version number triggers the unread notification for users.
 // Mark entries with `userImpact: true` to highlight them in the UI.
 
-const CHANGELOG_VERSION = '2026.01.26';
+const CHANGELOG_VERSION = '2026.01.25d';
 
 interface ChangelogEntry {
   version: string;
@@ -60,8 +60,8 @@ interface ChangelogEntry {
 
 const CHANGELOG: ChangelogEntry[] = [
   {
-    version: '2026.01.26',
-    date: 'January 26, 2026',
+    version: '2026.01.25d',
+    date: 'January 25, 2026',
     sections: [
       {
         title: 'New Features',
