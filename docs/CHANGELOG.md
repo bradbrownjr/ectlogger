@@ -8,14 +8,22 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Announcements / General Traffic** - Nets now have a dedicated "Announcements" field separate from the net script. This provides a running list of upcoming events, club announcements, and general traffic items for NCS to reference during the net. Visible to all users via a megaphone icon button in the net toolbar. Supports Markdown formatting and can be opened in a floating window or new tab. Can be edited when creating or editing a net (new "Announcements" tab in net configuration).
-
-* **Prior Topics Log** - Track previously used "Topic of the Week" prompts to avoid repetition. When a net closes with a topic enabled, the topic is automatically logged to history. A history icon button appears in the net toolbar (for nets created from templates) to view all past topics with dates. Helps NCS staff rotate topics and avoid reusing recent ones.
-
-* **Audio Stream URL** - Nets can now include a direct audio stream URL (Shoutcast, Broadcastify, etc.). A speaker icon appears in the net toolbar for easy listening. Works for both authenticated users and guests.
 * **Per-user Chat System Messages Toggle** - Users can now hide or show system (activity) messages in the chat using a toolbar icon located to the left of the pop-out button; the preference is saved to the user's profile and persists across sessions.
+* **Announcements / General Traffic** - Nets now have a dedicated "Announcements" field separate from the net script. This provides a running list of upcoming events, club announcements, and general traffic items for NCS to reference during the net. Visible to all users via a megaphone icon button in the net toolbar. Supports Markdown formatting and can be opened in a floating window or new tab. Can be edited when creating or editing a net (new "Announcements" tab in net configuration).
+* **Prior Topics Log** - Track previously used "Topic of the Week" prompts to avoid repetition. When a net closes with a topic enabled, the topic is automatically logged to history. A history icon button appears in the net toolbar (for nets created from templates) to view all past topics with dates. Helps NCS staff rotate topics and avoid reusing recent ones.
+* **Audio Stream URL** - Nets can now include a direct audio stream URL (Shoutcast, Broadcastify, etc.). A speaker icon appears in the net toolbar for easy listening. Works for both authenticated users and guests.
 * **Unarchive from Archived List** - Added unarchive button directly to the Archived Nets dialog on the Dashboard (no need to open the net first)
 * **In-App Changelog** - New floating info button shows recent changes with unread indicator
+
+## Bug Fixes & Improvements
+
+* **Net staff members can now create and start nets** (not just rotation members)
+* **WebSocket connections now auto-reconnect** if disconnected unexpectedly
+* **Users can now check out their own check-in** (previously only NCS/Logger could)
+* **Role assignments are now logged in chat** (NCS, Logger, Relay)
+* **Improved map PDF export reliability**
+* **Net closure now immediately updates all connected clients**
+* **Fixed dead WebSocket connections being kept in memory**
 
 ---
 
