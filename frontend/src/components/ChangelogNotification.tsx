@@ -22,6 +22,22 @@ import NewReleasesIcon from '@mui/icons-material/NewReleases';
 import BugReportIcon from '@mui/icons-material/BugReport';
 import BuildIcon from '@mui/icons-material/Build';
 
+// Pulse animation for the changelog badge
+const pulseAnimation = keyframes`
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7);
+  }
+  50% {
+    transform: scale(1.2);
+    box-shadow: 0 0 0 6px rgba(244, 67, 54, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(244, 67, 54, 0);
+  }
+`;
+
 // ========== CHANGELOG DATA ==========
 // When making user-impacting changes, add an entry here and increment the version.
 // The version number triggers the unread notification for users.
@@ -159,22 +175,6 @@ const ChangelogNotification: React.FC = () => {
         return 'default';
     }
   };
-
-  // Pulse animation for the badge
-  const pulseAnimation = keyframes`
-    0% {
-      transform: scale(1);
-      box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7);
-    }
-    50% {
-      transform: scale(1.2);
-      box-shadow: 0 0 0 6px rgba(244, 67, 54, 0);
-    }
-    100% {
-      transform: scale(1);
-      box-shadow: 0 0 0 0 rgba(244, 67, 54, 0);
-    }
-  `;
 
   return (
     <>
