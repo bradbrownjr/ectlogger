@@ -14,7 +14,7 @@ import {
   Alert,
 } from '@mui/material';
 import HistoryIcon from '@mui/icons-material/History';
-import { api } from '../services/api';
+import api from '../services/api';
 
 interface TopicHistoryEntry {
   id: number;
