@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ThemeProvider, createTheme, PaletteMode } from '@mui/material/styles';
 import { CssBaseline, Box } from '@mui/material';
 import { SnackbarProvider } from 'notistack';
@@ -84,12 +84,16 @@ const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
 const AppRoutes: React.FC = () => {
   const { isAuthenticated } = useAuth();
+  const location = useLocation();
+
+  // Hide changelog notification on net view pages
+  const showChangelog = !location.pathname.startsWith('/nets/') || location.pathname === '/nets/create';
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
       <Navbar />
       {isAuthenticated && <ProfileSetupDialog />}
-      <ChangelogNotification />
+      {showChangelog && <ChangelogNotification />}
       <Box component="main" sx={{ flexGrow: 1, bgcolor: 'background.default', display: 'flex', flexDirection: 'column', overflow: 'auto', minHeight: 0 }}>
         <Routes>
           <Route path="/login" element={<Login />} />
