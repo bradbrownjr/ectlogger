@@ -103,6 +103,7 @@ class Net(Base):
     name = Column(String(255), nullable=False)
     description = Column(Text)
     info_url = Column(String(500))  # URL for net, club, or organization info
+    stream_url = Column(String(500))  # Audio stream URL (Shoutcast, Broadcastify, etc.)
     script = Column(Text)  # Net script for NCS to follow during net operations
     status = Column(Enum(NetStatus), default=NetStatus.DRAFT)
     owner_id = Column(Integer, ForeignKey("users.id"))

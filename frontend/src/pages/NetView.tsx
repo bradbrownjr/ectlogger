@@ -39,6 +39,7 @@ import DownloadIcon from '@mui/icons-material/Download';
 import ArchiveIcon from '@mui/icons-material/Archive';
 import UnarchiveIcon from '@mui/icons-material/Unarchive';
 import MapIcon from '@mui/icons-material/Map';
+import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import FastForwardIcon from '@mui/icons-material/FastForward';
 import SearchIcon from '@mui/icons-material/Search';
@@ -73,6 +74,7 @@ interface Net {
   name: string;
   description: string;
   info_url?: string;
+  stream_url?: string;
   script?: string;
   status: string;
   owner_id: number;
@@ -1789,6 +1791,18 @@ const NetView: React.FC = () => {
                         <MapIcon fontSize="small" />
                       </Button>
                     </Tooltip>
+                    {net.stream_url && (
+                      <Tooltip title="Listen to net audio">
+                        <Button 
+                          size="small" 
+                          variant="outlined" 
+                          onClick={() => window.open(net.stream_url, '_blank')}
+                          sx={{ minWidth: 'auto', px: 1 }}
+                        >
+                          <VolumeUpIcon fontSize="small" />
+                        </Button>
+                      </Tooltip>
+                    )}
                     <Tooltip title="Net statistics">
                       <Button 
                         size="small" 

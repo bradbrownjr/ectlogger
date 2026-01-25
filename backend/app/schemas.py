@@ -170,6 +170,7 @@ class NetBase(BaseModel):
     name: str = Field(max_length=200, min_length=1)
     description: Optional[str] = Field(None, max_length=2000)
     info_url: Optional[str] = Field(None, max_length=500)
+    stream_url: Optional[str] = Field(None, max_length=500)
     script: Optional[str] = Field(None, max_length=50000)
     field_config: Optional[dict] = None
     ics309_enabled: Optional[bool] = False
@@ -190,6 +191,7 @@ class NetUpdate(BaseModel):
     name: Optional[str] = Field(None, max_length=200, min_length=1)
     description: Optional[str] = Field(None, max_length=2000)
     info_url: Optional[str] = Field(None, max_length=500)
+    stream_url: Optional[str] = Field(None, max_length=500)
     script: Optional[str] = Field(None, max_length=50000)
     status: Optional[NetStatus] = None
     active_frequency_id: Optional[int] = None

@@ -129,6 +129,7 @@ const CreateNet: React.FC = () => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [infoUrl, setInfoUrl] = useState('');
+  const [streamUrl, setStreamUrl] = useState('');
   const [script, setScript] = useState('');
   const [ics309Enabled, setIcs309Enabled] = useState(false);
   // Topic of the Week / Poll features
@@ -222,6 +223,7 @@ const CreateNet: React.FC = () => {
       setName(response.data.name);
       setDescription(response.data.description || '');
       setInfoUrl(response.data.info_url || '');
+      setStreamUrl(response.data.stream_url || '');
       setScript(response.data.script || '');
       setIcs309Enabled(response.data.ics309_enabled || false);
       setTopicOfWeekEnabled(response.data.topic_of_week_enabled || false);
@@ -447,6 +449,7 @@ const CreateNet: React.FC = () => {
           name,
           description,
           info_url: infoUrl || null,
+          stream_url: streamUrl || null,
           script,
           frequency_ids: selectedFrequencies,
           field_config: fieldConfig,
@@ -463,6 +466,7 @@ const CreateNet: React.FC = () => {
           name,
           description,
           info_url: infoUrl || null,
+          stream_url: streamUrl || null,
           script,
           frequency_ids: selectedFrequencies,
           field_config: fieldConfig,
@@ -807,6 +811,17 @@ const CreateNet: React.FC = () => {
             margin="normal"
             placeholder="https://example.com/club-info"
             helperText={isInfoMode && infoUrl ? <a href={infoUrl} target="_blank" rel="noopener noreferrer">Open link</a> : "Optional link to club, organization, or net information page"}
+            InputProps={{ readOnly: isInfoMode }}
+          />
+
+          <TextField
+            fullWidth
+            label="Audio Stream URL"
+            value={streamUrl}
+            onChange={(e: any) => setStreamUrl(e.target.value)}
+            margin="normal"
+            placeholder="https://broadcastify.com/listen/... or Shoutcast URL"
+            helperText="Optional. Direct audio stream URL (Shoutcast, Broadcastify, etc.) for net listeners"
             InputProps={{ readOnly: isInfoMode }}
           />
 
