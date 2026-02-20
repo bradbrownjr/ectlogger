@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -31,6 +31,7 @@ import {
   TrendingUp,
   Radio,
   PictureAsPdf,
+  Map as MapIcon,
 } from '@mui/icons-material';
 import {
   BarChart,
@@ -45,10 +46,56 @@ import {
   Cell,
   Legend,
 } from 'recharts';
-import { statisticsApi } from '../services/api';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import icon from 'leaflet/dist/images/marker-icon.png';
+import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+import iconRetina from 'leaflet/dist/images/marker-icon-2x.png';
+import { statisticsApi, checkInApi } from '../services/api';
+import { parseLocation, geocodeAddress, ParsedLocation } from '../utils/locationParser';
 import { formatDateTime } from '../utils/dateUtils';
 import { useAuth } from '../contexts/AuthContext';
 import { exportElementToPdf } from '../utils/pdfExport';
+
+// Fix default Leaflet marker icons for Vite/webpack
+const DefaultIcon = L.icon({
+  iconUrl: icon,
+  iconRetinaUrl: iconRetina,
+  shadowUrl: iconShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+});
+L.Marker.prototype.options.icon = DefaultIcon;
+
+// Simple green pin for all historical check-in locations on the stats map
+const statsMarkerIcon = L.divIcon({
+  className: 'custom-marker',
+  html: `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="30" viewBox="0 0 24 32">
+    <path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 20 12 20s12-11 12-20c0-6.6-5.4-12-12-12z"
+          fill="#4caf50" stroke="#333" stroke-width="2"/>
+    <circle cx="12" cy="12" r="4" fill="white"/>
+  </svg>`,
+  iconSize: [22, 30],
+  iconAnchor: [11, 30],
+  popupAnchor: [0, -30],
+});
+
+// FitBounds: auto-fits the map to show all markers, then stays put
+const FitBoundsOnce: React.FC<{ positions: [number, number][] }> = ({ positions }) => {
+  const map = useMap();
+  const hasFitRef = useRef(false);
+  useEffect(() => {
+    if (positions.length > 0 && !hasFitRef.current) {
+      hasFitRef.current = true;
+      const bounds = L.latLngBounds(positions.map(p => L.latLng(p[0], p[1])));
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 10 });
+    }
+  }, [map, positions]);
+  return null;
+};
 
 interface TimeSeriesDataPoint {
   label: string;
@@ -78,6 +125,20 @@ interface NetStats {
   check_ins_by_frequency: Record<string, number>;
 }
 
+// Individual check-in record (for location map)
+interface CheckInRecord {
+  id: number;
+  callsign: string;
+  name?: string;
+  location?: string;
+  status: string;
+}
+
+interface MappedCheckIn {
+  checkIn: CheckInRecord;
+  parsedLocation: ParsedLocation;
+}
+
 const NetStatistics: React.FC = () => {
   const { netId } = useParams<{ netId: string }>();
   const navigate = useNavigate();
@@ -87,6 +148,12 @@ const NetStatistics: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<NetStats | null>(null);
   const [exporting, setExporting] = useState(false);
+
+  // Location map state
+  const [checkIns, setCheckIns] = useState<CheckInRecord[]>([]);
+  const [mappedCheckIns, setMappedCheckIns] = useState<MappedCheckIn[]>([]);
+  const [mapLoading, setMapLoading] = useState(false);
+  const processedKeyRef = useRef<string>('');
 
   // Handle PDF export
   const handleExportPdf = async () => {
@@ -106,14 +173,18 @@ const NetStatistics: React.FC = () => {
     }
   };
 
+  // Fetch stats and check-in list in parallel
   useEffect(() => {
-    const fetchStats = async () => {
+    const fetchData = async () => {
       if (!netId) return;
-      
       try {
         setLoading(true);
-        const response = await statisticsApi.getNetStats(parseInt(netId));
-        setStats(response.data);
+        const [statsRes, checkInsRes] = await Promise.all([
+          statisticsApi.getNetStats(parseInt(netId)),
+          checkInApi.list(parseInt(netId)),
+        ]);
+        setStats(statsRes.data);
+        setCheckIns(checkInsRes.data);
         setError(null);
       } catch (err: any) {
         console.error('Failed to fetch net statistics:', err);
@@ -122,9 +193,53 @@ const NetStatistics: React.FC = () => {
         setLoading(false);
       }
     };
-
-    fetchStats();
+    fetchData();
   }, [netId]);
+
+  // Process check-in locations for the map
+  useEffect(() => {
+    if (checkIns.length === 0) return;
+
+    const checkInsKey = checkIns
+      .filter(c => c.location)
+      .map(c => `${c.id}:${c.location}`)
+      .join('|');
+
+    if (processedKeyRef.current === checkInsKey && mappedCheckIns.length > 0) return;
+
+    const processLocations = async () => {
+      setMapLoading(true);
+      const results: MappedCheckIn[] = [];
+      const addressesToGeocode: { checkIn: CheckInRecord; parsed: ParsedLocation }[] = [];
+
+      for (const checkIn of checkIns) {
+        if (!checkIn.location) continue;
+        const parsed = parseLocation(checkIn.location);
+        if (parsed) {
+          if (parsed.type === 'address') {
+            addressesToGeocode.push({ checkIn, parsed });
+          } else {
+            results.push({ checkIn, parsedLocation: parsed });
+          }
+        }
+      }
+
+      // Geocode up to 10 addresses to avoid excessive API calls
+      for (let i = 0; i < Math.min(addressesToGeocode.length, 10); i++) {
+        const { checkIn, parsed } = addressesToGeocode[i];
+        const coords = await geocodeAddress(parsed.original);
+        if (coords) {
+          results.push({ checkIn, parsedLocation: { ...coords, type: 'address', original: parsed.original } });
+        }
+      }
+
+      processedKeyRef.current = checkInsKey;
+      setMappedCheckIns(results);
+      setMapLoading(false);
+    };
+
+    processLocations();
+  }, [checkIns]);
 
   const formatDuration = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
@@ -364,6 +479,58 @@ const NetStatistics: React.FC = () => {
                   <Bar dataKey="count" fill={theme.palette.primary.main} radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
+            </Paper>
+          </Grid>
+        )}
+
+        {/* ========== CHECK-IN LOCATION MAP ========== */}
+        {/* Fills the empty grid column when frequency data is absent, or goes full-width below */}
+        {(mappedCheckIns.length > 0 || mapLoading) && (
+          <Grid item xs={12} md={frequencyData.length === 0 ? 6 : 12}>
+            <Paper sx={{ p: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                <MapIcon color="action" fontSize="small" />
+                <Typography variant="h6">
+                  Check-in Locations
+                </Typography>
+                {mappedCheckIns.length > 0 && (
+                  <Typography variant="caption" color="text.secondary">
+                    ({mappedCheckIns.length} plotted)
+                  </Typography>
+                )}
+                {mapLoading && <CircularProgress size={14} sx={{ ml: 'auto' }} />}
+              </Box>
+              {mappedCheckIns.length > 0 && (
+                <Box sx={{ height: frequencyData.length === 0 ? 280 : 350, width: '100%', borderRadius: 1, overflow: 'hidden' }}>
+                  <MapContainer
+                    center={[39.8283, -98.5795]}
+                    zoom={4}
+                    style={{ height: '100%', width: '100%' }}
+                    scrollWheelZoom={false}
+                  >
+                    <TileLayer
+                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    />
+                    <FitBoundsOnce
+                      positions={mappedCheckIns.map(m => [m.parsedLocation.lat, m.parsedLocation.lon] as [number, number])}
+                    />
+                    {mappedCheckIns.map((mapped) => (
+                      <Marker
+                        key={mapped.checkIn.id}
+                        position={[mapped.parsedLocation.lat, mapped.parsedLocation.lon]}
+                        icon={statsMarkerIcon}
+                      >
+                        <Popup>
+                          <strong>{mapped.checkIn.callsign}</strong>
+                          {mapped.checkIn.name && <><br />{mapped.checkIn.name}</>}
+                          {mapped.checkIn.location && <><br /><span style={{ color: '#666' }}>{mapped.checkIn.location}</span></>}
+                        </Popup>
+                      </Marker>
+                    ))}
+                  </MapContainer>
+                </Box>
+              )}
             </Paper>
           </Grid>
         )}

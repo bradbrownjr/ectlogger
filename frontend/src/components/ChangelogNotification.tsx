@@ -43,7 +43,7 @@ const pulseAnimation = keyframes`
 // The version number triggers the unread notification for users.
 // Mark entries with `userImpact: true` to highlight them in the UI.
 
-const CHANGELOG_VERSION = '2026.01.25f';
+const CHANGELOG_VERSION = '2026.02.20b';
 
 interface ChangelogEntry {
   version: string;
@@ -59,6 +59,35 @@ interface ChangelogEntry {
 }
 
 const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '2026.02.20b',
+    date: 'February 20, 2026',
+    sections: [
+      {
+        title: 'New Features',
+        type: 'feature',
+        items: [
+          { text: 'Dual-map view in PDF Report — when check-ins are geographically clustered with a few outliers at a significant distance, the report now shows two side-by-side maps: a zoomed cluster view and a full overview, so neither is lost.', userImpact: true },
+          { text: 'Check-in location map on the Net Statistics page — fills the empty space next to the status chart with a map showing all check-in locations for that net.', userImpact: true },
+        ],
+      },
+    ],
+  },
+  {
+    version: '2026.02.20',
+    date: 'February 20, 2026',
+    sections: [
+      {
+        title: 'Bug Fixes',
+        type: 'bugfix',
+        items: [
+          { text: 'Check-in now works in LOBBY mode — stations can check in as soon as the NCS opens the lobby before the official start time.', userImpact: true },
+          { text: 'Check-in errors now show as in-app notifications instead of browser alert pop-ups, with the actual error detail from the server.', userImpact: true },
+          { text: 'Map zoom no longer snaps back to show all stations when the check-in list updates. Your zoom level and pan position are now preserved after the initial auto-fit.', userImpact: true },
+        ],
+      },
+    ],
+  },
   {
     version: '2026.01.25f',
     date: 'January 25, 2026',

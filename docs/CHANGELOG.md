@@ -4,6 +4,21 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# February 20, 2026
+
+## New Features
+
+* **Dual-map view in PDF Report** — When check-ins are geographically clustered with a few distant outliers, the Net Report PDF now automatically shows two maps side-by-side: a zoomed cluster detail view and a full geographic overview. Single-map layout is used when all stations are in a similar area.
+* **Check-in location map on Net Statistics page** — The statistics page now fetches and displays a map of all check-in locations for the net, filling the empty grid space next to the status breakdown chart.
+
+## Bug Fixes
+
+* **Check-in now works in LOBBY mode** — Stations can check in as soon as the NCS opens the lobby before the official scheduled start time. Previously, the backend rejected check-ins with a 400 error until the net transitioned to full ACTIVE state.
+* **Check-in errors show as in-app toasts** — Error messages (e.g., validation failures) are now displayed as Snackbar notifications instead of native browser `alert()` pop-ups. The actual server error detail is shown when available.
+* **Map zoom no longer resets** — The check-in map no longer snaps back to "show all stations" zoom each time the check-in list updates. Your zoom level and pan position are preserved after the initial auto-fit when the map first loads.
+
+---
+
 # January 25, 2026
 
 ## New Features

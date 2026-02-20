@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -56,6 +56,50 @@ L.Marker.prototype.options.icon = DefaultIcon;
 
 // Custom marker colors based on status
 // Uses SVG for better html2canvas PDF export compatibility
+// ========== DUAL-MAP OUTLIER DETECTION ==========
+// Detects whether check-in positions have significant geographic outliers that justify
+// showing two maps side-by-side: one zoomed into the cluster and one full overview.
+// Uses degree-based Euclidean distance from centroid (sufficient for relative comparison).
+interface DualMapData {
+  clusterPositions: [number, number][];
+  allPositions: [number, number][];
+}
+
+const computeDualMapData = (
+  pts: { lat: number; lon: number }[]
+): DualMapData | null => {
+  if (pts.length < 3) return null;
+
+  // Centroid
+  const centLat = pts.reduce((s, p) => s + p.lat, 0) / pts.length;
+  const centLon = pts.reduce((s, p) => s + p.lon, 0) / pts.length;
+
+  // Distance from centroid for each point (degrees)
+  const dists = pts.map(p =>
+    Math.sqrt(Math.pow(p.lat - centLat, 2) + Math.pow(p.lon - centLon, 2))
+  );
+
+  const sorted = [...dists].sort((a, b) => a - b);
+  const medianDist = sorted[Math.floor(sorted.length / 2)];
+  const maxDist = sorted[sorted.length - 1];
+
+  // Only split when the maximal outlier is >3× the median distance AND
+  // the cluster itself spans a meaningful area (≥0.5°, roughly 50 km)
+  if (medianDist < 0.5 || maxDist < medianDist * 3) return null;
+
+  const clusterThreshold = medianDist * 2.5;
+  const clusterPositions = pts
+    .filter((_, i) => dists[i] <= clusterThreshold)
+    .map(p => [p.lat, p.lon] as [number, number]);
+
+  const allPositions = pts.map(p => [p.lat, p.lon] as [number, number]);
+
+  // Only worth splitting if there are ≥2 cluster points AND at least 1 outlier
+  if (clusterPositions.length < 2 || clusterPositions.length === allPositions.length) return null;
+
+  return { clusterPositions, allPositions };
+};
+
 const createColoredIcon = (color: string) => {
   // Create an SVG marker that renders properly in PDF export
   const svg = `
@@ -455,6 +499,13 @@ const NetReport: React.FC = () => {
     count: value,
   }));
 
+  // Compute dual-map data (memoized): non-null when positions have significant outliers
+  const dualMapData = useMemo(() => {
+    if (mappedCheckIns.length < 3) return null;
+    const pts = mappedCheckIns.map(m => ({ lat: m.parsedLocation.lat, lon: m.parsedLocation.lon }));
+    return computeDualMapData(pts);
+  }, [mappedCheckIns]);
+
   // Get NCS operators from net roles
   const ncsOperators = netRoles.filter(r => r.role === 'ncs');
 
@@ -720,63 +771,169 @@ const NetReport: React.FC = () => {
           <>
             <Typography variant="h6" sx={{ mt: 3, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
               <MapIcon /> Check-in Map ({mappedCheckIns.length} locations)
+              {dualMapData && (
+                <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                  — split view: cluster detail (left) and full overview (right)
+                </Typography>
+              )}
             </Typography>
-            
-            <Paper variant="outlined" sx={{ mb: 3, overflow: 'hidden' }}>
-              <Box sx={{ height: 400, width: '100%' }}>
-                <MapContainer
-                  center={[39.8283, -98.5795]} // US center
-                  zoom={4}
-                  style={{ height: '100%', width: '100%' }}
-                  scrollWheelZoom={false}
-                >
-                  <TileLayer
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  />
-                  <FitBounds positions={mappedCheckIns.map(m => [m.parsedLocation.lat, m.parsedLocation.lon] as [number, number])} />
-                  {mappedCheckIns.map((mapped) => (
-                    <Marker
-                      key={mapped.checkIn.id}
-                      position={[mapped.parsedLocation.lat, mapped.parsedLocation.lon]}
-                      icon={createColoredIcon(getStatusColor(mapped.checkIn.status))}
-                    >
-                      <Popup>
-                        <Box sx={{ minWidth: 150 }}>
-                          <Typography variant="subtitle2" fontWeight="bold">
-                            {mapped.checkIn.callsign}
-                          </Typography>
-                          {mapped.checkIn.name && (
-                            <Typography variant="body2">{mapped.checkIn.name}</Typography>
-                          )}
-                          <Typography variant="body2" color="text.secondary">
-                            {mapped.checkIn.location}
-                          </Typography>
-                          <Box sx={{ mt: 0.5 }}>
-                            <StatusBadge status={mapped.checkIn.status} />
+
+            {/* ---- Helper: shared marker list for a given MapContainer ---- */}
+            {/* Rendered inline inside each MapContainer below */}
+
+            {dualMapData ? (
+              // ---- DUAL MAP: cluster detail + full overview side-by-side ----
+              <Grid container spacing={2} sx={{ mb: 3 }}>
+                {/* Left: cluster zoom */}
+                <Grid item xs={12} md={6}>
+                  <Paper variant="outlined" sx={{ overflow: 'hidden' }}>
+                    <Box sx={{ p: 1, borderBottom: `1px solid ${theme.palette.divider}` }}>
+                      <Typography variant="caption" fontWeight="medium">
+                        📍 Cluster Detail ({dualMapData.clusterPositions.length} stations)
+                      </Typography>
+                    </Box>
+                    <Box sx={{ height: 320, width: '100%' }}>
+                      <MapContainer
+                        center={[39.8283, -98.5795]}
+                        zoom={4}
+                        style={{ height: '100%', width: '100%' }}
+                        scrollWheelZoom={false}
+                      >
+                        <TileLayer
+                          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                        />
+                        <FitBounds positions={dualMapData.clusterPositions} />
+                        {mappedCheckIns.map((mapped) => (
+                          <Marker
+                            key={`cluster-${mapped.checkIn.id}`}
+                            position={[mapped.parsedLocation.lat, mapped.parsedLocation.lon]}
+                            icon={createColoredIcon(getStatusColor(mapped.checkIn.status))}
+                          >
+                            <Popup>
+                              <Box sx={{ minWidth: 150 }}>
+                                <Typography variant="subtitle2" fontWeight="bold">{mapped.checkIn.callsign}</Typography>
+                                {mapped.checkIn.name && <Typography variant="body2">{mapped.checkIn.name}</Typography>}
+                                <Typography variant="body2" color="text.secondary">{mapped.checkIn.location}</Typography>
+                                <Box sx={{ mt: 0.5 }}><StatusBadge status={mapped.checkIn.status} /></Box>
+                              </Box>
+                            </Popup>
+                          </Marker>
+                        ))}
+                      </MapContainer>
+                    </Box>
+                  </Paper>
+                </Grid>
+
+                {/* Right: full overview */}
+                <Grid item xs={12} md={6}>
+                  <Paper variant="outlined" sx={{ overflow: 'hidden' }}>
+                    <Box sx={{ p: 1, borderBottom: `1px solid ${theme.palette.divider}` }}>
+                      <Typography variant="caption" fontWeight="medium">
+                        🌐 Full Overview ({dualMapData.allPositions.length} stations)
+                      </Typography>
+                    </Box>
+                    <Box sx={{ height: 320, width: '100%' }}>
+                      <MapContainer
+                        center={[39.8283, -98.5795]}
+                        zoom={4}
+                        style={{ height: '100%', width: '100%' }}
+                        scrollWheelZoom={false}
+                      >
+                        <TileLayer
+                          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                        />
+                        <FitBounds positions={dualMapData.allPositions} />
+                        {mappedCheckIns.map((mapped) => (
+                          <Marker
+                            key={`overview-${mapped.checkIn.id}`}
+                            position={[mapped.parsedLocation.lat, mapped.parsedLocation.lon]}
+                            icon={createColoredIcon(getStatusColor(mapped.checkIn.status))}
+                          >
+                            <Popup>
+                              <Box sx={{ minWidth: 150 }}>
+                                <Typography variant="subtitle2" fontWeight="bold">{mapped.checkIn.callsign}</Typography>
+                                {mapped.checkIn.name && <Typography variant="body2">{mapped.checkIn.name}</Typography>}
+                                <Typography variant="body2" color="text.secondary">{mapped.checkIn.location}</Typography>
+                                <Box sx={{ mt: 0.5 }}><StatusBadge status={mapped.checkIn.status} /></Box>
+                              </Box>
+                            </Popup>
+                          </Marker>
+                        ))}
+                      </MapContainer>
+                    </Box>
+                  </Paper>
+                </Grid>
+
+                {/* Shared legend below both maps */}
+                <Grid item xs={12}>
+                  <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: theme.palette.success.main }} />
+                      <Typography variant="caption">Checked In</Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: theme.palette.warning.main }} />
+                      <Typography variant="caption">Tactical</Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: theme.palette.info.main }} />
+                      <Typography variant="caption">Monitoring</Typography>
+                    </Box>
+                  </Box>
+                </Grid>
+              </Grid>
+            ) : (
+              // ---- SINGLE MAP: all stations in one view ----
+              <Paper variant="outlined" sx={{ mb: 3, overflow: 'hidden' }}>
+                <Box sx={{ height: 400, width: '100%' }}>
+                  <MapContainer
+                    center={[39.8283, -98.5795]}
+                    zoom={4}
+                    style={{ height: '100%', width: '100%' }}
+                    scrollWheelZoom={false}
+                  >
+                    <TileLayer
+                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    />
+                    <FitBounds positions={mappedCheckIns.map(m => [m.parsedLocation.lat, m.parsedLocation.lon] as [number, number])} />
+                    {mappedCheckIns.map((mapped) => (
+                      <Marker
+                        key={mapped.checkIn.id}
+                        position={[mapped.parsedLocation.lat, mapped.parsedLocation.lon]}
+                        icon={createColoredIcon(getStatusColor(mapped.checkIn.status))}
+                      >
+                        <Popup>
+                          <Box sx={{ minWidth: 150 }}>
+                            <Typography variant="subtitle2" fontWeight="bold">{mapped.checkIn.callsign}</Typography>
+                            {mapped.checkIn.name && <Typography variant="body2">{mapped.checkIn.name}</Typography>}
+                            <Typography variant="body2" color="text.secondary">{mapped.checkIn.location}</Typography>
+                            <Box sx={{ mt: 0.5 }}><StatusBadge status={mapped.checkIn.status} /></Box>
                           </Box>
-                        </Box>
-                      </Popup>
-                    </Marker>
-                  ))}
-                </MapContainer>
-              </Box>
-              {/* Map Legend */}
-              <Box sx={{ p: 1, display: 'flex', gap: 2, flexWrap: 'wrap', borderTop: `1px solid ${theme.palette.divider}` }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: theme.palette.success.main }} />
-                  <Typography variant="caption">Checked In</Typography>
+                        </Popup>
+                      </Marker>
+                    ))}
+                  </MapContainer>
                 </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: theme.palette.warning.main }} />
-                  <Typography variant="caption">Tactical</Typography>
+                {/* Map Legend */}
+                <Box sx={{ p: 1, display: 'flex', gap: 2, flexWrap: 'wrap', borderTop: `1px solid ${theme.palette.divider}` }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: theme.palette.success.main }} />
+                    <Typography variant="caption">Checked In</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: theme.palette.warning.main }} />
+                    <Typography variant="caption">Tactical</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: theme.palette.info.main }} />
+                    <Typography variant="caption">Monitoring</Typography>
+                  </Box>
                 </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                  <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: theme.palette.info.main }} />
-                  <Typography variant="caption">Monitoring</Typography>
-                </Box>
-              </Box>
-            </Paper>
+              </Paper>
+            )}
           </>
         )}
         {mapLoading && (

@@ -632,7 +632,7 @@ const NetView: React.FC = () => {
 
   const handleAssignRole = async () => {
     if (!selectedUserId) {
-      alert('Please select a user');
+      setToastMessage('Please select a user');
       return;
     }
 
@@ -656,7 +656,7 @@ const NetView: React.FC = () => {
       await fetchCheckIns();
     } catch (error: any) {
       console.error('Failed to assign role:', error);
-      alert(error.response?.data?.detail || 'Failed to assign role');
+      setToastMessage(error.response?.data?.detail || 'Failed to assign role');
     }
   };
 
@@ -668,7 +668,7 @@ const NetView: React.FC = () => {
       fetchNetRoles();
     } catch (error) {
       console.error('Failed to remove role:', error);
-      alert('Failed to remove role');
+      setToastMessage('Failed to remove role');
     }
   };
 
@@ -707,7 +707,7 @@ const NetView: React.FC = () => {
       handleStartNet();
     } catch (error) {
       console.error('Failed to save topic/poll config:', error);
-      alert('Failed to save configuration');
+      setToastMessage('Failed to save configuration');
     }
   };
 
@@ -913,7 +913,7 @@ const NetView: React.FC = () => {
       navigate('/dashboard');
     } catch (error) {
       console.error('Failed to delete net:', error);
-      alert('Failed to delete net');
+      setToastMessage('Failed to delete net');
     }
   };
 
@@ -976,7 +976,7 @@ const NetView: React.FC = () => {
   const handleCheckIn = async () => {
     // Validate required fields
     if (!checkInForm.callsign) {
-      alert('Callsign is required');
+      setToastMessage('Callsign is required');
       return;
     }
 
@@ -1027,9 +1027,9 @@ const NetView: React.FC = () => {
           timestamp: new Date().toISOString()
         }));
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create check-in:', error);
-      alert('Failed to check in station');
+      setToastMessage(error.response?.data?.detail || 'Failed to check in station');
     }
   };
 
@@ -1209,7 +1209,7 @@ const NetView: React.FC = () => {
       fetchCheckIns();
     } catch (error) {
       console.error('Failed to delete check-in:', error);
-      alert('Failed to delete check-in');
+      setToastMessage('Failed to delete check-in');
     }
   };
 
@@ -1270,7 +1270,7 @@ const NetView: React.FC = () => {
       }
     } catch (error) {
       console.error('Failed to update check-in:', error);
-      alert('Failed to update check-in');
+      setToastMessage('Failed to update check-in');
     }
   };
 
@@ -1363,7 +1363,7 @@ const NetView: React.FC = () => {
       }
     } catch (error) {
       console.error('Failed to set active frequency:', error);
-      alert('Failed to change frequency');
+      setToastMessage('Failed to change frequency');
     }
   };
 
@@ -1503,7 +1503,7 @@ const NetView: React.FC = () => {
         checkIns.some((ci: any) => ci.user_id === role.user_id && ci.status !== 'checked_out')
       );
       if (otherNCS.length === 0) {
-        alert('Cannot check out: You are the only active NCS. Please assign another NCS first.');
+        setToastMessage('Cannot check out: You are the only active NCS. Please assign another NCS first.');
         return;
       }
     }
@@ -1516,7 +1516,7 @@ const NetView: React.FC = () => {
       fetchCheckIns();
     } catch (error) {
       console.error('Failed to check out:', error);
-      alert('Failed to check out');
+      setToastMessage('Failed to check out');
     }
   };
 

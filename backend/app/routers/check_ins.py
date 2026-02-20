@@ -32,7 +32,8 @@ async def create_check_in(
     if not net:
         raise HTTPException(status_code=404, detail="Net not found")
     
-    if net.status != NetStatus.ACTIVE:
+    # Allow check-ins in both LOBBY (pre-net staging) and ACTIVE (official net) states
+    if net.status not in (NetStatus.ACTIVE, NetStatus.LOBBY):
         raise HTTPException(status_code=400, detail="Net is not active")
     
     # Validate and process frequency_id

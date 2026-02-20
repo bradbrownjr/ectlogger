@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import {
   Paper,
   IconButton,
@@ -82,12 +82,18 @@ interface MappedCheckIn extends CheckIn {
   parsedLocation: ParsedLocation;
 }
 
-// Component to fit map bounds to markers
+// Component to fit map bounds to markers - only runs once on initial load.
+// Uses hasFitRef to ensure that after the user zooms/pans, the map does NOT snap back
+// on every re-render or check-in update. The ref naturally resets when the MapContainer
+// is remounted (e.g., on resize/maximize via key change), allowing a fresh auto-fit.
 const FitBounds: React.FC<{ positions: [number, number][]; disabled?: boolean }> = ({ positions, disabled }) => {
   const map = useMap();
+  const hasFitRef = useRef(false);
 
   useEffect(() => {
-    if (positions.length > 0 && !disabled) {
+    // Only fit bounds once - the first time positions become available
+    if (positions.length > 0 && !disabled && !hasFitRef.current) {
+      hasFitRef.current = true;
       const bounds = L.latLngBounds(positions.map(p => L.latLng(p[0], p[1])));
       map.fitBounds(bounds, { padding: [50, 50], maxZoom: 12 });
     }
@@ -354,9 +360,14 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
     { color: '#607d8b', label: 'Mobile', show: true },
   ];
 
-  const positions: [number, number][] = mappedCheckIns
-    .filter(c => c.parsedLocation.lat !== 0 && c.parsedLocation.lon !== 0)
-    .map(c => [c.parsedLocation.lat, c.parsedLocation.lon]);
+  // Memoize positions so the array reference only changes when mappedCheckIns actually changes,
+  // preventing FitBounds' useEffect from triggering on unrelated re-renders
+  const positions = useMemo<[number, number][]>(
+    () => mappedCheckIns
+      .filter(c => c.parsedLocation.lat !== 0 && c.parsedLocation.lon !== 0)
+      .map(c => [c.parsedLocation.lat, c.parsedLocation.lon]),
+    [mappedCheckIns]
+  );
 
   // Default center (USA)
   const defaultCenter: [number, number] = [39.8283, -98.5795];
