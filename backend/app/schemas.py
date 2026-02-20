@@ -832,6 +832,7 @@ class NetStatsResponse(BaseModel):
     net_id: int
     net_name: str
     status: str
+    template_id: Optional[int] = None  # ID of the recurring net template, if any
     
     # Counts
     total_check_ins: int
@@ -846,7 +847,7 @@ class NetStatsResponse(BaseModel):
     # Breakdowns
     status_counts: dict  # {"checked_in": 5, "checked_out": 3, ...}
     check_ins_timeline: List[TimeSeriesDataPoint]  # Check-ins over time during net
-    top_operators: List[TopOperator]  # Top 10 operators in this net
+    top_operators: List[TopOperator]  # All operators in this net, sorted by check-in count
     check_ins_by_frequency: dict  # {"146.520 MHz": 10, "Wires-X Room 12345": 5}
 
 

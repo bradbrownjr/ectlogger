@@ -32,6 +32,7 @@ import {
   Radio,
   PictureAsPdf,
   Map as MapIcon,
+  Assessment,
 } from '@mui/icons-material';
 import {
   BarChart,
@@ -139,6 +140,7 @@ interface NetStats {
   net_id: number;
   net_name: string;
   status: string;
+  template_id: number | null;  // ID of the recurring net template, if any
   total_check_ins: number;
   unique_callsigns: number;
   rechecks: number;
@@ -399,6 +401,16 @@ const NetStatistics: React.FC = () => {
             {exporting ? 'Exporting...' : 'PDF'}
           </Button>
         </Tooltip>
+        {/* Only shown if this net belongs to a recurring template */}
+        {stats.template_id && (
+          <Button
+            variant="outlined"
+            startIcon={<Assessment />}
+            onClick={() => navigate(`/statistics/schedules/${stats.template_id}`)}
+          >
+            All-Time Stats
+          </Button>
+        )}
         <Button
           variant="outlined"
           startIcon={<Radio />}
@@ -710,38 +722,31 @@ const NetStatistics: React.FC = () => {
           </Grid>
         )}
 
-        {/* Top Operators */}
+        {/* ========== OPERATORS TABLE ========== */}
+        {/* Lists all operators who checked into this net; sorted by check-in count */}
         <Grid item xs={12}>
           <Paper sx={{ p: 3, height: '100%' }}>
             <Typography variant="h6" gutterBottom>
-              Top Operators
+              Operators ({stats.top_operators.length})
             </Typography>
             <TableContainer>
               <Table size="small">
                 <TableHead>
                   <TableRow>
-                    <TableCell>Rank</TableCell>
                     <TableCell>Callsign</TableCell>
                     <TableCell align="right">Check-ins</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {stats.top_operators.map((op, index) => (
+                  {stats.top_operators.map((op) => (
                     <TableRow key={op.callsign}>
-                      <TableCell>
-                        {index < 3 ? ['🥇', '🥈', '🥉'][index] : index + 1}
-                      </TableCell>
-                      <TableCell>
-                        <Typography fontWeight={index < 3 ? 'bold' : 'normal'}>
-                          {op.callsign}
-                        </Typography>
-                      </TableCell>
+                      <TableCell>{op.callsign}</TableCell>
                       <TableCell align="right">{op.check_in_count}</TableCell>
                     </TableRow>
                   ))}
                   {stats.top_operators.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={3} align="center">
+                      <TableCell colSpan={2} align="center">
                         <Typography color="text.secondary">No check-ins yet</Typography>
                       </TableCell>
                     </TableRow>

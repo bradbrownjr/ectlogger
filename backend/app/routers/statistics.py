@@ -238,7 +238,7 @@ async def get_net_statistics(
     sorted_operators = sorted(
         callsign_data.items(),
         key=lambda x: (-x[1]['count'], x[1]['first_check_in'])
-    )[:10]
+    )
     
     top_operators = [
         TopOperator(
@@ -260,6 +260,7 @@ async def get_net_statistics(
         net_id=net_id,
         net_name=net.name,
         status=net.status.value,
+        template_id=net.template_id,
         total_check_ins=total_check_ins,
         unique_callsigns=unique_callsigns,
         rechecks=rechecks,
