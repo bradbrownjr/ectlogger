@@ -71,7 +71,12 @@ const CHANGELOG: ChangelogEntry[] = [
           { text: 'Check-in location map on the Net Statistics page — fills the empty space next to the status chart with a map showing all check-in locations for that net.', userImpact: true },
           { text: 'Check-in Pace chart on the Net Statistics page — shows cumulative arrivals over time so you can see at a glance whether stations checked in quickly or trickled in throughout the net.', userImpact: true },
         ],
-      },t: 'Check-in now works in LOBBY mode — stations can check in as soon as the NCS opens the lobby before the official start time.', userImpact: true },
+      },
+      {
+        title: 'Bug Fixes',
+        type: 'bugfix',
+        items: [
+          { text: 'Check-in now works in LOBBY mode — stations can check in as soon as the NCS opens the lobby before the official start time.', userImpact: true },
           { text: 'Check-in errors now show as in-app notifications instead of browser alert pop-ups, with the actual error detail from the server.', userImpact: true },
           { text: 'Map zoom no longer snaps back to show all stations when the check-in list updates. Your zoom level and pan position are now preserved after the initial auto-fit.', userImpact: true },
         ],
