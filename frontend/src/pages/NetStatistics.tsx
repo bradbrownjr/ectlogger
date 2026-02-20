@@ -45,6 +45,8 @@ import {
   Pie,
   Cell,
   Legend,
+  AreaChart,
+  Area,
 } from 'recharts';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -295,6 +297,21 @@ const NetStatistics: React.FC = () => {
     return null;
   }
 
+  // Prepare cumulative check-in pace data from timeline (one point per check-in → aggregate to cumulative)
+  const timelineData = (() => {
+    if (!stats.check_ins_timeline || stats.check_ins_timeline.length < 2) return [];
+    // Sort by minute offset parsed from "+Xm" label
+    const sorted = [...stats.check_ins_timeline].sort((a, b) => {
+      const parse = (lbl: string) => parseInt(lbl.replace('+', '').replace('m', ''), 10);
+      return parse(a.label) - parse(b.label);
+    });
+    let cumulative = 0;
+    return sorted.map(pt => {
+      cumulative += 1;
+      return { label: pt.label, cumulative };
+    });
+  })();
+
   // Prepare data for status pie chart
   const statusData = Object.entries(stats.status_counts).map(([name, value]) => ({
     name: name.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
@@ -458,6 +475,58 @@ const NetStatistics: React.FC = () => {
           </Grid>
         )}
 
+        {/* ========== CHECK-IN PACE CHART ========== */}
+        {/* Cumulative area chart showing how quickly stations checked in over time */}
+        {timelineData.length >= 2 && (
+          <Grid item xs={12} md={6}>
+            <Paper sx={{ p: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                Check-in Pace
+              </Typography>
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
+                Cumulative arrivals from net open
+              </Typography>
+              <ResponsiveContainer width="100%" height={262}>
+                <AreaChart data={timelineData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
+                  <defs>
+                    <linearGradient id="paceGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={theme.palette.success.main} stopOpacity={0.35} />
+                      <stop offset="95%" stopColor={theme.palette.success.main} stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                  <XAxis
+                    dataKey="label"
+                    tick={{ fontSize: 11 }}
+                    interval={Math.max(0, Math.floor(timelineData.length / 6) - 1)}
+                  />
+                  <YAxis
+                    allowDecimals={false}
+                    tick={{ fontSize: 11 }}
+                    label={{ value: 'Check-ins', angle: -90, position: 'insideLeft', offset: 12, style: { fontSize: 11 } }}
+                  />
+                  <RechartsTooltip
+                    formatter={(value: number) => [value, 'Total checked in']}
+                    contentStyle={{
+                      backgroundColor: theme.palette.background.paper,
+                      border: `1px solid ${theme.palette.divider}`,
+                    }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="cumulative"
+                    stroke={theme.palette.success.main}
+                    strokeWidth={2}
+                    fill="url(#paceGradient)"
+                    dot={{ r: 3, fill: theme.palette.success.main }}
+                    activeDot={{ r: 5 }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </Paper>
+          </Grid>
+        )}
+
         {/* Check-ins by Frequency */}
         {frequencyData.length > 0 && (
           <Grid item xs={12} md={6}>
@@ -484,9 +553,8 @@ const NetStatistics: React.FC = () => {
         )}
 
         {/* ========== CHECK-IN LOCATION MAP ========== */}
-        {/* Fills the empty grid column when frequency data is absent, or goes full-width below */}
         {(mappedCheckIns.length > 0 || mapLoading) && (
-          <Grid item xs={12} md={frequencyData.length === 0 ? 6 : 12}>
+          <Grid item xs={12}>
             <Paper sx={{ p: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                 <MapIcon color="action" fontSize="small" />
@@ -501,7 +569,7 @@ const NetStatistics: React.FC = () => {
                 {mapLoading && <CircularProgress size={14} sx={{ ml: 'auto' }} />}
               </Box>
               {mappedCheckIns.length > 0 && (
-                <Box sx={{ height: frequencyData.length === 0 ? 280 : 350, width: '100%', borderRadius: 1, overflow: 'hidden' }}>
+                <Box sx={{ height: 350, width: '100%', borderRadius: 1, overflow: 'hidden' }}>
                   <MapContainer
                     center={[39.8283, -98.5795]}
                     zoom={4}
