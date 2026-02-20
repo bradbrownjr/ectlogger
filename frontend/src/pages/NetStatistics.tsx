@@ -286,6 +286,29 @@ const NetStatistics: React.FC = () => {
     theme.palette.secondary.main,
   ];
 
+  // ========== HOOKS (must all be called before any early returns) ==========
+
+  // Compute dual-map split: non-null when positions have significant outliers
+  const dualMapData = useMemo(() => {
+    if (mappedCheckIns.length < 3) return null;
+    const pts = mappedCheckIns.map(m => ({ lat: m.parsedLocation.lat, lon: m.parsedLocation.lon }));
+    return computeDualMapData(pts);
+  }, [mappedCheckIns]);
+
+  // Prepare cumulative check-in pace data from timeline
+  const timelineData = useMemo(() => {
+    if (!stats || !stats.check_ins_timeline || stats.check_ins_timeline.length < 2) return [];
+    const sorted = [...stats.check_ins_timeline].sort((a, b) => {
+      const parse = (lbl: string) => parseInt(lbl.replace('+', '').replace('m', ''), 10);
+      return parse(a.label) - parse(b.label);
+    });
+    let cumulative = 0;
+    return sorted.map(pt => {
+      cumulative += 1;
+      return { label: pt.label, cumulative };
+    });
+  }, [stats]);
+
   if (loading) {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -320,28 +343,6 @@ const NetStatistics: React.FC = () => {
   if (!stats) {
     return null;
   }
-
-  // Compute dual-map split (before any early returns to satisfy hooks rules)
-  const dualMapData = useMemo(() => {
-    if (mappedCheckIns.length < 3) return null;
-    const pts = mappedCheckIns.map(m => ({ lat: m.parsedLocation.lat, lon: m.parsedLocation.lon }));
-    return computeDualMapData(pts);
-  }, [mappedCheckIns]);
-
-  // Prepare cumulative check-in pace data from timeline (one point per check-in → aggregate to cumulative)
-  const timelineData = (() => {
-    if (!stats.check_ins_timeline || stats.check_ins_timeline.length < 2) return [];
-    // Sort by minute offset parsed from "+Xm" label
-    const sorted = [...stats.check_ins_timeline].sort((a, b) => {
-      const parse = (lbl: string) => parseInt(lbl.replace('+', '').replace('m', ''), 10);
-      return parse(a.label) - parse(b.label);
-    });
-    let cumulative = 0;
-    return sorted.map(pt => {
-      cumulative += 1;
-      return { label: pt.label, cumulative };
-    });
-  })();
 
   // Prepare data for status pie chart
   const statusData = Object.entries(stats.status_counts).map(([name, value]) => ({
