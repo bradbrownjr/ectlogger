@@ -443,6 +443,13 @@ const NetReport: React.FC = () => {
     }
   };
 
+  // Compute dual-map data (memoized) - must be before any early returns to satisfy React hooks rules
+  const dualMapData = useMemo(() => {
+    if (mappedCheckIns.length < 3) return null;
+    const pts = mappedCheckIns.map(m => ({ lat: m.parsedLocation.lat, lon: m.parsedLocation.lon }));
+    return computeDualMapData(pts);
+  }, [mappedCheckIns]);
+
   // ========== LOADING & ERROR STATES ==========
 
   if (loading) {
@@ -498,13 +505,6 @@ const NetReport: React.FC = () => {
     name,
     count: value,
   }));
-
-  // Compute dual-map data (memoized): non-null when positions have significant outliers
-  const dualMapData = useMemo(() => {
-    if (mappedCheckIns.length < 3) return null;
-    const pts = mappedCheckIns.map(m => ({ lat: m.parsedLocation.lat, lon: m.parsedLocation.lon }));
-    return computeDualMapData(pts);
-  }, [mappedCheckIns]);
 
   // Get NCS operators from net roles
   const ncsOperators = netRoles.filter(r => r.role === 'ncs');
