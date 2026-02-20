@@ -723,7 +723,7 @@ const NetStatistics: React.FC = () => {
         )}
 
         {/* ========== OPERATORS TABLE ========== */}
-        {/* Lists all operators who checked into this net; sorted by check-in count */}
+        {/* Lists all operators; name/location pulled from the already-fetched checkIns list */}
         <Grid item xs={12}>
           <Paper sx={{ p: 3, height: '100%' }}>
             <Typography variant="h6" gutterBottom>
@@ -734,19 +734,25 @@ const NetStatistics: React.FC = () => {
                 <TableHead>
                   <TableRow>
                     <TableCell>Callsign</TableCell>
-                    <TableCell align="right">Check-ins</TableCell>
+                    <TableCell>Name</TableCell>
+                    <TableCell>Location</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {stats.top_operators.map((op) => (
-                    <TableRow key={op.callsign}>
-                      <TableCell>{op.callsign}</TableCell>
-                      <TableCell align="right">{op.check_in_count}</TableCell>
-                    </TableRow>
-                  ))}
+                  {stats.top_operators.map((op) => {
+                    // Look up the most recent check-in record for this callsign to get name/location
+                    const record = checkIns.find(c => c.callsign === op.callsign);
+                    return (
+                      <TableRow key={op.callsign}>
+                        <TableCell>{op.callsign}</TableCell>
+                        <TableCell>{record?.name || '—'}</TableCell>
+                        <TableCell>{record?.location || '—'}</TableCell>
+                      </TableRow>
+                    );
+                  })}
                   {stats.top_operators.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={2} align="center">
+                      <TableCell colSpan={3} align="center">
                         <Typography color="text.secondary">No check-ins yet</Typography>
                       </TableCell>
                     </TableRow>
