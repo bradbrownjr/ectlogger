@@ -430,7 +430,7 @@ const NetStatistics: React.FC = () => {
         {/* Status Breakdown */}
         {statusData.length > 0 && (
           <Grid item xs={12} md={6}>
-            <Paper sx={{ p: 3 }}>
+            <Paper sx={{ p: 3, height: '100%' }}>
               <Typography variant="h6" gutterBottom>
                 Check-in Status
               </Typography>
@@ -479,7 +479,7 @@ const NetStatistics: React.FC = () => {
         {/* Cumulative area chart showing how quickly stations checked in over time */}
         {timelineData.length >= 2 && (
           <Grid item xs={12} md={6}>
-            <Paper sx={{ p: 3 }}>
+            <Paper sx={{ p: 3, height: '100%' }}>
               <Typography variant="h6" gutterBottom>
                 Check-in Pace
               </Typography>
@@ -530,7 +530,7 @@ const NetStatistics: React.FC = () => {
         {/* Check-ins by Frequency */}
         {frequencyData.length > 0 && (
           <Grid item xs={12} md={6}>
-            <Paper sx={{ p: 3 }}>
+            <Paper sx={{ p: 3, height: '100%' }}>
               <Typography variant="h6" gutterBottom>
                 Check-ins by Frequency
               </Typography>
@@ -555,7 +555,7 @@ const NetStatistics: React.FC = () => {
         {/* ========== CHECK-IN LOCATION MAP ========== */}
         {(mappedCheckIns.length > 0 || mapLoading) && (
           <Grid item xs={12}>
-            <Paper sx={{ p: 2 }}>
+            <Paper sx={{ p: 2, height: '100%' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                 <MapIcon color="action" fontSize="small" />
                 <Typography variant="h6">
@@ -605,7 +605,7 @@ const NetStatistics: React.FC = () => {
 
         {/* Top Operators */}
         <Grid item xs={12}>
-          <Paper sx={{ p: 3 }}>
+          <Paper sx={{ p: 3, height: '100%' }}>
             <Typography variant="h6" gutterBottom>
               Top Operators
             </Typography>
