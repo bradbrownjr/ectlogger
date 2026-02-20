@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -97,6 +97,30 @@ const FitBoundsOnce: React.FC<{ positions: [number, number][] }> = ({ positions 
     }
   }, [map, positions]);
   return null;
+};
+
+// Dual-map split: detects outliers and separates cluster from full overview
+interface DualMapData {
+  clusterPositions: [number, number][];
+  allPositions: [number, number][];
+}
+
+const computeDualMapData = (pts: { lat: number; lon: number }[]): DualMapData | null => {
+  if (pts.length < 3) return null;
+  const centLat = pts.reduce((s, p) => s + p.lat, 0) / pts.length;
+  const centLon = pts.reduce((s, p) => s + p.lon, 0) / pts.length;
+  const dists = pts.map(p => Math.sqrt(Math.pow(p.lat - centLat, 2) + Math.pow(p.lon - centLon, 2)));
+  const sorted = [...dists].sort((a, b) => a - b);
+  const medianDist = sorted[Math.floor(sorted.length / 2)];
+  const maxDist = sorted[sorted.length - 1];
+  if (medianDist < 0.5 || maxDist < medianDist * 3) return null;
+  const clusterThreshold = medianDist * 2.5;
+  const clusterPositions = pts
+    .filter((_, i) => dists[i] <= clusterThreshold)
+    .map(p => [p.lat, p.lon] as [number, number]);
+  const allPositions = pts.map(p => [p.lat, p.lon] as [number, number]);
+  if (clusterPositions.length < 2 || clusterPositions.length === allPositions.length) return null;
+  return { clusterPositions, allPositions };
 };
 
 interface TimeSeriesDataPoint {
@@ -296,6 +320,13 @@ const NetStatistics: React.FC = () => {
   if (!stats) {
     return null;
   }
+
+  // Compute dual-map split (before any early returns to satisfy hooks rules)
+  const dualMapData = useMemo(() => {
+    if (mappedCheckIns.length < 3) return null;
+    const pts = mappedCheckIns.map(m => ({ lat: m.parsedLocation.lat, lon: m.parsedLocation.lon }));
+    return computeDualMapData(pts);
+  }, [mappedCheckIns]);
 
   // Prepare cumulative check-in pace data from timeline (one point per check-in → aggregate to cumulative)
   const timelineData = (() => {
@@ -564,40 +595,107 @@ const NetStatistics: React.FC = () => {
                 {mappedCheckIns.length > 0 && (
                   <Typography variant="caption" color="text.secondary">
                     ({mappedCheckIns.length} plotted)
+                    {dualMapData && ' — split view: cluster detail (left) and full overview (right)'}
                   </Typography>
                 )}
                 {mapLoading && <CircularProgress size={14} sx={{ ml: 'auto' }} />}
               </Box>
               {mappedCheckIns.length > 0 && (
-                <Box sx={{ height: 350, width: '100%', borderRadius: 1, overflow: 'hidden' }}>
-                  <MapContainer
-                    center={[39.8283, -98.5795]}
-                    zoom={4}
-                    style={{ height: '100%', width: '100%' }}
-                    scrollWheelZoom={false}
-                  >
-                    <TileLayer
-                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    />
-                    <FitBoundsOnce
-                      positions={mappedCheckIns.map(m => [m.parsedLocation.lat, m.parsedLocation.lon] as [number, number])}
-                    />
-                    {mappedCheckIns.map((mapped) => (
-                      <Marker
-                        key={mapped.checkIn.id}
-                        position={[mapped.parsedLocation.lat, mapped.parsedLocation.lon]}
-                        icon={statsMarkerIcon}
-                      >
-                        <Popup>
-                          <strong>{mapped.checkIn.callsign}</strong>
-                          {mapped.checkIn.name && <><br />{mapped.checkIn.name}</>}
-                          {mapped.checkIn.location && <><br /><span style={{ color: '#666' }}>{mapped.checkIn.location}</span></>}
-                        </Popup>
-                      </Marker>
-                    ))}
-                  </MapContainer>
-                </Box>
+                dualMapData ? (
+                  // ---- DUAL MAP: cluster detail + full overview side-by-side ----
+                  <Grid container spacing={2}>
+                    {/* Left: cluster zoom */}
+                    <Grid item xs={12} md={6}>
+                      <Paper variant="outlined" sx={{ overflow: 'hidden' }}>
+                        <Box sx={{ p: 1, borderBottom: 1, borderColor: 'divider' }}>
+                          <Typography variant="caption" fontWeight="medium">
+                            📍 Cluster Detail ({dualMapData.clusterPositions.length} stations)
+                          </Typography>
+                        </Box>
+                        <Box sx={{ height: 320, width: '100%' }}>
+                          <MapContainer center={[39.8283, -98.5795]} zoom={4} style={{ height: '100%', width: '100%' }} scrollWheelZoom={false}>
+                            <TileLayer
+                              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                            />
+                            <FitBoundsOnce positions={dualMapData.clusterPositions} />
+                            {mappedCheckIns.map((mapped) => (
+                              <Marker
+                                key={`cluster-${mapped.checkIn.id}`}
+                                position={[mapped.parsedLocation.lat, mapped.parsedLocation.lon]}
+                                icon={statsMarkerIcon}
+                              >
+                                <Popup>
+                                  <strong>{mapped.checkIn.callsign}</strong>
+                                  {mapped.checkIn.name && <><br />{mapped.checkIn.name}</>}
+                                  {mapped.checkIn.location && <><br /><span style={{ color: '#666' }}>{mapped.checkIn.location}</span></>}
+                                </Popup>
+                              </Marker>
+                            ))}
+                          </MapContainer>
+                        </Box>
+                      </Paper>
+                    </Grid>
+                    {/* Right: full overview */}
+                    <Grid item xs={12} md={6}>
+                      <Paper variant="outlined" sx={{ overflow: 'hidden' }}>
+                        <Box sx={{ p: 1, borderBottom: 1, borderColor: 'divider' }}>
+                          <Typography variant="caption" fontWeight="medium">
+                            🌐 Full Overview ({dualMapData.allPositions.length} stations)
+                          </Typography>
+                        </Box>
+                        <Box sx={{ height: 320, width: '100%' }}>
+                          <MapContainer center={[39.8283, -98.5795]} zoom={4} style={{ height: '100%', width: '100%' }} scrollWheelZoom={false}>
+                            <TileLayer
+                              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                            />
+                            <FitBoundsOnce positions={dualMapData.allPositions} />
+                            {mappedCheckIns.map((mapped) => (
+                              <Marker
+                                key={`overview-${mapped.checkIn.id}`}
+                                position={[mapped.parsedLocation.lat, mapped.parsedLocation.lon]}
+                                icon={statsMarkerIcon}
+                              >
+                                <Popup>
+                                  <strong>{mapped.checkIn.callsign}</strong>
+                                  {mapped.checkIn.name && <><br />{mapped.checkIn.name}</>}
+                                  {mapped.checkIn.location && <><br /><span style={{ color: '#666' }}>{mapped.checkIn.location}</span></>}
+                                </Popup>
+                              </Marker>
+                            ))}
+                          </MapContainer>
+                        </Box>
+                      </Paper>
+                    </Grid>
+                  </Grid>
+                ) : (
+                  // ---- SINGLE MAP: all stations fit in one view ----
+                  <Box sx={{ height: 350, width: '100%', borderRadius: 1, overflow: 'hidden' }}>
+                    <MapContainer center={[39.8283, -98.5795]} zoom={4} style={{ height: '100%', width: '100%' }} scrollWheelZoom={false}>
+                      <TileLayer
+                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                      />
+                      <FitBoundsOnce
+                        positions={mappedCheckIns.map(m => [m.parsedLocation.lat, m.parsedLocation.lon] as [number, number])}
+                      />
+                      {mappedCheckIns.map((mapped) => (
+                        <Marker
+                          key={mapped.checkIn.id}
+                          position={[mapped.parsedLocation.lat, mapped.parsedLocation.lon]}
+                          icon={statsMarkerIcon}
+                        >
+                          <Popup>
+                            <strong>{mapped.checkIn.callsign}</strong>
+                            {mapped.checkIn.name && <><br />{mapped.checkIn.name}</>}
+                            {mapped.checkIn.location && <><br /><span style={{ color: '#666' }}>{mapped.checkIn.location}</span></>}
+                          </Popup>
+                        </Marker>
+                      ))}
+                    </MapContainer>
+                  </Box>
+                )
               )}
             </Paper>
           </Grid>
