@@ -169,6 +169,14 @@ const NetStatistics: React.FC = () => {
   const { netId } = useParams<{ netId: string }>();
   const navigate = useNavigate();
   const theme = useTheme();
+  const isDarkMode = theme.palette.mode === 'dark';
+  // Use CartoDB Dark Matter tiles in dark mode, OSM in light mode
+  const tileUrl = isDarkMode
+    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+    : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+  const tileAttribution = isDarkMode
+    ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+    : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -616,8 +624,8 @@ const NetStatistics: React.FC = () => {
                         <Box sx={{ height: 320, width: '100%' }}>
                           <MapContainer center={[39.8283, -98.5795]} zoom={4} style={{ height: '100%', width: '100%' }} scrollWheelZoom={false}>
                             <TileLayer
-                              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                              attribution={tileAttribution}
+                              url={tileUrl}
                             />
                             <FitBoundsOnce positions={dualMapData.clusterPositions} />
                             {mappedCheckIns.map((mapped) => (
@@ -648,8 +656,8 @@ const NetStatistics: React.FC = () => {
                         <Box sx={{ height: 320, width: '100%' }}>
                           <MapContainer center={[39.8283, -98.5795]} zoom={4} style={{ height: '100%', width: '100%' }} scrollWheelZoom={false}>
                             <TileLayer
-                              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                              attribution={tileAttribution}
+                              url={tileUrl}
                             />
                             <FitBoundsOnce positions={dualMapData.allPositions} />
                             {mappedCheckIns.map((mapped) => (
@@ -675,8 +683,8 @@ const NetStatistics: React.FC = () => {
                   <Box sx={{ height: 350, width: '100%', borderRadius: 1, overflow: 'hidden' }}>
                     <MapContainer center={[39.8283, -98.5795]} zoom={4} style={{ height: '100%', width: '100%' }} scrollWheelZoom={false}>
                       <TileLayer
-                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                        attribution={tileAttribution}
+                        url={tileUrl}
                       />
                       <FitBoundsOnce
                         positions={mappedCheckIns.map(m => [m.parsedLocation.lat, m.parsedLocation.lon] as [number, number])}

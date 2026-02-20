@@ -220,9 +220,15 @@ const NetReport: React.FC = () => {
   const { netId } = useParams<{ netId: string }>();
   const navigate = useNavigate();
   const theme = useTheme();
+  const isDarkMode = theme.palette.mode === 'dark';
+  // Use CartoDB Dark Matter tiles in dark mode, OSM in light mode
+  const tileUrl = isDarkMode
+    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+    : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+  const tileAttribution = isDarkMode
+    ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+    : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
   const { user } = useAuth();
-
-  // State for all net data
   const [net, setNet] = useState<Net | null>(null);
   const [stats, setStats] = useState<NetStats | null>(null);
   const [checkIns, setCheckIns] = useState<CheckIn[]>([]);
@@ -800,8 +806,8 @@ const NetReport: React.FC = () => {
                         scrollWheelZoom={false}
                       >
                         <TileLayer
-                          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                          attribution={tileAttribution}
+                          url={tileUrl}
                         />
                         <FitBounds positions={dualMapData.clusterPositions} />
                         {mappedCheckIns.map((mapped) => (
@@ -841,8 +847,8 @@ const NetReport: React.FC = () => {
                         scrollWheelZoom={false}
                       >
                         <TileLayer
-                          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                          attribution={tileAttribution}
+                          url={tileUrl}
                         />
                         <FitBounds positions={dualMapData.allPositions} />
                         {mappedCheckIns.map((mapped) => (
@@ -895,8 +901,8 @@ const NetReport: React.FC = () => {
                     scrollWheelZoom={false}
                   >
                     <TileLayer
-                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                      attribution={tileAttribution}
+                      url={tileUrl}
                     />
                     <FitBounds positions={mappedCheckIns.map(m => [m.parsedLocation.lat, m.parsedLocation.lon] as [number, number])} />
                     {mappedCheckIns.map((mapped) => (
