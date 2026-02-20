@@ -4,6 +4,17 @@
 
 ECTLogger is a real-time radio net logging application for Emergency Communications Teams (ECT) and SKYWARN spotter nets. Full-stack app: **Python 3.13+ FastAPI async backend** + **React TypeScript frontend**. Target deployment: Debian Trixie.
 
+## Planning and Collaboration Rules
+
+- Treat every user question as requiring a direct answer — never treat questions as rhetorical.
+- **Answer questions before making code changes.**
+- Before implementing a feature or significant change, present:
+  - A clear plan of action
+  - Any open questions that affect implementation
+  - Risks, concerns, or tradeoffs
+- For large changes, get alignment on the plan before writing code.
+- Prefer cohesive refactors over layered quick fixes.
+
 ## Architecture
 
 ### Backend (`backend/app/`)
@@ -99,6 +110,20 @@ Example for repeated UI components:
 {/* This table displays on small screens (xs) only */}
 <Table>...</Table>
 ```
+
+## Engineering Principles
+
+- **DRY** — Don't Repeat Yourself. Extract shared logic rather than duplicating it.
+- **SOLID** — Follow single-responsibility, open/closed, and dependency-inversion principles.
+- **KISS** — Keep solutions simple, explicit, and maintainable. Favor clarity over cleverness.
+- Favor clear architecture and extensibility over short-term shortcuts.
+- Preserve architectural consistency — new code should match the patterns already established in the codebase.
+
+## Root-Cause Policy
+
+- Never patch symptoms. Always research and identify the root cause before implementing a fix.
+- Resolve root causes thoroughly, even when the correct fix is more invasive than a quick workaround.
+- Maintain a foundation-first mindset — a stable codebase matters more than shipping fast.
 
 ## Environment Setup
 
@@ -223,3 +248,22 @@ ssh bradb@10.6.26.3 "cd /home/bradb/ectlogger && python3 backend/migrations/006_
 **Note**: `migrate.sh` is for URL configuration, NOT database migrations. Don't use it for schema changes.
 
 Fresh installations don't need migrations - they get the current schema from `models.py`.
+
+## Always/Never Memory Protocol
+
+This file (`copilot-instructions.md`) is the agent's persistent memory for this project.
+
+- If the user says to **always** or **never** do something, treat it as an instruction to update this file with that rule.
+- If an instruction is not written here, assume it may be forgotten in future sessions.
+- Capture always/never rules as clear, testable directives.
+
+## Definition of Done
+
+A change is complete when:
+
+- It solves the validated root cause (not just the symptom).
+- The implementation follows DRY, SOLID, and KISS principles.
+- User-facing behavior is clear and appropriate for the audience (net operators, NCS, ECT staff).
+- Related documentation is updated (`README.md`, `USER-GUIDE.md`, `CHANGELOG.md` as applicable).
+- If user-impacting: `ChangelogNotification.tsx` version is bumped and an entry is added.
+- Changes are committed and pushed to GitHub before being deployed to any server.

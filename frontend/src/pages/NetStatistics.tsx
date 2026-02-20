@@ -401,6 +401,13 @@ const NetStatistics: React.FC = () => {
             {exporting ? 'Exporting...' : 'PDF'}
           </Button>
         </Tooltip>
+        <Button
+          variant="outlined"
+          startIcon={<Radio />}
+          onClick={() => navigate(`/nets/${stats.net_id}`)}
+        >
+          View Net
+        </Button>
         {/* Only shown if this net belongs to a recurring template */}
         {stats.template_id && (
           <Button
@@ -411,13 +418,6 @@ const NetStatistics: React.FC = () => {
             All-Time Stats
           </Button>
         )}
-        <Button
-          variant="outlined"
-          startIcon={<Radio />}
-          onClick={() => navigate(`/nets/${stats.net_id}`)}
-        >
-          View Net
-        </Button>
       </Box>
 
       {/* Content wrapper for PDF export */}
