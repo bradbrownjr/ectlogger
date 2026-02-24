@@ -44,7 +44,7 @@ const pulseAnimation = keyframes`
 // The version number triggers the unread notification for users.
 // Mark entries with `userImpact: true` to highlight them in the UI.
 
-const CHANGELOG_VERSION = '2026.02.24';
+const CHANGELOG_VERSION = '2026.02.24b';
 
 interface ChangelogEntry {
   version: string;
@@ -60,6 +60,20 @@ interface ChangelogEntry {
 }
 
 const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '2026.02.24b',
+    date: '2026-02-24',
+    sections: [
+      {
+        title: 'Improvements',
+        type: 'improvement',
+        items: [
+          { text: 'Browser autocomplete disabled on the Name field in check-in forms — prevents browsers from overwriting the platform\'s own callsign-based name lookup with saved personal data.', userImpact: true },
+          { text: 'What\'s New dialog now respects your UTC/local time display preference when showing release dates, and same-day releases are merged into a single section instead of showing duplicate date headers.', userImpact: false },
+        ],
+      },
+    ],
+  },
   {
     version: '2026.02.24',
     date: '2026-02-24',
