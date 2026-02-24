@@ -44,7 +44,7 @@ const pulseAnimation = keyframes`
 // The version number triggers the unread notification for users.
 // Mark entries with `userImpact: true` to highlight them in the UI.
 
-const CHANGELOG_VERSION = '2026.02.23b';
+const CHANGELOG_VERSION = '2026.02.23c';
 
 interface ChangelogEntry {
   version: string;
@@ -60,6 +60,20 @@ interface ChangelogEntry {
 }
 
 const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '2026.02.23c',
+    date: '2026-02-23',
+    sections: [
+      {
+        title: 'Bug Fixes',
+        type: 'bugfix',
+        items: [
+          { text: 'Check-in location map now plots all stations, including those that checked out during the net — checked-out stations still participated and are shown.', userImpact: true },
+          { text: 'Location parser now recognizes full state names (e.g., "Skowhegan Maine") in addition to abbreviations, so more check-in locations are mapped correctly.', userImpact: true },
+        ],
+      },
+    ],
+  },
   {
     version: '2026.02.23b',
     date: '2026-02-23',
