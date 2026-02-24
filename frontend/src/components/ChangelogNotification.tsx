@@ -44,7 +44,7 @@ const pulseAnimation = keyframes`
 // The version number triggers the unread notification for users.
 // Mark entries with `userImpact: true` to highlight them in the UI.
 
-const CHANGELOG_VERSION = '2026.02.24b';
+const CHANGELOG_VERSION = '2026.02.23b';
 
 interface ChangelogEntry {
   version: string;
@@ -61,22 +61,22 @@ interface ChangelogEntry {
 
 const CHANGELOG: ChangelogEntry[] = [
   {
-    version: '2026.02.24b',
-    date: '2026-02-24',
+    version: '2026.02.23b',
+    date: '2026-02-23',
     sections: [
       {
         title: 'Improvements',
         type: 'improvement',
         items: [
           { text: 'Browser autocomplete disabled on the Name field in check-in forms — prevents browsers from overwriting the platform\'s own callsign-based name lookup with saved personal data.', userImpact: true },
-          { text: 'What\'s New dialog now respects your UTC/local time display preference when showing release dates, and same-day releases are merged into a single section instead of showing duplicate date headers.', userImpact: false },
+          { text: 'What\'s New dialog now shows the correct local date for changelog entries regardless of timezone. Same-day releases are merged into a single section.', userImpact: false },
         ],
       },
     ],
   },
   {
-    version: '2026.02.24',
-    date: '2026-02-24',
+    version: '2026.02.23',
+    date: '2026-02-23',
     sections: [
       {
         title: 'Bug Fixes',
@@ -192,13 +192,12 @@ const ChangelogNotification: React.FC = () => {
 
   // Format an ISO date string ("YYYY-MM-DD") respecting the user's UTC preference.
   // Parsed at noon UTC to avoid date-boundary shifts in any timezone.
+  // Format a changelog ISO date ("YYYY-MM-DD") as a readable label.
+  // Dates are stored as the author's local calendar date, not a UTC timestamp.
+  // Using the multi-arg Date constructor avoids any UTC-offset day shift.
   const formatChangelogDate = (isoDate: string): string => {
-    const date = new Date(`${isoDate}T12:00:00Z`);
-    if (user?.prefer_utc) {
-      return date.toLocaleDateString('en-US', {
-        month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC',
-      });
-    }
+    const [year, month, day] = isoDate.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
     return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
   };
 

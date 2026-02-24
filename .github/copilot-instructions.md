@@ -149,7 +149,7 @@ When adding or changing features, **always update relevant documentation**:
 When making **user-impacting changes** (new features, workflow changes, UI changes), update the in-app changelog:
 
 1. Edit `frontend/src/components/ChangelogNotification.tsx`
-2. Increment `CHANGELOG_VERSION` (format: `YYYY.MM.DD` using the UTC date at time of change, or `YYYY.MM.DDx` for multiple updates on same day, e.g., `2026.01.25b`). The in-app dialog displays dates converted to the user's local timezone, so UTC-based version dates are correct.
+2. Increment `CHANGELOG_VERSION` (format: `YYYY.MM.DD` using the **author's local calendar date** at time of change, or `YYYY.MM.DDx` for multiple updates on same day, e.g., `2026.01.25b`). Dates are stored as fixed calendar labels and displayed as-written — no UTC conversion is applied.
 3. Add entry to the `CHANGELOG` array with:
    - `version`: Same as CHANGELOG_VERSION
    - `date`: Human-readable date
