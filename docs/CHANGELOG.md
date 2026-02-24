@@ -4,7 +4,7 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
-# February 23, 2026
+# February 24, 2026
 
 ## Bug Fixes
 
