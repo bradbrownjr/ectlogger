@@ -21,6 +21,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import NewReleasesIcon from '@mui/icons-material/NewReleases';
 import BugReportIcon from '@mui/icons-material/BugReport';
 import BuildIcon from '@mui/icons-material/Build';
+import { useAuth } from '../contexts/AuthContext';
 
 // Pulse animation for the changelog badge
 const pulseAnimation = keyframes`
@@ -47,7 +48,7 @@ const CHANGELOG_VERSION = '2026.02.24';
 
 interface ChangelogEntry {
   version: string;
-  date: string;
+  date: string; // ISO date string: "YYYY-MM-DD"
   sections: {
     title: string;
     type: 'feature' | 'improvement' | 'bugfix';
@@ -61,7 +62,7 @@ interface ChangelogEntry {
 const CHANGELOG: ChangelogEntry[] = [
   {
     version: '2026.02.24',
-    date: 'February 24, 2026',
+    date: '2026-02-24',
     sections: [
       {
         title: 'Bug Fixes',
@@ -74,7 +75,7 @@ const CHANGELOG: ChangelogEntry[] = [
   },
   {
     version: '2026.02.19',
-    date: 'February 19, 2026',
+    date: '2026-02-19',
     sections: [
       {
         title: 'New Features',
@@ -98,7 +99,7 @@ const CHANGELOG: ChangelogEntry[] = [
   },
   {
     version: '2026.01.25f',
-    date: 'January 25, 2026',
+    date: '2026-01-25',
     sections: [
       {
         title: 'New Features',
@@ -130,7 +131,7 @@ const CHANGELOG: ChangelogEntry[] = [
   },
   {
     version: '2025.12.19',
-    date: 'December 19, 2025',
+    date: '2025-12-19',
     sections: [
       {
         title: 'New Features',
@@ -152,7 +153,7 @@ const CHANGELOG: ChangelogEntry[] = [
   },
   {
     version: '2025.12.18',
-    date: 'December 18, 2025',
+    date: '2025-12-18',
     sections: [
       {
         title: 'New Features',
@@ -171,8 +172,34 @@ const CHANGELOG: ChangelogEntry[] = [
 
 const ChangelogNotification: React.FC = () => {
   const theme = useTheme();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [hasUnread, setHasUnread] = useState(false);
+
+  // Format an ISO date string ("YYYY-MM-DD") respecting the user's UTC preference.
+  // Parsed at noon UTC to avoid date-boundary shifts in any timezone.
+  const formatChangelogDate = (isoDate: string): string => {
+    const date = new Date(`${isoDate}T12:00:00Z`);
+    if (user?.prefer_utc) {
+      return date.toLocaleDateString('en-US', {
+        month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC',
+      });
+    }
+    return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  };
+
+  // Group same-date entries so they appear as a single block in the dialog.
+  // CHANGELOG is ordered newest-first; we preserve that order within each group.
+  const groupedEntries: { date: string; versions: string[]; sections: ChangelogEntry['sections'] }[] = [];
+  for (const entry of CHANGELOG) {
+    const last = groupedEntries[groupedEntries.length - 1];
+    if (last && last.date === entry.date) {
+      last.versions.push(entry.version);
+      last.sections = [...last.sections, ...entry.sections];
+    } else {
+      groupedEntries.push({ date: entry.date, versions: [entry.version], sections: [...entry.sections] });
+    }
+  }
 
   useEffect(() => {
     const lastReadVersion = localStorage.getItem('changelog_last_read_version');
@@ -269,20 +296,25 @@ const ChangelogNotification: React.FC = () => {
           </IconButton>
         </DialogTitle>
         <DialogContent dividers>
-          {CHANGELOG.map((entry, entryIndex) => (
-            <Box key={entry.version} sx={{ mb: entryIndex < CHANGELOG.length - 1 ? 3 : 0 }}>
-              {/* Version header */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+          {/* Render one block per calendar day; same-day versions are merged into one heading */}
+          {groupedEntries.map((group, groupIndex) => (
+            <Box key={group.date} sx={{ mb: groupIndex < groupedEntries.length - 1 ? 3 : 0 }}>
+              {/* Date + version chip(s) header */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5, flexWrap: 'wrap' }}>
                 <Typography variant="subtitle1" fontWeight="bold">
-                  {entry.date}
+                  {formatChangelogDate(group.date)}
                 </Typography>
-                <Chip
-                  label={`v${entry.version}`}
-                  size="small"
-                  variant="outlined"
-                  sx={{ height: 20, fontSize: '0.7rem' }}
-                />
-                {entry.version === CHANGELOG_VERSION && hasUnread && (
+                {/* Show a chip for each version in this day-group */}
+                {group.versions.map((v) => (
+                  <Chip
+                    key={v}
+                    label={`v${v}`}
+                    size="small"
+                    variant="outlined"
+                    sx={{ height: 20, fontSize: '0.7rem' }}
+                  />
+                ))}
+                {group.versions.includes(CHANGELOG_VERSION) && hasUnread && (
                   <Chip
                     label="NEW"
                     size="small"
@@ -292,8 +324,8 @@ const ChangelogNotification: React.FC = () => {
                 )}
               </Box>
 
-              {/* Sections */}
-              {entry.sections.map((section, sectionIndex) => (
+              {/* All sections for this date group */}
+              {group.sections.map((section, sectionIndex) => (
                 <Box key={sectionIndex} sx={{ mb: 2 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
                     {getTypeIcon(section.type)}
@@ -319,9 +351,7 @@ const ChangelogNotification: React.FC = () => {
                       >
                         <Typography
                           variant="body2"
-                          sx={{
-                            ...(item.userImpact && { fontWeight: 500 }),
-                          }}
+                          sx={{ ...(item.userImpact && { fontWeight: 500 }) }}
                         >
                           {item.text}
                           {item.userImpact && (
@@ -340,7 +370,7 @@ const ChangelogNotification: React.FC = () => {
                 </Box>
               ))}
 
-              {entryIndex < CHANGELOG.length - 1 && <Divider sx={{ mt: 2 }} />}
+              {groupIndex < groupedEntries.length - 1 && <Divider sx={{ mt: 2 }} />}
             </Box>
           ))}
 
