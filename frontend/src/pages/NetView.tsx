@@ -2944,6 +2944,7 @@ const NetView: React.FC = () => {
                             }
                           }}
                           placeholder="Name"
+                          autoComplete="off"
                           inputProps={{ style: { fontSize: '0.875rem' } }}
                           fullWidth
                           required={net.field_config.name.required}
@@ -3231,6 +3232,7 @@ const NetView: React.FC = () => {
                       value={checkInForm.name}
                       onChange={(e) => setCheckInForm({ ...checkInForm, name: e.target.value })}
                       placeholder="Name"
+                      autoComplete="off"
                       fullWidth
                       required={net.field_config.name.required}
                     />
@@ -3619,7 +3621,7 @@ const NetView: React.FC = () => {
                       required
                     />
                     {net?.field_config?.name?.enabled && (
-                      <TextField size="small" value={checkInForm.name} onChange={(e) => setCheckInForm({ ...checkInForm, name: e.target.value })} placeholder="Name" sx={{ width: 120 }} />
+                      <TextField size="small" value={checkInForm.name} onChange={(e) => setCheckInForm({ ...checkInForm, name: e.target.value })} placeholder="Name" autoComplete="off" sx={{ width: 120 }} />
                     )}
                     {net?.field_config?.location?.enabled && (
                       <TextField size="small" value={checkInForm.location} onChange={(e) => setCheckInForm({ ...checkInForm, location: e.target.value })} placeholder="Location" sx={{ width: 150 }} />
