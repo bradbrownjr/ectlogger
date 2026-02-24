@@ -4,6 +4,14 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# February 24, 2026
+
+## Bug Fixes
+
+* **Logger role now works correctly** — Loggers can now change check-in statuses and use the check-in entry form at the bottom of the net page. Previously, a case-sensitivity mismatch in the frontend permission check (`'Logger'` vs the stored value `'LOGGER'`) caused all logger-gated UI controls to be hidden, requiring net staff to promote loggers to NCS as a workaround.
+
+---
+
 # February 20, 2026
 
 ## New Features

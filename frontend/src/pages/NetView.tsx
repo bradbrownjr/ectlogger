@@ -1377,7 +1377,8 @@ const NetView: React.FC = () => {
   // Check if user has NCS or Logger role
   const userNetRole = netRoles.find((role: any) => role.user_id === user?.id);
   const isNCS = userNetRole && userNetRole.role === 'NCS';
-  const isNCSOrLogger = userNetRole && (userNetRole.role === 'NCS' || userNetRole.role === 'Logger');
+  // Role is stored as uppercase 'NCS' or 'LOGGER' in the database
+  const isNCSOrLogger = userNetRole && (userNetRole.role === 'NCS' || userNetRole.role === 'LOGGER');
   
   // NCS users can manage the net (edit settings, close, etc.) - they're co-owners
   const canManage = isOwner || isAdmin || isNCS;
@@ -4099,7 +4100,7 @@ const NetView: React.FC = () => {
         checkIns={filteredCheckIns}
         netName={net?.name || 'Net'}
         ncsUserIds={netRoles.filter((r: any) => r.role === 'NCS').map((r: any) => r.user_id)}
-        loggerUserIds={netRoles.filter((r: any) => r.role === 'Logger').map((r: any) => r.user_id)}
+        loggerUserIds={netRoles.filter((r: any) => r.role === 'LOGGER').map((r: any) => r.user_id)}
         relayUserIds={netRoles.filter((r: any) => r.role === 'Relay').map((r: any) => r.user_id)}
       />
 

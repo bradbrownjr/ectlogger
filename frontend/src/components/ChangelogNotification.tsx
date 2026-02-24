@@ -43,7 +43,7 @@ const pulseAnimation = keyframes`
 // The version number triggers the unread notification for users.
 // Mark entries with `userImpact: true` to highlight them in the UI.
 
-const CHANGELOG_VERSION = '2026.02.19';
+const CHANGELOG_VERSION = '2026.02.24';
 
 interface ChangelogEntry {
   version: string;
@@ -59,6 +59,19 @@ interface ChangelogEntry {
 }
 
 const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '2026.02.24',
+    date: 'February 24, 2026',
+    sections: [
+      {
+        title: 'Bug Fixes',
+        type: 'bugfix',
+        items: [
+          { text: 'Logger role now works correctly — loggers can change check-in statuses and use the check-in entry form. Previously, only NCS and above could perform these actions due to a role-name mismatch.', userImpact: true },
+        ],
+      },
+    ],
+  },
   {
     version: '2026.02.19',
     date: 'February 19, 2026',
