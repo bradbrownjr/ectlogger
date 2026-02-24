@@ -240,8 +240,9 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
 
   // Create a stable key for checkIns to prevent unnecessary re-runs
   // Only re-process when the actual data changes, not on every render
+  // Include checked-out stations - they still participated in the net
   const checkInsKey = checkIns
-    .filter(c => c.location && c.status !== 'checked_out')
+    .filter(c => c.location)
     .map(c => `${c.id}:${c.location}:${c.status}`)
     .join('|');
 
@@ -262,8 +263,9 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
       const addressesToGeocode: { checkIn: CheckIn; parsed: ParsedLocation }[] = [];
 
       // First pass: parse all locations
+      // Checked-out stations are included - they still participated in the net
       for (const checkIn of checkIns) {
-        if (!checkIn.location || checkIn.status === 'checked_out') continue;
+        if (!checkIn.location) continue;
 
         const parsed = parseLocation(checkIn.location);
         if (parsed) {
