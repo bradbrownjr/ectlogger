@@ -630,9 +630,9 @@ _REGION_CENTROIDS: dict[str, tuple[float, float]] = {
 
 
 def _parse_maidenhead_to_latlon(grid: str) -> tuple[float, float] | None:
-    """Convert a Maidenhead grid square to its center lat/lon.
-    Only uses the first 4 characters (field + square) for privacy —
-    this gives ~100km resolution, preventing individual location identification.
+    """Convert a Maidenhead grid square string to its approximate center lat/lon.
+    The caller is expected to then resolve this to a state/province centroid via
+    _nearest_region() so individual positions are never exposed on the map.
     """
     match = _MAIDENHEAD_RE.match(grid)
     if not match:
@@ -661,6 +661,26 @@ def _extract_state_abbrev(location: str) -> str | None:
     return None
 
 
+# Maximum squared-degree distance (~1500 km) before we give up resolving a grid to a region.
+# Keeps overseas grid squares (e.g. Europe) from being pinned to the nearest US state.
+_MAX_NEAREST_DIST_SQ = 15.0 ** 2  # 15° ≈ 1500 km at mid-latitudes
+
+
+def _nearest_region(lat: float, lon: float) -> str | None:
+    """Return the abbreviation of the nearest state/province centroid to (lat, lon).
+    Returns None if all centroids are farther than _MAX_NEAREST_DIST_SQ.
+    Uses squared Euclidean distance in degrees — fast and sufficient for this purpose.
+    """
+    best_key = None
+    best_dist = float('inf')
+    for key, (clat, clon) in _REGION_CENTROIDS.items():
+        dist = (lat - clat) ** 2 + (lon - clon) ** 2
+        if dist < best_dist:
+            best_dist = dist
+            best_key = key
+    return best_key if best_dist <= _MAX_NEAREST_DIST_SQ else None
+
+
 @router.get("/checkin-map", response_model=CheckInMapResponse)
 async def get_checkin_map(
     db: AsyncSession = Depends(get_db),
@@ -668,8 +688,8 @@ async def get_checkin_map(
 ):
     """
     Get geographic distribution of check-ins for the statistics map.
-    Locations are aggregated to 4-character Maidenhead grid squares (~100km)
-    or state/province centroids to protect individual privacy.
+    All locations — whether grid squares or text — are resolved to the nearest
+    US state or Canadian province centroid, so each region produces at most one pin.
     No authentication required (public statistics).
     """
     # Query all distinct locations with their check-in counts
@@ -693,13 +713,14 @@ async def get_checkin_map(
         lat = None
         lon = None
 
-        # Try Maidenhead grid square first
+        # Try Maidenhead grid square first — resolve to nearest state/province
         coords = _parse_maidenhead_to_latlon(location)
         if coords:
-            # Truncate to 4-char grid for aggregation key
-            grid_4char = location[:4].upper()
-            region_key = grid_4char
-            lat, lon = coords
+            grid_lat, grid_lon = coords
+            region = _nearest_region(grid_lat, grid_lon)
+            if region:
+                region_key = region
+                lat, lon = _REGION_CENTROIDS[region]
         else:
             # Try to extract state/province abbreviation from text
             state = _extract_state_abbrev(location)
