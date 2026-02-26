@@ -829,6 +829,24 @@ class TimeSeriesDataPoint(BaseModel):
     date: str  # ISO date string for reference
 
 
+# ========== Check-In Map Schemas ==========
+
+class CheckInMapDataPoint(BaseModel):
+    """A geographic region with aggregated check-in count for the statistics map.
+    Locations are coarsened to 4-char Maidenhead grid squares (~100km) or
+    state/province centroids to protect individual privacy."""
+    region: str  # 4-char grid square (e.g., "FN43") or state/province code
+    latitude: float
+    longitude: float
+    count: int
+
+
+class CheckInMapResponse(BaseModel):
+    """Response for the check-in geographic distribution map"""
+    regions: List[CheckInMapDataPoint]
+    total_locations: int  # Number of distinct raw locations parsed
+
+
 class TopOperator(BaseModel):
     """Top operator by check-in count, with tie-breaking by earliest check-in"""
     callsign: str

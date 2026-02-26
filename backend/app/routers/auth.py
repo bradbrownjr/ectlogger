@@ -5,7 +5,7 @@ from sqlalchemy import select
 from authlib.integrations.starlette_client import OAuth
 from app.database import get_db
 from app.dependencies import get_current_user
-from app.models import User, UserRole
+from app.models import User, UserRole, Contact
 from app.schemas import Token, UserResponse, MagicLinkRequest, MagicLinkVerify
 from app.auth import create_access_token, create_magic_link_token, verify_magic_link_token
 from app.email_service import EmailService
@@ -92,19 +92,36 @@ async def get_or_create_user(db: AsyncSession, email: str, name: str, provider: 
     result = await db.execute(select(User))
     user_count = len(result.scalars().all())
     
+    # Check if a contact with this email exists — auto-populate name, callsign, location
+    contact_result = await db.execute(
+        select(Contact).where(Contact.email == email)
+    )
+    contact = contact_result.scalar_one_or_none()
+    
     # Create new user with unsubscribe token
     user = User(
         email=email,
-        name=name,
+        name=contact.name if contact and contact.name else name,
+        callsign=contact.callsign if contact else None,
+        location=contact.location if contact else None,
+        skywarn_number=contact.skywarn_number if contact else None,
         oauth_provider=provider,
         oauth_id=provider_id,
         role=UserRole.ADMIN if user_count == 0 else UserRole.USER,
         unsubscribe_token=generate_unsubscribe_token()
     )
     db.add(user)
+    await db.flush()
+    
+    # Link the contact to the new user
+    if contact and not contact.user_id:
+        contact.user_id = user.id
+    
     await db.commit()
     await db.refresh(user)
     
+    if contact:
+        logger.info("API", f"New user auto-populated from contact: {email} (callsign={contact.callsign})")
     if user.role == UserRole.ADMIN:
         logger.info("API", f"First user created as admin: {email}")
     

@@ -43,6 +43,7 @@ import {
 } from 'recharts';
 import { statisticsApi } from '../services/api';
 import { exportElementToPdf } from '../utils/pdfExport';
+import GlobalCheckInMap from '../components/GlobalCheckInMap';
 
 interface TimeSeriesDataPoint {
   label: string;
@@ -503,6 +504,10 @@ const Statistics: React.FC = () => {
           </Box>
         )}
       </Paper>
+
+      {/* ========== Check-In Geographic Map ========== */}
+      {/* Shows approximate regions where check-ins have originated */}
+      <GlobalCheckInMap />
       </Box>
     </Container>
   );

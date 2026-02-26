@@ -44,7 +44,7 @@ const pulseAnimation = keyframes`
 // The version number triggers the unread notification for users.
 // Mark entries with `userImpact: true` to highlight them in the UI.
 
-const CHANGELOG_VERSION = '2026.02.26';
+const CHANGELOG_VERSION = '2026.02.26b';
 
 interface ChangelogEntry {
   version: string;
@@ -60,6 +60,19 @@ interface ChangelogEntry {
 }
 
 const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '2026.02.26b',
+    date: '2026-02-26',
+    sections: [
+      {
+        title: 'New Features',
+        type: 'feature',
+        items: [
+          { text: 'Check-In Map on the Statistics page — shows a geographic map of approximate regions where check-ins have originated (by grid square or state/province), without revealing individual locations.', userImpact: true },
+        ],
+      },
+    ],
+  },
   {
     version: '2026.02.26',
     date: '2026-02-26',

@@ -165,6 +165,7 @@ export const statisticsApi = {
   getTemplateStats: (templateId: number) => api.get(`/statistics/templates/${templateId}`),
   getUserStats: () => api.get('/statistics/users/me'),
   getUserStatsById: (userId: number) => api.get(`/statistics/users/${userId}`),
+  getCheckinMap: () => api.get('/statistics/checkin-map'),
 };
 
 // Net Role API (for NCS frequency claiming)
