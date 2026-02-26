@@ -244,14 +244,23 @@ const ChangelogNotification: React.FC = () => {
 
   // Group same-date entries so they appear as a single block in the dialog.
   // CHANGELOG is ordered newest-first; we preserve that order within each group.
+  // Sections with the same type on the same date are merged into one section.
   const groupedEntries: { date: string; versions: string[]; sections: ChangelogEntry['sections'] }[] = [];
   for (const entry of CHANGELOG) {
     const last = groupedEntries[groupedEntries.length - 1];
     if (last && last.date === entry.date) {
       last.versions.push(entry.version);
-      last.sections = [...last.sections, ...entry.sections];
+      // Merge into existing section of the same type, or append as a new section
+      for (const newSection of entry.sections) {
+        const existing = last.sections.find(s => s.type === newSection.type);
+        if (existing) {
+          existing.items = [...existing.items, ...newSection.items];
+        } else {
+          last.sections.push({ ...newSection });
+        }
+      }
     } else {
-      groupedEntries.push({ date: entry.date, versions: [entry.version], sections: [...entry.sections] });
+      groupedEntries.push({ date: entry.date, versions: [entry.version], sections: entry.sections.map(s => ({ ...s, items: [...s.items] })) });
     }
   }
 
