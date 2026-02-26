@@ -17,10 +17,25 @@ import {
   useTheme,
 } from '@mui/material';
 import MapIcon from '@mui/icons-material/Map';
-import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import icon from 'leaflet/dist/images/marker-icon.png';
+import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+import iconRetina from 'leaflet/dist/images/marker-icon-2x.png';
 import { statisticsApi } from '../services/api';
+
+// Fix default marker icons for Vite
+const DefaultIcon = L.icon({
+  iconUrl: icon,
+  iconRetinaUrl: iconRetina,
+  shadowUrl: iconShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+});
+L.Marker.prototype.options.icon = DefaultIcon;
 
 // ========== Types ==========
 
@@ -95,22 +110,10 @@ const GlobalCheckInMap: React.FC = () => {
     ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
     : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
-  // Compute marker sizes: scale radius between 6 and 30 based on count
-  const { positions, maxCount } = useMemo(() => {
-    if (!data || data.regions.length === 0) return { positions: [] as [number, number][], maxCount: 1 };
-    const max = Math.max(...data.regions.map(r => r.count));
-    const pos = data.regions.map(r => [r.latitude, r.longitude] as [number, number]);
-    return { positions: pos, maxCount: max };
+  const positions = useMemo(() => {
+    if (!data || data.regions.length === 0) return [] as [number, number][];
+    return data.regions.map(r => [r.latitude, r.longitude] as [number, number]);
   }, [data]);
-
-  const getRadius = (count: number): number => {
-    if (maxCount <= 1) return 8;
-    // Logarithmic scale works better than linear for wide count ranges
-    const minR = 6;
-    const maxR = 28;
-    const logScale = Math.log(count + 1) / Math.log(maxCount + 1);
-    return minR + logScale * (maxR - minR);
-  };
 
   // ========== Render ==========
 
@@ -187,23 +190,16 @@ const GlobalCheckInMap: React.FC = () => {
           <FitBounds positions={positions} />
 
           {data.regions.map((region) => (
-            <CircleMarker
+            <Marker
               key={region.region}
-              center={[region.latitude, region.longitude]}
-              radius={getRadius(region.count)}
-              pathOptions={{
-                fillColor: theme.palette.primary.main,
-                fillOpacity: 0.55,
-                color: theme.palette.primary.light,
-                weight: 1.5,
-              }}
+              position={[region.latitude, region.longitude]}
             >
               <Popup>
                 <strong>{region.region}</strong>
                 <br />
                 {region.count.toLocaleString()} check-in{region.count !== 1 ? 's' : ''}
               </Popup>
-            </CircleMarker>
+            </Marker>
           ))}
         </MapContainer>
       </Box>
