@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import List, Optional
 from app.database import get_db
-from app.models import User, UserRole
+from app.models import User, UserRole, Contact
 from app.schemas import UserResponse, UserUpdate, AdminUserCreate, CallsignLookupResponse
 from app.dependencies import get_current_user, get_current_user_optional, get_admin_user
 
@@ -188,14 +188,15 @@ async def lookup_by_callsign(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """Look up user info by callsign for check-in auto-fill.
+    """Look up station info by callsign for check-in auto-fill.
     
-    Returns limited info (name, location, skywarn_number) if user exists.
-    Location is only returned if user has location_awareness enabled.
+    Priority: User account > Contact record.
+    Returns limited info (name, location, skywarn_number) with source indicator.
+    Future: QRZ lookup as tertiary source (roadmap).
     """
     callsign_upper = callsign.upper()
     
-    # Look up by primary callsign, GMRS callsign, or additional callsigns
+    # Priority 1: Look up registered user by primary callsign, GMRS callsign, or additional callsigns
     result = await db.execute(
         select(User).where(
             (User.callsign == callsign_upper) | 
@@ -205,27 +206,42 @@ async def lookup_by_callsign(
     )
     user = result.scalar_one_or_none()
     
-    if not user:
-        # Return empty response instead of 404 - callsign may be valid but unregistered
-        return CallsignLookupResponse()
+    if user:
+        # Prefer live GPS location if available and recent (within 1 hour), otherwise use static default
+        from datetime import datetime, UTC, timedelta
+        location = None
+        if user.live_location and user.live_location_updated:
+            age = datetime.now(UTC) - user.live_location_updated.replace(tzinfo=UTC)
+            if age < timedelta(hours=1):
+                location = user.live_location
+        
+        # Fall back to static default location if no recent live location
+        if not location:
+            location = user.location
+        
+        return CallsignLookupResponse(
+            name=user.name,
+            location=location,
+            skywarn_number=user.skywarn_number,
+            source='user'
+        )
     
-    # Prefer live GPS location if available and recent (within 1 hour), otherwise use static default
-    from datetime import datetime, UTC, timedelta
-    location = None
-    if user.live_location and user.live_location_updated:
-        age = datetime.now(UTC) - user.live_location_updated.replace(tzinfo=UTC)
-        if age < timedelta(hours=1):
-            location = user.live_location
-    
-    # Fall back to static default location if no recent live location
-    if not location:
-        location = user.location
-    
-    return CallsignLookupResponse(
-        name=user.name,
-        location=location,
-        skywarn_number=user.skywarn_number
+    # Priority 2: Look up contact record (from check-in history)
+    contact_result = await db.execute(
+        select(Contact).where(Contact.callsign == callsign_upper)
     )
+    contact = contact_result.scalar_one_or_none()
+    
+    if contact:
+        return CallsignLookupResponse(
+            name=contact.name,
+            location=contact.location,
+            skywarn_number=contact.skywarn_number,
+            source='contact'
+        )
+    
+    # No match found — return empty response (future: QRZ lookup here)
+    return CallsignLookupResponse()
 
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)

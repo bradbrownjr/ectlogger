@@ -6,7 +6,7 @@ from typing import List
 from datetime import datetime, UTC
 import json
 from app.database import get_db
-from app.models import CheckIn, Net, NetStatus, User, StationStatus, NetRole
+from app.models import CheckIn, Net, NetStatus, User, StationStatus, NetRole, Contact
 from app.schemas import CheckInCreate, CheckInUpdate, CheckInResponse
 from app.dependencies import get_current_user
 
@@ -209,6 +209,38 @@ async def create_check_in(
         old_poll = existing_check_in.poll_response if existing_check_in else None
         if check_in_data.poll_response != old_poll:
             await post_system_message(net_id, f"{check_in_data.callsign} answered the poll: {check_in_data.poll_response}", db)
+    
+    # Auto-create or update Contact record for callsign history
+    # Only if this callsign doesn't belong to a registered user
+    if not linked_user_id:
+        try:
+            contact_result = await db.execute(
+                select(Contact).where(Contact.callsign == check_in_data.callsign)
+            )
+            contact = contact_result.scalar_one_or_none()
+            
+            if contact:
+                # Update contact with latest info (only if new values are non-empty)
+                if check_in_data.name and check_in_data.name != contact.name:
+                    contact.name = check_in_data.name
+                if check_in_data.location and check_in_data.location != contact.location:
+                    contact.location = check_in_data.location
+                if check_in_data.skywarn_number and check_in_data.skywarn_number != contact.skywarn_number:
+                    contact.skywarn_number = check_in_data.skywarn_number
+            else:
+                # Create new contact from check-in data
+                contact = Contact(
+                    callsign=check_in_data.callsign,
+                    name=check_in_data.name or None,
+                    location=check_in_data.location or None,
+                    skywarn_number=check_in_data.skywarn_number or None,
+                )
+                db.add(contact)
+            
+            await db.commit()
+        except Exception:
+            # Contact auto-creation is best-effort — don't fail the check-in
+            await db.rollback()
     
     return CheckInResponse.from_orm(check_in)
 

@@ -67,8 +67,8 @@ View your participation statistics:
 1. Open an active net
 2. Fill in the check-in form:
    - Your callsign (auto-filled if logged in)
-   - Your name (auto-filled from profile)
-   - Your location (auto-filled if location awareness is enabled)
+   - Your name (auto-filled from profile or contacts directory)
+   - Your location (auto-filled if location awareness is enabled, or from contacts directory)
    - Any additional fields the NCS has configured
 3. Click **Check In**
 
@@ -445,6 +445,7 @@ The Users tab shows all registered users with online presence indicators:
 
 ### Additional Admin Features
 
+- **Contacts** — View and manage station contacts auto-populated from check-in history. Fix names, add emails, send invites to create user accounts. Contact data auto-fills when NCS enters a callsign during check-in.
 - **Check-In Fields** — Configure default check-in form fields
 - **Frequency Library** — Manage shared frequency presets
 - **Security** — View fail2ban status and recent authentication events

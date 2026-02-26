@@ -44,7 +44,7 @@ const pulseAnimation = keyframes`
 // The version number triggers the unread notification for users.
 // Mark entries with `userImpact: true` to highlight them in the UI.
 
-const CHANGELOG_VERSION = '2026.02.23c';
+const CHANGELOG_VERSION = '2026.02.26';
 
 interface ChangelogEntry {
   version: string;
@@ -60,6 +60,20 @@ interface ChangelogEntry {
 }
 
 const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '2026.02.26',
+    date: '2026-02-26',
+    sections: [
+      {
+        title: 'New Features',
+        type: 'feature',
+        items: [
+          { text: 'Callsign auto-fill now uses contacts directory — when NCS enters a callsign, name, location, and SKYWARN number are auto-filled from the user\'s account or from prior check-in history. Fields remain editable.', userImpact: true },
+          { text: 'Admin Contacts tab — manage station contacts, fix misspelled names, add emails, and send invites to create user accounts.', userImpact: true },
+        ],
+      },
+    ],
+  },
   {
     version: '2026.02.23c',
     date: '2026-02-23',

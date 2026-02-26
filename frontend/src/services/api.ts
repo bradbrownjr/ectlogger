@@ -175,3 +175,13 @@ export const netRoleApi = {
   clearFrequency: (netId: number, roleId: number) =>
     api.delete(`/nets/${netId}/roles/${roleId}/frequency`),
 };
+
+// Contact API (station contacts from check-in history)
+export const contactApi = {
+  list: (search?: string) => api.get('/contacts', { params: search ? { search } : undefined }),
+  get: (id: number) => api.get(`/contacts/${id}`),
+  create: (data: any) => api.post('/contacts', data),
+  update: (id: number, data: any) => api.put(`/contacts/${id}`, data),
+  delete: (id: number) => api.delete(`/contacts/${id}`),
+  invite: (id: number) => api.post(`/contacts/${id}/invite`),
+};

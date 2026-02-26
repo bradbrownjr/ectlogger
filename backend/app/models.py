@@ -415,6 +415,30 @@ class NCSReminderLog(Base):
     user = relationship("User")
 
 
+class Contact(Base):
+    """Known station contacts built from check-in history.
+    
+    Auto-populated when a callsign checks in for the first time.
+    Admin can edit to fix names, add emails, and send invites.
+    When a contact creates an account, their user_id links here.
+    """
+    __tablename__ = "contacts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    callsign = Column(String(50), unique=True, index=True, nullable=False)  # Primary identifier
+    name = Column(String(255))  # Operator name (may be corrected by admin)
+    location = Column(String(255))  # Home QTH / default location
+    email = Column(String(255))  # For sending invites
+    skywarn_number = Column(String(50))
+    notes = Column(Text)  # Admin notes about this contact
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)  # Linked user account
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    # Relationships
+    user = relationship("User")
+
+
 class AppSettings(Base):
     """Global application settings - singleton table with one row"""
     __tablename__ = "app_settings"

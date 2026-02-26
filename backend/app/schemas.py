@@ -120,10 +120,61 @@ class UserResponse(UserBase):
 
 # Callsign Lookup Response (limited info for privacy)
 class CallsignLookupResponse(BaseModel):
-    """Limited user info returned when looking up by callsign - for NCS auto-fill."""
+    """Limited user info returned when looking up by callsign - for NCS auto-fill.
+    Source indicates where the data came from: 'user', 'contact', or None if unknown.
+    """
     name: Optional[str] = None
     location: Optional[str] = None  # Grid square if location_awareness enabled
     skywarn_number: Optional[str] = None
+    source: Optional[str] = None  # 'user' or 'contact' — helps NCS know data origin
+
+    class Config:
+        from_attributes = True
+
+
+# Contact Schemas (station contacts from check-in history)
+class ContactBase(BaseModel):
+    callsign: str = Field(max_length=50, min_length=2, pattern=r'^[A-Z0-9/]+$')
+    name: Optional[str] = Field(None, max_length=255)
+    location: Optional[str] = Field(None, max_length=255)
+    email: Optional[EmailStr] = None
+    skywarn_number: Optional[str] = Field(None, max_length=50)
+    notes: Optional[str] = None
+
+    @field_validator('callsign')
+    @classmethod
+    def validate_callsign(cls, v: str) -> str:
+        if not re.match(r'^[A-Z0-9/]+$', v):
+            raise ValueError('Callsign must contain only uppercase letters, numbers, and forward slashes')
+        return v
+
+
+class ContactCreate(ContactBase):
+    pass
+
+
+class ContactUpdate(BaseModel):
+    """All fields optional for partial updates."""
+    callsign: Optional[str] = Field(None, max_length=50, pattern=r'^[A-Z0-9/]+$')
+    name: Optional[str] = Field(None, max_length=255)
+    location: Optional[str] = Field(None, max_length=255)
+    email: Optional[EmailStr] = None
+    skywarn_number: Optional[str] = Field(None, max_length=50)
+    notes: Optional[str] = None
+
+    @field_validator('callsign')
+    @classmethod
+    def validate_callsign(cls, v: Optional[str]) -> Optional[str]:
+        if v and not re.match(r'^[A-Z0-9/]+$', v):
+            raise ValueError('Callsign must contain only uppercase letters, numbers, and forward slashes')
+        return v
+
+
+class ContactResponse(ContactBase):
+    id: int
+    user_id: Optional[int] = None
+    created_at: datetime
+    updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True

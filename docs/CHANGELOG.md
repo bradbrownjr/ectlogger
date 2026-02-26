@@ -4,6 +4,16 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# February 26, 2026
+
+## New Features
+
+* **Contacts & Auto-fill** — A new Contacts system auto-populates station information from check-in history. When an NCS or Logger enters a callsign, name, location, and SKYWARN number are auto-filled from the user's account (if registered) or from the contacts directory (built from prior check-ins). All auto-filled fields remain editable for each check-in.
+* **Admin Contacts Tab** — A new "Contacts" tab on the Admin page provides a rolodex-style directory of all known stations. Admins can fix misspelled names from rushed check-ins, add email addresses, send invites to create user accounts, and add admin-only notes.
+* **Contact Invites** — Admins can add an email to any contact and send an invite. This creates a user account and sends a magic link email. When the contact signs in, their check-in history and statistics are linked to their new account.
+
+---
+
 # February 23, 2026
 
 ## Bug Fixes

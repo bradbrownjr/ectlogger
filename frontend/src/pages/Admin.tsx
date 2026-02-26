@@ -62,9 +62,11 @@ import EmailIcon from '@mui/icons-material/Email';
 import RadioIcon from '@mui/icons-material/Radio';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
+import ContactsIcon from '@mui/icons-material/ContactPhone';
+import SendIcon from '@mui/icons-material/Send';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
-import { frequencyApi } from '../services/api';
+import { frequencyApi, contactApi } from '../services/api';
 import { formatDateTime, formatDate } from '../utils/dateUtils';
 
 interface User {
@@ -137,6 +139,22 @@ type SortDirection = 'asc' | 'desc';
 
 // User sorting types - 'online' sorts by presence status then by name
 type UserSortField = 'online' | 'email' | 'name' | 'callsign' | 'role' | 'status' | 'last_active' | 'created_at';
+
+// Contact types
+interface Contact {
+  id: number;
+  callsign: string;
+  name?: string;
+  location?: string;
+  email?: string;
+  skywarn_number?: string;
+  notes?: string;
+  user_id?: number;
+  created_at: string;
+  updated_at?: string;
+}
+
+type ContactSortField = 'callsign' | 'name' | 'location' | 'email' | 'status' | 'created_at';
 
 // Field sorting types
 type FieldSortField = 'name' | 'label' | 'type' | 'default_enabled' | 'default_required' | 'status';
@@ -252,6 +270,26 @@ const Admin: React.FC = () => {
   const [scheduleSettingsLoading, setScheduleSettingsLoading] = useState(false);
   const [scheduleSettingsSaving, setScheduleSettingsSaving] = useState(false);
   
+  // Contacts state
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [contactsLoading, setContactsLoading] = useState(false);
+  const [contactDialogOpen, setContactDialogOpen] = useState(false);
+  const [editingContact, setEditingContact] = useState<Contact | null>(null);
+  const [contactForm, setContactForm] = useState({
+    callsign: '',
+    name: '',
+    location: '',
+    email: '',
+    skywarn_number: '',
+    notes: '',
+  });
+  const [contactSaving, setContactSaving] = useState(false);
+  const [deleteContactDialogOpen, setDeleteContactDialogOpen] = useState(false);
+  const [contactToDelete, setContactToDelete] = useState<Contact | null>(null);
+  const [contactFilter, setContactFilter] = useState('');
+  const [contactSortField, setContactSortField] = useState<ContactSortField>('callsign');
+  const [contactSortDirection, setContactSortDirection] = useState<SortDirection>('asc');
+  
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
     message: '',
@@ -270,6 +308,7 @@ const Admin: React.FC = () => {
     fetchSecurityInfo();
     fetchScheduleSettings();
     fetchFrequencies();
+    fetchContacts();
   }, [currentUser, navigate]);
 
   useEffect(() => {
@@ -318,6 +357,122 @@ const Admin: React.FC = () => {
       console.error('Failed to fetch frequencies:', error);
     } finally {
       setFrequenciesLoading(false);
+    }
+  };
+
+  // ========== CONTACTS FUNCTIONS ==========
+  const fetchContacts = async () => {
+    setContactsLoading(true);
+    try {
+      const response = await contactApi.list();
+      setContacts(response.data);
+    } catch (error) {
+      console.error('Failed to fetch contacts:', error);
+    } finally {
+      setContactsLoading(false);
+    }
+  };
+
+  const handleOpenContactDialog = (contact?: Contact) => {
+    if (contact) {
+      setEditingContact(contact);
+      setContactForm({
+        callsign: contact.callsign,
+        name: contact.name || '',
+        location: contact.location || '',
+        email: contact.email || '',
+        skywarn_number: contact.skywarn_number || '',
+        notes: contact.notes || '',
+      });
+    } else {
+      setEditingContact(null);
+      setContactForm({
+        callsign: '',
+        name: '',
+        location: '',
+        email: '',
+        skywarn_number: '',
+        notes: '',
+      });
+    }
+    setContactDialogOpen(true);
+  };
+
+  const handleSaveContact = async () => {
+    if (!contactForm.callsign) {
+      setSnackbar({ open: true, message: 'Callsign is required', severity: 'error' });
+      return;
+    }
+
+    setContactSaving(true);
+    try {
+      const payload = {
+        callsign: contactForm.callsign.toUpperCase(),
+        name: contactForm.name || null,
+        location: contactForm.location || null,
+        email: contactForm.email || null,
+        skywarn_number: contactForm.skywarn_number || null,
+        notes: contactForm.notes || null,
+      };
+
+      if (editingContact) {
+        await contactApi.update(editingContact.id, payload);
+        setSnackbar({ open: true, message: 'Contact updated', severity: 'success' });
+      } else {
+        await contactApi.create(payload);
+        setSnackbar({ open: true, message: 'Contact created', severity: 'success' });
+      }
+      setContactDialogOpen(false);
+      fetchContacts();
+    } catch (error: any) {
+      const message = error.response?.data?.detail || 'Failed to save contact';
+      setSnackbar({ open: true, message, severity: 'error' });
+    } finally {
+      setContactSaving(false);
+    }
+  };
+
+  const handleDeleteContactClick = (contact: Contact) => {
+    setContactToDelete(contact);
+    setDeleteContactDialogOpen(true);
+  };
+
+  const handleDeleteContact = async () => {
+    if (!contactToDelete) return;
+    try {
+      await contactApi.delete(contactToDelete.id);
+      setSnackbar({ open: true, message: 'Contact deleted', severity: 'success' });
+      setDeleteContactDialogOpen(false);
+      setContactToDelete(null);
+      fetchContacts();
+    } catch (error: any) {
+      const message = error.response?.data?.detail || 'Failed to delete contact';
+      setSnackbar({ open: true, message, severity: 'error' });
+    }
+  };
+
+  const handleInviteContact = async (contact: Contact) => {
+    if (!contact.email) {
+      setSnackbar({ open: true, message: 'Contact has no email address. Edit the contact to add one first.', severity: 'error' });
+      return;
+    }
+    if (contact.user_id) {
+      setSnackbar({ open: true, message: 'Contact already has a linked user account', severity: 'error' });
+      return;
+    }
+    if (!confirm(`Send invite to ${contact.callsign} at ${contact.email}?`)) return;
+    
+    try {
+      const response = await contactApi.invite(contact.id);
+      const msg = response.data.email_error 
+        ? `Account created but email failed: ${response.data.message}`
+        : response.data.message;
+      setSnackbar({ open: true, message: msg, severity: response.data.email_error ? 'error' : 'success' });
+      fetchContacts();
+      fetchUsers(); // Refresh users since a new user was created
+    } catch (error: any) {
+      const message = error.response?.data?.detail || 'Failed to invite contact';
+      setSnackbar({ open: true, message, severity: 'error' });
     }
   };
 
@@ -545,6 +700,70 @@ const Admin: React.FC = () => {
     } else {
       setFieldSortField(field);
       setFieldSortDirection('asc');
+    }
+  };
+
+  // ========== CONTACT FILTERING & SORTING ==========
+  const filteredContacts = contacts.filter((contact) => {
+    if (!contactFilter) return true;
+    const searchTerm = contactFilter.toLowerCase();
+    return (
+      contact.callsign.toLowerCase().includes(searchTerm) ||
+      (contact.name?.toLowerCase().includes(searchTerm)) ||
+      (contact.location?.toLowerCase().includes(searchTerm)) ||
+      (contact.email?.toLowerCase().includes(searchTerm)) ||
+      (contact.notes?.toLowerCase().includes(searchTerm))
+    );
+  });
+
+  const sortedContacts = [...filteredContacts].sort((a, b) => {
+    let aVal: string | number = '';
+    let bVal: string | number = '';
+
+    switch (contactSortField) {
+      case 'callsign':
+        aVal = a.callsign;
+        bVal = b.callsign;
+        break;
+      case 'name':
+        aVal = a.name || '';
+        bVal = b.name || '';
+        break;
+      case 'location':
+        aVal = a.location || '';
+        bVal = b.location || '';
+        break;
+      case 'email':
+        aVal = a.email || '';
+        bVal = b.email || '';
+        break;
+      case 'status':
+        // Linked users first (or last depending on sort direction)
+        aVal = a.user_id ? 1 : 0;
+        bVal = b.user_id ? 1 : 0;
+        break;
+      case 'created_at':
+        aVal = new Date(a.created_at.endsWith('Z') ? a.created_at : a.created_at + 'Z').getTime();
+        bVal = new Date(b.created_at.endsWith('Z') ? b.created_at : b.created_at + 'Z').getTime();
+        break;
+    }
+
+    if (contactSortField === 'status' || contactSortField === 'created_at') {
+      return contactSortDirection === 'asc'
+        ? (aVal as number) - (bVal as number)
+        : (bVal as number) - (aVal as number);
+    }
+
+    const comparison = (aVal as string).localeCompare(bVal as string, undefined, { numeric: true, sensitivity: 'base' });
+    return contactSortDirection === 'asc' ? comparison : -comparison;
+  });
+
+  const handleContactSort = (field: ContactSortField) => {
+    if (contactSortField === field) {
+      setContactSortDirection(contactSortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setContactSortField(field);
+      setContactSortDirection('asc');
     }
   };
 
@@ -939,9 +1158,10 @@ const Admin: React.FC = () => {
 
         <Tabs value={tabValue} onChange={(_, newValue) => setTabValue(newValue)} sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <Tab label="Users" id="admin-tab-0" aria-controls="admin-tabpanel-0" icon={<PersonAddIcon />} iconPosition="start" />
-          <Tab label="Check-in Fields" id="admin-tab-1" aria-controls="admin-tabpanel-1" icon={<EditIcon />} iconPosition="start" />
-          <Tab label="Frequencies" id="admin-tab-2" aria-controls="admin-tabpanel-2" icon={<RadioIcon />} iconPosition="start" />
-          <Tab label="Security" id="admin-tab-3" aria-controls="admin-tabpanel-3" icon={<SecurityIcon />} iconPosition="start" />
+          <Tab label="Contacts" id="admin-tab-1" aria-controls="admin-tabpanel-1" icon={<ContactsIcon />} iconPosition="start" />
+          <Tab label="Check-in Fields" id="admin-tab-2" aria-controls="admin-tabpanel-2" icon={<EditIcon />} iconPosition="start" />
+          <Tab label="Frequencies" id="admin-tab-3" aria-controls="admin-tabpanel-3" icon={<RadioIcon />} iconPosition="start" />
+          <Tab label="Security" id="admin-tab-4" aria-controls="admin-tabpanel-4" icon={<SecurityIcon />} iconPosition="start" />
         </Tabs>
 
         {/* Users Tab */}
@@ -1170,8 +1390,177 @@ const Admin: React.FC = () => {
           </TableContainer>
         </TabPanel>
 
-        {/* Field Configuration Tab */}
+        {/* ========== CONTACTS TAB ========== */}
+        {/* Rolodex-style contact management for stations from check-in history */}
         <TabPanel value={tabValue} index={1}>
+          <Alert severity="info" sx={{ mb: 3 }}>
+            Station contacts auto-populate from check-in history. Fix names, add emails, and send invites to create user accounts.
+            Auto-fill data flows to NCS when they enter a callsign during check-in.
+          </Alert>
+
+          {/* ========== CONTACT FILTER INPUT ========== */}
+          <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+            <TextField
+              size="small"
+              placeholder="Filter by callsign, name, location, or email..."
+              value={contactFilter}
+              onChange={(e) => setContactFilter(e.target.value)}
+              sx={{ flexGrow: 1, maxWidth: 500 }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon color="action" />
+                  </InputAdornment>
+                ),
+                endAdornment: contactFilter && (
+                  <InputAdornment position="end">
+                    <IconButton size="small" onClick={() => setContactFilter('')}>
+                      <ClearIcon fontSize="small" />
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <Typography variant="body2" color="text.secondary">
+              {filteredContacts.length} of {contacts.length} contacts
+            </Typography>
+          </Box>
+
+          {contactsLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <TableContainer>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>
+                      <TableSortLabel
+                        active={contactSortField === 'callsign'}
+                        direction={contactSortField === 'callsign' ? contactSortDirection : 'asc'}
+                        onClick={() => handleContactSort('callsign')}
+                      >
+                        Callsign
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell>
+                      <TableSortLabel
+                        active={contactSortField === 'name'}
+                        direction={contactSortField === 'name' ? contactSortDirection : 'asc'}
+                        onClick={() => handleContactSort('name')}
+                      >
+                        Name
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell>
+                      <TableSortLabel
+                        active={contactSortField === 'location'}
+                        direction={contactSortField === 'location' ? contactSortDirection : 'asc'}
+                        onClick={() => handleContactSort('location')}
+                      >
+                        Location
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell>
+                      <TableSortLabel
+                        active={contactSortField === 'email'}
+                        direction={contactSortField === 'email' ? contactSortDirection : 'asc'}
+                        onClick={() => handleContactSort('email')}
+                      >
+                        Email
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell>
+                      <TableSortLabel
+                        active={contactSortField === 'status'}
+                        direction={contactSortField === 'status' ? contactSortDirection : 'asc'}
+                        onClick={() => handleContactSort('status')}
+                      >
+                        Status
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell>
+                      <TableSortLabel
+                        active={contactSortField === 'created_at'}
+                        direction={contactSortField === 'created_at' ? contactSortDirection : 'asc'}
+                        onClick={() => handleContactSort('created_at')}
+                      >
+                        First Seen
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell align="right">Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {sortedContacts.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
+                        <Typography color="text.secondary">
+                          {contactFilter ? 'No contacts match your filter' : 'No contacts yet. They\'ll appear as stations check in.'}
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    sortedContacts.map((contact) => (
+                      <TableRow key={contact.id} hover>
+                        <TableCell>
+                          <Typography variant="body2" fontWeight="bold" sx={{ fontFamily: 'monospace' }}>
+                            {contact.callsign}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>{contact.name || <Typography variant="body2" color="text.disabled">—</Typography>}</TableCell>
+                        <TableCell>{contact.location || <Typography variant="body2" color="text.disabled">—</Typography>}</TableCell>
+                        <TableCell>{contact.email || <Typography variant="body2" color="text.disabled">—</Typography>}</TableCell>
+                        <TableCell>
+                          {contact.user_id ? (
+                            <Chip label="User" color="success" size="small" />
+                          ) : contact.email ? (
+                            <Chip label="Has Email" color="info" size="small" variant="outlined" />
+                          ) : (
+                            <Chip label="Contact" size="small" variant="outlined" />
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" color="text.secondary">
+                            {formatDate(contact.created_at)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}>
+                            <Tooltip title="Edit contact">
+                              <IconButton size="small" onClick={() => handleOpenContactDialog(contact)}>
+                                <EditIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            {/* Show invite button only for contacts with email but no linked user */}
+                            {contact.email && !contact.user_id && (
+                              <Tooltip title="Send invite email">
+                                <IconButton size="small" color="primary" onClick={() => handleInviteContact(contact)}>
+                                  <SendIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            )}
+                            {!contact.user_id && (
+                              <Tooltip title="Delete contact">
+                                <IconButton size="small" color="error" onClick={() => handleDeleteContactClick(contact)}>
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            )}
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </TabPanel>
+
+        {/* Field Configuration Tab */}
+        <TabPanel value={tabValue} index={2}>
           <Alert severity="info" sx={{ mb: 3 }}>
             Configure check-in fields available when creating nets. Custom fields can be added and archived (but not deleted to preserve historical data).
           </Alert>
@@ -1357,7 +1746,7 @@ const Admin: React.FC = () => {
         </TabPanel>
 
         {/* Frequencies Tab */}
-        <TabPanel value={tabValue} index={2}>
+        <TabPanel value={tabValue} index={3}>
           <Alert severity="info" sx={{ mb: 3 }}>
             Manage global frequencies available for all nets. Pre-populate common frequencies, DMR talkgroups, and digital modes.
           </Alert>
@@ -1515,7 +1904,7 @@ const Admin: React.FC = () => {
         </TabPanel>
 
         {/* Security Tab */}
-        <TabPanel value={tabValue} index={3}>
+        <TabPanel value={tabValue} index={4}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
             <Typography variant="h6">
               <SecurityIcon sx={{ verticalAlign: 'middle', mr: 1 }} />
@@ -2044,6 +2433,104 @@ const Admin: React.FC = () => {
         </DialogActions>
       </Dialog>
 
+      {/* ========== CONTACT EDIT/CREATE DIALOG ========== */}
+      <Dialog open={contactDialogOpen} onClose={() => setContactDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>{editingContact ? 'Edit Contact' : 'Add New Contact'}</DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <TextField
+              label="Callsign"
+              value={contactForm.callsign}
+              onChange={(e) => setContactForm({ ...contactForm, callsign: e.target.value.toUpperCase() })}
+              required
+              fullWidth
+              disabled={!!editingContact}
+              inputProps={{ style: { textTransform: 'uppercase', fontFamily: 'monospace' } }}
+              helperText={editingContact ? 'Callsign cannot be changed' : 'Amateur or GMRS callsign'}
+            />
+            <TextField
+              label="Name"
+              value={contactForm.name}
+              onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
+              fullWidth
+              helperText="Operator name — fix misspellings from rushed check-ins here"
+            />
+            <TextField
+              label="Location"
+              value={contactForm.location}
+              onChange={(e) => setContactForm({ ...contactForm, location: e.target.value })}
+              fullWidth
+              helperText="Home QTH / default location (auto-fills during check-in)"
+            />
+            <TextField
+              label="Email"
+              type="email"
+              value={contactForm.email}
+              onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
+              fullWidth
+              helperText="Add email to send an invite and create a user account"
+            />
+            <TextField
+              label="SKYWARN / Spotter #"
+              value={contactForm.skywarn_number}
+              onChange={(e) => setContactForm({ ...contactForm, skywarn_number: e.target.value })}
+              fullWidth
+            />
+            <TextField
+              label="Notes"
+              value={contactForm.notes}
+              onChange={(e) => setContactForm({ ...contactForm, notes: e.target.value })}
+              fullWidth
+              multiline
+              rows={2}
+              helperText="Admin-only notes (not shared with the operator)"
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setContactDialogOpen(false)} disabled={contactSaving}>Cancel</Button>
+          <Button
+            onClick={handleSaveContact}
+            variant="contained"
+            disabled={!contactForm.callsign || contactSaving}
+            startIcon={contactSaving ? <CircularProgress size={20} color="inherit" /> : null}
+          >
+            {editingContact ? 'Update' : 'Create'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ========== DELETE CONTACT CONFIRMATION DIALOG ========== */}
+      <Dialog open={deleteContactDialogOpen} onClose={() => setDeleteContactDialogOpen(false)}>
+        <DialogTitle>Delete Contact</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to delete this contact?
+          </Typography>
+          {contactToDelete && (
+            <Box sx={{ mt: 2, p: 2, bgcolor: 'action.hover', borderRadius: 1 }}>
+              <Typography variant="body2">
+                <strong>Callsign:</strong> {contactToDelete.callsign}
+              </Typography>
+              {contactToDelete.name && (
+                <Typography variant="body2">
+                  <strong>Name:</strong> {contactToDelete.name}
+                </Typography>
+              )}
+            </Box>
+          )}
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+            This won't delete historical check-in records. A new contact will be auto-created if this callsign checks in again.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteContactDialogOpen(false)}>Cancel</Button>
+          <Button onClick={handleDeleteContact} variant="contained" color="error">
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {/* Frequency Dialog */}
       <Dialog open={frequencyDialogOpen} onClose={() => setFrequencyDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>{editingFrequency ? 'Edit Frequency' : 'Add Frequency'}</DialogTitle>
@@ -2184,6 +2671,18 @@ const Admin: React.FC = () => {
         </>
       )}
       {tabValue === 1 && (
+        <Tooltip title="Add contact">
+          <Fab
+            color="primary"
+            aria-label="add contact"
+            sx={{ position: 'fixed', bottom: 16, right: 16 }}
+            onClick={() => handleOpenContactDialog()}
+          >
+            <AddIcon />
+          </Fab>
+        </Tooltip>
+      )}
+      {tabValue === 2 && (
         <Tooltip title="Add field">
           <Fab
             color="primary"
@@ -2195,7 +2694,7 @@ const Admin: React.FC = () => {
           </Fab>
         </Tooltip>
       )}
-      {tabValue === 2 && (
+      {tabValue === 3 && (
         <Tooltip title="Add frequency">
           <Fab
             color="primary"
