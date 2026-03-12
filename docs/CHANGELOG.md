@@ -4,6 +4,15 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# March 12, 2026
+
+## Improvements
+
+* **Smaller PDF exports** — Net Report PDF exports now render text, tables, and statistics natively instead of converting the entire page to images. Only maps are captured as compressed JPEG images. Typical file size reduced from ~24 MB to under 1 MB, making reports easy to email.
+* **Net date in PDF filename** — PDF filenames now include the net's start date and time (e.g., `ARES_Net_Report_2026-03-12_1930.pdf`) instead of the date the export was generated.
+
+---
+
 # February 26, 2026
 
 ## New Features

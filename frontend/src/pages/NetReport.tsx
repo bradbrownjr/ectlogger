@@ -151,7 +151,7 @@ import { netApi, statisticsApi, checkInApi, netRoleApi } from '../services/api';
 import { chatApi, ChatMessage } from '../api/chat';
 import { formatDateTime, formatTimeWithDate } from '../utils/dateUtils';
 import { useAuth } from '../contexts/AuthContext';
-import { exportElementToPdf } from '../utils/pdfExport';
+import { exportNetReportPdf } from '../utils/netReportPdf';
 
 // ========== INTERFACES ==========
 
@@ -430,17 +430,26 @@ const NetReport: React.FC = () => {
   // ========== PDF EXPORT ==========
 
   const handleExportPdf = async () => {
+    if (!net || !stats) return;
     setExporting(true);
     try {
-      const filename = net?.name 
-        ? `${net.name.replace(/[^a-zA-Z0-9]/g, '_')}_Net_Report`
-        : 'Net_Report';
-      
-      await exportElementToPdf('net-report-content', {
-        filename,
-        orientation: 'portrait',
-        scale: 1.5, // Higher quality for dense content
-        margin: 10,
+      // Collect map element IDs based on which map variant is rendered
+      const mapElementIds: string[] = [];
+      if (dualMapData) {
+        mapElementIds.push('report-map-cluster', 'report-map-overview');
+      } else if (mappedCheckIns.length > 0) {
+        mapElementIds.push('report-map-single');
+      }
+
+      await exportNetReportPdf({
+        net,
+        stats,
+        checkIns,
+        chatMessages,
+        netRoles,
+        preferUtc: user?.prefer_utc || false,
+        mapElementIds,
+        chartElementIds: [], // Charts are rendered as native tables instead
       });
     } catch (err) {
       console.error('Failed to export PDF:', err);
@@ -792,7 +801,7 @@ const NetReport: React.FC = () => {
               <Grid container spacing={2} sx={{ mb: 3 }}>
                 {/* Left: cluster zoom */}
                 <Grid item xs={12} md={6}>
-                  <Paper variant="outlined" sx={{ overflow: 'hidden' }}>
+                  <Paper id="report-map-cluster" variant="outlined" sx={{ overflow: 'hidden' }}>
                     <Box sx={{ p: 1, borderBottom: `1px solid ${theme.palette.divider}` }}>
                       <Typography variant="caption" fontWeight="medium">
                         📍 Cluster Detail ({dualMapData.clusterPositions.length} stations)
@@ -833,7 +842,7 @@ const NetReport: React.FC = () => {
 
                 {/* Right: full overview */}
                 <Grid item xs={12} md={6}>
-                  <Paper variant="outlined" sx={{ overflow: 'hidden' }}>
+                  <Paper id="report-map-overview" variant="outlined" sx={{ overflow: 'hidden' }}>
                     <Box sx={{ p: 1, borderBottom: `1px solid ${theme.palette.divider}` }}>
                       <Typography variant="caption" fontWeight="medium">
                         🌐 Full Overview ({dualMapData.allPositions.length} stations)
@@ -892,7 +901,7 @@ const NetReport: React.FC = () => {
               </Grid>
             ) : (
               // ---- SINGLE MAP: all stations in one view ----
-              <Paper variant="outlined" sx={{ mb: 3, overflow: 'hidden' }}>
+              <Paper id="report-map-single" variant="outlined" sx={{ mb: 3, overflow: 'hidden' }}>
                 <Box sx={{ height: 400, width: '100%' }}>
                   <MapContainer
                     center={[39.8283, -98.5795]}

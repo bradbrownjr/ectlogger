@@ -44,7 +44,7 @@ const pulseAnimation = keyframes`
 // The version number triggers the unread notification for users.
 // Mark entries with `userImpact: true` to highlight them in the UI.
 
-const CHANGELOG_VERSION = '2026.02.26b';
+const CHANGELOG_VERSION = '2026.03.12';
 
 interface ChangelogEntry {
   version: string;
@@ -60,6 +60,20 @@ interface ChangelogEntry {
 }
 
 const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '2026.03.12',
+    date: '2026-03-12',
+    sections: [
+      {
+        title: 'Improvements',
+        type: 'improvement',
+        items: [
+          { text: 'Net Report PDF export is now dramatically smaller — text and tables are rendered natively instead of as images. Only maps remain as compressed images. Typical file size reduced from ~24 MB to under 1 MB.', userImpact: true },
+          { text: 'PDF filename now includes the net\'s start date and time (e.g., "ARES_Net_Report_2026-03-12_1930.pdf") instead of the export date.', userImpact: true },
+        ],
+      },
+    ],
+  },
   {
     version: '2026.02.26b',
     date: '2026-02-26',
