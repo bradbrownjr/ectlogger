@@ -7,7 +7,7 @@
  */
 
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import html2canvas from 'html2canvas';
 
 // ========== INTERFACES ==========
@@ -179,16 +179,14 @@ const getImageDimensions = (dataUrl: string): Promise<{ width: number; height: n
 
 // ========== MAIN EXPORT FUNCTION ==========
 
-// Extend jsPDF type to include autoTable from the plugin
-interface AutoTableJsPDF extends jsPDF {
-  autoTable: (options: import('jspdf-autotable').UserOptions) => jsPDF;
-  lastAutoTable?: { finalY: number };
-}
+// Helper to get the finalY position after autoTable renders
+const getLastY = (pdf: jsPDF, fallback: number): number =>
+  ((pdf as any).lastAutoTable?.finalY ?? fallback) as number;
 
 export const exportNetReportPdf = async (data: NetReportPdfData): Promise<void> => {
   const { net, stats, checkIns, chatMessages, netRoles, preferUtc, mapElementIds, chartElementIds } = data;
 
-  const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' }) as AutoTableJsPDF;
+  const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const pageWidth = 210;
   const pageHeight = 297;
   const margin = 15;
@@ -318,7 +316,7 @@ export const exportNetReportPdf = async (data: NetReportPdfData): Promise<void> 
   const statsCardData = [
     [String(stats.total_check_ins), String(stats.unique_callsigns), String(stats.rechecks), stats.duration_minutes ? formatDuration(stats.duration_minutes) : '\u2014'],
   ];
-  pdf.autoTable({
+  autoTable(pdf, {
     startY: y,
     head: [['Total Check-ins', 'Unique Operators', 'Re-checks', 'Duration']],
     body: statsCardData,
@@ -328,7 +326,7 @@ export const exportNetReportPdf = async (data: NetReportPdfData): Promise<void> 
     bodyStyles: { fontSize: 14, fontStyle: 'bold', halign: 'center', textColor: [25, 118, 210] },
     tableWidth: contentWidth,
   });
-  y = (pdf.lastAutoTable?.finalY ?? y) + 6;
+  y = getLastY(pdf, y) + 6;
 
   // Status breakdown (text list instead of pie chart - keeps it native)
   if (Object.keys(stats.status_counts).length > 0) {
@@ -339,7 +337,7 @@ export const exportNetReportPdf = async (data: NetReportPdfData): Promise<void> 
     pdf.text('Check-in Status Breakdown', margin, y);
     y += 5;
 
-    pdf.autoTable({
+    autoTable(pdf, {
       startY: y,
       head: [['Status', 'Count', 'Percentage']],
       body: Object.entries(stats.status_counts).map(([status, count]) => {
@@ -352,7 +350,7 @@ export const exportNetReportPdf = async (data: NetReportPdfData): Promise<void> 
       bodyStyles: { fontSize: 8 },
       tableWidth: contentWidth / 2,
     });
-    y = (pdf.lastAutoTable?.finalY ?? y) + 4;
+    y = getLastY(pdf, y) + 4;
   }
 
   // Frequency breakdown
@@ -364,7 +362,7 @@ export const exportNetReportPdf = async (data: NetReportPdfData): Promise<void> 
     pdf.text('Check-ins by Frequency', margin, y);
     y += 5;
 
-    pdf.autoTable({
+    autoTable(pdf, {
       startY: y,
       head: [['Frequency', 'Check-ins']],
       body: Object.entries(stats.check_ins_by_frequency).map(([freq, count]) => [freq, String(count)]),
@@ -374,7 +372,7 @@ export const exportNetReportPdf = async (data: NetReportPdfData): Promise<void> 
       bodyStyles: { fontSize: 8 },
       tableWidth: contentWidth / 2,
     });
-    y = (pdf.lastAutoTable?.finalY ?? y) + 6;
+    y = getLastY(pdf, y) + 6;
   }
 
   // ========== SECTION 3: CHARTS (captured as images) ==========
@@ -423,7 +421,7 @@ export const exportNetReportPdf = async (data: NetReportPdfData): Promise<void> 
   y += 6;
 
   if (checkIns.length > 0) {
-    pdf.autoTable({
+    autoTable(pdf, {
       startY: y,
       head: [['#', 'Time', 'Callsign', 'Name', 'Location', 'Status', 'Frequency', 'Notes']],
       body: checkIns.map((ci, i) => {
@@ -455,7 +453,7 @@ export const exportNetReportPdf = async (data: NetReportPdfData): Promise<void> 
       },
       tableWidth: contentWidth,
     });
-    y = (pdf.lastAutoTable?.finalY ?? y) + 6;
+    y = getLastY(pdf, y) + 6;
   } else {
     pdf.setFontSize(9);
     pdf.setFont('helvetica', 'italic');
@@ -473,7 +471,7 @@ export const exportNetReportPdf = async (data: NetReportPdfData): Promise<void> 
     pdf.text(`Chat Log (${chatMessages.length} messages)`, margin, y);
     y += 6;
 
-    pdf.autoTable({
+    autoTable(pdf, {
       startY: y,
       head: [['Time', 'From', 'Message']],
       body: chatMessages.map(msg => [
@@ -502,7 +500,7 @@ export const exportNetReportPdf = async (data: NetReportPdfData): Promise<void> 
       },
       tableWidth: contentWidth,
     });
-    y = (pdf.lastAutoTable?.finalY ?? y) + 6;
+    y = getLastY(pdf, y) + 6;
   }
 
   // ========== SECTION 7: ICS-309 FORMAT ==========
@@ -536,7 +534,7 @@ export const exportNetReportPdf = async (data: NetReportPdfData): Promise<void> 
     y += 2;
 
     // ICS-309 log table
-    pdf.autoTable({
+    autoTable(pdf, {
       startY: y,
       head: [['Time', 'From (Station)', 'To', 'Subject/Message']],
       body: checkIns.map(ci => [
@@ -562,7 +560,7 @@ export const exportNetReportPdf = async (data: NetReportPdfData): Promise<void> 
       },
       tableWidth: contentWidth,
     });
-    y = (pdf.lastAutoTable?.finalY ?? y) + 6;
+    y = getLastY(pdf, y) + 6;
 
     // ICS-309 Footer
     ensureSpace(12);
