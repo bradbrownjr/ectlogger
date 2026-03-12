@@ -195,10 +195,11 @@ Users see a red badge on the info icon (lower-left) until they view the changelo
   # Build frontend (required after frontend changes)
   ssh ectlogger@app.ectlogger.us "cd ~/ectlogger/frontend && npm run build"
   
-  # Restart backend (requires interactive sudo)
+  # Restart backend (requires interactive sudo password)
   ssh ectlogger@app.ectlogger.us
   sudo systemctl restart ectlogger
   ```
+- **Backend restarts**: When the backend needs to be restarted, run `ssh ectlogger@app.ectlogger.us` in an **interactive** terminal (not as a one-liner), then run `sudo systemctl restart ectlogger` and leave the terminal active so the user can type their sudo password.
 
 ### Beta (ectbeta.lynwood.us)
 - **Host**: `bradb@10.6.26.3`
@@ -213,10 +214,11 @@ Users see a red badge on the info icon (lower-left) until they view the changelo
   # First commit and push locally, then pull on beta
   ssh bradb@10.6.26.3 "cd /home/bradb/ectlogger && git pull origin main"
   
-  # Restart service (requires sudo - SSH in interactively)
+  # Restart service (requires interactive sudo password)
   ssh bradb@10.6.26.3
   sudo systemctl restart ectlogger
   ```
+- **Backend restarts**: Run `ssh bradb@10.6.26.3` in an **interactive** terminal, then run `sudo systemctl restart ectlogger` and leave the terminal active so the user can type their sudo password.
 - **Database**: SQLite at `/home/bradb/ectlogger/backend/ectlogger.db`
 
 ### Alpha (10.6.26.6)
