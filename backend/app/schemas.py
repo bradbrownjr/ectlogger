@@ -258,6 +258,9 @@ class NetUpdate(BaseModel):
     poll_question: Optional[str] = Field(None, max_length=500)
     # Scheduled start time for countdown display
     scheduled_start_time: Optional[datetime] = None
+    # Allow NCS/admin to adjust actual start/end timestamps
+    started_at: Optional[datetime] = None
+    closed_at: Optional[datetime] = None
     
     @field_validator('frequency_ids')
     @classmethod
@@ -406,6 +409,42 @@ class NetTemplateResponse(NetTemplateBase):
 
     class Config:
         from_attributes = True
+
+
+class TemplateMergeRequest(BaseModel):
+    """Request to merge multiple templates into a single target template"""
+    target_template_id: int = Field(description="The template that will survive the merge")
+    source_template_ids: List[int] = Field(min_length=1, description="Templates to merge into the target (will be deleted)")
+
+
+class TemplateMergeConflict(BaseModel):
+    """A field where the source template differs from the target"""
+    field: str
+    target_value: Optional[str] = None
+    source_value: Optional[str] = None
+    source_template_name: str
+
+
+class TemplateMergePreview(BaseModel):
+    """Preview of what a merge operation will do"""
+    target_template_id: int
+    target_template_name: str
+    source_templates: List[dict]  # [{id, name, net_count, subscriber_count}]
+    total_nets_moved: int
+    total_subscribers_moved: int
+    total_staff_moved: int
+    total_rotation_members_moved: int
+    conflicts: List[TemplateMergeConflict] = []
+
+
+class TemplateMergeResponse(BaseModel):
+    """Result of a merge operation"""
+    target_template_id: int
+    nets_moved: int
+    subscribers_moved: int
+    staff_moved: int
+    rotation_members_moved: int
+    templates_deleted: int
 
 
 class NetTemplateSubscriptionResponse(BaseModel):

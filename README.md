@@ -91,11 +91,12 @@ ECTLogger provides the following types of users:
 When a user creates a net, they automatically become its **NCS (Net Control Station)**. The net creator can assign these roles to other users:
 
 
-| Role         | Description                                                   |
-| -------------- | --------------------------------------------------------------- |
-| 👑**NCS**    | Full control: start/close net, manage check-ins, assign roles |
-| 📋**Logger** | Log check-ins and manage station status                       |
-| 📡**Relay**  | Check in stations on behalf of others                         |
+| Role                  | Description                                                   |
+| ----------------------- | --------------------------------------------------------------- |
+| 👑**NCS**             | Full control: start/close net, manage check-ins, assign roles |
+| 🤴**Secondary NCS**   | Additional NCS operators for multi-frequency nets             |
+| 📋**Logger**          | Log check-ins and manage station status                       |
+| 📡**Relay**           | Check in stations on behalf of others                         |
 
 Any registered user can run their own nets!
 

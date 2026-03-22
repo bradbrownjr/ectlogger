@@ -222,26 +222,27 @@ async def get_net_stats(
     if not net:
         raise HTTPException(status_code=404, detail="Net not found")
     
-    # Get online user IDs
+    # Get online user IDs (authenticated users only)
     online_user_ids = list(manager.get_online_users(net_id))
     
-    # Get check-in counts
-    check_in_result = await db.execute(
-        select(CheckIn).where(
-            CheckIn.net_id == net_id,
-            CheckIn.status != 'checked_out'
-        )
+    # Get ALL check-ins (total who participated in the net)
+    all_check_in_result = await db.execute(
+        select(CheckIn).where(CheckIn.net_id == net_id)
     )
-    check_ins = check_in_result.scalars().all()
-    total_check_ins = len(check_ins)
+    all_check_ins = all_check_in_result.scalars().all()
+    total_check_ins = len(all_check_ins)
     
-    # Count guests (check-ins without user_id or user not online)
-    guest_count = sum(1 for ci in check_ins if not ci.user_id or ci.user_id not in online_user_ids)
+    # Count checked-out stations separately
+    checked_out_count = sum(1 for ci in all_check_ins if ci.status and ci.status.value == 'checked_out')
+    
+    # Count guest WebSocket viewers (unauthenticated connections)
+    guest_count = manager.get_guest_count(net_id)
     
     return {
         "net_id": net_id,
         "online_user_ids": online_user_ids,
         "total_check_ins": total_check_ins,
+        "checked_out_count": checked_out_count,
         "online_count": len(online_user_ids),
         "guest_count": guest_count
     }
@@ -778,7 +779,7 @@ async def close_net(
                     started_at=net.started_at.strftime("%Y-%m-%d %H:%M:%S") if net.started_at else "N/A",
                     closed_at=net.closed_at.strftime("%Y-%m-%d %H:%M:%S") if net.closed_at else "N/A",
                     chat_messages=chat_messages_data if chat_messages_data else None,
-                    field_config=net.field_config,
+                    field_config=json.loads(net.field_config) if isinstance(net.field_config, str) else net.field_config,
                     topic_of_week_enabled=net.topic_of_week_enabled,
                     topic_of_week_prompt=net.topic_of_week_prompt,
                     poll_enabled=net.poll_enabled,
@@ -786,8 +787,9 @@ async def close_net(
                     unsubscribe_token=unsub_token
                 )
         except Exception as e:
-            # Log error but don't fail the close operation
-            print(f"Failed to send net log email to {email}: {e}")
+            # Log error with traceback but don't fail the close operation
+            import traceback
+            print(f"Failed to send net log email to {email}: {e}\n{traceback.format_exc()}")
     
     return NetResponse.from_orm(net)
 

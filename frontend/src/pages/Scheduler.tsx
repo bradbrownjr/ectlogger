@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -33,6 +33,14 @@ import {
   TableHead,
   TableRow,
   Paper,
+  Checkbox,
+  Snackbar,
+  Alert,
+  Radio,
+  RadioGroup,
+  FormControl,
+  FormControlLabel as MuiFormControlLabel,
+  CircularProgress,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -48,6 +56,8 @@ import LanguageIcon from '@mui/icons-material/Language';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import ViewModuleIcon from '@mui/icons-material/ViewModule';
 import ViewListIcon from '@mui/icons-material/ViewList';
+import CallMergeIcon from '@mui/icons-material/CallMerge';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
@@ -134,6 +144,15 @@ const Scheduler: React.FC = () => {
   });
   const [showFilter, setShowFilter] = useState(false);
   const [scheduleFilter, setScheduleFilter] = useState('');
+  // ========== MERGE MODE STATE ==========
+  const [mergeMode, setMergeMode] = useState(false);
+  const [mergeSelected, setMergeSelected] = useState<Set<number>>(new Set());
+  const [mergeDialogOpen, setMergeDialogOpen] = useState(false);
+  const [mergeTargetId, setMergeTargetId] = useState<number | null>(null);
+  const [mergePreview, setMergePreview] = useState<any>(null);
+  const [mergeLoading, setMergeLoading] = useState(false);
+  const [mergeError, setMergeError] = useState<string | null>(null);
+  const [mergeSuccess, setMergeSuccess] = useState<string | null>(null);
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const theme = useTheme();
@@ -224,6 +243,91 @@ const Scheduler: React.FC = () => {
   const isOwner = (schedule: Schedule) => user?.id === schedule.owner_id;
   const isAdmin = user?.role === 'admin';
 
+  // ========== MERGE MODE HELPERS ==========
+  /** Can the current user merge this template? (admin or owner only) */
+  const canMerge = useCallback((schedule: Schedule) => {
+    return isAdmin || (user?.id === schedule.owner_id);
+  }, [isAdmin, user?.id]);
+
+  /** Number of templates the user could merge */
+  const mergeableCount = schedules.filter(canMerge).length;
+
+  const handleToggleMergeSelect = (id: number) => {
+    setMergeSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleExitMergeMode = () => {
+    setMergeMode(false);
+    setMergeSelected(new Set());
+    setMergePreview(null);
+    setMergeTargetId(null);
+  };
+
+  const handleOpenMergeDialog = async () => {
+    if (mergeSelected.size < 2) return;
+    // Default target = first selected
+    const selectedIds = Array.from(mergeSelected);
+    setMergeTargetId(selectedIds[0]);
+    setMergeDialogOpen(true);
+    // Fetch preview with first selected as target
+    await fetchMergePreview(selectedIds[0], selectedIds.filter(id => id !== selectedIds[0]));
+  };
+
+  const fetchMergePreview = async (targetId: number, sourceIds: number[]) => {
+    setMergeLoading(true);
+    setMergeError(null);
+    try {
+      const response = await templateApi.mergePreview({
+        target_template_id: targetId,
+        source_template_ids: sourceIds,
+      });
+      setMergePreview(response.data);
+    } catch (error: any) {
+      setMergeError(error.response?.data?.detail || 'Failed to load merge preview');
+      setMergePreview(null);
+    } finally {
+      setMergeLoading(false);
+    }
+  };
+
+  const handleMergeTargetChange = async (newTargetId: number) => {
+    setMergeTargetId(newTargetId);
+    const sourceIds = Array.from(mergeSelected).filter(id => id !== newTargetId);
+    await fetchMergePreview(newTargetId, sourceIds);
+  };
+
+  const handleConfirmMerge = async () => {
+    if (!mergeTargetId) return;
+    const sourceIds = Array.from(mergeSelected).filter(id => id !== mergeTargetId);
+    setMergeLoading(true);
+    setMergeError(null);
+    try {
+      const response = await templateApi.merge({
+        target_template_id: mergeTargetId,
+        source_template_ids: sourceIds,
+      });
+      const r = response.data;
+      setMergeSuccess(
+        `Merged ${r.templates_deleted} schedule${r.templates_deleted !== 1 ? 's' : ''} into target. ` +
+        `Moved ${r.nets_moved} net${r.nets_moved !== 1 ? 's' : ''}, ` +
+        `${r.subscribers_moved} subscriber${r.subscribers_moved !== 1 ? 's' : ''}, ` +
+        `${r.staff_moved} staff, ${r.rotation_members_moved} rotation member${r.rotation_members_moved !== 1 ? 's' : ''}.`
+      );
+      setMergeDialogOpen(false);
+      handleExitMergeMode();
+      fetchSchedules();
+    } catch (error: any) {
+      setMergeError(error.response?.data?.detail || 'Merge failed');
+    } finally {
+      setMergeLoading(false);
+    }
+  };
+
   // ========== SCHEDULE FILTERING ==========
   const filteredSchedules = schedules.filter((schedule) => {
     if (!scheduleFilter) return true;
@@ -246,8 +350,28 @@ const Scheduler: React.FC = () => {
   const renderCardView = () => (
     <Grid container spacing={3} sx={{ alignItems: 'stretch' }}>
       {filteredSchedules.map((schedule: Schedule) => (
-        <Grid item xs={12} sm={6} md={4} key={schedule.id} sx={{ display: 'flex' }}>
-          {renderScheduleCard(schedule)}
+        <Grid item xs={12} sm={6} md={4} key={schedule.id} sx={{ display: 'flex', position: 'relative' }}>
+          {/* Merge mode checkbox overlay on top-right of card */}
+          {mergeMode && canMerge(schedule) && (
+            <Checkbox
+              checked={mergeSelected.has(schedule.id)}
+              onChange={() => handleToggleMergeSelect(schedule.id)}
+              sx={{
+                position: 'absolute', top: 4, right: 4, zIndex: 2,
+                bgcolor: 'background.paper', borderRadius: 1,
+                boxShadow: 1,
+              }}
+            />
+          )}
+          <Box
+            sx={{
+              width: '100%',
+              opacity: mergeMode && !canMerge(schedule) ? 0.4 : 1,
+              pointerEvents: mergeMode && !canMerge(schedule) ? 'none' : 'auto',
+            }}
+          >
+            {renderScheduleCard(schedule)}
+          </Box>
         </Grid>
       ))}
     </Grid>
@@ -259,6 +383,8 @@ const Scheduler: React.FC = () => {
       <Table size="small">
         <TableHead>
           <TableRow>
+            {/* Merge mode checkbox column */}
+            {mergeMode && <TableCell padding="checkbox" />}
             <TableCell>Name</TableCell>
             <TableCell>Schedule</TableCell>
             <TableCell>NCS/Host</TableCell>
@@ -269,7 +395,23 @@ const Scheduler: React.FC = () => {
         </TableHead>
         <TableBody>
           {filteredSchedules.map((schedule: Schedule) => (
-            <TableRow key={schedule.id} hover>
+            <TableRow
+              key={schedule.id}
+              hover
+              sx={{ opacity: mergeMode && !canMerge(schedule) ? 0.4 : 1 }}
+            >
+              {/* Merge mode checkbox */}
+              {mergeMode && (
+                <TableCell padding="checkbox">
+                  {canMerge(schedule) && (
+                    <Checkbox
+                      checked={mergeSelected.has(schedule.id)}
+                      onChange={() => handleToggleMergeSelect(schedule.id)}
+                      size="small"
+                    />
+                  )}
+                </TableCell>
+              )}
               <TableCell>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <Typography variant="body2" fontWeight="medium">{schedule.name}</Typography>
@@ -640,6 +782,34 @@ const Scheduler: React.FC = () => {
       {/* ========== FLOATING ACTION BUTTONS ========== */}
       {isAuthenticated && (
         <>
+          {/* Merge FAB — visible when user can merge 2+ templates and NOT in merge mode */}
+          {!mergeMode && mergeableCount >= 2 && (
+            <Tooltip title="Merge schedules">
+              <Fab
+                color="default"
+                aria-label="merge schedules"
+                sx={{ position: 'fixed', bottom: 16, right: 144 }}
+                onClick={() => setMergeMode(true)}
+                size="medium"
+              >
+                <CallMergeIcon />
+              </Fab>
+            </Tooltip>
+          )}
+          {/* Cancel merge FAB — visible in merge mode */}
+          {mergeMode && (
+            <Tooltip title="Cancel merge">
+              <Fab
+                color="default"
+                aria-label="cancel merge"
+                sx={{ position: 'fixed', bottom: 16, right: 144 }}
+                onClick={handleExitMergeMode}
+                size="medium"
+              >
+                <ClearIcon />
+              </Fab>
+            </Tooltip>
+          )}
           <Tooltip title={showFilter ? "Hide filter" : "Filter schedules"}>
             <Fab
               color={showFilter ? "primary" : "default"}
@@ -677,6 +847,171 @@ const Scheduler: React.FC = () => {
         } : null}
         onUpdate={fetchSchedules}
       />
+
+      {/* ========== MERGE SELECTION BAR (bottom of screen in merge mode) ========== */}
+      {mergeMode && (
+        <Box
+          sx={{
+            position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1200,
+            bgcolor: 'background.paper', borderTop: 1, borderColor: 'divider',
+            py: 1.5, px: 3,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            boxShadow: 3,
+          }}
+        >
+          <Typography variant="body2" color="text.secondary">
+            <CallMergeIcon fontSize="small" sx={{ verticalAlign: 'middle', mr: 0.5 }} />
+            {mergeSelected.size} schedule{mergeSelected.size !== 1 ? 's' : ''} selected
+            {mergeSelected.size < 2 && ' (select at least 2)'}
+          </Typography>
+          <Button
+            variant="contained"
+            color="warning"
+            startIcon={<CallMergeIcon />}
+            disabled={mergeSelected.size < 2}
+            onClick={handleOpenMergeDialog}
+          >
+            Merge Selected
+          </Button>
+        </Box>
+      )}
+
+      {/* ========== MERGE CONFIRMATION DIALOG ========== */}
+      <Dialog
+        open={mergeDialogOpen}
+        onClose={() => !mergeLoading && setMergeDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <CallMergeIcon color="warning" /> Merge Schedules
+        </DialogTitle>
+        <DialogContent dividers>
+          {mergeError && (
+            <Alert severity="error" sx={{ mb: 2 }} onClose={() => setMergeError(null)}>
+              {mergeError}
+            </Alert>
+          )}
+
+          {/* Master template selection */}
+          <Typography variant="subtitle2" gutterBottom>
+            Select the master schedule (the one that will survive):
+          </Typography>
+          <FormControl component="fieldset" sx={{ mb: 2, width: '100%' }}>
+            <RadioGroup
+              value={mergeTargetId?.toString() || ''}
+              onChange={(e) => handleMergeTargetChange(Number(e.target.value))}
+            >
+              {Array.from(mergeSelected).map(id => {
+                const schedule = schedules.find(s => s.id === id);
+                if (!schedule) return null;
+                return (
+                  <MuiFormControlLabel
+                    key={id}
+                    value={id.toString()}
+                    control={<Radio size="small" />}
+                    label={
+                      <Box>
+                        <Typography variant="body2" fontWeight="medium">
+                          {schedule.name}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {formatSchedule(schedule)} · {schedule.owner_callsign || 'Unknown owner'}
+                          {schedule.subscriber_count > 0 && ` · ${schedule.subscriber_count} subscriber${schedule.subscriber_count !== 1 ? 's' : ''}`}
+                        </Typography>
+                      </Box>
+                    }
+                    sx={{ alignItems: 'flex-start', mb: 0.5 }}
+                  />
+                );
+              })}
+            </RadioGroup>
+          </FormControl>
+
+          {/* Loading spinner */}
+          {mergeLoading && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+              <CircularProgress size={28} />
+            </Box>
+          )}
+
+          {/* Preview summary */}
+          {mergePreview && !mergeLoading && (
+            <>
+              <Typography variant="subtitle2" gutterBottom>
+                Merge summary:
+              </Typography>
+              <Box sx={{ bgcolor: 'action.hover', borderRadius: 1, p: 1.5, mb: 2 }}>
+                {mergePreview.source_templates.map((src: any) => (
+                  <Typography key={src.id} variant="body2">
+                    <strong>{src.name}</strong>: {src.net_count} net{src.net_count !== 1 ? 's' : ''}
+                    {src.subscriber_count > 0 && `, ${src.subscriber_count} subscriber${src.subscriber_count !== 1 ? 's' : ''}`}
+                  </Typography>
+                ))}
+                <Typography variant="body2" sx={{ mt: 1 }} fontWeight="medium">
+                  Total moving to <em>{mergePreview.target_template_name}</em>:
+                  {' '}{mergePreview.total_nets_moved} net{mergePreview.total_nets_moved !== 1 ? 's' : ''},
+                  {' '}{mergePreview.total_subscribers_moved} new subscriber{mergePreview.total_subscribers_moved !== 1 ? 's' : ''},
+                  {' '}{mergePreview.total_staff_moved} staff,
+                  {' '}{mergePreview.total_rotation_members_moved} rotation member{mergePreview.total_rotation_members_moved !== 1 ? 's' : ''}
+                </Typography>
+              </Box>
+
+              {/* Conflict warnings */}
+              {mergePreview.conflicts.length > 0 && (
+                <>
+                  <Typography variant="subtitle2" color="warning.main" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <WarningAmberIcon fontSize="small" /> Settings that differ (source values will be lost):
+                  </Typography>
+                  <Box sx={{ bgcolor: 'warning.light', borderRadius: 1, p: 1.5, mb: 2, opacity: 0.9 }}>
+                    {mergePreview.conflicts.map((c: any, i: number) => (
+                      <Box key={i} sx={{ mb: i < mergePreview.conflicts.length - 1 ? 1 : 0 }}>
+                        <Typography variant="body2" fontWeight="medium">
+                          {c.field} — from "{c.source_template_name}"
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" component="div">
+                          Master: {c.target_value} · Source: {c.source_value}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Box>
+                </>
+              )}
+            </>
+          )}
+
+          <Alert severity="warning" variant="outlined" sx={{ mt: 1 }}>
+            This will combine all nets, subscribers, and staff into the master schedule. 
+            Source schedules will be <strong>permanently deleted</strong>. This cannot be undone.
+          </Alert>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setMergeDialogOpen(false)} disabled={mergeLoading}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="warning"
+            onClick={handleConfirmMerge}
+            disabled={mergeLoading || !mergePreview || !mergeTargetId}
+            startIcon={mergeLoading ? <CircularProgress size={16} /> : <CallMergeIcon />}
+          >
+            Merge
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ========== MERGE SUCCESS SNACKBAR ========== */}
+      <Snackbar
+        open={!!mergeSuccess}
+        autoHideDuration={8000}
+        onClose={() => setMergeSuccess(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert severity="success" onClose={() => setMergeSuccess(null)}>
+          {mergeSuccess}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };

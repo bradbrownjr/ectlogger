@@ -99,10 +99,16 @@ class ConnectionManager:
                 del self.active_connections[net_id]
     
     def get_online_users(self, net_id: int) -> set[int]:
-        """Get set of user IDs currently connected to this net"""
+        """Get set of authenticated user IDs currently connected to this net (excludes guests)"""
         if net_id not in self.active_connections:
             return set()
-        return set(user_id for _, user_id in self.active_connections[net_id])
+        return set(user_id for _, user_id in self.active_connections[net_id] if user_id != 0)
+    
+    def get_guest_count(self, net_id: int) -> int:
+        """Get count of unauthenticated (guest) WebSocket connections for a net"""
+        if net_id not in self.active_connections:
+            return 0
+        return sum(1 for _, user_id in self.active_connections[net_id] if user_id == 0)
     
     async def broadcast(self, message: dict, net_id: int):
         """Broadcast message to all connections for a net, cleaning up dead connections"""

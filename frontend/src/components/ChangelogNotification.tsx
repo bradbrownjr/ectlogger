@@ -44,7 +44,7 @@ const pulseAnimation = keyframes`
 // The version number triggers the unread notification for users.
 // Mark entries with `userImpact: true` to highlight them in the UI.
 
-const CHANGELOG_VERSION = '2026.03.12';
+const CHANGELOG_VERSION = '2026.03.21';
 
 interface ChangelogEntry {
   version: string;
@@ -60,6 +60,44 @@ interface ChangelogEntry {
 }
 
 const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '2026.03.21',
+    date: '2026-03-21',
+    sections: [
+      {
+        title: 'New Features',
+        type: 'feature',
+        items: [
+          { text: 'Merge Schedules — combine multiple net schedules into one. All nets, subscribers, staff, and NCS rotation members are moved to the master schedule. Accessible via the merge button on the Scheduler page.', userImpact: true },
+        ],
+      },
+    ],
+  },
+  {
+    version: '2026.03.20',
+    date: '2026-03-20',
+    sections: [
+      {
+        title: 'New Features',
+        type: 'feature',
+        items: [
+          { text: 'Auto-start nets — lobby nets now automatically go live at their scheduled start time. NCS can still start early manually.', userImpact: true },
+          { text: 'Edit net times — NCS and admins can now adjust the start and end time of active, closed, or archived nets via an edit icon next to the status chip.', userImpact: true },
+          { text: 'Check-in prompt — authenticated users viewing an active or lobby net are prompted with a notification asking if they\'d like to check in, with a one-click Check In button.', userImpact: true },
+          { text: 'Net titles on the Dashboard are now clickable — click a net name to go directly to the net view.', userImpact: true },
+        ],
+      },
+      {
+        title: 'Bug Fixes',
+        type: 'bugfix',
+        items: [
+          { text: 'Check-ins count now shows total participants including checked-out stations, with a separate "Checked Out" chip. Previously, checked-out stations were excluded from the count.', userImpact: true },
+          { text: 'Guest count now shows actual unauthenticated viewers instead of checked-in stations without online presence. No longer inflated by users who navigated away.', userImpact: true },
+          { text: 'Fixed net close/report email not being sent — a JSON parsing issue with field configuration prevented email delivery for some nets.', userImpact: true },
+        ],
+      },
+    ],
+  },
   {
     version: '2026.03.12',
     date: '2026-03-12',

@@ -4,6 +4,37 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# March 21, 2026
+
+## New Features
+
+* **Merge Schedules** — Combine multiple net schedules into a single master schedule. All child nets, subscribers, staff, NCS rotation members, topic history, and schedule overrides are moved to the master. Source schedules are permanently deleted. Accessible via the merge (⑂) button on the Scheduler page. Only admins and schedule owners can merge.
+
+---
+
+# March 20, 2026
+
+## New Features
+
+* **Auto-start nets at scheduled time** — Nets in lobby mode now automatically go live when the scheduled start time arrives. Any NCS/admin viewing the net triggers the transition. The manual Start button remains available for starting early.
+* **Edit net start/end times** — NCS operators and admins can now adjust the actual start and end timestamps of active, closed, or archived nets. Click the edit (pencil) icon next to the status chip to open the time editor.
+* **Check-in prompt notification** — Authenticated users viewing an active or lobby net they haven't checked into now receive a friendly notification with a one-click "Check In" button. Appears 2 seconds after page load and auto-dismisses after 15 seconds.
+* **Clickable net titles on Dashboard** — Net names in the card view are now clickable links that navigate directly to the net view page.
+
+## Bug Fixes
+
+* **Check-ins chip count** — The check-ins count now shows total participants who checked into the net, including those who later checked out. Checked-out stations are shown separately as a "Checked Out" chip. Previously, checked-out stations were subtracted from the total.
+* **Guest count accuracy** — The "Guests" chip now counts actual unauthenticated WebSocket viewers instead of checked-in stations without online presence. This fixes inflated guest counts caused by users who navigated away from the page.
+* **Net close/report email fix** — Fixed an issue where the net close email with the log/report was not sent due to `field_config` being passed as a JSON string instead of a parsed dictionary. Added traceback logging for future email failures.
+* **Go Live toast notification fix** — The "Net is now LIVE" confirmation toast now displays correctly (was referencing non-existent state variables).
+
+## Documentation
+
+* **README.md** — Added Secondary NCS to the Net Roles table.
+* **USER-GUIDE.md** — Fixed the "Checking In" section to show the correct order: click Check In first, then fill the form.
+
+---
+
 # March 12, 2026
 
 ## Improvements

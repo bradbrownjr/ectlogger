@@ -504,7 +504,12 @@ const Dashboard: React.FC = () => {
       <CardContent sx={{ flex: 1 }}>
         {/* Title with Status */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
-          <Typography variant="h6" component="h2">
+          <Typography 
+            variant="h6" 
+            component="h2"
+            onClick={() => navigate(`/nets/${net.id}`)}
+            sx={{ cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+          >
             {net.name}
           </Typography>
           <Chip 

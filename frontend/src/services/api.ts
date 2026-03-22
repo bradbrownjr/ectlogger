@@ -102,6 +102,10 @@ export const templateApi = {
   subscribe: (id: number) => api.post(`/templates/${id}/subscribe`),
   unsubscribe: (id: number) => api.delete(`/templates/${id}/subscribe`),
   createNetFromTemplate: (id: number) => api.post(`/templates/${id}/create-net`),
+  mergePreview: (data: { target_template_id: number; source_template_ids: number[] }) =>
+    api.post('/templates/merge/preview', data),
+  merge: (data: { target_template_id: number; source_template_ids: number[] }) =>
+    api.post('/templates/merge', data),
 };
 
 // Frequency API

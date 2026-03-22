@@ -224,7 +224,7 @@ const NetView: React.FC = () => {
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [checkInDialogOpen, setCheckInDialogOpen] = useState(false);
   const [onlineUserIds, setOnlineUserIds] = useState<number[]>([]);
-  const [netStats, setNetStats] = useState<{total_check_ins: number, online_count: number, guest_count: number} | null>(null);
+  const [netStats, setNetStats] = useState<{total_check_ins: number, checked_out_count: number, online_count: number, guest_count: number} | null>(null);
   const [frequencyDialogOpen, setFrequencyDialogOpen] = useState(false);
   const [fieldDefinitions, setFieldDefinitions] = useState<FieldDefinition[]>([]);
   const [mapOpen, setMapOpen] = useState(false);
@@ -247,6 +247,13 @@ const NetView: React.FC = () => {
   const [topicPollDialogOpen, setTopicPollDialogOpen] = useState(false);
   const [tempTopicPrompt, setTempTopicPrompt] = useState('');
   const [tempPollQuestion, setTempPollQuestion] = useState('');
+  // Net time editing dialog state
+  const [timeEditDialogOpen, setTimeEditDialogOpen] = useState(false);
+  const [editStartedAt, setEditStartedAt] = useState('');
+  const [editClosedAt, setEditClosedAt] = useState('');
+  // Check-in prompt for authenticated users viewing active/lobby nets
+  const [checkInPromptOpen, setCheckInPromptOpen] = useState(false);
+  const checkInPromptShownRef = useRef(false);
   // Inline editing state
   const [inlineEditingId, setInlineEditingId] = useState<number | null>(null);
   const [inlineEditValues, setInlineEditValues] = useState<Partial<CheckIn>>({});
@@ -260,6 +267,8 @@ const NetView: React.FC = () => {
   });
   // Frequency filter state - allows filtering check-ins by selected frequencies
   const [filteredFrequencyIds, setFilteredFrequencyIds] = useState<number[]>([]);
+  // Auto-start ref to prevent multiple go-live triggers
+  const autoStartTriggeredRef = useRef(false);
   const { user, isAuthenticated } = useAuth();
   const { gridSquare } = useLocation();
   const navigate = useNavigate();
@@ -372,6 +381,10 @@ const NetView: React.FC = () => {
   // Countdown and duration timer effect - updates every second
   useEffect(() => {
     if (!net) return;
+    // Reset auto-start flag when net becomes active (e.g., triggered by another client)
+    if (net.status === 'active') {
+      autoStartTriggeredRef.current = false;
+    }
     
     const updateTimers = () => {
       const now = new Date();
@@ -396,8 +409,27 @@ const NetView: React.FC = () => {
             setCountdownTime(`${seconds}s`);
           }
         } else {
-          // Past scheduled time - show "Starting soon" or similar
-          setCountdownTime('Starting soon');
+          // Past scheduled time — auto-start the net if in LOBBY mode
+          // Only trigger if current user is NCS/owner/admin (has permission to go live)
+          const isOwnerOrAdmin = user?.id === net.owner_id || user?.role === 'admin';
+          const isNCSRole = netRoles.some((r: any) => r.user_id === user?.id && r.role === 'NCS');
+          const canAutoStart = isOwnerOrAdmin || isNCSRole;
+          
+          if (net.status === 'lobby' && canAutoStart && !autoStartTriggeredRef.current) {
+            autoStartTriggeredRef.current = true;
+            setCountdownTime('Starting...');
+            api.post(`/nets/${net.id}/go-live`).then(() => {
+              fetchNet();
+              setToastMessage('Net auto-started at scheduled time!');
+            }).catch((err: any) => {
+              // Already active or other issue — reset so it can retry
+              console.debug('Auto-start not triggered:', err?.response?.data?.detail);
+              autoStartTriggeredRef.current = false;
+              setCountdownTime('Starting soon');
+            });
+          } else {
+            setCountdownTime('Starting soon');
+          }
         }
       } else {
         setCountdownTime(null);
@@ -437,7 +469,22 @@ const NetView: React.FC = () => {
     const interval = setInterval(updateTimers, 1000);
     
     return () => clearInterval(interval);
-  }, [net?.scheduled_start_time, net?.started_at, net?.status]);
+  }, [net?.scheduled_start_time, net?.started_at, net?.status, net?.owner_id, net?.id, user?.id, user?.role, netRoles]);
+
+  // Show check-in prompt for authenticated users viewing an active/lobby net they haven't checked into
+  useEffect(() => {
+    if (!net || !isAuthenticated || checkInPromptShownRef.current) return;
+    if (net.status !== 'active' && net.status !== 'lobby') return;
+    const alreadyCheckedIn = checkIns.some(
+      (ci: any) => ci.user_id === user?.id && ci.status !== 'checked_out'
+    );
+    if (!alreadyCheckedIn) {
+      checkInPromptShownRef.current = true;
+      // Delay so it doesn't flash during initial data load
+      const timer = setTimeout(() => setCheckInPromptOpen(true), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [net?.status, isAuthenticated, checkIns, user?.id]);
 
   const handleDetachCheckInList = () => setCheckInListDetached(true);
   const handleAttachCheckInList = () => setCheckInListDetached(false);
@@ -814,12 +861,26 @@ const NetView: React.FC = () => {
     try {
       await api.post(`/nets/${netId}/go-live`);
       await fetchNet();
-      setSnackbarMessage('Net is now LIVE! Subscribers have been notified.');
-      setSnackbarOpen(true);
+      setToastMessage('Net is now LIVE! Subscribers have been notified.');
     } catch (error: any) {
       console.error('Failed to go live:', error);
-      setSnackbarMessage(error.response?.data?.detail || 'Failed to go live');
-      setSnackbarOpen(true);
+      setToastMessage(error.response?.data?.detail || 'Failed to go live');
+    }
+  };
+
+  // Save adjusted net start/end times
+  const handleSaveNetTimes = async () => {
+    try {
+      const updateData: any = {};
+      if (editStartedAt) updateData.started_at = new Date(editStartedAt).toISOString();
+      if (editClosedAt) updateData.closed_at = new Date(editClosedAt).toISOString();
+      await netApi.update(Number(netId), updateData);
+      await fetchNet();
+      setTimeEditDialogOpen(false);
+      setToastMessage('Net times updated');
+    } catch (error: any) {
+      console.error('Failed to update net times:', error);
+      setToastMessage(error.response?.data?.detail || 'Failed to update net times');
     }
   };
 
@@ -1557,6 +1618,30 @@ const NetView: React.FC = () => {
                 {/* Left side: Status, timers, and stats */}
                 <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexWrap: 'wrap' }}>
                   <Chip label={net.status === 'lobby' ? 'LOBBY' : net.status} size="small" color={net.status === 'active' ? 'success' : net.status === 'lobby' ? 'warning' : 'default'} />
+                  {/* Edit net times button — available for NCS/admin on any started net */}
+                  {canManage && (net.status === 'active' || net.status === 'closed' || net.status === 'archived') && (
+                    <Tooltip title="Edit net start/end times">
+                      <IconButton
+                        size="small"
+                        onClick={() => {
+                          // Convert UTC timestamps to local datetime-local format for the inputs
+                          const toLocal = (isoStr?: string) => {
+                            if (!isoStr) return '';
+                            const d = new Date(isoStr.endsWith('Z') ? isoStr : isoStr + 'Z');
+                            const offset = d.getTimezoneOffset();
+                            const local = new Date(d.getTime() - offset * 60000);
+                            return local.toISOString().slice(0, 16);
+                          };
+                          setEditStartedAt(toLocal(net.started_at));
+                          setEditClosedAt(toLocal(net.closed_at));
+                          setTimeEditDialogOpen(true);
+                        }}
+                        sx={{ p: 0.25 }}
+                      >
+                        <EditIcon sx={{ fontSize: 16 }} />
+                      </IconButton>
+                    </Tooltip>
+                  )}
                   {/* Countdown timer - shows time until scheduled start */}
                   {countdownTime && (
                     <Chip 
@@ -1582,9 +1667,12 @@ const NetView: React.FC = () => {
                   {netStats && (
                     <>
                       <Chip label={`${netStats.total_check_ins} Check-ins`} size="small" color="primary" variant="outlined" />
+                      {netStats.checked_out_count > 0 && (
+                        <Chip label={`${netStats.checked_out_count} Checked Out`} size="small" color="default" variant="outlined" />
+                      )}
                       <Chip label={`${netStats.online_count} Online`} size="small" color="success" variant="outlined" />
                       {netStats.guest_count > 0 && (
-                        <Chip label={`${netStats.guest_count} Guests`} size="small" color="default" variant="outlined" />
+                        <Chip label={`${netStats.guest_count} ${netStats.guest_count === 1 ? 'Guest' : 'Guests'}`} size="small" color="default" variant="outlined" />
                       )}
                     </>
                   )}
@@ -4151,6 +4239,92 @@ const NetView: React.FC = () => {
           templateName={net.name}
         />
       )}
+
+      {/* ========== NET TIME EDIT DIALOG ========== */}
+      <Dialog open={timeEditDialogOpen} onClose={() => setTimeEditDialogOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Edit Net Times</DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+          <TextField
+            label="Started At"
+            type="datetime-local"
+            value={editStartedAt}
+            onChange={(e) => setEditStartedAt(e.target.value)}
+            InputLabelProps={{ shrink: true }}
+            fullWidth
+            sx={{ mt: 1 }}
+          />
+          <TextField
+            label="Closed At"
+            type="datetime-local"
+            value={editClosedAt}
+            onChange={(e) => setEditClosedAt(e.target.value)}
+            InputLabelProps={{ shrink: true }}
+            fullWidth
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setTimeEditDialogOpen(false)}>Cancel</Button>
+          <Button variant="contained" onClick={handleSaveNetTimes}>Save</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ========== CHECK-IN PROMPT FOR VIEWERS ========== */}
+      {/* Shows once for authenticated users viewing an active/lobby net they haven't joined */}
+      <Snackbar
+        open={checkInPromptOpen}
+        autoHideDuration={15000}
+        onClose={() => setCheckInPromptOpen(false)}
+        message={net?.status === 'lobby' ? 'The lobby is open! Would you like to check in?' : 'This net is active. Would you like to check in?'}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        action={
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button
+              color="primary"
+              size="small"
+              variant="contained"
+              onClick={() => {
+                setCheckInPromptOpen(false);
+                // Pre-fill form with user's profile data and open check-in
+                if (user) {
+                  const locationValue = (user.location_awareness && gridSquare)
+                    ? gridSquare
+                    : (user.location || '');
+                  setCheckInForm({
+                    callsign: getAppropriateCallsign(),
+                    name: user.name || '',
+                    location: locationValue,
+                    skywarn_number: '',
+                    weather_observation: '',
+                    power_source: '',
+                    power: '',
+                    feedback: '',
+                    notes: '',
+                    relayed_by: '',
+                    available_frequency_ids: [],
+                    custom_fields: {},
+                    topic_response: '',
+                    poll_response: '',
+                  });
+                }
+                if (canManageCheckIns) {
+                  const callsignField = document.querySelector('input[placeholder="Callsign"]') as HTMLInputElement;
+                  if (callsignField) {
+                    callsignField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    callsignField.focus();
+                  }
+                } else {
+                  setCheckInDialogOpen(true);
+                }
+              }}
+            >
+              Check In
+            </Button>
+            <Button color="inherit" size="small" onClick={() => setCheckInPromptOpen(false)}>
+              Dismiss
+            </Button>
+          </Box>
+        }
+      />
 
       <Snackbar
         open={toastMessage !== ''}

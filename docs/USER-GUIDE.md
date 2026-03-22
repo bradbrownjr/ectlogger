@@ -65,12 +65,13 @@ View your participation statistics:
 ### Checking In
 
 1. Open an active net
-2. Fill in the check-in form:
+2. Click **Check In** (the login icon button in the toolbar)
+3. Fill in the check-in form that opens:
    - Your callsign (auto-filled if logged in)
    - Your name (auto-filled from profile or contacts directory)
    - Your location (auto-filled if location awareness is enabled, or from contacts directory)
    - Any additional fields the NCS has configured
-3. Click **Check In**
+4. Submit the form to complete your check-in
 
 ### Status Updates
 
@@ -151,6 +152,29 @@ For nets that run regularly (weekly club nets, SKYWARN practice nets, etc.), cre
 - View upcoming NCS assignments on the rotation calendar
 - Request coverage or swap dates with other operators
 - Override specific dates when needed
+
+### Merging Schedules
+
+If you have multiple schedules that should be combined into one (e.g., separate schedules that were created for the same net series):
+
+1. On the **Scheduler** page, click the **Merge** button (⑂) in the bottom-right corner
+2. Checkboxes appear on each schedule card — select 2 or more schedules to merge
+3. Click **Merge Selected** in the bottom bar
+4. In the dialog, choose which schedule becomes the **master** (the one that survives)
+5. Review the merge summary and any conflicting settings highlighted in yellow
+6. Click **Merge** to confirm
+
+**What gets moved to the master schedule:**
+- All historical nets and their check-ins, roles, and chat messages
+- Subscribers (duplicates are automatically removed)
+- Staff members and NCS rotation members
+- Topic history and schedule overrides
+
+**Who can merge:**
+- **Admins** can merge any schedules
+- **Owners** can merge schedules they own (all selected schedules must be yours)
+
+> **This action is permanent and cannot be undone.** Source schedules are deleted after the merge.
 
 ### Net Script
 
