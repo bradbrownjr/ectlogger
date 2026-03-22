@@ -350,26 +350,27 @@ const Scheduler: React.FC = () => {
   const renderCardView = () => (
     <Grid container spacing={3} sx={{ alignItems: 'stretch' }}>
       {filteredSchedules.map((schedule: Schedule) => (
-        <Grid item xs={12} sm={6} md={4} key={schedule.id} sx={{ display: 'flex', position: 'relative' }}>
-          {/* Merge mode checkbox overlay on top-right of card */}
-          {mergeMode && canMerge(schedule) && (
-            <Checkbox
-              checked={mergeSelected.has(schedule.id)}
-              onChange={() => handleToggleMergeSelect(schedule.id)}
-              sx={{
-                position: 'absolute', top: 4, right: 4, zIndex: 2,
-                bgcolor: 'background.paper', borderRadius: 1,
-                boxShadow: 1,
-              }}
-            />
-          )}
+        <Grid item xs={12} sm={6} md={4} key={schedule.id} sx={{ display: 'flex' }}>
           <Box
             sx={{
               width: '100%',
+              position: 'relative',
               opacity: mergeMode && !canMerge(schedule) ? 0.4 : 1,
               pointerEvents: mergeMode && !canMerge(schedule) ? 'none' : 'auto',
             }}
           >
+            {/* Merge mode checkbox overlay on top-right of card */}
+            {mergeMode && canMerge(schedule) && (
+              <Checkbox
+                checked={mergeSelected.has(schedule.id)}
+                onChange={() => handleToggleMergeSelect(schedule.id)}
+                sx={{
+                  position: 'absolute', top: 4, right: 4, zIndex: 2,
+                  bgcolor: 'background.paper', borderRadius: 1,
+                  boxShadow: 1,
+                }}
+              />
+            )}
             {renderScheduleCard(schedule)}
           </Box>
         </Grid>
@@ -864,15 +865,25 @@ const Scheduler: React.FC = () => {
             {mergeSelected.size} schedule{mergeSelected.size !== 1 ? 's' : ''} selected
             {mergeSelected.size < 2 && ' (select at least 2)'}
           </Typography>
-          <Button
-            variant="contained"
-            color="warning"
-            startIcon={<CallMergeIcon />}
-            disabled={mergeSelected.size < 2}
-            onClick={handleOpenMergeDialog}
-          >
-            Merge Selected
-          </Button>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button
+              variant="outlined"
+              color="inherit"
+              startIcon={<ClearIcon />}
+              onClick={handleExitMergeMode}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              color="warning"
+              startIcon={<CallMergeIcon />}
+              disabled={mergeSelected.size < 2}
+              onClick={handleOpenMergeDialog}
+            >
+              Merge Selected
+            </Button>
+          </Box>
         </Box>
       )}
 
