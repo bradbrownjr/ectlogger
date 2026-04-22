@@ -4,6 +4,23 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# April 21, 2026
+
+## Bug Fixes
+
+* **Schedule merge no longer detaches nets** — Merging schedules now correctly preserves every child net's link to the surviving schedule. Previously, when SQLAlchemy flushed the deletion of source schedules in the same transaction as the FK reassignment, the dependency processor's "nullify orphaned children" pass could clobber the just-updated `template_id` values on moved nets, causing those nets (and all their check-ins) to silently disappear from the merged schedule's statistics. Fixed by explicitly flushing all FK reparentings before the source-schedule deletions run.
+
+## New Features
+
+* **Link Existing Net to Schedule** — From the schedule statistics page (`/statistics/schedules/:id`), schedule owners and admins can now click "Link Existing Net" to attach an ad-hoc net (or a net created under the wrong schedule) to this schedule. Useful when an NCS starts a one-off net and later realizes it should be counted toward a recurring schedule's history.
+
+## API
+
+* `PUT /nets/{net_id}/template` — Attach (or detach with `template_id: null`) a net to a schedule. Requires the caller to be the net's owner or admin, and when attaching, also the schedule's owner or admin.
+* `GET /templates/{template_id}/linkable-nets` — List nets the current user could attach to a given schedule (their own nets, or all nets if admin, excluding ones already attached).
+
+---
+
 # March 21, 2026
 
 ## New Features

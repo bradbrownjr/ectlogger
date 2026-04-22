@@ -417,6 +417,11 @@ class TemplateMergeRequest(BaseModel):
     source_template_ids: List[int] = Field(min_length=1, description="Templates to merge into the target (will be deleted)")
 
 
+class NetTemplateLinkRequest(BaseModel):
+    """Request to attach (or detach) an existing net to a schedule/template"""
+    template_id: Optional[int] = Field(None, description="Template to link this net to. Pass null to detach.")
+
+
 class TemplateMergeConflict(BaseModel):
     """A field where the source template differs from the target"""
     field: str

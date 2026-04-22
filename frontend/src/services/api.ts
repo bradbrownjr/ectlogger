@@ -77,6 +77,11 @@ export const netApi = {
   clearActiveFrequency: (netId: number) => 
     api.delete(`/nets/${netId}/active-frequency`),
   claimNcs: (netId: number) => api.post(`/nets/${netId}/claim-ncs`),
+  // Attach (or detach with template_id=null) an existing net to a schedule/template.
+  // Used by NCS/admin when a net was started outside its schedule and needs to be
+  // counted under the right schedule's stats.
+  linkToTemplate: (netId: number, templateId: number | null) =>
+    api.put(`/nets/${netId}/template`, { template_id: templateId }),
 };
 
 // Check-in API
@@ -106,6 +111,11 @@ export const templateApi = {
     api.post('/templates/merge/preview', data),
   merge: (data: { target_template_id: number; source_template_ids: number[] }) =>
     api.post('/templates/merge', data),
+  // List nets the current user can attach to a given schedule/template.
+  // Returns nets owned by the caller (or all nets if admin) that aren't already
+  // attached to this template.
+  linkableNets: (templateId: number) =>
+    api.get(`/templates/${templateId}/linkable-nets`),
 };
 
 // Frequency API

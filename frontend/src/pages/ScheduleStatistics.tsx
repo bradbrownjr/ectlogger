@@ -21,6 +21,13 @@ import {
   useTheme,
   Button,
   Chip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  MenuItem,
+  Snackbar,
 } from '@mui/material';
 import {
   ArrowBack,
@@ -28,6 +35,7 @@ import {
   People,
   Event,
   BarChart as BarChartIconMui,
+  Link as LinkIcon,
 } from '@mui/icons-material';
 import {
   BarChart,
@@ -40,7 +48,7 @@ import {
   LineChart,
   Line,
 } from 'recharts';
-import { statisticsApi } from '../services/api';
+import { statisticsApi, templateApi, netApi } from '../services/api';
 import { formatDateTime } from '../utils/dateUtils';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -60,12 +68,23 @@ interface NetInstance {
 interface TemplateStats {
   template_id: number;
   template_name: string;
+  template_owner_id?: number;
   total_instances: number;
   total_check_ins: number;
   avg_check_ins_per_instance: number;
   unique_operators: number;
   regular_operators: RegularOperator[];
   instances: NetInstance[];
+}
+
+interface LinkableNet {
+  id: number;
+  name: string;
+  status: string | null;
+  started_at: string | null;
+  closed_at: string | null;
+  owner_callsign: string | null;
+  current_template_id: number | null;
 }
 
 const ScheduleStatistics: React.FC = () => {
@@ -76,6 +95,62 @@ const ScheduleStatistics: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<TemplateStats | null>(null);
+
+  // ========== LINK EXISTING NET DIALOG STATE ==========
+  // Lets the schedule owner (or admin) attach an ad-hoc net to this schedule
+  // so its check-ins start counting against the schedule's stats.
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const [linkableNets, setLinkableNets] = useState<LinkableNet[]>([]);
+  const [linkableLoading, setLinkableLoading] = useState(false);
+  const [linkableError, setLinkableError] = useState<string | null>(null);
+  const [selectedNetId, setSelectedNetId] = useState<number | ''>('');
+  const [linkSubmitting, setLinkSubmitting] = useState(false);
+  const [linkSuccess, setLinkSuccess] = useState<string | null>(null);
+
+  // Caller can manage this schedule if they own it or are an admin.
+  const canManageSchedule = !!(
+    stats &&
+    user &&
+    (user.role === 'admin' || stats.template_owner_id === user.id)
+  );
+
+  const refetchStats = async () => {
+    if (!templateId) return;
+    const response = await statisticsApi.getTemplateStats(parseInt(templateId));
+    setStats(response.data);
+  };
+
+  const openLinkDialog = async () => {
+    if (!templateId) return;
+    setLinkDialogOpen(true);
+    setSelectedNetId('');
+    setLinkableError(null);
+    setLinkableLoading(true);
+    try {
+      const resp = await templateApi.linkableNets(parseInt(templateId));
+      setLinkableNets(resp.data);
+    } catch (err: any) {
+      setLinkableError(err.response?.data?.detail || 'Failed to load linkable nets');
+    } finally {
+      setLinkableLoading(false);
+    }
+  };
+
+  const submitLink = async () => {
+    if (!templateId || selectedNetId === '') return;
+    setLinkSubmitting(true);
+    setLinkableError(null);
+    try {
+      await netApi.linkToTemplate(Number(selectedNetId), parseInt(templateId));
+      setLinkDialogOpen(false);
+      setLinkSuccess('Net linked to this schedule.');
+      await refetchStats();
+    } catch (err: any) {
+      setLinkableError(err.response?.data?.detail || 'Failed to link net');
+    } finally {
+      setLinkSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -159,6 +234,16 @@ const ScheduleStatistics: React.FC = () => {
             Historical statistics for this scheduled net series
           </Typography>
         </Box>
+        {/* Schedule owners and admins can pull an existing ad-hoc net into this schedule */}
+        {canManageSchedule && (
+          <Button
+            variant="outlined"
+            startIcon={<LinkIcon />}
+            onClick={openLinkDialog}
+          >
+            Link Existing Net
+          </Button>
+        )}
         <Button
           variant="outlined"
           startIcon={<Event />}
@@ -367,6 +452,85 @@ const ScheduleStatistics: React.FC = () => {
           </Paper>
         </Grid>
       </Grid>
+
+      {/* ========== LINK EXISTING NET DIALOG ========== */}
+      {/* Owner/admin selects one of their nets that is not already attached to this
+          schedule and links it. After success, the net's check-ins will count toward
+          this schedule's stats. */}
+      <Dialog
+        open={linkDialogOpen}
+        onClose={() => !linkSubmitting && setLinkDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Link Existing Net to {stats.template_name}</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Attach a net that was started outside this schedule (for example an
+            ad-hoc net) so its check-ins count toward this schedule's statistics.
+          </Typography>
+          {linkableError && (
+            <Alert severity="error" sx={{ mb: 2 }}>{linkableError}</Alert>
+          )}
+          {linkableLoading ? (
+            <Skeleton variant="rectangular" height={56} />
+          ) : linkableNets.length === 0 ? (
+            <Alert severity="info">
+              No eligible nets to link. You can only link nets you own that are not
+              already attached to this schedule.
+            </Alert>
+          ) : (
+            <TextField
+              select
+              fullWidth
+              label="Net to link"
+              value={selectedNetId}
+              onChange={(e) => setSelectedNetId(Number(e.target.value))}
+              SelectProps={{ MenuProps: { PaperProps: { sx: { maxHeight: 400 } } } }}
+            >
+              {linkableNets.map((n) => {
+                const dateLabel = n.started_at
+                  ? formatDateTime(n.started_at, user?.prefer_utc || false)
+                  : 'not started';
+                const detached = n.current_template_id == null
+                  ? 'unscheduled'
+                  : `currently linked to schedule #${n.current_template_id}`;
+                return (
+                  <MenuItem key={n.id} value={n.id}>
+                    <Box>
+                      <Typography variant="body2">
+                        #{n.id} — {n.name}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {dateLabel} · {n.status || 'unknown'} · {detached}
+                      </Typography>
+                    </Box>
+                  </MenuItem>
+                );
+              })}
+            </TextField>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setLinkDialogOpen(false)} disabled={linkSubmitting}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={submitLink}
+            disabled={selectedNetId === '' || linkSubmitting}
+          >
+            {linkSubmitting ? 'Linking…' : 'Link Net'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Snackbar
+        open={!!linkSuccess}
+        autoHideDuration={4000}
+        onClose={() => setLinkSuccess(null)}
+        message={linkSuccess || ''}
+      />
     </Container>
   );
 };

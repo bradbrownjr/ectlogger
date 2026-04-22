@@ -9,8 +9,8 @@ import csv
 import io
 import json
 from app.database import get_db
-from app.models import Net, NetStatus, User, Frequency, NetRole, net_frequencies, CheckIn
-from app.schemas import NetCreate, NetUpdate, NetResponse, FrequencyResponse
+from app.models import Net, NetStatus, User, Frequency, NetRole, net_frequencies, CheckIn, NetTemplate, UserRole
+from app.schemas import NetCreate, NetUpdate, NetResponse, FrequencyResponse, NetTemplateLinkRequest
 from app.dependencies import get_current_user, get_current_user_optional
 from app.email_service import EmailService
 
@@ -288,6 +288,58 @@ async def update_net(
     await db.commit()
     await db.refresh(net, ['frequencies'])
     
+    return NetResponse.from_orm(net)
+
+
+# ========== LINK / UNLINK NET TO A SCHEDULE (TEMPLATE) ==========
+# Used when an NCS started an ad-hoc net (or a net under the wrong schedule)
+# and later wants it counted against a recurring schedule's stats.
+@router.put("/{net_id}/template", response_model=NetResponse)
+async def link_net_to_template(
+    net_id: int,
+    link_data: NetTemplateLinkRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Attach a net to a schedule/template, or detach it (template_id=null).
+
+    Permission rules:
+    - Caller must be admin OR the net's owner (i.e. allowed to manage the net).
+    - When attaching to a template, caller must also be admin OR the template's
+      owner. This prevents arbitrary users from poisoning someone else's
+      schedule statistics with unrelated nets.
+    """
+    result = await db.execute(
+        select(Net).options(selectinload(Net.frequencies)).where(Net.id == net_id)
+    )
+    net = result.scalar_one_or_none()
+    if not net:
+        raise HTTPException(status_code=404, detail="Net not found")
+
+    is_admin = current_user.role == UserRole.ADMIN
+    if not (is_admin or net.owner_id == current_user.id):
+        raise HTTPException(status_code=403, detail="Only the net owner or an admin can change this net's schedule")
+
+    new_template_id = link_data.template_id
+
+    if new_template_id is not None:
+        template_result = await db.execute(
+            select(NetTemplate).where(NetTemplate.id == new_template_id)
+        )
+        template = template_result.scalar_one_or_none()
+        if not template:
+            raise HTTPException(status_code=404, detail="Template not found")
+        if not (is_admin or template.owner_id == current_user.id):
+            raise HTTPException(
+                status_code=403,
+                detail="Only the schedule owner or an admin can attach nets to this schedule",
+            )
+
+    net.template_id = new_template_id
+    await db.commit()
+    await db.refresh(net, ['frequencies'])
+
     return NetResponse.from_orm(net)
 
 

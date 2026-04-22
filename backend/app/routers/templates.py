@@ -623,6 +623,15 @@ async def merge_templates(
     nets_moved = len(nets_to_move)
     for net in nets_to_move:
         net.template_id = target_id
+    # IMPORTANT: flush the FK updates to the database BEFORE the source-template
+    # deletions below. NetTemplate.nets is a one-to-many without cascade or
+    # passive_deletes, so when SQLAlchemy flushes a source DELETE it issues a
+    # bulk "UPDATE nets SET template_id=NULL WHERE template_id=<source_id>" to
+    # null out orphans. If we let that happen in the same flush as the FK
+    # reassignment, the nullify pass can clobber the just-updated rows and
+    # nets get silently detached from the merged schedule. Flushing here
+    # commits the new FK values first so the nullify pass affects 0 rows.
+    await db.flush()
     logger.info(f"Merge: moved {nets_moved} nets to template {target_id}")
 
     # 2. Move subscriptions (skip duplicates)
@@ -706,6 +715,13 @@ async def merge_templates(
         topic.template_id = target_id
 
     # 7. Delete source templates (cascade handles any remaining orphan records)
+    # IMPORTANT: flush ALL FK reassignments above before issuing any source
+    # template DELETEs. SQLAlchemy's dependency processor decides how to handle
+    # orphaned children at flush time based on what's currently in the DB. If
+    # the FK updates from steps 1-6 haven't been flushed yet, the source DELETE
+    # can trigger nullify/delete passes that clobber the just-reparented rows.
+    # See merge_templates docstring and the comment in step 1.
+    await db.flush()
     for source in sources:
         await db.delete(source)
     logger.info(f"Merge: deleted {len(sources)} source templates")
@@ -722,6 +738,65 @@ async def merge_templates(
         rotation_members_moved=rotation_moved,
         templates_deleted=len(sources),
     )
+
+
+@router.get("/{template_id}/linkable-nets")
+async def list_linkable_nets(
+    template_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    List nets that the current user could attach to this schedule/template.
+
+    Returns nets that:
+    - Are NOT already linked to this template, AND
+    - Are owned by the current user (or any net if caller is admin).
+
+    Used by the "Link existing net" UI on the schedule statistics page so an
+    NCS can pull an ad-hoc net into the right schedule after the fact.
+    """
+    # Verify the template exists and the caller is allowed to attach to it.
+    template_result = await db.execute(
+        select(NetTemplate).where(NetTemplate.id == template_id)
+    )
+    template = template_result.scalar_one_or_none()
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+
+    is_admin = current_user.role == UserRole.ADMIN
+    if not (is_admin or template.owner_id == current_user.id):
+        raise HTTPException(
+            status_code=403,
+            detail="Only the schedule owner or an admin can link nets to this schedule",
+        )
+
+    # Build candidate net query
+    query = (
+        select(Net)
+        .options(selectinload(Net.owner))
+        .where((Net.template_id != template_id) | (Net.template_id.is_(None)))
+        .order_by(Net.started_at.desc().nullslast(), Net.created_at.desc())
+        .limit(500)
+    )
+    if not is_admin:
+        query = query.where(Net.owner_id == current_user.id)
+
+    result = await db.execute(query)
+    nets = result.scalars().all()
+
+    return [
+        {
+            "id": n.id,
+            "name": n.name,
+            "status": n.status.value if n.status else None,
+            "started_at": n.started_at.isoformat() if n.started_at else None,
+            "closed_at": n.closed_at.isoformat() if n.closed_at else None,
+            "owner_callsign": n.owner.callsign if n.owner else None,
+            "current_template_id": n.template_id,
+        }
+        for n in nets
+    ]
 
 
 @router.post("/{template_id}/subscribe", response_model=NetTemplateSubscriptionResponse)

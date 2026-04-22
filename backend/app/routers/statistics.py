@@ -342,6 +342,7 @@ async def get_template_statistics(
     return {
         "template_id": template_id,
         "template_name": template.name,
+        "template_owner_id": template.owner_id,
         "total_instances": total_instances,
         "total_check_ins": total_check_ins,
         "avg_check_ins_per_instance": avg_check_ins,

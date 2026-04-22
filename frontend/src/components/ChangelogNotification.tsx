@@ -44,7 +44,7 @@ const pulseAnimation = keyframes`
 // The version number triggers the unread notification for users.
 // Mark entries with `userImpact: true` to highlight them in the UI.
 
-const CHANGELOG_VERSION = '2026.03.21';
+const CHANGELOG_VERSION = '2026.04.21';
 
 interface ChangelogEntry {
   version: string;
@@ -60,6 +60,26 @@ interface ChangelogEntry {
 }
 
 const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '2026.04.21',
+    date: '2026-04-21',
+    sections: [
+      {
+        title: 'Bug Fixes',
+        type: 'bugfix',
+        items: [
+          { text: 'Schedule merge now correctly preserves all nets and their check-ins under the surviving schedule. Previously, merging schedules could silently detach nets so their stats no longer counted toward the merged schedule.', userImpact: true },
+        ],
+      },
+      {
+        title: 'New Features',
+        type: 'feature',
+        items: [
+          { text: 'Link Existing Net to Schedule — schedule owners and admins can now attach an ad-hoc or misfiled net to a schedule from the schedule statistics page so its check-ins count toward the schedule\u2019s history.', userImpact: true },
+        ],
+      },
+    ],
+  },
   {
     version: '2026.03.21',
     date: '2026-03-21',
