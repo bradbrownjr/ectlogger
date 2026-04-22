@@ -4,6 +4,15 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# April 21, 2026 (c)
+
+## Schedule Statistics Tweaks
+
+* **Default time window is now 1 year** — Monthly nets and occasional SKYWARN activations were showing zeros under the old 30-day default. The 30 / 90 / year / all-time toggle is unchanged; only the default selection moved.
+* **PDF export includes all leaderboards** — The static PDF report now contains all four leaderboards (Check-ins, NCS, Logger, Relay) stacked sequentially, since tab clicks aren't possible in a PDF. The on-screen tabbed view is unchanged.
+
+---
+
 # April 21, 2026 (b)
 
 ## Schedule Statistics Overhaul

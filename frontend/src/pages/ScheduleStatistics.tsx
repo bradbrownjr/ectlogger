@@ -177,6 +177,61 @@ interface LinkableNet {
   current_template_id: number | null;
 }
 
+// ========== TYPED LEADERBOARD WRAPPERS ==========
+// Thin adapters around LeaderboardTable so the per-leaderboard column/row
+// shaping lives in one place and can be reused by both the on-screen tabbed
+// view and the stacked PDF-export view.
+const CheckInLeaderboard: React.FC<{ data: RegularOperator[] }> = ({ data }) => (
+  <LeaderboardTable
+    emptyMessage="No check-ins recorded in this window."
+    columns={['Callsign', 'Nets', 'Participation']}
+    rows={data.map((op) => ({
+      key: op.callsign,
+      cells: [
+        op.callsign,
+        op.appearances,
+        <Chip
+          key="pct"
+          label={`${op.percentage}%`}
+          size="small"
+          color={op.percentage >= 80 ? 'success' : op.percentage >= 50 ? 'info' : 'default'}
+        />,
+      ],
+    }))}
+  />
+);
+
+const RoleLeaderboard: React.FC<{
+  data: RoleLeaderEntry[];
+  countLabel: string;
+  emptyMessage: string;
+}> = ({ data, countLabel, emptyMessage }) => (
+  <LeaderboardTable
+    emptyMessage={emptyMessage}
+    columns={['Operator', countLabel]}
+    rows={data.map((row) => ({
+      key: String(row.user_id),
+      cells: [
+        row.callsign
+          ? `${row.callsign}${row.name ? ' (' + row.name + ')' : ''}`
+          : (row.name || `User #${row.user_id}`),
+        row.nets_count,
+      ],
+    }))}
+  />
+);
+
+const RelayLeaderboard: React.FC<{ data: RelayLeaderEntry[] }> = ({ data }) => (
+  <LeaderboardTable
+    emptyMessage="No relayed check-ins recorded in this window."
+    columns={['Callsign', 'Nets', 'Total Relays']}
+    rows={data.map((row) => ({
+      key: row.callsign,
+      cells: [row.callsign, row.nets_count, row.relays_count],
+    }))}
+  />
+);
+
 const ScheduleStatistics: React.FC = () => {
   const { templateId } = useParams<{ templateId: string }>();
   const navigate = useNavigate();
@@ -186,14 +241,19 @@ const ScheduleStatistics: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<TemplateStats | null>(null);
 
-  // Time-window filter for stats. Default 30 days; persists across schedules
-  // for the lifetime of the page. Triggers a refetch when changed.
-  const [windowDays, setWindowDays] = useState<WindowDays>(30);
+  // Time-window filter for stats. Default 1 year so monthly nets and the
+  // occasional SKYWARN net always have meaningful counts; 30 days is too
+  // narrow for nets that don't run weekly. Persists across schedules for
+  // the lifetime of the page; triggers a refetch when changed.
+  const [windowDays, setWindowDays] = useState<WindowDays>(365);
 
-  // Which leaderboard tab is active.
+  // Which leaderboard tab is active (on-screen view only).
   const [leaderboardTab, setLeaderboardTab] = useState<0 | 1 | 2 | 3>(0);
 
-  // PDF export state
+  // PDF export state. While true, the page swaps the tabbed leaderboard
+  // view for a stacked view that renders ALL four leaderboards so they all
+  // appear in the captured PDF. Without this, only the active tab would
+  // be in the DOM at capture time.
   const [exporting, setExporting] = useState(false);
 
   // ========== LINK EXISTING NET DIALOG STATE ==========
@@ -273,11 +333,16 @@ const ScheduleStatistics: React.FC = () => {
   }, [templateId, windowDays]);
 
   // Export the stats container to PDF. We export the inner content div so the
-  // page header / toolbar buttons aren't included in the report.
+  // page header / toolbar buttons aren't included in the report. We also
+  // toggle `exporting` so the PDF-only stacked leaderboards are mounted
+  // (and the on-screen tabbed view hidden) before html2canvas captures.
   const handleExportPdf = async () => {
     if (!stats) return;
     setExporting(true);
     try {
+      // Yield to React so the export-mode DOM (all four leaderboards visible,
+      // tabbed view hidden) is committed before html2canvas reads it.
+      await new Promise((resolve) => setTimeout(resolve, 50));
       const filename = `${(stats.template_name || 'Schedule').replace(/[^a-zA-Z0-9]/g, '_')}_Statistics`;
       await exportElementToPdf('schedule-stats-content', {
         filename,
@@ -512,99 +577,99 @@ const ScheduleStatistics: React.FC = () => {
         )}
 
         {/* ========== LEADERBOARDS ========== */}
-        {/* Tabbed view: Check-ins / NCS / Logger / Relay. All scoped to the
-            currently-selected time window. Counts represent distinct nets
-            within the window, not raw event counts. */}
-        <Grid item xs={12} md={6}>
+        {/* Two layouts share the same data: a compact tabbed view for the
+            screen, and a stacked view (all four leaderboards visible) used
+            during PDF export so every leaderboard ends up in the report. */}
+        <Grid item xs={12} md={exporting ? 12 : 6}>
           <Paper sx={{ p: 3, height: '100%' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
               <EmojiEventsIcon color="warning" />
               <Typography variant="h6">Leaderboards</Typography>
             </Box>
-            <Tabs
-              value={leaderboardTab}
-              onChange={(_, v) => setLeaderboardTab(v)}
-              variant="scrollable"
-              scrollButtons="auto"
-              sx={{ mb: 1 }}
-            >
-              <Tab label={`Check-ins (${stats.check_in_leaderboard?.length ?? stats.regular_operators.length})`} />
-              <Tab label={`NCS (${stats.ncs_leaderboard?.length ?? 0})`} />
-              <Tab label={`Logger (${stats.logger_leaderboard?.length ?? 0})`} />
-              <Tab label={`Relay (${stats.relay_leaderboard?.length ?? 0})`} />
-            </Tabs>
 
-            {/* Check-in leaderboard */}
-            {leaderboardTab === 0 && (
-              <LeaderboardTable
-                emptyMessage="No check-ins recorded in this window."
-                columns={['Callsign', 'Nets', 'Participation']}
-                rows={(stats.check_in_leaderboard ?? stats.regular_operators).map((op) => ({
-                  key: op.callsign,
-                  cells: [
-                    op.callsign,
-                    op.appearances,
-                    <Chip
-                      key="pct"
-                      label={`${op.percentage}%`}
-                      size="small"
-                      color={op.percentage >= 80 ? 'success' : op.percentage >= 50 ? 'info' : 'default'}
-                    />,
-                  ],
-                }))}
-              />
+            {/* ----- TABBED VIEW (on-screen only) ----- */}
+            {!exporting && (
+              <>
+                <Tabs
+                  value={leaderboardTab}
+                  onChange={(_, v) => setLeaderboardTab(v)}
+                  variant="scrollable"
+                  scrollButtons="auto"
+                  sx={{ mb: 1 }}
+                >
+                  <Tab label={`Check-ins (${stats.check_in_leaderboard?.length ?? stats.regular_operators.length})`} />
+                  <Tab label={`NCS (${stats.ncs_leaderboard?.length ?? 0})`} />
+                  <Tab label={`Logger (${stats.logger_leaderboard?.length ?? 0})`} />
+                  <Tab label={`Relay (${stats.relay_leaderboard?.length ?? 0})`} />
+                </Tabs>
+
+                {leaderboardTab === 0 && (
+                  <CheckInLeaderboard data={stats.check_in_leaderboard ?? stats.regular_operators} />
+                )}
+                {leaderboardTab === 1 && (
+                  <RoleLeaderboard
+                    data={stats.ncs_leaderboard ?? []}
+                    countLabel="Nets Run"
+                    emptyMessage="No NCS assignments recorded in this window."
+                  />
+                )}
+                {leaderboardTab === 2 && (
+                  <RoleLeaderboard
+                    data={stats.logger_leaderboard ?? []}
+                    countLabel="Nets Logged"
+                    emptyMessage="No Logger assignments recorded in this window."
+                  />
+                )}
+                {leaderboardTab === 3 && (
+                  <RelayLeaderboard data={stats.relay_leaderboard ?? []} />
+                )}
+              </>
             )}
 
-            {/* NCS leaderboard */}
-            {leaderboardTab === 1 && (
-              <LeaderboardTable
-                emptyMessage="No NCS assignments recorded in this window."
-                columns={['Operator', 'Nets Run']}
-                rows={(stats.ncs_leaderboard ?? []).map((row) => ({
-                  key: String(row.user_id),
-                  cells: [
-                    row.callsign
-                      ? `${row.callsign}${row.name ? ' (' + row.name + ')' : ''}`
-                      : (row.name || `User #${row.user_id}`),
-                    row.nets_count,
-                  ],
-                }))}
-              />
-            )}
-
-            {/* Logger leaderboard */}
-            {leaderboardTab === 2 && (
-              <LeaderboardTable
-                emptyMessage="No Logger assignments recorded in this window."
-                columns={['Operator', 'Nets Logged']}
-                rows={(stats.logger_leaderboard ?? []).map((row) => ({
-                  key: String(row.user_id),
-                  cells: [
-                    row.callsign
-                      ? `${row.callsign}${row.name ? ' (' + row.name + ')' : ''}`
-                      : (row.name || `User #${row.user_id}`),
-                    row.nets_count,
-                  ],
-                }))}
-              />
-            )}
-
-            {/* Relay leaderboard — derived from CheckIn.relayed_by */}
-            {leaderboardTab === 3 && (
-              <LeaderboardTable
-                emptyMessage="No relayed check-ins recorded in this window."
-                columns={['Callsign', 'Nets', 'Total Relays']}
-                rows={(stats.relay_leaderboard ?? []).map((row) => ({
-                  key: row.callsign,
-                  cells: [row.callsign, row.nets_count, row.relays_count],
-                }))}
-              />
+            {/* ----- STACKED VIEW (PDF export only) ----- */}
+            {/* Renders every leaderboard sequentially so the static PDF
+                contains all four — the user can't click tabs in a PDF. */}
+            {exporting && (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                <Box>
+                  <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                    Check-in Leaderboard
+                  </Typography>
+                  <CheckInLeaderboard data={stats.check_in_leaderboard ?? stats.regular_operators} />
+                </Box>
+                <Box>
+                  <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                    NCS Leaderboard
+                  </Typography>
+                  <RoleLeaderboard
+                    data={stats.ncs_leaderboard ?? []}
+                    countLabel="Nets Run"
+                    emptyMessage="No NCS assignments recorded in this window."
+                  />
+                </Box>
+                <Box>
+                  <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                    Logger Leaderboard
+                  </Typography>
+                  <RoleLeaderboard
+                    data={stats.logger_leaderboard ?? []}
+                    countLabel="Nets Logged"
+                    emptyMessage="No Logger assignments recorded in this window."
+                  />
+                </Box>
+                <Box>
+                  <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                    Relay Leaderboard
+                  </Typography>
+                  <RelayLeaderboard data={stats.relay_leaderboard ?? []} />
+                </Box>
+              </Box>
             )}
           </Paper>
         </Grid>
 
         {/* ========== HISTORY LOG (Recent Net Instances) ========== */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={exporting ? 12 : 6}>
           <Paper sx={{ p: 3, height: '100%' }}>
             <Typography variant="h6" gutterBottom>
               Net History

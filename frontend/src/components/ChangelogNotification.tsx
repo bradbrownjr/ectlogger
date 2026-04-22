@@ -44,7 +44,7 @@ const pulseAnimation = keyframes`
 // The version number triggers the unread notification for users.
 // Mark entries with `userImpact: true` to highlight them in the UI.
 
-const CHANGELOG_VERSION = '2026.04.21b';
+const CHANGELOG_VERSION = '2026.04.21c';
 
 interface ChangelogEntry {
   version: string;
@@ -60,6 +60,20 @@ interface ChangelogEntry {
 }
 
 const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '2026.04.21c',
+    date: '2026-04-21',
+    sections: [
+      {
+        title: 'Schedule Statistics Tweaks',
+        type: 'improvement',
+        items: [
+          { text: 'Schedule statistics now defaults to the last 1 year so monthly nets and occasional SKYWARN activations always show meaningful counts. The 30/90 day and all-time filters are still available.', userImpact: true },
+          { text: 'PDF export now includes all four leaderboards (Check-ins, NCS, Logger, Relay) instead of only the tab that was visible on screen.', userImpact: true },
+        ],
+      },
+    ],
+  },
   {
     version: '2026.04.21b',
     date: '2026-04-21',
