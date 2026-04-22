@@ -511,7 +511,10 @@ const Scheduler: React.FC = () => {
 
   // ========== SCHEDULE CARD COMPONENT ==========
   const renderScheduleCard = (schedule: Schedule) => (
-    <Card sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+    // height: 100% makes sibling cards in a Grid row stretch to equal height
+    // (the Grid item is display:flex). minHeight gives short/lone cards
+    // enough visual presence so the layout doesn't look uneven.
+    <Card sx={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', minHeight: 260 }}>
       <CardContent sx={{ flex: 1 }}>
         {/* Title */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>

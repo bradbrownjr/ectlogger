@@ -44,7 +44,7 @@ const pulseAnimation = keyframes`
 // The version number triggers the unread notification for users.
 // Mark entries with `userImpact: true` to highlight them in the UI.
 
-const CHANGELOG_VERSION = '2026.04.21';
+const CHANGELOG_VERSION = '2026.04.21b';
 
 interface ChangelogEntry {
   version: string;
@@ -60,6 +60,30 @@ interface ChangelogEntry {
 }
 
 const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '2026.04.21b',
+    date: '2026-04-21',
+    sections: [
+      {
+        title: 'Schedule Statistics Overhaul',
+        type: 'feature',
+        items: [
+          { text: 'Schedule statistics page now has time-window filters (30 days, 90 days, 1 year, all-time) and defaults to the last 30 days.', userImpact: true },
+          { text: 'New Leaderboards tab on schedule stats: top check-ins, NCS operators, Loggers, and Relay stations — each scoped to the selected time window.', userImpact: true },
+          { text: 'Net History log on schedule stats now shows the NCS callsign(s) for each net instance.', userImpact: true },
+          { text: 'Export to PDF button on schedule statistics for a one-click performance report.', userImpact: true },
+        ],
+      },
+      {
+        title: 'Improvements',
+        type: 'improvement',
+        items: [
+          { text: 'Replaced the strict "Regular Operators (50%+)" view with a top-20 check-in leaderboard so long-running nets with operator turnover always show meaningful results.', userImpact: true },
+          { text: 'Schedule cards on the Scheduler page now stretch to equal heights within a row and have a minimum height for a more uniform, professional appearance.', userImpact: true },
+        ],
+      },
+    ],
+  },
   {
     version: '2026.04.21',
     date: '2026-04-21',

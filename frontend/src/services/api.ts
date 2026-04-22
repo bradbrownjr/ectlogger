@@ -176,7 +176,8 @@ export const statisticsApi = {
   getNetStats: (netId: number) => api.get(`/statistics/nets/${netId}`),
   getNetOperators: (netId: number) => api.get(`/statistics/nets/${netId}/operators`),
   getNetDaily: (netId: number) => api.get(`/statistics/nets/${netId}/daily`),
-  getTemplateStats: (templateId: number) => api.get(`/statistics/templates/${templateId}`),
+  getTemplateStats: (templateId: number, days?: number) =>
+    api.get(`/statistics/templates/${templateId}`, { params: days !== undefined ? { days } : undefined }),
   getUserStats: () => api.get('/statistics/users/me'),
   getUserStatsById: (userId: number) => api.get(`/statistics/users/${userId}`),
   getCheckinMap: () => api.get('/statistics/checkin-map'),

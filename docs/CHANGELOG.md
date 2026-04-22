@@ -4,6 +4,29 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# April 21, 2026 (b)
+
+## Schedule Statistics Overhaul
+
+* **Time-window filters** — Schedule statistics page now supports 30 days / 90 days / 1 year / all-time filters, defaulting to last 30 days. Applies to summary cards, leaderboards, and the history log.
+* **Leaderboards** — New tabbed leaderboards on schedule stats:
+  * **Check-ins** — Top 20 callsigns by net appearances (replaces the previous "Regular Operators 50%+" view, which was empty for long-running nets).
+  * **NCS** — Top operators by number of nets they ran as NCS.
+  * **Logger** — Top operators by number of nets they logged.
+  * **Relay** — Top callsigns by distinct nets where they relayed at least one check-in (derived from `CheckIn.relayed_by`).
+* **NCS column in Net History** — The history log now shows the NCS callsign(s) for each net instance.
+* **Export to PDF** — One-click PDF export of the schedule performance report.
+
+## Improvements
+
+* **Uniform schedule card heights** — Cards on the Scheduler page now stretch to equal height within a row and have a minimum height, giving the layout a more professional appearance when content lengths vary.
+
+## API
+
+* `GET /statistics/templates/{template_id}` — Now accepts `?days=30|90|365|0` (0 = all-time, default 30). Response adds `filter_days`, `check_in_leaderboard`, `ncs_leaderboard`, `logger_leaderboard`, `relay_leaderboard`, and per-instance `name`, `closed_at`, `ncs_callsigns`. The legacy `regular_operators` field is preserved (but will often be empty for long-running nets).
+
+---
+
 # April 21, 2026
 
 ## Bug Fixes

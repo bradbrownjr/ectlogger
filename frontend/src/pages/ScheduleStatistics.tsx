@@ -28,6 +28,10 @@ import {
   TextField,
   MenuItem,
   Snackbar,
+  ToggleButton,
+  ToggleButtonGroup,
+  Tabs,
+  Tab,
 } from '@mui/material';
 import {
   ArrowBack,
@@ -36,6 +40,8 @@ import {
   Event,
   BarChart as BarChartIconMui,
   Link as LinkIcon,
+  PictureAsPdf as PictureAsPdfIcon,
+  EmojiEvents as EmojiEventsIcon,
 } from '@mui/icons-material';
 import {
   BarChart,
@@ -51,6 +57,7 @@ import {
 import { statisticsApi, templateApi, netApi } from '../services/api';
 import { formatDateTime } from '../utils/dateUtils';
 import { useAuth } from '../contexts/AuthContext';
+import { exportElementToPdf } from '../utils/pdfExport';
 
 interface RegularOperator {
   callsign: string;
@@ -58,24 +65,107 @@ interface RegularOperator {
   percentage: number;
 }
 
+interface RoleLeaderEntry {
+  user_id: number;
+  callsign: string | null;
+  name: string | null;
+  nets_count: number;
+}
+
+interface RelayLeaderEntry {
+  callsign: string;
+  nets_count: number;
+  relays_count: number;
+}
+
 interface NetInstance {
   net_id: number;
+  name?: string;
   date: string | null;
+  closed_at?: string | null;
   check_in_count: number;
   unique_operators: number;
+  ncs_callsigns?: string[];
 }
 
 interface TemplateStats {
   template_id: number;
   template_name: string;
   template_owner_id?: number;
+  filter_days?: number;
   total_instances: number;
   total_check_ins: number;
   avg_check_ins_per_instance: number;
   unique_operators: number;
   regular_operators: RegularOperator[];
+  check_in_leaderboard?: RegularOperator[];
+  ncs_leaderboard?: RoleLeaderEntry[];
+  logger_leaderboard?: RoleLeaderEntry[];
+  relay_leaderboard?: RelayLeaderEntry[];
   instances: NetInstance[];
 }
+
+// Time-window filter values that map directly to the backend ?days= param.
+// 0 means "all time" on the backend.
+type WindowDays = 30 | 90 | 365 | 0;
+const WINDOW_OPTIONS: { value: WindowDays; label: string }[] = [
+  { value: 30, label: '30d' },
+  { value: 90, label: '90d' },
+  { value: 365, label: '1y' },
+  { value: 0, label: 'All' },
+];
+
+// ========== LEADERBOARD TABLE ==========
+// Small reusable table for the four leaderboards. Adds a medal icon to the
+// top three rows so readers can spot the top performers quickly.
+interface LeaderboardRow {
+  key: string;
+  cells: React.ReactNode[];
+}
+const MEDALS = ['🥇', '🥈', '🥉'];
+const LeaderboardTable: React.FC<{
+  columns: string[];
+  rows: LeaderboardRow[];
+  emptyMessage: string;
+}> = ({ columns, rows, emptyMessage }) => {
+  if (rows.length === 0) {
+    return (
+      <Typography color="text.secondary" sx={{ py: 2, textAlign: 'center' }}>
+        {emptyMessage}
+      </Typography>
+    );
+  }
+  return (
+    <TableContainer sx={{ maxHeight: 420 }}>
+      <Table size="small" stickyHeader>
+        <TableHead>
+          <TableRow>
+            {columns.map((c, idx) => (
+              <TableCell key={c} align={idx === 0 ? 'left' : 'right'}>{c}</TableCell>
+            ))}
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {rows.map((row, idx) => (
+            <TableRow key={row.key} hover>
+              {row.cells.map((cell, cidx) => (
+                <TableCell key={cidx} align={cidx === 0 ? 'left' : 'right'}>
+                  {cidx === 0 ? (
+                    <Typography component="span" fontWeight={idx < 3 ? 'bold' : 'normal'}>
+                      {idx < 3 ? MEDALS[idx] + ' ' : ''}{cell}
+                    </Typography>
+                  ) : (
+                    cell
+                  )}
+                </TableCell>
+              ))}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </TableContainer>
+  );
+};
 
 interface LinkableNet {
   id: number;
@@ -95,6 +185,16 @@ const ScheduleStatistics: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<TemplateStats | null>(null);
+
+  // Time-window filter for stats. Default 30 days; persists across schedules
+  // for the lifetime of the page. Triggers a refetch when changed.
+  const [windowDays, setWindowDays] = useState<WindowDays>(30);
+
+  // Which leaderboard tab is active.
+  const [leaderboardTab, setLeaderboardTab] = useState<0 | 1 | 2 | 3>(0);
+
+  // PDF export state
+  const [exporting, setExporting] = useState(false);
 
   // ========== LINK EXISTING NET DIALOG STATE ==========
   // Lets the schedule owner (or admin) attach an ad-hoc net to this schedule
@@ -116,7 +216,7 @@ const ScheduleStatistics: React.FC = () => {
 
   const refetchStats = async () => {
     if (!templateId) return;
-    const response = await statisticsApi.getTemplateStats(parseInt(templateId));
+    const response = await statisticsApi.getTemplateStats(parseInt(templateId), windowDays);
     setStats(response.data);
   };
 
@@ -158,7 +258,7 @@ const ScheduleStatistics: React.FC = () => {
       
       try {
         setLoading(true);
-        const response = await statisticsApi.getTemplateStats(parseInt(templateId));
+        const response = await statisticsApi.getTemplateStats(parseInt(templateId), windowDays);
         setStats(response.data);
         setError(null);
       } catch (err: any) {
@@ -170,7 +270,25 @@ const ScheduleStatistics: React.FC = () => {
     };
 
     fetchStats();
-  }, [templateId]);
+  }, [templateId, windowDays]);
+
+  // Export the stats container to PDF. We export the inner content div so the
+  // page header / toolbar buttons aren't included in the report.
+  const handleExportPdf = async () => {
+    if (!stats) return;
+    setExporting(true);
+    try {
+      const filename = `${(stats.template_name || 'Schedule').replace(/[^a-zA-Z0-9]/g, '_')}_Statistics`;
+      await exportElementToPdf('schedule-stats-content', {
+        filename,
+        orientation: 'portrait',
+      });
+    } catch (err) {
+      console.error('Failed to export PDF:', err);
+    } finally {
+      setExporting(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -221,12 +339,12 @@ const ScheduleStatistics: React.FC = () => {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+      {/* Header (excluded from PDF export) */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2, flexWrap: 'wrap' }}>
         <IconButton onClick={() => navigate('/scheduler')}>
           <ArrowBack />
         </IconButton>
-        <Box sx={{ flexGrow: 1 }}>
+        <Box sx={{ flexGrow: 1, minWidth: 200 }}>
           <Typography variant="h5" fontWeight="bold">
             {stats.template_name}
           </Typography>
@@ -234,6 +352,22 @@ const ScheduleStatistics: React.FC = () => {
             Historical statistics for this scheduled net series
           </Typography>
         </Box>
+        {/* ========== TIME WINDOW FILTER ========== */}
+        {/* Applies to all stats below: instance count, check-in counts,
+            leaderboards, and history log. Default 30 days. 0 = all-time. */}
+        <ToggleButtonGroup
+          value={windowDays}
+          exclusive
+          size="small"
+          onChange={(_, v) => v !== null && setWindowDays(v as WindowDays)}
+          aria-label="Time window"
+        >
+          {WINDOW_OPTIONS.map((opt) => (
+            <ToggleButton key={opt.value} value={opt.value} aria-label={opt.label}>
+              {opt.label}
+            </ToggleButton>
+          ))}
+        </ToggleButtonGroup>
         {/* Schedule owners and admins can pull an existing ad-hoc net into this schedule */}
         {canManageSchedule && (
           <Button
@@ -246,12 +380,35 @@ const ScheduleStatistics: React.FC = () => {
         )}
         <Button
           variant="outlined"
+          startIcon={<PictureAsPdfIcon />}
+          onClick={handleExportPdf}
+          disabled={exporting}
+        >
+          {exporting ? 'Exporting…' : 'Export PDF'}
+        </Button>
+        <Button
+          variant="outlined"
           startIcon={<Event />}
           onClick={() => navigate('/scheduler')}
         >
           Back to Scheduler
         </Button>
       </Box>
+
+      {/* ========== EXPORTABLE STATS CONTENT ========== */}
+      {/* Everything inside #schedule-stats-content is captured by the PDF
+          export. The header/toolbar above intentionally sits outside it. */}
+      <Box id="schedule-stats-content">
+        {/* PDF-only header so the exported document has a title block */}
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="h5" fontWeight="bold">
+            {stats.template_name}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Schedule Performance Report — {WINDOW_OPTIONS.find(o => o.value === windowDays)?.label || ''}
+            {windowDays === 0 ? ' (all-time)' : ''}
+          </Typography>
+        </Box>
 
       {/* Summary Cards */}
       <Grid container spacing={2} sx={{ mb: 4 }}>
@@ -354,61 +511,110 @@ const ScheduleStatistics: React.FC = () => {
           </Grid>
         )}
 
-        {/* Regular Operators */}
-        {stats.regular_operators.length > 0 && (
-          <Grid item xs={12} md={6}>
-            <Paper sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Regular Operators
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Operators who participated in 50%+ of nets
-              </Typography>
-              <TableContainer>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Callsign</TableCell>
-                      <TableCell align="right">Appearances</TableCell>
-                      <TableCell align="right">Participation</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {stats.regular_operators.map((op, index) => (
-                      <TableRow key={op.callsign}>
-                        <TableCell>
-                          <Typography fontWeight={index < 3 ? 'bold' : 'normal'}>
-                            {index < 3 ? ['🥇', '🥈', '🥉'][index] + ' ' : ''}{op.callsign}
-                          </Typography>
-                        </TableCell>
-                        <TableCell align="right">{op.appearances}</TableCell>
-                        <TableCell align="right">
-                          <Chip 
-                            label={`${op.percentage}%`}
-                            size="small"
-                            color={op.percentage >= 80 ? 'success' : op.percentage >= 60 ? 'info' : 'default'}
-                          />
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </Paper>
-          </Grid>
-        )}
+        {/* ========== LEADERBOARDS ========== */}
+        {/* Tabbed view: Check-ins / NCS / Logger / Relay. All scoped to the
+            currently-selected time window. Counts represent distinct nets
+            within the window, not raw event counts. */}
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 3, height: '100%' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <EmojiEventsIcon color="warning" />
+              <Typography variant="h6">Leaderboards</Typography>
+            </Box>
+            <Tabs
+              value={leaderboardTab}
+              onChange={(_, v) => setLeaderboardTab(v)}
+              variant="scrollable"
+              scrollButtons="auto"
+              sx={{ mb: 1 }}
+            >
+              <Tab label={`Check-ins (${stats.check_in_leaderboard?.length ?? stats.regular_operators.length})`} />
+              <Tab label={`NCS (${stats.ncs_leaderboard?.length ?? 0})`} />
+              <Tab label={`Logger (${stats.logger_leaderboard?.length ?? 0})`} />
+              <Tab label={`Relay (${stats.relay_leaderboard?.length ?? 0})`} />
+            </Tabs>
 
-        {/* Recent Net Instances */}
-        <Grid item xs={12} md={stats.regular_operators.length > 0 ? 6 : 12}>
-          <Paper sx={{ p: 3 }}>
+            {/* Check-in leaderboard */}
+            {leaderboardTab === 0 && (
+              <LeaderboardTable
+                emptyMessage="No check-ins recorded in this window."
+                columns={['Callsign', 'Nets', 'Participation']}
+                rows={(stats.check_in_leaderboard ?? stats.regular_operators).map((op) => ({
+                  key: op.callsign,
+                  cells: [
+                    op.callsign,
+                    op.appearances,
+                    <Chip
+                      key="pct"
+                      label={`${op.percentage}%`}
+                      size="small"
+                      color={op.percentage >= 80 ? 'success' : op.percentage >= 50 ? 'info' : 'default'}
+                    />,
+                  ],
+                }))}
+              />
+            )}
+
+            {/* NCS leaderboard */}
+            {leaderboardTab === 1 && (
+              <LeaderboardTable
+                emptyMessage="No NCS assignments recorded in this window."
+                columns={['Operator', 'Nets Run']}
+                rows={(stats.ncs_leaderboard ?? []).map((row) => ({
+                  key: String(row.user_id),
+                  cells: [
+                    row.callsign
+                      ? `${row.callsign}${row.name ? ' (' + row.name + ')' : ''}`
+                      : (row.name || `User #${row.user_id}`),
+                    row.nets_count,
+                  ],
+                }))}
+              />
+            )}
+
+            {/* Logger leaderboard */}
+            {leaderboardTab === 2 && (
+              <LeaderboardTable
+                emptyMessage="No Logger assignments recorded in this window."
+                columns={['Operator', 'Nets Logged']}
+                rows={(stats.logger_leaderboard ?? []).map((row) => ({
+                  key: String(row.user_id),
+                  cells: [
+                    row.callsign
+                      ? `${row.callsign}${row.name ? ' (' + row.name + ')' : ''}`
+                      : (row.name || `User #${row.user_id}`),
+                    row.nets_count,
+                  ],
+                }))}
+              />
+            )}
+
+            {/* Relay leaderboard — derived from CheckIn.relayed_by */}
+            {leaderboardTab === 3 && (
+              <LeaderboardTable
+                emptyMessage="No relayed check-ins recorded in this window."
+                columns={['Callsign', 'Nets', 'Total Relays']}
+                rows={(stats.relay_leaderboard ?? []).map((row) => ({
+                  key: row.callsign,
+                  cells: [row.callsign, row.nets_count, row.relays_count],
+                }))}
+              />
+            )}
+          </Paper>
+        </Grid>
+
+        {/* ========== HISTORY LOG (Recent Net Instances) ========== */}
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 3, height: '100%' }}>
             <Typography variant="h6" gutterBottom>
-              Recent Net Instances
+              Net History
             </Typography>
-            <TableContainer sx={{ maxHeight: 400 }}>
+            <TableContainer sx={{ maxHeight: 480 }}>
               <Table size="small" stickyHeader>
                 <TableHead>
                   <TableRow>
                     <TableCell>Date</TableCell>
+                    <TableCell>NCS</TableCell>
                     <TableCell align="right">Check-ins</TableCell>
                     <TableCell align="right">Operators</TableCell>
                     <TableCell align="right">Actions</TableCell>
@@ -422,6 +628,11 @@ const ScheduleStatistics: React.FC = () => {
                           ? formatDateTime(instance.date, user?.prefer_utc || false)
                           : '—'
                         }
+                      </TableCell>
+                      <TableCell>
+                        {instance.ncs_callsigns && instance.ncs_callsigns.length > 0
+                          ? instance.ncs_callsigns.join(', ')
+                          : '—'}
                       </TableCell>
                       <TableCell align="right">{instance.check_in_count}</TableCell>
                       <TableCell align="right">{instance.unique_operators}</TableCell>
@@ -439,9 +650,9 @@ const ScheduleStatistics: React.FC = () => {
                   ))}
                   {stats.instances.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={4} align="center">
+                      <TableCell colSpan={5} align="center">
                         <Typography color="text.secondary" sx={{ py: 2 }}>
-                          No nets have been created from this schedule yet
+                          No nets in the selected time window.
                         </Typography>
                       </TableCell>
                     </TableRow>
@@ -452,6 +663,7 @@ const ScheduleStatistics: React.FC = () => {
           </Paper>
         </Grid>
       </Grid>
+      </Box>{/* end #schedule-stats-content */}
 
       {/* ========== LINK EXISTING NET DIALOG ========== */}
       {/* Owner/admin selects one of their nets that is not already attached to this
