@@ -176,6 +176,19 @@ If you have multiple schedules that should be combined into one (e.g., separate 
 
 > **This action is permanent and cannot be undone.** Source schedules are deleted after the merge.
 
+### Linking an Existing Net to a Schedule
+
+If an ad-hoc net was created outside a schedule (or was attached to the wrong schedule), you can re-attach it from the **Schedule Statistics** page so its check-ins count toward the schedule's history and leaderboards:
+
+1. Open the schedule from the **Scheduler** page and click **View Statistics**.
+2. Click **Link Existing Net** in the page header.
+3. Pick a net from the list and confirm. To detach a net from a schedule entirely, choose **(none)**.
+
+**Who can link/detach:**
+- The net's owner or an admin can change a net's schedule.
+- When *attaching* to a schedule, you must also be the schedule's owner or an admin.
+- Detaching only requires net ownership/admin.
+
 ### Net Script
 
 Create a standardized script for NCS operators to follow:
@@ -390,12 +403,41 @@ The PDF is ideal for after-action reports, club records, or emergency management
 
 ## Statistics
 
-View participation statistics:
-- **Platform Stats** — Overall system activity (with PDF export)
-- **Net Stats** — Per-net participation trends (with PDF export)
-- **Your Activity** — Personal check-in history (also available in your Profile, with PDF export)
+Three statistics views are available, each with PDF export:
 
-**Top Operators Ranking** — In statistics, the top operators are ranked by check-in count. When operators are tied with the same count, the one who checked in earliest gets the higher medal (🥇🥈🥉) ranking.
+- **Platform Stats** — Overall system activity across all nets.
+- **Net Stats** — Per-net participation trends, status breakdown, and check-ins by frequency.
+- **Your Activity** — Personal check-in history (also available in your Profile).
+
+**Top Operators Ranking** — Top operators are ranked by check-in count. When tied, the operator who checked in earliest gets the higher medal (🥇🥈🥉) ranking.
+
+### Schedule Statistics
+
+For recurring nets, the **Schedule Statistics** page (Scheduler → *View Statistics* on a schedule card) aggregates participation across every net instance the schedule has produced.
+
+**Time-window filter** — Toggle between **30 days**, **90 days**, **1 year**, and **All time**. The default is **1 year** so monthly nets and occasional SKYWARN activations always show meaningful counts. The selected window applies to every panel on the page (summary cards, leaderboards, history log, and PDF export).
+
+**Summary cards** — Total nets in the window, total check-ins, unique operators, and average check-ins per net.
+
+**Leaderboards** — Tabbed view; each leaderboard is scoped to the selected time window and lists the top 20:
+
+- **Check-ins** — Top callsigns by number of nets they checked into. Replaces the old strict "Regular Operators (50%+)" view, which was empty for nets with operator turnover.
+- **NCS** — Operators ranked by the number of nets they ran as Net Control.
+- **Logger** — Operators ranked by the number of nets they logged.
+- **Relay** — Stations ranked by both the number of nets they relayed in and total relayed check-ins. Derived from the *Relayed By* field on each check-in.
+
+**Net History log** — Recent net instances under this schedule, including start/end times, duration, check-in count, and the **NCS callsign(s)** for each instance.
+
+### Exporting a Schedule Statistics Report (PDF)
+
+Click **Export PDF** in the page header to download a printable report. The report respects the active time-window filter and includes:
+
+- The schedule name and the active filter (e.g., "Last 1 year").
+- All summary cards.
+- **All four leaderboards** stacked sequentially — the PDF is static, so every leaderboard is included regardless of which tab is active on screen.
+- The Net History log with NCS callsigns.
+
+Use this for after-action reporting, club records, or emergency management documentation that needs to show participation trends across many nets.
 
 ## Tips & Tricks
 

@@ -119,6 +119,7 @@ ectlogger/
 - `GET /nets/{net_id}` - Get net details (includes `can_manage` permission flag)
 - `GET /nets/{net_id}/stats` - Get net statistics and online users
 - `PUT /nets/{net_id}` - Update net
+- `PUT /nets/{net_id}/template` - Link/unlink the net to a schedule (`{ "template_id": <int|null> }`). Requires net owner/admin; attaching also requires schedule owner/admin.
 - `POST /nets/{net_id}/start` - Start net
 - `POST /nets/{net_id}/close` - Close net
 - `DELETE /nets/{net_id}` - Delete net
@@ -150,10 +151,12 @@ ectlogger/
 - `POST /templates/` - Create template from net
 - `GET /templates/{template_id}` - Get template
 - `DELETE /templates/{template_id}` - Delete template
+- `GET /templates/{template_id}/linkable-nets` - Nets the caller may attach to this template (their own, or all if admin); excludes nets already on this template
 
 ### Statistics (`/statistics`)
 - `GET /statistics/platform` - Platform-wide statistics
 - `GET /statistics/user/{user_id}` - User participation statistics
+- `GET /statistics/template/{template_id}?days=<int>` - Schedule statistics. `days` window: `30`, `90`, `365`, or `0` for all-time (default `30`; range `0–3650`). Response includes summary counts, `instances[]` (with `name`, `closed_at`, `ncs_callsigns`), `check_in_leaderboard`, `ncs_leaderboard`, `logger_leaderboard`, `relay_leaderboard`, `filter_days`, and the legacy `regular_operators` (≥50% participation subset).
 
 ### WebSocket
 - `WS /ws/nets/{net_id}?token={jwt}` - Real-time net updates
