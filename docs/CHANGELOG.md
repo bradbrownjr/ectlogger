@@ -4,6 +4,19 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# April 22, 2026
+
+## Mobile & Status Selector Improvements
+
+* **Status dropdown labels** — Each option in the check-in status dropdown now shows a text label next to the emoji (e.g., `👂 Listening only`, `📢 Announcements`, `🚨 Has traffic`). Closed selects still display only the icon to keep the table compact. Addresses confusion where new NCS users picked the wrong icon (e.g., bullhorn for "just listening").
+* **Mobile net header compaction**:
+  * Duration chip drops the "Duration:" prefix; the clock icon is sufficient.
+  * The edit-times pencil button next to the status chip is hidden on mobile (still available on desktop and from the net info page).
+  * Toolbar action buttons now shrink in padding/min-width on mobile so the full row of icons (Start/Check-in/Close + exports + admin actions) fits without wrapping.
+* **Collapsible mobile check-in form** — The "New Check-in" form on the mobile net view is collapsed by default with a tappable header. NCS/Loggers attending another operator's net no longer have a tall form pushing the check-in list off-screen.
+
+---
+
 # April 21, 2026 (c)
 
 ## Schedule Statistics Tweaks

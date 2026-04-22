@@ -44,7 +44,7 @@ const pulseAnimation = keyframes`
 // The version number triggers the unread notification for users.
 // Mark entries with `userImpact: true` to highlight them in the UI.
 
-const CHANGELOG_VERSION = '2026.04.21c';
+const CHANGELOG_VERSION = '2026.04.22';
 
 interface ChangelogEntry {
   version: string;
@@ -60,6 +60,21 @@ interface ChangelogEntry {
 }
 
 const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '2026.04.22',
+    date: '2026-04-22',
+    sections: [
+      {
+        title: 'Mobile & Status Selector Improvements',
+        type: 'improvement',
+        items: [
+          { text: 'Status dropdowns on the check-in list now show a text label next to each emoji icon (e.g., 👂 Listening only, 📢 Announcements) so new NCS users don’t have to memorize the icon legend.', userImpact: true },
+          { text: 'Mobile net header is more compact: the duration chip drops the “Duration:” prefix, the edit-times pencil moved off the header, and toolbar buttons shrink to fit on a single row.', userImpact: true },
+          { text: 'Mobile “New Check-in” form is now collapsible and starts collapsed — attendees of nets they aren’t logging no longer have to scroll past a tall form.', userImpact: true },
+        ],
+      },
+    ],
+  },
   {
     version: '2026.04.21c',
     date: '2026-04-21',

@@ -31,6 +31,7 @@ import {
   Grid,
   Tooltip,
   CircularProgress,
+  Collapse,
 } from '@mui/material';
 import { keyframes } from '@mui/system';
 import EditIcon from '@mui/icons-material/Edit';
@@ -59,6 +60,8 @@ import InfoIcon from '@mui/icons-material/Info';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import TimerIcon from '@mui/icons-material/Timer';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { netApi, checkInApi, userApi, netRoleApi, templateApi } from '../services/api';
 import api from '../services/api';
 import { formatTimeWithDate } from '../utils/dateUtils';
@@ -223,6 +226,10 @@ const NetView: React.FC = () => {
   const [toastMessage, setToastMessage] = useState<string>('');
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [checkInDialogOpen, setCheckInDialogOpen] = useState(false);
+  // Mobile-only: collapsed-by-default New Check-in form. NCS/Loggers attending
+  // someone else's net don't need the form expanded by default; they can open
+  // it on demand when they want to log a check-in.
+  const [mobileCheckInExpanded, setMobileCheckInExpanded] = useState(false);
   const [onlineUserIds, setOnlineUserIds] = useState<number[]>([]);
   const [netStats, setNetStats] = useState<{total_check_ins: number, checked_out_count: number, online_count: number, guest_count: number} | null>(null);
   const [frequencyDialogOpen, setFrequencyDialogOpen] = useState(false);
@@ -1185,6 +1192,25 @@ const NetView: React.FC = () => {
     }
   };
 
+  // Short text label for the status select dropdown options. Pairs with the
+  // emoji icon so new NCS users don't have to memorize the icon legend
+  // (e.g., bullhorn 📢 vs ear 👂 — both look "loud" at a glance).
+  const getStatusLabel = (status: string): string => {
+    switch (status) {
+      case 'ncs': return 'NCS';
+      case 'logger': return 'Logger';
+      case 'checked_in': return 'Checked in';
+      case 'listening': return 'Listening only';
+      case 'relay': return 'Relay';
+      case 'away': return 'Away';
+      case 'has_traffic': return 'Has traffic';
+      case 'announcements': return 'Announcements';
+      case 'mobile': return 'Mobile';
+      case 'checked_out': return 'Checked out';
+      default: return status;
+    }
+  };
+
   // Helper to get the NCS icon for a specific check-in (primary crown or secondary prince)
   const getNcsIcon = (checkIn: CheckIn) => {
     // Owner is always primary
@@ -1618,7 +1644,9 @@ const NetView: React.FC = () => {
                 {/* Left side: Status, timers, and stats */}
                 <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexWrap: 'wrap' }}>
                   <Chip label={net.status === 'lobby' ? 'LOBBY' : net.status} size="small" color={net.status === 'active' ? 'success' : net.status === 'lobby' ? 'warning' : 'default'} />
-                  {/* Edit net times button — available for NCS/admin on any started net */}
+                  {/* Edit net times button — NCS/admin only, hidden on mobile to keep
+                      the header chip row compact. Net times can also be edited from
+                      the net info page. */}
                   {canManage && (net.status === 'active' || net.status === 'closed' || net.status === 'archived') && (
                     <Tooltip title="Edit net start/end times">
                       <IconButton
@@ -1636,7 +1664,7 @@ const NetView: React.FC = () => {
                           setEditClosedAt(toLocal(net.closed_at));
                           setTimeEditDialogOpen(true);
                         }}
-                        sx={{ p: 0.25 }}
+                        sx={{ p: 0.25, display: { xs: 'none', md: 'inline-flex' } }}
                       >
                         <EditIcon sx={{ fontSize: 16 }} />
                       </IconButton>
@@ -1653,11 +1681,14 @@ const NetView: React.FC = () => {
                       sx={{ fontFamily: 'monospace' }}
                     />
                   )}
-                  {/* Duration timer - shows elapsed time since net started */}
+                  {/* Duration timer - shows elapsed time since net started.
+                      Label drops the "Duration: " prefix on mobile to keep all
+                      header chips on a single row. The clock icon already conveys
+                      meaning. */}
                   {durationTime && (
                     <Chip 
                       icon={<AccessTimeIcon />}
-                      label={`Duration: ${durationTime}`}
+                      label={durationTime}
                       size="small" 
                       color="info" 
                       variant="outlined"
@@ -1778,7 +1809,22 @@ const NetView: React.FC = () => {
               </Box>
             </Grid>
             <Grid item xs={12} md={4} sx={{ pl: { md: 0.5 } }}>
-              <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', alignItems: 'center', justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
+              {/* Toolbar buttons. On mobile we shrink button padding/min-width
+                  so the full row of icon buttons (Start/Check-in/Close + exports
+                  + admin actions) fits without wrapping to a second row. */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  gap: { xs: 0.25, md: 0.5 },
+                  flexWrap: 'wrap',
+                  alignItems: 'center',
+                  justifyContent: { xs: 'flex-start', md: 'flex-end' },
+                  '& .MuiButton-root': {
+                    px: { xs: 0.5, md: 1 },
+                    minWidth: { xs: 32, md: 'auto' },
+                  },
+                }}
+              >
                 {/* Start Net button - prominent, green, leftmost */}
                 {canStartNet && (net.status === 'draft' || net.status === 'scheduled') && (
                   <>
@@ -2424,18 +2470,21 @@ const NetView: React.FC = () => {
                                   disableAutoFocusItem: false,
                                   autoFocus: true,
                                 }}
+                                renderValue={(v) => v === 'ncs' ? getNcsIcon(checkIn) : v === 'logger' ? '📋' : getStatusIcon(v as string, checkIn)}
                               >
-                                {/* Always render the current value as an option to prevent MUI errors */}
-                                {((canManageCheckIns || selectValue === 'ncs') && <MenuItem value="ncs">{getNcsIcon(checkIn)}</MenuItem>)}
-                                {((canManageCheckIns || selectValue === 'logger') && <MenuItem value="logger">📋</MenuItem>)}
-                                <MenuItem value="checked_in">{checkIn.is_recheck ? '🔄' : '✅'}</MenuItem>
-                                <MenuItem value="listening">👂</MenuItem>
-                                <MenuItem value="relay">📡</MenuItem>
-                                <MenuItem value="away">⏸️</MenuItem>
-                                <MenuItem value="has_traffic">🚨</MenuItem>
-                                <MenuItem value="announcements">📢</MenuItem>
-                                <MenuItem value="mobile">🚗</MenuItem>
-                                {(canManageCheckIns || checkIn.user_id === user?.id) && <MenuItem value="checked_out">👋</MenuItem>}
+                                {/* Always render the current value as an option to prevent MUI errors.
+                                    Each option shows icon + text label so new NCS users can pick the
+                                    correct status without memorizing the icon legend. */}
+                                {((canManageCheckIns || selectValue === 'ncs') && <MenuItem value="ncs">{getNcsIcon(checkIn)}  {getStatusLabel('ncs')}</MenuItem>)}
+                                {((canManageCheckIns || selectValue === 'logger') && <MenuItem value="logger">📋  {getStatusLabel('logger')}</MenuItem>)}
+                                <MenuItem value="checked_in">{checkIn.is_recheck ? '🔄' : '✅'}  {checkIn.is_recheck ? 'Re-check' : getStatusLabel('checked_in')}</MenuItem>
+                                <MenuItem value="listening">👂  {getStatusLabel('listening')}</MenuItem>
+                                <MenuItem value="relay">📡  {getStatusLabel('relay')}</MenuItem>
+                                <MenuItem value="away">⏸️  {getStatusLabel('away')}</MenuItem>
+                                <MenuItem value="has_traffic">🚨  {getStatusLabel('has_traffic')}</MenuItem>
+                                <MenuItem value="announcements">📢  {getStatusLabel('announcements')}</MenuItem>
+                                <MenuItem value="mobile">🚗  {getStatusLabel('mobile')}</MenuItem>
+                                {(canManageCheckIns || checkIn.user_id === user?.id) && <MenuItem value="checked_out">👋  {getStatusLabel('checked_out')}</MenuItem>}
                               </Select>
                             </Tooltip>
                           );
@@ -2852,17 +2901,18 @@ const NetView: React.FC = () => {
                                 sx={{ minWidth: 45 }}
                                 disabled={owner?.id === checkIn.user_id}
                                 MenuProps={{ disableScrollLock: true }}
+                                renderValue={(v) => v === 'ncs' ? getNcsIcon(checkIn) : v === 'logger' ? '📋' : getStatusIcon(v as string, checkIn)}
                               >
-                                {((canManageCheckIns || selectValue === 'ncs') && <MenuItem value="ncs">{getNcsIcon(checkIn)}</MenuItem>)}
-                                {((canManageCheckIns || selectValue === 'logger') && <MenuItem value="logger">📋</MenuItem>)}
-                                <MenuItem value="checked_in">{checkIn.is_recheck ? '🔄' : '✅'}</MenuItem>
-                                <MenuItem value="listening">👂</MenuItem>
-                                <MenuItem value="relay">📡</MenuItem>
-                                <MenuItem value="away">⏸️</MenuItem>
-                                <MenuItem value="has_traffic">🚨</MenuItem>
-                                <MenuItem value="announcements">📢</MenuItem>
-                                <MenuItem value="mobile">🚗</MenuItem>
-                                {(canManageCheckIns || checkIn.user_id === user?.id) && <MenuItem value="checked_out">👋</MenuItem>}
+                                {((canManageCheckIns || selectValue === 'ncs') && <MenuItem value="ncs">{getNcsIcon(checkIn)}  {getStatusLabel('ncs')}</MenuItem>)}
+                                {((canManageCheckIns || selectValue === 'logger') && <MenuItem value="logger">📋  {getStatusLabel('logger')}</MenuItem>)}
+                                <MenuItem value="checked_in">{checkIn.is_recheck ? '🔄' : '✅'}  {checkIn.is_recheck ? 'Re-check' : getStatusLabel('checked_in')}</MenuItem>
+                                <MenuItem value="listening">👂  {getStatusLabel('listening')}</MenuItem>
+                                <MenuItem value="relay">📡  {getStatusLabel('relay')}</MenuItem>
+                                <MenuItem value="away">⏸️  {getStatusLabel('away')}</MenuItem>
+                                <MenuItem value="has_traffic">🚨  {getStatusLabel('has_traffic')}</MenuItem>
+                                <MenuItem value="announcements">📢  {getStatusLabel('announcements')}</MenuItem>
+                                <MenuItem value="mobile">🚗  {getStatusLabel('mobile')}</MenuItem>
+                                {(canManageCheckIns || checkIn.user_id === user?.id) && <MenuItem value="checked_out">👋  {getStatusLabel('checked_out')}</MenuItem>}
                               </Select>
                             );
                           })() : (
@@ -3294,10 +3344,29 @@ const NetView: React.FC = () => {
               </Paper>
             )}
             
-            {/* Mobile check-in form - full version */}
+            {/* Mobile check-in form - full version. Collapsed by default so
+                NCS/Loggers attending another operator's net don't have a tall
+                form pushing the check-in list off-screen. Header is always
+                tappable to expand/collapse. */}
             {(net.status === 'active' || net.status === 'lobby') && canManageCheckIns && (
               <Paper sx={{ p: 1.5, mt: 1, display: { xs: 'block', md: 'none' } }}>
-                <Typography variant="subtitle2" sx={{ mb: 1.5 }}>New Check-in</Typography>
+                <Box
+                  onClick={() => setMobileCheckInExpanded((v) => !v)}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    cursor: 'pointer',
+                    mb: mobileCheckInExpanded ? 1.5 : 0,
+                    userSelect: 'none',
+                  }}
+                >
+                  <Typography variant="subtitle2">New Check-in</Typography>
+                  <IconButton size="small" aria-label={mobileCheckInExpanded ? 'Collapse' : 'Expand'}>
+                    {mobileCheckInExpanded ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
+                  </IconButton>
+                </Box>
+                <Collapse in={mobileCheckInExpanded} unmountOnExit>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                   {/* Callsign - always required */}
                   <TextField
@@ -3485,6 +3554,7 @@ const NetView: React.FC = () => {
                     Add Check-in
                   </Button>
                 </Box>
+                </Collapse>
               </Paper>
             )}
               </FloatingWindow>
@@ -3607,17 +3677,18 @@ const NetView: React.FC = () => {
                                     sx={{ minWidth: 50 }}
                                     disabled={owner?.id === checkIn.user_id}
                                     MenuProps={{ disableScrollLock: true }}
+                                    renderValue={(v) => v === 'ncs' ? getNcsIcon(checkIn) : v === 'logger' ? '📋' : getStatusIcon(v as string, checkIn)}
                                   >
-                                    {((canManageCheckIns || selectValue === 'ncs') && <MenuItem value="ncs">{getNcsIcon(checkIn)}</MenuItem>)}
-                                    {((canManageCheckIns || selectValue === 'logger') && <MenuItem value="logger">📋</MenuItem>)}
-                                    <MenuItem value="checked_in">{checkIn.is_recheck ? '🔄' : '✅'}</MenuItem>
-                                    <MenuItem value="listening">👂</MenuItem>
-                                    <MenuItem value="relay">📡</MenuItem>
-                                    <MenuItem value="away">⏸️</MenuItem>
-                                    <MenuItem value="has_traffic">🚨</MenuItem>
-                                    <MenuItem value="announcements">📢</MenuItem>
-                                    <MenuItem value="mobile">🚗</MenuItem>
-                                    {(canManageCheckIns || checkIn.user_id === user?.id) && <MenuItem value="checked_out">👋</MenuItem>}
+                                    {((canManageCheckIns || selectValue === 'ncs') && <MenuItem value="ncs">{getNcsIcon(checkIn)}  {getStatusLabel('ncs')}</MenuItem>)}
+                                    {((canManageCheckIns || selectValue === 'logger') && <MenuItem value="logger">📋  {getStatusLabel('logger')}</MenuItem>)}
+                                    <MenuItem value="checked_in">{checkIn.is_recheck ? '🔄' : '✅'}  {checkIn.is_recheck ? 'Re-check' : getStatusLabel('checked_in')}</MenuItem>
+                                    <MenuItem value="listening">👂  {getStatusLabel('listening')}</MenuItem>
+                                    <MenuItem value="relay">📡  {getStatusLabel('relay')}</MenuItem>
+                                    <MenuItem value="away">⏸️  {getStatusLabel('away')}</MenuItem>
+                                    <MenuItem value="has_traffic">🚨  {getStatusLabel('has_traffic')}</MenuItem>
+                                    <MenuItem value="announcements">📢  {getStatusLabel('announcements')}</MenuItem>
+                                    <MenuItem value="mobile">🚗  {getStatusLabel('mobile')}</MenuItem>
+                                    {(canManageCheckIns || checkIn.user_id === user?.id) && <MenuItem value="checked_out">👋  {getStatusLabel('checked_out')}</MenuItem>}
                                   </Select>
                                 </Tooltip>
                               );
