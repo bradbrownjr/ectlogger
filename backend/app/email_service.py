@@ -14,27 +14,54 @@ import csv
 class EmailService:
     
     @staticmethod
-    def get_unsubscribe_url(unsubscribe_token: str) -> str:
-        """Generate the unsubscribe URL for a user"""
-        return f"{settings.frontend_url}/unsubscribe?token={unsubscribe_token}"
-    
+    def get_unsubscribe_url(unsubscribe_token: str, list_name: Optional[str] = None) -> str:
+        """Generate the unsubscribe URL for a user.
+
+        When ``list_name`` is provided the URL targets a per-list opt-out
+        (e.g. ``?list=whats_new``) instead of the master switch.
+        """
+        base = f"{settings.frontend_url}/unsubscribe?token={unsubscribe_token}"
+        if list_name:
+            base += f"&list={list_name}"
+        return base
+
     @staticmethod
-    def get_unsubscribe_footer(unsubscribe_token: str) -> str:
-        """Generate HTML footer with unsubscribe link for email compliance"""
+    def get_unsubscribe_footer(unsubscribe_token: str, list_name: Optional[str] = None,
+                                list_label: Optional[str] = None) -> str:
+        """Generate HTML footer with unsubscribe link for email compliance.
+
+        ``list_name`` / ``list_label`` together render a per-list unsubscribe
+        link (e.g. "Unsubscribe from What's New emails") in addition to the
+        regular profile-settings link. Falls back to the master unsubscribe
+        when ``list_name`` is None.
+        """
         if not unsubscribe_token:
             return ""
-        unsubscribe_url = EmailService.get_unsubscribe_url(unsubscribe_token)
+        if list_name:
+            unsubscribe_url = EmailService.get_unsubscribe_url(unsubscribe_token, list_name)
+            label = list_label or list_name
+            link_text = f"Unsubscribe from {label} emails"
+        else:
+            unsubscribe_url = EmailService.get_unsubscribe_url(unsubscribe_token)
+            link_text = "Unsubscribe from all email notifications"
         return f'''
         <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; text-align: center;">
             <p>You received this email because you have an account on {settings.app_name}.</p>
-            <p><a href="{unsubscribe_url}" style="color: #666;">Unsubscribe from all email notifications</a></p>
+            <p><a href="{unsubscribe_url}" style="color: #666;">{link_text}</a></p>
             <p>To manage your notification preferences, visit your <a href="{settings.frontend_url}/profile" style="color: #666;">profile settings</a>.</p>
         </div>
         '''
     
     @staticmethod
-    async def send_email(to_email: str, subject: str, html_content: str, unsubscribe_token: str = None):
-        """Send an email using SMTP"""
+    async def send_email(to_email: str, subject: str, html_content: str,
+                         unsubscribe_token: str = None,
+                         unsubscribe_list: Optional[str] = None):
+        """Send an email using SMTP.
+
+        ``unsubscribe_list`` (optional) routes the List-Unsubscribe header and
+        plain-text unsubscribe link to a per-list opt-out (e.g. ``"whats_new"``)
+        instead of the master unsubscribe.
+        """
         logger.info("EMAIL", f"Sending email to {to_email}")
         logger.debug("EMAIL", f"Subject: {subject}")
         logger.debug("EMAIL", f"From: {settings.smtp_from_name} <{settings.smtp_from_email}>")
@@ -52,7 +79,7 @@ class EmailService:
         
         # Add List-Unsubscribe header - use token-based URL if available, otherwise mailto
         if unsubscribe_token:
-            unsubscribe_url = EmailService.get_unsubscribe_url(unsubscribe_token)
+            unsubscribe_url = EmailService.get_unsubscribe_url(unsubscribe_token, unsubscribe_list)
             message["List-Unsubscribe"] = f"<{unsubscribe_url}>"
             message["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click"
         else:
@@ -71,7 +98,7 @@ If you cannot view this email properly, please enable HTML in your email client.
 This is an automated message, please do not reply.
 """
         if unsubscribe_token:
-            plain_text += f"\nTo unsubscribe: {EmailService.get_unsubscribe_url(unsubscribe_token)}"
+            plain_text += f"\nTo unsubscribe: {EmailService.get_unsubscribe_url(unsubscribe_token, unsubscribe_list)}"
             
         text_part = MIMEText(plain_text, "plain")
         html_part = MIMEText(html_content, "html")
@@ -1255,4 +1282,91 @@ This is an automated message, please do not reply.
             html_content=html_content,
             attachments=attachments,
             unsubscribe_token=unsubscribe_token
+        )
+
+    @staticmethod
+    async def send_whats_new_email(to_email: str, unsubscribe_token: Optional[str],
+                                    digest_date_label: str,
+                                    entries: list):
+        """Send the daily "What's New in ECTLogger" digest email.
+
+        ``entries`` is a list of changelog entry dicts (matching changelog.json
+        shape) covering changes from a single calendar day. ``digest_date_label``
+        is the human-readable date already formatted in the user's locale.
+        """
+        # Build sections HTML per type for visual grouping
+        type_styles = {
+            'feature':     {'label': 'New Features',  'color': '#2e7d32', 'emoji': '✨'},
+            'improvement': {'label': 'Improvements',  'color': '#0288d1', 'emoji': '🔧'},
+            'bugfix':      {'label': 'Bug Fixes',     'color': '#ed6c02', 'emoji': '🐛'},
+        }
+
+        sections_html_parts = []
+        for entry in entries:
+            for section in entry.get('sections', []):
+                style = type_styles.get(section.get('type', 'improvement'),
+                                        type_styles['improvement'])
+                items_html = ''.join(
+                    f'<li style="margin-bottom: 8px;">{item.get("text", "")}</li>'
+                    for item in section.get('items', [])
+                )
+                sections_html_parts.append(f'''
+                <div style="margin-bottom: 24px;">
+                    <h3 style="color: {style['color']}; margin: 0 0 8px 0; font-size: 16px;">
+                        {style['emoji']} {section.get('title', style['label'])}
+                    </h3>
+                    <ul style="margin: 0; padding-left: 24px; color: #333;">
+                        {items_html}
+                    </ul>
+                </div>
+                ''')
+        sections_html = ''.join(sections_html_parts)
+
+        unsubscribe_footer = EmailService.get_unsubscribe_footer(
+            unsubscribe_token, list_name="whats_new", list_label="What's New"
+        )
+
+        html_content = f'''
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                .header {{ background: linear-gradient(135deg, #1976d2 0%, #42a5f5 100%);
+                          color: #fff; padding: 24px; border-radius: 8px 8px 0 0;
+                          text-align: center; }}
+                .header h1 {{ margin: 0; font-size: 22px; }}
+                .header p {{ margin: 4px 0 0 0; opacity: 0.95; font-size: 14px; }}
+                .body {{ background: #fff; border: 1px solid #e0e0e0; border-top: none;
+                        padding: 24px; border-radius: 0 0 8px 8px; }}
+                .cta {{ display: inline-block; padding: 10px 20px; background-color: #1976d2;
+                       color: #fff !important; text-decoration: none; border-radius: 4px;
+                       margin-top: 8px; font-weight: bold; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>✨ What's New in {settings.app_name}</h1>
+                    <p>Updates from {digest_date_label}</p>
+                </div>
+                <div class="body">
+                    {sections_html}
+                    <p style="margin-top: 24px; text-align: center;">
+                        <a href="{settings.frontend_url}" class="cta" style="color: #fff;">Open {settings.app_name}</a>
+                    </p>
+                </div>
+                {unsubscribe_footer}
+            </div>
+        </body>
+        </html>
+        '''
+
+        await EmailService.send_email(
+            to_email=to_email,
+            subject=f"✨ What's New in {settings.app_name} — {digest_date_label}",
+            html_content=html_content,
+            unsubscribe_token=unsubscribe_token,
+            unsubscribe_list="whats_new",
         )

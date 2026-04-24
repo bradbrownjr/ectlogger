@@ -148,16 +148,16 @@ When adding or changing features, **always update relevant documentation**:
 
 When making **user-impacting changes** (new features, workflow changes, UI changes), update the in-app changelog:
 
-1. Edit `frontend/src/components/ChangelogNotification.tsx`
-2. Increment `CHANGELOG_VERSION` (format: `YYYY.MM.DD` using the **author's local calendar date** at time of change, or `YYYY.MM.DDx` for multiple updates on same day, e.g., `2026.01.25b`). Dates are stored as fixed calendar labels and displayed as-written — no UTC conversion is applied.
+1. Edit `frontend/src/changelog.json` — this is the **single source of truth**. The in-app `ChangelogNotification.tsx` dialog AND the backend `whats_new_service.py` daily digest email both read from this file, so they never drift apart.
+2. Increment the top-level `version` field (format: `YYYY.MM.DD` using the **author's local calendar date** at time of change, or `YYYY.MM.DDx` for multiple updates on same day, e.g., `2026.01.25b`). Dates are stored as fixed calendar labels and displayed as-written — no UTC conversion is applied.
    - **Always run `date` in the terminal before writing a changelog entry** to get the current UTC time, then convert to the author's local timezone (default: America/New_York, UTC-5 EST / UTC-4 EDT) to determine the correct calendar date.
-3. Add entry to the `CHANGELOG` array with:
-   - `version`: Same as CHANGELOG_VERSION
-   - `date`: Human-readable date
-   - `sections`: Array of { title, type: 'feature'|'improvement'|'bugfix', items }
+3. Prepend a new object to the `entries` array with:
+   - `version`: Same as the top-level `version`
+   - `date`: ISO date string `YYYY-MM-DD`
+   - `sections`: Array of `{ title, type: 'feature'|'improvement'|'bugfix', items: [{ text, userImpact? }] }`
    - Mark `userImpact: true` on items that directly affect user workflow
 
-Users see a red badge on the info icon (lower-left) until they view the changelog. User-impacting items are highlighted in the dialog. The badge only reappears when the version string changes, so always bump the version when deploying user-facing changes.
+Users see a red badge on the info icon (lower-left) until they view the changelog. User-impacting items are highlighted in the dialog. The badge only reappears when the version string changes, so always bump the version when deploying user-facing changes. Subscribed users (Profile → "What's New emails") also receive a consolidated 8 AM email digest the morning after a release.
 
 ### Development Workflow
 1. Make changes locally

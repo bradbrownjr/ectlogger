@@ -12,6 +12,7 @@ import {
   Divider,
   Chip,
   IconButton,
+  Tooltip,
   useTheme,
   alpha,
   keyframes,
@@ -21,7 +22,13 @@ import CloseIcon from '@mui/icons-material/Close';
 import NewReleasesIcon from '@mui/icons-material/NewReleases';
 import BugReportIcon from '@mui/icons-material/BugReport';
 import BuildIcon from '@mui/icons-material/Build';
+import DescriptionIcon from '@mui/icons-material/Description';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import jsPDF from 'jspdf';
 import { useAuth } from '../contexts/AuthContext';
+import api from '../services/api';
+import changelogData from '../changelog.json';
 
 // Pulse animation for the changelog badge
 const pulseAnimation = keyframes`
@@ -39,358 +46,54 @@ const pulseAnimation = keyframes`
   }
 `;
 
+// Sparkle animation for the Subscribe button when the user is NOT yet
+// subscribed — gently rotates the AutoAwesome icon and brightens the text
+// to draw the eye without being annoying.
+const sparkleAnimation = keyframes`
+  0%, 100% { transform: rotate(0deg) scale(1); opacity: 1; }
+  50% { transform: rotate(15deg) scale(1.15); opacity: 0.85; }
+`;
 // ========== CHANGELOG DATA ==========
-// When making user-impacting changes, add an entry here and increment the version.
-// The version number triggers the unread notification for users.
-// Mark entries with `userImpact: true` to highlight them in the UI.
+// The canonical changelog lives in frontend/src/changelog.json so the
+// in-app dialog AND the backend "What's New" digest email both render
+// the same content. Update changelog.json (bump "version" and prepend
+// a new entry) when you ship a user-impacting change.
 
-const CHANGELOG_VERSION = '2026.04.24b';
+interface ChangelogItem {
+  text: string;
+  userImpact?: boolean;
+}
+
+interface ChangelogSection {
+  title: string;
+  type: 'feature' | 'improvement' | 'bugfix';
+  items: ChangelogItem[];
+}
 
 interface ChangelogEntry {
   version: string;
   date: string; // ISO date string: "YYYY-MM-DD"
-  sections: {
-    title: string;
-    type: 'feature' | 'improvement' | 'bugfix';
-    items: {
-      text: string;
-      userImpact?: boolean;  // Highlight as user-impacting change
-    }[];
-  }[];
+  sections: ChangelogSection[];
 }
 
-const CHANGELOG: ChangelogEntry[] = [
-  {
-    version: '2026.04.24b',
-    date: '2026-04-24',
-    sections: [
-      {
-        title: 'Schedule Editor & Staff Modal Cleanup',
-        type: 'improvement',
-        items: [
-          { text: 'The "Owner / Default NCS" selector moved from the Basic Info tab to the Net Staff tab on the Edit Schedule page, where it is now labeled "Schedule Manager" — keeping the Manager and the rotation in one place.', userImpact: true },
-          { text: 'The Net Staff modal (opened from a schedule card) now lets the current Manager or an admin transfer ownership inline. Click the pencil next to the Manager name to pick a new operator.', userImpact: true },
-        ],
-      },
-    ],
-  },
-  {
-    version: '2026.04.24',
-    date: '2026-04-24',
-    sections: [
-      {
-        title: 'Net Manager Terminology & Staff Management Fixes',
-        type: 'improvement',
-        items: [
-          { text: 'Renamed "Host" to "Manager" throughout the schedule and net pages to match standard ham-radio Net Manager terminology. The schedule owner is now displayed as the Manager.', userImpact: true },
-          { text: 'The Manager (schedule owner) is always implicitly listed as an authorized Net Control Station — they don\'t need to be added to the staff list to run nets.', userImpact: true },
-        ],
-      },
-      {
-        title: 'Bug Fixes',
-        type: 'bugfix',
-        items: [
-          { text: 'Active staff members and NCS rotation members can now manage a schedule\'s staff list and rotation, not just the owner. Previously the "Manage Staff" and "Manage Rotation" tabs were hidden from anyone who wasn\'t the owner or an admin.', userImpact: true },
-          { text: 'Fixed permission inconsistency where the NCS rotation/staff endpoints rejected active staff members even though the rest of the template management endpoints accepted them.', userImpact: true },
-        ],
-      },
-    ],
-  },
-  {
-    version: '2026.04.22',
-    date: '2026-04-22',
-    sections: [
-      {
-        title: 'Mobile & Status Selector Improvements',
-        type: 'improvement',
-        items: [
-          { text: 'Status dropdowns on the check-in list now show a text label next to each emoji icon (e.g., 👂 Listening only, 📢 Announcements) so new NCS users don’t have to memorize the icon legend.', userImpact: true },
-          { text: 'Mobile net header is more compact: the duration chip drops the “Duration:” prefix, the edit-times pencil moved off the header, and toolbar buttons shrink to fit on a single row.', userImpact: true },
-          { text: 'Mobile “New Check-in” form is now collapsible and starts collapsed — attendees of nets they aren’t logging no longer have to scroll past a tall form.', userImpact: true },
-        ],
-      },
-    ],
-  },
-  {
-    version: '2026.04.21c',
-    date: '2026-04-21',
-    sections: [
-      {
-        title: 'Schedule Statistics Tweaks',
-        type: 'improvement',
-        items: [
-          { text: 'Schedule statistics now defaults to the last 1 year so monthly nets and occasional SKYWARN activations always show meaningful counts. The 30/90 day and all-time filters are still available.', userImpact: true },
-          { text: 'PDF export now includes all four leaderboards (Check-ins, NCS, Logger, Relay) instead of only the tab that was visible on screen.', userImpact: true },
-        ],
-      },
-    ],
-  },
-  {
-    version: '2026.04.21b',
-    date: '2026-04-21',
-    sections: [
-      {
-        title: 'Schedule Statistics Overhaul',
-        type: 'feature',
-        items: [
-          { text: 'Schedule statistics page now has time-window filters (30 days, 90 days, 1 year, all-time) and defaults to the last 30 days.', userImpact: true },
-          { text: 'New Leaderboards tab on schedule stats: top check-ins, NCS operators, Loggers, and Relay stations — each scoped to the selected time window.', userImpact: true },
-          { text: 'Net History log on schedule stats now shows the NCS callsign(s) for each net instance.', userImpact: true },
-          { text: 'Export to PDF button on schedule statistics for a one-click performance report.', userImpact: true },
-        ],
-      },
-      {
-        title: 'Improvements',
-        type: 'improvement',
-        items: [
-          { text: 'Replaced the strict "Regular Operators (50%+)" view with a top-20 check-in leaderboard so long-running nets with operator turnover always show meaningful results.', userImpact: true },
-          { text: 'Schedule cards on the Scheduler page now stretch to equal heights within a row and have a minimum height for a more uniform, professional appearance.', userImpact: true },
-        ],
-      },
-    ],
-  },
-  {
-    version: '2026.04.21',
-    date: '2026-04-21',
-    sections: [
-      {
-        title: 'Bug Fixes',
-        type: 'bugfix',
-        items: [
-          { text: 'Schedule merge now correctly preserves all nets and their check-ins under the surviving schedule. Previously, merging schedules could silently detach nets so their stats no longer counted toward the merged schedule.', userImpact: true },
-        ],
-      },
-      {
-        title: 'New Features',
-        type: 'feature',
-        items: [
-          { text: 'Link Existing Net to Schedule — schedule owners and admins can now attach an ad-hoc or misfiled net to a schedule from the schedule statistics page so its check-ins count toward the schedule\u2019s history.', userImpact: true },
-        ],
-      },
-    ],
-  },
-  {
-    version: '2026.03.21',
-    date: '2026-03-21',
-    sections: [
-      {
-        title: 'New Features',
-        type: 'feature',
-        items: [
-          { text: 'Merge Schedules — combine multiple net schedules into one. All nets, subscribers, staff, and NCS rotation members are moved to the master schedule. Accessible via the merge button on the Scheduler page.', userImpact: true },
-        ],
-      },
-    ],
-  },
-  {
-    version: '2026.03.20',
-    date: '2026-03-20',
-    sections: [
-      {
-        title: 'New Features',
-        type: 'feature',
-        items: [
-          { text: 'Auto-start nets — lobby nets now automatically go live at their scheduled start time. NCS can still start early manually.', userImpact: true },
-          { text: 'Edit net times — NCS and admins can now adjust the start and end time of active, closed, or archived nets via an edit icon next to the status chip.', userImpact: true },
-          { text: 'Check-in prompt — authenticated users viewing an active or lobby net are prompted with a notification asking if they\'d like to check in, with a one-click Check In button.', userImpact: true },
-          { text: 'Net titles on the Dashboard are now clickable — click a net name to go directly to the net view.', userImpact: true },
-        ],
-      },
-      {
-        title: 'Bug Fixes',
-        type: 'bugfix',
-        items: [
-          { text: 'Check-ins count now shows total participants including checked-out stations, with a separate "Checked Out" chip. Previously, checked-out stations were excluded from the count.', userImpact: true },
-          { text: 'Guest count now shows actual unauthenticated viewers instead of checked-in stations without online presence. No longer inflated by users who navigated away.', userImpact: true },
-          { text: 'Fixed net close/report email not being sent — a JSON parsing issue with field configuration prevented email delivery for some nets.', userImpact: true },
-        ],
-      },
-    ],
-  },
-  {
-    version: '2026.03.12',
-    date: '2026-03-12',
-    sections: [
-      {
-        title: 'Improvements',
-        type: 'improvement',
-        items: [
-          { text: 'Net Report PDF export is now dramatically smaller — text and tables are rendered natively instead of as images. Only maps remain as compressed images. Typical file size reduced from ~24 MB to under 1 MB.', userImpact: true },
-          { text: 'PDF filename now includes the net\'s start date and time (e.g., "ARES_Net_Report_2026-03-12_1930.pdf") instead of the export date.', userImpact: true },
-        ],
-      },
-    ],
-  },
-  {
-    version: '2026.02.26b',
-    date: '2026-02-26',
-    sections: [
-      {
-        title: 'New Features',
-        type: 'feature',
-        items: [
-          { text: 'Check-In Map on the Statistics page — shows a geographic map of approximate regions where check-ins have originated (by grid square or state/province), without revealing individual locations.', userImpact: true },
-        ],
-      },
-    ],
-  },
-  {
-    version: '2026.02.26',
-    date: '2026-02-26',
-    sections: [
-      {
-        title: 'New Features',
-        type: 'feature',
-        items: [
-          { text: 'Callsign auto-fill now uses contacts directory — when NCS enters a callsign, name, location, and SKYWARN number are auto-filled from the user\'s account or from prior check-in history. Fields remain editable.', userImpact: true },
-          { text: 'Admin Contacts tab — manage station contacts, fix misspelled names, add emails, and send invites to create user accounts.', userImpact: true },
-        ],
-      },
-    ],
-  },
-  {
-    version: '2026.02.23c',
-    date: '2026-02-23',
-    sections: [
-      {
-        title: 'Bug Fixes',
-        type: 'bugfix',
-        items: [
-          { text: 'Check-in location map now plots all stations, including those that checked out during the net — checked-out stations still participated and are shown.', userImpact: true },
-          { text: 'Location parser now recognizes full state names (e.g., "Skowhegan Maine") in addition to abbreviations, so more check-in locations are mapped correctly.', userImpact: true },
-        ],
-      },
-    ],
-  },
-  {
-    version: '2026.02.23b',
-    date: '2026-02-23',
-    sections: [
-      {
-        title: 'Improvements',
-        type: 'improvement',
-        items: [
-          { text: 'Browser autocomplete disabled on the Name field in check-in forms — prevents browsers from overwriting the platform\'s own callsign-based name lookup with saved personal data.', userImpact: true },
-          { text: 'What\'s New dialog now shows the correct local date for changelog entries regardless of timezone. Same-day releases are merged into a single section.', userImpact: false },
-        ],
-      },
-    ],
-  },
-  {
-    version: '2026.02.23',
-    date: '2026-02-23',
-    sections: [
-      {
-        title: 'Bug Fixes',
-        type: 'bugfix',
-        items: [
-          { text: 'Logger role now works correctly — loggers can change check-in statuses and use the check-in entry form. Previously, only NCS and above could perform these actions due to a role-name mismatch.', userImpact: true },
-        ],
-      },
-    ],
-  },
-  {
-    version: '2026.02.19',
-    date: '2026-02-19',
-    sections: [
-      {
-        title: 'New Features',
-        type: 'feature',
-        items: [
-          { text: 'Dual-map view in PDF Report — when check-ins are geographically clustered with a few outliers at a significant distance, the report now shows two side-by-side maps: a zoomed cluster view and a full overview, so neither is lost.', userImpact: true },
-          { text: 'Check-in location map on the Net Statistics page — fills the empty space next to the status chart with a map showing all check-in locations for that net.', userImpact: true },
-          { text: 'Check-in Pace chart on the Net Statistics page — shows cumulative arrivals over time so you can see at a glance whether stations checked in quickly or trickled in throughout the net.', userImpact: true },
-        ],
-      },
-      {
-        title: 'Bug Fixes',
-        type: 'bugfix',
-        items: [
-          { text: 'Check-in now works in LOBBY mode — stations can check in as soon as the NCS opens the lobby before the official start time.', userImpact: true },
-          { text: 'Check-in errors now show as in-app notifications instead of browser alert pop-ups, with the actual error detail from the server.', userImpact: true },
-          { text: 'Map zoom no longer snaps back to show all stations when the check-in list updates. Your zoom level and pan position are now preserved after the initial auto-fit.', userImpact: true },
-        ],
-      },
-    ],
-  },
-  {
-    version: '2026.01.25f',
-    date: '2026-01-25',
-    sections: [
-      {
-        title: 'New Features',
-        type: 'feature',
-        items: [
-          { text: 'Per-user Chat System Messages Toggle — users can now hide or show system (activity) messages from the chat via a toolbar icon (left of the pop-out button). Preference is saved to your profile and persists across sessions.', userImpact: true },
-          { text: 'Announcements / General Traffic - Separate field from net script for listing upcoming events and announcements. Visible to all via megaphone icon. Supports Markdown.', userImpact: true },
-          { text: 'Prior Topics Log - Tracks previously used "Topic of the Week" prompts to avoid repetition. View via history icon for template-based nets.', userImpact: true },
-          { text: 'Audio Stream URL - Add Shoutcast/Broadcastify stream links to nets for in-browser listening', userImpact: true },
-          { text: 'Unarchive button added directly to the Archived Nets list', userImpact: true },
-          { text: 'In-App Changelog floating button (Whats New) with unread indicator', userImpact: true },
-          { text: 'Consistent Action Button Colors - All buttons now use consistent colors throughout the UI (blue for view/search, purple for people/staff, orange for stats, green for exports, teal for ICS-309, red for delete/close) making them easier to find', userImpact: true },
-        ],
-      },
-      {
-        title: 'Bug Fixes & Improvements',
-        type: 'bugfix',
-        items: [
-          { text: 'Net staff members can now create and start nets (not just rotation members)', userImpact: true },
-          { text: 'WebSocket connections now auto-reconnect if disconnected unexpectedly', userImpact: true },
-          { text: 'Users can now check out their own check-in (previously only NCS/Logger could)', userImpact: true },
-          { text: 'Role assignments (NCS, Logger, Relay) are now logged in chat', userImpact: true },
-          { text: 'Improved map PDF export reliability', userImpact: true },
-          { text: 'Net closure now immediately updates all connected clients', userImpact: false },
-          { text: 'Fixed dead WebSocket connections being kept in memory', userImpact: false },
-        ],
-      },
-    ],
-  },
-  {
-    version: '2025.12.19',
-    date: '2025-12-19',
-    sections: [
-      {
-        title: 'New Features',
-        type: 'feature',
-        items: [
-          { text: 'Email unsubscribe links in all notification emails', userImpact: true },
-          { text: 'Subscription prompt after check-in when a scheduled net closes', userImpact: true },
-        ],
-      },
-      {
-        title: 'Improvements',
-        type: 'improvement',
-        items: [
-          { text: 'Admin Users list now shows three-tier online status (green/yellow/red)', userImpact: false },
-          { text: 'PDF exports now force light mode for better printing', userImpact: true },
-        ],
-      },
-    ],
-  },
-  {
-    version: '2025.12.18',
-    date: '2025-12-18',
-    sections: [
-      {
-        title: 'New Features',
-        type: 'feature',
-        items: [
-          { text: 'Lobby Mode - NCS can start nets early with countdown to official start', userImpact: true },
-          { text: 'Unarchive Nets - Restore archived nets to closed status', userImpact: true },
-          { text: 'Net Report (PDF) - Comprehensive multi-page PDF reports for closed nets', userImpact: true },
-          { text: 'Inline Check-In Editing - Click any row to edit directly', userImpact: true },
-          { text: 'Countdown Timer - Shows time until scheduled net start', userImpact: true },
-        ],
-      },
-    ],
-  },
-];
+const CHANGELOG_VERSION: string = (changelogData as { version: string }).version;
+const CHANGELOG: ChangelogEntry[] = (changelogData as { entries: ChangelogEntry[] }).entries;
+
 
 const ChangelogNotification: React.FC = () => {
   const theme = useTheme();
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [hasUnread, setHasUnread] = useState(false);
+  // ========== "What's New" subscription state ==========
+  // Mirrors user.notify_whats_new locally so the Subscribe button can
+  // give immediate feedback after PUT /users/me succeeds.
+  const [subscribed, setSubscribed] = useState<boolean>(!!user?.notify_whats_new);
+  const [subscribeBusy, setSubscribeBusy] = useState(false);
+
+  useEffect(() => {
+    setSubscribed(!!user?.notify_whats_new);
+  }, [user?.notify_whats_new]);
 
   // Format an ISO date string ("YYYY-MM-DD") respecting the user's UTC preference.
   // Parsed at noon UTC to avoid date-boundary shifts in any timezone.
@@ -441,6 +144,126 @@ const ChangelogNotification: React.FC = () => {
     // Mark as read when dialog is closed
     localStorage.setItem('changelog_last_read_version', CHANGELOG_VERSION);
     setHasUnread(false);
+  };
+
+  // ========== "What's New" subscription toggle ==========
+  // Single click flips notify_whats_new on the user profile via PUT /users/me.
+  // Hidden entirely when the user isn't authenticated (handled in render).
+  const handleToggleSubscribe = async () => {
+    if (!user || subscribeBusy) return;
+    const next = !subscribed;
+    setSubscribeBusy(true);
+    try {
+      // Auto-capture the browser's IANA timezone the first time the user
+      // subscribes so the daily 8 AM digest fires in their local time
+      // instead of the PST fallback. Safe to send every time; backend just
+      // overwrites with the latest detected zone.
+      const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      await api.put('/users/me', {
+        notify_whats_new: next,
+        ...(browserTz ? { timezone: browserTz } : {}),
+      });
+      setSubscribed(next);
+    } catch (err) {
+      console.error('Failed to update What\'s New subscription:', err);
+    } finally {
+      setSubscribeBusy(false);
+    }
+  };
+
+  // ========== PDF EXPORT ==========
+  // Render the changelog as a text-native PDF (selectable text, small file
+  // size — same approach the net report PDF uses post-2026.03.12). One-shot
+  // helper builds a doc from a list of grouped entries; callers pass either
+  // just the latest day's group or the entire grouped list.
+  const buildChangelogPdf = (
+    groups: { date: string; versions: string[]; sections: ChangelogSection[] }[],
+    title: string,
+  ): jsPDF => {
+    const pdf = new jsPDF({ unit: 'pt', format: 'letter' });
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 48;
+    const contentWidth = pageWidth - margin * 2;
+    let y = margin;
+
+    const ensureRoom = (needed: number) => {
+      if (y + needed > pageHeight - margin) {
+        pdf.addPage();
+        y = margin;
+      }
+    };
+
+    // Title
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(18);
+    pdf.text(title, margin, y);
+    y += 22;
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(10);
+    pdf.setTextColor(120);
+    pdf.text(`Generated ${new Date().toLocaleString()}`, margin, y);
+    y += 18;
+    pdf.setTextColor(0);
+
+    const typeLabel: Record<string, string> = {
+      feature: 'New Features',
+      improvement: 'Improvements',
+      bugfix: 'Bug Fixes',
+    };
+
+    for (const group of groups) {
+      ensureRoom(40);
+      // Date heading
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(13);
+      pdf.text(formatChangelogDate(group.date), margin, y);
+      y += 16;
+      // Version chip(s)
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(9);
+      pdf.setTextColor(100);
+      pdf.text(group.versions.map(v => `v${v}`).join('  ·  '), margin, y);
+      y += 14;
+      pdf.setTextColor(0);
+
+      for (const section of group.sections) {
+        ensureRoom(28);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(11);
+        pdf.text(`${typeLabel[section.type] || section.title}: ${section.title}`, margin, y);
+        y += 14;
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(10);
+        for (const item of section.items) {
+          const bullet = '\u2022 ';
+          const wrapped = pdf.splitTextToSize(bullet + item.text, contentWidth - 12);
+          ensureRoom(wrapped.length * 12 + 4);
+          pdf.text(wrapped, margin + 6, y);
+          y += wrapped.length * 12 + 2;
+        }
+        y += 6;
+      }
+      y += 8;
+    }
+    return pdf;
+  };
+
+  const handleDownloadLatest = () => {
+    // Latest = the newest day-group (groupedEntries[0]).
+    if (!groupedEntries.length) return;
+    const latest = groupedEntries[0];
+    const pdf = buildChangelogPdf(
+      [latest],
+      `What's New in ECTLogger — ${formatChangelogDate(latest.date)}`,
+    );
+    pdf.save(`ECTLogger_WhatsNew_${latest.date}.pdf`);
+  };
+
+  const handleDownloadAll = () => {
+    const pdf = buildChangelogPdf(groupedEntries, 'ECTLogger Changelog');
+    const today = new Date().toISOString().slice(0, 10);
+    pdf.save(`ECTLogger_Changelog_${today}.pdf`);
   };
 
   const getTypeIcon = (type: string) => {
@@ -613,10 +436,61 @@ const ChangelogNotification: React.FC = () => {
             </Typography>
           </Box>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleClose} variant="contained">
-            Got it!
-          </Button>
+        <DialogActions sx={{ justifyContent: 'space-between', px: 2 }}>
+          {/* ========== LEFT GROUP: PDF download icon buttons ========== */}
+          {/* Single page = latest day's changelog. Open book = entire changelog. */}
+          <Box sx={{ display: 'flex', gap: 0.5 }}>
+            <Tooltip title="Download latest version's changelog (PDF)">
+              <IconButton onClick={handleDownloadLatest} size="small" color="primary" aria-label="Download latest changelog as PDF">
+                <DescriptionIcon />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Download entire changelog (PDF)">
+              <IconButton onClick={handleDownloadAll} size="small" color="primary" aria-label="Download entire changelog as PDF">
+                <MenuBookIcon />
+              </IconButton>
+            </Tooltip>
+          </Box>
+
+          {/* ========== RIGHT GROUP: Subscribe + close ========== */}
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+            {/* Subscribe button — only shown when authenticated. Sparkles when
+                NOT yet subscribed to draw the eye, calmly green when active. */}
+            {user && (
+              <Tooltip
+                title={
+                  subscribed
+                    ? "You're subscribed to the daily What's New digest. Click to unsubscribe."
+                    : "Get a daily 8 AM email summarizing each day's new features and fixes."
+                }
+              >
+                <span>
+                  <Button
+                    onClick={handleToggleSubscribe}
+                    disabled={subscribeBusy}
+                    variant={subscribed ? 'contained' : 'outlined'}
+                    color={subscribed ? 'success' : 'primary'}
+                    size="small"
+                    startIcon={
+                      <AutoAwesomeIcon
+                        fontSize="small"
+                        sx={{
+                          animation: !subscribed
+                            ? `${sparkleAnimation} 2s ease-in-out infinite`
+                            : 'none',
+                        }}
+                      />
+                    }
+                  >
+                    {subscribed ? 'Subscribed' : 'Subscribe'}
+                  </Button>
+                </span>
+              </Tooltip>
+            )}
+            <Button onClick={handleClose} variant="contained">
+              Got it!
+            </Button>
+          </Box>
         </DialogActions>
       </Dialog>
     </>

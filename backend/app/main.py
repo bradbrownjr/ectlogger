@@ -9,6 +9,7 @@ from app.routers import auth, users, nets, check_ins, frequencies, templates, ch
 from app.routers import settings as app_settings_router
 from app.security import sanitize_html
 from app.ncs_reminder_service import ncs_reminder_service
+from app.whats_new_service import whats_new_service
 from typing import Dict, List
 import json
 
@@ -241,12 +242,15 @@ async def startup_event():
     await init_db()
     # Start NCS reminder service
     await ncs_reminder_service.start()
+    # Start What's New daily digest service
+    await whats_new_service.start()
 
 
 @app.on_event("shutdown")
 async def shutdown_event():
     """Cleanup background services on shutdown"""
     await ncs_reminder_service.stop()
+    await whats_new_service.stop()
 
 
 @app.get("/api")

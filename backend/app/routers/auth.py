@@ -13,6 +13,7 @@ from app.config import settings
 from app.logger import logger
 from app.security import get_client_ip
 from datetime import timedelta
+from typing import Optional
 import secrets
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
@@ -268,33 +269,54 @@ async def get_current_user_info(
 @router.get("/unsubscribe")
 async def unsubscribe_from_emails(
     token: str,
+    list: Optional[str] = None,
     db: AsyncSession = Depends(get_db)
 ):
     """
     One-click email unsubscribe endpoint.
-    Disables all email notifications for the user with the matching token.
+
+    By default disables ALL email notifications for the user with the matching token
+    (CAN-SPAM compliant master unsubscribe).
+
+    Pass ``?list=<name>`` to opt out of a specific email category instead of the
+    master switch. Supported per-list values:
+      - ``whats_new`` -> clears notify_whats_new only
+
     This endpoint does not require authentication for CAN-SPAM compliance.
     """
     if not token:
         raise HTTPException(status_code=400, detail="Unsubscribe token is required")
-    
+
     # Find user by unsubscribe token
     result = await db.execute(
         select(User).where(User.unsubscribe_token == token)
     )
     user = result.scalar_one_or_none()
-    
+
     if not user:
         raise HTTPException(status_code=404, detail="Invalid or expired unsubscribe token")
-    
-    # Disable email notifications
+
+    # Per-list opt-out: only clear the named preference, leave master + others alone
+    if list == "whats_new":
+        user.notify_whats_new = False
+        await db.commit()
+        logger.info("API", f"User {user.email} unsubscribed from What's New emails via one-click link")
+        return {
+            "success": True,
+            "list": "whats_new",
+            "message": "You have been unsubscribed from What's New in ECTLogger emails.",
+            "email": user.email,
+        }
+
+    # Default: master unsubscribe from all email notifications
     user.email_notifications = False
     await db.commit()
-    
+
     logger.info("API", f"User {user.email} unsubscribed from emails via one-click link")
-    
+
     return {
         "success": True,
+        "list": None,
         "message": "You have been unsubscribed from all email notifications.",
         "email": user.email
     }

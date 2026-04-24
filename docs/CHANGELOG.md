@@ -4,6 +4,20 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# April 24, 2026 (c)
+
+## Changelog Downloads & What's New Email Digest
+
+* **PDF download buttons** — The What's New dialog now has two download icons in its action bar: a single-page icon downloads just the latest version's changelog as a PDF, and an open-book icon downloads the entire changelog history. Output is text-native (selectable, small file size).
+* **What's New email digest** — Optional opt-in (off by default) that emails subscribed users a single 8 AM digest the morning after each release, summarising every changelog entry from the previous calendar day. Silent on days with no updates so it never spams.
+* **Sparkling Subscribe button** — A subscribe/unsubscribe toggle appears in the What's New dialog (right next to "Got it!") so users can opt in to the digest without leaving the modal. Hidden when not signed in.
+* **Per-user timezone** — Digests fire at 8 AM in the user's local timezone (auto-captured from the browser the first time they subscribe). Falls back to America/Los_Angeles (PST/PDT) if the timezone isn't set, so we don't wake anyone up early.
+* **One-click per-list unsubscribe** — Every What's New email includes a `?list=whats_new` unsubscribe link that opts the user out of just the digest, leaving net-start / net-close / reminder preferences alone. Master unsubscribe still works for everything.
+* **Single source of truth** — The changelog data has moved from `frontend/src/components/ChangelogNotification.tsx` to `frontend/src/changelog.json`, which is imported by both the React dialog and the new backend `whats_new_service.py` so the in-app and email content can never drift apart.
+* **Migration 017** — Adds `users.notify_whats_new` (Boolean, default false) and `users.timezone` (String) columns. Run `python3 backend/migrations/017_add_whats_new_subscription.py` on each environment.
+
+---
+
 # April 24, 2026 (b)
 
 ## Schedule Editor & Staff Modal Cleanup

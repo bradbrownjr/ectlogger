@@ -27,7 +27,10 @@ export default function Unsubscribe() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const token = searchParams.get('token');
-  
+  // Optional per-list opt-out (e.g. ?list=whats_new) — when present we
+  // unsubscribed from that list only, not the user's master switch.
+  const list = searchParams.get('list');
+
   const [status, setStatus] = useState<'loading' | 'success' | 'error' | 'resubscribed'>('loading');
   const [message, setMessage] = useState('');
   const [email, setEmail] = useState('');
@@ -43,7 +46,10 @@ export default function Unsubscribe() {
     // Call the unsubscribe endpoint
     const unsubscribe = async () => {
       try {
-        const response = await api.get(`/auth/unsubscribe?token=${token}`);
+        const url = list
+          ? `/auth/unsubscribe?token=${token}&list=${encodeURIComponent(list)}`
+          : `/auth/unsubscribe?token=${token}`;
+        const response = await api.get(url);
         setStatus('success');
         setMessage(response.data.message);
         setEmail(response.data.email || '');
@@ -58,7 +64,7 @@ export default function Unsubscribe() {
     };
 
     unsubscribe();
-  }, [token]);
+  }, [token, list]);
 
   const handleResubscribe = async () => {
     if (!token) return;

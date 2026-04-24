@@ -75,6 +75,8 @@ class User(Base):
     notify_net_close = Column(Boolean, default=True)  # Notify when subscribed net closes (with log)
     notify_net_reminder = Column(Boolean, default=False)  # Reminder 1 hour before subscribed net
     notify_ics309 = Column(Boolean, default=False)  # Send ICS-309 format instead of standard log
+    notify_whats_new = Column(Boolean, default=False)  # Daily 8 AM digest of new platform features (off by default)
+    timezone = Column(String(64), nullable=True)  # IANA timezone (e.g. "America/New_York") used to schedule per-user emails. Falls back to PST when unset.
     unsubscribe_token = Column(String(64), unique=True, index=True, nullable=True)  # Token for one-click email unsubscribe
     show_activity_in_chat = Column(Boolean, default=True)  # Show check-in/out activity in chat
     location_awareness = Column(Boolean, default=False)  # Enable browser geolocation for grid square

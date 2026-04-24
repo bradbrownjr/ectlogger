@@ -17,6 +17,8 @@ interface User {
   notify_net_start?: boolean;
   notify_net_close?: boolean;
   notify_net_reminder?: boolean;
+  notify_whats_new?: boolean;
+  timezone?: string;
   role: string;
 }
 

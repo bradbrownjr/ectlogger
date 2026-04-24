@@ -101,6 +101,7 @@ const Profile: React.FC = () => {
     notify_net_close: user?.notify_net_close ?? true,
     notify_net_reminder: user?.notify_net_reminder ?? false,
     notify_ics309: user?.notify_ics309 ?? false,
+    notify_whats_new: user?.notify_whats_new ?? false,
   });
 
   useEffect(() => {
@@ -416,6 +417,23 @@ const Profile: React.FC = () => {
                 />
                 <Typography variant="body2" color="text.secondary" sx={{ ml: 4, mb: 1 }}>
                   Receive a reminder email 1 hour before scheduled nets start
+                </Typography>
+
+                {/* ========== "What's New" digest opt-in (off by default) ==========
+                    Sends a single daily email at 8 AM (user's local TZ, PST fallback)
+                    summarizing platform updates from the previous day. */}
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={formData.notify_whats_new}
+                      onChange={(e) => setFormData({ ...formData, notify_whats_new: e.target.checked })}
+                      disabled={!formData.email_notifications}
+                    />
+                  }
+                  label="What's New emails"
+                />
+                <Typography variant="body2" color="text.secondary" sx={{ ml: 4, mb: 1 }}>
+                  Get a daily 8 AM digest of new ECTLogger features and fixes (sent only on days with updates)
                 </Typography>
               </Box>
             </Box>
