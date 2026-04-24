@@ -4,6 +4,15 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# April 24, 2026 (b)
+
+## Schedule Editor & Staff Modal Cleanup
+
+* **Manager selector moved to Net Staff tab** — On the Edit Schedule page, the "Owner / Default NCS" selector has been relocated from the Basic Info tab to the Net Staff tab and renamed "Schedule Manager". This keeps the Manager (owner) visible alongside the NCS rotation in one place, eliminating the confusion of "why isn't the Manager in the NCS list?"
+* **Inline manager transfer in the Staff modal** — The Net Staff modal accessed from a schedule card now exposes a pencil icon next to the Manager. The current Manager or an admin can click it to transfer ownership without leaving the modal. Backend permission checks (`templateApi.update` with `owner_id`) prevent staff/rotation members from transferring ownership.
+
+---
+
 # April 24, 2026
 
 ## Net Manager Terminology

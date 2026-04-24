@@ -44,7 +44,7 @@ const pulseAnimation = keyframes`
 // The version number triggers the unread notification for users.
 // Mark entries with `userImpact: true` to highlight them in the UI.
 
-const CHANGELOG_VERSION = '2026.04.24';
+const CHANGELOG_VERSION = '2026.04.24b';
 
 interface ChangelogEntry {
   version: string;
@@ -60,6 +60,20 @@ interface ChangelogEntry {
 }
 
 const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '2026.04.24b',
+    date: '2026-04-24',
+    sections: [
+      {
+        title: 'Schedule Editor & Staff Modal Cleanup',
+        type: 'improvement',
+        items: [
+          { text: 'The "Owner / Default NCS" selector moved from the Basic Info tab to the Net Staff tab on the Edit Schedule page, where it is now labeled "Schedule Manager" — keeping the Manager and the rotation in one place.', userImpact: true },
+          { text: 'The Net Staff modal (opened from a schedule card) now lets the current Manager or an admin transfer ownership inline. Click the pencil next to the Manager name to pick a new operator.', userImpact: true },
+        ],
+      },
+    ],
+  },
   {
     version: '2026.04.24',
     date: '2026-04-24',

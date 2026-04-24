@@ -1026,24 +1026,9 @@ const CreateSchedule: React.FC = () => {
               )}
             </Box>
 
-            {/* Owner selector - only show when editing and user is owner or admin */}
-            {isEdit && users.length > 0 && (currentUser?.role === 'admin' || currentUser?.id === originalOwnerId) && (
-              <Autocomplete
-                options={users}
-                getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
-                value={users.find((u: User) => u.id === ownerId) || null}
-                onChange={(_: any, value: User | null) => setOwnerId(value?.id || null)}
-                renderInput={(params: any) => (
-                  <TextField 
-                    {...params} 
-                    label="Owner / Default NCS" 
-                    margin="normal"
-                    helperText="The owner is the default NCS when no rotation is configured"
-                  />
-                )}
-                sx={{ mt: 2 }}
-              />
-            )}
+            {/* Owner selector moved to the Net Staff tab so the Manager
+                appears alongside the rotation in one place. See the
+                "Schedule Manager" section under the Net Staff tab below. */}
 
             {isEdit && (
               <FormControlLabel
@@ -1189,9 +1174,9 @@ const CreateSchedule: React.FC = () => {
           {/* Tab 2: Net Staff */}
           <TabPanel value={activeTab} index={2}>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              {isEdit 
-                ? 'Manage NCS operators for this schedule. Any operator listed here can start and run nets. Use the Manage Rotation tab (in the Net Staff modal) to set up automatic rotation.'
-                : 'Add NCS operators who can start and run nets from this schedule. After creating the schedule, you can set up automatic NCS rotation from the Net Staff modal.'}
+              {isEdit
+                ? 'Manage the schedule Manager (owner) and the NCS rotation. Any operator listed here can start and run nets.'
+                : 'Add NCS operators who can start and run nets from this schedule. After creating the schedule, you can set up automatic NCS rotation here.'}
             </Typography>
 
             {/* For NEW schedules - show owner first, then add input, then pending users */}
@@ -1293,9 +1278,51 @@ const CreateSchedule: React.FC = () => {
               </>
             )}
 
-            {/* For EDIT mode - show add input and existing rotation members */}
+            {/* For EDIT mode - show owner, add input, and existing rotation members */}
             {isEdit && (
               <>
+                {/* ========== SCHEDULE MANAGER (OWNER) ========== */}
+                {/* Manager is the schedule owner (ham-radio Net Manager term).
+                    They are always implicitly authorized to start/run nets and
+                    serve as the default NCS when no rotation is configured.
+                    Only the current owner or an admin can transfer ownership. */}
+                <Box sx={{ mb: 3 }}>
+                  <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                    Schedule Manager
+                  </Typography>
+                  {users.length > 0 && (currentUser?.role === 'admin' || currentUser?.id === originalOwnerId) ? (
+                    <Autocomplete
+                      options={users}
+                      getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
+                      value={users.find((u: User) => u.id === ownerId) || null}
+                      onChange={(_: any, value: User | null) => setOwnerId(value?.id || null)}
+                      renderInput={(params: any) => (
+                        <TextField
+                          {...params}
+                          size="small"
+                          helperText="The Manager is implicitly authorized as NCS and serves as the default NCS when no rotation is configured."
+                        />
+                      )}
+                    />
+                  ) : (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1, bgcolor: 'action.hover', borderRadius: 1 }}>
+                      <Typography variant="body2">
+                        {users.find((u: User) => u.id === ownerId)?.callsign || 'Unknown'}
+                        {users.find((u: User) => u.id === ownerId)?.name && ` (${users.find((u: User) => u.id === ownerId)?.name})`}
+                      </Typography>
+                      <Chip label="Manager" size="small" color="primary" variant="outlined" />
+                    </Box>
+                  )}
+                </Box>
+
+                <Divider sx={{ mb: 2 }} />
+                <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                  NCS Rotation
+                </Typography>
+                <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
+                  Operators added here can start nets and will be cycled through automatically as the next NCS for upcoming scheduled nets. Use the up/down arrows to set rotation order.
+                </Typography>
+
                 {/* Add user input for edit mode */}
                 <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
                   <Autocomplete

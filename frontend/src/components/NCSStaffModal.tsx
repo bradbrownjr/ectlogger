@@ -39,7 +39,10 @@ import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import BlockIcon from '@mui/icons-material/Block';
 import PersonIcon from '@mui/icons-material/Person';
-import { ncsRotationApi, userApi, templateStaffApi } from '../services/api';
+import EditIcon from '@mui/icons-material/Edit';
+import SaveIcon from '@mui/icons-material/Save';
+import CloseIcon from '@mui/icons-material/Close';
+import { ncsRotationApi, userApi, templateStaffApi, templateApi } from '../services/api';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -132,6 +135,17 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
   const [swapUser, setSwapUser] = useState<User | null>(null);
   const [swapReason, setSwapReason] = useState('');
   const [isCancellation, setIsCancellation] = useState(false);
+
+  // ========== MANAGER (OWNER) TRANSFER STATE ==========
+  // Lets the current owner or an admin transfer schedule ownership from
+  // inside the staff modal. The new manager is set via templateApi.update
+  // and onUpdate() refetches the parent so the rest of the UI stays in sync.
+  const [editingManager, setEditingManager] = useState(false);
+  const [pendingManager, setPendingManager] = useState<User | null>(null);
+  const [managerSaving, setManagerSaving] = useState(false);
+  // Local override of the displayed manager so the new value sticks even
+  // before the parent refetches and passes a fresh `schedule` prop.
+  const [localOwner, setLocalOwner] = useState<{ id: number; callsign?: string; name?: string } | null>(null);
   
   const { user, isAuthenticated } = useAuth();
   const theme = useTheme();
@@ -206,6 +220,9 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
       // Reset when modal closes
       setTabValue(0);
       setError(null);
+      setEditingManager(false);
+      setPendingManager(null);
+      setLocalOwner(null);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, scheduleId, netId]);
@@ -251,7 +268,34 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
   };
 
   // ===== SCHEDULE/TEMPLATE STAFF HANDLERS =====
-  
+
+  // Transfer schedule ownership to a new user. Allowed only for the current
+  // owner or an admin (enforced both here and by the backend). On success we
+  // update the local display and call onUpdate() so the parent (Scheduler)
+  // refetches its list with the new owner.
+  const handleSaveManager = async () => {
+    if (!schedule || !pendingManager || pendingManager.id === (localOwner?.id ?? schedule.owner_id)) {
+      setEditingManager(false);
+      return;
+    }
+    setManagerSaving(true);
+    try {
+      await templateApi.update(schedule.id, { owner_id: pendingManager.id });
+      setLocalOwner({
+        id: pendingManager.id,
+        callsign: pendingManager.callsign,
+        name: pendingManager.name || undefined,
+      });
+      setEditingManager(false);
+      setPendingManager(null);
+      onUpdate?.();
+    } catch (err: any) {
+      setError(getErrorMessage(err, 'Failed to update manager'));
+    } finally {
+      setManagerSaving(false);
+    }
+  };
+
   const handleAddStaff = async () => {
     if (!schedule || !selectedUser) return;
     
@@ -481,21 +525,72 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
             Any of these operators can start and run nets from this schedule.
           </Typography>
           
-          {/* Always show owner first */}
+          {/* Manager (owner) — always shown first. Owner/admin can transfer
+              ownership inline; staff/rotation members get the read-only view. */}
           <List dense>
             <ListItem sx={{ py: 0.5, bgcolor: 'action.hover', borderRadius: 1, mb: 0.5 }}>
               <PersonIcon sx={{ mr: 1, color: 'primary.main' }} />
-              <ListItemText
-                primary={
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography variant="body2">
-                      {schedule?.owner_callsign || 'Manager'}
-                      {schedule?.owner_name && ` (${schedule.owner_name})`}
-                    </Typography>
-                    <Chip label="Manager" size="small" color="primary" variant="outlined" />
-                  </Box>
-                }
-              />
+              {editingManager ? (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexGrow: 1 }}>
+                  <Autocomplete
+                    size="small"
+                    options={users}
+                    getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
+                    value={pendingManager}
+                    onChange={(_: any, value: User | null) => setPendingManager(value)}
+                    renderInput={(params: any) => (
+                      <TextField {...params} label="Transfer to" placeholder="Select new manager" />
+                    )}
+                    sx={{ flexGrow: 1, minWidth: 220 }}
+                  />
+                  <IconButton
+                    size="small"
+                    color="primary"
+                    onClick={handleSaveManager}
+                    disabled={!pendingManager || managerSaving || pendingManager.id === (localOwner?.id ?? schedule?.owner_id)}
+                    title="Save new manager"
+                  >
+                    <SaveIcon fontSize="small" />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    onClick={() => { setEditingManager(false); setPendingManager(null); }}
+                    disabled={managerSaving}
+                    title="Cancel"
+                  >
+                    <CloseIcon fontSize="small" />
+                  </IconButton>
+                </Box>
+              ) : (
+                <ListItemText
+                  primary={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography variant="body2">
+                        {(localOwner?.callsign ?? schedule?.owner_callsign) || 'Manager'}
+                        {(localOwner?.name ?? schedule?.owner_name) && ` (${localOwner?.name ?? schedule?.owner_name})`}
+                      </Typography>
+                      <Chip label="Manager" size="small" color="primary" variant="outlined" />
+                    </Box>
+                  }
+                />
+              )}
+              {/* Edit affordance is only visible to the current owner or an admin —
+                  staff/rotation members can manage staff but not transfer ownership. */}
+              {!editingManager && (isOwner || isAdmin) && (
+                <ListItemSecondaryAction>
+                  <IconButton
+                    size="small"
+                    onClick={() => {
+                      const currentOwnerId = localOwner?.id ?? schedule?.owner_id;
+                      setPendingManager(users.find((u: User) => u.id === currentOwnerId) || null);
+                      setEditingManager(true);
+                    }}
+                    title="Change Manager"
+                  >
+                    <EditIcon fontSize="small" />
+                  </IconButton>
+                </ListItemSecondaryAction>
+              )}
             </ListItem>
             {staff.map((s: StaffMember) => (
               <ListItem key={s.id} sx={{ py: 0.5 }}>
