@@ -4,6 +4,20 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# April 24, 2026
+
+## Net Manager Terminology
+
+* **"Host" renamed to "Manager"** — The schedule owner is now labeled as the "Manager" everywhere in the UI (Scheduler list, Scheduler card, Create Net page, Staff Modal). This matches the standard ham-radio "Net Manager" role: the operator ultimately responsible for a net series.
+* **Manager is implicitly an authorized NCS** — The Manager (schedule owner) is always shown at the top of the "Authorized Net Control Stations" list with a Manager chip and never needs to be added as a separate staff member to start or run nets.
+
+## Bug Fixes
+
+* **Staff and rotation members can manage staff** — The "Manage Staff" and "Manage Rotation" tabs were hidden for everyone except the Manager and admins. Active staff members and active NCS rotation members can now also manage the staff list and rotation, matching the documented intent that staff members can run and curate the schedule.
+* **Permission consistency between routers** — `routers/ncs_rotation.check_template_permission` previously rejected active staff members even though `routers/templates.check_template_permission` accepted them. The two helpers now allow the same set of users (admin, owner, active staff, active rotation member). This was the root cause behind the SKYWARN GYX schedule manager being unable to assign other NCS operators after a schedule merge.
+
+---
+
 # April 22, 2026
 
 ## Mobile & Status Selector Improvements

@@ -45,14 +45,25 @@ async def get_template_or_404(template_id: int, db: AsyncSession) -> NetTemplate
 
 
 async def check_template_permission(template: NetTemplate, user: User, db: AsyncSession) -> bool:
-    """Check if user can manage this template's rotation and staff"""
+    """Check if user can manage this template's rotation and staff.
+
+    Authorized roles (must match the equivalent helper in routers/templates.py):
+    - Global admin
+    - Template owner (a.k.a. Net Manager)
+    - Active member of the template's NCS rotation
+    - Active member of the template's staff list
+    """
     if user.role == 'admin':
         return True
     if template.owner_id == user.id:
         return True
-    # Check if user is in the rotation
+    # Active rotation members can manage
     for member in template.rotation_members:
-        if member.user_id == user.id:
+        if member.user_id == user.id and member.is_active:
+            return True
+    # Active staff members can manage (parity with routers/templates.py)
+    for staff in template.staff:
+        if staff.user_id == user.id and staff.is_active:
             return True
     return False
 

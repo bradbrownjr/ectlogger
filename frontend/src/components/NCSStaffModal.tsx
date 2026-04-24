@@ -142,16 +142,26 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
   const isNetContext = !!net;
   
   // Permissions
-  const isOwner = isScheduleContext 
-    ? user?.id === schedule?.owner_id 
+  // The schedule "owner" is the Net Manager (ham-radio term) — the person
+  // ultimately responsible for the schedule. Owner / admin / active staff /
+  // active rotation members can all manage the staff list. This must stay in
+  // sync with the backend `check_template_permission` helpers in
+  // routers/templates.py and routers/ncs_rotation.py.
+  const isOwner = isScheduleContext
+    ? user?.id === schedule?.owner_id
     : user?.id === net?.owner_id;
   const isAdmin = user?.role === 'admin';
   // Can't manage staff for closed nets
   const isNetClosed = isNetContext && net?.status === 'closed';
-  const canManage = isAuthenticated && (isOwner || isAdmin) && !isNetClosed;
-  
+
   // Check if user is in the rotation (for schedules)
-  const isRotationMember = members.some((m: RotationMember) => m.user_id === user?.id);
+  const isRotationMember = members.some((m: RotationMember) => m.user_id === user?.id && m.is_active !== false);
+  // Check if user is an active staff member (for schedules)
+  const isStaffMember = staff.some((s: StaffMember) => s.user_id === user?.id && s.is_active);
+
+  const canManage = isAuthenticated
+    && (isOwner || isAdmin || (isScheduleContext && (isStaffMember || isRotationMember)))
+    && !isNetClosed;
 
   // Title based on context
   const getTitle = () => {
@@ -479,10 +489,10 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                 primary={
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Typography variant="body2">
-                      {schedule?.owner_callsign || 'Owner'}
+                      {schedule?.owner_callsign || 'Manager'}
                       {schedule?.owner_name && ` (${schedule.owner_name})`}
                     </Typography>
-                    <Chip label="Owner" size="small" color="primary" variant="outlined" />
+                    <Chip label="Manager" size="small" color="primary" variant="outlined" />
                   </Box>
                 }
               />
@@ -560,13 +570,13 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1, bgcolor: 'action.hover', borderRadius: 1 }}>
               <PersonIcon color="primary" />
               <Typography>
-                {net?.owner_callsign || 'Owner'}
+                {net?.owner_callsign || 'Manager'}
                 {net?.owner_name && ` (${net.owner_name})`}
               </Typography>
-              <Chip label="Owner" size="small" color="primary" variant="outlined" />
+              <Chip label="Manager" size="small" color="primary" variant="outlined" />
             </Box>
             <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-              No additional NCS assigned. The owner serves as NCS.
+              No additional NCS assigned. The manager serves as NCS.
             </Typography>
           </Box>
         );
@@ -658,7 +668,7 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                       
                       {/* Staff list - owner first, then additional staff */}
                       <List>
-                        {/* Owner - always shown, not deletable */}
+                        {/* Manager (owner) - always shown, not deletable */}
                         <ListItem
                           sx={{ 
                             bgcolor: 'action.hover',
@@ -673,10 +683,10 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                             primary={
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                 <Typography>
-                                  {schedule?.owner_callsign || 'Owner'}
+                                  {schedule?.owner_callsign || 'Manager'}
                                   {schedule?.owner_name && ` (${schedule.owner_name})`}
                                 </Typography>
-                                <Chip label="Owner" size="small" color="primary" />
+                                <Chip label="Manager" size="small" color="primary" />
                               </Box>
                             }
                           />

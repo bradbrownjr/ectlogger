@@ -567,7 +567,7 @@ const Dashboard: React.FC = () => {
             </Box>
           )}
           
-          {/* Host/NCS */}
+          {/* Manager / NCS */}
           {net.owner_callsign && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <PersonIcon fontSize="small" color="action" />

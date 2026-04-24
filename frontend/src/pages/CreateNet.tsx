@@ -965,7 +965,7 @@ const CreateNet: React.FC = () => {
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
             {isEditMode 
               ? "Assign additional Net Control Stations who can manage check-ins and control this net."
-              : "Pre-assign Net Control Stations who will be able to manage check-ins and control this net. You (as the host) always have full access."
+              : "Pre-assign Net Control Stations who will be able to manage check-ins and control this net. You (as the manager) always have full access."
             }
           </Typography>
 
@@ -975,10 +975,10 @@ const CreateNet: React.FC = () => {
             </Alert>
           )}
 
-          {/* Current host info */}
+          {/* Current manager (owner) info */}
           <Box sx={{ mb: 3 }}>
             <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-              Net Host (always has full access)
+              Net Manager (always has full access)
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1.5, bgcolor: 'action.hover', borderRadius: 1 }}>
               <PersonIcon color="primary" />
@@ -986,7 +986,7 @@ const CreateNet: React.FC = () => {
                 {user?.callsign || 'You'}
                 {user?.name && ` (${user.name})`}
               </Typography>
-              <Chip label="Host" size="small" color="primary" />
+              <Chip label="Manager" size="small" color="primary" />
             </Box>
           </Box>
 
@@ -1062,7 +1062,7 @@ const CreateNet: React.FC = () => {
             // Create mode: show pending users to be assigned
             pendingNCSUsers.length === 0 ? (
               <Typography color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
-                No additional NCS assigned yet. The host will serve as NCS by default.
+                No additional NCS assigned yet. The manager will serve as NCS by default.
               </Typography>
             ) : (
               <List>

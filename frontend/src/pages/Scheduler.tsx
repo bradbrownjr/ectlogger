@@ -388,7 +388,7 @@ const Scheduler: React.FC = () => {
             {mergeMode && <TableCell padding="checkbox" />}
             <TableCell>Name</TableCell>
             <TableCell>Schedule</TableCell>
-            <TableCell>NCS/Host</TableCell>
+            <TableCell>NCS/Manager</TableCell>
             <TableCell>Frequencies</TableCell>
             <TableCell align="center">Subscribers</TableCell>
             <TableCell align="right">Actions</TableCell>
@@ -560,7 +560,7 @@ const Scheduler: React.FC = () => {
             </Box>
           )}
           
-          {/* Host / Next NCS */}
+          {/* Manager (owner) / Next NCS */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <PersonIcon fontSize="small" color="action" />
             <Typography variant="body2" color="text.secondary">
@@ -577,7 +577,7 @@ const Scheduler: React.FC = () => {
                 </>
               ) : (
                 <>
-                  <strong>Host:</strong> {schedule.owner_callsign || 'Unknown'}
+                  <strong>Manager:</strong> {schedule.owner_callsign || 'Unknown'}
                   {schedule.owner_name && ` (${schedule.owner_name})`}
                 </>
               )}

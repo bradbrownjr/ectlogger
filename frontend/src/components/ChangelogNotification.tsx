@@ -44,7 +44,7 @@ const pulseAnimation = keyframes`
 // The version number triggers the unread notification for users.
 // Mark entries with `userImpact: true` to highlight them in the UI.
 
-const CHANGELOG_VERSION = '2026.04.22';
+const CHANGELOG_VERSION = '2026.04.24';
 
 interface ChangelogEntry {
   version: string;
@@ -60,6 +60,28 @@ interface ChangelogEntry {
 }
 
 const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: '2026.04.24',
+    date: '2026-04-24',
+    sections: [
+      {
+        title: 'Net Manager Terminology & Staff Management Fixes',
+        type: 'improvement',
+        items: [
+          { text: 'Renamed "Host" to "Manager" throughout the schedule and net pages to match standard ham-radio Net Manager terminology. The schedule owner is now displayed as the Manager.', userImpact: true },
+          { text: 'The Manager (schedule owner) is always implicitly listed as an authorized Net Control Station — they don\'t need to be added to the staff list to run nets.', userImpact: true },
+        ],
+      },
+      {
+        title: 'Bug Fixes',
+        type: 'bugfix',
+        items: [
+          { text: 'Active staff members and NCS rotation members can now manage a schedule\'s staff list and rotation, not just the owner. Previously the "Manage Staff" and "Manage Rotation" tabs were hidden from anyone who wasn\'t the owner or an admin.', userImpact: true },
+          { text: 'Fixed permission inconsistency where the NCS rotation/staff endpoints rejected active staff members even though the rest of the template management endpoints accepted them.', userImpact: true },
+        ],
+      },
+    ],
+  },
   {
     version: '2026.04.22',
     date: '2026-04-22',
