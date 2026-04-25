@@ -918,7 +918,6 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                   section: build-from-staff, reorder, toggle active, upcoming preview. */}
               {tabValue === 1 && isScheduleContext && canManage && (
                 <Box sx={{ mt: 3, pt: 3, borderTop: 1, borderColor: 'divider' }}>
-                <Box>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                     <Typography variant="subtitle2">
                       Rotation Order
