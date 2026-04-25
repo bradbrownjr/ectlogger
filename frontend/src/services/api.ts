@@ -57,6 +57,10 @@ export const userApi = {
   updateProfile: (data: any) => api.put('/users/me', data),
   updateLocation: (location: string) => api.put('/users/me/location', { location }),
   listUsers: () => api.get('/users'),
+  // Minimal directory of active users (id/callsign/name) — available to any
+  // authenticated user, used to populate staff/rotation pickers without
+  // requiring admin access.
+  listDirectory: () => api.get('/users/directory'),
   lookupByCallsign: (callsign: string) => api.get(`/users/lookup/${encodeURIComponent(callsign)}`),
 };
 

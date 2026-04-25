@@ -10,7 +10,7 @@ import io
 import json
 from app.database import get_db
 from app.models import Net, NetStatus, User, Frequency, NetRole, net_frequencies, CheckIn, NetTemplate, UserRole
-from app.schemas import NetCreate, NetUpdate, NetResponse, FrequencyResponse, NetTemplateLinkRequest
+from app.schemas import NetCreate, NetUpdate, NetResponse, FrequencyResponse, NetTemplateLinkRequest, public_display_name
 from app.dependencies import get_current_user, get_current_user_optional
 from app.email_service import EmailService
 
@@ -157,7 +157,7 @@ async def list_nets(
         responses.append(NetResponse.from_orm(
             net,
             owner_callsign=net.owner.callsign if net.owner else None,
-            owner_name=net.owner.name if net.owner else None,
+            owner_name=public_display_name(net.owner.name if net.owner else None, current_user is not None),
             check_in_count=check_in_counts.get(net.id, 0),
             can_manage=can_manage
         ))
@@ -202,7 +202,7 @@ async def get_net(
     return NetResponse.from_orm(
         net,
         owner_callsign=net.owner.callsign if net.owner else None,
-        owner_name=net.owner.name if net.owner else None,
+        owner_name=public_display_name(net.owner.name if net.owner else None, current_user is not None),
         can_manage=can_manage
     )
 
@@ -1503,20 +1503,25 @@ async def list_net_roles(
     )
     roles = result.scalars().all()
     
-    # Build role list using eagerly loaded user data
+    # Build role list using eagerly loaded user data.
+    # For unauthenticated callers we expose only callsign + first name so guests
+    # can see who is running the net without leaking email or surnames.
     role_list = []
+    is_authed = current_user is not None
     for role in roles:
         if role.user:
-            role_list.append({
+            entry = {
                 "id": role.id,
                 "user_id": role.user.id,
-                "email": role.user.email,
-                "name": role.user.name,
+                "name": public_display_name(role.user.name, is_authed),
                 "callsign": role.user.callsign,
                 "role": role.role,
                 "active_frequency_id": role.active_frequency_id,
-                "assigned_at": role.assigned_at
-            })
+                "assigned_at": role.assigned_at,
+            }
+            if is_authed:
+                entry["email"] = role.user.email
+            role_list.append(entry)
     
     return role_list
 

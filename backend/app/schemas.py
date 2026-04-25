@@ -5,6 +5,19 @@ from app.models import UserRole, NetStatus, StationStatus
 import re
 
 
+def public_display_name(name: Optional[str], is_authenticated: bool) -> Optional[str]:
+    """Reduce a display name for unauthenticated callers.
+
+    Authenticated users see the full name. Guests see only the first token
+    (typically the first name) so callsign + first name are visible without
+    exposing surnames or other PII. Returns None unchanged.
+    """
+    if not name or is_authenticated:
+        return name
+    first = name.strip().split()
+    return first[0] if first else None
+
+
 # User Schemas
 class UserBase(BaseModel):
     email: EmailStr
@@ -120,6 +133,19 @@ class UserResponse(UserBase):
         else:
             obj.callsigns = []
         return super().from_orm(obj)
+
+
+# Directory entry — minimal user info for staff/rotation pickers and
+# any authenticated UI that needs to display "who is who" by callsign.
+# Intentionally excludes email, role, last_active, notification prefs, etc.
+class UserDirectoryEntry(BaseModel):
+    """Minimal user info for authenticated user pickers (staff/rotation/etc.)."""
+    id: int
+    callsign: Optional[str] = None
+    name: Optional[str] = None  # full display name; pickers render `CALLSIGN (Name)`
+
+    class Config:
+        from_attributes = True
 
 
 # Callsign Lookup Response (limited info for privacy)

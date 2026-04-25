@@ -77,6 +77,14 @@ interface RotationMember {
   is_active: boolean;
 }
 
+interface StaffMember {
+  id: number;
+  user_id: number;
+  user_callsign: string;
+  user_name: string | null;
+  is_active: boolean;
+}
+
 interface Frequency {
   id: number;
   frequency?: string;
@@ -176,6 +184,11 @@ const CreateSchedule: React.FC = () => {
   const [selectedUserForRotation, setSelectedUserForRotation] = useState<User | null>(null);
   // Pending NCS users for new schedules (assigned after creation)
   const [pendingNCSUsers, setPendingNCSUsers] = useState<User[]>([]);
+
+  // Authorized Net Staff (edit mode) — operators allowed to start/run nets
+  // for this schedule. Independent of the rotation order.
+  const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [selectedUserForStaff, setSelectedUserForStaff] = useState<User | null>(null);
   
   // Owner management (for editing)
   const [ownerId, setOwnerId] = useState<number | null>(null);
@@ -230,6 +243,7 @@ const CreateSchedule: React.FC = () => {
     // Fetch rotation members when editing
     if (isEdit && scheduleId) {
       fetchRotationMembers();
+      fetchStaff();
     }
   }, [scheduleId, isEdit]);
 
@@ -263,7 +277,7 @@ const CreateSchedule: React.FC = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await userApi.listUsers();
+      const response = await userApi.listDirectory();
       setUsers(response.data);
     } catch (error) {
       console.error('Failed to fetch users:', error);
@@ -688,6 +702,74 @@ const CreateSchedule: React.FC = () => {
     }, 0);
   };
 
+  // Net Staff handlers (operators authorized to start/run nets) ──────────────
+  const fetchStaff = async () => {
+    if (!scheduleId) return;
+    try {
+      const response = await templateStaffApi.list(Number(scheduleId));
+      setStaff(response.data);
+    } catch (error) {
+      console.error('Failed to fetch staff:', error);
+    }
+  };
+
+  const handleAddStaff = async () => {
+    if (!selectedUserForStaff || !scheduleId) return;
+    try {
+      const response = await templateStaffApi.add(Number(scheduleId), {
+        user_id: selectedUserForStaff.id,
+      });
+      setStaff([...staff, response.data]);
+      setSelectedUserForStaff(null);
+    } catch (error: any) {
+      console.error('Failed to add staff:', error);
+      alert(error?.response?.data?.detail || 'Failed to add staff');
+    }
+  };
+
+  const handleRemoveStaff = async (staffId: number) => {
+    if (!scheduleId) return;
+    if (!confirm('Remove this operator from the staff list?')) return;
+    try {
+      await templateStaffApi.remove(Number(scheduleId), staffId);
+      setStaff(staff.filter(s => s.id !== staffId));
+    } catch (error) {
+      console.error('Failed to remove staff:', error);
+    }
+  };
+
+  const handleToggleStaffActive = async (staffId: number, currentActive: boolean) => {
+    if (!scheduleId) return;
+    try {
+      await templateStaffApi.updateActive(Number(scheduleId), staffId, !currentActive);
+      setStaff(staff.map(s => (s.id === staffId ? { ...s, is_active: !currentActive } : s)));
+    } catch (error) {
+      console.error('Failed to update staff:', error);
+    }
+  };
+
+  // Build the rotation from the active staff list. Adds any active staff
+  // members not already in the rotation, preserving existing rotation order.
+  const handleBuildRotationFromStaff = async () => {
+    if (!scheduleId) return;
+    const toAdd = staff.filter(
+      s => s.is_active && !rotationMembers.some(m => m.user_id === s.user_id)
+    );
+    if (toAdd.length === 0) {
+      alert('All active staff are already in the rotation.');
+      return;
+    }
+    try {
+      for (const s of toAdd) {
+        await ncsRotationApi.addMember(Number(scheduleId), { user_id: s.user_id });
+      }
+      await fetchRotationMembers();
+    } catch (error: any) {
+      console.error('Failed to build rotation from staff:', error);
+      alert(error?.response?.data?.detail || 'Failed to build rotation from staff');
+    }
+  };
+
   // NCS Rotation handlers
   const handleAddRotationMember = async () => {
     if (!selectedUserForRotation || !scheduleId) return;
@@ -748,6 +830,11 @@ const CreateSchedule: React.FC = () => {
   // Get users not already in rotation
   const availableUsersForRotation = users.filter(
     u => !rotationMembers.some(m => m.user_id === u.id)
+  );
+
+  // Get users not already in the staff list and not the schedule manager
+  const availableUsersForStaff = users.filter(
+    u => u.id !== ownerId && !staff.some(s => s.user_id === u.id)
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -1175,8 +1262,8 @@ const CreateSchedule: React.FC = () => {
           <TabPanel value={activeTab} index={2}>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
               {isEdit
-                ? 'Manage the schedule Manager (owner) and the NCS rotation. Any operator listed here can start and run nets.'
-                : 'Add NCS operators who can start and run nets from this schedule. After creating the schedule, you can set up automatic NCS rotation here.'}
+                ? 'Manage the Schedule Manager, the authorized Net Staff (who can start and run nets), and an optional NCS rotation order.'
+                : 'Add Net Staff operators who will be authorized to start and run nets from this schedule. After saving, you can also configure an optional NCS rotation order.'}
             </Typography>
 
             {/* For NEW schedules - show owner first, then add input, then pending users */}
@@ -1316,11 +1403,112 @@ const CreateSchedule: React.FC = () => {
                 </Box>
 
                 <Divider sx={{ mb: 2 }} />
+
+                {/* ========== AUTHORIZED NET STAFF ========== */}
+                {/* Operators in this list can start and run nets from this schedule.
+                    This is the primary, recommended workflow. The rotation below
+                    is optional and only matters when you want NCS duty to cycle
+                    automatically across upcoming scheduled nets. */}
                 <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                  NCS Rotation
+                  Authorized Net Staff
                 </Typography>
                 <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
-                  Operators added here can start nets and will be cycled through automatically as the next NCS for upcoming scheduled nets. Use the up/down arrows to set rotation order.
+                  Operators listed here can start and run nets from this schedule. The Manager always has access — add others to share the workload.
+                </Typography>
+
+                <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+                  <Autocomplete
+                    options={availableUsersForStaff}
+                    getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
+                    value={selectedUserForStaff}
+                    onChange={(_: any, value: User | null) => setSelectedUserForStaff(value)}
+                    noOptionsText={users.length === 0 ? 'Loading users…' : 'No other users available'}
+                    renderInput={(params: any) => (
+                      <TextField {...params} label="Add Net Staff Operator" size="small" />
+                    )}
+                    sx={{ flexGrow: 1 }}
+                  />
+                  <Button
+                    type="button"
+                    variant="contained"
+                    startIcon={<PersonAddIcon />}
+                    onClick={handleAddStaff}
+                    disabled={!selectedUserForStaff}
+                  >
+                    Add
+                  </Button>
+                </Box>
+
+                {staff.length === 0 ? (
+                  <Typography color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
+                    No additional staff assigned. Only the Manager can start nets.
+                  </Typography>
+                ) : (
+                  <List dense>
+                    {staff.map((s) => (
+                      <ListItem
+                        key={s.id}
+                        sx={{
+                          border: 1,
+                          borderColor: 'divider',
+                          borderRadius: 1,
+                          mb: 1,
+                          bgcolor: s.is_active ? 'background.paper' : 'action.disabledBackground',
+                        }}
+                      >
+                        <ListItemText
+                          primary={
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Typography fontWeight="bold">{s.user_callsign}</Typography>
+                              {s.user_name && (
+                                <Typography color="text.secondary">({s.user_name})</Typography>
+                              )}
+                              {!s.is_active && (
+                                <Chip label="Inactive" size="small" variant="outlined" />
+                              )}
+                            </Box>
+                          }
+                        />
+                        <ListItemSecondaryAction>
+                          <Switch
+                            checked={s.is_active}
+                            onChange={() => handleToggleStaffActive(s.id, s.is_active)}
+                            title={s.is_active ? 'Active (can run nets)' : 'Inactive (temporarily disabled)'}
+                          />
+                          <IconButton
+                            type="button"
+                            edge="end"
+                            onClick={() => handleRemoveStaff(s.id)}
+                            color="error"
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </ListItemSecondaryAction>
+                      </ListItem>
+                    ))}
+                  </List>
+                )}
+
+                <Divider sx={{ my: 3 }} />
+
+                {/* ========== NCS ROTATION (OPTIONAL) ========== */}
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                  <Typography variant="subtitle2">
+                    NCS Rotation <Typography component="span" variant="caption" color="text.secondary">(optional)</Typography>
+                  </Typography>
+                  {staff.some(s => s.is_active && !rotationMembers.some(m => m.user_id === s.user_id)) && (
+                    <Button
+                      type="button"
+                      size="small"
+                      variant="outlined"
+                      onClick={handleBuildRotationFromStaff}
+                    >
+                      Build rotation from staff
+                    </Button>
+                  )}
+                </Box>
+                <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
+                  Optional: define an order to cycle NCS duty across upcoming scheduled nets. If empty, nets default to the Manager. Use the up/down arrows to set the order.
                 </Typography>
 
                 {/* Add user input for edit mode */}
@@ -1330,8 +1518,9 @@ const CreateSchedule: React.FC = () => {
                     getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
                     value={selectedUserForRotation}
                     onChange={(_: any, value: User | null) => setSelectedUserForRotation(value)}
+                    noOptionsText={users.length === 0 ? 'Loading users…' : 'No other users available'}
                     renderInput={(params: any) => (
-                      <TextField {...params} label="Add NCS Operator" size="small" />
+                      <TextField {...params} label="Add NCS Operator to rotation" size="small" />
                     )}
                     sx={{ flexGrow: 1 }}
                   />
@@ -1348,7 +1537,7 @@ const CreateSchedule: React.FC = () => {
 
                 {rotationMembers.length === 0 ? (
                 <Typography color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
-                  No additional NCS operators assigned. Add operators above to let them start nets.
+                  No rotation configured — nets default to the Manager. Add operators above (or click "Build rotation from staff") to cycle NCS duty automatically.
                 </Typography>
               ) : (
                 <List>

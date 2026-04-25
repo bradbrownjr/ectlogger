@@ -4,7 +4,7 @@ from sqlalchemy import select
 from typing import List, Optional
 from app.database import get_db
 from app.models import User, UserRole, Contact
-from app.schemas import UserResponse, UserUpdate, AdminUserCreate, CallsignLookupResponse
+from app.schemas import UserResponse, UserUpdate, AdminUserCreate, CallsignLookupResponse, UserDirectoryEntry
 from app.dependencies import get_current_user, get_current_user_optional, get_admin_user
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -103,6 +103,28 @@ async def create_user(
     await db.refresh(new_user)
     
     return UserResponse.from_orm(new_user)
+
+
+@router.get("/directory", response_model=List[UserDirectoryEntry])
+async def list_user_directory(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Minimal user directory for staff/rotation pickers.
+
+    Returns only id, callsign, and name for active users. Available to any
+    authenticated user so non-admin schedule managers can add staff or NCS
+    rotation members. Excludes email, role, notification preferences, and
+    activity timestamps to avoid leaking PII through the picker UI.
+    """
+    result = await db.execute(
+        select(User).where(User.is_active == True).order_by(User.callsign)
+    )
+    users = result.scalars().all()
+    return [
+        UserDirectoryEntry(id=u.id, callsign=u.callsign, name=u.name)
+        for u in users
+    ]
 
 
 @router.get("/{user_id}", response_model=UserResponse)

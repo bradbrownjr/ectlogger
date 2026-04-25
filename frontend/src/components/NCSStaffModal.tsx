@@ -205,8 +205,8 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
   const netId = net?.id;
   
   // Ensure tabValue is valid for current context
-  // Tab 2 (Manage Rotation) only exists for schedule context
-  const maxTab = isScheduleContext && canManage ? 2 : (canManage ? 1 : 0);
+  // Modal uses two tabs at most: Staff (read-only) and Manage.
+  const maxTab = canManage ? 1 : 0;
   useEffect(() => {
     if (tabValue > maxTab) {
       setTabValue(0);
@@ -246,7 +246,7 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
         
         // Only fetch users list if user can manage
         if (canManage) {
-          const usersRes = await userApi.listUsers();
+          const usersRes = await userApi.listDirectory();
           setUsers(usersRes.data);
         }
       } else if (isNetContext && net) {
@@ -256,7 +256,7 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
         
         // Only fetch users list if user can manage
         if (canManage) {
-          const usersRes = await userApi.listUsers();
+          const usersRes = await userApi.listDirectory();
           setUsers(usersRes.data);
         }
       }
@@ -699,7 +699,9 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
             </Alert>
           )}
           
-          {/* Simplified tabs based on context */}
+          {/* Tabs: read-only Staff view vs. unified Manage view.
+              For schedule context the Manage view stacks Net Staff and NCS
+              Rotation in one scrollable tab so the popup mirrors the editor. */}
           {canManage && (
             <Tabs 
               value={tabValue} 
@@ -708,12 +710,7 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
               variant={isMobile ? 'fullWidth' : 'standard'}
             >
               <Tab label="Staff" id="tab-staff" />
-              {canManage && (
-                <Tab label="Manage Staff" id="tab-manage-staff" />
-              )}
-              {isScheduleContext && canManage && (
-                <Tab label="Manage Rotation" id="tab-manage-rotation" />
-              )}
+              <Tab label={isScheduleContext ? 'Manage' : 'Manage Staff'} id="tab-manage" />
             </Tabs>
           )}
           
@@ -746,6 +743,7 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                           getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
                           value={selectedUser}
                           onChange={(_: any, value: User | null) => setSelectedUser(value)}
+                          noOptionsText={users.length === 0 ? 'Loading users…' : 'No other users available'}
                           renderInput={(params: any) => (
                             <TextField {...params} label="Add NCS operator" size="small" />
                           )}
@@ -854,6 +852,7 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                           getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
                           value={selectedUser}
                           onChange={(_: any, value: User | null) => setSelectedUser(value)}
+                          noOptionsText={users.length === 0 ? 'Loading users…' : 'No other users available'}
                           renderInput={(params: any) => (
                             <TextField {...params} label="Add NCS" size="small" />
                           )}
@@ -914,8 +913,11 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                 </Box>
               )}
               
-              {/* Manage Rotation Tab (tab 2) - only for schedules with rotation */}
-              {tabValue === 2 && isScheduleContext && canManage && (
+              {/* Manage Rotation section - rendered inside the unified Manage tab
+                  for schedule context (tab 1). Mirrors the editor's NCS Rotation
+                  section: build-from-staff, reorder, toggle active, upcoming preview. */}
+              {tabValue === 1 && isScheduleContext && canManage && (
+                <Box sx={{ mt: 3, pt: 3, borderTop: 1, borderColor: 'divider' }}>
                 <Box>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                     <Typography variant="subtitle2">
@@ -934,7 +936,7 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                     )}
                   </Box>
                   <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
-                    NCS duties rotate through members in order. Use "Create from Staff" to populate from your staff list.
+                    Optional: cycle NCS duty automatically across upcoming scheduled nets. If empty, nets default to the Manager. Use "Add Staff to Rotation" to populate from your staff list.
                   </Typography>
                   
                   {/* Create from Staff button - only show if there are staff not in rotation */}
@@ -956,15 +958,15 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                   {members.length === 0 ? (
                     <Box sx={{ textAlign: 'center', py: 2 }}>
                       <Typography color="text.secondary" sx={{ mb: 1 }}>
-                        No members in the rotation.
+                        No rotation configured — nets default to the Manager.
                       </Typography>
                       {staff.length > 0 ? (
                         <Typography variant="caption" color="text.secondary">
-                          Use "Create from Staff" above to populate from your staff list.
+                          Use "Add Staff to Rotation" above to populate the order from your staff list.
                         </Typography>
                       ) : (
                         <Typography variant="caption" color="text.secondary">
-                          Add staff members first on the "Manage Staff" tab.
+                          Add staff above first, then build the rotation from them.
                         </Typography>
                       )}
                     </Box>

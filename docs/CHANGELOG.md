@@ -4,6 +4,21 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# April 25, 2026
+
+## Net Staff & NCS Rotation
+
+* **Bugfix — non-admin managers can now add staff** — Schedule managers (and net owners) who aren't global admins were silently unable to add operators because the user picker called the admin-only `GET /users` endpoint. A new `GET /users/directory` endpoint returns minimal `{id, callsign, name}` for any authenticated caller and is now used by every staff/rotation picker. Admin-only `GET /users` (which exposes email, role, and notification preferences) is unchanged.
+* **Two-step Net Staff workflow restored** — The schedule editor's "Net Staff" tab is now structured as **Schedule Manager → Authorized Net Staff → NCS Rotation (optional)**. Adding staff is the primary action; the rotation is a secondary, optional ordering. A "Build rotation from staff" button populates the rotation in one click instead of forcing the user to re-add every operator manually.
+* **Net Staff popup mirrors the editor** — The popup's three tabs (Staff / Manage Staff / Manage Rotation) have been consolidated into a single scrollable "Manage" view for schedule context, matching the editor layout. The read-only "Staff" tab remains for users without management permission.
+* **Empty-picker feedback** — Operator pickers now display "No other users available" / "Loading users…" instead of silently showing an empty dropdown, so the failure mode that bit us before can't recur.
+
+## Privacy
+
+* **Guest visibility for net managers and NCS** — Unauthenticated viewers can still see who is the Net Manager and who is currently NCS, but the response now only includes callsign and first name. Surnames, email addresses, and notification preferences are stripped on the public `GET /nets`, `GET /nets/{id}`, `GET /nets/{id}/roles`, and `GET /templates` endpoints when the caller isn't logged in.
+
+---
+
 # April 24, 2026 (c)
 
 ## Changelog Downloads & What's New Email Digest

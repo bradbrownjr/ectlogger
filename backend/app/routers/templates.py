@@ -6,7 +6,7 @@ from typing import List
 from datetime import datetime, timedelta, timezone
 from app.database import get_db
 from app.models import NetTemplate, NetTemplateSubscription, User, net_template_frequencies, Frequency, Net, NetStatus, NCSRotationMember, NetRole, CheckIn, AppSettings, UserRole, TemplateStaff, NCSScheduleOverride, TopicHistory
-from app.schemas import NetTemplateCreate, NetTemplateUpdate, NetTemplateResponse, NetTemplateSubscriptionResponse, NetResponse, TemplateMergeRequest, TemplateMergePreview, TemplateMergeConflict, TemplateMergeResponse
+from app.schemas import NetTemplateCreate, NetTemplateUpdate, NetTemplateResponse, NetTemplateSubscriptionResponse, NetResponse, TemplateMergeRequest, TemplateMergePreview, TemplateMergeConflict, TemplateMergeResponse, public_display_name
 from app import schemas
 from app.dependencies import get_current_user, get_current_user_optional
 import json
@@ -234,7 +234,7 @@ async def list_templates(
             subscriber_count=subscriber_count,
             is_subscribed=is_subscribed,
             owner_callsign=template.owner.callsign if template.owner else None,
-            owner_name=template.owner.name if template.owner else None,
+            owner_name=public_display_name(template.owner.name if template.owner else None, current_user is not None),
             can_manage=can_manage,
             can_create_net=can_manage  # Same permission - owner, admin, or NCS staff
         ))

@@ -142,7 +142,7 @@ const NCSRotationModal: React.FC<NCSRotationModalProps> = ({
       const [membersRes, scheduleRes, usersRes] = await Promise.all([
         ncsRotationApi.listMembers(schedule.id),
         ncsRotationApi.getSchedule(schedule.id, 12), // 12 weeks ahead
-        userApi.listUsers(),
+        userApi.listDirectory(),
       ]);
       
       const loadedMembers = membersRes.data;

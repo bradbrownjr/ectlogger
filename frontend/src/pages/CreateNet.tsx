@@ -185,7 +185,7 @@ const CreateNet: React.FC = () => {
   
   const fetchUsers = async () => {
     try {
-      const response = await userApi.listUsers();
+      const response = await userApi.listDirectory();
       setUsers(response.data);
     } catch (error) {
       console.error('Failed to fetch users:', error);

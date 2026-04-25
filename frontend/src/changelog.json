@@ -1,6 +1,50 @@
 {
-  "version": "2026.04.24c",
+  "version": "2026.04.25",
   "entries": [
+    {
+      "version": "2026.04.25",
+      "date": "2026-04-25",
+      "sections": [
+        {
+          "title": "Net Staff & NCS Rotation",
+          "type": "bugfix",
+          "items": [
+            {
+              "text": "Schedule managers who aren't global admins can now add staff and build NCS rotations. Previously the operator picker silently returned no results unless you were an admin.",
+              "userImpact": true
+            }
+          ]
+        },
+        {
+          "title": "Net Staff & NCS Rotation",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "The schedule editor's Net Staff tab is now a clear two-step workflow: first add Authorized Net Staff (operators who can start and run nets), then optionally build an NCS Rotation order. A \"Build rotation from staff\" button populates the rotation in one click.",
+              "userImpact": true
+            },
+            {
+              "text": "The Net Staff popup mirrors the editor — Manager, Net Staff, and (for schedules) NCS Rotation now appear in a single scrollable Manage view instead of three separate tabs.",
+              "userImpact": true
+            },
+            {
+              "text": "Operator pickers now show a \"No other users available\" message when empty, so failures stop being silent.",
+              "userImpact": true
+            }
+          ]
+        },
+        {
+          "title": "Privacy",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Guest viewers (not logged in) now see only callsign and first name for net managers and NCS — surnames and email addresses are no longer exposed on public net and template listings.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.04.24c",
       "date": "2026-04-24",
