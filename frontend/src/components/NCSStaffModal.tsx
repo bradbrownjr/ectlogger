@@ -16,8 +16,6 @@ import {
   Paper,
   IconButton,
   Chip,
-  Tabs,
-  Tab,
   TextField,
   Autocomplete,
   CircularProgress,
@@ -121,7 +119,6 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
   net,
   onUpdate,
 }) => {
-  const [tabValue, setTabValue] = useState<number>(0);
   const [staff, setStaff] = useState<StaffMember[]>([]);  // Separate staff list
   const [members, setMembers] = useState<RotationMember[]>([]);  // Rotation members (with position/order)
   const [scheduleEntries, setScheduleEntries] = useState<ScheduleEntry[]>([]);
@@ -169,13 +166,8 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
   const isNetClosed = isNetContext && net?.status === 'closed';
 
   // Check if user is in the rotation (for schedules)
-  const isRotationMember = members.some((m: RotationMember) => m.user_id === user?.id && m.is_active !== false);
-  // Check if user is an active staff member (for schedules)
-  const isStaffMember = staff.some((s: StaffMember) => s.user_id === user?.id && s.is_active);
-
-  const canManage = isAuthenticated
-    && (isOwner || isAdmin || (isScheduleContext && (isStaffMember || isRotationMember)))
-    && !isNetClosed;
+  // Only owners and admins can edit staff/rotation.
+  const canEdit = isAuthenticated && (isOwner || isAdmin) && !isNetClosed;
 
   // Title based on context
   const getTitle = () => {
@@ -204,21 +196,11 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
   const scheduleId = schedule?.id;
   const netId = net?.id;
   
-  // Ensure tabValue is valid for current context
-  // Modal uses two tabs at most: Staff (read-only) and Manage.
-  const maxTab = canManage ? 1 : 0;
-  useEffect(() => {
-    if (tabValue > maxTab) {
-      setTabValue(0);
-    }
-  }, [tabValue, maxTab]);
-  
   useEffect(() => {
     if (open) {
       fetchData();
     } else {
       // Reset when modal closes
-      setTabValue(0);
       setError(null);
       setEditingManager(false);
       setPendingManager(null);
@@ -244,8 +226,8 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
         setMembers(membersRes.data);
         setScheduleEntries(scheduleRes.data.schedule || []);
         
-        // Only fetch users list if user can manage
-        if (canManage) {
+        // Only fetch users list if user can edit
+        if (canEdit) {
           const usersRes = await userApi.listDirectory();
           setUsers(usersRes.data);
         }
@@ -254,8 +236,8 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
         const rolesRes = await api.get(`/nets/${net.id}/roles`);
         setNetRoles(rolesRes.data || []);
         
-        // Only fetch users list if user can manage
-        if (canManage) {
+        // Only fetch users list if user can edit
+        if (canEdit) {
           const usersRes = await userApi.listDirectory();
           setUsers(usersRes.data);
         }
@@ -512,10 +494,9 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
   // Get NCS-only roles for display
   const ncsRoles = netRoles.filter((r: NetRole) => r.role === 'NCS');
 
-  // Render the staff list section (always visible for both contexts)
+  // Render the staff list. Owners and admins see inline add/remove/toggle controls.
   const renderStaffList = () => {
     if (isScheduleContext) {
-      // For schedules - show staff members (owner + any assigned staff)
       return (
         <Box>
           <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
@@ -524,9 +505,33 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
           <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
             Any of these operators can start and run nets from this schedule.
           </Typography>
-          
-          {/* Manager (owner) — always shown first. Owner/admin can transfer
-              ownership inline; staff/rotation members get the read-only view. */}
+
+          {/* Add staff - owners/admins only */}
+          {canEdit && (
+            <Box sx={{ display: 'flex', gap: 1, mb: 2, flexDirection: isMobile ? 'column' : 'row' }}>
+              <Autocomplete
+                options={availableStaffUsers}
+                getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
+                value={selectedUser}
+                onChange={(_: any, value: User | null) => setSelectedUser(value)}
+                noOptionsText={users.length === 0 ? 'Loading users…' : 'No other users available'}
+                renderInput={(params: any) => (
+                  <TextField {...params} label="Add NCS operator" size="small" />
+                )}
+                sx={{ flex: 1 }}
+              />
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={handleAddStaff}
+                disabled={!selectedUser}
+              >
+                Add
+              </Button>
+            </Box>
+          )}
+
+          {/* Manager (owner) — always shown first */}
           <List dense>
             <ListItem sx={{ py: 0.5, bgcolor: 'action.hover', borderRadius: 1, mb: 0.5 }}>
               <PersonIcon sx={{ mr: 1, color: 'primary.main' }} />
@@ -574,9 +579,8 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                   }
                 />
               )}
-              {/* Edit affordance is only visible to the current owner or an admin —
-                  staff/rotation members can manage staff but not transfer ownership. */}
-              {!editingManager && (isOwner || isAdmin) && (
+              {/* Transfer ownership - owners/admins only */}
+              {!editingManager && canEdit && (
                 <ListItemSecondaryAction>
                   <IconButton
                     size="small"
@@ -592,8 +596,18 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                 </ListItemSecondaryAction>
               )}
             </ListItem>
+
+            {/* Additional staff members */}
             {staff.map((s: StaffMember) => (
-              <ListItem key={s.id} sx={{ py: 0.5 }}>
+              <ListItem
+                key={s.id}
+                sx={{
+                  py: 0.5,
+                  bgcolor: s.is_active ? undefined : 'action.disabledBackground',
+                  borderRadius: 1,
+                  mb: 0.5,
+                }}
+              >
                 <PersonIcon sx={{ mr: 1, color: s.is_active ? 'primary.main' : 'action.disabled' }} />
                 <ListItemText
                   primary={
@@ -608,11 +622,24 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                     </Box>
                   }
                 />
+                {/* Edit controls - owners/admins only */}
+                {canEdit && (
+                  <ListItemSecondaryAction>
+                    <Tooltip title={s.is_active ? 'Mark inactive' : 'Mark active'}>
+                      <IconButton size="small" onClick={() => handleToggleStaffActive(s)}>
+                        <BlockIcon fontSize="small" color={s.is_active ? 'action' : 'error'} />
+                      </IconButton>
+                    </Tooltip>
+                    <IconButton size="small" color="error" onClick={() => handleRemoveStaff(s.id)}>
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </ListItemSecondaryAction>
+                )}
               </ListItem>
             ))}
           </List>
-          
-          {staff.length === 0 && (
+
+          {staff.length === 0 && !canEdit && (
             <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
               No additional NCS assigned. Only the owner can start nets.
             </Typography>
@@ -620,15 +647,59 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
         </Box>
       );
     } else if (isNetContext) {
-      // For nets - show assigned NCS roles OR owner if none assigned
-      if (ncsRoles.length > 0) {
-        return (
-          <Box>
-            <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-              Assigned Net Control Stations ({ncsRoles.length})
-            </Typography>
-            <List dense>
-              {ncsRoles.map((role) => (
+      // For nets - show assigned NCS roles (or owner if none assigned)
+      return (
+        <Box>
+          <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+            {ncsRoles.length > 0
+              ? `Assigned Net Control Stations (${ncsRoles.length})`
+              : 'Net Control Station'}
+          </Typography>
+
+          {/* Add NCS - owners/admins only */}
+          {canEdit && (
+            <Box sx={{ display: 'flex', gap: 1, mb: 2, flexDirection: isMobile ? 'column' : 'row' }}>
+              <Autocomplete
+                options={availableStaffUsers}
+                getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
+                value={selectedUser}
+                onChange={(_: any, value: User | null) => setSelectedUser(value)}
+                noOptionsText={users.length === 0 ? 'Loading users…' : 'No other users available'}
+                renderInput={(params: any) => (
+                  <TextField {...params} label="Add NCS" size="small" />
+                )}
+                sx={{ flex: 1 }}
+              />
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={handleAddNetRole}
+                disabled={!selectedUser}
+              >
+                Add
+              </Button>
+            </Box>
+          )}
+
+          <List dense>
+            {ncsRoles.length === 0 ? (
+              /* No assigned NCS — show the owner as the default */
+              <ListItem sx={{ py: 0.5, bgcolor: 'action.hover', borderRadius: 1 }}>
+                <PersonIcon sx={{ mr: 1, color: 'primary.main' }} />
+                <ListItemText
+                  primary={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography variant="body2">
+                        {net?.owner_callsign || 'Manager'}
+                        {net?.owner_name && ` (${net.owner_name})`}
+                      </Typography>
+                      <Chip label="Manager" size="small" color="primary" variant="outlined" />
+                    </Box>
+                  }
+                />
+              </ListItem>
+            ) : (
+              ncsRoles.map((role: NetRole) => (
                 <ListItem key={role.id} sx={{ py: 0.5 }}>
                   <PersonIcon sx={{ mr: 1, color: 'primary.main' }} />
                   <ListItemText
@@ -639,43 +710,25 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                       </Typography>
                     }
                   />
-                  {canManage && (
+                  {canEdit && (
                     <ListItemSecondaryAction>
-                      <IconButton
-                        size="small"
-                        color="error"
-                        onClick={() => handleRemoveNetRole(role.id)}
-                      >
+                      <IconButton size="small" color="error" onClick={() => handleRemoveNetRole(role.id)}>
                         <DeleteIcon fontSize="small" />
                       </IconButton>
                     </ListItemSecondaryAction>
                   )}
                 </ListItem>
-              ))}
-            </List>
-          </Box>
-        );
-      } else {
-        // No assigned NCS - show owner as default
-        return (
-          <Box>
-            <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-              Net Control Station
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1, bgcolor: 'action.hover', borderRadius: 1 }}>
-              <PersonIcon color="primary" />
-              <Typography>
-                {net?.owner_callsign || 'Manager'}
-                {net?.owner_name && ` (${net.owner_name})`}
-              </Typography>
-              <Chip label="Manager" size="small" color="primary" variant="outlined" />
-            </Box>
+              ))
+            )}
+          </List>
+
+          {ncsRoles.length === 0 && (
             <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
               No additional NCS assigned. The manager serves as NCS.
             </Typography>
-          </Box>
-        );
-      }
+          )}
+        </Box>
+      );
     }
     return null;
   };
@@ -699,224 +752,17 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
             </Alert>
           )}
           
-          {/* Tabs: read-only Staff view vs. unified Manage view.
-              For schedule context the Manage view stacks Net Staff and NCS
-              Rotation in one scrollable tab so the popup mirrors the editor. */}
-          {canManage && (
-            <Tabs 
-              value={tabValue} 
-              onChange={(_, v: number) => setTabValue(v)} 
-              sx={{ mb: 2 }}
-              variant={isMobile ? 'fullWidth' : 'standard'}
-            >
-              <Tab label="Staff" id="tab-staff" />
-              <Tab label={isScheduleContext ? 'Manage' : 'Manage Staff'} id="tab-manage" />
-            </Tabs>
-          )}
-          
           {loading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
               <CircularProgress />
             </Box>
           ) : (
             <>
-              {/* Staff Tab - always visible, default view */}
-              {tabValue === 0 && renderStaffList()}
-              
-              {/* Manage Staff Tab - add/remove staff (tab 1) */}
-              {tabValue === 1 && canManage && (
-                <Box>
-                  {isScheduleContext ? (
-                    // Manage NCS staff for schedules (without rotation ordering)
-                    <>
-                      <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                        NCS Staff
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
-                        Add operators who can start and run nets from this schedule. Staff is separate from the rotation schedule.
-                      </Typography>
-                      
-                      {/* Add staff member */}
-                      <Box sx={{ display: 'flex', gap: 1, mb: 2, flexDirection: isMobile ? 'column' : 'row' }}>
-                        <Autocomplete
-                          options={availableStaffUsers}
-                          getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
-                          value={selectedUser}
-                          onChange={(_: any, value: User | null) => setSelectedUser(value)}
-                          noOptionsText={users.length === 0 ? 'Loading users…' : 'No other users available'}
-                          renderInput={(params: any) => (
-                            <TextField {...params} label="Add NCS operator" size="small" />
-                          )}
-                          sx={{ flex: 1 }}
-                        />
-                        <Button
-                          variant="contained"
-                          startIcon={<AddIcon />}
-                          onClick={handleAddStaff}
-                          disabled={!selectedUser}
-                        >
-                          Add
-                        </Button>
-                      </Box>
-                      
-                      {/* Staff list - owner first, then additional staff */}
-                      <List>
-                        {/* Manager (owner) - always shown, not deletable */}
-                        <ListItem
-                          sx={{ 
-                            bgcolor: 'action.hover',
-                            border: 1,
-                            borderColor: 'primary.main',
-                            borderRadius: 1,
-                            mb: 0.5,
-                          }}
-                        >
-                          <PersonIcon sx={{ mr: 1, color: 'primary.main' }} />
-                          <ListItemText
-                            primary={
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <Typography>
-                                  {schedule?.owner_callsign || 'Manager'}
-                                  {schedule?.owner_name && ` (${schedule.owner_name})`}
-                                </Typography>
-                                <Chip label="Manager" size="small" color="primary" />
-                              </Box>
-                            }
-                          />
-                        </ListItem>
-                        
-                        {/* Additional staff members */}
-                        {staff.map((s: StaffMember) => (
-                            <ListItem
-                              key={s.id}
-                              sx={{ 
-                                bgcolor: s.is_active ? 'background.paper' : 'action.disabledBackground',
-                                border: 1,
-                                borderColor: 'divider',
-                                borderRadius: 1,
-                                mb: 0.5,
-                              }}
-                            >
-                              <PersonIcon sx={{ mr: 1, color: s.is_active ? 'primary.main' : 'action.disabled' }} />
-                              <ListItemText
-                                primary={
-                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    <Typography>
-                                      {s.user_callsign}
-                                      {s.user_name && ` (${s.user_name})`}
-                                    </Typography>
-                                    {!s.is_active && (
-                                      <Chip label="Inactive" size="small" color="default" />
-                                    )}
-                                  </Box>
-                                }
-                              />
-                              <ListItemSecondaryAction>
-                                <Tooltip title={s.is_active ? 'Mark inactive' : 'Mark active'}>
-                                  <IconButton
-                                    size="small"
-                                    onClick={() => handleToggleStaffActive(s)}
-                                  >
-                                    <BlockIcon 
-                                      fontSize="small" 
-                                      color={s.is_active ? 'action' : 'error'} 
-                                    />
-                                  </IconButton>
-                                </Tooltip>
-                                <IconButton
-                                  size="small"
-                                  color="error"
-                                  onClick={() => handleRemoveStaff(s.id)}
-                                >
-                                  <DeleteIcon fontSize="small" />
-                                </IconButton>
-                              </ListItemSecondaryAction>
-                            </ListItem>
-                          ))}
-                      </List>
-                    </>
-                  ) : (
-                    // Manage NCS roles for nets
-                    <>
-                      <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                        Assign Net Control Stations
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
-                        Any assigned NCS can manage check-ins and control the net. The owner always has full access.
-                      </Typography>
-                      
-                      {/* Add NCS */}
-                      <Box sx={{ display: 'flex', gap: 1, mb: 2, flexDirection: isMobile ? 'column' : 'row' }}>
-                        <Autocomplete
-                          options={availableStaffUsers}
-                          getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
-                          value={selectedUser}
-                          onChange={(_: any, value: User | null) => setSelectedUser(value)}
-                          noOptionsText={users.length === 0 ? 'Loading users…' : 'No other users available'}
-                          renderInput={(params: any) => (
-                            <TextField {...params} label="Add NCS" size="small" />
-                          )}
-                          sx={{ flex: 1 }}
-                        />
-                        <Button
-                          variant="contained"
-                          startIcon={<AddIcon />}
-                          onClick={handleAddNetRole}
-                          disabled={!selectedUser}
-                        >
-                          Add
-                        </Button>
-                      </Box>
-                      
-                      {/* Current NCS list */}
-                      {ncsRoles.length === 0 ? (
-                        <Typography color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
-                          No additional NCS assigned. The owner ({net?.owner_callsign}) serves as NCS.
-                        </Typography>
-                      ) : (
-                        <List>
-                          {ncsRoles.map((role: NetRole) => (
-                            <ListItem
-                              key={role.id}
-                              sx={{ 
-                                bgcolor: 'background.paper',
-                                border: 1,
-                                borderColor: 'divider',
-                                borderRadius: 1,
-                                mb: 0.5,
-                              }}
-                            >
-                              <PersonIcon sx={{ mr: 1, color: 'primary.main' }} />
-                              <ListItemText
-                                primary={
-                                  <Typography>
-                                    {role.callsign}
-                                    {role.name && ` (${role.name})`}
-                                  </Typography>
-                                }
-                              />
-                              <ListItemSecondaryAction>
-                                <IconButton
-                                  size="small"
-                                  color="error"
-                                  onClick={() => handleRemoveNetRole(role.id)}
-                                >
-                                  <DeleteIcon fontSize="small" />
-                                </IconButton>
-                              </ListItemSecondaryAction>
-                            </ListItem>
-                          ))}
-                        </List>
-                      )}
-                    </>
-                  )}
-                </Box>
-              )}
-              
-              {/* Manage Rotation section - rendered inside the unified Manage tab
-                  for schedule context (tab 1). Mirrors the editor's NCS Rotation
-                  section: build-from-staff, reorder, toggle active, upcoming preview. */}
-              {tabValue === 1 && isScheduleContext && canManage && (
+              {/* Staff list - all authenticated users can view; owners/admins get inline edit controls */}
+              {renderStaffList()}
+
+              {/* Rotation section - schedule context, owners/admins only */}
+              {isScheduleContext && canEdit && (
                 <Box sx={{ mt: 3, pt: 3, borderTop: 1, borderColor: 'divider' }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                     <Typography variant="subtitle2">
