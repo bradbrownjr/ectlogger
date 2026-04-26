@@ -761,14 +761,15 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
               {/* Staff list - all authenticated users can view; owners/admins get inline edit controls */}
               {renderStaffList()}
 
-              {/* Rotation section - schedule context, owners/admins only */}
-              {isScheduleContext && canEdit && (
+              {/* Rotation section - all users can view; edit controls restricted to owners/admins */}
+              {isScheduleContext && (members.length > 0 || scheduleEntries.length > 0 || canEdit) && (
                 <Box sx={{ mt: 3, pt: 3, borderTop: 1, borderColor: 'divider' }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                     <Typography variant="subtitle2">
                       Rotation Order
                     </Typography>
-                    {members.length > 0 && (
+                    {/* Clear All - owners/admins only */}
+                    {canEdit && members.length > 0 && (
                       <Button
                         size="small"
                         color="error"
@@ -781,11 +782,13 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                     )}
                   </Box>
                   <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
-                    Optional: cycle NCS duty automatically across upcoming scheduled nets. If empty, nets default to the Manager. Use "Add Staff to Rotation" to populate from your staff list.
+                    {canEdit
+                      ? 'Optional: cycle NCS duty automatically across upcoming scheduled nets. If empty, nets default to the Manager. Use "Add Staff to Rotation" to populate from your staff list.'
+                      : 'NCS duty cycles automatically across upcoming scheduled nets. If empty, nets default to the Manager.'}
                   </Typography>
-                  
-                  {/* Create from Staff button - only show if there are staff not in rotation */}
-                  {staff.filter((s: StaffMember) => s.is_active && !members.some((m: RotationMember) => m.user_id === s.user_id)).length > 0 && (
+
+                  {/* Add Staff to Rotation button - owners/admins only */}
+                  {canEdit && staff.filter((s: StaffMember) => s.is_active && !members.some((m: RotationMember) => m.user_id === s.user_id)).length > 0 && (
                     <Box sx={{ mb: 2 }}>
                       <Button
                         variant="contained"
@@ -798,20 +801,18 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                       </Button>
                     </Box>
                   )}
-                  
-                  {/* Members list with reorder controls */}
+
+                  {/* Members list */}
                   {members.length === 0 ? (
                     <Box sx={{ textAlign: 'center', py: 2 }}>
                       <Typography color="text.secondary" sx={{ mb: 1 }}>
                         No rotation configured — nets default to the Manager.
                       </Typography>
-                      {staff.length > 0 ? (
+                      {canEdit && (
                         <Typography variant="caption" color="text.secondary">
-                          Use "Add Staff to Rotation" above to populate the order from your staff list.
-                        </Typography>
-                      ) : (
-                        <Typography variant="caption" color="text.secondary">
-                          Add staff above first, then build the rotation from them.
+                          {staff.length > 0
+                            ? 'Use "Add Staff to Rotation" above to populate the order from your staff list.'
+                            : 'Add staff above first, then build the rotation from them.'}
                         </Typography>
                       )}
                     </Box>
@@ -820,7 +821,7 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                       {members.map((member: RotationMember, idx: number) => (
                         <ListItem
                           key={member.id}
-                          sx={{ 
+                          sx={{
                             bgcolor: member.is_active ? 'background.paper' : 'action.disabledBackground',
                             border: 1,
                             borderColor: 'divider',
@@ -843,46 +844,39 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                               </Box>
                             }
                           />
-                          <ListItemSecondaryAction>
-                            <IconButton
-                              size="small"
-                              onClick={() => handleMoveMember(member.id, 'up')}
-                              disabled={idx === 0}
-                            >
-                              <ArrowUpwardIcon fontSize="small" />
-                            </IconButton>
-                            <IconButton
-                              size="small"
-                              onClick={() => handleMoveMember(member.id, 'down')}
-                              disabled={idx === members.length - 1}
-                            >
-                              <ArrowDownwardIcon fontSize="small" />
-                            </IconButton>
-                            <Tooltip title={member.is_active ? 'Skip (mark inactive)' : 'Include (mark active)'}>
+                          {/* Reorder / toggle / delete - owners/admins only */}
+                          {canEdit && (
+                            <ListItemSecondaryAction>
                               <IconButton
                                 size="small"
-                                onClick={() => handleToggleMemberActive(member)}
+                                onClick={() => handleMoveMember(member.id, 'up')}
+                                disabled={idx === 0}
                               >
-                                <BlockIcon 
-                                  fontSize="small" 
-                                  color={member.is_active ? 'action' : 'error'} 
-                                />
+                                <ArrowUpwardIcon fontSize="small" />
                               </IconButton>
-                            </Tooltip>
-                            <IconButton
-                              size="small"
-                              color="error"
-                              onClick={() => handleRemoveMember(member.id)}
-                            >
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
-                          </ListItemSecondaryAction>
+                              <IconButton
+                                size="small"
+                                onClick={() => handleMoveMember(member.id, 'down')}
+                                disabled={idx === members.length - 1}
+                              >
+                                <ArrowDownwardIcon fontSize="small" />
+                              </IconButton>
+                              <Tooltip title={member.is_active ? 'Skip (mark inactive)' : 'Include (mark active)'}>
+                                <IconButton size="small" onClick={() => handleToggleMemberActive(member)}>
+                                  <BlockIcon fontSize="small" color={member.is_active ? 'action' : 'error'} />
+                                </IconButton>
+                              </Tooltip>
+                              <IconButton size="small" color="error" onClick={() => handleRemoveMember(member.id)}>
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </ListItemSecondaryAction>
+                          )}
                         </ListItem>
                       ))}
                     </List>
                   )}
-                  
-                  {/* Upcoming rotation schedule preview */}
+
+                  {/* Upcoming schedule preview - visible to all */}
                   {scheduleEntries.length > 0 && (
                     <Box sx={{ mt: 3 }}>
                       <Typography variant="subtitle2" sx={{ mb: 1 }}>
@@ -894,30 +888,25 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                             <TableRow>
                               <TableCell>Date</TableCell>
                               <TableCell>NCS</TableCell>
-                              <TableCell align="right">Actions</TableCell>
+                              {canEdit && <TableCell align="right">Actions</TableCell>}
                             </TableRow>
                           </TableHead>
                           <TableBody>
                             {scheduleEntries.slice(0, 8).map((entry: ScheduleEntry, idx: number) => (
-                              <TableRow 
+                              <TableRow
                                 key={idx}
-                                sx={{ 
-                                  bgcolor: entry.is_cancelled 
-                                    ? 'action.disabledBackground' 
-                                    : entry.is_override 
-                                      ? 'warning.light' 
-                                      : undefined 
+                                sx={{
+                                  bgcolor: entry.is_cancelled
+                                    ? 'action.disabledBackground'
+                                    : entry.is_override
+                                      ? 'warning.light'
+                                      : undefined,
                                 }}
                               >
                                 <TableCell>{formatDate(entry.date)}</TableCell>
                                 <TableCell>
                                   {entry.is_cancelled ? (
-                                    <Chip 
-                                      icon={<BlockIcon />} 
-                                      label="Cancelled" 
-                                      size="small" 
-                                      color="default"
-                                    />
+                                    <Chip icon={<BlockIcon />} label="Cancelled" size="small" color="default" />
                                   ) : (
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                       <Typography variant="body2">
@@ -930,29 +919,29 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                                     </Box>
                                   )}
                                 </TableCell>
-                                <TableCell align="right">
-                                  {entry.is_override && entry.override_id && (
-                                    <Tooltip title="Revert to normal rotation">
-                                      <IconButton 
-                                        size="small" 
-                                        onClick={() => handleCancelOverride(entry.override_id!)}
-                                        color="error"
-                                      >
-                                        <UndoIcon fontSize="small" />
-                                      </IconButton>
-                                    </Tooltip>
-                                  )}
-                                  {!entry.is_cancelled && !entry.is_override && (
-                                    <Tooltip title="Swap or cancel">
-                                      <IconButton 
-                                        size="small" 
-                                        onClick={() => handleOpenSwapDialog(entry)}
-                                      >
-                                        <SwapHorizIcon fontSize="small" />
-                                      </IconButton>
-                                    </Tooltip>
-                                  )}
-                                </TableCell>
+                                {/* Swap/cancel actions - owners/admins only */}
+                                {canEdit && (
+                                  <TableCell align="right">
+                                    {entry.is_override && entry.override_id && (
+                                      <Tooltip title="Revert to normal rotation">
+                                        <IconButton
+                                          size="small"
+                                          onClick={() => handleCancelOverride(entry.override_id!)}
+                                          color="error"
+                                        >
+                                          <UndoIcon fontSize="small" />
+                                        </IconButton>
+                                      </Tooltip>
+                                    )}
+                                    {!entry.is_cancelled && !entry.is_override && (
+                                      <Tooltip title="Swap or cancel">
+                                        <IconButton size="small" onClick={() => handleOpenSwapDialog(entry)}>
+                                          <SwapHorizIcon fontSize="small" />
+                                        </IconButton>
+                                      </Tooltip>
+                                    )}
+                                  </TableCell>
+                                )}
                               </TableRow>
                             ))}
                           </TableBody>
