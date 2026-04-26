@@ -1,6 +1,40 @@
 {
-  "version": "2026.04.25",
+  "version": "2026.04.25b",
   "entries": [
+    {
+      "version": "2026.04.25b",
+      "date": "2026-04-25",
+      "sections": [
+        {
+          "title": "Save edits back to the schedule",
+          "type": "feature",
+          "items": [
+            {
+              "text": "The Edit Net page now has two save buttons: \"Save for this Net\" (the everyday save, only affects the current net) and \"Save to Schedule\" (pushes your edits back to the parent schedule so future nets opened from it inherit the new values). A confirmation dialog lists exactly what will be overwritten.",
+              "userImpact": true
+            },
+            {
+              "text": "The Net Staff dialog (when opened from a scheduled net) now has a \"Push staff to schedule\" button that copies the net's NCS operators into the schedule's authorized staff list. Operators already on the schedule are skipped, so it's safe to repeat.",
+              "userImpact": true
+            },
+            {
+              "text": "Schedules now carry stream URL and announcements. Values you set on the schedule propagate to new nets opened from it, and the new \"Save to Schedule\" action can promote in-the-moment edits back to the schedule's defaults.",
+              "userImpact": true
+            }
+          ]
+        },
+        {
+          "title": "Save edits back to the schedule",
+          "type": "bugfix",
+          "items": [
+            {
+              "text": "Fixed a long-standing gap where a schedule's info URL, script, stream URL, and announcements were ignored when opening a net from it. Newly opened nets now inherit those values from the schedule.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.04.25",
       "date": "2026-04-25",

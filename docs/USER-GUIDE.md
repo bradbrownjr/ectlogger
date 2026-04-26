@@ -153,6 +153,19 @@ For nets that run regularly (weekly club nets, SKYWARN practice nets, etc.), cre
 - Request coverage or swap dates with other operators
 - Override specific dates when needed
 
+### Schedules act as templates
+
+A **schedule** is also the *template* that nets are opened from. When the system (or you) opens a net from a schedule, the net is seeded with the schedule's name, description, info URL, stream URL, script, announcements, frequencies, check-in field configuration, ICS-309/Topic/Poll settings, and staff list.
+
+After a net is opened, edits you make to the net stay on **that net only** by default. The schedule isn't touched unless you explicitly push your changes back to it. This keeps in-the-moment edits (a one-off frequency change, a session-specific announcement) from rewriting the schedule's defaults.
+
+To promote net edits back to the schedule:
+
+- **Edit Net page** — A second button, **Save to Schedule**, sits next to **Save for this Net**. It copies the net's editable fields (name, description, info URL, stream URL, script, announcements, frequencies, field config, and ICS-309/Topic/Poll toggles) onto the parent schedule. A confirmation dialog lists exactly what will be overwritten.
+- **Net Staff dialog** — When opened from a net that came from a schedule, a **Push staff to schedule** button copies the net's NCS operators into the schedule's authorized staff list. Operators already on the schedule are skipped, so the action is safe to repeat.
+
+**Who can use these actions:** the same people who can edit the schedule — its owner, an admin, an active staff member, or an active NCS rotation member. If you don't have permission, the app surfaces a clear error.
+
 ### Merging Schedules
 
 If you have multiple schedules that should be combined into one (e.g., separate schedules that were created for the same net series):

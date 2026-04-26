@@ -358,7 +358,9 @@ class NetTemplateBase(BaseModel):
     name: str = Field(max_length=200, min_length=1)
     description: Optional[str] = Field(None, max_length=2000)
     info_url: Optional[str] = Field(None, max_length=500)
+    stream_url: Optional[str] = Field(None, max_length=500)  # Default audio stream URL for nets created from this schedule
     script: Optional[str] = None  # Net script template
+    announcements: Optional[str] = None  # Default announcements/traffic carried into nets from this schedule
     field_config: Optional[dict] = None
     schedule_type: Optional[str] = Field(default='ad_hoc')  # ad_hoc, daily, weekly, monthly
     schedule_config: Optional[dict] = Field(default_factory=dict)  # {day_of_week, week_of_month, time}
@@ -379,7 +381,9 @@ class NetTemplateUpdate(BaseModel):
     name: Optional[str] = Field(None, max_length=200, min_length=1)
     description: Optional[str] = Field(None, max_length=2000)
     info_url: Optional[str] = Field(None, max_length=500)
+    stream_url: Optional[str] = Field(None, max_length=500)
     script: Optional[str] = None
+    announcements: Optional[str] = None
     field_config: Optional[dict] = None
     frequency_ids: Optional[List[int]] = None
     is_active: Optional[bool] = None
@@ -415,7 +419,9 @@ class NetTemplateResponse(NetTemplateBase):
             'name': template.name,
             'description': template.description,
             'info_url': template.info_url,
+            'stream_url': template.stream_url,
             'script': template.script,
+            'announcements': template.announcements,
             'owner_id': template.owner_id,
             'owner_callsign': owner_callsign,
             'owner_name': owner_name,

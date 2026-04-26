@@ -63,6 +63,10 @@ interface NCSStaffModalProps {
     owner_callsign?: string;
     owner_name?: string;
     status?: string;
+    // ID of the parent schedule (NetTemplate) this net was created from.
+    // When present, the modal exposes a "Push staff to schedule" action so
+    // changes made on the net can be promoted into the schedule's staff pool.
+    template_id?: number | null;
   } | null;
   onUpdate?: () => void;
 }
@@ -143,7 +147,16 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
   // Local override of the displayed manager so the new value sticks even
   // before the parent refetches and passes a fresh `schedule` prop.
   const [localOwner, setLocalOwner] = useState<{ id: number; callsign?: string; name?: string } | null>(null);
-  
+
+  // ========== PUSH-STAFF-TO-SCHEDULE STATE ==========
+  // When viewing a net created from a schedule (template), the modal exposes
+  // a one-shot button that copies the net's NCS NetRole users into the
+  // schedule's TemplateStaff pool (skipping anyone already on it). This lets
+  // ad-hoc NCS additions made for a single net be promoted to the schedule
+  // so future nets opened from the schedule see them too.
+  const [pushingStaff, setPushingStaff] = useState(false);
+  const [pushStaffResult, setPushStaffResult] = useState<{ severity: 'success' | 'info' | 'error'; message: string } | null>(null);
+
   const { user, isAuthenticated } = useAuth();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -205,6 +218,7 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
       setEditingManager(false);
       setPendingManager(null);
       setLocalOwner(null);
+      setPushStaffResult(null);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, scheduleId, netId]);
@@ -473,6 +487,85 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
       onUpdate?.();
     } catch (err: any) {
       setError(getErrorMessage(err, 'Failed to remove NCS'));
+    }
+  };
+
+  // Push the net's NCS roster into the parent schedule's TemplateStaff pool.
+  // Idempotent: anyone already on the schedule's staff list is skipped, so
+  // clicking twice is harmless. Backend enforces edit permission on the
+  // schedule (owner / admin / active staff / rotation member).
+  const handlePushStaffToSchedule = async () => {
+    if (!net?.template_id) return;
+    setPushStaffResult(null);
+    setPushingStaff(true);
+    try {
+      // Snapshot the schedule's current staff to avoid duplicate adds.
+      const existingRes = await templateStaffApi.list(net.template_id);
+      const existingUserIds = new Set<number>(existingRes.data.map((s: StaffMember) => s.user_id));
+      const ncsUsers = netRoles.filter((r: NetRole) => r.role === 'NCS');
+      const toAdd = ncsUsers.filter((r: NetRole) => !existingUserIds.has(r.user_id));
+
+      if (ncsUsers.length === 0) {
+        setPushStaffResult({ severity: 'info', message: 'This net has no NCS operators to push to the schedule.' });
+        return;
+      }
+      if (toAdd.length === 0) {
+        setPushStaffResult({ severity: 'info', message: 'All NCS operators on this net are already on the schedule\u2019s staff list.' });
+        return;
+      }
+
+      let added = 0;
+      const failures: string[] = [];
+      for (const role of toAdd) {
+        try {
+          await templateStaffApi.add(net.template_id, { user_id: role.user_id });
+          added += 1;
+        } catch (err: any) {
+          // Permission failure on the very first add is the common case
+          // (backend rejects all subsequent adds the same way), so bail
+          // early with a clean message rather than spamming N errors.
+          if (err?.response?.status === 403) {
+            const detail = err?.response?.data?.detail;
+            setPushStaffResult({
+              severity: 'error',
+              message: typeof detail === 'string'
+                ? detail
+                : "You don\u2019t have permission to edit this schedule\u2019s staff.",
+            });
+            return;
+          }
+          failures.push(role.callsign);
+        }
+      }
+
+      if (failures.length > 0) {
+        setPushStaffResult({
+          severity: 'error',
+          message: `Added ${added} operator(s). Failed to add: ${failures.join(', ')}.`,
+        });
+      } else {
+        setPushStaffResult({
+          severity: 'success',
+          message: `Added ${added} NCS operator(s) to the schedule\u2019s staff list.`,
+        });
+      }
+      onUpdate?.();
+    } catch (err: any) {
+      const status = err?.response?.status;
+      const detail = err?.response?.data?.detail;
+      if (status === 403) {
+        setPushStaffResult({
+          severity: 'error',
+          message: typeof detail === 'string' ? detail : "You don\u2019t have permission to edit this schedule\u2019s staff.",
+        });
+      } else {
+        setPushStaffResult({
+          severity: 'error',
+          message: typeof detail === 'string' ? detail : 'Failed to push staff to the schedule.',
+        });
+      }
+    } finally {
+      setPushingStaff(false);
     }
   };
 
@@ -955,8 +1048,42 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
           )}
         </DialogContent>
         
-        <DialogActions>
-          <Button onClick={onClose}>Close</Button>
+        <DialogActions sx={{ flexDirection: 'column', alignItems: 'stretch', gap: 1, p: 2 }}>
+          {/* Inline result for the Push-to-Schedule action. Lives in the
+              footer (not the toast layer) so it stays visible alongside the
+              button that triggered it. */}
+          {pushStaffResult && (
+            <Alert
+              severity={pushStaffResult.severity}
+              onClose={() => setPushStaffResult(null)}
+              sx={{ width: '100%' }}
+            >
+              {pushStaffResult.message}
+            </Alert>
+          )}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, flexWrap: 'wrap' }}>
+            {/* Push staff to schedule: net-context only, requires that the
+                net was created from a schedule. Hidden otherwise so the
+                action area stays uncluttered for one-off (ad-hoc) nets. */}
+            <Box>
+              {isNetContext && net?.template_id && canEdit && (
+                <Tooltip title="Copy this net's NCS operators into the parent schedule's staff list. Anyone already on the schedule is skipped.">
+                  <span>
+                    <Button
+                      onClick={handlePushStaffToSchedule}
+                      disabled={pushingStaff || netRoles.filter((r: NetRole) => r.role === 'NCS').length === 0}
+                      startIcon={<SaveIcon />}
+                      color="secondary"
+                      variant="outlined"
+                    >
+                      {pushingStaff ? 'Pushing…' : 'Push staff to schedule'}
+                    </Button>
+                  </span>
+                </Tooltip>
+              )}
+            </Box>
+            <Button onClick={onClose}>Close</Button>
+          </Box>
         </DialogActions>
       </Dialog>
       

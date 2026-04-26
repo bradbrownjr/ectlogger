@@ -34,6 +34,11 @@ import {
   Switch,
   InputAdornment,
   Snackbar,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -52,7 +57,7 @@ import AddIcon from '@mui/icons-material/Add';
 import PersonIcon from '@mui/icons-material/Person';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
-import { netApi, frequencyApi, userApi } from '../services/api';
+import { netApi, frequencyApi, userApi, templateApi } from '../services/api';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -153,9 +158,15 @@ const CreateNet: React.FC = () => {
   const [frequencySortDirection, setFrequencySortDirection] = useState<SortDirection>('asc');
   const [fieldDefinitions, setFieldDefinitions] = useState<FieldDefinition[]>([]);
   const [fieldConfig, setFieldConfig] = useState<Record<string, { enabled: boolean; required: boolean }>>({});
-  // Toast notification for field messages
+  // Toast notification for field messages and Save-to-Schedule feedback
   const [toastOpen, setToastOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [toastSeverity, setToastSeverity] = useState<'info' | 'success' | 'error' | 'warning'>('info');
+  // Save-to-Schedule confirmation dialog. Pushing the current net's editable
+  // fields back to the parent schedule overwrites the schedule's defaults
+  // wholesale (frequencies, script, field config, etc.) so we always confirm.
+  const [saveToScheduleConfirmOpen, setSaveToScheduleConfirmOpen] = useState(false);
+  const [savingToSchedule, setSavingToSchedule] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scriptTextAreaRef = useRef<HTMLTextAreaElement>(null);
   const navigate = useNavigate();
@@ -516,6 +527,62 @@ const CreateNet: React.FC = () => {
     } catch (error) {
       console.error('Failed to save net:', error);
       alert('Failed to save net');
+    }
+  };
+
+  // ========== SAVE-TO-SCHEDULE ==========
+  // Pushes the current edited net's values back to its parent schedule
+  // (NetTemplate). The schedule acts as a template that future nets are
+  // opened from, so this lets a net manager promote in-the-moment edits
+  // (frequencies, script, announcements, stream URL, etc.) into the
+  // schedule's defaults.
+  //
+  // Notes:
+  //  - Net staff (NCS NetRoles) are NOT pushed here — the staff modal has its
+  //    own dedicated "Push staff to schedule" action since the data models
+  //    for net roles vs. template staff are different.
+  //  - The owner/manager of the schedule is unchanged.
+  //  - The backend (`PUT /templates/{id}`) enforces who is allowed to edit
+  //    the schedule (owner, admin, active staff, rotation member). On 403 we
+  //    surface a friendly toast.
+  const showToast = (message: string, severity: 'info' | 'success' | 'error' | 'warning' = 'info') => {
+    setToastMessage(message);
+    setToastSeverity(severity);
+    setToastOpen(true);
+  };
+
+  const handleSaveToSchedule = async () => {
+    if (!templateId) return;
+    setSavingToSchedule(true);
+    try {
+      await templateApi.update(templateId, {
+        name,
+        description,
+        info_url: infoUrl || null,
+        stream_url: streamUrl || null,
+        script,
+        announcements,
+        frequency_ids: selectedFrequencies,
+        field_config: fieldConfig,
+        ics309_enabled: ics309Enabled,
+        topic_of_week_enabled: topicOfWeekEnabled,
+        topic_of_week_prompt: topicOfWeekPrompt || null,
+        poll_enabled: pollEnabled,
+        poll_question: pollQuestion || null,
+      });
+      setSaveToScheduleConfirmOpen(false);
+      showToast('Schedule updated. Future nets opened from this schedule will use these values.', 'success');
+    } catch (error: any) {
+      const status = error?.response?.status;
+      const detail = error?.response?.data?.detail;
+      if (status === 403) {
+        showToast(typeof detail === 'string' ? detail : "You don't have permission to edit this schedule.", 'error');
+      } else {
+        console.error('Failed to save to schedule:', error);
+        showToast(typeof detail === 'string' ? detail : 'Failed to save changes to the schedule.', 'error');
+      }
+    } finally {
+      setSavingToSchedule(false);
     }
   };
 
@@ -1496,14 +1563,35 @@ This is **[CALLSIGN]**, closing the net at [TIME]. 73 to all.`}
             )}
           </Box>
           {!isInfoMode && (
-            <Button
-              variant="contained"
-              onClick={handleCreateNet}
-              disabled={!name || selectedFrequencies.length === 0}
-              startIcon={<SaveIcon />}
-            >
-              {isEditMode ? 'Save Changes' : 'Create Net'}
-            </Button>
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+              {/* Save for this Net: persists changes to the current net only.
+                  This is the everyday save — the schedule (template) is left
+                  alone so per-session edits don't accidentally rewrite the
+                  schedule's defaults. */}
+              <Button
+                variant="contained"
+                onClick={handleCreateNet}
+                disabled={!name || selectedFrequencies.length === 0}
+                startIcon={<SaveIcon />}
+              >
+                {isEditMode ? 'Save for this Net' : 'Create Net'}
+              </Button>
+              {/* Save to Schedule: only meaningful when editing a net that
+                  was created from a schedule. Pushes the editable fields
+                  back to the parent schedule so future nets inherit them.
+                  Backend enforces permission (owner/admin/staff/rotation). */}
+              {isEditMode && templateId && (
+                <Button
+                  variant="contained"
+                  color="secondary"
+                  onClick={() => setSaveToScheduleConfirmOpen(true)}
+                  disabled={!name || selectedFrequencies.length === 0 || savingToSchedule}
+                  startIcon={<SaveIcon />}
+                >
+                  Save to Schedule
+                </Button>
+              )}
+            </Box>
           )}
         </Box>
       </Paper>
@@ -1515,10 +1603,53 @@ This is **[CALLSIGN]**, closing the net at [TIME]. 73 to all.`}
         onClose={() => setToastOpen(false)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert onClose={() => setToastOpen(false)} severity="info" sx={{ width: '100%' }}>
+        <Alert onClose={() => setToastOpen(false)} severity={toastSeverity} sx={{ width: '100%' }}>
           {toastMessage}
         </Alert>
       </Snackbar>
+
+      {/* Save to Schedule confirmation dialog.
+          Pushing back to the schedule overwrites that schedule's defaults
+          (name, description, frequencies, script, announcements, stream URL,
+          field config, ICS-309/topic/poll toggles), so we always confirm. */}
+      <Dialog
+        open={saveToScheduleConfirmOpen}
+        onClose={() => !savingToSchedule && setSaveToScheduleConfirmOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Save changes to the schedule?</DialogTitle>
+        <DialogContent>
+          <DialogContentText component="div">
+            This will replace the schedule's saved defaults with the values
+            currently on this net, including:
+            <ul style={{ marginTop: 8, marginBottom: 8 }}>
+              <li>Name, description, info URL, stream URL</li>
+              <li>Net script and announcements</li>
+              <li>Selected frequencies</li>
+              <li>Check-in field configuration</li>
+              <li>ICS-309, Topic of the Week, and Poll settings</li>
+            </ul>
+            Future nets opened from this schedule will inherit these values.
+            Net staff/rotation are managed separately from the Net Staff dialog
+            and aren't changed here.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSaveToScheduleConfirmOpen(false)} disabled={savingToSchedule}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="secondary"
+            onClick={handleSaveToSchedule}
+            disabled={savingToSchedule}
+            startIcon={<SaveIcon />}
+          >
+            {savingToSchedule ? 'Saving…' : 'Save to Schedule'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };

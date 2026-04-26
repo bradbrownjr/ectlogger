@@ -4,6 +4,18 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# April 25, 2026 (b)
+
+## Save edits back to the schedule
+
+* **"Save for this Net" + "Save to Schedule" buttons** — The Edit Net page now has two save buttons. **Save for this Net** persists changes only to the current net (unchanged behavior, just renamed from "Save Changes"). **Save to Schedule** pushes the net's editable fields back to the parent schedule so future nets opened from that schedule inherit them. A confirmation dialog lists exactly what will be overwritten.
+* **Push staff to schedule** — The Net Staff dialog opened from a scheduled net now has a **Push staff to schedule** button that copies the net's NCS operators into the schedule's authorized staff list. Operators already on the schedule are skipped, so it's safe to repeat.
+* **Schedules now carry stream URL and announcements** — `stream_url` and `announcements` were previously net-only fields. They've been added to the schedule (template) model so values entered there propagate to nets opened from the schedule, and so the new "Save to Schedule" action can promote them. Migration: `018_add_template_stream_announcements.py`.
+* **Schedule fields actually copy when opening a net** — Fixed a long-standing gap where `info_url`, `script`, `stream_url`, and `announcements` on a schedule were ignored when opening a net from it. Newly opened nets now inherit those values.
+* **Permission model unchanged** — Both new actions check the same backend permissions used everywhere else for editing a schedule (owner, admin, active staff, or active NCS rotation member). The buttons surface a clear error toast on permission failure rather than silently failing.
+
+---
+
 # April 25, 2026
 
 ## Net Staff & NCS Rotation

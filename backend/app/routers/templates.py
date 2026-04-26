@@ -129,7 +129,9 @@ async def create_template(
         name=template_data.name,
         description=template_data.description,
         info_url=template_data.info_url,
+        stream_url=template_data.stream_url,
         script=template_data.script,
+        announcements=template_data.announcements,
         owner_id=owner_id,
         field_config=field_config_json,
         schedule_type=template_data.schedule_type,
@@ -309,8 +311,12 @@ async def update_template(
         template.description = template_data.description
     if template_data.info_url is not None:
         template.info_url = template_data.info_url
+    if template_data.stream_url is not None:
+        template.stream_url = template_data.stream_url
     if template_data.script is not None:
         template.script = template_data.script
+    if template_data.announcements is not None:
+        template.announcements = template_data.announcements
     if template_data.field_config is not None:
         template.field_config = json.dumps(template_data.field_config)
     if template_data.is_active is not None:
@@ -1004,6 +1010,10 @@ async def create_net_from_template(
     net = Net(
         name=template.name,
         description=template.description,
+        info_url=template.info_url,
+        stream_url=template.stream_url,
+        script=template.script,
+        announcements=template.announcements,
         owner_id=current_user.id,
         template_id=template_id,
         field_config=template.field_config,

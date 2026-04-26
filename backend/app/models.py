@@ -145,7 +145,9 @@ class NetTemplate(Base):
     name = Column(String(200), nullable=False)
     description = Column(Text)
     info_url = Column(String(500))  # URL for net, club, or organization info
+    stream_url = Column(String(500))  # Audio stream URL (Shoutcast, Broadcastify, etc.) - default for nets created from this schedule
     script = Column(Text)  # Net script template
+    announcements = Column(Text)  # Default announcements/traffic carried forward to nets created from this schedule
     owner_id = Column(Integer, ForeignKey("users.id"))
     field_config = Column(Text, default='{"name": {"enabled": true, "required": false}, "location": {"enabled": true, "required": false}, "skywarn_number": {"enabled": false, "required": false}, "weather_observation": {"enabled": false, "required": false}, "power_source": {"enabled": false, "required": false}, "power": {"enabled": false, "required": false}, "feedback": {"enabled": false, "required": false}, "notes": {"enabled": false, "required": false}}')
     is_active = Column(Boolean, default=True)

@@ -1127,6 +1127,7 @@ const Dashboard: React.FC = () => {
           owner_callsign: selectedNet.owner_callsign || undefined,
           owner_name: selectedNet.owner_name || undefined,
           status: selectedNet.status,
+          template_id: selectedNet.template_id ?? null,
         } : null}
         onUpdate={fetchNets}
       />
