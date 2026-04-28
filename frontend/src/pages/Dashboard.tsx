@@ -73,6 +73,12 @@ interface Net {
   owner_id: number;
   owner_callsign?: string | null;
   owner_name?: string | null;
+  // Currently-assigned NCS for this net (most recent NetRole with role='NCS').
+  // May be null if no NCS has been assigned yet, or the same person as the
+  // owner. The owner is the "Net Manager"; the NCS is whoever is actually
+  // running the net on the air.
+  ncs_callsign?: string | null;
+  ncs_name?: string | null;
   template_id?: number | null;  // ID of the template this net was created from
   started_at?: string;
   closed_at?: string;
@@ -425,6 +431,16 @@ const Dashboard: React.FC = () => {
                     </IconButton>
                   </Tooltip>
                 )}
+                {/* Active net delete: owner/admin/NCS can discard a net */}
+                {/* mid-flight (e.g. an aborted training run). Confirmation */}
+                {/* dialog warns about losing all check-ins and chat. */}
+                {(net.status === 'active' || net.status === 'lobby') && net.can_manage && (
+                  <Tooltip title="Delete">
+                    <IconButton size="small" color="error" onClick={() => handleDeleteClick(net)}>
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                )}
                 {/* Draft/Scheduled net actions */}
                 {(net.status === 'draft' || net.status === 'scheduled') && net.can_manage && (
                   <>
@@ -479,13 +495,14 @@ const Dashboard: React.FC = () => {
                             <ArchiveIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
-                        {user?.role === 'admin' && (
-                          <Tooltip title="Delete">
-                            <IconButton size="small" color="error" onClick={() => handleDeleteClick(net)}>
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        )}
+                        {/* Owners (and admins) can delete closed nets. The */}
+                        {/* confirmation dialog warns about data loss and */}
+                        {/* offers Archive as a safer alternative. */}
+                        <Tooltip title="Delete">
+                          <IconButton size="small" color="error" onClick={() => handleDeleteClick(net)}>
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
                       </>
                     )}
                   </>
@@ -567,13 +584,30 @@ const Dashboard: React.FC = () => {
             </Box>
           )}
           
-          {/* Manager / NCS */}
+          {/* ========== NET MANAGER (owner) ========== */}
+          {/* The owner of the net record. They created/scheduled it and may */}
+          {/* not be the operator running it on the air. Always shown when set. */}
           {net.owner_callsign && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <PersonIcon fontSize="small" color="action" />
               <Typography variant="body2" color="text.secondary">
-                <strong>NCS:</strong> {net.owner_callsign}
+                <strong>Net Manager:</strong> {net.owner_callsign}
                 {net.owner_name && ` (${net.owner_name})`}
+              </Typography>
+            </Box>
+          )}
+
+          {/* ========== CURRENT / NEXT NCS ========== */}
+          {/* Whoever is actually running the net (NetRole role='NCS'). For */}
+          {/* draft/scheduled nets this is effectively the "next" NCS; for */}
+          {/* active or closed nets it's the operator who ran it. Suppressed */}
+          {/* when the NCS is the same person as the manager to avoid noise. */}
+          {net.ncs_callsign && net.ncs_callsign !== net.owner_callsign && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <PersonIcon fontSize="small" color="action" />
+              <Typography variant="body2" color="text.secondary">
+                <strong>{net.status === 'draft' || net.status === 'scheduled' ? 'Next NCS' : 'NCS'}:</strong> {net.ncs_callsign}
+                {net.ncs_name && ` (${net.ncs_name})`}
               </Typography>
             </Box>
           )}
@@ -616,6 +650,20 @@ const Dashboard: React.FC = () => {
                 onClick={() => navigate(`/statistics/nets/${net.id}`)}
               >
                 <BarChartIcon />
+              </IconButton>
+            </Tooltip>
+          )}
+          {/* Active/Lobby net - allow the owner (or admin/NCS) to delete */}
+          {/* their own net. Useful for training/practice runs the owner */}
+          {/* wants to discard. Confirmation dialog warns before deleting. */}
+          {(net.status === 'active' || net.status === 'lobby') && net.can_manage && (
+            <Tooltip title="Delete net">
+              <IconButton
+                size="small"
+                color="error"
+                onClick={() => handleDeleteClick(net)}
+              >
+                <DeleteIcon />
               </IconButton>
             </Tooltip>
           )}
@@ -711,17 +759,18 @@ const Dashboard: React.FC = () => {
                   <ArchiveIcon />
                 </IconButton>
               </Tooltip>
-              {user?.role === 'admin' && (
-                <Tooltip title="Delete net">
-                  <IconButton
-                    size="small"
-                    color="error"
-                    onClick={() => handleDeleteClick(net)}
-                  >
-                    <DeleteIcon />
-                  </IconButton>
-                </Tooltip>
-              )}
+              {/* Closed net delete: any user who can manage the net (owner, */}
+              {/* admin, or NCS) may permanently delete it. Confirmation */}
+              {/* dialog steers them toward Archive when appropriate. */}
+              <Tooltip title="Delete net">
+                <IconButton
+                  size="small"
+                  color="error"
+                  onClick={() => handleDeleteClick(net)}
+                >
+                  <DeleteIcon />
+                </IconButton>
+              </Tooltip>
             </>
           )}
         </Box>
@@ -1050,21 +1099,120 @@ const Dashboard: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)}>
-        <DialogTitle>Delete Net</DialogTitle>
+      {/* ========== DELETE CONFIRMATION DIALOG ========== */}
+      {/* Hard-coded button colors per design: */}
+      {/*   - Cancel: blue (primary)   – default safe action */}
+      {/*   - Archive: yellow (warning) – only for closed nets, hides from */}
+      {/*     active list while preserving check-ins/chat for later review */}
+      {/*   - Delete: red (error)      – permanent destruction of all data */}
+      <Dialog
+        open={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Delete "{netToDelete?.name}"?</DialogTitle>
         <DialogContent>
-          <Typography>
-            Are you sure you want to permanently delete "{netToDelete?.name}"?
+          <Typography sx={{ mb: 2 }}>
+            Deleting this net will <strong>permanently remove</strong> every record
+            tied to it, including:
           </Typography>
-          <Typography color="error" sx={{ mt: 1 }}>
-            This will delete all check-ins and cannot be undone.
+          <Box component="ul" sx={{ mt: 0, mb: 2, pl: 3 }}>
+            <li><Typography variant="body2">All check-ins logged during this net</Typography></li>
+            <li><Typography variant="body2">All chat messages sent in this net</Typography></li>
+            <li><Typography variant="body2">Any reports, statistics, and history for this instance</Typography></li>
+          </Box>
+          <Typography color="error" sx={{ mb: 2, fontWeight: 'bold' }}>
+            This cannot be undone.
           </Typography>
+          {netToDelete?.status === 'closed' ? (
+            <Typography variant="body2" color="text.secondary">
+              If you only want to clear this net out of the active list while keeping
+              the log for later, choose <strong>Archive</strong> instead. Archived
+              nets stay searchable and can be restored at any time.
+            </Typography>
+          ) : netToDelete?.status === 'active' || netToDelete?.status === 'lobby' ? (
+            <Typography variant="body2" color="text.secondary">
+              If you'd rather keep the log for the record, choose
+              {' '}<strong>Close &amp; Archive</strong>. The net is closed normally
+              (a complete log is emailed to you), then immediately archived so it
+              disappears from the active list but every check-in and chat message
+              is preserved and downloadable.
+            </Typography>
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              If you'd rather keep the log for the record, close the net first and
+              then archive it &mdash; archiving hides the net from the active list
+              but preserves every check-in and message.
+            </Typography>
+          )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteConfirmOpen(false)}>Cancel</Button>
-          <Button onClick={handleDeleteConfirm} color="error" variant="contained">
-            Delete
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          {/* Blue Cancel — keep on the left, the safe default */}
+          <Button
+            onClick={() => setDeleteConfirmOpen(false)}
+            variant="contained"
+            color="primary"
+          >
+            Cancel
+          </Button>
+          {/* Yellow Close & Archive — for active/lobby nets, runs close */}
+          {/* (which emails the full log to the owner) then archive in one */}
+          {/* shot. Saves the manager from a two-step "close, then archive" */}
+          {/* dance when they realize mid-net they want to keep the record. */}
+          {(netToDelete?.status === 'active' || netToDelete?.status === 'lobby') && (
+            <Button
+              onClick={async () => {
+                if (!netToDelete) return;
+                const id = netToDelete.id;
+                const name = netToDelete.name;
+                setDeleteConfirmOpen(false);
+                setNetToDelete(null);
+                try {
+                  await netApi.close(id);
+                  await netApi.archive(id);
+                  fetchNets();
+                  if (showArchived) fetchArchivedNets();
+                  setSnackbar({ open: true, message: `"${name}" closed and archived. The log was emailed to you.`, severity: 'success' });
+                } catch (error: any) {
+                  console.error('Failed to close & archive net:', error);
+                  const message = error.response?.data?.detail || 'Failed to close and archive net';
+                  setSnackbar({ open: true, message, severity: 'error' });
+                }
+              }}
+              variant="contained"
+              color="warning"
+              startIcon={<ArchiveIcon />}
+            >
+              Close &amp; Archive
+            </Button>
+          )}
+          {/* Yellow Archive — only valid for closed nets (the only state */}
+          {/* the existing archive endpoint accepts) */}
+          {netToDelete?.status === 'closed' && (
+            <Button
+              onClick={async () => {
+                if (!netToDelete) return;
+                const id = netToDelete.id;
+                setDeleteConfirmOpen(false);
+                setNetToDelete(null);
+                await handleArchiveNet(id);
+              }}
+              variant="contained"
+              color="warning"
+              startIcon={<ArchiveIcon />}
+            >
+              Archive Instead
+            </Button>
+          )}
+          {/* Red Delete — destructive, requires explicit click */}
+          <Button
+            onClick={handleDeleteConfirm}
+            variant="contained"
+            color="error"
+            startIcon={<DeleteIcon />}
+          >
+            Delete Permanently
           </Button>
         </DialogActions>
       </Dialog>

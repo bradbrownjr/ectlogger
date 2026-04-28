@@ -240,16 +240,20 @@ Click the green **▶ Play** button on the Dashboard or NetView page to start a 
 
 This is useful for opening check-ins early while operators are gathering, before the net officially starts on the air.
 
-### Canceling a Scheduled Net
+### Canceling or Deleting a Net
 
-To cancel a specific net instance (e.g., Christmas Day):
-1. Find the draft or scheduled net on the Dashboard
-2. Click the red **🗑️ Delete** icon
-3. Confirm the deletion
+To cancel or remove a specific net instance:
+1. Find the net on the Dashboard
+2. Click the red **🗑️ Delete** icon (visible to net owners, NCS, and admins on every net you can manage — draft, scheduled, active, or closed)
+3. The confirmation dialog spells out exactly what will be lost (check-ins, chat, reports). Choose:
+   - **Cancel** (blue) — back out
+   - **Close & Archive** (yellow, only on active/lobby nets) — close the net normally (the full log is emailed to you) and immediately archive it, so the record is preserved but the net leaves the active list. Best choice for finished test/training runs you want to keep.
+   - **Archive Instead** (yellow, only on closed nets) — hide the net from the active list while keeping every record
+   - **Delete Permanently** (red) — destroy the net and all its data; this cannot be undone
 
-This deletes only that net instance — the recurring schedule continues for future dates.
+This deletes only the chosen net instance — the recurring schedule continues for future dates. For training and practice runs, deletion is the right choice; for real net activations, **archive** is almost always safer because it preserves the log.
 
-**Email Subscribers** — Before canceling, you can notify subscribers by clicking the **✉️ Email** icon and sending a custom message.
+**Email Subscribers** — Before canceling a draft/scheduled net, you can notify subscribers by clicking the **✉️ Email** icon and sending a custom message.
 
 ### Managing Check-ins
 

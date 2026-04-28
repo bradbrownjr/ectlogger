@@ -143,7 +143,27 @@ async def list_nets(
             .where(NetRole.role == "NCS")
         )
         user_ncs_net_ids = set(row[0] for row in ncs_result.fetchall())
-    
+
+    # ========== CURRENT NCS PER NET ==========
+    # For each net, find the most recently-assigned NCS user. The Net Manager
+    # is the net's owner; the NCS is whoever is actually running the net on
+    # the air, tracked via NetRole(role='NCS'). They are often different
+    # people (e.g. a club's net manager schedules nets for other operators
+    # to run). We surface both on the cards so users can tell them apart.
+    ncs_by_net: dict = {}
+    if net_ids:
+        ncs_users_result = await db.execute(
+            select(NetRole.net_id, User.callsign, User.name, NetRole.assigned_at)
+            .join(User, User.id == NetRole.user_id)
+            .where(NetRole.net_id.in_(net_ids))
+            .where(NetRole.role == "NCS")
+            .order_by(NetRole.assigned_at.desc())
+        )
+        for net_id_row, callsign, name, _assigned_at in ncs_users_result.fetchall():
+            # First row per net wins (descending assigned_at => most recent)
+            if net_id_row not in ncs_by_net:
+                ncs_by_net[net_id_row] = (callsign, name)
+
     responses = []
     for net in nets:
         # Check if user can manage this net
@@ -153,13 +173,16 @@ async def list_nets(
             is_admin = current_user.role.value == "admin"
             is_ncs = net.id in user_ncs_net_ids
             can_manage = is_owner or is_admin or is_ncs
-        
+
+        ncs_callsign, ncs_name = ncs_by_net.get(net.id, (None, None))
         responses.append(NetResponse.from_orm(
             net,
             owner_callsign=net.owner.callsign if net.owner else None,
             owner_name=public_display_name(net.owner.name if net.owner else None, current_user is not None),
             check_in_count=check_in_counts.get(net.id, 0),
-            can_manage=can_manage
+            can_manage=can_manage,
+            ncs_callsign=ncs_callsign,
+            ncs_name=public_display_name(ncs_name, current_user is not None),
         ))
     
     return responses
@@ -198,12 +221,29 @@ async def get_net(
         )
         is_ncs = ncs_result.scalar_one_or_none() is not None
         can_manage = is_owner or is_admin or is_ncs
-    
+
+    # ========== CURRENT NCS ==========
+    # Look up the most-recently-assigned NCS user for this net so the UI
+    # can display the Net Manager (owner) and NCS as separate entities.
+    current_ncs_result = await db.execute(
+        select(User.callsign, User.name)
+        .join(NetRole, NetRole.user_id == User.id)
+        .where(NetRole.net_id == net_id)
+        .where(NetRole.role == "NCS")
+        .order_by(NetRole.assigned_at.desc())
+        .limit(1)
+    )
+    current_ncs_row = current_ncs_result.first()
+    ncs_callsign = current_ncs_row[0] if current_ncs_row else None
+    ncs_name = current_ncs_row[1] if current_ncs_row else None
+
     return NetResponse.from_orm(
         net,
         owner_callsign=net.owner.callsign if net.owner else None,
         owner_name=public_display_name(net.owner.name if net.owner else None, current_user is not None),
-        can_manage=can_manage
+        can_manage=can_manage,
+        ncs_callsign=ncs_callsign,
+        ncs_name=public_display_name(ncs_name, current_user is not None),
     )
 
 

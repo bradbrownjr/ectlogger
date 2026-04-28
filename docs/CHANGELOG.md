@@ -4,6 +4,24 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# April 28, 2026
+
+## Net Manager and NCS shown separately
+
+* **Net cards (Active Nets)** now display **Net Manager** (the owner of the net record) and **NCS** (whoever is currently assigned via NetRole) on separate lines. Previously the owner was labeled "NCS", which was misleading whenever the manager and the operator on the air were different people.
+* **Schedule cards (Scheduler)** always show **Net Manager**, with **Next NCS** appearing as an additional line when an NCS rotation is configured. The two are no longer mutually exclusive.
+* When the manager and NCS are the same person, the duplicate line is suppressed.
+
+## Net owners can delete their own nets
+
+* **Owners can now delete a net in any state** — draft, scheduled, active, or closed. Previously the trash icon only appeared on draft/scheduled nets, and closed-net deletion was locked to admins. Useful for net managers cleaning up training/practice runs.
+* **Stronger confirmation dialog** spells out exactly what gets destroyed (check-ins, chat messages, reports) and warns that deletion is permanent.
+* **Color-coded buttons**: blue **Cancel**, yellow **Archive Instead** (only for closed nets) or yellow **Close & Archive** (only for active/lobby nets), red **Delete Permanently**. Archive paths are presented as the safer alternative whenever they apply.
+* **Close & Archive** runs the existing close endpoint (which emails the complete log to the owner) and then immediately archives the net, so managers who want to preserve the record of a started test/training net can do it in one click.
+* **Backend** — the delete-net endpoint already permitted the owner; only the frontend gate has been relaxed. Permission is still owner / admin / NCS via `can_manage`.
+
+---
+
 # April 25, 2026 (b)
 
 ## Save edits back to the schedule

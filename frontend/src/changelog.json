@@ -1,6 +1,40 @@
 {
-  "version": "2026.04.25b",
+  "version": "2026.04.28",
   "entries": [
+    {
+      "version": "2026.04.28",
+      "date": "2026-04-28",
+      "sections": [
+        {
+          "title": "Net Manager and NCS shown separately",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Net cards on the Active Nets page and schedule cards on the Scheduler now list the Net Manager (the person who owns the net or schedule) and the current/next Net Control Station as separate lines, so it's clear when the manager and the operator on the air are different people.",
+              "userImpact": true
+            }
+          ]
+        },
+        {
+          "title": "Net owners can delete their own nets",
+          "type": "feature",
+          "items": [
+            {
+              "text": "If you own a net, you can now delete it in any state — draft, scheduled, active, or closed — without needing an admin. The trash icon shows up on every card you can manage.",
+              "userImpact": true
+            },
+            {
+              "text": "The delete confirmation dialog now spells out exactly what will be lost (check-ins, chat, reports) and offers an Archive Instead button when the net is closed. Buttons are color-coded: blue Cancel, yellow Archive, red Delete Permanently.",
+              "userImpact": true
+            },
+            {
+              "text": "For active nets, the delete dialog now offers a yellow Close & Archive button — closes the net normally (emailing the full log to the owner) and immediately archives it, so a manager who wants to keep the record of a test or training run can do it in one click.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.04.25b",
       "date": "2026-04-25",

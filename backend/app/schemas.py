@@ -306,6 +306,12 @@ class NetResponse(NetBase):
     owner_id: int
     owner_callsign: Optional[str] = None
     owner_name: Optional[str] = None
+    # Currently-assigned Net Control Station for this net (most recently
+    # added user with NetRole.role == "NCS"). May differ from the owner
+    # (the "Net Manager"), since the manager is whoever created/owns the
+    # net while the NCS is whoever is actually running it on the air.
+    ncs_callsign: Optional[str] = None
+    ncs_name: Optional[str] = None
     template_id: Optional[int] = None  # ID of the template this net was created from
     active_frequency_id: Optional[int] = None
     field_config: Optional[dict] = None
@@ -319,7 +325,7 @@ class NetResponse(NetBase):
     can_manage: bool = False  # True if current user can edit (owner, admin, or NCS)
 
     @classmethod
-    def from_orm(cls, net, owner_callsign: str = None, owner_name: str = None, check_in_count: int = None, can_manage: bool = False):
+    def from_orm(cls, net, owner_callsign: str = None, owner_name: str = None, check_in_count: int = None, can_manage: bool = False, ncs_callsign: str = None, ncs_name: str = None):
         import json
         data = {
             'id': net.id,
@@ -331,6 +337,8 @@ class NetResponse(NetBase):
             'owner_id': net.owner_id,
             'owner_callsign': owner_callsign,
             'owner_name': owner_name,
+            'ncs_callsign': ncs_callsign,
+            'ncs_name': ncs_name,
             'template_id': net.template_id,
             'active_frequency_id': net.active_frequency_id,
             'field_config': json.loads(net.field_config) if net.field_config else None,

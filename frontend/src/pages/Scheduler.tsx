@@ -560,29 +560,37 @@ const Scheduler: React.FC = () => {
             </Box>
           )}
           
-          {/* Manager (owner) / Next NCS */}
+          {/* ========== NET MANAGER (owner) ========== */}
+          {/* The schedule owner — the person responsible for the recurring */}
+          {/* net itself. Always shown so it's clear who maintains the */}
+          {/* schedule, even when a different operator is up next as NCS. */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <PersonIcon fontSize="small" color="action" />
             <Typography variant="body2" color="text.secondary">
-              {schedule.nextNCS ? (
-                <>
-                  <strong>Next NCS:</strong> {schedule.nextNCS.user_callsign}
-                  {schedule.nextNCS.user_name && ` (${schedule.nextNCS.user_name})`}
-                  {' - '}
-                  {new Date(schedule.nextNCS.date).toLocaleDateString(undefined, { 
-                    weekday: 'short', 
-                    month: 'short', 
-                    day: 'numeric' 
-                  })}
-                </>
-              ) : (
-                <>
-                  <strong>Manager:</strong> {schedule.owner_callsign || 'Unknown'}
-                  {schedule.owner_name && ` (${schedule.owner_name})`}
-                </>
-              )}
+              <strong>Net Manager:</strong> {schedule.owner_callsign || 'Unknown'}
+              {schedule.owner_name && ` (${schedule.owner_name})`}
             </Typography>
           </Box>
+
+          {/* ========== NEXT NCS ========== */}
+          {/* Whoever is next up in the NCS rotation for this schedule. */}
+          {/* Suppressed when no rotation is configured, or when the next */}
+          {/* NCS happens to be the same person as the manager. */}
+          {schedule.nextNCS && schedule.nextNCS.user_callsign !== schedule.owner_callsign && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <PersonIcon fontSize="small" color="action" />
+              <Typography variant="body2" color="text.secondary">
+                <strong>Next NCS:</strong> {schedule.nextNCS.user_callsign}
+                {schedule.nextNCS.user_name && ` (${schedule.nextNCS.user_name})`}
+                {' - '}
+                {new Date(schedule.nextNCS.date).toLocaleDateString(undefined, {
+                  weekday: 'short',
+                  month: 'short',
+                  day: 'numeric'
+                })}
+              </Typography>
+            </Box>
+          )}
           
           {/* Subscribers */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
