@@ -407,9 +407,13 @@ async def delete_template(
     if not template:
         raise HTTPException(status_code=404, detail="Template not found")
     
-    # Check permissions (owner, admin, or NCS rotation member)
-    if not await check_template_permission(db, template, current_user):
-        raise HTTPException(status_code=403, detail="Not authorized to delete this template")
+    # Deletion is restricted to the template owner and admins only.
+    # Staff members and NCS rotation members can manage a schedule's
+    # settings but should not be able to permanently destroy it.
+    is_owner = template.owner_id == current_user.id
+    is_admin = current_user.role == UserRole.ADMIN
+    if not (is_owner or is_admin):
+        raise HTTPException(status_code=403, detail="Only the schedule owner or an admin can delete a schedule")
     
     await db.delete(template)
     await db.commit()

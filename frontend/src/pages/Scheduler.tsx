@@ -153,6 +153,9 @@ const Scheduler: React.FC = () => {
   const [mergeLoading, setMergeLoading] = useState(false);
   const [mergeError, setMergeError] = useState<string | null>(null);
   const [mergeSuccess, setMergeSuccess] = useState<string | null>(null);
+  // ========== SCHEDULE DELETE DIALOG STATE ==========
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [scheduleToDelete, setScheduleToDelete] = useState<Schedule | null>(null);
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const theme = useTheme();
@@ -228,15 +231,24 @@ const Scheduler: React.FC = () => {
     }
   };
 
-  const handleDelete = async (scheduleId: number) => {
-    if (!confirm('Are you sure you want to delete this schedule?')) return;
+  const handleDelete = (scheduleId: number) => {
+    const schedule = schedules.find(s => s.id === scheduleId);
+    if (!schedule) return; // guard: schedule not in local state, nothing to show
+    setScheduleToDelete(schedule);
+    setDeleteConfirmOpen(true);
+  };
 
+  const handleDeleteConfirm = async () => {
+    if (!scheduleToDelete) return;
     try {
-      await templateApi.delete(scheduleId);
+      await templateApi.delete(scheduleToDelete.id);
       fetchSchedules();
     } catch (error: any) {
       console.error('Failed to delete schedule:', error);
-      alert(error.response?.data?.detail || 'Failed to delete schedule');
+      setMergeError(error.response?.data?.detail || 'Failed to delete schedule');
+    } finally {
+      setDeleteConfirmOpen(false);
+      setScheduleToDelete(null);
     }
   };
 
@@ -494,9 +506,14 @@ const Scheduler: React.FC = () => {
                         <EditIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
-                    <Tooltip title="Delete">
-                      <IconButton size="small" color="error" onClick={() => handleDelete(schedule.id)}>
-                        <DeleteIcon fontSize="small" />
+                  </>
+                )}
+                {/* Delete is restricted to owner and admin only — staff/NCS */}
+                {/* rotation members can manage a schedule but not destroy it. */}
+                {(isOwner(schedule) || isAdmin) && (
+                  <Tooltip title="Delete">
+                    <IconButton size="small" color="error" onClick={() => handleDelete(schedule.id)}>
+                      <DeleteIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
                   </>
@@ -669,27 +686,29 @@ const Scheduler: React.FC = () => {
             )
           )}
           
-          {/* Edit & Delete for owners, admins, or NCS rotation members */}
+          {/* Edit for owners, admins, or NCS rotation members */}
           {(schedule.can_manage || isAdmin) && (
-            <>
-              <Tooltip title="Edit schedule">
-                <IconButton
-                  size="small"
-                  onClick={() => navigate(`/scheduler/${schedule.id}/edit`)}
-                >
-                  <EditIcon />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Delete schedule">
-                <IconButton
-                  size="small"
-                  color="error"
-                  onClick={() => handleDelete(schedule.id)}
-                >
-                  <DeleteIcon />
-                </IconButton>
-              </Tooltip>
-            </>
+            <Tooltip title="Edit schedule">
+              <IconButton
+                size="small"
+                onClick={() => navigate(`/scheduler/${schedule.id}/edit`)}
+              >
+                <EditIcon />
+              </IconButton>
+            </Tooltip>
+          )}
+          {/* Delete is restricted to owner and admin only — staff/NCS */}
+          {/* rotation members can manage a schedule but not destroy it. */}
+          {(isOwner(schedule) || isAdmin) && (
+            <Tooltip title="Delete schedule">
+              <IconButton
+                size="small"
+                color="error"
+                onClick={() => handleDelete(schedule.id)}
+              >
+                <DeleteIcon />
+              </IconButton>
+            </Tooltip>
           )}
         </Box>
       </CardActions>
@@ -1034,6 +1053,58 @@ const Scheduler: React.FC = () => {
           {mergeSuccess}
         </Alert>
       </Snackbar>
+
+      {/* ========== SCHEDULE DELETE CONFIRMATION DIALOG ========== */}
+      {/* Deletion removes the schedule, NCS rotation, staff list, and       */}
+      {/* subscriber list — but does NOT delete nets opened from it.        */}
+      {/* Those nets simply lose their schedule association and are kept.   */}
+      {/* Restricted to owner and admin only (tightened from can_manage).  */}
+      <Dialog
+        open={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Delete "{scheduleToDelete?.name}"?</DialogTitle>
+        <DialogContent>
+          <Typography sx={{ mb: 2 }}>
+            Deleting this schedule will <strong>permanently remove</strong>:
+          </Typography>
+          <Box component="ul" sx={{ mt: 0, mb: 2, pl: 3 }}>
+            <li><Typography variant="body2">The schedule and its recurrence settings</Typography></li>
+            <li><Typography variant="body2">The NCS rotation and all assigned operators</Typography></li>
+            <li><Typography variant="body2">NCS schedule overrides (swaps, skips, date-specific assignments)</Typography></li>
+            <li><Typography variant="body2">The authorized staff list</Typography></li>
+            <li><Typography variant="body2">All subscriber associations</Typography></li>
+            <li><Typography variant="body2">Topic of the Week history for this schedule</Typography></li>
+          </Box>
+          <Typography variant="body2" color="text.secondary">
+            Nets that were previously opened from this schedule are{' '}
+            <strong>not affected</strong> — their check-ins, chat, and logs
+            are preserved. They will simply no longer be linked to a schedule.
+          </Typography>
+          <Typography color="error" sx={{ mt: 2, fontWeight: 'bold' }}>
+            This cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button
+            onClick={() => setDeleteConfirmOpen(false)}
+            variant="contained"
+            color="primary"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleDeleteConfirm}
+            variant="contained"
+            color="error"
+            startIcon={<DeleteIcon />}
+          >
+            Delete Permanently
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };
