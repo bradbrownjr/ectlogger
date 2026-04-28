@@ -514,9 +514,8 @@ const Scheduler: React.FC = () => {
                   <Tooltip title="Delete">
                     <IconButton size="small" color="error" onClick={() => handleDelete(schedule.id)}>
                       <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  </>
+                    </IconButton>
+                  </Tooltip>
                 )}
               </TableCell>
             </TableRow>
