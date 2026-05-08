@@ -65,12 +65,12 @@ async def check_schedule_creation_eligibility(db: AsyncSession, user: User) -> t
         min_participations = 1
         max_per_day = 5
     else:
-        min_age_days = settings.schedule_min_account_age_days or 7
-        min_participations = settings.schedule_min_net_participations or 1
-        max_per_day = settings.schedule_max_per_day or 5
+        min_age_days = settings.schedule_min_account_age_days if settings.schedule_min_account_age_days is not None else 7
+        min_participations = settings.schedule_min_net_participations if settings.schedule_min_net_participations is not None else 1
+        max_per_day = settings.schedule_max_per_day if settings.schedule_max_per_day is not None else 5
     
-    # Check account age
-    if user.created_at:
+    # Check account age (skip if disabled or if user has been granted early access)
+    if min_age_days > 0 and user.created_at and not getattr(user, 'schedule_age_bypass', False):
         account_age = datetime.now(timezone.utc) - user.created_at.replace(tzinfo=timezone.utc)
         if account_age.days < min_age_days:
             days_remaining = min_age_days - account_age.days

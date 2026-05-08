@@ -53,7 +53,7 @@ async def get_or_create_settings(db: AsyncSession) -> AppSettings:
     return settings
 
 
-@router.get("/", response_model=AppSettingsResponse)
+@router.get("", response_model=AppSettingsResponse)
 async def get_settings(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -64,13 +64,13 @@ async def get_settings(
     return AppSettingsResponse(
         default_field_config=json.loads(settings.default_field_config) if settings.default_field_config else {},
         field_labels=json.loads(settings.field_labels) if settings.field_labels else {},
-        schedule_min_account_age_days=settings.schedule_min_account_age_days or 7,
-        schedule_min_net_participations=settings.schedule_min_net_participations or 1,
-        schedule_max_per_day=settings.schedule_max_per_day or 5
+        schedule_min_account_age_days=settings.schedule_min_account_age_days if settings.schedule_min_account_age_days is not None else 7,
+        schedule_min_net_participations=settings.schedule_min_net_participations if settings.schedule_min_net_participations is not None else 1,
+        schedule_max_per_day=settings.schedule_max_per_day if settings.schedule_max_per_day is not None else 5
     )
 
 
-@router.put("/", response_model=AppSettingsResponse)
+@router.put("", response_model=AppSettingsResponse)
 async def update_settings(
     settings_update: AppSettingsUpdate,
     db: AsyncSession = Depends(get_db),
@@ -104,9 +104,9 @@ async def update_settings(
     return AppSettingsResponse(
         default_field_config=json.loads(settings.default_field_config) if settings.default_field_config else {},
         field_labels=json.loads(settings.field_labels) if settings.field_labels else {},
-        schedule_min_account_age_days=settings.schedule_min_account_age_days or 7,
-        schedule_min_net_participations=settings.schedule_min_net_participations or 1,
-        schedule_max_per_day=settings.schedule_max_per_day or 5
+        schedule_min_account_age_days=settings.schedule_min_account_age_days if settings.schedule_min_account_age_days is not None else 7,
+        schedule_min_net_participations=settings.schedule_min_net_participations if settings.schedule_min_net_participations is not None else 1,
+        schedule_max_per_day=settings.schedule_max_per_day if settings.schedule_max_per_day is not None else 5
     )
 
 

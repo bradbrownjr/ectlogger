@@ -116,6 +116,7 @@ class UserResponse(UserBase):
     location: Optional[str] = None
     prefer_utc: bool = False
     last_active: Optional[datetime] = None
+    schedule_age_bypass: bool = False
     created_at: datetime
 
     class Config:

@@ -204,6 +204,26 @@ async def unban_user(
     return UserResponse.from_orm(user)
 
 
+@router.put("/{user_id}/schedule-bypass", response_model=UserResponse)
+async def set_schedule_age_bypass(
+    user_id: int,
+    grant: bool,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Grant or revoke early schedule-creation access for a user (admin only)."""
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user.schedule_age_bypass = grant
+    await db.commit()
+    await db.refresh(user)
+    return UserResponse.from_orm(user)
+
+
 @router.get("/lookup/{callsign}", response_model=CallsignLookupResponse)
 async def lookup_by_callsign(
     callsign: str,

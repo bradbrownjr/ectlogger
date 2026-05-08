@@ -189,17 +189,21 @@ Users see a red badge on the info icon (lower-left) until they view the changelo
 - **Reverse Proxy**: Caddy handles HTTPS, routes `/api/*` and `/ws/*` to backend
 - **Deploy from GitHub**:
   ```bash
-  # Pull latest from GitHub (preferred method)
+  # 1. Pull latest from GitHub
   ssh ectlogger@app.ectlogger.us "cd ~/ectlogger && git pull origin main"
   
-  # Build frontend (required after frontend changes)
+  # 2. Build frontend (REQUIRED after any frontend change — git pull alone is not enough)
   ssh ectlogger@app.ectlogger.us "cd ~/ectlogger/frontend && npm run build"
   
-  # Restart backend (requires interactive sudo password)
-  ssh ectlogger@app.ectlogger.us
-  sudo systemctl restart ectlogger
+  # 3. Restart backend (only needed if backend files changed)
+  set -a; source ~/.ectlogger-deploy.env; set +a
+  ssh -t ectlogger@app.ectlogger.us "echo '$SUDO_PROD' | sudo -S systemctl restart ectlogger"
+  
+  # 4. Verify
+  ssh ectlogger@app.ectlogger.us "sudo systemctl status ectlogger --no-pager"
   ```
-- **Backend restarts**: When the backend needs to be restarted, run `ssh ectlogger@app.ectlogger.us` in an **interactive** terminal (not as a one-liner), then run `sudo systemctl restart ectlogger` and leave the terminal active so the user can type their sudo password.
+- **Sudo password**: stored in `~/.ectlogger-deploy.env` as `SUDO_PROD`. Always source this file; never ask the user interactively.
+- **Deploy verification**: after every deploy, confirm prod git log matches local with `ssh ectlogger@app.ectlogger.us "cd ~/ectlogger && git log --oneline -3"`.
 
 ### Beta (ectbeta.lynwood.us)
 - **Host**: `bradb@10.6.26.3`
@@ -214,11 +218,11 @@ Users see a red badge on the info icon (lower-left) until they view the changelo
   # First commit and push locally, then pull on beta
   ssh bradb@10.6.26.3 "cd /home/bradb/ectlogger && git pull origin main"
   
-  # Restart service (requires interactive sudo password)
-  ssh bradb@10.6.26.3
-  sudo systemctl restart ectlogger
+  # Restart backend
+  set -a; source ~/.ectlogger-deploy.env; set +a
+  ssh -t bradb@10.6.26.3 "echo '$SUDO_BETA' | sudo -S systemctl restart ectlogger"
   ```
-- **Backend restarts**: Run `ssh bradb@10.6.26.3` in an **interactive** terminal, then run `sudo systemctl restart ectlogger` and leave the terminal active so the user can type their sudo password.
+- **Sudo password**: stored in `~/.ectlogger-deploy.env` as `SUDO_BETA`. Always source this file; never ask the user interactively.
 - **Database**: SQLite at `/home/bradb/ectlogger/backend/ectlogger.db`
 
 ### Alpha (10.6.26.6)
@@ -270,3 +274,82 @@ A change is complete when:
 - Related documentation is updated (`README.md`, `USER-GUIDE.md`, `CHANGELOG.md` as applicable).
 - If user-impacting: `ChangelogNotification.tsx` version is bumped and an entry is added.
 - Changes are committed and pushed to GitHub before being deployed to any server.
+
+---
+
+## Baseline additions (from agents-baseline)
+
+The following sections were appended from the cross-project
+`agents-baseline` standard. Some may duplicate rules already present
+above — prune or merge as you review.
+
+### Phase / Milestone Completion Guardrail
+
+Never mark a phase, milestone, or roadmap item "complete" without:
+
+1. Reading the full requirement section top-to-bottom.
+2. Checking for "pending", "planned", or "deferred" — if any remain,
+   the phase is **not** complete.
+3. Verifying each requirement: code exists, tests pass, docs match.
+4. Asking the user "Ready to mark X complete?" before flipping the flag.
+5. If in doubt, leave it "in progress" and summarize done vs pending.
+
+This is a learned rule — phases tend to get auto-completed prematurely
+on multi-part work. The guardrail is a deliberate checkpoint.
+
+### Regression Check Policy
+
+- **Before every commit**, mentally run `git diff --stat`. If deletions
+  outnumber additions, or any single file is shrinking by more than ~50
+  lines, **explicitly audit** that no shipped behavior is being removed.
+- A single commit removing **200+ lines** from one file requires a
+  written justification in the commit body.
+- Before any large file rewrite, list the named features / API routes /
+  exported functions present in that file, then confirm each one
+  survives. Cross-reference against the Feature Registry.
+- Run the full local test/lint suite after any multi-file change.
+- After pushing, watch CI. A regression that goes green locally but red
+  in CI is still a regression — fix forward, don't disable the check.
+
+### Implementation Discipline
+
+- Only make changes that are directly requested or clearly necessary.
+- Don't add features, refactor code, or make "improvements" beyond scope.
+- Don't add docstrings, comments, or type annotations to code you
+  didn't change.
+- Don't add error handling for scenarios that can't happen. Validate at
+  system boundaries only.
+- Don't create helpers or abstractions for one-time operations.
+
+### Subagent Usage
+
+- Prefer subagents (e.g., `Explore`) for read-only multi-step research
+  to avoid cluttering the main conversation. Safe to call in parallel.
+- Specify thoroughness explicitly (quick / medium / thorough).
+- Subagents are stateless — give them complete context in the prompt
+  and tell them exactly what to return.
+
+### Validate Locally Before Pushing
+
+- CI ping-pong (push → wait → fix → push) is the slowest feedback loop.
+- If a toolchain is missing locally, install it once rather than
+  firefighting per CI run.
+- Symptom of falling into the trap: "fix one error, push, new error,
+  fix, push" cycle. Stop and audit holistically.
+
+### Output style defaults
+
+- No emoji in code, comments, commit messages, or generated docs unless
+  explicitly requested.
+- No em-dashes in source code or generated text — use commas, periods,
+  or parentheses.
+
+### Feature Registry (template)
+
+Maintain a compact checklist of shipped user-facing features keyed to
+their primary implementation files. Before any large refactor, verify
+every row touching the affected file column is preserved.
+
+| Feature | Key file(s) | Key identifiers |
+|---|---|---|
+| _(populate as features ship)_ | | |

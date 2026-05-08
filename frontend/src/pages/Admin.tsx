@@ -64,6 +64,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import ContactsIcon from '@mui/icons-material/ContactPhone';
 import SendIcon from '@mui/icons-material/Send';
+import TimerIcon from '@mui/icons-material/Timer';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import { frequencyApi, contactApi } from '../services/api';
@@ -78,6 +79,7 @@ interface User {
   is_active: boolean;
   last_active?: string;
   created_at: string;
+  schedule_age_bypass: boolean;
 }
 
 interface FieldDefinition {
@@ -1059,6 +1061,16 @@ const Admin: React.FC = () => {
     }
   };
 
+  const handleScheduleBypass = async (userId: number, grant: boolean) => {
+    try {
+      await api.put(`/users/${userId}/schedule-bypass?grant=${grant}`);
+      fetchUsers();
+    } catch (error) {
+      console.error('Failed to update schedule bypass:', error);
+      alert('Failed to update schedule bypass');
+    }
+  };
+
   const handleDeleteUser = async (userId: number) => {
     if (!confirm('Are you sure you want to delete this user? This cannot be undone.')) return;
     
@@ -1401,7 +1413,7 @@ const Admin: React.FC = () => {
                         <span>{formatDate(user.created_at, currentUser?.prefer_utc || false)}</span>
                       </Tooltip>
                     </TableCell>
-                    <TableCell>
+                    <TableCell sx={{ whiteSpace: 'nowrap' }}>
                       <IconButton 
                         size="small" 
                         onClick={() => handleOpenRoleDialog(user)}
@@ -1430,6 +1442,52 @@ const Admin: React.FC = () => {
                           <CheckCircleIcon />
                         </IconButton>
                       )}
+                      {scheduleSettings.schedule_min_account_age_days > 0 && (() => {
+                        const accountAgeDays = Math.floor(
+                          (Date.now() - new Date(user.created_at.endsWith('Z') ? user.created_at : user.created_at + 'Z').getTime())
+                          / (1000 * 60 * 60 * 24)
+                        );
+                        const minAge = scheduleSettings.schedule_min_account_age_days;
+                        const underAge = accountAgeDays < minAge;
+                        if (!underAge) {
+                          // Age requirement met — gray informational icon
+                          return (
+                            <Tooltip title={`Age requirement met (${accountAgeDays} day${accountAgeDays !== 1 ? 's' : ''} old)`}>
+                              <span>
+                                <IconButton size="small" disabled>
+                                  <TimerIcon fontSize="small" sx={{ color: 'text.disabled' }} />
+                                </IconButton>
+                              </span>
+                            </Tooltip>
+                          );
+                        }
+                        if (user.schedule_age_bypass) {
+                          // Under age but bypass granted — green, click revokes
+                          return (
+                            <Tooltip title={`Early access granted — account is ${accountAgeDays} of ${minAge} day${minAge !== 1 ? 's' : ''} old (click to revoke)`}>
+                              <IconButton
+                                size="small"
+                                color="success"
+                                onClick={() => handleScheduleBypass(user.id, false)}
+                              >
+                                <TimerIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          );
+                        }
+                        // Under age, no bypass — orange, click grants
+                        return (
+                          <Tooltip title={`Account is ${accountAgeDays} of ${minAge} day${minAge !== 1 ? 's' : ''} old — click to grant early access`}>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleScheduleBypass(user.id, true)}
+                              sx={{ color: 'warning.main' }}
+                            >
+                              <TimerIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        );
+                      })()}
                       <IconButton 
                         size="small" 
                         onClick={() => handleDeleteUser(user.id)}
