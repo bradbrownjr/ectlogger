@@ -1,6 +1,32 @@
 {
-  "version": "2026.04.28",
+  "version": "2026.05.08",
   "entries": [
+    {
+      "version": "2026.05.08",
+      "date": "2026-05-08",
+      "sections": [
+        {
+          "title": "Early schedule access for trusted users",
+          "type": "feature",
+          "items": [
+            {
+              "text": "Admins can now grant individual users early access to schedule creation before their account reaches the minimum age requirement. Look for the timer icon in the Actions column of the Users tab — orange means the account is still under the age limit, click it to grant early access. Click the green timer to revoke it.",
+              "userImpact": true
+            }
+          ]
+        },
+        {
+          "title": "Fix: Schedule Creation Limits saving failed with 'Not Found'",
+          "type": "bugfix",
+          "items": [
+            {
+              "text": "Saving the Schedule Creation Limits settings (minimum account age, minimum net participations, maximum per day) was failing silently with a 404 error. This is now fixed. Setting the minimum account age to 0 to disable it now also works correctly.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.04.28",
       "date": "2026-04-28",
