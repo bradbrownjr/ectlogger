@@ -1,6 +1,98 @@
 {
-  "version": "2026.05.08",
+  "version": "2026.05.09",
   "entries": [
+    {
+      "version": "2026.05.09",
+      "date": "2026-05-09",
+      "sections": [
+        {
+          "title": "Activity Log panel",
+          "type": "feature",
+          "items": [
+            {
+              "text": "The right sidebar on active nets is now split into two stacked panels: Chat (operator-to-operator conversation) and a new Activity Log that shows only system events like check-ins and status changes. Both panels can be minimized or popped out independently.",
+              "userImpact": true
+            },
+            {
+              "text": "The eyeball toggle for hiding system messages from Chat has been removed — system messages now live exclusively in the Activity Log.",
+              "userImpact": true
+            }
+          ]
+        },
+        {
+          "title": "Richer activity log messages",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Check-in system messages now include the frequency and the callsign of the operator who logged the check-in — for example: \"W1CRR has checked in from Springfield — 147.345 MHz FM (logged by KC1JMH)\".",
+              "userImpact": true
+            }
+          ]
+        },
+        {
+          "title": "GMRS callsign support",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Users who hold only a GMRS license (no amateur callsign) now display their GMRS callsign everywhere in the app — in the nav bar, check-in lists, activity log messages, PDF exports, and email reminders.",
+              "userImpact": true
+            }
+          ]
+        },
+        {
+          "title": "Fix: Profile save failed for new accounts",
+          "type": "bugfix",
+          "items": [
+            {
+              "text": "Saving your profile with an empty callsign field was failing for new accounts. This is now fixed — blank callsign and GMRS callsign fields are correctly treated as \"not set\".",
+              "userImpact": true
+            }
+          ]
+        },
+        {
+          "title": "Net wizard validation",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "The Create Net wizard now prevents you from advancing past the Name tab without entering a net name, and past the Frequencies tab without selecting at least one frequency. An inline hint explains what's needed.",
+              "userImpact": true
+            }
+          ]
+        },
+        {
+          "title": "Bulk check-in: additional fields",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "The Bulk Check-In tool now supports SKYWARN number, weather observation, feedback, and any custom fields defined for the net.",
+              "userImpact": true
+            }
+          ]
+        },
+        {
+          "title": "Net Report PDF improvements",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "The map in exported PDFs now always uses light tiles, regardless of whether you're in dark mode.",
+              "userImpact": true
+            },
+            {
+              "text": "Check-in rows no longer split across page breaks in exported PDFs.",
+              "userImpact": true
+            },
+            {
+              "text": "Status chip text and borders are now legible on printed/exported PDFs.",
+              "userImpact": true
+            },
+            {
+              "text": "The net header section in exported PDFs now uses a full-width stacked layout so long net names and date/time information are never cut off.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.05.08",
       "date": "2026-05-08",
