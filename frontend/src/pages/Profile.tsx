@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { displayCallsign } from '../utils/userDisplay';
 import { useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -74,7 +75,7 @@ const Profile: React.FC = () => {
   const handleExportActivityPdf = async () => {
     setExportingPdf(true);
     try {
-      const callsign = user?.callsign || user?.name || 'User';
+      const callsign = displayCallsign(user) || 'User';
       await exportElementToPdf('activity-stats-content', {
         filename: `${callsign.replace(/[^a-zA-Z0-9]/g, '_')}_Activity_Stats`,
         orientation: 'landscape',

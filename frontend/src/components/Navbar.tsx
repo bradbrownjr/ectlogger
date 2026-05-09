@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { displayCallsign } from '../utils/userDisplay';
 import { 
   AppBar, 
   Toolbar, 
@@ -228,7 +229,7 @@ const Navbar: React.FC = () => {
                     <ListItem disablePadding>
                       <ListItemButton onClick={() => handleNavigate('/profile')}>
                         <ListItemIcon><PersonIcon /></ListItemIcon>
-                        <ListItemText primary={user?.callsign || user?.name || 'Profile'} />
+                        <ListItemText primary={displayCallsign(user) || 'Profile'} />
                       </ListItemButton>
                     </ListItem>
                   )}
@@ -281,7 +282,7 @@ const Navbar: React.FC = () => {
                 onClick={() => navigate('/profile')}
                 sx={{ textTransform: 'none' }}
               >
-                {user?.callsign || user?.name || user?.email}
+                {displayCallsign(user)}
               </Button>
             )}
             <IconButton color="inherit" onClick={toggleColorMode} title={`Switch to ${mode === 'light' ? 'dark' : 'light'} mode`}>

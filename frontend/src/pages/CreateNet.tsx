@@ -471,6 +471,12 @@ const CreateNet: React.FC = () => {
     return true;
   });
 
+  const canProceedFromTab = (tab: number): boolean => {
+    if (tab === 0) return name.trim().length > 0;
+    if (tab === 2) return selectedFrequencies.length > 0;
+    return true;
+  };
+
   const handleCreateNet = async () => {
     try {
       // Convert local datetime to ISO string for API
@@ -1557,9 +1563,26 @@ This is **[CALLSIGN]**, closing the net at [TIME]. 73 to all.`}
               </Button>
             )}
             {!isInfoMode && activeTab < 4 && (
-              <Button variant="outlined" onClick={() => setActiveTab(activeTab + 1)} endIcon={<ArrowForwardIcon />}>
-                Next
-              </Button>
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                <Button
+                  variant="outlined"
+                  onClick={() => setActiveTab(activeTab + 1)}
+                  endIcon={<ArrowForwardIcon />}
+                  disabled={!canProceedFromTab(activeTab)}
+                >
+                  Next
+                </Button>
+                {activeTab === 2 && selectedFrequencies.length === 0 && (
+                  <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>
+                    Select at least one frequency to continue
+                  </Typography>
+                )}
+                {activeTab === 0 && !name.trim() && (
+                  <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>
+                    Enter a net name to continue
+                  </Typography>
+                )}
+              </Box>
             )}
           </Box>
           {!isInfoMode && (

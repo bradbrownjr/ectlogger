@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from typing import List, Optional
 from app.database import get_db
 from app.models import User, UserRole, Contact
@@ -31,8 +32,15 @@ async def update_my_profile(
             setattr(current_user, field, json.dumps(value))
         else:
             setattr(current_user, field, value)
-    
-    await db.commit()
+
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="That callsign is already in use by another account."
+        )
     await db.refresh(current_user)
     return UserResponse.from_orm(current_user)
 

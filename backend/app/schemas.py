@@ -81,7 +81,17 @@ class UserUpdate(BaseModel):
     skywarn_number: Optional[str] = Field(None, max_length=50)
     location: Optional[str] = Field(None, max_length=200)
     prefer_utc: Optional[bool] = None
-    
+
+    @model_validator(mode='before')
+    @classmethod
+    def empty_strings_to_none(cls, values: dict) -> dict:
+        # Unique-constrained columns must store NULL rather than "" so that
+        # multiple users without a value don't collide on the unique index.
+        for field in ('callsign', 'gmrs_callsign'):
+            if values.get(field) == '':
+                values[field] = None
+        return values
+
     @field_validator('callsign')
     @classmethod
     def validate_callsign(cls, v: Optional[str]) -> Optional[str]:

@@ -6,9 +6,10 @@ from typing import List
 from datetime import datetime, UTC
 import json
 from app.database import get_db
-from app.models import CheckIn, Net, NetStatus, User, StationStatus, NetRole, Contact
+from app.models import CheckIn, Net, NetStatus, User, StationStatus, NetRole, Contact, Frequency
 from app.schemas import CheckInCreate, CheckInUpdate, CheckInResponse
 from app.dependencies import get_current_user
+from app.utils import display_callsign
 
 router = APIRouter(prefix="/check-ins", tags=["check-ins"])
 
@@ -183,19 +184,36 @@ async def create_check_in(
     
     await db.commit()
     await db.refresh(check_in)
-    
+
+    # Build enriched suffix: "— 147.345 MHz FM (logged by KC1JMH)"
+    freq_label = ""
+    if check_in.frequency_id:
+        freq_result = await db.execute(select(Frequency).where(Frequency.id == check_in.frequency_id))
+        freq_obj = freq_result.scalar_one_or_none()
+        if freq_obj:
+            freq_label = f"{freq_obj.frequency} {freq_obj.mode}".strip() if freq_obj.frequency else freq_obj.mode
+    logger_cs = display_callsign(current_user)
+    if freq_label and logger_cs:
+        ci_suffix = f" — {freq_label} (logged by {logger_cs})"
+    elif freq_label:
+        ci_suffix = f" — {freq_label}"
+    elif logger_cs:
+        ci_suffix = f" (logged by {logger_cs})"
+    else:
+        ci_suffix = ""
+
     # Post system message for check-in activity
     from app.main import post_system_message
     if existing_check_in:
         if location_changed:
-            await post_system_message(net_id, f"{check_in_data.callsign} has checked in from {new_location}", db)
+            await post_system_message(net_id, f"{check_in_data.callsign} has checked in from {new_location}{ci_suffix}", db)
         else:
-            await post_system_message(net_id, f"{check_in_data.callsign} has rechecked", db)
+            await post_system_message(net_id, f"{check_in_data.callsign} has rechecked{ci_suffix}", db)
     else:
         if check_in_data.location:
-            await post_system_message(net_id, f"{check_in_data.callsign} has checked in from {check_in_data.location}", db)
+            await post_system_message(net_id, f"{check_in_data.callsign} has checked in from {check_in_data.location}{ci_suffix}", db)
         else:
-            await post_system_message(net_id, f"{check_in_data.callsign} has checked in", db)
+            await post_system_message(net_id, f"{check_in_data.callsign} has checked in{ci_suffix}", db)
     
     # Post system messages for poll/topic responses (if newly added)
     if check_in_data.topic_response and net.topic_of_week_enabled:

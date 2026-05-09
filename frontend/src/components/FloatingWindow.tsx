@@ -23,6 +23,12 @@ interface FloatingWindowProps {
   minWidth?: number;
   minHeight?: number;
   storageKey?: string;
+  /** Controlled minimized state for docked mode */
+  minimized?: boolean;
+  onMinimize?: () => void;
+  onRestore?: () => void;
+  /** Hide the detach/pop-out button in the docked title bar */
+  hideDetach?: boolean;
 }
 
 interface WindowPosition {
@@ -43,6 +49,10 @@ const FloatingWindow: React.FC<FloatingWindowProps> = ({
   minWidth = 300,
   minHeight = 200,
   storageKey,
+  minimized,
+  onMinimize,
+  onRestore,
+  hideDetach = false,
 }) => {
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
@@ -89,8 +99,59 @@ const FloatingWindow: React.FC<FloatingWindowProps> = ({
   }, []);
 
   if (!isDetached) {
-    // When attached, just render children directly - no wrapper header
-    // The parent component is responsible for placing the detach button
+    // Docked mode: show a compact title bar when minimize/restore props are provided
+    const hasDockControls = onMinimize !== undefined || onRestore !== undefined;
+    if (hasDockControls) {
+      return (
+        <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+          {/* Docked title bar */}
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              px: 1.5,
+              py: 0.25,
+              backgroundColor: isDarkMode ? '#1565c0' : 'primary.main',
+              color: '#ffffff',
+              flexShrink: 0,
+              borderRadius: '4px 4px 0 0',
+            }}
+          >
+            <Typography variant="subtitle2" sx={{ fontWeight: 'bold', fontSize: '0.8rem' }}>
+              {title}
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 0.5 }}>
+              {!hideDetach && (
+                <IconButton
+                  size="small"
+                  onClick={onDetach}
+                  title="Pop out"
+                  sx={{ color: 'inherit', p: 0.25 }}
+                >
+                  <OpenInNewIcon sx={{ fontSize: 14 }} />
+                </IconButton>
+              )}
+              <IconButton
+                size="small"
+                onClick={minimized ? onRestore : onMinimize}
+                title={minimized ? 'Restore' : 'Minimize'}
+                sx={{ color: 'inherit', p: 0.25 }}
+              >
+                {minimized ? <CropSquareIcon sx={{ fontSize: 14 }} /> : <MinimizeIcon sx={{ fontSize: 14 }} />}
+              </IconButton>
+            </Box>
+          </Box>
+          {/* Content — hidden when minimized */}
+          {!minimized && (
+            <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              {children}
+            </Box>
+          )}
+        </Box>
+      );
+    }
+    // No dock controls: legacy passthrough
     return (
       <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
         {children}

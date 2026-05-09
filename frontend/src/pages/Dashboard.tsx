@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { displayCallsign } from '../utils/userDisplay';
 import { useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -789,7 +790,7 @@ const Dashboard: React.FC = () => {
           {!isMobile && (
             <Typography variant="body2" color="text.secondary">
               {isAuthenticated ? (
-                `Welcome, ${user?.callsign || user?.name || user?.email}`
+                `Welcome, ${displayCallsign(user)}`
               ) : (
                 "Welcome! Feel free to look around."
               )}

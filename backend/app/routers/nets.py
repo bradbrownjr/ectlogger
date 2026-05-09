@@ -13,6 +13,7 @@ from app.models import Net, NetStatus, User, Frequency, NetRole, net_frequencies
 from app.schemas import NetCreate, NetUpdate, NetResponse, FrequencyResponse, NetTemplateLinkRequest, public_display_name
 from app.dependencies import get_current_user, get_current_user_optional
 from app.email_service import EmailService
+from app.utils import display_callsign
 
 router = APIRouter(prefix="/nets", tags=["nets"])
 
@@ -453,7 +454,7 @@ async def start_net(
     ncs_check_in = CheckIn(
         net_id=net_id,
         user_id=current_user.id,
-        callsign=current_user.callsign or current_user.email.split('@')[0].upper(),
+        callsign=display_callsign(current_user) or current_user.email.split('@')[0].upper(),
         name=current_user.name or '',
         location=current_user.location or '',
         status=StationStatus.CHECKED_IN,
@@ -466,9 +467,9 @@ async def start_net(
     # Post system message
     from app.main import post_system_message, manager
     if go_to_lobby:
-        await post_system_message(net_id, f"Net lobby opened by {current_user.callsign or current_user.email}. Official start at scheduled time.", db)
+        await post_system_message(net_id, f"Net lobby opened by {display_callsign(current_user)}. Official start at scheduled time.", db)
     else:
-        await post_system_message(net_id, f"Net has been started by {current_user.callsign or current_user.email}", db)
+        await post_system_message(net_id, f"Net has been started by {display_callsign(current_user)}", db)
     
     # Broadcast event so all connected clients refresh
     await manager.broadcast({
@@ -552,14 +553,14 @@ async def go_live(
     
     # Post system message
     from app.main import post_system_message, manager
-    await post_system_message(net_id, f"Net is now LIVE! Started by {current_user.callsign or current_user.email}", db)
+    await post_system_message(net_id, f"Net is now LIVE! Started by {display_callsign(current_user)}", db)
     
     # Broadcast net_started event
     await manager.broadcast({
         "type": "net_started",
         "data": {
             "net_id": net_id,
-            "started_by": current_user.callsign or current_user.email,
+            "started_by": display_callsign(current_user),
             "status": "active",
             "started_at": net.started_at.isoformat() if net.started_at else None
         }
@@ -735,7 +736,7 @@ async def close_net(
     }, net_id)
     
     # Post system message for net close
-    await post_system_message(net_id, f"Net has been closed by {current_user.callsign or current_user.email}", db)
+    await post_system_message(net_id, f"Net has been closed by {display_callsign(current_user)}", db)
     
     # Get owner/NCS information
     result = await db.execute(
@@ -834,8 +835,8 @@ async def close_net(
             freq_strings.append(f"{freq.network} TG{freq.talkgroup or ''}")
     
     # Send log email to all recipients based on their preference
-    ncs_callsign = owner.callsign if owner else "Unknown"
-    ncs_name = owner.name or owner.callsign or owner.email if owner else "Unknown"
+    ncs_callsign = display_callsign(owner) if owner else "Unknown"
+    ncs_name = owner.name or display_callsign(owner) if owner else "Unknown"
     
     for email, recipient in recipients_to_notify:
         try:
@@ -1115,8 +1116,8 @@ async def export_net_ics309(
     freq_list = ", ".join(freq_strings) if freq_strings else "Multiple"
     
     # Get NCS info
-    ncs_callsign = net.owner.callsign if net.owner else "Unknown"
-    ncs_name = net.owner.name or net.owner.callsign or "Unknown" if net.owner else "Unknown"
+    ncs_callsign = display_callsign(net.owner) if net.owner else "Unknown"
+    ncs_name = net.owner.name or display_callsign(net.owner) if net.owner else "Unknown"
     
     # Format times
     started_at = net.started_at.strftime("%Y-%m-%d %H:%M:%S") if net.started_at else "N/A"
@@ -1378,7 +1379,7 @@ async def assign_net_role(
     # Log role assignment in chat
     await post_system_message(
         net_id,
-        f"{user.callsign or user.name or user.email} assigned as {role}",
+        f"{display_callsign(user)} assigned as {role}",
         db
     )
 
@@ -1451,7 +1452,7 @@ async def remove_net_role(
     if user_to_remove:
         await post_system_message(
             net_id,
-            f"{user_to_remove.callsign or user_to_remove.name or user_to_remove.email} removed from {role_name} role",
+            f"{display_callsign(user_to_remove)} removed from {role_name} role",
             db
         )
 
@@ -1510,7 +1511,7 @@ async def claim_ncs_role(
     
     # Post system message
     from app.main import post_system_message
-    await post_system_message(net_id, f"{current_user.callsign or current_user.email} has claimed NCS", db)
+    await post_system_message(net_id, f"{display_callsign(current_user)} has claimed NCS", db)
     
     # Broadcast role change via WebSocket
     from app.main import manager
@@ -1771,7 +1772,7 @@ async def email_net_subscribers(
         subject=subject,
         net_name=net.name,
         message=message,
-        sender_callsign=current_user.callsign or current_user.email
+        sender_callsign=display_callsign(current_user)
     )
     
     # Send emails

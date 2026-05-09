@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { displayCallsign } from '../utils/userDisplay';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -68,6 +69,7 @@ import { formatTimeWithDate } from '../utils/dateUtils';
 import { useAuth } from '../contexts/AuthContext';
 import { useLocation } from '../contexts/LocationContext';
 import Chat from '../components/Chat';
+import ActivityLog from '../components/ActivityLog';
 import CheckInMap from '../components/CheckInMap';
 import BulkCheckIn from '../components/BulkCheckIn';
 import SearchCheckIns from '../components/SearchCheckIns';
@@ -272,6 +274,15 @@ const NetView: React.FC = () => {
   const [chatDetached, setChatDetached] = useState(() => {
     return localStorage.getItem('floatingWindow_chat_detached') === 'true';
   });
+  const [chatMinimized, setChatMinimized] = useState(() => {
+    return localStorage.getItem('dockedPanel_chat_minimized') === 'true';
+  });
+  const [activityLogMinimized, setActivityLogMinimized] = useState(() => {
+    return localStorage.getItem('dockedPanel_activityLog_minimized') === 'true';
+  });
+  const [activityLogDetached, setActivityLogDetached] = useState(() => {
+    return localStorage.getItem('floatingWindow_activityLog_detached') === 'true';
+  });
   // Frequency filter state - allows filtering check-ins by selected frequencies
   const [filteredFrequencyIds, setFilteredFrequencyIds] = useState<number[]>([]);
   // Auto-start ref to prevent multiple go-live triggers
@@ -352,6 +363,18 @@ const NetView: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('floatingWindow_chat_detached', String(chatDetached));
   }, [chatDetached]);
+
+  useEffect(() => {
+    localStorage.setItem('dockedPanel_chat_minimized', String(chatMinimized));
+  }, [chatMinimized]);
+
+  useEffect(() => {
+    localStorage.setItem('dockedPanel_activityLog_minimized', String(activityLogMinimized));
+  }, [activityLogMinimized]);
+
+  useEffect(() => {
+    localStorage.setItem('floatingWindow_activityLog_detached', String(activityLogDetached));
+  }, [activityLogDetached]);
 
   // Show start net reminder when viewing a draft/scheduled net that user can start
   // Only runs once when net data is first loaded
@@ -497,6 +520,8 @@ const NetView: React.FC = () => {
   const handleAttachCheckInList = () => setCheckInListDetached(false);
   const handleDetachChat = () => setChatDetached(true);
   const handleAttachChat = () => setChatDetached(false);
+  const handleDetachActivityLog = () => setActivityLogDetached(true);
+  const handleAttachActivityLog = () => setActivityLogDetached(false);
 
   const connectWebSocket = () => {
     // Get JWT token from localStorage (optional - guests can still connect)
@@ -1501,7 +1526,7 @@ const NetView: React.FC = () => {
   // Helper to get NCS callsign for a frequency
   const getNcsForFrequency = (frequencyId: number) => {
     const role = ncsRoles.find((r: any) => r.active_frequency_id === frequencyId);
-    return role ? (role.callsign || role.name || role.email) : null;
+    return role ? (displayCallsign(role) || role.email) : null;
   };
 
   // Handle frequency chip click - NCS claims frequency, or Ctrl+click filters
@@ -3561,26 +3586,67 @@ const NetView: React.FC = () => {
             </Grid>
             )}
             
-            {/* Chat panel - hide Grid if detached */}
+            {/* Right column: Chat + Activity Log stacked vertically */}
             {!chatDetached && (
-            <Grid item xs={12} md={checkInListDetached ? 12 : 4} sx={{ pl: { md: 0.5 }, display: 'flex', flexDirection: 'column', minHeight: { xs: 300, md: 0 }, height: { xs: 350, md: '100%' } }}>
-              <FloatingWindow
-                title="Chat"
-                isDetached={false}
-                onDetach={handleDetachChat}
-                onAttach={handleAttachChat}
-                defaultWidth={450}
-                defaultHeight={500}
-                minWidth={300}
-                minHeight={250}
-                storageKey="chat"
-              >
-              <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-                  <Chat netId={Number(netId)} netStartedAt={net?.started_at} netStatus={net?.status} searchQuery={searchQuery} onDetach={handleDetachChat} />
-                </Box>
+            <Grid item xs={12} md={checkInListDetached ? 12 : 4} sx={{ pl: { md: 0.5 }, display: 'flex', flexDirection: 'column', gap: 0.5, minHeight: { xs: 300, md: 0 }, height: { xs: 'auto', md: '100%' } }}>
+              {/* Chat panel */}
+              <Box sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                flex: activityLogMinimized ? 1 : (chatMinimized ? '0 0 auto' : 1),
+                minHeight: chatMinimized ? 'auto' : 0,
+                overflow: 'hidden',
+              }}>
+                <FloatingWindow
+                  title="Chat"
+                  isDetached={false}
+                  onDetach={handleDetachChat}
+                  onAttach={handleAttachChat}
+                  defaultWidth={450}
+                  defaultHeight={500}
+                  minWidth={300}
+                  minHeight={250}
+                  storageKey="chat"
+                  minimized={chatMinimized}
+                  onMinimize={() => setChatMinimized(true)}
+                  onRestore={() => setChatMinimized(false)}
+                >
+                  <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                    <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+                      <Chat netId={Number(netId)} netStartedAt={net?.started_at} netStatus={net?.status} searchQuery={searchQuery} onDetach={handleDetachChat} />
+                    </Box>
+                  </Box>
+                </FloatingWindow>
               </Box>
-              </FloatingWindow>
+
+              {/* Activity Log panel */}
+              <Box sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                flex: chatMinimized ? 1 : (activityLogMinimized ? '0 0 auto' : 1),
+                minHeight: activityLogMinimized ? 'auto' : 0,
+                overflow: 'hidden',
+              }}>
+                <FloatingWindow
+                  title="Activity Log"
+                  isDetached={false}
+                  onDetach={() => setActivityLogDetached(true)}
+                  onAttach={() => {}}
+                  defaultWidth={450}
+                  defaultHeight={500}
+                  minWidth={300}
+                  minHeight={250}
+                  storageKey="activityLog"
+                  minimized={activityLogMinimized}
+                  onMinimize={() => setActivityLogMinimized(true)}
+                  onRestore={() => setActivityLogMinimized(false)}
+                  hideDetach={activityLogDetached}
+                >
+                  <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                    {!activityLogDetached && <ActivityLog netId={Number(netId)} />}
+                  </Box>
+                </FloatingWindow>
+              </Box>
             </Grid>
             )}
           </Grid>
@@ -3853,6 +3919,23 @@ const NetView: React.FC = () => {
             <Chat netId={Number(netId)} netStartedAt={net?.started_at} netStatus={net?.status} searchQuery={searchQuery} />
           </FloatingWindow>
         )}
+
+        {/* Floating Activity Log when detached */}
+        {activityLogDetached && (net.status === 'active' || net.status === 'lobby' || net.status === 'closed' || net.status === 'archived') && (
+          <FloatingWindow
+            title="Activity Log"
+            isDetached={true}
+            onDetach={handleDetachActivityLog}
+            onAttach={handleAttachActivityLog}
+            defaultWidth={450}
+            defaultHeight={500}
+            minWidth={300}
+            minHeight={250}
+            storageKey="activityLog"
+          >
+            <ActivityLog netId={Number(netId)} />
+          </FloatingWindow>
+        )}
       </Paper>
 
       {/* Close Net Confirmation Dialog */}
@@ -3987,7 +4070,7 @@ const NetView: React.FC = () => {
                 </MenuItem>
                 {allUsers.map((u: any) => (
                   <MenuItem key={u.id} value={u.id}>
-                    {u.callsign || u.name || u.email} ({u.email})
+                    {displayCallsign(u) || u.email} ({u.email})
                   </MenuItem>
                 ))}
               </Select>
@@ -4031,7 +4114,7 @@ const NetView: React.FC = () => {
                       }
                     >
                       <ListItemText
-                        primary={role.callsign || role.name || role.email}
+                        primary={displayCallsign(role) || role.email}
                         secondary={`${role.role} • ${new Date(role.assigned_at).toLocaleDateString()}`}
                       />
                     </ListItem>

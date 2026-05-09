@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { displayCallsign } from '../utils/userDisplay';
 import { useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -2406,7 +2407,7 @@ const Admin: React.FC = () => {
         <DialogContent>
           <Box sx={{ pt: 2, minWidth: 300 }}>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Changing role for: {selectedUser?.callsign || selectedUser?.name || selectedUser?.email}
+              Changing role for: {displayCallsign(selectedUser)}
             </Typography>
             <FormControl fullWidth>
               <InputLabel>Role</InputLabel>

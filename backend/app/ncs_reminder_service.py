@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import select, and_
 from sqlalchemy.orm import selectinload
 from app.database import AsyncSessionLocal
+from app.utils import display_callsign
 from app.models import NetTemplate, NCSRotationMember, NCSReminderLog, User, NetTemplateSubscription
 from app.email_service import EmailService
 from app.config import settings
@@ -191,8 +192,8 @@ class NCSReminderService:
                     })
             
             # Get operator name and callsign
-            operator_name = user.name or user.callsign or "Operator"
-            operator_callsign = user.callsign or "N/A"
+            operator_name = user.name or display_callsign(user) or "Operator"
+            operator_callsign = display_callsign(user) or "N/A"
             
             # Build scheduler URL
             scheduler_url = f"{settings.frontend_url}/scheduler"
@@ -334,8 +335,8 @@ class NCSReminderService:
                 })
         
         # Get user name and callsign
-        recipient_name = user.name or user.callsign or "Operator"
-        recipient_callsign = user.callsign or "N/A"
+        recipient_name = user.name or display_callsign(user) or "Operator"
+        recipient_callsign = display_callsign(user) or "N/A"
         
         # Build net URL (dashboard where they can see active nets)
         net_url = f"{settings.frontend_url}/dashboard"

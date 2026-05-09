@@ -36,9 +36,13 @@ interface ParsedCheckIn {
   callsign: string;
   name?: string;
   location?: string;
+  skywarn_number?: string;
+  weather_observation?: string;
   power_source?: string;
+  feedback?: string;
   notes?: string;
   status?: string;
+  custom_fields?: Record<string, string>;
   error?: string;
 }
 
@@ -61,13 +65,22 @@ const BulkCheckIn: React.FC<BulkCheckInProps> = ({ open, onClose, netId, onCheck
   const [results, setResults] = useState<{ success: number; failed: number; errors: string[] }>({ success: 0, failed: 0, errors: [] });
   const [showResults, setShowResults] = useState(false);
 
+  // Known standard field keys — anything else in fieldConfig is a custom field
+  const STANDARD_FIELD_KEYS = ['name', 'location', 'skywarn_number', 'weather_observation', 'power_source', 'power', 'notes', 'feedback'];
+
   // Build dynamic field list based on enabled fields
   const enabledFields = [
     'callsign', // Always required
     ...(fieldConfig?.name?.enabled !== false ? ['name'] : []),
     ...(fieldConfig?.location?.enabled !== false ? ['location'] : []),
+    ...(fieldConfig?.skywarn_number?.enabled ? ['skywarn_number'] : []),
+    ...(fieldConfig?.weather_observation?.enabled ? ['weather_observation'] : []),
     ...(fieldConfig?.power_source?.enabled ? ['power'] : []),
+    ...(fieldConfig?.feedback?.enabled ? ['feedback'] : []),
     ...(fieldConfig?.notes?.enabled !== false ? ['notes'] : []),
+    // Custom fields (any non-standard enabled key)
+    ...Object.keys(fieldConfig || {})
+      .filter(k => !STANDARD_FIELD_KEYS.includes(k) && fieldConfig![k]?.enabled),
   ];
 
   // Generate format string
@@ -76,20 +89,26 @@ const BulkCheckIn: React.FC<BulkCheckInProps> = ({ open, onClose, netId, onCheck
   // Generate placeholder example based on enabled fields
   const generatePlaceholder = () => {
     const examples: string[] = [];
-    
+
     // First example - basic check-in
     const ex1Parts = ['KC1ABC'];
     if (fieldConfig?.name?.enabled !== false) ex1Parts.push('John');
     if (fieldConfig?.location?.enabled !== false) ex1Parts.push('Portland ME');
+    if (fieldConfig?.skywarn_number?.enabled) ex1Parts.push('DFW-1234');
+    if (fieldConfig?.weather_observation?.enabled) ex1Parts.push('Clear skies');
     if (fieldConfig?.power_source?.enabled) ex1Parts.push('Generator');
+    if (fieldConfig?.feedback?.enabled) ex1Parts.push('Good signal');
+    Object.keys(fieldConfig || {})
+      .filter(k => !['name','location','skywarn_number','weather_observation','power_source','power','notes','feedback'].includes(k) && fieldConfig![k]?.enabled)
+      .forEach(() => ex1Parts.push('value'));
     examples.push(ex1Parts.join(', '));
-    
+
     // Second example - with status
     const ex2Parts = ['N1XYZ'];
     if (fieldConfig?.name?.enabled !== false) ex2Parts.push('Jane');
     if (fieldConfig?.location?.enabled !== false) ex2Parts.push('Boston MA');
     examples.push(ex2Parts.join(', ') + ':jl');
-    
+
     return examples.join('; ');
   };
 
@@ -151,8 +170,16 @@ const BulkCheckIn: React.FC<BulkCheckInProps> = ({ open, onClose, netId, onCheck
         if (value) {
           if (fieldName === 'name') checkIn.name = value;
           else if (fieldName === 'location') checkIn.location = value;
+          else if (fieldName === 'skywarn_number') checkIn.skywarn_number = value;
+          else if (fieldName === 'weather_observation') checkIn.weather_observation = value;
           else if (fieldName === 'power') checkIn.power_source = value;
+          else if (fieldName === 'feedback') checkIn.feedback = value;
           else if (fieldName === 'notes') checkIn.notes = value;
+          else {
+            // Custom field
+            if (!checkIn.custom_fields) checkIn.custom_fields = {};
+            checkIn.custom_fields[fieldName] = value;
+          }
         }
       }
       
@@ -189,9 +216,13 @@ const BulkCheckIn: React.FC<BulkCheckInProps> = ({ open, onClose, netId, onCheck
           callsign: checkIn.callsign,
           name: checkIn.name || '',
           location: checkIn.location || '',
+          skywarn_number: checkIn.skywarn_number,
+          weather_observation: checkIn.weather_observation,
           power_source: checkIn.power_source || '',
+          feedback: checkIn.feedback,
           notes: checkIn.notes || '',
           status: checkIn.status || 'checked_in',
+          custom_fields: checkIn.custom_fields || {},
         });
         success++;
       } catch (error: any) {

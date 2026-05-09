@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { displayCallsign } from '../utils/userDisplay';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -221,13 +222,6 @@ const NetReport: React.FC = () => {
   const navigate = useNavigate();
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
-  // Use CartoDB Dark Matter tiles in dark mode, OSM in light mode
-  const tileUrl = isDarkMode
-    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-    : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-  const tileAttribution = isDarkMode
-    ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-    : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
   const { user } = useAuth();
   const [net, setNet] = useState<Net | null>(null);
   const [stats, setStats] = useState<NetStats | null>(null);
@@ -237,6 +231,15 @@ const NetReport: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
+
+  // Use CartoDB Dark Matter tiles in dark mode, OSM in light mode.
+  // When exporting to PDF always use light tiles so the map is readable on paper.
+  const tileUrl = (isDarkMode && !exporting)
+    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+    : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+  const tileAttribution = (isDarkMode && !exporting)
+    ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+    : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
   // State for mapped locations
   interface MappedCheckIn {
@@ -585,6 +588,12 @@ const NetReport: React.FC = () => {
           '& .MuiCardContent-root': {
             backgroundColor: '#ffffff !important',
           },
+          '& .MuiChip-label': {
+            color: '#000000 !important',
+          },
+          '& .MuiChip-root': {
+            borderColor: '#666666 !important',
+          },
         }}
       >
         
@@ -603,38 +612,34 @@ const NetReport: React.FC = () => {
 
         {/* ========== SECTION 1: NET INFO HEADER ========== */}
         <Paper sx={{ p: 3, mb: 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-            <Box>
-              <Typography variant="h4" fontWeight="bold" gutterBottom>
-                {net.name}
-              </Typography>
-              {net.description && (
-                <Typography variant="body1" color="text.secondary" paragraph>
-                  {net.description}
-                </Typography>
-              )}
-              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 1 }}>
-                <Chip
-                  label={net.status.toUpperCase()}
-                  color={net.status === 'active' ? 'success' : net.status === 'closed' ? 'default' : 'info'}
-                  size="small"
-                />
-                {net.ics309_enabled && (
-                  <Chip label="ICS-309" color="primary" size="small" variant="outlined" />
-                )}
-              </Box>
-            </Box>
-            <Box sx={{ textAlign: 'right' }}>
-              <Typography variant="body2" color="text.secondary">
-                Started: {stats.started_at ? formatDateTime(stats.started_at, user?.prefer_utc || false) : '—'}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Closed: {stats.closed_at ? formatDateTime(stats.closed_at, user?.prefer_utc || false) : '—'}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Duration: {stats.duration_minutes ? formatDuration(stats.duration_minutes) : '—'}
-              </Typography>
-            </Box>
+          <Typography variant="h4" fontWeight="bold" gutterBottom>
+            {net.name}
+          </Typography>
+          {net.description && (
+            <Typography variant="body1" color="text.secondary" paragraph>
+              {net.description}
+            </Typography>
+          )}
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
+            <Chip
+              label={net.status.toUpperCase()}
+              color={net.status === 'active' ? 'success' : net.status === 'closed' ? 'default' : 'info'}
+              size="small"
+            />
+            {net.ics309_enabled && (
+              <Chip label="ICS-309" color="primary" size="small" variant="outlined" />
+            )}
+          </Box>
+          <Box sx={{ display: 'flex', gap: 4, flexWrap: 'wrap', mb: 2 }}>
+            <Typography variant="body2" color="text.secondary">
+              Started: {stats.started_at ? formatDateTime(stats.started_at, user?.prefer_utc || false) : '—'}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Closed: {stats.closed_at ? formatDateTime(stats.closed_at, user?.prefer_utc || false) : '—'}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Duration: {stats.duration_minutes ? formatDuration(stats.duration_minutes) : '—'}
+            </Typography>
           </Box>
 
           {/* Frequencies */}
@@ -658,7 +663,7 @@ const NetReport: React.FC = () => {
                 Net Control Station(s):
               </Typography>
               <Typography variant="body2">
-                {ncsOperators.map(r => r.callsign || r.name || r.email).join(', ')}
+                {ncsOperators.map(r => displayCallsign(r) || r.email).join(', ')}
               </Typography>
             </Box>
           )}
@@ -970,7 +975,7 @@ const NetReport: React.FC = () => {
             </TableHead>
             <TableBody>
               {checkIns.map((checkIn, index) => (
-                <TableRow key={checkIn.id} sx={{ '&:nth-of-type(odd)': { backgroundColor: theme.palette.action.hover } }}>
+                <TableRow key={checkIn.id} sx={{ '&:nth-of-type(odd)': { backgroundColor: theme.palette.action.hover }, pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                   <TableCell>{index + 1}</TableCell>
                   <TableCell sx={{ whiteSpace: 'nowrap', fontSize: '0.75rem' }}>
                     {formatTimeWithDate(checkIn.checked_in_at, user?.prefer_utc || false)}
@@ -1084,7 +1089,7 @@ const NetReport: React.FC = () => {
                 </Grid>
                 <Grid item xs={12} sm={6}>
                   <Typography variant="body2">
-                    <strong>3. Radio Operator Name/Position:</strong> {ncsOperators.map(r => r.callsign || r.name).join(', ') || 'N/A'}
+                    <strong>3. Radio Operator Name/Position:</strong> {ncsOperators.map(r => displayCallsign(r) || r.name).join(', ') || 'N/A'}
                   </Typography>
                 </Grid>
                 <Grid item xs={12} sm={6}>

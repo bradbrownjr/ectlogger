@@ -9,6 +9,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import html2canvas from 'html2canvas';
+import { displayCallsign } from './userDisplay';
 
 // ========== INTERFACES ==========
 
@@ -296,7 +297,7 @@ export const exportNetReportPdf = async (data: NetReportPdfData): Promise<void> 
     pdf.setTextColor(100, 100, 100);
     pdf.text('Net Control Station(s):', margin, y);
     pdf.setFont('helvetica', 'normal');
-    const ncsText = ncsOperators.map(r => r.callsign || r.name || r.email).join(', ');
+    const ncsText = ncsOperators.map(r => displayCallsign(r) || r.email).join(', ');
     pdf.text(ncsText, margin + pdf.getTextWidth('Net Control Station(s): '), y);
     y += 5;
   }
@@ -517,7 +518,7 @@ export const exportNetReportPdf = async (data: NetReportPdfData): Promise<void> 
     const icsFields = [
       ['1. Incident Name:', net.name],
       ['2. Operational Period:', `${stats.started_at ? formatDateTimeForPdf(stats.started_at, true) : '\u2014'} to ${stats.closed_at ? formatDateTimeForPdf(stats.closed_at, true) : '\u2014'}`],
-      ['3. Radio Operator Name/Position:', ncsOperators.map(r => r.callsign || r.name).join(', ') || 'N/A'],
+      ['3. Radio Operator Name/Position:', ncsOperators.map(r => displayCallsign(r) || r.name).join(', ') || 'N/A'],
       ['4. Radio Channel:', net.frequencies.map(f => getFrequencyLabel(f)).join(', ') || 'N/A'],
     ];
     icsFields.forEach(([label, value]) => {
