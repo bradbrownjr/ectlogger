@@ -262,7 +262,8 @@ const ChangelogNotification: React.FC = () => {
 
   const handleDownloadAll = () => {
     const pdf = buildChangelogPdf(groupedEntries, 'ECTLogger Changelog');
-    const today = new Date().toISOString().slice(0, 10);
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     pdf.save(`ECTLogger_Changelog_${today}.pdf`);
   };
 
