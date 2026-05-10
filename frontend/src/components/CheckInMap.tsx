@@ -124,7 +124,12 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
     
     setExporting(true);
     setIsExporting(true);  // Prevent FitBounds from triggering during export
-    
+
+    // Wait for React to re-render (tileUrl switches to light OSM tiles when
+    // exporting=true) and for Leaflet to begin requesting the new tiles
+    // before the tile-wait logic below scans for incomplete images.
+    await new Promise(resolve => setTimeout(resolve, 200));
+
     try {
       const map = mapRef.current;
       
@@ -195,11 +200,13 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
     }
   };
 
-  // Tile layer URLs - dark mode uses CartoDB Dark Matter
-  const tileUrl = isDarkMode 
+  // Tile layer URLs - dark mode uses CartoDB Dark Matter, but always use
+  // light OSM tiles during PDF export (html2canvas captures what's rendered;
+  // the forced-white PDF background looks wrong with dark CartoDB tiles).
+  const tileUrl = (isDarkMode && !exporting)
     ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
     : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-  const tileAttribution = isDarkMode
+  const tileAttribution = (isDarkMode && !exporting)
     ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
     : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
