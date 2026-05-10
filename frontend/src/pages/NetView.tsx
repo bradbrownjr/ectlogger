@@ -134,6 +134,7 @@ interface CheckIn {
   poll_response?: string;
   status: string;
   is_recheck: boolean;
+  parent_check_in_id?: number;
   checked_in_at: string;
   frequency_id?: number;
   available_frequencies?: number[];
@@ -233,11 +234,12 @@ const NetView: React.FC = () => {
   // it on demand when they want to log a check-in.
   const [mobileCheckInExpanded, setMobileCheckInExpanded] = useState(false);
   const [onlineUserIds, setOnlineUserIds] = useState<number[]>([]);
-  const [netStats, setNetStats] = useState<{total_check_ins: number, checked_out_count: number, online_count: number, guest_count: number} | null>(null);
+  const [netStats, setNetStats] = useState<{total_check_ins: number, unique_stations: number, recheck_count: number, checked_out_count: number, online_count: number, guest_count: number} | null>(null);
   const [frequencyDialogOpen, setFrequencyDialogOpen] = useState(false);
   const [fieldDefinitions, setFieldDefinitions] = useState<FieldDefinition[]>([]);
   const [mapOpen, setMapOpen] = useState(false);
   const [bulkCheckInOpen, setBulkCheckInOpen] = useState(false);
+  const [hideDuplicates, setHideDuplicates] = useState<boolean>(() => localStorage.getItem('checkin_hideDuplicates') === 'true');
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [closeNetDialogOpen, setCloseNetDialogOpen] = useState(false);
@@ -958,7 +960,7 @@ const NetView: React.FC = () => {
 
   // State for archive undo functionality
   const [pendingArchive, setPendingArchive] = React.useState<boolean>(false);
-  const archiveTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  const archiveTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleArchive = async () => {
     // Show actionable toast with undo option
@@ -1425,7 +1427,7 @@ const NetView: React.FC = () => {
   };
 
   // Handle blur on inline edit fields - only save if focus leaves the editing row entirely
-  const handleInlineBlur = (e: React.FocusEvent) => {
+  const handleInlineBlur = (_e: React.FocusEvent) => {
     // Use setTimeout to allow the new focus target to be set before checking
     setTimeout(() => {
       // Check if focus moved to another element within the same editing row
@@ -1462,7 +1464,7 @@ const NetView: React.FC = () => {
 
   const handleSetActiveFrequency = async (frequencyId: number) => {
     try {
-      const response = await netApi.setActiveFrequency(netId!, frequencyId);
+      const response = await netApi.setActiveFrequency(Number(netId!), frequencyId);
       setNet(response.data);
       
       // Broadcast frequency change via WebSocket
@@ -1571,6 +1573,18 @@ const NetView: React.FC = () => {
     }
   };
 
+  // Compute the latest checked_in_at per callsign (for graying prior rows)
+  const latestCheckedInAtByCallsign = React.useMemo(() => {
+    const map = new Map<string, string>();
+    for (const ci of checkIns) {
+      const prev = map.get(ci.callsign);
+      if (!prev || ci.checked_in_at > prev) {
+        map.set(ci.callsign, ci.checked_in_at);
+      }
+    }
+    return map;
+  }, [checkIns]);
+
   // Filter check-ins based on search query AND frequency filter
   const filteredCheckIns = checkIns.filter((checkIn: CheckIn) => {
     // First apply search filter
@@ -1594,6 +1608,12 @@ const NetView: React.FC = () => {
       const checkInFreqs = checkIn.available_frequencies || [];
       const hasMatchingFreq = filteredFrequencyIds.some(fid => checkInFreqs.includes(fid));
       if (!hasMatchingFreq) return false;
+    }
+
+    // Hide-duplicates: if enabled, hide prior rows (only show the latest row per callsign)
+    if (hideDuplicates) {
+      const latest = latestCheckedInAtByCallsign.get(checkIn.callsign);
+      if (latest && checkIn.checked_in_at < latest) return false;
     }
     
     return true;
@@ -1635,7 +1655,7 @@ const NetView: React.FC = () => {
 
   const handleClaimNCS = async () => {
     try {
-      await netApi.claimNcs(netId);
+      await netApi.claimNcs(Number(netId));
       await fetchNetRoles();
       setToastMessage('You are now NCS');
     } catch (error: any) {
@@ -1722,7 +1742,10 @@ const NetView: React.FC = () => {
                   )}
                   {netStats && (
                     <>
-                      <Chip label={`${netStats.total_check_ins} Check-ins`} size="small" color="primary" variant="outlined" />
+                      <Chip label={`${netStats.unique_stations ?? netStats.total_check_ins} Stations`} size="small" color="primary" variant="outlined" />
+                      {(netStats.recheck_count ?? 0) > 0 && (
+                        <Chip label={`${netStats.recheck_count} Rechecks`} size="small" color="warning" variant="outlined" />
+                      )}
                       {netStats.checked_out_count > 0 && (
                         <Chip label={`${netStats.checked_out_count} Checked Out`} size="small" color="default" variant="outlined" />
                       )}
@@ -2370,6 +2393,18 @@ const NetView: React.FC = () => {
                       <TableCell sx={{ whiteSpace: 'nowrap', width: 30, p: 0.5 }}>
                         <IconButton
                           size="small"
+                          onClick={() => {
+                            const next = !hideDuplicates;
+                            setHideDuplicates(next);
+                            localStorage.setItem('checkin_hideDuplicates', String(next));
+                          }}
+                          title={hideDuplicates ? 'Show all rows (including re-checks)' : 'Hide duplicate rows (show latest per station)'}
+                          sx={{ p: 0.25, color: hideDuplicates ? 'primary.main' : 'text.secondary' }}
+                        >
+                          <GroupIcon sx={{ fontSize: 14 }} />
+                        </IconButton>
+                        <IconButton
+                          size="small"
                           onClick={handleDetachCheckInList}
                           title="Detach to floating window"
                           sx={{ p: 0.25 }}
@@ -2407,6 +2442,12 @@ const NetView: React.FC = () => {
                     // Check if this row is being inline edited
                     const isInlineEditing = inlineEditingId === checkIn.id;
                     
+                    // Gray out rows that are not the latest for this callsign
+                    const isPriorRow = (() => {
+                      const latest = latestCheckedInAtByCallsign.get(checkIn.callsign);
+                      return latest !== undefined && checkIn.checked_in_at < latest;
+                    })();
+
                     return (
                     <React.Fragment key={checkIn.id}>
                     <TableRow
@@ -2434,7 +2475,7 @@ const NetView: React.FC = () => {
                           : isOnActiveFrequency
                           ? (theme) => theme.palette.mode === 'dark' ? 'rgba(25, 118, 210, 0.15)' : 'rgba(25, 118, 210, 0.08)'
                           : 'transparent',
-                        opacity: checkIn.status === 'checked_out' ? 0.6 : 1,
+                        opacity: isPriorRow ? 0.4 : checkIn.status === 'checked_out' ? 0.6 : 1,
                         border: checkIn.id === activeSpeakerId ? 2 : 0,
                         borderColor: checkIn.id === activeSpeakerId ? 'success.main' : 'transparent',
                         // Add left border for NCS users
@@ -2888,6 +2929,10 @@ const NetView: React.FC = () => {
                     // Get NCS color if this user is an NCS
                     const ncsColor = checkIn.user_id ? getNcsColor(checkIn.user_id) : null;
                     const isNcsUser = ncsRoles.some((r: any) => r.user_id === checkIn.user_id);
+                    const isPriorRowMobile = (() => {
+                      const latest = latestCheckedInAtByCallsign.get(checkIn.callsign);
+                      return latest !== undefined && checkIn.checked_in_at < latest;
+                    })();
                     
                     return (
                       <TableRow key={checkIn.id} sx={{ 
@@ -2896,7 +2941,7 @@ const NetView: React.FC = () => {
                           : checkIn.status === 'checked_out' ? 'action.disabledBackground' 
                           : isNcsUser && ncsColor ? ncsColor.bg
                           : isOnActiveFrequency ? (theme) => theme.palette.mode === 'dark' ? 'rgba(25, 118, 210, 0.15)' : 'rgba(25, 118, 210, 0.08)' : 'inherit',
-                        opacity: checkIn.status === 'checked_out' ? 0.6 : 1,
+                        opacity: isPriorRowMobile ? 0.4 : checkIn.status === 'checked_out' ? 0.6 : 1,
                         // Add left border for NCS users
                         ...(isNcsUser && ncsColor && checkIn.status !== 'checked_out' && {
                           borderLeft: `3px solid ${ncsColor.border}`,
@@ -3708,6 +3753,10 @@ const NetView: React.FC = () => {
                       // Get NCS color if this user is an NCS
                       const ncsColor = checkIn.user_id ? getNcsColor(checkIn.user_id) : null;
                       const isNcsUser = ncsRoles.some((r: any) => r.user_id === checkIn.user_id);
+                      const isPriorRowDetached = (() => {
+                        const latest = latestCheckedInAtByCallsign.get(checkIn.callsign);
+                        return latest !== undefined && checkIn.checked_in_at < latest;
+                      })();
                       return (
                         <TableRow 
                           key={checkIn.id}
@@ -3717,7 +3766,7 @@ const NetView: React.FC = () => {
                               : checkIn.status === 'checked_out' ? 'action.disabledBackground' 
                               : isNcsUser && ncsColor ? ncsColor.bg
                               : isOnActiveFrequency ? (thm) => thm.palette.mode === 'dark' ? 'rgba(25, 118, 210, 0.15)' : 'rgba(25, 118, 210, 0.08)' : 'inherit',
-                            opacity: checkIn.status === 'checked_out' ? 0.6 : 1,
+                            opacity: isPriorRowDetached ? 0.4 : checkIn.status === 'checked_out' ? 0.6 : 1,
                             // Add left border for NCS users
                             ...(isNcsUser && ncsColor && checkIn.status !== 'checked_out' && {
                               borderLeft: `3px solid ${ncsColor.border}`,
@@ -3861,7 +3910,7 @@ const NetView: React.FC = () => {
                       <Autocomplete
                         freeSolo
                         size="small"
-                        options={topicResponses}
+                        options={topicResponses.responses.map(r => r.response)}
                         value={checkInForm.topic_response || ''}
                         onChange={(_, newValue) => setCheckInForm({ ...checkInForm, topic_response: newValue || '' })}
                         onInputChange={(_, newInputValue) => setCheckInForm({ ...checkInForm, topic_response: newInputValue })}

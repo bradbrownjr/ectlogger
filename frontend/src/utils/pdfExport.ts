@@ -171,7 +171,7 @@ export const exportToPdf = async (
       const imgHeightPx = canvas.height;
       
       // Calculate how the image will fit on the page (in mm)
-      const imgWidthMm = contentWidth;
+      void contentWidth; // imgWidthMm unused but kept for reference
       const imgHeightMm = (imgHeightPx * contentWidth) / imgWidthPx;
       
       // Calculate page height in pixels (at the scale we captured)

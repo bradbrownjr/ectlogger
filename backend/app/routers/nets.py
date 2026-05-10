@@ -266,15 +266,35 @@ async def get_net_stats(
     # Get online user IDs (authenticated users only)
     online_user_ids = list(manager.get_online_users(net_id))
     
-    # Get ALL check-ins (total who participated in the net)
+    # Get ALL check-ins (every row including re-checks)
     all_check_in_result = await db.execute(
         select(CheckIn).where(CheckIn.net_id == net_id)
     )
     all_check_ins = all_check_in_result.scalars().all()
+
+    # Compute per-callsign stats
+    # "latest" row per callsign = the row with the most recent checked_in_at
+    from collections import defaultdict
+    latest_by_callsign: dict[str, CheckIn] = {}
+    for ci in all_check_ins:
+        callsign = ci.callsign
+        if callsign not in latest_by_callsign or ci.checked_in_at > latest_by_callsign[callsign].checked_in_at:
+            latest_by_callsign[callsign] = ci
+
+    # unique_stations: callsigns whose latest row is NOT checked_out
+    unique_stations = sum(
+        1 for ci in latest_by_callsign.values()
+        if not (ci.status and ci.status.value == 'checked_out')
+    )
+    # recheck_count: total rows with is_recheck=True
+    recheck_count = sum(1 for ci in all_check_ins if ci.is_recheck)
+    # checked_out_count: callsigns whose latest row IS checked_out
+    checked_out_count = sum(
+        1 for ci in latest_by_callsign.values()
+        if ci.status and ci.status.value == 'checked_out'
+    )
+    # total_check_ins kept for backward compat (= total rows)
     total_check_ins = len(all_check_ins)
-    
-    # Count checked-out stations separately
-    checked_out_count = sum(1 for ci in all_check_ins if ci.status and ci.status.value == 'checked_out')
     
     # Count guest WebSocket viewers (unauthenticated connections)
     guest_count = manager.get_guest_count(net_id)
@@ -283,6 +303,8 @@ async def get_net_stats(
         "net_id": net_id,
         "online_user_ids": online_user_ids,
         "total_check_ins": total_check_ins,
+        "unique_stations": unique_stations,
+        "recheck_count": recheck_count,
         "checked_out_count": checked_out_count,
         "online_count": len(online_user_ids),
         "guest_count": guest_count

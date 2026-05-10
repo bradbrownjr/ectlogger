@@ -5,6 +5,8 @@ export interface ChatMessage {
   net_id: number;
   user_id: number | null;
   callsign: string;
+  sender_callsign?: string;
+  sender_display_name?: string;
   message: string;
   created_at: string;
   is_system: boolean;

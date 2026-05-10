@@ -26,7 +26,7 @@ const Announcements: React.FC<AnnouncementsProps> = ({
   onClose, 
   announcements,
   netName,
-  netId
+  netId: _netId
 }) => {
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
@@ -133,10 +133,10 @@ const Announcements: React.FC<AnnouncementsProps> = ({
       }}
       position={{ x: windowState.x, y: windowState.y }}
       size={{ width: windowState.width, height: windowState.height }}
-      onDragStop={(e, d) => {
+      onDragStop={(_e, d) => {
         setWindowState(prev => ({ ...prev, x: d.x, y: d.y }));
       }}
-      onResizeStop={(e, direction, ref, delta, position) => {
+      onResizeStop={(_e, _direction, ref, _delta, position) => {
         setWindowState({
           x: position.x,
           y: position.y,

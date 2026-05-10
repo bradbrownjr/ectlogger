@@ -36,11 +36,6 @@ import {
   Fab,
   Card,
   CardContent,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  Divider,
   InputAdornment,
 } from '@mui/material';
 import BlockIcon from '@mui/icons-material/Block';
@@ -442,7 +437,7 @@ const Admin: React.FC = () => {
   };
 
   // Handle blur on inline edit - save if focus leaves the editing row entirely
-  const handleContactInlineBlur = (e: React.FocusEvent) => {
+  const handleContactInlineBlur = (_e: React.FocusEvent) => {
     setTimeout(() => {
       const activeElement = document.activeElement;
       if (inlineEditContactRowRef.current && inlineEditContactRowRef.current.contains(activeElement)) {

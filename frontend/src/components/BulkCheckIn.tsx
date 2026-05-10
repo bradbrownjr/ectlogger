@@ -258,10 +258,10 @@ const BulkCheckIn: React.FC<BulkCheckInProps> = ({ open, onClose, netId, onCheck
       <Rnd
         size={{ width: windowState.width, height: windowState.height }}
         position={{ x: windowState.x, y: windowState.y }}
-        onDragStop={(e, d) => {
+        onDragStop={(_e, d) => {
           setWindowState(prev => ({ ...prev, x: d.x, y: d.y }));
         }}
-        onResizeStop={(e, direction, ref, delta, position) => {
+        onResizeStop={(_e, _direction, ref, _delta, position) => {
           setWindowState({
             width: parseInt(ref.style.width),
             height: parseInt(ref.style.height),

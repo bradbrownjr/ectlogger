@@ -956,7 +956,7 @@ const NetReport: React.FC = () => {
 
         {/* ========== SECTION 4: CHECK-IN LOG ========== */}
         <Typography variant="h6" sx={{ mt: 3, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Assignment /> Check-in Log ({checkIns.length} entries)
+          <Assignment /> Check-in Log ({checkIns.length} event{checkIns.length !== 1 ? 's' : ''} &mdash; {stats.unique_callsigns} unique station{stats.unique_callsigns !== 1 ? 's' : ''}{stats.rechecks > 0 ? `, ${stats.rechecks} re-check${stats.rechecks !== 1 ? 's' : ''}` : ''})
         </Typography>
         
         <TableContainer component={Paper} variant="outlined" sx={{ mb: 3 }}>

@@ -591,6 +591,7 @@ class CheckInResponse(CheckInBase):
     available_frequencies: List[int] = Field(default_factory=list)
     custom_fields: Optional[dict] = Field(default_factory=dict)
     is_recheck: bool
+    parent_check_in_id: Optional[int] = None
     checked_in_by_id: Optional[int] = None
     checked_in_at: datetime
     checked_out_at: Optional[datetime] = None

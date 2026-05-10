@@ -418,7 +418,10 @@ export const exportNetReportPdf = async (data: NetReportPdfData): Promise<void> 
   pdf.setFontSize(13);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(0, 0, 0);
-  pdf.text(`Check-in Log (${checkIns.length} entries)`, margin, y);
+  const uniqueStations = stats.unique_callsigns;
+  const recheckCount = stats.rechecks;
+  const logHeader = `Check-in Log (${checkIns.length} event${checkIns.length !== 1 ? 's' : ''} \u2014 ${uniqueStations} unique station${uniqueStations !== 1 ? 's' : ''}${recheckCount > 0 ? `, ${recheckCount} re-check${recheckCount !== 1 ? 's' : ''}` : ''})`;
+  pdf.text(logHeader, margin, y);
   y += 6;
 
   if (checkIns.length > 0) {

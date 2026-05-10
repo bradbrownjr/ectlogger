@@ -17,8 +17,8 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  Switch,
-  FormControlLabel,
+  Switch as _Switch,
+  FormControlLabel as _FormControlLabel,
   useMediaQuery,
   useTheme,
   Tooltip,
@@ -61,7 +61,7 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
-import { templateApi, netApi, ncsRotationApi } from '../services/api';
+import { templateApi, netApi as _netApi, ncsRotationApi } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import NCSStaffModal from '../components/NCSStaffModal';
 
@@ -85,6 +85,7 @@ interface Schedule {
   frequencies: any[];
   is_subscribed: boolean;
   can_manage?: boolean;  // True if current user can edit (owner, admin, or NCS rotation member)
+  can_create_net?: boolean;
   schedule_type?: string;
   schedule_config?: {
     day_of_week?: number;
@@ -133,8 +134,6 @@ const formatSchedule = (schedule: Schedule): string => {
 const Scheduler: React.FC = () => {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [currentSchedule, setCurrentSchedule] = useState<Schedule | null>(null);
   const [rotationModalOpen, setRotationModalOpen] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null);
   // View mode and filter state - persist view preference

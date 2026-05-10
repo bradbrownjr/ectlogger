@@ -13,12 +13,10 @@ import {
   CircularProgress,
   Alert,
   TextField,
-  IconButton,
   Collapse,
 } from '@mui/material';
 import HistoryIcon from '@mui/icons-material/History';
 import AddIcon from '@mui/icons-material/Add';
-import CloseIcon from '@mui/icons-material/Close';
 import api from '../services/api';
 
 interface TopicHistoryEntry {

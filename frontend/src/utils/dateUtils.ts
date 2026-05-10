@@ -9,7 +9,7 @@ export const formatDateTime = (dateString: string, preferUtc: boolean = false): 
   }
   
   // Get timezone abbreviation
-  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  void Intl.DateTimeFormat().resolvedOptions().timeZone;
   const shortTimeZone = new Intl.DateTimeFormat('en-US', {
     timeZoneName: 'short'
   }).formatToParts(date).find(part => part.type === 'timeZoneName')?.value || '';

@@ -26,7 +26,7 @@ const NetScript: React.FC<NetScriptProps> = ({
   onClose, 
   script,
   netName,
-  netId
+  netId: _netId
 }) => {
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';

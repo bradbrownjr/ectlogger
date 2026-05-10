@@ -17,6 +17,7 @@ interface User {
   notify_net_start?: boolean;
   notify_net_close?: boolean;
   notify_net_reminder?: boolean;
+  notify_ics309?: boolean;
   notify_whats_new?: boolean;
   timezone?: string;
   role: string;
@@ -48,7 +49,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const fetchUser = async (authToken: string) => {
+  const fetchUser = async (_authToken: string) => {
     try {
       const response = await authApi.getCurrentUser();
       // Normalize role to lowercase for consistent comparison

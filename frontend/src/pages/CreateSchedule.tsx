@@ -171,7 +171,6 @@ const CreateSchedule: React.FC = () => {
   const [fieldDefinitions, setFieldDefinitions] = useState<FieldDefinition[]>([]);
   const [fieldConfig, setFieldConfig] = useState<Record<string, { enabled: boolean; required: boolean }>>({});
   // Toast notification for field messages
-  const [toastOpen, setToastOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [isActive, setIsActive] = useState(true);
   
@@ -197,7 +196,11 @@ const CreateSchedule: React.FC = () => {
   
   // Schedule configuration
   const [scheduleType, setScheduleType] = useState(initialType);
-  const [scheduleConfig, setScheduleConfig] = useState({
+  const [scheduleConfig, setScheduleConfig] = useState<{
+    day_of_week: number;
+    week_of_month: number[];
+    time: string;
+  }>({
     day_of_week: 1, // Monday
     week_of_month: [], // e.g., [1, 3] for 1st and 3rd week
     time: '18:00'
@@ -475,7 +478,7 @@ const CreateSchedule: React.FC = () => {
         <TableCell>
           {isEditing ? (
             <>
-              <IconButton type="button" size="small" onClick={saveEdit} color="primary">
+              <IconButton type="button" size="small" onClick={() => saveEdit()} color="primary">
                 <CheckIcon />
               </IconButton>
               <IconButton type="button" size="small" onClick={cancelEdit}>
@@ -1208,7 +1211,7 @@ const CreateSchedule: React.FC = () => {
               <Box sx={{ mt: 2 }}>
                 <Typography variant="body2" sx={{ mb: 1 }}>Which weeks of the month?</Typography>
                 <FormGroup sx={{ flexDirection: 'row', gap: 2, mb: 2 }}>
-                  {[1, 2, 3, 4, 5].map(week => (
+                  {[1, 2, 3, 4, 5].map((week) => (
                     <FormControlLabel
                       key={week}
                       control={
@@ -1328,7 +1331,7 @@ const CreateSchedule: React.FC = () => {
                   </Typography>
                 ) : (
                   <List>
-                    {pendingNCSUsers.map((user, index) => (
+                    {pendingNCSUsers.map((user) => (
                       <ListItem
                         key={user.id}
                         sx={{

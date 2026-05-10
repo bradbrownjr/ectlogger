@@ -379,7 +379,7 @@ const Statistics: React.FC = () => {
                   interval={isMobile ? 4 : 2}
                 />
                 <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip 
+                <RechartsTooltip 
                   contentStyle={{ 
                     backgroundColor: theme.palette.background.paper,
                     border: `1px solid ${theme.palette.divider}`,
@@ -413,7 +413,7 @@ const Statistics: React.FC = () => {
                   interval={isMobile ? 4 : 2}
                 />
                 <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip 
+                <RechartsTooltip 
                   contentStyle={{ 
                     backgroundColor: theme.palette.background.paper,
                     border: `1px solid ${theme.palette.divider}`,
@@ -451,7 +451,7 @@ const Statistics: React.FC = () => {
                   interval={isMobile ? 4 : 2}
                 />
                 <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip 
+                <RechartsTooltip 
                   contentStyle={{ 
                     backgroundColor: theme.palette.background.paper,
                     border: `1px solid ${theme.palette.divider}`,
@@ -485,7 +485,7 @@ const Statistics: React.FC = () => {
                   interval={isMobile ? 4 : 2}
                 />
                 <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip 
+                <RechartsTooltip 
                   contentStyle={{ 
                     backgroundColor: theme.palette.background.paper,
                     border: `1px solid ${theme.palette.divider}`,

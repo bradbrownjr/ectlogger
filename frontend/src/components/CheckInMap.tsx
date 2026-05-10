@@ -114,7 +114,7 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
   const [mapKey, setMapKey] = useState(0);
   const [exporting, setExporting] = useState(false);
   const mapRef = useRef<L.Map | null>(null);
-  const mapContainerRef = useRef<HTMLDivElement | null>(null);
+  useRef<HTMLDivElement | null>(null); // kept for potential future use
   const [isExporting, setIsExporting] = useState(false);
 
   // Handle PDF export of the map

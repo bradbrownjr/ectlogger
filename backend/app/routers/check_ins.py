@@ -70,14 +70,16 @@ async def create_check_in(
             )
     
     # Check if this is a recheck (user previously checked in to this net)
-    # Only consider the most recent check-in for this callsign
+    # Find the root (original) check-in for this callsign to use as parent_check_in_id
     result = await db.execute(
         select(CheckIn).where(
             CheckIn.net_id == net_id,
-            CheckIn.callsign == check_in_data.callsign
-        ).order_by(CheckIn.checked_in_at.desc()).limit(1)
+            CheckIn.callsign == check_in_data.callsign,
+            CheckIn.parent_check_in_id == None  # noqa: E711 — SQLAlchemy requires == None
+        ).order_by(CheckIn.checked_in_at.asc()).limit(1)
     )
-    existing_check_in = result.scalar_one_or_none()
+    root_check_in = result.scalar_one_or_none()
+    is_recheck = root_check_in is not None
     
     # Try to automatically link to existing user by callsign (amateur or GMRS)
     linked_user_id = None
@@ -92,73 +94,46 @@ async def create_check_in(
     if matching_user:
         linked_user_id = matching_user.id
     
-    # If there's an existing check-in, update it and accumulate frequencies
-    if existing_check_in:
+    # Every check-in — whether first or re-check — creates a new row.
+    # Re-checks link back to the root (original) check-in via parent_check_in_id.
+    available_frequencies_json = json.dumps(available_freq_ids)
+    custom_fields_json = json.dumps(check_in_data.custom_fields) if check_in_data.custom_fields else '{}'
+
+    if is_recheck:
         # Track location change for system message
-        old_location = existing_check_in.location
-        new_location = check_in_data.location if check_in_data.location else old_location
-        location_changed = old_location and new_location and old_location != new_location
-        
-        # Merge available frequencies - add new frequency_id to available_frequencies
-        existing_freqs = json.loads(existing_check_in.available_frequencies) if existing_check_in.available_frequencies else []
-        
-        # Add previous frequency_id to available frequencies if it exists and isn't already there
-        if existing_check_in.frequency_id and existing_check_in.frequency_id not in existing_freqs:
-            existing_freqs.append(existing_check_in.frequency_id)
-        
-        # Add new frequency_id to available frequencies if it exists and isn't already there
-        if check_in_data.frequency_id and check_in_data.frequency_id not in existing_freqs:
-            existing_freqs.append(check_in_data.frequency_id)
-        
-        # Merge with user-provided available frequencies
-        for freq_id in available_freq_ids:
-            if freq_id not in existing_freqs:
-                existing_freqs.append(freq_id)
-        
-        available_frequencies_json = json.dumps(existing_freqs)
-        
-        existing_check_in.user_id = linked_user_id
-        # Only update fields if new value is provided (not empty), otherwise keep existing
-        if check_in_data.name:
-            existing_check_in.name = check_in_data.name
-        if check_in_data.location:
-            existing_check_in.location = check_in_data.location
-        if check_in_data.skywarn_number:
-            existing_check_in.skywarn_number = check_in_data.skywarn_number
-        if check_in_data.weather_observation:
-            existing_check_in.weather_observation = check_in_data.weather_observation
-        if check_in_data.power_source:
-            existing_check_in.power_source = check_in_data.power_source
-        if check_in_data.feedback:
-            existing_check_in.feedback = check_in_data.feedback
-        if check_in_data.notes:
-            existing_check_in.notes = check_in_data.notes
-        if check_in_data.relayed_by is not None:
-            existing_check_in.relayed_by = check_in_data.relayed_by.upper() if check_in_data.relayed_by else None
-        # Update topic and poll responses if provided
-        if check_in_data.topic_response:
-            existing_check_in.topic_response = check_in_data.topic_response
-        if check_in_data.poll_response:
-            existing_check_in.poll_response = check_in_data.poll_response
-        # Merge custom fields
-        if check_in_data.custom_fields:
-            existing_custom = json.loads(existing_check_in.custom_fields) if existing_check_in.custom_fields else {}
-            existing_custom.update(check_in_data.custom_fields)
-            existing_check_in.custom_fields = json.dumps(existing_custom)
-        existing_check_in.frequency_id = check_in_data.frequency_id
-        existing_check_in.available_frequencies = available_frequencies_json
-        existing_check_in.is_recheck = True
-        existing_check_in.checked_in_by_id = current_user.id
-        existing_check_in.status = StationStatus.CHECKED_IN
-        existing_check_in.checked_out_at = None  # Clear checkout timestamp
-        existing_check_in.checked_in_at = datetime.now(UTC)  # Update check-in time
-        check_in = existing_check_in
+        location_changed = (
+            root_check_in.location
+            and check_in_data.location
+            and root_check_in.location != check_in_data.location
+        )
+        new_location = check_in_data.location or root_check_in.location
+
+        check_in = CheckIn(
+            net_id=net_id,
+            user_id=linked_user_id,
+            callsign=check_in_data.callsign,
+            name=check_in_data.name or root_check_in.name,
+            location=check_in_data.location or root_check_in.location,
+            skywarn_number=check_in_data.skywarn_number,
+            weather_observation=check_in_data.weather_observation,
+            power_source=check_in_data.power_source,
+            feedback=check_in_data.feedback,
+            notes=check_in_data.notes,
+            relayed_by=check_in_data.relayed_by.upper() if check_in_data.relayed_by else None,
+            topic_response=check_in_data.topic_response,
+            poll_response=check_in_data.poll_response,
+            custom_fields=custom_fields_json,
+            frequency_id=check_in_data.frequency_id,
+            available_frequencies=available_frequencies_json,
+            is_recheck=True,
+            parent_check_in_id=root_check_in.id,
+            checked_in_by_id=current_user.id,
+            status=StationStatus.CHECKED_IN,
+        )
     else:
-        # Serialize available frequencies to JSON for new check-in
-        available_frequencies_json = json.dumps(available_freq_ids)
-        # Serialize custom fields to JSON
-        custom_fields_json = json.dumps(check_in_data.custom_fields) if check_in_data.custom_fields else '{}'
-        # Create new check-in
+        location_changed = False
+        new_location = check_in_data.location
+
         check_in = CheckIn(
             net_id=net_id,
             user_id=linked_user_id,
@@ -177,10 +152,11 @@ async def create_check_in(
             frequency_id=check_in_data.frequency_id,
             available_frequencies=available_frequencies_json,
             is_recheck=False,
+            parent_check_in_id=None,
             checked_in_by_id=current_user.id,
-            status=StationStatus.CHECKED_IN
+            status=StationStatus.CHECKED_IN,
         )
-        db.add(check_in)
+    db.add(check_in)
     
     await db.commit()
     await db.refresh(check_in)
@@ -204,9 +180,9 @@ async def create_check_in(
 
     # Post system message for check-in activity
     from app.main import post_system_message
-    if existing_check_in:
+    if is_recheck:
         if location_changed:
-            await post_system_message(net_id, f"{check_in_data.callsign} has checked in from {new_location}{ci_suffix}", db)
+            await post_system_message(net_id, f"{check_in_data.callsign} has rechecked from {new_location}{ci_suffix}", db)
         else:
             await post_system_message(net_id, f"{check_in_data.callsign} has rechecked{ci_suffix}", db)
     else:
@@ -218,13 +194,13 @@ async def create_check_in(
     # Post system messages for poll/topic responses (if newly added)
     if check_in_data.topic_response and net.topic_of_week_enabled:
         # Only post if this is a new response (not on recheck with same answer)
-        old_topic = existing_check_in.topic_response if existing_check_in else None
+        old_topic = root_check_in.topic_response if root_check_in else None
         if check_in_data.topic_response != old_topic:
             await post_system_message(net_id, f"{check_in_data.callsign} shared: {check_in_data.topic_response}", db)
     
     if check_in_data.poll_response and net.poll_enabled:
         # Only post if this is a new response (not on recheck with same answer)
-        old_poll = existing_check_in.poll_response if existing_check_in else None
+        old_poll = root_check_in.poll_response if root_check_in else None
         if check_in_data.poll_response != old_poll:
             await post_system_message(net_id, f"{check_in_data.callsign} answered the poll: {check_in_data.poll_response}", db)
     
@@ -336,6 +312,21 @@ async def update_check_in(
     # Update remaining fields
     for field, value in update_data.items():
         setattr(check_in, field, value)
+    
+    # When checking out, mark ALL rows for this callsign in this net as checked out
+    if check_in_update.status == StationStatus.CHECKED_OUT:
+        checkout_time = check_in.checked_out_at or datetime.now(UTC)
+        sibling_result = await db.execute(
+            select(CheckIn).where(
+                CheckIn.net_id == check_in.net_id,
+                CheckIn.callsign == check_in.callsign,
+                CheckIn.id != check_in.id,
+            )
+        )
+        siblings = sibling_result.scalars().all()
+        for sibling in siblings:
+            sibling.status = StationStatus.CHECKED_OUT
+            sibling.checked_out_at = checkout_time
     
     await db.commit()
     await db.refresh(check_in)

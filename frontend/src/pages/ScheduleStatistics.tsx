@@ -44,8 +44,6 @@ import {
   EmojiEvents as EmojiEventsIcon,
 } from '@mui/icons-material';
 import {
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   CartesianGrid,

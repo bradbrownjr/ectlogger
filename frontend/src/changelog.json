@@ -1,10 +1,44 @@
 {
-  "version": "2026.05.09",
+  "version": "2026.05.10",
   "entries": [
     {
-      "version": "2026.05.09",
-      "date": "2026-05-09",
+      "version": "2026.05.10",
+      "date": "2026-05-10",
       "sections": [
+        {
+          "title": "Row-per-event re-check model",
+          "type": "feature",
+          "items": [
+            {
+              "text": "Each re-check-in now creates a new database row instead of overwriting the original. This preserves the full event history for a net.",
+              "userImpact": true
+            },
+            {
+              "text": "Prior check-in rows for the same callsign are shown in the table at reduced opacity (40%). A new toggle in the check-in table header lets you hide duplicate rows and see only the most recent entry per callsign.",
+              "userImpact": true
+            },
+            {
+              "text": "Net stats now show three separate chips: Stations (unique active callsigns), Rechecks (total re-check events), and Checked Out.",
+              "userImpact": true
+            },
+            {
+              "text": "The Net Report and PDF export now label the check-in log with the event count, unique-station count, and re-check count for easy reference.",
+              "userImpact": true
+            }
+          ]
+        },
+        {
+          "title": "TypeScript cleanup",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Resolved all TypeScript strict-mode errors across the frontend codebase.",
+              "userImpact": false
+            }
+          ]
+        }
+      ]
+    },
         {
           "title": "Activity Log panel",
           "type": "feature",

@@ -38,7 +38,7 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
   const [sending, setSending] = useState(false);
   const [showClosedToast, setShowClosedToast] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLUListElement>(null);
 
   // Show toast when net is closed/archived
   useEffect(() => {
@@ -108,7 +108,7 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
 
     setSending(true);
     try {
-      const response = await chatApi.create(netId, { message: newMessage.trim() });
+      await chatApi.create(netId, { message: newMessage.trim() });
       setNewMessage('');
       // Do NOT add message here; rely on WebSocket event to update chat for all clients
       // if (onNewMessage) onNewMessage(response.data);

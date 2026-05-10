@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { ThemeProvider, createTheme, PaletteMode } from '@mui/material/styles';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+type PaletteMode = 'light' | 'dark';
 import { CssBaseline, Box } from '@mui/material';
 import { SnackbarProvider } from 'notistack';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -173,7 +174,7 @@ const App: React.FC = () => {
   }, [mode]);
 
   const toggleColorMode = () => {
-    setMode((prevMode) => (prevMode === 'light' ? 'dark' : 'light'));
+    setMode((prevMode: PaletteMode) => (prevMode === 'light' ? 'dark' : 'light'));
   };
 
   const theme = useMemo(() => createTheme(getDesignTokens(mode)), [mode]);
