@@ -39,6 +39,10 @@
         }
       ]
     },
+    {
+      "version": "2026.05.09",
+      "date": "2026-05-09",
+      "sections": [
         {
           "title": "Activity Log panel",
           "type": "feature",
