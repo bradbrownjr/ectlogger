@@ -3,6 +3,36 @@
   "entries": [
     {
       "version": "2026.05.10",
+      "date": "2026-05-10",
+      "sections": [
+        {
+          "title": "UI polish",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Panel header bars (Chat, Activity Log, check-in table) now use the correct background color in both light and dark mode, matching the page header for better visual consistency.",
+              "userImpact": true
+            }
+          ]
+        },
+        {
+          "title": "Net Report map fixes",
+          "type": "fix",
+          "items": [
+            {
+              "text": "Net Report maps now always display in light mode (OpenStreetMap tiles), ensuring the printed or exported PDF is always legible regardless of your dark-mode setting.",
+              "userImpact": true
+            },
+            {
+              "text": "Net Report maps now show a 'Loading map...' spinner overlay while tiles are being fetched, so it's clear the map is loading rather than appearing blank.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "version": "2026.05.09b",
       "date": "2026-05-09",
       "sections": [
         {
