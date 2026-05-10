@@ -2368,7 +2368,7 @@ const NetView: React.FC = () => {
                 {/* ========== CHECK-IN LIST TABLE 1: Desktop Inline (attached) ========== */}
                 {/* This table displays when check-in list is NOT detached, on medium+ screens */}
                 <Table size="small" sx={{ borderCollapse: 'collapse' }}>
-                  <TableHead sx={{ position: 'sticky', top: 0, backgroundColor: 'background.paper', zIndex: 1 }}>
+                  <TableHead sx={{ position: 'sticky', top: 0, backgroundColor: 'background.default', zIndex: 1 }}>
                     <TableRow>
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>#</TableCell>
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>Status</TableCell>
@@ -2900,7 +2900,7 @@ const NetView: React.FC = () => {
               {/* ========== CHECK-IN LIST TABLE 2: Mobile View ========== */}
               {/* This table displays on small screens (xs) only */}
               <Table size="small">
-                <TableHead sx={{ position: 'sticky', top: 0, backgroundColor: 'background.paper', zIndex: 1 }}>
+                <TableHead sx={{ position: 'sticky', top: 0, backgroundColor: 'background.default', zIndex: 1 }}>
                   <TableRow>
                     <TableCell sx={{ whiteSpace: 'nowrap' }}>#</TableCell>
                     <TableCell sx={{ whiteSpace: 'nowrap' }}>Status</TableCell>
@@ -3719,7 +3719,7 @@ const NetView: React.FC = () => {
                 '&::-webkit-scrollbar-thumb': { backgroundColor: (thm) => thm.palette.mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)', borderRadius: 4 },
               }}>
                 <Table size="small" sx={{ borderCollapse: 'collapse' }}>
-                  <TableHead sx={{ position: 'sticky', top: 0, backgroundColor: 'background.paper', zIndex: 1 }}>
+                  <TableHead sx={{ position: 'sticky', top: 0, backgroundColor: 'background.default', zIndex: 1 }}>
                     <TableRow>
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>#</TableCell>
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>Status</TableCell>

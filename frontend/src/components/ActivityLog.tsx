@@ -69,7 +69,7 @@ const ActivityLog: React.FC<ActivityLogProps> = ({ netId, minimized, onMinimize,
         <Table size="small">
           <TableHead>
             <TableRow>
-              <TableCell sx={{ borderBottom: 1, borderColor: 'divider', py: 0.5 }}>
+              <TableCell sx={{ borderBottom: 1, borderColor: 'divider', py: 0.5, backgroundColor: 'background.default' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   Activity Log
                   <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>

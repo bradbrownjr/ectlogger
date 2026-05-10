@@ -169,7 +169,7 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
         <Table size="small">
           <TableHead>
             <TableRow>
-              <TableCell sx={{ borderBottom: 1, borderColor: 'divider' }}>
+              <TableCell sx={{ borderBottom: 1, borderColor: 'divider', backgroundColor: 'background.default' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   Chat
                   <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>

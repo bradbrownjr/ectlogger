@@ -221,7 +221,6 @@ const NetReport: React.FC = () => {
   const { netId } = useParams<{ netId: string }>();
   const navigate = useNavigate();
   const theme = useTheme();
-  const isDarkMode = theme.palette.mode === 'dark';
   const { user } = useAuth();
   const [net, setNet] = useState<Net | null>(null);
   const [stats, setStats] = useState<NetStats | null>(null);
@@ -232,14 +231,10 @@ const NetReport: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
 
-  // Use CartoDB Dark Matter tiles in dark mode, OSM in light mode.
-  // When exporting to PDF always use light tiles so the map is readable on paper.
-  const tileUrl = (isDarkMode && !exporting)
-    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-    : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-  const tileAttribution = (isDarkMode && !exporting)
-    ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-    : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+  // Always use OSM light tiles in the report — this is a print/export document
+  // and dark tiles are unreadable on white paper regardless of app UI mode.
+  const tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+  const tileAttribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
   // State for mapped locations
   interface MappedCheckIn {
@@ -248,6 +243,7 @@ const NetReport: React.FC = () => {
   }
   const [mappedCheckIns, setMappedCheckIns] = useState<MappedCheckIn[]>([]);
   const [mapLoading, setMapLoading] = useState(false);
+  const [mapTilesReady, setMapTilesReady] = useState(false);
   const processedKeyRef = useRef<string>('');
 
   // Colors for pie chart
@@ -352,6 +348,7 @@ const NetReport: React.FC = () => {
 
       processedKeyRef.current = checkInsKey;
       setMappedCheckIns(results);
+      setMapTilesReady(false);
       setMapLoading(false);
     };
 
@@ -803,7 +800,13 @@ const NetReport: React.FC = () => {
                         📍 Cluster Detail ({dualMapData.clusterPositions.length} stations)
                       </Typography>
                     </Box>
-                    <Box sx={{ height: 320, width: '100%' }}>
+                    <Box sx={{ position: 'relative', height: 320, width: '100%' }}>
+                      {!mapTilesReady && (
+                        <Box sx={{ position: 'absolute', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, backgroundColor: 'background.paper' }}>
+                          <CircularProgress size={16} />
+                          <Typography variant="body2" color="text.secondary">Loading map...</Typography>
+                        </Box>
+                      )}
                       <MapContainer
                         center={[39.8283, -98.5795]}
                         zoom={4}
@@ -813,6 +816,7 @@ const NetReport: React.FC = () => {
                         <TileLayer
                           attribution={tileAttribution}
                           url={tileUrl}
+                          eventHandlers={{ load: () => setMapTilesReady(true) }}
                         />
                         <FitBounds positions={dualMapData.clusterPositions} />
                         {mappedCheckIns.map((mapped) => (
@@ -844,7 +848,13 @@ const NetReport: React.FC = () => {
                         🌐 Full Overview ({dualMapData.allPositions.length} stations)
                       </Typography>
                     </Box>
-                    <Box sx={{ height: 320, width: '100%' }}>
+                    <Box sx={{ position: 'relative', height: 320, width: '100%' }}>
+                      {!mapTilesReady && (
+                        <Box sx={{ position: 'absolute', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, backgroundColor: 'background.paper' }}>
+                          <CircularProgress size={16} />
+                          <Typography variant="body2" color="text.secondary">Loading map...</Typography>
+                        </Box>
+                      )}
                       <MapContainer
                         center={[39.8283, -98.5795]}
                         zoom={4}
@@ -854,6 +864,7 @@ const NetReport: React.FC = () => {
                         <TileLayer
                           attribution={tileAttribution}
                           url={tileUrl}
+                          eventHandlers={{ load: () => setMapTilesReady(true) }}
                         />
                         <FitBounds positions={dualMapData.allPositions} />
                         {mappedCheckIns.map((mapped) => (
@@ -898,7 +909,13 @@ const NetReport: React.FC = () => {
             ) : (
               // ---- SINGLE MAP: all stations in one view ----
               <Paper variant="outlined" sx={{ mb: 3, overflow: 'hidden' }}>
-                <Box sx={{ height: 400, width: '100%' }}>
+                <Box sx={{ position: 'relative', height: 400, width: '100%' }}>
+                  {!mapTilesReady && (
+                    <Box sx={{ position: 'absolute', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, backgroundColor: 'background.paper' }}>
+                      <CircularProgress size={16} />
+                      <Typography variant="body2" color="text.secondary">Loading map...</Typography>
+                    </Box>
+                  )}
                   <MapContainer
                     center={[39.8283, -98.5795]}
                     zoom={4}
@@ -908,6 +925,7 @@ const NetReport: React.FC = () => {
                     <TileLayer
                       attribution={tileAttribution}
                       url={tileUrl}
+                      eventHandlers={{ load: () => setMapTilesReady(true) }}
                     />
                     <FitBounds positions={mappedCheckIns.map(m => [m.parsedLocation.lat, m.parsedLocation.lon] as [number, number])} />
                     {mappedCheckIns.map((mapped) => (
