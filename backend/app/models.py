@@ -269,6 +269,7 @@ class CheckIn(Base):
     frequency_id = Column(Integer, ForeignKey("frequencies.id"))  # Frequency they checked in on
     available_frequencies = Column(Text, default='[]')  # JSON array of frequency IDs they can reach
     is_recheck = Column(Boolean, default=False)
+    parent_check_in_id = Column(Integer, ForeignKey("check_ins.id", ondelete="SET NULL"), nullable=True)
     checked_in_by_id = Column(Integer, ForeignKey("users.id"))  # Who logged this check-in
     
     checked_in_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -280,6 +281,7 @@ class CheckIn(Base):
     user = relationship("User", foreign_keys=[user_id], back_populates="check_ins")
     checked_in_by = relationship("User", foreign_keys=[checked_in_by_id])
     frequency = relationship("Frequency")
+    parent_check_in = relationship("CheckIn", remote_side="CheckIn.id", foreign_keys=[parent_check_in_id])
     custom_values = relationship("CustomFieldValue", back_populates="check_in", cascade="all, delete-orphan")
 
 
