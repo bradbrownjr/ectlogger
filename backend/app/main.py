@@ -12,6 +12,24 @@ from app.ncs_reminder_service import ncs_reminder_service
 from app.whats_new_service import whats_new_service
 from typing import Dict, List
 import json
+import sys
+
+
+def _is_primary_process() -> bool:
+    """Return True only for the primary (public-facing) uvicorn process.
+
+    We run two processes: port 8001 (public, via Caddy) and port 9999
+    (localhost, internal).  Background services — email digests, NCS
+    reminders — must only run from one of them or every timed job fires
+    twice and every user gets duplicate emails.  We designate port 8001 as
+    the primary; if we can't detect the port we default to True (safe: runs
+    services rather than silently skipping them).
+    """
+    try:
+        idx = sys.argv.index('--port')
+        return sys.argv[idx + 1] != '9999'
+    except (ValueError, IndexError):
+        return True
 
 # Initialize rate limiter
 limiter = Limiter(key_func=get_remote_address, default_limits=["200 per minute"])
@@ -240,10 +258,13 @@ async def websocket_endpoint(websocket: WebSocket, net_id: int, token: str = Non
 async def startup_event():
     """Initialize database and background services on startup"""
     await init_db()
-    # Start NCS reminder service
-    await ncs_reminder_service.start()
-    # Start What's New daily digest service
-    await whats_new_service.start()
+    if _is_primary_process():
+        # Only the primary process (port 8001) runs background services to
+        # prevent duplicate emails from the secondary localhost process.
+        await ncs_reminder_service.start()
+        await whats_new_service.start()
+    else:
+        print("Secondary process (port 9999): background services skipped.")
 
 
 @app.on_event("shutdown")

@@ -29,8 +29,9 @@ from typing import Optional
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from sqlalchemy import select, and_
+from sqlalchemy.exc import IntegrityError
 from app.database import AsyncSessionLocal
-from app.models import User
+from app.models import User, WhatsNewSendLog
 from app.email_service import EmailService
 from app.logger import logger
 
@@ -118,14 +119,9 @@ class WhatsNewService:
 
     # ---------- per-user dedupe ----------
 
-    # In-memory dedupe: { user_id: last_sent_iso_date }. Process-local; a
-    # single restart will not cause duplicates because the service only
-    # fires inside an 08:00-08:59 local-time window and most restarts won't
-    # land back in that same window for the same user. If a user could
-    # legitimately get a duplicate (e.g. crash + restart at 08:30) they
-    # already opted in to the digest, so duplication is preferable to a miss
-    # that drops a release announcement entirely.
-    _sent_cache: dict = {}
+    # Deduplication is handled by a DB UNIQUE constraint on
+    # (user_id, sent_date) in whats_new_send_log.  This works across
+    # multiple processes, unlike an in-memory dict.
 
     # ---------- main tick ----------
 
@@ -163,10 +159,19 @@ class WhatsNewService:
                 if not day_entries:
                     continue
 
-                # Dedupe: don't send the same day's digest twice to the same user
-                last_sent = self._sent_cache.get(user.id)
-                if last_sent == yesterday_local.isoformat():
-                    continue
+                # Dedupe: attempt to INSERT a send-log row.  The UNIQUE
+                # constraint on (user_id, sent_date) means only one process
+                # can succeed; the other gets an IntegrityError and skips.
+                try:
+                    send_log = WhatsNewSendLog(
+                        user_id=user.id,
+                        sent_date=yesterday_local.isoformat(),
+                    )
+                    db.add(send_log)
+                    await db.flush()   # raises IntegrityError here if dupe
+                except IntegrityError:
+                    await db.rollback()
+                    continue  # other process already sent this digest
 
                 date_label = yesterday_local.strftime('%B %-d, %Y') if hasattr(date, 'strftime') else yesterday_local.isoformat()
                 try:
@@ -176,9 +181,10 @@ class WhatsNewService:
                         digest_date_label=date_label,
                         entries=day_entries,
                     )
-                    self._sent_cache[user.id] = yesterday_local.isoformat()
+                    await db.commit()   # persist the send-log row
                     sent_count += 1
                 except Exception as e:
+                    await db.rollback()
                     logger.error("WHATS_NEW", f"Failed to send digest to {user.email}: {e}")
 
             if sent_count:

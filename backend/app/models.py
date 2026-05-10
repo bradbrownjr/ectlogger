@@ -422,6 +422,28 @@ class NCSReminderLog(Base):
     user = relationship("User")
 
 
+class WhatsNewSendLog(Base):
+    """Track sent What's New digest emails for cross-process deduplication.
+
+    The UNIQUE constraint on (user_id, sent_date) is the atomic lock that
+    prevents two uvicorn processes from sending the same day's digest to
+    the same user.  Whichever process INSERTs first wins; the second gets
+    an IntegrityError and skips the send.
+    """
+    __tablename__ = "whats_new_send_log"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    sent_date = Column(String(10), nullable=False)   # ISO date, e.g. "2026-05-09"
+    sent_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint('user_id', 'sent_date', name='uq_whats_new_send_log_user_date'),
+    )
+
+    user = relationship("User")
+
+
 class Contact(Base):
     """Known station contacts built from check-in history.
     
