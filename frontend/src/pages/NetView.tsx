@@ -1481,6 +1481,19 @@ const NetView: React.FC = () => {
     }
   };
 
+  // Compute the latest checked_in_at per callsign (for graying prior rows)
+  // Must be above all early returns so hook count never changes between renders.
+  const latestCheckedInAtByCallsign = React.useMemo(() => {
+    const map = new Map<string, string>();
+    for (const ci of checkIns) {
+      const prev = map.get(ci.callsign);
+      if (!prev || ci.checked_in_at > prev) {
+        map.set(ci.callsign, ci.checked_in_at);
+      }
+    }
+    return map;
+  }, [checkIns]);
+
   if (!net) {
     return <Container><Typography>Loading...</Typography></Container>;
   }
@@ -1572,18 +1585,6 @@ const NetView: React.FC = () => {
       handleSetActiveFrequency(frequencyId);
     }
   };
-
-  // Compute the latest checked_in_at per callsign (for graying prior rows)
-  const latestCheckedInAtByCallsign = React.useMemo(() => {
-    const map = new Map<string, string>();
-    for (const ci of checkIns) {
-      const prev = map.get(ci.callsign);
-      if (!prev || ci.checked_in_at > prev) {
-        map.set(ci.callsign, ci.checked_in_at);
-      }
-    }
-    return map;
-  }, [checkIns]);
 
   // Filter check-ins based on search query AND frequency filter
   const filteredCheckIns = checkIns.filter((checkIn: CheckIn) => {
