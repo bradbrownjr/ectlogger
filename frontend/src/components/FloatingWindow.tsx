@@ -8,7 +8,6 @@ import {
   useTheme,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import MinimizeIcon from '@mui/icons-material/Minimize';
 import CropSquareIcon from '@mui/icons-material/CropSquare';
 
@@ -16,19 +15,13 @@ interface FloatingWindowProps {
   title: string;
   children: React.ReactNode;
   isDetached: boolean;
-  onDetach: () => void;
+  onDetach?: () => void;
   onAttach: () => void;
   defaultWidth?: number;
   defaultHeight?: number;
   minWidth?: number;
   minHeight?: number;
   storageKey?: string;
-  /** Controlled minimized state for docked mode */
-  minimized?: boolean;
-  onMinimize?: () => void;
-  onRestore?: () => void;
-  /** Hide the detach/pop-out button in the docked title bar */
-  hideDetach?: boolean;
 }
 
 interface WindowPosition {
@@ -42,17 +35,12 @@ const FloatingWindow: React.FC<FloatingWindowProps> = ({
   title,
   children,
   isDetached,
-  onDetach,
   onAttach,
   defaultWidth = 500,
   defaultHeight = 400,
   minWidth = 300,
   minHeight = 200,
   storageKey,
-  minimized,
-  onMinimize,
-  onRestore,
-  hideDetach = false,
 }) => {
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
@@ -99,59 +87,8 @@ const FloatingWindow: React.FC<FloatingWindowProps> = ({
   }, []);
 
   if (!isDetached) {
-    // Docked mode: show a compact title bar when minimize/restore props are provided
-    const hasDockControls = onMinimize !== undefined || onRestore !== undefined;
-    if (hasDockControls) {
-      return (
-        <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-          {/* Docked title bar */}
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              px: 1.5,
-              py: 0.25,
-              backgroundColor: isDarkMode ? '#1565c0' : 'primary.main',
-              color: '#ffffff',
-              flexShrink: 0,
-              borderRadius: '4px 4px 0 0',
-            }}
-          >
-            <Typography variant="subtitle2" sx={{ fontWeight: 'bold', fontSize: '0.8rem' }}>
-              {title}
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 0.5 }}>
-              {!hideDetach && (
-                <IconButton
-                  size="small"
-                  onClick={onDetach}
-                  title="Pop out"
-                  sx={{ color: 'inherit', p: 0.25 }}
-                >
-                  <OpenInNewIcon sx={{ fontSize: 14 }} />
-                </IconButton>
-              )}
-              <IconButton
-                size="small"
-                onClick={minimized ? onRestore : onMinimize}
-                title={minimized ? 'Restore' : 'Minimize'}
-                sx={{ color: 'inherit', p: 0.25 }}
-              >
-                {minimized ? <CropSquareIcon sx={{ fontSize: 14 }} /> : <MinimizeIcon sx={{ fontSize: 14 }} />}
-              </IconButton>
-            </Box>
-          </Box>
-          {/* Content — hidden when minimized */}
-          {!minimized && (
-            <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-              {children}
-            </Box>
-          )}
-        </Box>
-      );
-    }
-    // No dock controls: legacy passthrough
+    // Docked mode: children own their own headers (Chat/ActivityLog render their own title rows).
+    // Just passthrough regardless of whether minimize props are provided.
     return (
       <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
         {children}

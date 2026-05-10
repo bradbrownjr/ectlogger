@@ -18,6 +18,8 @@ import {
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import MinimizeIcon from '@mui/icons-material/Minimize';
+import CropSquareIcon from '@mui/icons-material/CropSquare';
 import { chatApi, ChatMessage } from '../api/chat';
 import { useAuth } from '../contexts/AuthContext';
 import { formatTimeWithDate } from '../utils/dateUtils';
@@ -29,9 +31,12 @@ interface ChatProps {
   searchQuery?: string;
   onNewMessage?: (message: ChatMessage) => void;
   onDetach?: () => void;
+  minimized?: boolean;
+  onMinimize?: () => void;
+  onRestore?: () => void;
 }
 
-const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery, onNewMessage, onDetach }) => {
+const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery, onNewMessage, onDetach, minimized, onMinimize, onRestore }) => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -167,8 +172,8 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
               <TableCell sx={{ borderBottom: 1, borderColor: 'divider' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   Chat
-                  {onDetach && (
-                    <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
+                  <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
+                    {onDetach && (
                       <IconButton
                         size="small"
                         onClick={onDetach}
@@ -177,8 +182,20 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
                       >
                         <OpenInNewIcon sx={{ fontSize: 14 }} />
                       </IconButton>
-                    </Box>
-                  )}
+                    )}
+                    {(onMinimize || onRestore) && (
+                      <IconButton
+                        size="small"
+                        onClick={minimized ? onRestore : onMinimize}
+                        title={minimized ? 'Restore' : 'Minimize'}
+                        sx={{ p: 0.25 }}
+                      >
+                        {minimized
+                          ? <CropSquareIcon sx={{ fontSize: 14 }} />
+                          : <MinimizeIcon sx={{ fontSize: 14 }} />}
+                      </IconButton>
+                    )}
+                  </Box>
                 </Box>
               </TableCell>
             </TableRow>
@@ -186,6 +203,8 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
         </Table>
       </Box>
 
+      {!minimized && (
+        <>
       <List 
         ref={messagesContainerRef}
         sx={{ 
@@ -322,6 +341,7 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
           </Box>
         </Box>
       )}
+      </>)}
 
       <Snackbar
         open={showClosedToast}

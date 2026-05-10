@@ -3646,20 +3646,17 @@ const NetView: React.FC = () => {
                 <FloatingWindow
                   title="Chat"
                   isDetached={false}
-                  onDetach={handleDetachChat}
                   onAttach={handleAttachChat}
                   defaultWidth={450}
                   defaultHeight={500}
                   minWidth={300}
                   minHeight={250}
                   storageKey="chat"
-                  minimized={chatMinimized}
-                  onMinimize={() => setChatMinimized(true)}
-                  onRestore={() => setChatMinimized(false)}
                 >
                   <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                     <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-                      <Chat netId={Number(netId)} netStartedAt={net?.started_at} netStatus={net?.status} searchQuery={searchQuery} onDetach={handleDetachChat} />
+                      <Chat netId={Number(netId)} netStartedAt={net?.started_at} netStatus={net?.status} searchQuery={searchQuery} onDetach={handleDetachChat}
+                        minimized={chatMinimized} onMinimize={() => setChatMinimized(true)} onRestore={() => setChatMinimized(false)} />
                     </Box>
                   </Box>
                 </FloatingWindow>
@@ -3676,20 +3673,16 @@ const NetView: React.FC = () => {
                 <FloatingWindow
                   title="Activity Log"
                   isDetached={false}
-                  onDetach={() => setActivityLogDetached(true)}
                   onAttach={() => {}}
                   defaultWidth={450}
                   defaultHeight={500}
                   minWidth={300}
                   minHeight={250}
                   storageKey="activityLog"
-                  minimized={activityLogMinimized}
-                  onMinimize={() => setActivityLogMinimized(true)}
-                  onRestore={() => setActivityLogMinimized(false)}
-                  hideDetach={activityLogDetached}
                 >
                   <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                    {!activityLogDetached && <ActivityLog netId={Number(netId)} />}
+                    {!activityLogDetached && <ActivityLog netId={Number(netId)}
+                        minimized={activityLogMinimized} onMinimize={() => setActivityLogMinimized(true)} onRestore={() => setActivityLogMinimized(false)} onDetach={() => setActivityLogDetached(true)} />}
                   </Box>
                 </FloatingWindow>
               </Box>
