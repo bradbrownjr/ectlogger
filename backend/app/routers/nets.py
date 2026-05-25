@@ -732,6 +732,16 @@ async def close_net(
     
     net.status = NetStatus.CLOSED
     net.closed_at = datetime.utcnow()
+
+    # If started_at was never set (net closed from LOBBY without going ACTIVE),
+    # backfill it from scheduled_start_time so duration stats are accurate.
+    if not net.started_at:
+        if net.scheduled_start_time:
+            net.started_at = net.scheduled_start_time
+        elif net.check_ins:
+            times = [c.checked_in_at for c in net.check_ins if c.checked_in_at]
+            if times:
+                net.started_at = min(times)
     
     # Log topic to history if topic was used and template is set
     if net.topic_of_week_enabled and net.topic_of_week_prompt and net.template_id:
