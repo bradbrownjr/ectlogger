@@ -45,22 +45,9 @@ def migrate(db_path: str = None):
             sys.exit(1)
         print(f"Template: '{template['name']}' (owner_id={template['owner_id']})")
 
-        # 3. Ensure AA1GM is in template_staff
-        cursor.execute(
-            "SELECT id FROM template_staff WHERE template_id = ? AND user_id = ?",
-            (TEMPLATE_ID, user_id)
-        )
-        if cursor.fetchone():
-            print(f"{CALLSIGN} is already in template_staff for template {TEMPLATE_ID}. Skipping staff add.")
-        else:
-            cursor.execute(
-                "INSERT INTO template_staff (template_id, user_id, is_active) VALUES (?, ?, 1)",
-                (TEMPLATE_ID, user_id)
-            )
-            conn.commit()
-            print(f"Added {CALLSIGN} to template_staff for template {TEMPLATE_ID}.")
-
-        # 4. Ensure AA1GM is in ncs_rotation_members
+        # 3. Ensure AA1GM is in ncs_rotation_members
+        # Note: the schedule manager is implicitly authorized and does NOT need
+        # a template_staff row — adding one causes a duplicate in the staff UI.
         cursor.execute(
             "SELECT id FROM ncs_rotation_members WHERE template_id = ? AND user_id = ?",
             (TEMPLATE_ID, user_id)

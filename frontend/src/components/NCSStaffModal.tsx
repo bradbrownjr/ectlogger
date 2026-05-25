@@ -690,8 +690,8 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
               )}
             </ListItem>
 
-            {/* Additional staff members */}
-            {staff.map((s: StaffMember) => (
+            {/* Additional staff members — skip owner, already shown above as Manager */}
+            {staff.filter((s: StaffMember) => s.user_id !== (localOwner?.id ?? schedule?.owner_id)).map((s: StaffMember) => (
               <ListItem
                 key={s.id}
                 sx={{
