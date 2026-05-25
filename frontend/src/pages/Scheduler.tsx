@@ -714,7 +714,7 @@ const Scheduler: React.FC = () => {
   );
 
   return (
-    <Container maxWidth="lg" sx={{ mt: { xs: 2, sm: 4 }, mb: 4, px: { xs: 1, sm: 3 } }}>
+    <Container maxWidth="lg" sx={{ mt: { xs: 2, sm: 4 }, mb: 4, pb: 12, px: { xs: 1, sm: 3 } }}>
       {/* ========== HEADER WITH VIEW TOGGLE ========== */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
         <Typography variant={isMobile ? "h5" : "h4"} component="h1">

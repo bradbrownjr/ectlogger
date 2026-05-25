@@ -1,6 +1,30 @@
 {
-  "version": "2026.05.10",
+  "version": "2026.05.20",
   "entries": [
+    {
+      "version": "2026.05.20",
+      "date": "2026-05-20",
+      "sections": [
+        {
+          "title": "Net Staff & Rotation improvements",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "The Net Schedule page and Active Nets page now have extra scroll room at the bottom so FAB buttons no longer obscure the action buttons on the last card.",
+              "userImpact": true
+            },
+            {
+              "text": "When editing a schedule's NCS rotation, the 'Add NCS Operator to rotation' dropdown now only lists the net manager and authorized net staff — not every user on the platform.",
+              "userImpact": true
+            },
+            {
+              "text": "The net manager is now always included as an option when building or editing a schedule's NCS rotation.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.05.10",
       "date": "2026-05-10",

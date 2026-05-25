@@ -830,14 +830,19 @@ const CreateSchedule: React.FC = () => {
     }
   };
 
-  // Get users not already in rotation
-  const availableUsersForRotation = users.filter(
-    u => !rotationMembers.some(m => m.user_id === u.id)
-  );
-
   // Get users not already in the staff list and not the schedule manager
   const availableUsersForStaff = users.filter(
     u => u.id !== ownerId && !staff.some(s => s.user_id === u.id)
+  );
+
+  // Only the manager and active staff are eligible for the NCS rotation —
+  // exclude anyone already in the rotation.
+  const eligibleForRotationIds = new Set<number>([
+    ...(ownerId ? [ownerId] : []),
+    ...staff.filter(s => s.is_active).map(s => s.user_id),
+  ]);
+  const availableUsersForRotation = users.filter(
+    u => eligibleForRotationIds.has(u.id) && !rotationMembers.some(m => m.user_id === u.id)
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
