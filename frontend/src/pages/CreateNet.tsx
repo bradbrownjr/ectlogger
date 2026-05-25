@@ -252,10 +252,17 @@ const CreateNet: React.FC = () => {
       
       setPollEnabled(response.data.poll_enabled || false);
       setPollQuestion(response.data.poll_question || '');
-      // Convert ISO string to local datetime-local format for input
+      // Convert ISO string to local datetime-local format for input.
+      // The server returns UTC without a 'Z' suffix; add it so the browser
+      // parses as UTC, then convert to local time for the datetime-local input.
       if (response.data.scheduled_start_time) {
-        const dt = new Date(response.data.scheduled_start_time);
-        setScheduledStartTime(dt.toISOString().slice(0, 16));
+        const isoStr = response.data.scheduled_start_time.endsWith('Z')
+          ? response.data.scheduled_start_time
+          : response.data.scheduled_start_time + 'Z';
+        const dt = new Date(isoStr);
+        const tzOffset = dt.getTimezoneOffset() * 60000;
+        const localDt = new Date(dt.getTime() - tzOffset);
+        setScheduledStartTime(localDt.toISOString().slice(0, 16));
       }
       setSelectedFrequencies(response.data.frequencies.map((f: Frequency) => f.id!));
       if (response.data.field_config) {
