@@ -11,13 +11,13 @@ from sqlalchemy import select, and_
 from sqlalchemy.orm import selectinload
 from app.database import AsyncSessionLocal
 from app.utils import display_callsign
-from app.models import NetTemplate, NCSRotationMember, NCSReminderLog, User, NetTemplateSubscription
+from app.models import NetTemplate, NCSRotationMember, NCSReminderLog, NCSScheduleOverride, User, NetTemplateSubscription, Net, NetStatus
 from app.email_service import EmailService
 from app.config import settings
 from app.logger import logger
 
-# Import the schedule calculation function from the router
-from app.routers.ncs_rotation import compute_ncs_schedule
+# Import the schedule calculation functions from the router
+from app.routers.ncs_rotation import compute_ncs_schedule, calculate_schedule_dates
 
 
 class NCSReminderService:
@@ -63,16 +63,78 @@ class NCSReminderService:
             # Wait before next check
             await asyncio.sleep(self.CHECK_INTERVAL_MINUTES * 60)
     
+    async def _get_or_create_scheduled_net(self, db, template: NetTemplate, scheduled_dt: datetime) -> int | None:
+        """
+        Find an existing open net for this template near scheduled_dt,
+        or auto-create a SCHEDULED net so the NCS has a direct link.
+        Returns the net ID, or None on failure.
+        """
+        from app.routers.nets import net_frequencies as net_freq_table
+        import json
+
+        # Look for any non-closed net for this template within ±4 hours
+        window_start = scheduled_dt - timedelta(hours=4)
+        window_end = scheduled_dt + timedelta(hours=4)
+        result = await db.execute(
+            select(Net)
+            .where(
+                and_(
+                    Net.template_id == template.id,
+                    Net.status.notin_(['closed', 'archived']),
+                    Net.scheduled_start_time >= window_start,
+                    Net.scheduled_start_time <= window_end,
+                )
+            )
+        )
+        existing = result.scalar_one_or_none()
+        if existing:
+            return existing.id
+
+        # Auto-create the net from the template as SCHEDULED
+        try:
+            net = Net(
+                name=template.name,
+                description=template.description,
+                info_url=template.info_url,
+                stream_url=template.stream_url,
+                script=template.script,
+                announcements=template.announcements,
+                owner_id=template.owner_id,
+                template_id=template.id,
+                field_config=template.field_config,
+                status=NetStatus.SCHEDULED,
+                ics309_enabled=template.ics309_enabled or False,
+                topic_of_week_enabled=template.topic_of_week_enabled or False,
+                topic_of_week_prompt=template.topic_of_week_prompt,
+                poll_enabled=template.poll_enabled or False,
+                poll_question=template.poll_question,
+                scheduled_start_time=scheduled_dt,
+            )
+            db.add(net)
+            await db.flush()
+            for freq in template.frequencies:
+                await db.execute(
+                    net_freq_table.insert().values(net_id=net.id, frequency_id=freq.id)
+                )
+            await db.commit()
+            logger.info("NCS_REMINDER", f"Auto-created net {net.id} for template {template.id} on {scheduled_dt.date()}")
+            return net.id
+        except Exception as e:
+            logger.error("NCS_REMINDER", f"Failed to auto-create net for template {template.id}: {e}")
+            await db.rollback()
+            return None
+
     async def _check_and_send_ncs_reminders(self):
         """Check for upcoming nets and send reminders if needed"""
         logger.debug("NCS_REMINDER", "Checking for NCS reminders to send...")
         
         async with AsyncSessionLocal() as db:
-            # Get all active templates with rotation members
+            # Get all active templates with rotation members and overrides
             result = await db.execute(
                 select(NetTemplate)
                 .options(
                     selectinload(NetTemplate.rotation_members).selectinload(NCSRotationMember.user),
+                    selectinload(NetTemplate.schedule_overrides),
                     selectinload(NetTemplate.frequencies)
                 )
                 .where(NetTemplate.is_active == True)
@@ -87,22 +149,27 @@ class NCSReminderService:
                 if not template.rotation_members:
                     continue
                 
-                # Get the upcoming schedule for this template (next 48 hours)
+                # Calculate upcoming schedule dates for this template
+                start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
                 try:
-                    schedule = await compute_ncs_schedule(db, template.id, weeks=1)
+                    dates = calculate_schedule_dates(template, start_date, months_ahead=1)
+                    if not dates:
+                        continue
+                    schedule = compute_ncs_schedule(
+                        template,
+                        dates,
+                        template.rotation_members,
+                        template.schedule_overrides
+                    )
                 except Exception as e:
                     logger.error("NCS_REMINDER", f"Error computing schedule for template {template.id}: {str(e)}")
                     continue
                 
                 for entry in schedule:
-                    if not entry.get('user_id') or entry.get('is_cancelled'):
+                    if not entry.user_id or entry.is_cancelled:
                         continue
                     
-                    # Parse the scheduled date/time
-                    try:
-                        scheduled_dt = datetime.fromisoformat(entry['date'])
-                    except (ValueError, KeyError):
-                        continue
+                    scheduled_dt = entry.date
                     
                     # Calculate hours until the net
                     time_until = scheduled_dt - now
@@ -112,26 +179,17 @@ class NCSReminderService:
                     for reminder_hours in self.REMINDER_HOURS:
                         # Check if we're within the reminder window (±30 minutes)
                         if abs(hours_until - reminder_hours) <= 0.5:
-                            # Check if we've already sent this reminder
                             reminder_type = f"{reminder_hours}h"
                             already_sent = await self._check_reminder_sent(
-                                db, 
-                                template.id, 
-                                entry['user_id'],
-                                scheduled_dt.date(),
-                                reminder_type
+                                db, template.id, entry.user_id,
+                                scheduled_dt.date(), reminder_type
                             )
                             
                             if not already_sent:
-                                # Get user details
-                                user = await self._get_user(db, entry['user_id'])
+                                user = await self._get_user(db, entry.user_id)
                                 if user and user.email:
                                     await self._send_reminder(
-                                        db,
-                                        template,
-                                        user,
-                                        scheduled_dt,
-                                        reminder_hours
+                                        db, template, user, scheduled_dt, reminder_hours
                                     )
                                     reminders_sent += 1
             
@@ -195,8 +253,32 @@ class NCSReminderService:
             operator_name = user.name or display_callsign(user) or "Operator"
             operator_callsign = display_callsign(user) or "N/A"
             
-            # Build scheduler URL
+            # Build URLs
             scheduler_url = f"{settings.frontend_url}/scheduler"
+
+            # For the 24h reminder, auto-create the net now so the NCS has a
+            # direct link to the waiting net in their email.
+            net_url = None
+            if hours_until >= 20:  # ~24h window
+                net_id = await self._get_or_create_scheduled_net(db, template, scheduled_dt)
+                if net_id:
+                    net_url = f"{settings.frontend_url}/nets/{net_id}"
+            else:
+                # 1h reminder — net should already exist; just find it
+                result = await db.execute(
+                    select(Net)
+                    .where(
+                        and_(
+                            Net.template_id == template.id,
+                            Net.status.notin_(['closed', 'archived']),
+                            Net.scheduled_start_time >= scheduled_dt - timedelta(hours=4),
+                            Net.scheduled_start_time <= scheduled_dt + timedelta(hours=4),
+                        )
+                    )
+                )
+                existing = result.scalar_one_or_none()
+                if existing:
+                    net_url = f"{settings.frontend_url}/nets/{existing.id}"
             
             await EmailService.send_ncs_reminder(
                 to_email=user.email,
@@ -208,6 +290,7 @@ class NCSReminderService:
                 frequencies=frequencies,
                 hours_until=hours_until,
                 scheduler_url=scheduler_url,
+                net_url=net_url,
                 unsubscribe_token=user.unsubscribe_token
             )
             
@@ -338,8 +421,22 @@ class NCSReminderService:
         recipient_name = user.name or display_callsign(user) or "Operator"
         recipient_callsign = display_callsign(user) or "N/A"
         
-        # Build net URL (dashboard where they can see active nets)
+        # Build net URL — find the open/scheduled net for this template
         net_url = f"{settings.frontend_url}/dashboard"
+        result = await db.execute(
+            select(Net)
+            .where(
+                and_(
+                    Net.template_id == template.id,
+                    Net.status.notin_(['closed', 'archived']),
+                    Net.scheduled_start_time >= next_date - timedelta(hours=4),
+                    Net.scheduled_start_time <= next_date + timedelta(hours=4),
+                )
+            )
+        )
+        existing_net = result.scalar_one_or_none()
+        if existing_net:
+            net_url = f"{settings.frontend_url}/nets/{existing_net.id}"
         
         await EmailService.send_subscriber_reminder(
             to_email=user.email,

@@ -989,11 +989,11 @@ async def create_net_from_template(
                     days_ahead += 7
                 scheduled_local = (now_local + timedelta(days=days_ahead)).replace(hour=hour, minute=minute, second=0, microsecond=0)
             elif template.schedule_type == 'monthly':
-                # For monthly nets, use the next scheduled date from calculate_schedule_dates
-                # For now, just use today's date with the time - the NCS rotation handles the complex logic
-                scheduled_local = now_local.replace(hour=hour, minute=minute, second=0, microsecond=0)
-                if scheduled_local <= now_local:
-                    scheduled_local = scheduled_local + timedelta(days=1)
+                # Use calculate_schedule_dates to find the actual next occurrence
+                # (e.g., the 3rd Thursday of the month), not just "today at HH:MM".
+                from app.routers.ncs_rotation import calculate_schedule_dates
+                next_dates = calculate_schedule_dates(template, now_local, months_ahead=2)
+                scheduled_local = next_dates[0] if next_dates else None
             else:
                 scheduled_local = None
             

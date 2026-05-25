@@ -419,6 +419,7 @@ This is an automated message, please do not reply.
         frequencies: list,
         hours_until: int,
         scheduler_url: str,
+        net_url: str = None,
         unsubscribe_token: str = None
     ):
         """Send NCS duty reminder email"""
@@ -493,7 +494,15 @@ This is an automated message, please do not reply.
                 <p>Please ensure you are ready to run the net at the scheduled time. 
                 If you are unable to fulfill your NCS duty, please arrange a swap with another operator as soon as possible.</p>
                 
+                {% if net_url %}
+                <p><strong>Your net is ready and waiting:</strong></p>
+                <a href="{{ net_url }}" class="button" style="color: #ffffff;">Open Net &rarr;</a>
+                <p style="margin-top: 10px; font-size: 13px; color: #555;">
+                    <a href="{{ scheduler_url }}">View Schedule</a>
+                </p>
+                {% else %}
                 <a href="{{ scheduler_url }}" class="button" style="color: #ffffff;">View Schedule</a>
+                {% endif %}
                 
                 <div class="footer">
                     <p>This is an automated reminder from {{ app_name }}.</p>
@@ -516,6 +525,7 @@ This is an automated message, please do not reply.
             urgency=urgency,
             urgency_style=urgency_style,
             scheduler_url=scheduler_url,
+            net_url=net_url,
             app_name=settings.app_name,
             unsubscribe_footer=EmailService.get_unsubscribe_footer(unsubscribe_token)
         )
