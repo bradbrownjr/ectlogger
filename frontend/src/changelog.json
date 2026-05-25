@@ -1,6 +1,26 @@
 {
-  "version": "2026.05.25",
+  "version": "2026.05.25b",
   "entries": [
+    {
+      "version": "2026.05.25b",
+      "date": "2026-05-25",
+      "sections": [
+        {
+          "title": "PDF report: smaller files and no split rows",
+          "type": "fix",
+          "items": [
+            {
+              "text": "Net Report PDFs are now roughly 75% smaller. The export now uses JPEG compression instead of lossless PNG, so a 30 MB report will typically come out under 5 MB with no visible loss of quality.",
+              "userImpact": true
+            },
+            {
+              "text": "Table rows are no longer cut in half at a page boundary. The exporter now detects where each row sits on the canvas and moves the page cut to the gap between rows.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.05.25",
       "date": "2026-05-25",
