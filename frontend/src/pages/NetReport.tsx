@@ -1068,43 +1068,7 @@ const NetReport: React.FC = () => {
           </Table>
         </TableContainer>
 
-        {/* ========== SECTION 5: CHAT MESSAGES (operator messages only) ========== */}
-        {userChatMessages.length > 0 && (
-          <>
-            <Typography variant="h6" sx={{ mt: 3, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-              <ChatIcon /> Chat Messages ({userChatMessages.length} message{userChatMessages.length !== 1 ? 's' : ''})
-            </Typography>
-            
-            <TableContainer component={Paper} variant="outlined" sx={{ mb: 3 }}>
-              <Table size="small">
-                <TableHead>
-                  <TableRow sx={{ backgroundColor: theme.palette.action.hover }}>
-                    <TableCell sx={{ fontWeight: 'bold', width: 140 }}>Time</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', width: 100 }}>From</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>Message</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {userChatMessages.map((msg: ChatMessage) => (
-                    <TableRow key={msg.id}>
-                      <TableCell sx={{ whiteSpace: 'nowrap', fontSize: '0.75rem' }}>
-                        {formatTimeWithDate(msg.created_at, user?.prefer_utc || false)}
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" fontWeight="medium">
-                          {msg.callsign || 'Unknown'}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>{msg.message}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </>
-        )}
-
-        {/* ========== SECTION 6: TOPIC OF THE WEEK (if enabled and responses exist) ========== */}
+        {/* ========== SECTION 5: TOPIC OF THE WEEK (if enabled and responses exist) ========== */}
         {topicPrompt && (
           <>
             <Typography variant="h6" sx={{ mt: 3, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -1143,7 +1107,7 @@ const NetReport: React.FC = () => {
           </>
         )}
 
-        {/* ========== SECTION 7: POLL RESULTS (if poll enabled and responses exist) ========== */}
+        {/* ========== SECTION 6: POLL RESULTS (if poll enabled and responses exist) ========== */}
         {pollQuestion && pollResults.length > 0 && (
           <>
             <Typography variant="h6" sx={{ mt: 3, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -1194,6 +1158,42 @@ const NetReport: React.FC = () => {
           </>
         )}
 
+        {/* ========== SECTION 7: CHAT MESSAGES (operator messages only) ========== */}
+        {userChatMessages.length > 0 && (
+          <>
+            <Typography variant="h6" sx={{ mt: 3, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <ChatIcon /> Chat Messages ({userChatMessages.length} message{userChatMessages.length !== 1 ? 's' : ''})
+            </Typography>
+            
+            <TableContainer component={Paper} variant="outlined" sx={{ mb: 3 }}>
+              <Table size="small">
+                <TableHead>
+                  <TableRow sx={{ backgroundColor: theme.palette.action.hover }}>
+                    <TableCell sx={{ fontWeight: 'bold', width: 140 }}>Time</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold', width: 100 }}>From</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Message</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {userChatMessages.map((msg: ChatMessage) => (
+                    <TableRow key={msg.id}>
+                      <TableCell sx={{ whiteSpace: 'nowrap', fontSize: '0.75rem' }}>
+                        {formatTimeWithDate(msg.created_at, user?.prefer_utc || false)}
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" fontWeight="medium">
+                          {msg.callsign || 'Unknown'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>{msg.message}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </>
+        )}
+
         {/* ========== SECTION 8: SYSTEM LOG (automated event entries only) ========== */}
         {systemLogMessages.length > 0 && (
           <>
@@ -1226,7 +1226,7 @@ const NetReport: React.FC = () => {
           </>
         )}
 
-        {/* ========== SECTION 8: ICS-309 FORMAT (if enabled) ========== */}
+        {/* ========== SECTION 9: ICS-309 FORMAT (if enabled) ========== */}
         {net.ics309_enabled && (
           <>
             <Typography variant="h6" sx={{ mt: 3, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>

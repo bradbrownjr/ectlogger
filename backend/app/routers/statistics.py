@@ -196,6 +196,17 @@ async def get_net_statistics(
             end_time = datetime.now(timezone.utc)
         
         duration_minutes = int((end_time - started_at).total_seconds() / 60)
+    elif net.check_ins:
+        # started_at not recorded — derive duration from first to last check-in
+        times = [c.checked_in_at for c in net.check_ins if c.checked_in_at]
+        if times:
+            first = min(times)
+            if first.tzinfo is None:
+                first = first.replace(tzinfo=timezone.utc)
+            end_time = net.closed_at or max(times)
+            if end_time.tzinfo is None:
+                end_time = end_time.replace(tzinfo=timezone.utc)
+            duration_minutes = int((end_time - first).total_seconds() / 60)
     
     # Check-ins by status
     status_counts = {}
