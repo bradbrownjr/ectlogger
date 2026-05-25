@@ -204,8 +204,11 @@ async def get_net_statistics(
         end_time = net.closed_at or datetime.now(timezone.utc)
         if end_time.tzinfo is None:
             end_time = end_time.replace(tzinfo=timezone.utc)
-        duration_minutes = int((end_time - started_at).total_seconds() / 60)
-    elif net.check_ins:
+        candidate = int((end_time - started_at).total_seconds() / 60)
+        # Only use if positive (guard against bad scheduled_start_time data)
+        if candidate > 0:
+            duration_minutes = candidate
+    if duration_minutes is None and net.check_ins:
         # started_at not recorded — derive duration from first to last check-in
         times = [c.checked_in_at for c in net.check_ins if c.checked_in_at]
         if times:
