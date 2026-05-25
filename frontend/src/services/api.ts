@@ -87,6 +87,7 @@ export const netApi = {
   linkToTemplate: (netId: number, templateId: number | null) =>
     api.put(`/nets/${netId}/template`, { template_id: templateId }),
   getTopicResponses: (id: number) => api.get(`/nets/${id}/topic-responses`),
+  getPollResults: (id: number) => api.get(`/nets/${id}/poll-results`),
 };
 
 // Check-in API

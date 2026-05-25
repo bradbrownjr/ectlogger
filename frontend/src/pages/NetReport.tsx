@@ -167,6 +167,8 @@ interface Net {
   ics309_enabled?: boolean;
   topic_of_week_enabled?: boolean;
   topic_of_week_prompt?: string;
+  poll_enabled?: boolean;
+  poll_question?: string;
   frequencies: Frequency[];
   started_at?: string;
   closed_at?: string;
@@ -177,6 +179,11 @@ interface TopicResponse {
   callsign: string;
   name: string | null;
   response: string;
+}
+
+interface PollResult {
+  response: string;
+  count: number;
 }
 
 interface Frequency {
@@ -239,6 +246,8 @@ const NetReport: React.FC = () => {
   const [netRoles, setNetRoles] = useState<NetRole[]>([]);
   const [topicPrompt, setTopicPrompt] = useState<string | null>(null);
   const [topicResponses, setTopicResponses] = useState<TopicResponse[]>([]);
+  const [pollQuestion, setPollQuestion] = useState<string | null>(null);
+  const [pollResults, setPollResults] = useState<PollResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
@@ -279,13 +288,14 @@ const NetReport: React.FC = () => {
         setError(null);
 
         // Fetch all data in parallel
-        const [netRes, statsRes, checkInsRes, chatRes, rolesRes, topicRes] = await Promise.all([
+        const [netRes, statsRes, checkInsRes, chatRes, rolesRes, topicRes, pollRes] = await Promise.all([
           netApi.get(parseInt(netId)),
           statisticsApi.getNetStats(parseInt(netId)),
           checkInApi.list(parseInt(netId)),
           chatApi.list(parseInt(netId)),
           netRoleApi.list(parseInt(netId)),
           netApi.getTopicResponses(parseInt(netId)),
+          netApi.getPollResults(parseInt(netId)),
         ]);
 
         setNet(netRes.data);
@@ -295,6 +305,8 @@ const NetReport: React.FC = () => {
         setNetRoles(rolesRes.data);
         setTopicPrompt(topicRes.data.prompt || null);
         setTopicResponses(topicRes.data.responses || []);
+        setPollQuestion(pollRes.data.question || null);
+        setPollResults(pollRes.data.results || []);
       } catch (err: any) {
         console.error('Failed to fetch net report data:', err);
         setError(err.response?.data?.detail || 'Failed to load net report');
@@ -1131,7 +1143,58 @@ const NetReport: React.FC = () => {
           </>
         )}
 
-        {/* ========== SECTION 7: SYSTEM LOG (automated event entries only) ========== */}
+        {/* ========== SECTION 7: POLL RESULTS (if poll enabled and responses exist) ========== */}
+        {pollQuestion && pollResults.length > 0 && (
+          <>
+            <Typography variant="h6" sx={{ mt: 3, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <TopicIcon sx={{ transform: 'scaleX(-1)' }} /> Poll Results ({pollResults.reduce((s, r) => s + r.count, 0)} response{pollResults.reduce((s, r) => s + r.count, 0) !== 1 ? 's' : ''})
+            </Typography>
+
+            <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
+              <Typography variant="subtitle1" fontWeight="medium" gutterBottom>
+                {pollQuestion}
+              </Typography>
+              <ResponsiveContainer width="100%" height={Math.max(160, pollResults.length * 48)}>
+                <BarChart
+                  data={pollResults.map(r => ({ name: r.response, count: r.count }))}
+                  layout="vertical"
+                  margin={{ top: 4, right: 40, left: 8, bottom: 4 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                  <XAxis type="number" allowDecimals={false} />
+                  <YAxis dataKey="name" type="category" width={180} tick={{ fontSize: 12 }} />
+                  <RechartsTooltip formatter={(v: number) => [`${v} vote${v !== 1 ? 's' : ''}`, 'Votes']} />
+                  <Bar dataKey="count" fill={theme.palette.primary.main} radius={[0, 4, 4, 0]}>
+                    {pollResults.map((_, index) => (
+                      <Cell key={`poll-cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+              {/* Tabular fallback for PDF export */}
+              <TableContainer sx={{ mt: 2 }}>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow sx={{ backgroundColor: theme.palette.action.hover }}>
+                      <TableCell sx={{ fontWeight: 'bold' }}>Response</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold', width: 80 }} align="right">Votes</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {pollResults.map((r: PollResult, i: number) => (
+                      <TableRow key={i} sx={{ '&:nth-of-type(odd)': { backgroundColor: theme.palette.action.hover } }}>
+                        <TableCell>{r.response}</TableCell>
+                        <TableCell align="right">{r.count}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Paper>
+          </>
+        )}
+
+        {/* ========== SECTION 8: SYSTEM LOG (automated event entries only) ========== */}
         {systemLogMessages.length > 0 && (
           <>
             <Typography variant="h6" sx={{ mt: 3, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
