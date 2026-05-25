@@ -67,12 +67,53 @@ const applyLightModeStyles = (element: HTMLElement): void => {
 };
 
 /**
- * Extract a specific page slice from a canvas
+ * Compute page cut boundaries that avoid splitting elements marked with
+ * break-avoid (e.g. table rows).  Instead of cutting at a fixed interval,
+ * we scan upward from the natural cut point until we find a gap between
+ * two avoid-break elements.
+ *
+ * @param totalHeight  Total canvas height in px
+ * @param pageHeight   Natural page height in px
+ * @param avoidRanges  Elements whose interior must not be cut
+ * @returns Array of Y cut positions: [0, cut1, cut2, ..., totalHeight]
  */
-const getPageSlice = (
+const computeSmartBoundaries = (
+  totalHeight: number,
+  pageHeight: number,
+  avoidRanges: { top: number; bottom: number }[]
+): number[] => {
+  const cuts: number[] = [0];
+  let cursor = 0;
+  while (cursor < totalHeight) {
+    let cutEnd = Math.min(cursor + pageHeight, totalHeight);
+    // Walk up from the natural cut to find a gap between avoid-break elements
+    let adjusted = true;
+    let safety = 0;
+    while (adjusted && safety < avoidRanges.length + 1) {
+      adjusted = false;
+      safety++;
+      for (const range of avoidRanges) {
+        if (range.top >= cursor && range.top < cutEnd && range.bottom > cutEnd) {
+          // The cut would slice through this element; move cut to just before it
+          cutEnd = Math.max(cursor + 1, range.top);
+          adjusted = true;
+          break;
+        }
+      }
+    }
+    cuts.push(cutEnd);
+    cursor = cutEnd;
+  }
+  return cuts;
+};
+
+/**
+ * Extract an arbitrary vertical slice from a canvas (not necessarily page-sized)
+ */
+const getCanvasSlice = (
   sourceCanvas: HTMLCanvasElement,
-  pageIndex: number,
-  pageHeightPx: number
+  sliceTop: number,
+  sliceHeight: number
 ): HTMLCanvasElement => {
   const sliceCanvas = document.createElement('canvas');
   const ctx = sliceCanvas.getContext('2d');
@@ -81,9 +122,8 @@ const getPageSlice = (
     throw new Error('Could not get canvas context');
   }
 
-  // Calculate the source Y position and height for this page
-  const sourceY = pageIndex * pageHeightPx;
-  const sourceHeight = Math.min(pageHeightPx, sourceCanvas.height - sourceY);
+  // Calculate the source Y position and height for this slice
+  const sourceHeight = Math.min(sliceHeight, sourceCanvas.height - sliceTop);
   
   // Set the slice canvas size
   sliceCanvas.width = sourceCanvas.width;
@@ -93,10 +133,10 @@ const getPageSlice = (
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, sliceCanvas.width, sliceCanvas.height);
 
-  // Draw only the portion of the source canvas that belongs on this page
+  // Draw only the portion of the source canvas that belongs on this slice
   ctx.drawImage(
     sourceCanvas,
-    0, sourceY,                          // Source x, y
+    0, sliceTop,                         // Source x, y
     sourceCanvas.width, sourceHeight,    // Source width, height
     0, 0,                                // Destination x, y
     sourceCanvas.width, sourceHeight     // Destination width, height
@@ -136,6 +176,13 @@ export const exportToPdf = async (
     // Apply light mode styles to the clone
     applyLightModeStyles(clone);
 
+    // Collect avoid-break element positions (table rows) so we can cut
+    // between rows instead of through them.
+    const cloneRect = clone.getBoundingClientRect();
+    const avoidEls = clone.querySelectorAll('tr') as NodeListOf<HTMLElement>;
+    // We'll compute scaled positions after we know the scale factor
+    const avoidElsArr = Array.from(avoidEls);
+
     try {
       // Create PDF
       const pdf = new jsPDF({
@@ -166,6 +213,16 @@ export const exportToPdf = async (
         removeContainer: true,
       });
 
+      // Build DOM-aware avoid-break ranges in canvas pixels so page cuts
+      // never split a table row in the middle.
+      const avoidRanges: { top: number; bottom: number }[] = avoidElsArr.map(el => {
+        const r = el.getBoundingClientRect();
+        return {
+          top: (r.top - cloneRect.top) * scale,
+          bottom: (r.bottom - cloneRect.top) * scale,
+        };
+      });
+
       // Calculate dimensions
       const imgWidthPx = canvas.width;
       const imgHeightPx = canvas.height;
@@ -177,24 +234,29 @@ export const exportToPdf = async (
       // Calculate page height in pixels (at the scale we captured)
       const pageHeightPx = (contentHeight / imgHeightMm) * imgHeightPx;
       
-      // Calculate how many pages we need
-      const totalPages = Math.ceil(imgHeightPx / pageHeightPx);
+      // Compute smart cut boundaries that avoid splitting table rows
+      const boundaries = computeSmartBoundaries(imgHeightPx, pageHeightPx, avoidRanges);
 
-      // Generate each page by slicing the canvas
-      for (let page = 0; page < totalPages; page++) {
-        if (page > 0) {
+      // Generate each page from the smart slice boundaries
+      for (let i = 0; i < boundaries.length - 1; i++) {
+        if (i > 0) {
           pdf.addPage();
         }
 
+        const sliceTop = boundaries[i];
+        const sliceHeight = boundaries[i + 1] - sliceTop;
+
         // Extract just this page's portion of the canvas
-        const pageCanvas = getPageSlice(canvas, page, pageHeightPx);
-        const pageImgData = pageCanvas.toDataURL('image/png');
+        const pageCanvas = getCanvasSlice(canvas, sliceTop, sliceHeight);
+        // Use JPEG (0.85 quality) — dramatically smaller than PNG with minimal
+        // visible quality loss for text/table content (~70-80% size reduction).
+        const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.85);
         
         // Calculate the height for this page slice (may be shorter on last page)
         const sliceHeightMm = (pageCanvas.height / imgHeightPx) * imgHeightMm;
 
         // Add the slice to the PDF at the top margin
-        pdf.addImage(pageImgData, 'PNG', margin, margin, contentWidth, sliceHeightMm);
+        pdf.addImage(pageImgData, 'JPEG', margin, margin, contentWidth, sliceHeightMm);
       }
 
       // Generate filename

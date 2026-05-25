@@ -463,7 +463,7 @@ const NetReport: React.FC = () => {
       await exportElementToPdf('net-report-content', {
         filename,
         orientation: 'portrait',
-        scale: 1.5, // Higher quality for dense content
+        scale: 1.2, // JPEG compression handles quality; lower scale = smaller file
         margin: 10,
       });
     } catch (err) {
