@@ -146,7 +146,17 @@ if git pull origin $CURRENT_BRANCH; then
         cd ..
         echo "✓ Frontend dependencies updated"
     fi
-    
+
+    # Rebuild frontend if any frontend source files changed
+    if git diff --name-only $CURRENT_COMMIT $REMOTE_COMMIT | grep -q "^frontend/"; then
+        echo ""
+        echo "🔨 Frontend source changed. Rebuilding..."
+        cd frontend
+        npm run build
+        cd ..
+        echo "✓ Frontend rebuilt"
+    fi
+
     echo ""
     echo "✓ Update complete!"
     
