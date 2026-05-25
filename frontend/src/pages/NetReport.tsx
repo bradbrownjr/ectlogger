@@ -32,6 +32,8 @@ import {
   Chat as ChatIcon,
   Assignment,
   Map as MapIcon,
+  QuestionAnswer as TopicIcon,
+  Dns as SystemLogIcon,
 } from '@mui/icons-material';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -163,10 +165,18 @@ interface Net {
   status: string;
   owner_id: number;
   ics309_enabled?: boolean;
+  topic_of_week_enabled?: boolean;
+  topic_of_week_prompt?: string;
   frequencies: Frequency[];
   started_at?: string;
   closed_at?: string;
   created_at: string;
+}
+
+interface TopicResponse {
+  callsign: string;
+  name: string | null;
+  response: string;
 }
 
 interface Frequency {
@@ -227,6 +237,8 @@ const NetReport: React.FC = () => {
   const [checkIns, setCheckIns] = useState<CheckIn[]>([]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [netRoles, setNetRoles] = useState<NetRole[]>([]);
+  const [topicPrompt, setTopicPrompt] = useState<string | null>(null);
+  const [topicResponses, setTopicResponses] = useState<TopicResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
@@ -267,12 +279,13 @@ const NetReport: React.FC = () => {
         setError(null);
 
         // Fetch all data in parallel
-        const [netRes, statsRes, checkInsRes, chatRes, rolesRes] = await Promise.all([
+        const [netRes, statsRes, checkInsRes, chatRes, rolesRes, topicRes] = await Promise.all([
           netApi.get(parseInt(netId)),
           statisticsApi.getNetStats(parseInt(netId)),
           checkInApi.list(parseInt(netId)),
           chatApi.list(parseInt(netId)),
           netRoleApi.list(parseInt(netId)),
+          netApi.getTopicResponses(parseInt(netId)),
         ]);
 
         setNet(netRes.data);
@@ -280,6 +293,8 @@ const NetReport: React.FC = () => {
         setCheckIns(checkInsRes.data);
         setChatMessages(chatRes.data);
         setNetRoles(rolesRes.data);
+        setTopicPrompt(topicRes.data.prompt || null);
+        setTopicResponses(topicRes.data.responses || []);
       } catch (err: any) {
         console.error('Failed to fetch net report data:', err);
         setError(err.response?.data?.detail || 'Failed to load net report');
@@ -424,9 +439,6 @@ const NetReport: React.FC = () => {
     return freq ? getFrequencyLabel(freq) : '—';
   };
 
-  // All chat messages for the report (including system messages)
-  const allChatMessages = chatMessages;
-
   // ========== PDF EXPORT ==========
 
   const handleExportPdf = async () => {
@@ -515,7 +527,9 @@ const NetReport: React.FC = () => {
   // Get NCS operators from net roles
   const ncsOperators = netRoles.filter(r => r.role === 'ncs');
 
-  // ========== RENDER ==========
+  // Split chat into user messages and system log entries
+  const userChatMessages = chatMessages.filter(m => !m.is_system);
+  const systemLogMessages = chatMessages.filter(m => m.is_system);
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -1042,11 +1056,11 @@ const NetReport: React.FC = () => {
           </Table>
         </TableContainer>
 
-        {/* ========== SECTION 5: CHAT LOG (if there are messages) ========== */}
-        {allChatMessages.length > 0 && (
+        {/* ========== SECTION 5: CHAT MESSAGES (operator messages only) ========== */}
+        {userChatMessages.length > 0 && (
           <>
             <Typography variant="h6" sx={{ mt: 3, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-              <ChatIcon /> Chat Log ({allChatMessages.length} messages)
+              <ChatIcon /> Chat Messages ({userChatMessages.length} message{userChatMessages.length !== 1 ? 's' : ''})
             </Typography>
             
             <TableContainer component={Paper} variant="outlined" sx={{ mb: 3 }}>
@@ -1059,24 +1073,86 @@ const NetReport: React.FC = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {allChatMessages.map((msg: ChatMessage) => (
-                    <TableRow 
-                      key={msg.id}
-                      sx={msg.is_system ? { backgroundColor: theme.palette.action.hover } : {}}
-                    >
+                  {userChatMessages.map((msg: ChatMessage) => (
+                    <TableRow key={msg.id}>
                       <TableCell sx={{ whiteSpace: 'nowrap', fontSize: '0.75rem' }}>
                         {formatTimeWithDate(msg.created_at, user?.prefer_utc || false)}
                       </TableCell>
                       <TableCell>
-                        <Typography 
-                          variant="body2" 
-                          fontWeight="medium"
-                          sx={msg.is_system ? { fontStyle: 'italic', color: 'text.secondary' } : {}}
-                        >
-                          {msg.is_system ? 'System' : (msg.callsign || 'Unknown')}
+                        <Typography variant="body2" fontWeight="medium">
+                          {msg.callsign || 'Unknown'}
                         </Typography>
                       </TableCell>
-                      <TableCell sx={msg.is_system ? { fontStyle: 'italic', color: 'text.secondary' } : {}}>
+                      <TableCell>{msg.message}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </>
+        )}
+
+        {/* ========== SECTION 6: TOPIC OF THE WEEK (if enabled and responses exist) ========== */}
+        {topicPrompt && (
+          <>
+            <Typography variant="h6" sx={{ mt: 3, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <TopicIcon /> Topic of the Week ({topicResponses.length} response{topicResponses.length !== 1 ? 's' : ''})
+            </Typography>
+
+            <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
+              <Typography variant="subtitle1" fontWeight="medium" gutterBottom>
+                {topicPrompt}
+              </Typography>
+              {topicResponses.length > 0 ? (
+                <TableContainer>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow sx={{ backgroundColor: theme.palette.action.hover }}>
+                        <TableCell sx={{ fontWeight: 'bold', width: 100 }}>Callsign</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold', width: 150 }}>Name</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold' }}>Answer</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {topicResponses.map((r: TopicResponse, i: number) => (
+                        <TableRow key={i} sx={{ '&:nth-of-type(odd)': { backgroundColor: theme.palette.action.hover } }}>
+                          <TableCell><Typography variant="body2" fontWeight="medium">{r.callsign}</Typography></TableCell>
+                          <TableCell>{r.name || '—'}</TableCell>
+                          <TableCell>{r.response}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              ) : (
+                <Typography variant="body2" color="text.secondary">No responses recorded.</Typography>
+              )}
+            </Paper>
+          </>
+        )}
+
+        {/* ========== SECTION 7: SYSTEM LOG (automated event entries only) ========== */}
+        {systemLogMessages.length > 0 && (
+          <>
+            <Typography variant="h6" sx={{ mt: 3, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <SystemLogIcon /> System Log ({systemLogMessages.length} event{systemLogMessages.length !== 1 ? 's' : ''})
+            </Typography>
+            
+            <TableContainer component={Paper} variant="outlined" sx={{ mb: 3 }}>
+              <Table size="small">
+                <TableHead>
+                  <TableRow sx={{ backgroundColor: theme.palette.action.hover }}>
+                    <TableCell sx={{ fontWeight: 'bold', width: 140 }}>Time</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Event</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {systemLogMessages.map((msg: ChatMessage) => (
+                    <TableRow key={msg.id} sx={{ backgroundColor: theme.palette.action.hover }}>
+                      <TableCell sx={{ whiteSpace: 'nowrap', fontSize: '0.75rem' }}>
+                        {formatTimeWithDate(msg.created_at, user?.prefer_utc || false)}
+                      </TableCell>
+                      <TableCell sx={{ fontStyle: 'italic', color: 'text.secondary', fontSize: '0.85rem' }}>
                         {msg.message}
                       </TableCell>
                     </TableRow>
@@ -1087,7 +1163,7 @@ const NetReport: React.FC = () => {
           </>
         )}
 
-        {/* ========== SECTION 6: ICS-309 FORMAT (if enabled) ========== */}
+        {/* ========== SECTION 8: ICS-309 FORMAT (if enabled) ========== */}
         {net.ics309_enabled && (
           <>
             <Typography variant="h6" sx={{ mt: 3, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>

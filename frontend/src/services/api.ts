@@ -86,6 +86,7 @@ export const netApi = {
   // counted under the right schedule's stats.
   linkToTemplate: (netId: number, templateId: number | null) =>
     api.put(`/nets/${netId}/template`, { template_id: templateId }),
+  getTopicResponses: (id: number) => api.get(`/nets/${id}/topic-responses`),
 };
 
 // Check-in API
