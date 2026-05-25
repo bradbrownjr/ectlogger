@@ -1,6 +1,58 @@
 {
-  "version": "2026.05.20",
+  "version": "2026.05.25",
   "entries": [
+    {
+      "version": "2026.05.25",
+      "date": "2026-05-25",
+      "sections": [
+        {
+          "title": "Net duration fixed on Net Report",
+          "type": "fix",
+          "items": [
+            {
+              "text": "Net Report no longer shows '—' for duration on nets where the go-live timer did not fire. Duration is now calculated from the scheduled start time or first check-in as a fallback.",
+              "userImpact": true
+            },
+            {
+              "text": "Closing a net now backfills the start time if it was never recorded, so historical reports remain accurate.",
+              "userImpact": true
+            }
+          ]
+        },
+        {
+          "title": "Net start time no longer shifts when editing",
+          "type": "fix",
+          "items": [
+            {
+              "text": "Editing a net's topic or other details via the 'Save for this Net' form no longer shifts the scheduled start time by several hours. The time zone was being applied twice during the save — this is now corrected.",
+              "userImpact": true
+            }
+          ]
+        },
+        {
+          "title": "Monthly net scheduling improvements",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Nets created from a monthly template (e.g. '3rd Thursday') now correctly land on the right date — previously the date calculation ignored the day-of-week and week-of-month settings.",
+              "userImpact": true
+            },
+            {
+              "text": "The NCS reminder email now includes a direct link to the waiting net, so the Net Control Station can open and start it without navigating the dashboard.",
+              "userImpact": true
+            },
+            {
+              "text": "When a 24-hour NCS reminder is sent, the net is automatically created in Scheduled status so it appears in the Nets list ready to go.",
+              "userImpact": true
+            },
+            {
+              "text": "NCS reminder emails were silently failing due to an internal API mismatch. The reminder service now correctly computes the schedule and sends the 24-hour and 1-hour duty reminders.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.05.20",
       "date": "2026-05-20",
