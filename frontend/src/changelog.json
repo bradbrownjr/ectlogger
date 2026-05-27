@@ -1,6 +1,26 @@
 {
-  "version": "2026.05.25b",
+  "version": "2026.05.27",
   "entries": [
+    {
+      "version": "2026.05.27",
+      "date": "2026-05-27",
+      "sections": [
+        {
+          "title": "NCS swap: replacement dropdown now shows all users",
+          "type": "fix",
+          "items": [
+            {
+              "text": "The Replacement NCS dropdown when swapping a scheduled net now lists all registered users, not just those already in the rotation. Anyone can now be selected as a one-time replacement.",
+              "userImpact": true
+            },
+            {
+              "text": "When a new net schedule is created, the net manager is now automatically added to the NCS rotation as the first member.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.05.25b",
       "date": "2026-05-25",
