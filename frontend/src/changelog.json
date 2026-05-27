@@ -12,10 +12,7 @@
             {
               "text": "The Replacement NCS dropdown when swapping a scheduled net now lists all net staff members and the net manager — previously it only showed people already in the rotation, so eligible operators were missing.",
               "userImpact": true
-            },
-            {
-              "text": "When a new net schedule is created, the net manager is now automatically added to the NCS rotation as the first member.",
-              "userImpact": true
+
             }
           ]
         }
