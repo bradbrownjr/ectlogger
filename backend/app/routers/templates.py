@@ -154,7 +154,16 @@ async def create_template(
                     frequency_id=freq_id
                 )
             )
-    
+
+    # Auto-enroll the owner as the first NCS rotation member
+    owner_rotation_member = NCSRotationMember(
+        template_id=template.id,
+        user_id=owner_id,
+        position=1,
+        is_active=True,
+    )
+    db.add(owner_rotation_member)
+
     await db.commit()
     await db.refresh(template)
     
