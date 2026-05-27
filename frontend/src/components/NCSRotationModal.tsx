@@ -568,16 +568,11 @@ const NCSRotationModal: React.FC<NCSRotationModalProps> = ({
           
           {!isCancellation && (
             <Autocomplete
-              options={members.filter((m: RotationMember) => m.is_active && m.user_id !== selectedEntry?.user_id)}
-              getOptionLabel={(option: RotationMember) => `${option.user_callsign}${option.user_name ? ` (${option.user_name})` : ''}`}
-              value={swapUser ? members.find((m: RotationMember) => m.user_id === swapUser.id) || null : null}
-              onChange={(_: React.SyntheticEvent, value: RotationMember | null) => {
-                if (value) {
-                  const foundUser = users.find((u: User) => u.id === value.user_id);
-                  setSwapUser(foundUser || null);
-                } else {
-                  setSwapUser(null);
-                }
+              options={users.filter((u: User) => u.id !== selectedEntry?.user_id)}
+              getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
+              value={swapUser}
+              onChange={(_: React.SyntheticEvent, value: User | null) => {
+                setSwapUser(value);
               }}
               renderInput={(params: any) => (
                 <TextField {...params} label="Replacement NCS" fullWidth />
