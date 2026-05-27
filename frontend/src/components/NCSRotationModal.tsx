@@ -572,7 +572,8 @@ const NCSRotationModal: React.FC<NCSRotationModalProps> = ({
           {!isCancellation && (
             <Autocomplete
               options={users.filter((u: User) =>
-                staffUserIds.has(u.id) || u.id === schedule?.owner_id
+                (staffUserIds.has(u.id) || u.id === schedule?.owner_id) &&
+                u.id !== selectedEntry?.user_id
               )}
               getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
               value={swapUser}
