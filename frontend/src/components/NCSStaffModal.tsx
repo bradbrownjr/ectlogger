@@ -1119,7 +1119,10 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
           
           {!isCancellation && (
             <Autocomplete
-              options={users.filter((u: User) => u.id !== selectedEntry?.user_id)}
+              options={users.filter((u: User) =>
+                (staff.some((s: StaffMember) => s.user_id === u.id && s.is_active) || u.id === schedule?.owner_id) &&
+                u.id !== selectedEntry?.user_id
+              )}
               getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
               value={swapUser}
               onChange={(_: any, value: User | null) => {

@@ -39,7 +39,7 @@ import AddIcon from '@mui/icons-material/Add';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import BlockIcon from '@mui/icons-material/Block';
-import { ncsRotationApi, userApi } from '../services/api';
+import { ncsRotationApi, userApi, templateStaffApi } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
 interface NCSRotationModalProps {
@@ -88,6 +88,7 @@ const NCSRotationModal: React.FC<NCSRotationModalProps> = ({
 }: NCSRotationModalProps) => {
   const [tabValue, setTabValue] = useState<number | null>(null); // null until data loads
   const [members, setMembers] = useState<RotationMember[]>([]);
+  const [staffUserIds, setStaffUserIds] = useState<Set<number>>(new Set());
   const [scheduleEntries, setScheduleEntries] = useState<ScheduleEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -139,16 +140,18 @@ const NCSRotationModal: React.FC<NCSRotationModalProps> = ({
     setError(null);
     
     try {
-      const [membersRes, scheduleRes, usersRes] = await Promise.all([
+      const [membersRes, scheduleRes, usersRes, staffRes] = await Promise.all([
         ncsRotationApi.listMembers(schedule.id),
         ncsRotationApi.getSchedule(schedule.id, 12), // 12 weeks ahead
         userApi.listDirectory(),
+        templateStaffApi.list(schedule.id),
       ]);
       
       const loadedMembers = membersRes.data;
       setMembers(loadedMembers);
       setScheduleEntries(scheduleRes.data.schedule || []);
       setUsers(usersRes.data);
+      setStaffUserIds(new Set((staffRes.data as { user_id: number }[]).map(s => s.user_id)));
       
       // Set initial tab: show Manage Rotation if no members yet (for owners/admins), otherwise Schedule
       const canManageNow = user?.id === schedule?.owner_id || user?.role === 'admin';
@@ -568,7 +571,10 @@ const NCSRotationModal: React.FC<NCSRotationModalProps> = ({
           
           {!isCancellation && (
             <Autocomplete
-              options={users.filter((u: User) => u.id !== selectedEntry?.user_id)}
+              options={users.filter((u: User) =>
+                (staffUserIds.has(u.id) || u.id === schedule?.owner_id) &&
+                u.id !== selectedEntry?.user_id
+              )}
               getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
               value={swapUser}
               onChange={(_: React.SyntheticEvent, value: User | null) => {
