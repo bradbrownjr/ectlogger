@@ -10,7 +10,7 @@
           "type": "fix",
           "items": [
             {
-              "text": "The Replacement NCS dropdown when swapping a scheduled net now lists all registered users, not just those already in the rotation. Anyone can now be selected as a one-time replacement.",
+              "text": "The Replacement NCS dropdown when swapping a scheduled net now lists all net staff members and the net manager — previously it only showed people already in the rotation, so eligible operators were missing.",
               "userImpact": true
             },
             {
