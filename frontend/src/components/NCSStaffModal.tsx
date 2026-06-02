@@ -1109,7 +1109,7 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                       color="secondary"
                       variant="outlined"
                     >
-                      {pushingStaff ? 'Pushing…' : 'Push staff to schedule'}
+                      {pushingStaff ? 'Creating schedule…' : 'Create schedule'}
                     </Button>
                   </span>
                 </Tooltip>
