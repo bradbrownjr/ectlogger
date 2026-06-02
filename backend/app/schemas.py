@@ -128,6 +128,8 @@ class UserResponse(UserBase):
     last_active: Optional[datetime] = None
     schedule_age_bypass: bool = False
     created_at: datetime
+    live_location: Optional[str] = None
+    live_location_updated: Optional[datetime] = None
 
     class Config:
         from_attributes = True
@@ -545,6 +547,7 @@ class CheckInCreate(CheckInBase):
     frequency_id: Optional[int] = None
     available_frequency_ids: Optional[List[int]] = Field(default_factory=list)
     custom_fields: Optional[dict] = Field(default_factory=dict, max_length=50)
+    status: Optional[StationStatus] = None
     
     @field_validator('custom_fields')
     @classmethod
@@ -646,6 +649,16 @@ class ChatMessageCreate(BaseModel):
     message: str = Field(max_length=5000, min_length=1)
 
 
+class ChatImageUploadResponse(BaseModel):
+    id: int
+    image_url: str
+    thumb_url: str
+    width: int
+    height: int
+    size_bytes: int
+    marker: str
+
+
 class ChatMessageResponse(BaseModel):
     id: int
     net_id: int
@@ -654,12 +667,19 @@ class ChatMessageResponse(BaseModel):
     message: str
     is_system: bool = False
     created_at: datetime
+    reactions: dict = {}  # emoji -> list of user_ids
 
     class Config:
         from_attributes = True
     
     @classmethod
     def from_orm(cls, obj):
+        # Build reactions dict: emoji -> sorted list of user_ids
+        reactions: dict = {}
+        for r in (obj.reactions if hasattr(obj, 'reactions') and obj.reactions else []):
+            reactions.setdefault(r.emoji, [])
+            reactions[r.emoji].append(r.user_id)
+
         # Include callsign from user relationship
         data = {
             'id': obj.id,
@@ -668,7 +688,8 @@ class ChatMessageResponse(BaseModel):
             'callsign': obj.user.callsign if obj.user and obj.user.callsign else ('System' if obj.is_system else 'Unknown'),
             'message': obj.message,
             'is_system': obj.is_system if hasattr(obj, 'is_system') else False,
-            'created_at': obj.created_at
+            'created_at': obj.created_at,
+            'reactions': reactions,
         }
         return cls(**data)
 
@@ -897,6 +918,7 @@ class TemplateStaffResponse(BaseModel):
     template_id: int
     user_id: int
     is_active: bool
+    is_co_manager: bool = False
     created_at: datetime
     # User info for display
     user_email: Optional[str] = None
@@ -913,6 +935,7 @@ class TemplateStaffResponse(BaseModel):
             template_id=staff.template_id,
             user_id=staff.user_id,
             is_active=staff.is_active,
+            is_co_manager=getattr(staff, 'is_co_manager', False),
             created_at=staff.created_at,
             user_email=staff.user.email if staff.user else None,
             user_name=staff.user.name if staff.user else None,

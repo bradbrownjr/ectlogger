@@ -15,12 +15,17 @@ import {
   TableCell,
   Snackbar,
   Alert,
+  Tooltip,
+  Dialog,
+  DialogContent,
+  CircularProgress,
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import MinimizeIcon from '@mui/icons-material/Minimize';
 import CropSquareIcon from '@mui/icons-material/CropSquare';
-import { chatApi, ChatMessage } from '../api/chat';
+import CloseIcon from '@mui/icons-material/Close';
+import { chatApi, ChatMessage, ChatImagePayload } from '../api/chat';
 import { useAuth } from '../contexts/AuthContext';
 import { formatTimeWithDate } from '../utils/dateUtils';
 
@@ -36,12 +41,19 @@ interface ChatProps {
   onRestore?: () => void;
 }
 
+const REACTION_EMOJIS = ['👍', '🙂', '🙁', '❤️', '✅'];
+const CHAT_IMAGE_PREFIX = '__CHAT_IMAGE__';
+
 const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery, onNewMessage, onDetach, minimized, onMinimize, onRestore }) => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [showClosedToast, setShowClosedToast] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [hoveredMessageId, setHoveredMessageId] = useState<number | null>(null);
+  const [lightboxImage, setLightboxImage] = useState<ChatImagePayload | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLUListElement>(null);
 
@@ -65,9 +77,20 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
       });
       if (onNewMessage) onNewMessage(chatMsg);
     };
+
+    // Listen for reaction updates dispatched from NetView WebSocket
+    const handleReactionUpdate = (event: any) => {
+      const { message_id, reactions } = event.detail;
+      setMessages((prev) =>
+        prev.map((msg) => msg.id === message_id ? { ...msg, reactions } : msg)
+      );
+    };
+
     window.addEventListener('newChatMessage', handleNewChatMessage);
+    window.addEventListener('chatReactionUpdate', handleReactionUpdate);
     return () => {
       window.removeEventListener('newChatMessage', handleNewChatMessage);
+      window.removeEventListener('chatReactionUpdate', handleReactionUpdate);
     };
   }, [user?.id]);
 
@@ -128,6 +151,65 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
+    }
+  };
+
+  const handleReaction = async (messageId: number, emoji: string) => {
+    if (!user) return;
+    try {
+      await chatApi.toggleReaction(netId, messageId, emoji);
+      // Optimistic UI: the WS broadcast will arrive and update all clients including this one
+    } catch (error) {
+      console.error('Failed to toggle reaction:', error);
+    }
+  };
+
+  const parseChatImage = (messageText: string): ChatImagePayload | null => {
+    if (!messageText.startsWith(CHAT_IMAGE_PREFIX)) {
+      return null;
+    }
+    try {
+      const parsed = JSON.parse(messageText.slice(CHAT_IMAGE_PREFIX.length));
+      if (
+        parsed &&
+        parsed.type === 'chat_image' &&
+        typeof parsed.id === 'number' &&
+        typeof parsed.image_url === 'string' &&
+        typeof parsed.thumb_url === 'string'
+      ) {
+        return parsed as ChatImagePayload;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
+  const handlePaste = async (e: React.ClipboardEvent<HTMLDivElement>) => {
+    if (!user || netStatus === 'closed' || netStatus === 'archived') return;
+
+    const file = Array.from(e.clipboardData.items)
+      .map((item) => (item.kind === 'file' ? item.getAsFile() : null))
+      .find((f) => !!f);
+
+    if (!file) return;
+
+    if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
+      return;
+    }
+
+    e.preventDefault();
+    if (uploadingImage || sending) return;
+
+    setUploadingImage(true);
+    try {
+      const upload = await chatApi.uploadImage(netId, file);
+      await chatApi.create(netId, { message: upload.data.marker });
+    } catch (error) {
+      console.error('Failed to paste/upload chat image:', error);
+      setUploadError('Image upload failed. Please try again.');
+    } finally {
+      setUploadingImage(false);
     }
   };
 
@@ -236,7 +318,12 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
           </Typography>
         ) : (
           filteredMessages.map((message, index) => (
-            <Box key={message.id}>
+            <Box
+              key={message.id}
+              onMouseEnter={() => setHoveredMessageId(message.id)}
+              onMouseLeave={() => setHoveredMessageId(null)}
+              sx={{ position: 'relative' }}
+            >
               {message.is_system ? (
                 // System message - IRC-style activity log
                 <ListItem sx={{ px: 0.5, py: 0.25 }}>
@@ -272,7 +359,8 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
                     px: 0.5,
                     py: 0.25,
                     backgroundColor: message.user_id === user?.id ? 'action.selected' : 'transparent',
-                    borderRadius: 1
+                    borderRadius: 1,
+                    pr: hoveredMessageId === message.id ? '100px' : 0.5,
                   }}
                 >
                   <ListItemText
@@ -296,18 +384,122 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
                       </Box>
                     }
                     secondary={
-                      <Typography
-                        component="span"
-                        variant="body2"
-                        sx={{ 
-                          wordBreak: 'break-word',
-                          whiteSpace: 'pre-wrap'
-                        }}
-                      >
-                        {linkify(message.message)}
-                      </Typography>
+                      <Box component="span">
+                        {(() => {
+                          const imagePayload = parseChatImage(message.message);
+                          if (!imagePayload) {
+                            return (
+                              <Typography
+                                component="span"
+                                variant="body2"
+                                sx={{
+                                  wordBreak: 'break-word',
+                                  whiteSpace: 'pre-wrap',
+                                  display: 'block',
+                                }}
+                              >
+                                {linkify(message.message)}
+                              </Typography>
+                            );
+                          }
+                          return (
+                            <Box sx={{ mt: 0.5 }}>
+                              <Box
+                                component="img"
+                                src={imagePayload.thumb_url}
+                                alt="Chat upload"
+                                onClick={() => setLightboxImage(imagePayload)}
+                                sx={{
+                                  display: 'block',
+                                  maxWidth: 220,
+                                  maxHeight: 220,
+                                  borderRadius: 1,
+                                  border: 1,
+                                  borderColor: 'divider',
+                                  cursor: 'zoom-in',
+                                  backgroundColor: 'background.default',
+                                }}
+                              />
+                            </Box>
+                          );
+                        })()}
+                        {/* Reaction counts */}
+                        {message.reactions && Object.keys(message.reactions).length > 0 && (
+                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
+                            {Object.entries(message.reactions).map(([emoji, userIds]) =>
+                              userIds.length > 0 ? (
+                                <Tooltip
+                                  key={emoji}
+                                  title={`${userIds.length} reaction${userIds.length !== 1 ? 's' : ''}`}
+                                >
+                                  <Box
+                                    component="span"
+                                    onClick={() => handleReaction(message.id, emoji)}
+                                    sx={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: 0.25,
+                                      px: 0.75,
+                                      py: 0.25,
+                                      borderRadius: 3,
+                                      fontSize: '0.75rem',
+                                      cursor: user ? 'pointer' : 'default',
+                                      border: 1,
+                                      borderColor: userIds.includes(user?.id ?? -1) ? 'primary.main' : 'divider',
+                                      backgroundColor: userIds.includes(user?.id ?? -1) ? 'primary.light' : 'action.hover',
+                                      opacity: userIds.includes(user?.id ?? -1) ? 1 : 0.85,
+                                      '&:hover': user ? { borderColor: 'primary.main', opacity: 1 } : {},
+                                    }}
+                                  >
+                                    {emoji} {userIds.length}
+                                  </Box>
+                                </Tooltip>
+                              ) : null
+                            )}
+                          </Box>
+                        )}
+                      </Box>
                     }
                   />
+                  {/* Hover emoji toolbar */}
+                  {hoveredMessageId === message.id && user && (
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        right: 4,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        display: 'flex',
+                        gap: 0.25,
+                        backgroundColor: 'background.paper',
+                        border: 1,
+                        borderColor: 'divider',
+                        borderRadius: 2,
+                        px: 0.5,
+                        py: 0.25,
+                        boxShadow: 1,
+                        zIndex: 1,
+                      }}
+                    >
+                      {REACTION_EMOJIS.map((emoji) => (
+                        <Tooltip key={emoji} title={emoji}>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleReaction(message.id, emoji)}
+                            sx={{
+                              fontSize: '1rem',
+                              p: 0.25,
+                              minWidth: 'unset',
+                              opacity: (message.reactions?.[emoji] ?? []).includes(user.id) ? 1 : 0.6,
+                              '&:hover': { opacity: 1 },
+                            }}
+                          >
+                            {emoji}
+                          </IconButton>
+                        </Tooltip>
+                      ))}
+                    </Box>
+                  )}
                 </ListItem>
               )}
               {index < filteredMessages.length - 1 && <Divider component="li" />}
@@ -323,25 +515,85 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
             <TextField
               fullWidth
               size="small"
-              placeholder={user ? "Type a message..." : "Sign in to send messages"}
+              placeholder={user ? "Type a message or paste an image..." : "Sign in to send messages"}
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyPress={handleKeyPress}
-              disabled={sending || !user}
+              onPaste={handlePaste}
+              disabled={sending || uploadingImage || !user}
               multiline
               maxRows={3}
             />
             <IconButton 
               color="primary" 
               onClick={handleSend}
-              disabled={!newMessage.trim() || sending || !user}
+              disabled={!newMessage.trim() || sending || uploadingImage || !user}
             >
-              <SendIcon />
+              {uploadingImage ? <CircularProgress size={20} /> : <SendIcon />}
             </IconButton>
           </Box>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+            {uploadingImage ? 'Uploading pasted image...' : 'Tip: paste PNG/JPEG/WEBP images directly into chat.'}
+          </Typography>
         </Box>
       )}
       </>)}
+
+      <Dialog
+        open={!!lightboxImage}
+        onClose={() => setLightboxImage(null)}
+        maxWidth="lg"
+      >
+        <DialogContent sx={{ p: 1, bgcolor: 'background.default', position: 'relative' }}>
+          <Box sx={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 0.5 }}>
+            {lightboxImage && (
+              <IconButton
+                size="small"
+                component="a"
+                href={lightboxImage.image_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{ bgcolor: 'background.paper', border: 1, borderColor: 'divider' }}
+              >
+                <OpenInNewIcon fontSize="small" />
+              </IconButton>
+            )}
+            <IconButton
+              size="small"
+              onClick={() => setLightboxImage(null)}
+              sx={{ bgcolor: 'background.paper', border: 1, borderColor: 'divider' }}
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </Box>
+          {lightboxImage && (
+            <Box
+              component="img"
+              src={lightboxImage.image_url}
+              alt="Full chat upload"
+              sx={{
+                display: 'block',
+                maxWidth: '90vw',
+                maxHeight: '85vh',
+                width: 'auto',
+                height: 'auto',
+                borderRadius: 1,
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Snackbar
+        open={!!uploadError}
+        autoHideDuration={5000}
+        onClose={() => setUploadError(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={() => setUploadError(null)} severity="error" sx={{ width: '100%' }}>
+          {uploadError}
+        </Alert>
+      </Snackbar>
 
       <Snackbar
         open={showClosedToast}

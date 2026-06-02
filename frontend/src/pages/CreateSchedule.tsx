@@ -987,7 +987,9 @@ const CreateSchedule: React.FC = () => {
       <Paper sx={{ p: 3 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: 1 }}>
           <Typography variant="h4" component="h1">
-            {isEdit ? 'Edit Schedule' : 'Create Schedule'}
+            {isEdit
+              ? (scheduleType === 'ad_hoc' || scheduleType === 'one_time' ? 'Edit Net' : 'Edit Schedule')
+              : (scheduleType === 'ad_hoc' || scheduleType === 'one_time' ? 'Create Net' : 'Create Schedule')}
           </Typography>
           <Typography variant="caption" color="text.secondary">
             Times in {Intl.DateTimeFormat().resolvedOptions().timeZone}
@@ -1921,7 +1923,7 @@ This concludes tonight's net. 73 to all."
               disabled={isTransitioning || !name || selectedFrequencyIds.length === 0}
               startIcon={<SaveIcon />}
             >
-              {isEdit ? 'Save Changes' : 'Create Schedule'}
+              {isEdit ? 'Save Changes' : (scheduleType === 'ad_hoc' || scheduleType === 'one_time' ? 'Create Net' : 'Create Schedule')}
             </Button>
           </Box>
         </Box>

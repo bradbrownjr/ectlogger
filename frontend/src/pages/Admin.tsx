@@ -1460,7 +1460,7 @@ const Admin: React.FC = () => {
                         if (user.schedule_age_bypass) {
                           // Under age but bypass granted — green, click revokes
                           return (
-                            <Tooltip title={`Early access granted — account is ${accountAgeDays} of ${minAge} day${minAge !== 1 ? 's' : ''} old (click to revoke)`}>
+                            <Tooltip title={`Early access granted — bypasses account age and net participation requirements (click to revoke)`}>
                               <IconButton
                                 size="small"
                                 color="success"
@@ -1473,7 +1473,7 @@ const Admin: React.FC = () => {
                         }
                         // Under age, no bypass — orange, click grants
                         return (
-                          <Tooltip title={`Account is ${accountAgeDays} of ${minAge} day${minAge !== 1 ? 's' : ''} old — click to grant early access`}>
+                          <Tooltip title={`Account is ${accountAgeDays} of ${minAge} day${minAge !== 1 ? 's' : ''} old — click to grant early access (bypasses age and net participation requirements)`}>
                             <IconButton
                               size="small"
                               onClick={() => handleScheduleBypass(user.id, true)}

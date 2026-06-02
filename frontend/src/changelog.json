@@ -1,6 +1,86 @@
 {
-  "version": "2026.05.27",
+  "version": "2026.06.02",
   "entries": [
+    {
+      "version": "2026.06.02",
+      "date": "2026-06-02",
+      "sections": [
+        {
+          "title": "Staff management reliability and co-manager controls",
+          "type": "feature",
+          "items": [
+            {
+              "text": "The Net Staff modal now refreshes immediately after manager transfer, so the add-staff dropdown no longer shows stale options from the previous owner.",
+              "userImpact": true
+            },
+            {
+              "text": "Owners/admins can now promote or demote authorized staff as Co-Managers directly from each staff row using a star icon. Co-Managers are clearly labeled and can manage staff/rotation without full admin rights.",
+              "userImpact": true
+            }
+          ]
+        },
+        {
+          "title": "Schedule eligibility and reminder delivery fixes",
+          "type": "fix",
+          "items": [
+            {
+              "text": "Early access now correctly bypasses both schedule account-age and net-participation requirements for users explicitly granted that override.",
+              "userImpact": true
+            },
+            {
+              "text": "A variable mismatch that prevented 1-hour subscriber reminder emails from sending has been fixed, restoring expected reminder delivery.",
+              "userImpact": true
+            }
+          ]
+        },
+        {
+          "title": "Check-in workflow and map export improvements",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "NCS quick-entry now supports choosing station status at creation time on both desktop and mobile forms.",
+              "userImpact": true
+            },
+            {
+              "text": "Away check-ins now render with a distinct yellow highlight, and Mobile check-ins are automatically prioritized near the top of the list after NCS rows.",
+              "userImpact": true
+            },
+            {
+              "text": "Map tiles now render with export-safe CORS settings so Net Report PDF map captures no longer come out blank.",
+              "userImpact": true
+            },
+            {
+              "text": "Create Schedule/Edit Schedule screens now use contextual labels for ad-hoc and one-time nets (Create Net/Edit Net), reducing workflow confusion.",
+              "userImpact": true
+            }
+          ]
+        },
+        {
+          "title": "Location visibility and correction tools",
+          "type": "fix",
+          "items": [
+            {
+              "text": "Profile now surfaces active GPS-derived live location and provides a one-click clear action, fixing cases where stale live location overrode the intended profile grid square during check-ins.",
+              "userImpact": true
+            }
+          ]
+        },
+        {
+          "title": "Chat enhancements: reactions and pasted images",
+          "type": "feature",
+          "items": [
+            {
+              "text": "Chat messages now support hover reactions (👍 🙂 🙁 ❤️ ✅) with live per-message counts synchronized to all connected clients.",
+              "userImpact": true
+            },
+            {
+              "text": "You can now paste PNG/JPEG/WEBP images directly into chat. The app uploads, generates thumbnails, embeds inline previews, and opens full images in a lightbox.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.05.27",
       "date": "2026-05-27",

@@ -330,9 +330,35 @@ const Profile: React.FC = () => {
                 label="Enable location awareness"
               />
               <Typography variant="body2" color="text.secondary" sx={{ ml: 4 }}>
-                Show your Maidenhead grid square in the navbar and use it to auto-fill location on check-ins. 
+                Show your Maidenhead grid square in the navbar and use it to auto-fill location on check-ins.
                 Your browser will prompt for location permission.
               </Typography>
+              {formData.location_awareness && user?.live_location && (
+                <Box sx={{ ml: 4, mt: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Current GPS-derived location: <strong>{user.live_location}</strong>
+                    {user.live_location_updated && (
+                      <> (last updated {new Date(user.live_location_updated).toLocaleString()})</>
+                    )}
+                  </Typography>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    color="warning"
+                    onClick={async () => {
+                      try {
+                        await api.put('/users/me/location', { location: '' });
+                        const token = localStorage.getItem('token');
+                        if (token) await login(token);
+                      } catch (err) {
+                        console.error('Failed to clear live location', err);
+                      }
+                    }}
+                  >
+                    Clear GPS location
+                  </Button>
+                </Box>
+              )}
             </Box>
 
             <Divider sx={{ my: 3 }} />

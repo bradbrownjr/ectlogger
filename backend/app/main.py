@@ -1,5 +1,6 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -13,6 +14,7 @@ from app.whats_new_service import whats_new_service
 from typing import Dict, List
 import json
 import sys
+from pathlib import Path
 
 
 def _is_primary_process() -> bool:
@@ -96,6 +98,11 @@ app.include_router(security.router, prefix="/api")
 app.include_router(statistics.router, prefix="/api")
 app.include_router(geocode.router, prefix="/api")
 app.include_router(contacts.router, prefix="/api")
+
+# Serve uploaded chat images from backend/data/chat_images
+chat_images_dir = Path(__file__).resolve().parents[1] / "data" / "chat_images"
+chat_images_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/api/chat-images", StaticFiles(directory=str(chat_images_dir)), name="chat-images")
 
 
 # WebSocket connection manager

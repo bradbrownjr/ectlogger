@@ -128,7 +128,7 @@ async def create_check_in(
             is_recheck=True,
             parent_check_in_id=root_check_in.id,
             checked_in_by_id=current_user.id,
-            status=StationStatus.CHECKED_IN,
+            status=check_in_data.status or StationStatus.CHECKED_IN,
         )
     else:
         location_changed = False
@@ -154,7 +154,7 @@ async def create_check_in(
             is_recheck=False,
             parent_check_in_id=None,
             checked_in_by_id=current_user.id,
-            status=StationStatus.CHECKED_IN,
+            status=check_in_data.status or StationStatus.CHECKED_IN,
         )
     db.add(check_in)
     

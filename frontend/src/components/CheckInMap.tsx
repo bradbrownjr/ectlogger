@@ -505,6 +505,7 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
                   <TileLayer
                     attribution={tileAttribution}
                     url={tileUrl}
+                    crossOrigin="anonymous"
                   />
                   <FitBounds positions={positions} disabled={isExporting} />
                   {mappedCheckIns.map((checkIn) => (
@@ -748,6 +749,7 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
                 <TileLayer
                   attribution={tileAttribution}
                   url={tileUrl}
+                  crossOrigin="anonymous"
                 />
                 <FitBounds positions={positions} disabled={isExporting} />
                 {mappedCheckIns.map((checkIn) => (

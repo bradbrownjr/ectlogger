@@ -329,6 +329,45 @@ class ChatMessage(Base):
     # Relationships
     net = relationship("Net", back_populates="chat_messages")
     user = relationship("User", back_populates="chat_messages")
+    reactions = relationship("ChatReaction", back_populates="message", cascade="all, delete-orphan")
+    images = relationship("ChatImage", back_populates="message", cascade="all, delete-orphan")
+
+
+class ChatReaction(Base):
+    __tablename__ = "chat_reactions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    message_id = Column(Integer, ForeignKey("chat_messages.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    emoji = Column(String(10), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint('message_id', 'user_id', 'emoji', name='uq_chat_reaction'),
+    )
+
+    message = relationship("ChatMessage", back_populates="reactions")
+    user = relationship("User")
+
+
+class ChatImage(Base):
+    __tablename__ = "chat_images"
+
+    id = Column(Integer, primary_key=True, index=True)
+    net_id = Column(Integer, ForeignKey("nets.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    message_id = Column(Integer, ForeignKey("chat_messages.id", ondelete="SET NULL"), nullable=True)
+    image_path = Column(String(500), nullable=False)
+    thumb_path = Column(String(500), nullable=False)
+    mime_type = Column(String(50), nullable=False)
+    width = Column(Integer, nullable=False)
+    height = Column(Integer, nullable=False)
+    size_bytes = Column(Integer, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    message = relationship("ChatMessage", back_populates="images")
+    user = relationship("User")
+    net = relationship("Net")
 
 
 class FieldDefinition(Base):
@@ -358,6 +397,7 @@ class TemplateStaff(Base):
     template_id = Column(Integer, ForeignKey("net_templates.id", ondelete="CASCADE"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     is_active = Column(Boolean, default=True)  # Can be temporarily disabled
+    is_co_manager = Column(Boolean, default=False)  # Elevated role within staff
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # Relationships

@@ -40,6 +40,8 @@ import PersonIcon from '@mui/icons-material/Person';
 import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
 import CloseIcon from '@mui/icons-material/Close';
+import StarIcon from '@mui/icons-material/Star';
+import StarBorderIcon from '@mui/icons-material/StarBorder';
 import { ncsRotationApi, userApi, templateStaffApi, templateApi } from '../services/api';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -86,6 +88,7 @@ interface StaffMember {
   user_callsign: string;
   user_name: string | null;
   is_active: boolean;
+  is_co_manager: boolean;
 }
 
 interface ScheduleEntry {
@@ -177,10 +180,14 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
   const isAdmin = user?.role === 'admin';
   // Can't manage staff for closed nets
   const isNetClosed = isNetContext && net?.status === 'closed';
+  // Co-managers (staff with is_co_manager flag) also get edit access
+  const isCoManager = isScheduleContext
+    ? staff.some((s: StaffMember) => s.user_id === user?.id && s.is_co_manager && s.is_active)
+    : false;
 
   // Check if user is in the rotation (for schedules)
-  // Only owners and admins can edit staff/rotation.
-  const canEdit = isAuthenticated && (isOwner || isAdmin) && !isNetClosed;
+  // Owners, admins, and co-managers can edit staff/rotation.
+  const canEdit = isAuthenticated && (isOwner || isAdmin || isCoManager) && !isNetClosed;
 
   // Title based on context
   const getTitle = () => {
@@ -284,6 +291,10 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
       });
       setEditingManager(false);
       setPendingManager(null);
+      // Refetch staff + users so the "Add Staff" dropdown reflects the new
+      // owner immediately — without this the stale staff list would exclude
+      // or incorrectly filter the previous owner after a manager transfer.
+      await fetchData();
       onUpdate?.();
     } catch (err: any) {
       setError(getErrorMessage(err, 'Failed to update manager'));
@@ -344,6 +355,18 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
       ));
     } catch (err: any) {
       setError(getErrorMessage(err, 'Failed to update staff'));
+    }
+  };
+
+  const handleToggleCoManager = async (staffMember: StaffMember) => {
+    if (!schedule) return;
+    try {
+      await templateStaffApi.updateCoManager(schedule.id, staffMember.id, !staffMember.is_co_manager);
+      setStaff(prev => prev.map(s =>
+        s.id === staffMember.id ? { ...s, is_co_manager: !s.is_co_manager } : s
+      ));
+    } catch (err: any) {
+      setError(getErrorMessage(err, 'Failed to update co-manager status'));
     }
   };
 
@@ -709,15 +732,25 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                         {s.user_callsign}
                         {s.user_name && ` (${s.user_name})`}
                       </Typography>
+                      {s.is_co_manager && (
+                        <Chip label="Co-Manager" size="small" color="primary" variant="outlined" />
+                      )}
                       {!s.is_active && (
                         <Chip label="Inactive" size="small" variant="outlined" />
                       )}
                     </Box>
                   }
                 />
-                {/* Edit controls - owners/admins only */}
+                {/* Edit controls - owners/admins/co-managers only */}
                 {canEdit && (
                   <ListItemSecondaryAction>
+                    <Tooltip title={s.is_co_manager ? 'Remove co-manager role' : 'Promote to co-manager'}>
+                      <IconButton size="small" onClick={() => handleToggleCoManager(s)}>
+                        {s.is_co_manager
+                          ? <StarIcon fontSize="small" color="primary" />
+                          : <StarBorderIcon fontSize="small" />}
+                      </IconButton>
+                    </Tooltip>
                     <Tooltip title={s.is_active ? 'Mark inactive' : 'Mark active'}>
                       <IconButton size="small" onClick={() => handleToggleStaffActive(s)}>
                         <BlockIcon fontSize="small" color={s.is_active ? 'action' : 'error'} />

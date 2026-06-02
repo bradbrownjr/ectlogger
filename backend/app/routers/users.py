@@ -62,7 +62,12 @@ async def update_my_location(
     if location:
         current_user.live_location = location.upper()
         current_user.live_location_updated = datetime.now(UTC)
-        await db.commit()
+    else:
+        # Empty string clears the GPS-derived location so the static profile
+        # default takes over in callsign lookups.
+        current_user.live_location = None
+        current_user.live_location_updated = None
+    await db.commit()
     return {"status": "ok", "live_location": current_user.live_location}
 
 

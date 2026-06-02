@@ -688,11 +688,12 @@ async def remove_template_staff(
 async def update_template_staff(
     template_id: int,
     staff_id: int,
-    is_active: bool,
+    is_active: Optional[bool] = None,
+    is_co_manager: Optional[bool] = None,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """Update a staff member's active status"""
+    """Update a staff member's active status or co-manager flag"""
     template = await get_template_or_404(template_id, db)
     
     if not await check_template_permission(template, current_user, db):
@@ -710,7 +711,10 @@ async def update_template_staff(
     if not staff:
         raise HTTPException(status_code=404, detail="Staff member not found")
     
-    staff.is_active = is_active
+    if is_active is not None:
+        staff.is_active = is_active
+    if is_co_manager is not None:
+        staff.is_co_manager = is_co_manager
     await db.commit()
     await db.refresh(staff)
     

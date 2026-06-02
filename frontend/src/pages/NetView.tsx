@@ -309,6 +309,7 @@ const NetView: React.FC = () => {
     custom_fields: {} as Record<string, string>,
     topic_response: '',
     poll_response: '',
+    status: 'checked_in',
   });
   
   // Poll autocomplete responses
@@ -556,6 +557,10 @@ const NetView: React.FC = () => {
       } else if (message.type === 'chat_message') {
         if (typeof window !== 'undefined' && window.dispatchEvent) {
           window.dispatchEvent(new CustomEvent('newChatMessage', { detail: message.data }));
+        }
+      } else if (message.type === 'chat_reaction') {
+        if (typeof window !== 'undefined' && window.dispatchEvent) {
+          window.dispatchEvent(new CustomEvent('chatReactionUpdate', { detail: message.data }));
         }
       } else if (message.type === 'role_change') {
         // Always refresh roles and check-ins for all clients
@@ -815,6 +820,7 @@ const NetView: React.FC = () => {
         custom_fields: {},
         topic_response: '',
         poll_response: '',
+        status: 'checked_in',
       });
     } catch (error) {
       console.error('Failed to start net:', error);
@@ -1099,6 +1105,7 @@ const NetView: React.FC = () => {
         custom_fields: {},
         topic_response: '',
         poll_response: '',
+        status: 'checked_in',
       });
       
       fetchCheckIns();
@@ -1618,6 +1625,18 @@ const NetView: React.FC = () => {
     }
     
     return true;
+  }).sort((a: CheckIn, b: CheckIn) => {
+    // Sort order: NCS first → Mobile second → then original checked_in_at order.
+    // Mobile stations may only be reachable briefly, so they surface immediately
+    // after NCS to ensure their comments are captured before they drop off.
+    const aIsNcs = ncsRoles.some((r: any) => r.user_id === a.user_id);
+    const bIsNcs = ncsRoles.some((r: any) => r.user_id === b.user_id);
+    if (aIsNcs !== bIsNcs) return aIsNcs ? -1 : 1;
+    const aIsMobile = a.status === 'mobile';
+    const bIsMobile = b.status === 'mobile';
+    if (aIsMobile !== bIsMobile) return aIsMobile ? -1 : 1;
+    // Preserve server order (checked_in_at ascending)
+    return new Date(a.checked_in_at).getTime() - new Date(b.checked_in_at).getTime();
   });
 
   // Find the user's active check-in (not checked out)
@@ -2147,6 +2166,7 @@ const NetView: React.FC = () => {
                               custom_fields: {},
                               topic_response: '',
                               poll_response: '',
+                              status: 'checked_in',
                             });
                           }
                           if (canManageCheckIns) {
@@ -2472,6 +2492,8 @@ const NetView: React.FC = () => {
                           ? (theme) => theme.palette.mode === 'dark' ? theme.palette.success.dark : theme.palette.success.light
                           : checkIn.status === 'checked_out' 
                           ? 'action.disabledBackground' 
+                          : checkIn.status === 'away'
+                          ? (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 193, 7, 0.18)' : 'rgba(255, 193, 7, 0.22)'
                           : isNcsUser && ncsColor ? ncsColor.bg
                           : isOnActiveFrequency
                           ? (theme) => theme.palette.mode === 'dark' ? 'rgba(25, 118, 210, 0.15)' : 'rgba(25, 118, 210, 0.08)'
@@ -3388,6 +3410,22 @@ const NetView: React.FC = () => {
                     </TableCell>
                     <TableCell>-</TableCell>
                     <TableCell>
+                      <Select
+                        size="small"
+                        value={checkInForm.status}
+                        onChange={(e) => setCheckInForm({ ...checkInForm, status: e.target.value })}
+                        sx={{ fontSize: '0.75rem', minWidth: 90 }}
+                      >
+                        <MenuItem value="checked_in">✅ In</MenuItem>
+                        <MenuItem value="listening">👂 Listening</MenuItem>
+                        <MenuItem value="mobile">🚗 Mobile</MenuItem>
+                        <MenuItem value="relay">📡 Relay</MenuItem>
+                        <MenuItem value="has_traffic">🚨 Traffic</MenuItem>
+                        <MenuItem value="announcements">📢 Announce</MenuItem>
+                        <MenuItem value="away">⏸️ Away</MenuItem>
+                      </Select>
+                    </TableCell>
+                    <TableCell>
                       <Box sx={{ display: 'flex', gap: 0.5 }}>
                         {net?.frequencies && net.frequencies.length > 1 && (
                           <Button
@@ -3613,6 +3651,24 @@ const NetView: React.FC = () => {
                       Set Available Frequencies
                     </Button>
                   )}
+                  
+                  {/* Status selector */}
+                  <FormControl size="small" fullWidth>
+                    <InputLabel>Status</InputLabel>
+                    <Select
+                      value={checkInForm.status}
+                      label="Status"
+                      onChange={(e) => setCheckInForm({ ...checkInForm, status: e.target.value })}
+                    >
+                      <MenuItem value="checked_in">✅ Checked In</MenuItem>
+                      <MenuItem value="listening">👂 Just Listening</MenuItem>
+                      <MenuItem value="mobile">🚗 Mobile</MenuItem>
+                      <MenuItem value="relay">📡 Relay</MenuItem>
+                      <MenuItem value="has_traffic">🚨 Has Traffic</MenuItem>
+                      <MenuItem value="announcements">📢 Announcements</MenuItem>
+                      <MenuItem value="away">⏸️ Away</MenuItem>
+                    </Select>
+                  </FormControl>
                   
                   {/* Add button */}
                   <Button
@@ -4501,6 +4557,7 @@ const NetView: React.FC = () => {
                     custom_fields: {},
                     topic_response: '',
                     poll_response: '',
+                    status: 'checked_in',
                   });
                 }
                 if (canManageCheckIns) {

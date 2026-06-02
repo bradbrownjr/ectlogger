@@ -76,8 +76,8 @@ async def check_schedule_creation_eligibility(db: AsyncSession, user: User) -> t
             days_remaining = min_age_days - account_age.days
             return False, f"Your account must be at least {min_age_days} days old to create schedules. Please wait {days_remaining} more day(s)."
     
-    # Check net participation count
-    if min_participations > 0:
+    # Check net participation count (skip if user has been granted early access)
+    if min_participations > 0 and not getattr(user, 'schedule_age_bypass', False):
         participation_result = await db.execute(
             select(func.count(func.distinct(CheckIn.net_id)))
             .where(CheckIn.user_id == user.id)

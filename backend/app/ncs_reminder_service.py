@@ -429,8 +429,8 @@ class NCSReminderService:
                 and_(
                     Net.template_id == template.id,
                     Net.status.notin_(['closed', 'archived']),
-                    Net.scheduled_start_time >= next_date - timedelta(hours=4),
-                    Net.scheduled_start_time <= next_date + timedelta(hours=4),
+                    Net.scheduled_start_time >= scheduled_dt - timedelta(hours=4),
+                    Net.scheduled_start_time <= scheduled_dt + timedelta(hours=4),
                 )
             )
         )
