@@ -427,13 +427,6 @@ const ChangelogNotification: React.FC = () => {
     y += 18;
     pdf.setTextColor(0);
 
-    const typeLabel: Record<string, string> = {
-      feature: 'New Features',
-      improvement: 'Improvements',
-      fix: 'Bug Fixes',
-      bugfix: 'Bug Fixes',
-    };
-
     for (const group of groups) {
       ensureRoom(40);
       // Date heading
@@ -454,13 +447,7 @@ const ChangelogNotification: React.FC = () => {
         ensureRoom(28);
         pdf.setFont('helvetica', 'bold');
         pdf.setFontSize(11);
-        const sectionTypeLabel = typeLabel[section.type] || section.title;
-        const normalizedTypeLabel = sectionTypeLabel.trim().toLowerCase();
-        const normalizedTitle = section.title.trim().toLowerCase();
-        const sectionHeading = normalizedTypeLabel === normalizedTitle
-          ? section.title
-          : `${sectionTypeLabel}: ${section.title}`;
-        pdf.text(sectionHeading, margin, y);
+        pdf.text(section.title, margin, y);
         y += 14;
         pdf.setFont('helvetica', 'normal');
         pdf.setFontSize(10);
