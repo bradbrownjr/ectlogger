@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, Query, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete, and_
 from sqlalchemy.orm import selectinload
@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 from dateutil.rrule import rrule, DAILY, WEEKLY, MONTHLY
 import json
+from pydantic import BaseModel
 
 from app.database import get_db
 from app.models import (
@@ -24,6 +25,12 @@ from app.config import settings
 from app.logger import logger
 
 router = APIRouter(prefix="/templates/{template_id}/ncs-rotation", tags=["ncs-rotation"])
+
+
+class TemplateStaffUpdateRequest(BaseModel):
+    """PATCH payload for template staff updates."""
+    is_active: Optional[bool] = None
+    is_co_manager: Optional[bool] = None
 
 
 async def get_template_or_404(template_id: int, db: AsyncSession) -> NetTemplate:
@@ -688,8 +695,9 @@ async def remove_template_staff(
 async def update_template_staff(
     template_id: int,
     staff_id: int,
-    is_active: Optional[bool] = None,
-    is_co_manager: Optional[bool] = None,
+    update: TemplateStaffUpdateRequest = Body(default_factory=TemplateStaffUpdateRequest),
+    is_active: Optional[bool] = Query(None),
+    is_co_manager: Optional[bool] = Query(None),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -711,10 +719,18 @@ async def update_template_staff(
     if not staff:
         raise HTTPException(status_code=404, detail="Staff member not found")
     
-    if is_active is not None:
-        staff.is_active = is_active
-    if is_co_manager is not None:
-        staff.is_co_manager = is_co_manager
+    # Body values are the canonical input for PATCH; query params are kept
+    # as backwards-compatible fallback for older clients.
+    next_is_active = update.is_active if update.is_active is not None else is_active
+    next_is_co_manager = update.is_co_manager if update.is_co_manager is not None else is_co_manager
+
+    if next_is_active is None and next_is_co_manager is None:
+        raise HTTPException(status_code=400, detail="No update fields provided")
+
+    if next_is_active is not None:
+        staff.is_active = next_is_active
+    if next_is_co_manager is not None:
+        staff.is_co_manager = next_is_co_manager
     await db.commit()
     await db.refresh(staff)
     

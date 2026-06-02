@@ -173,9 +173,9 @@ export const templateStaffApi = {
   remove: (templateId: number, staffId: number) =>
     api.delete(`/templates/${templateId}/ncs-rotation/staff/${staffId}`),
   updateActive: (templateId: number, staffId: number, isActive: boolean) =>
-    api.patch(`/templates/${templateId}/ncs-rotation/staff/${staffId}`, null, { params: { is_active: isActive } }),
+    api.patch(`/templates/${templateId}/ncs-rotation/staff/${staffId}`, { is_active: isActive }),
   updateCoManager: (templateId: number, staffId: number, isCoManager: boolean) =>
-    api.patch(`/templates/${templateId}/ncs-rotation/staff/${staffId}`, null, { params: { is_co_manager: isCoManager } }),
+    api.patch(`/templates/${templateId}/ncs-rotation/staff/${staffId}`, { is_co_manager: isCoManager }),
 };
 
 // Statistics API
