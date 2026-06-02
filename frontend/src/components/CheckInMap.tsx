@@ -191,6 +191,7 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
         filename: `${netName.replace(/[^a-zA-Z0-9]/g, '_')}_Map`,
         orientation: 'landscape',
         scale: 2,
+        captureMode: 'live',
       });
     } catch (err) {
       console.error('Failed to export map PDF:', err);

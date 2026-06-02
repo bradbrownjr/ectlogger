@@ -22,6 +22,8 @@ export interface PdfExportOptions {
   margin?: number;
   /** Use page breaks (sections with pageBreakBefore style become separate pages) */
   usePageBreaks?: boolean;
+  /** DOM capture strategy: clone (default) or live element */
+  captureMode?: 'clone' | 'live';
 }
 
 /**
@@ -161,25 +163,33 @@ export const exportToPdf = async (
     addTimestamp = true,
     scale = 2,
     margin = 10,
+    captureMode = 'clone',
   } = options;
 
   try {
-    // Clone the element to apply light mode without affecting the original
-    const clone = element.cloneNode(true) as HTMLElement;
-    clone.style.position = 'absolute';
-    clone.style.left = '-9999px';
-    clone.style.top = '0';
-    clone.style.width = `${element.offsetWidth}px`;
-    clone.style.backgroundColor = '#ffffff';
-    document.body.appendChild(clone);
+    let captureElement: HTMLElement = element;
+    let clone: HTMLElement | null = null;
 
-    // Apply light mode styles to the clone
-    applyLightModeStyles(clone);
+    // Default strategy uses an off-screen clone so we can force light mode
+    // without mutating the on-screen UI.
+    if (captureMode === 'clone') {
+      clone = element.cloneNode(true) as HTMLElement;
+      clone.style.position = 'absolute';
+      clone.style.left = '-9999px';
+      clone.style.top = '0';
+      clone.style.width = `${element.offsetWidth}px`;
+      clone.style.backgroundColor = '#ffffff';
+      document.body.appendChild(clone);
+
+      // Apply light mode styles to the clone
+      applyLightModeStyles(clone);
+      captureElement = clone;
+    }
 
     // Collect avoid-break element positions (table rows) so we can cut
     // between rows instead of through them.
-    const cloneRect = clone.getBoundingClientRect();
-    const avoidEls = clone.querySelectorAll('tr') as NodeListOf<HTMLElement>;
+    const captureRect = captureElement.getBoundingClientRect();
+    const avoidEls = captureElement.querySelectorAll('tr') as NodeListOf<HTMLElement>;
     // We'll compute scaled positions after we know the scale factor
     const avoidElsArr = Array.from(avoidEls);
 
@@ -199,7 +209,7 @@ export const exportToPdf = async (
       // Capture the cloned element with light mode styles
       // Note: Map tiles may not capture due to CORS restrictions
       // html2canvas with useCORS and allowTaint helps but isn't guaranteed
-      const canvas = await html2canvas(clone, {
+      const canvas = await html2canvas(captureElement, {
         scale,
         useCORS: true,
         allowTaint: true,
@@ -218,8 +228,8 @@ export const exportToPdf = async (
       const avoidRanges: { top: number; bottom: number }[] = avoidElsArr.map(el => {
         const r = el.getBoundingClientRect();
         return {
-          top: (r.top - cloneRect.top) * scale,
-          bottom: (r.bottom - cloneRect.top) * scale,
+          top: (r.top - captureRect.top) * scale,
+          bottom: (r.bottom - captureRect.top) * scale,
         };
       });
 
@@ -270,7 +280,9 @@ export const exportToPdf = async (
       pdf.save(`${finalFilename}.pdf`);
     } finally {
       // Clean up the clone
-      document.body.removeChild(clone);
+      if (clone) {
+        document.body.removeChild(clone);
+      }
     }
   } catch (error) {
     console.error('Failed to export PDF:', error);
