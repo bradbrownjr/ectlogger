@@ -1,6 +1,26 @@
 {
-  "version": "2026.06.02",
+  "version": "2026.06.02b",
   "entries": [
+    {
+      "version": "2026.06.02b",
+      "date": "2026-06-02",
+      "sections": [
+        {
+          "title": "PDF export compatibility fixes",
+          "type": "fix",
+          "items": [
+            {
+              "text": "What's New / Changelog PDF exports now preserve emoji reactions (for example 👍 🙂 ❤️ ✅) using inline emoji rendering instead of broken glyph fallback.",
+              "userImpact": true
+            },
+            {
+              "text": "Changelog PDF text wrapping now handles mixed text-and-emoji lines more reliably, reducing malformed spacing and symbol corruption in exported files.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.06.02",
       "date": "2026-06-02",

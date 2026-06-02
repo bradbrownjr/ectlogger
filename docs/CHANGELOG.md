@@ -4,6 +4,13 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# June 2, 2026 (b)
+
+## PDF export compatibility fixes
+
+* **Emoji-safe What's New PDFs** — What's New / Changelog PDF exports now preserve emoji reactions (for example 👍 🙂 ❤️ ✅) using inline emoji rendering instead of broken glyph fallback.
+* **Mixed text + emoji wrapping improvements** — Changelog PDF line wrapping now handles mixed text-and-emoji lines more reliably, reducing malformed spacing and symbol corruption in exported files.
+
 # June 2, 2026
 
 ## Staff management reliability and co-manager controls
