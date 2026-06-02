@@ -84,8 +84,8 @@ const CHANGELOG: ChangelogEntry[] = (changelogData as { entries: ChangelogEntry[
 
 const SECTION_PRIORITY: Record<'feature' | 'fix' | 'improvement', number> = {
   feature: 0,
-  fix: 1,
-  improvement: 2,
+  improvement: 1,
+  fix: 2,
 };
 
 const IMPORTANCE_PRIORITY: Record<'critical' | 'high' | 'medium' | 'low', number> = {

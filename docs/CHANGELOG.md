@@ -13,6 +13,12 @@ All notable changes to ECTLogger are documented here.
 * **Paste-to-chat images** — Users can paste PNG/JPEG/WEBP images directly into chat; uploads are resized, thumbnailed, rendered inline, and viewable in a full-image lightbox.
 * **Status-at-entry for check-ins** — NCS quick-entry now supports choosing station status at creation time on both desktop and mobile forms.
 
+## Improvements
+
+* **Away and Mobile visibility improvements** — Away rows now use a distinct yellow highlight, and Mobile stations are prioritized near the top of the check-in list (after NCS).
+* **Contextual create/edit labels** — Ad-hoc/one-time flows now show **Create Net / Edit Net** labels where appropriate instead of always saying Schedule.
+* **Clearer schedule action wording** — The Net Staff action label now reads **Create schedule** instead of **Push staff to schedule**.
+
 ## Bug Fixes (highest impact first)
 
 * **Check-in Map PDF white-page fix** — Exporting a Check-in Map PDF from the floating map window no longer produces a blank white page. The exporter now captures the live map element so Leaflet tiles and overlays render correctly.
@@ -23,12 +29,6 @@ All notable changes to ECTLogger are documented here.
 * **Early access bypass corrected** — The schedule early-access override now properly bypasses both minimum account age and net-participation requirements.
 * **Net Staff modal refresh after manager transfer** — The staff list and add-staff dropdown now refresh immediately after ownership transfer, so users no longer see stale eligibility from the prior manager.
 * **Live location control in Profile** — Users can now see and clear current GPS-derived live location from Profile, preventing stale live location from overriding intended profile location during check-ins.
-
-## Improvements
-
-* **Away and Mobile visibility improvements** — Away rows now use a distinct yellow highlight, and Mobile stations are prioritized near the top of the check-in list (after NCS).
-* **Contextual create/edit labels** — Ad-hoc/one-time flows now show **Create Net / Edit Net** labels where appropriate instead of always saying Schedule.
-* **Clearer schedule action wording** — The Net Staff action label now reads **Create schedule** instead of **Push staff to schedule**.
 
 # April 28, 2026
 
