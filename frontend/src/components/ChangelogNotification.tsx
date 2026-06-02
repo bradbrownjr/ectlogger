@@ -454,7 +454,13 @@ const ChangelogNotification: React.FC = () => {
         ensureRoom(28);
         pdf.setFont('helvetica', 'bold');
         pdf.setFontSize(11);
-        pdf.text(`${typeLabel[section.type] || section.title}: ${section.title}`, margin, y);
+        const sectionTypeLabel = typeLabel[section.type] || section.title;
+        const normalizedTypeLabel = sectionTypeLabel.trim().toLowerCase();
+        const normalizedTitle = section.title.trim().toLowerCase();
+        const sectionHeading = normalizedTypeLabel === normalizedTitle
+          ? section.title
+          : `${sectionTypeLabel}: ${section.title}`;
+        pdf.text(sectionHeading, margin, y);
         y += 14;
         pdf.setFont('helvetica', 'normal');
         pdf.setFontSize(10);
