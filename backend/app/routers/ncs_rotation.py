@@ -695,7 +695,7 @@ async def remove_template_staff(
 async def update_template_staff(
     template_id: int,
     staff_id: int,
-    update: TemplateStaffUpdateRequest = Body(default_factory=TemplateStaffUpdateRequest),
+    update: Optional[TemplateStaffUpdateRequest] = Body(None),
     is_active: Optional[bool] = Query(None),
     is_co_manager: Optional[bool] = Query(None),
     current_user: User = Depends(get_current_user),
@@ -721,8 +721,8 @@ async def update_template_staff(
     
     # Body values are the canonical input for PATCH; query params are kept
     # as backwards-compatible fallback for older clients.
-    next_is_active = update.is_active if update.is_active is not None else is_active
-    next_is_co_manager = update.is_co_manager if update.is_co_manager is not None else is_co_manager
+    next_is_active = update.is_active if (update is not None and update.is_active is not None) else is_active
+    next_is_co_manager = update.is_co_manager if (update is not None and update.is_co_manager is not None) else is_co_manager
 
     if next_is_active is None and next_is_co_manager is None:
         raise HTTPException(status_code=400, detail="No update fields provided")
