@@ -70,7 +70,7 @@
           "type": "feature",
           "items": [
             {
-              "text": "Chat messages now support hover reactions (thumbs up, smile, frown, heart, checkmark) with live per-message counts synchronized to all connected clients.",
+              "text": "Chat messages now support hover reactions (👍 🙂 🙁 ❤️ ✅) with live per-message counts synchronized to all connected clients.",
               "userImpact": true
             },
             {
@@ -587,7 +587,7 @@
           "type": "improvement",
           "items": [
             {
-              "text": "Status dropdowns on the check-in list now show a text label next to each status icon (e.g., Listening only, Announcements) so new NCS users don’t have to memorize the icon legend.",
+              "text": "Status dropdowns on the check-in list now show a text label next to each emoji icon (e.g., 👂 Listening only, 📢 Announcements) so new NCS users don’t have to memorize the icon legend.",
               "userImpact": true
             },
             {

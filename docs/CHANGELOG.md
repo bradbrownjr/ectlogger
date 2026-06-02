@@ -29,7 +29,7 @@ All notable changes to ECTLogger are documented here.
 
 ## Chat enhancements: reactions and pasted images
 
-* **Hover reactions** — Chat now supports per-message reactions (thumbs up, smile, frown, heart, checkmark) with live counts synchronized across connected clients.
+* **Hover reactions** — Chat now supports per-message reactions (👍 🙂 🙁 ❤️ ✅) with live counts synchronized across connected clients.
 * **Paste-to-chat images** — Users can paste PNG/JPEG/WEBP images directly into chat; uploads are resized, thumbnailed, rendered inline, and viewable in a full-image lightbox.
 
 # April 28, 2026
@@ -118,7 +118,7 @@ All notable changes to ECTLogger are documented here.
 
 ## Mobile & Status Selector Improvements
 
-* **Status dropdown labels** — Each option in the check-in status dropdown now shows a text label next to the status icon (e.g., `Listening only`, `Announcements`, `Has traffic`). Closed selects still display only the icon to keep the table compact. Addresses confusion where new NCS users picked the wrong icon (e.g., bullhorn for "just listening").
+* **Status dropdown labels** — Each option in the check-in status dropdown now shows a text label next to the emoji (e.g., `👂 Listening only`, `📢 Announcements`, `🚨 Has traffic`). Closed selects still display only the icon to keep the table compact. Addresses confusion where new NCS users picked the wrong icon (e.g., bullhorn for "just listening").
 * **Mobile net header compaction**:
   * Duration chip drops the "Duration:" prefix; the clock icon is sufficient.
   * The edit-times pencil button next to the status chip is hidden on mobile (still available on desktop and from the net info page).

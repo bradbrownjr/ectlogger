@@ -79,6 +79,168 @@ interface ChangelogEntry {
 const CHANGELOG_VERSION: string = (changelogData as { version: string }).version;
 const CHANGELOG: ChangelogEntry[] = (changelogData as { entries: ChangelogEntry[] }).entries;
 
+const EMOJI_REGEX = /\p{Extended_Pictographic}(?:\uFE0F|\u200D\p{Extended_Pictographic})*/gu;
+const TWEMOJI_BASE_URL = 'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/72x72';
+const emojiImageCache = new Map<string, string | null>();
+
+const toTwemojiCodepoint = (emoji: string): string => {
+  return Array.from(emoji)
+    .map((char) => char.codePointAt(0))
+    .filter((cp): cp is number => cp !== undefined && cp !== 0xfe0f)
+    .map((cp) => cp.toString(16))
+    .join('-');
+};
+
+const loadEmojiDataUrl = async (emoji: string): Promise<string | null> => {
+  if (emojiImageCache.has(emoji)) {
+    return emojiImageCache.get(emoji) ?? null;
+  }
+
+  try {
+    const codepoint = toTwemojiCodepoint(emoji);
+    if (!codepoint) {
+      emojiImageCache.set(emoji, null);
+      return null;
+    }
+
+    const response = await fetch(`${TWEMOJI_BASE_URL}/${codepoint}.png`);
+    if (!response.ok) {
+      emojiImageCache.set(emoji, null);
+      return null;
+    }
+
+    const blob = await response.blob();
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => reject(new Error('Failed to convert emoji image to data URL'));
+      reader.readAsDataURL(blob);
+    });
+
+    emojiImageCache.set(emoji, dataUrl);
+    return dataUrl;
+  } catch {
+    emojiImageCache.set(emoji, null);
+    return null;
+  }
+};
+
+const splitByEmoji = (input: string): Array<{ type: 'text' | 'emoji'; value: string }> => {
+  const parts: Array<{ type: 'text' | 'emoji'; value: string }> = [];
+  let lastIndex = 0;
+
+  for (const match of input.matchAll(EMOJI_REGEX)) {
+    const start = match.index ?? 0;
+    const value = match[0];
+    if (start > lastIndex) {
+      parts.push({ type: 'text', value: input.slice(lastIndex, start) });
+    }
+    parts.push({ type: 'emoji', value });
+    lastIndex = start + value.length;
+  }
+
+  if (lastIndex < input.length) {
+    parts.push({ type: 'text', value: input.slice(lastIndex) });
+  }
+
+  return parts;
+};
+
+const tokenizeLineForWrap = (input: string): Array<{ type: 'text' | 'emoji'; value: string }> => {
+  const tokens: Array<{ type: 'text' | 'emoji'; value: string }> = [];
+  for (const part of splitByEmoji(input)) {
+    if (part.type === 'emoji') {
+      tokens.push(part);
+      continue;
+    }
+
+    const textTokens = part.value.match(/\S+|\s+/g) || [];
+    for (const t of textTokens) {
+      tokens.push({ type: 'text', value: t });
+    }
+  }
+  return tokens;
+};
+
+const measureTokenWidth = (
+  pdf: jsPDF,
+  token: { type: 'text' | 'emoji'; value: string },
+  emojiWidthPt: number,
+): number => {
+  if (token.type === 'emoji') {
+    return emojiWidthPt;
+  }
+  return pdf.getTextWidth(token.value);
+};
+
+const wrapEmojiAwareLine = (
+  pdf: jsPDF,
+  text: string,
+  maxWidth: number,
+  emojiWidthPt: number,
+): Array<Array<{ type: 'text' | 'emoji'; value: string }>> => {
+  const tokens = tokenizeLineForWrap(text);
+  const lines: Array<Array<{ type: 'text' | 'emoji'; value: string }>> = [];
+  let currentLine: Array<{ type: 'text' | 'emoji'; value: string }> = [];
+  let currentWidth = 0;
+
+  for (const token of tokens) {
+    const tokenWidth = measureTokenWidth(pdf, token, emojiWidthPt);
+    const isLeadingWhitespace = token.type === 'text' && token.value.trim() === '' && currentLine.length === 0;
+    if (isLeadingWhitespace) {
+      continue;
+    }
+
+    if (currentWidth + tokenWidth > maxWidth && currentLine.length > 0) {
+      lines.push(currentLine);
+      currentLine = [];
+      currentWidth = 0;
+      if (token.type === 'text' && token.value.trim() === '') {
+        continue;
+      }
+    }
+
+    currentLine.push(token);
+    currentWidth += tokenWidth;
+  }
+
+  if (currentLine.length > 0) {
+    lines.push(currentLine);
+  }
+
+  return lines.length > 0 ? lines : [[{ type: 'text', value: '' }]];
+};
+
+const renderEmojiAwareLine = async (
+  pdf: jsPDF,
+  line: Array<{ type: 'text' | 'emoji'; value: string }>,
+  x: number,
+  y: number,
+  emojiWidthPt: number,
+): Promise<void> => {
+  let cursorX = x;
+  const emojiYOffset = 8;
+
+  for (const token of line) {
+    if (token.type === 'text') {
+      if (token.value) {
+        pdf.text(token.value, cursorX, y);
+        cursorX += pdf.getTextWidth(token.value);
+      }
+      continue;
+    }
+
+    const emojiDataUrl = await loadEmojiDataUrl(token.value);
+    if (emojiDataUrl) {
+      pdf.addImage(emojiDataUrl, 'PNG', cursorX, y - emojiYOffset, emojiWidthPt, emojiWidthPt);
+      cursorX += emojiWidthPt;
+    } else {
+      pdf.text(token.value, cursorX, y);
+      cursorX += pdf.getTextWidth(token.value);
+    }
+  }
+};
+
 
 const ChangelogNotification: React.FC = () => {
   const theme = useTheme();
@@ -176,10 +338,10 @@ const ChangelogNotification: React.FC = () => {
   // size — same approach the net report PDF uses post-2026.03.12). One-shot
   // helper builds a doc from a list of grouped entries; callers pass either
   // just the latest day's group or the entire grouped list.
-  const buildChangelogPdf = (
+  const buildChangelogPdf = async (
     groups: { date: string; versions: string[]; sections: ChangelogSection[] }[],
     title: string,
-  ): jsPDF => {
+  ): Promise<jsPDF> => {
     const pdf = new jsPDF({ unit: 'pt', format: 'letter' });
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
@@ -237,10 +399,15 @@ const ChangelogNotification: React.FC = () => {
         pdf.setFontSize(10);
         for (const item of section.items) {
           const bullet = '\u2022 ';
-          const wrapped = pdf.splitTextToSize(bullet + item.text, contentWidth - 12);
-          ensureRoom(wrapped.length * 12 + 4);
-          pdf.text(wrapped, margin + 6, y);
-          y += wrapped.length * 12 + 2;
+          const emojiWidthPt = 10;
+          const lineHeightPt = 12;
+          const wrappedLines = wrapEmojiAwareLine(pdf, bullet + item.text, contentWidth - 12, emojiWidthPt);
+          ensureRoom(wrappedLines.length * lineHeightPt + 4);
+          for (const line of wrappedLines) {
+            await renderEmojiAwareLine(pdf, line, margin + 6, y, emojiWidthPt);
+            y += lineHeightPt;
+          }
+          y += 2;
         }
         y += 6;
       }
@@ -249,19 +416,19 @@ const ChangelogNotification: React.FC = () => {
     return pdf;
   };
 
-  const handleDownloadLatest = () => {
+  const handleDownloadLatest = async () => {
     // Latest = the newest day-group (groupedEntries[0]).
     if (!groupedEntries.length) return;
     const latest = groupedEntries[0];
-    const pdf = buildChangelogPdf(
+    const pdf = await buildChangelogPdf(
       [latest],
       `What's New in ECTLogger — ${formatChangelogDate(latest.date)}`,
     );
     pdf.save(`ECTLogger_WhatsNew_${latest.date}.pdf`);
   };
 
-  const handleDownloadAll = () => {
-    const pdf = buildChangelogPdf(groupedEntries, 'ECTLogger Changelog');
+  const handleDownloadAll = async () => {
+    const pdf = await buildChangelogPdf(groupedEntries, 'ECTLogger Changelog');
     const now = new Date();
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     pdf.save(`ECTLogger_Changelog_${today}.pdf`);
