@@ -187,6 +187,10 @@ Users see a red badge on the info icon (lower-left) until they view the changelo
 - **Frontend**: Static files in `frontend/dist/` served by **Caddy**
 - **Backend**: uvicorn on port 8001 (no auto-reload)
 - **Reverse Proxy**: Caddy handles HTTPS, routes `/api/*` and `/ws/*` to backend
+- **Service control**: passwordless sudo is configured for these exact commands:
+  - `/usr/bin/systemctl restart ectlogger`
+  - `/usr/bin/systemctl is-active ectlogger`
+  - `/usr/bin/systemctl status ectlogger`
 - **Deploy from GitHub**:
   ```bash
   # 1. Pull latest from GitHub
@@ -195,14 +199,14 @@ Users see a red badge on the info icon (lower-left) until they view the changelo
   # 2. Build frontend (REQUIRED after any frontend change — git pull alone is not enough)
   ssh ectlogger@app.ectlogger.us "cd ~/ectlogger/frontend && npm run build"
   
-  # 3. Restart backend (only needed if backend files changed)
-  set -a; source ~/.ectlogger-deploy.env; set +a
-  ssh -t ectlogger@app.ectlogger.us "echo '$SUDO_PROD' | sudo -S systemctl restart ectlogger"
+  # 3. Restart backend (for backend changes and migrations)
+  ssh ectlogger@app.ectlogger.us "sudo -n /usr/bin/systemctl restart ectlogger"
   
   # 4. Verify
-  ssh ectlogger@app.ectlogger.us "sudo systemctl status ectlogger --no-pager"
+  ssh ectlogger@app.ectlogger.us "sudo -n /usr/bin/systemctl is-active ectlogger"
+  ssh ectlogger@app.ectlogger.us "sudo -n /usr/bin/systemctl status ectlogger"
+  ssh ectlogger@app.ectlogger.us "cd ~/ectlogger && git log --oneline -3"
   ```
-- **Sudo password**: stored in `~/.ectlogger-deploy.env` as `SUDO_PROD`. Always source this file; never ask the user interactively.
 - **Deploy verification**: after every deploy, confirm prod git log matches local with `ssh ectlogger@app.ectlogger.us "cd ~/ectlogger && git log --oneline -3"`.
 
 ### Beta (ectbeta.lynwood.us)

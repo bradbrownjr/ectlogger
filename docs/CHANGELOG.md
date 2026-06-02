@@ -9,7 +9,7 @@ All notable changes to ECTLogger are documented here.
 ## Staff management reliability and co-manager controls
 
 * **Net Staff modal refresh after manager transfer** — The staff list and add-staff dropdown now refresh immediately after ownership transfer, so users no longer see stale eligibility from the prior manager.
-* **Co-Manager toggle in staff rows** — Owners/admins can now promote or demote authorized staff to/from **Co-Manager** directly from each row using a star icon. Co-Managers are labeled and can manage schedule staff/rotation without full admin access.
+* **Co-Manager toggle in staff rows** — Owners/admins can now promote or demote authorized staff to/from **Co-Manager** directly from each row using a star icon. Co-Managers are labeled and share owner-level schedule responsibility for owner-gated actions (such as ownership transfer, linking nets, merge, and delete), providing true backup coverage.
 
 ## Schedule eligibility and reminder delivery fixes
 

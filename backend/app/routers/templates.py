@@ -46,6 +46,19 @@ async def check_template_permission(db: AsyncSession, template: NetTemplate, use
     return False
 
 
+async def is_active_co_manager(db: AsyncSession, template_id: int, user_id: int) -> bool:
+    """Return True when user is an active staff member flagged as co-manager."""
+    result = await db.execute(
+        select(TemplateStaff).where(
+            TemplateStaff.template_id == template_id,
+            TemplateStaff.user_id == user_id,
+            TemplateStaff.is_active == True,
+            TemplateStaff.is_co_manager == True,
+        )
+    )
+    return result.scalar_one_or_none() is not None
+
+
 async def check_schedule_creation_eligibility(db: AsyncSession, user: User) -> tuple[bool, str]:
     """
     Check if user is eligible to create schedules based on app settings.
@@ -336,8 +349,17 @@ async def update_template(
     if template_data.poll_question is not None:
         template.poll_question = template_data.poll_question
     
-    # Update owner if provided (only owner or admin can transfer ownership)
+    # Update owner if provided (owner/admin/co-manager can transfer ownership)
     if template_data.owner_id is not None and template_data.owner_id != template.owner_id:
+        is_admin = current_user.role == UserRole.ADMIN
+        is_owner = template.owner_id == current_user.id
+        is_co_manager = await is_active_co_manager(db, template.id, current_user.id)
+        if not (is_admin or is_owner or is_co_manager):
+            raise HTTPException(
+                status_code=403,
+                detail="Only the schedule owner, a co-manager, or an admin can transfer ownership",
+            )
+
         # Verify new owner exists
         new_owner_result = await db.execute(select(User).where(User.id == template_data.owner_id))
         new_owner = new_owner_result.scalar_one_or_none()
@@ -407,13 +429,14 @@ async def delete_template(
     if not template:
         raise HTTPException(status_code=404, detail="Template not found")
     
-    # Deletion is restricted to the template owner and admins only.
-    # Staff members and NCS rotation members can manage a schedule's
-    # settings but should not be able to permanently destroy it.
+    # Deletion is restricted to owner/co-manager/admin.
+    # Active staff and NCS rotation members can manage schedule settings
+    # but should not be able to permanently destroy a schedule.
     is_owner = template.owner_id == current_user.id
     is_admin = current_user.role == UserRole.ADMIN
-    if not (is_owner or is_admin):
-        raise HTTPException(status_code=403, detail="Only the schedule owner or an admin can delete a schedule")
+    is_co_manager = await is_active_co_manager(db, template.id, current_user.id)
+    if not (is_owner or is_admin or is_co_manager):
+        raise HTTPException(status_code=403, detail="Only the schedule owner, a co-manager, or an admin can delete a schedule")
     
     await db.delete(template)
     await db.commit()
@@ -422,9 +445,11 @@ async def delete_template(
 # ========== MERGE TEMPLATES ==========
 
 
-async def _check_merge_permission(template: NetTemplate, user: User) -> bool:
-    """Only admin or template owner can merge (destructive operation)"""
-    return user.role == UserRole.ADMIN or template.owner_id == user.id
+async def _check_merge_permission(template: NetTemplate, user: User, db: AsyncSession) -> bool:
+    """Only admin, template owner, or active co-manager can merge."""
+    if user.role == UserRole.ADMIN or template.owner_id == user.id:
+        return True
+    return await is_active_co_manager(db, template.id, user.id)
 
 
 def _compare_template_fields(target: NetTemplate, source: NetTemplate) -> list:
@@ -479,7 +504,7 @@ async def preview_merge(
     target = target_result.scalar_one_or_none()
     if not target:
         raise HTTPException(status_code=404, detail="Target template not found")
-    if not await _check_merge_permission(target, current_user):
+    if not await _check_merge_permission(target, current_user, db):
         raise HTTPException(status_code=403, detail="Not authorized to merge into this template")
 
     # Load source templates
@@ -494,7 +519,7 @@ async def preview_merge(
 
     # Permission check on all sources
     for source in sources:
-        if not await _check_merge_permission(source, current_user):
+        if not await _check_merge_permission(source, current_user, db):
             raise HTTPException(status_code=403, detail=f"Not authorized to merge template '{source.name}' (id={source.id})")
 
     # Gather stats for each source
@@ -775,10 +800,11 @@ async def list_linkable_nets(
         raise HTTPException(status_code=404, detail="Template not found")
 
     is_admin = current_user.role == UserRole.ADMIN
-    if not (is_admin or template.owner_id == current_user.id):
+    is_co_manager = await is_active_co_manager(db, template.id, current_user.id)
+    if not (is_admin or template.owner_id == current_user.id or is_co_manager):
         raise HTTPException(
             status_code=403,
-            detail="Only the schedule owner or an admin can link nets to this schedule",
+            detail="Only the schedule owner, a co-manager, or an admin can link nets to this schedule",
         )
 
     # Build candidate net query

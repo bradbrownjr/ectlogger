@@ -14,7 +14,7 @@
               "userImpact": true
             },
             {
-              "text": "Owners/admins can now promote or demote authorized staff as Co-Managers directly from each staff row using a star icon. Co-Managers are clearly labeled and can manage staff/rotation without full admin rights.",
+              "text": "Owners/admins can now promote or demote authorized staff as Co-Managers directly from each staff row using a star icon. Co-Managers are clearly labeled and share owner-level schedule responsibility for owner-gated actions (for example ownership transfer, linking nets, merge, and delete), providing true backup coverage.",
               "userImpact": true
             }
           ]
