@@ -62,11 +62,14 @@ const sparkleAnimation = keyframes`
 interface ChangelogItem {
   text: string;
   userImpact?: boolean;
+  importance?: 'critical' | 'high' | 'medium' | 'low';
 }
+
+type ChangelogSectionType = 'feature' | 'improvement' | 'bugfix' | 'fix';
 
 interface ChangelogSection {
   title: string;
-  type: 'feature' | 'improvement' | 'bugfix';
+  type: ChangelogSectionType;
   items: ChangelogItem[];
 }
 
@@ -78,6 +81,70 @@ interface ChangelogEntry {
 
 const CHANGELOG_VERSION: string = (changelogData as { version: string }).version;
 const CHANGELOG: ChangelogEntry[] = (changelogData as { entries: ChangelogEntry[] }).entries;
+
+const SECTION_PRIORITY: Record<'feature' | 'fix' | 'improvement', number> = {
+  feature: 0,
+  fix: 1,
+  improvement: 2,
+};
+
+const IMPORTANCE_PRIORITY: Record<'critical' | 'high' | 'medium' | 'low', number> = {
+  critical: 0,
+  high: 1,
+  medium: 2,
+  low: 3,
+};
+
+const normalizeSectionType = (type: ChangelogSectionType): 'feature' | 'fix' | 'improvement' => {
+  if (type === 'bugfix') return 'fix';
+  return type;
+};
+
+const sortItemsForSection = (section: ChangelogSection): ChangelogItem[] => {
+  const normalizedType = normalizeSectionType(section.type);
+  if (normalizedType !== 'fix') {
+    return section.items;
+  }
+
+  return section.items
+    .map((item, index) => ({ item, index }))
+    .sort((a, b) => {
+      const aImportance = IMPORTANCE_PRIORITY[a.item.importance ?? 'medium'];
+      const bImportance = IMPORTANCE_PRIORITY[b.item.importance ?? 'medium'];
+      if (aImportance !== bImportance) {
+        return aImportance - bImportance;
+      }
+
+      const aImpact = a.item.userImpact ? 0 : 1;
+      const bImpact = b.item.userImpact ? 0 : 1;
+      if (aImpact !== bImpact) {
+        return aImpact - bImpact;
+      }
+
+      return a.index - b.index;
+    })
+    .map(({ item }) => item);
+};
+
+const getOrderedSections = (sections: ChangelogSection[]): ChangelogSection[] => {
+  return sections
+    .map((section, index) => ({
+      section: {
+        ...section,
+        items: sortItemsForSection(section),
+      },
+      index,
+    }))
+    .sort((a, b) => {
+      const aPriority = SECTION_PRIORITY[normalizeSectionType(a.section.type)];
+      const bPriority = SECTION_PRIORITY[normalizeSectionType(b.section.type)];
+      if (aPriority !== bPriority) {
+        return aPriority - bPriority;
+      }
+      return a.index - b.index;
+    })
+    .map(({ section }) => section);
+};
 
 const EMOJI_REGEX = /\p{Extended_Pictographic}(?:\uFE0F|\u200D\p{Extended_Pictographic})*/gu;
 const TWEMOJI_BASE_URL = 'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/72x72';
@@ -269,22 +336,14 @@ const ChangelogNotification: React.FC = () => {
   };
 
   // Group same-date entries so they appear as a single block in the dialog.
-  // CHANGELOG is ordered newest-first; we preserve that order within each group.
-  // Sections with the same type on the same date are merged into one section.
+  // CHANGELOG is ordered newest-first; we preserve section boundaries so
+  // unrelated same-type sections never get blended together.
   const groupedEntries: { date: string; versions: string[]; sections: ChangelogEntry['sections'] }[] = [];
   for (const entry of CHANGELOG) {
     const last = groupedEntries[groupedEntries.length - 1];
     if (last && last.date === entry.date) {
       last.versions.push(entry.version);
-      // Merge into existing section of the same type, or append as a new section
-      for (const newSection of entry.sections) {
-        const existing = last.sections.find(s => s.type === newSection.type);
-        if (existing) {
-          existing.items = [...existing.items, ...newSection.items];
-        } else {
-          last.sections.push({ ...newSection });
-        }
-      }
+      last.sections.push(...entry.sections.map(s => ({ ...s, items: [...s.items] })));
     } else {
       groupedEntries.push({ date: entry.date, versions: [entry.version], sections: entry.sections.map(s => ({ ...s, items: [...s.items] })) });
     }
@@ -371,6 +430,7 @@ const ChangelogNotification: React.FC = () => {
     const typeLabel: Record<string, string> = {
       feature: 'New Features',
       improvement: 'Improvements',
+      fix: 'Bug Fixes',
       bugfix: 'Bug Fixes',
     };
 
@@ -389,7 +449,8 @@ const ChangelogNotification: React.FC = () => {
       y += 14;
       pdf.setTextColor(0);
 
-      for (const section of group.sections) {
+      const orderedSections = getOrderedSections(group.sections);
+      for (const section of orderedSections) {
         ensureRoom(28);
         pdf.setFont('helvetica', 'bold');
         pdf.setFontSize(11);
@@ -440,6 +501,7 @@ const ChangelogNotification: React.FC = () => {
         return <NewReleasesIcon fontSize="small" sx={{ color: 'success.main' }} />;
       case 'improvement':
         return <BuildIcon fontSize="small" sx={{ color: 'info.main' }} />;
+      case 'fix':
       case 'bugfix':
         return <BugReportIcon fontSize="small" sx={{ color: 'warning.main' }} />;
       default:
@@ -453,6 +515,7 @@ const ChangelogNotification: React.FC = () => {
         return 'success';
       case 'improvement':
         return 'info';
+      case 'fix':
       case 'bugfix':
         return 'warning';
       default:
@@ -540,7 +603,7 @@ const ChangelogNotification: React.FC = () => {
               </Box>
 
               {/* All sections for this date group */}
-              {group.sections.map((section, sectionIndex) => (
+              {getOrderedSections(group.sections).map((section, sectionIndex) => (
                 <Box key={sectionIndex} sx={{ mb: 2 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
                     {getTypeIcon(section.type)}

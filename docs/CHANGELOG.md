@@ -4,40 +4,31 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
-# June 2, 2026 (b)
+# June 2, 2026 (c)
 
-## PDF export compatibility fixes
+## New Features
 
+* **Co-Manager controls in staff rows** — Owners/admins can now promote or demote authorized staff as **Co-Managers** directly from each row using a star icon. Co-Managers are clearly labeled and share owner-level schedule responsibility for owner-gated actions (such as ownership transfer, linking nets, merge, and delete), providing true backup coverage.
+* **Hover reactions in chat** — Chat now supports per-message reactions (👍 🙂 🙁 ❤️ ✅) with live counts synchronized across connected clients.
+* **Paste-to-chat images** — Users can paste PNG/JPEG/WEBP images directly into chat; uploads are resized, thumbnailed, rendered inline, and viewable in a full-image lightbox.
+* **Status-at-entry for check-ins** — NCS quick-entry now supports choosing station status at creation time on both desktop and mobile forms.
+
+## Bug Fixes (highest impact first)
+
+* **Check-in Map PDF white-page fix** — Exporting a Check-in Map PDF from the floating map window no longer produces a blank white page. The exporter now captures the live map element so Leaflet tiles and overlays render correctly.
 * **Emoji-safe What's New PDFs** — What's New / Changelog PDF exports now preserve emoji reactions (for example 👍 🙂 ❤️ ✅) using inline emoji rendering instead of broken glyph fallback.
 * **Mixed text + emoji wrapping improvements** — Changelog PDF line wrapping now handles mixed text-and-emoji lines more reliably, reducing malformed spacing and symbol corruption in exported files.
-
-# June 2, 2026
-
-## Staff management reliability and co-manager controls
-
-* **Net Staff modal refresh after manager transfer** — The staff list and add-staff dropdown now refresh immediately after ownership transfer, so users no longer see stale eligibility from the prior manager.
-* **Co-Manager toggle in staff rows** — Owners/admins can now promote or demote authorized staff to/from **Co-Manager** directly from each row using a star icon. Co-Managers are labeled and share owner-level schedule responsibility for owner-gated actions (such as ownership transfer, linking nets, merge, and delete), providing true backup coverage.
-
-## Schedule eligibility and reminder delivery fixes
-
-* **Early access bypass corrected** — The schedule early-access override now properly bypasses both minimum account age and net-participation requirements.
-* **1-hour reminder delivery restored** — Fixed a variable-name bug that prevented 1-hour subscriber reminder emails from sending.
-
-## Check-in workflow and map export improvements
-
-* **Status at check-in entry (desktop + mobile)** — NCS quick-entry can now set station status at creation time in both desktop and mobile forms.
-* **Away and Mobile visibility improvements** — Away rows now use a distinct yellow highlight, and Mobile stations are prioritized near the top of the check-in list (after NCS).
 * **Map PDF blank export fix** — Tile layers now use export-safe CORS settings, preventing blank map captures in PDF exports.
-* **Contextual create/edit labels** — Ad-hoc/one-time flows now show **Create Net / Edit Net** labels where appropriate instead of always saying Schedule.
-
-## Location visibility and correction tools
-
+* **1-hour reminder delivery restored** — Fixed a variable-name bug that prevented 1-hour subscriber reminder emails from sending.
+* **Early access bypass corrected** — The schedule early-access override now properly bypasses both minimum account age and net-participation requirements.
+* **Net Staff modal refresh after manager transfer** — The staff list and add-staff dropdown now refresh immediately after ownership transfer, so users no longer see stale eligibility from the prior manager.
 * **Live location control in Profile** — Users can now see and clear current GPS-derived live location from Profile, preventing stale live location from overriding intended profile location during check-ins.
 
-## Chat enhancements: reactions and pasted images
+## Improvements
 
-* **Hover reactions** — Chat now supports per-message reactions (👍 🙂 🙁 ❤️ ✅) with live counts synchronized across connected clients.
-* **Paste-to-chat images** — Users can paste PNG/JPEG/WEBP images directly into chat; uploads are resized, thumbnailed, rendered inline, and viewable in a full-image lightbox.
+* **Away and Mobile visibility improvements** — Away rows now use a distinct yellow highlight, and Mobile stations are prioritized near the top of the check-in list (after NCS).
+* **Contextual create/edit labels** — Ad-hoc/one-time flows now show **Create Net / Edit Net** labels where appropriate instead of always saying Schedule.
+* **Clearer schedule action wording** — The Net Staff action label now reads **Create schedule** instead of **Push staff to schedule**.
 
 # April 28, 2026
 

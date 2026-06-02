@@ -1,100 +1,92 @@
 {
-  "version": "2026.06.02b",
+  "version": "2026.06.02c",
   "entries": [
     {
-      "version": "2026.06.02b",
+      "version": "2026.06.02c",
       "date": "2026-06-02",
       "sections": [
         {
-          "title": "PDF export compatibility fixes",
-          "type": "fix",
-          "items": [
-            {
-              "text": "What's New / Changelog PDF exports now preserve emoji reactions (for example 👍 🙂 ❤️ ✅) using inline emoji rendering instead of broken glyph fallback.",
-              "userImpact": true
-            },
-            {
-              "text": "Changelog PDF text wrapping now handles mixed text-and-emoji lines more reliably, reducing malformed spacing and symbol corruption in exported files.",
-              "userImpact": true
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "version": "2026.06.02",
-      "date": "2026-06-02",
-      "sections": [
-        {
-          "title": "Staff management reliability and co-manager controls",
+          "title": "New Features",
           "type": "feature",
           "items": [
-            {
-              "text": "The Net Staff modal now refreshes immediately after manager transfer, so the add-staff dropdown no longer shows stale options from the previous owner.",
-              "userImpact": true
-            },
             {
               "text": "Owners/admins can now promote or demote authorized staff as Co-Managers directly from each staff row using a star icon. Co-Managers are clearly labeled and share owner-level schedule responsibility for owner-gated actions (for example ownership transfer, linking nets, merge, and delete), providing true backup coverage.",
               "userImpact": true
-            }
-          ]
-        },
-        {
-          "title": "Schedule eligibility and reminder delivery fixes",
-          "type": "fix",
-          "items": [
-            {
-              "text": "Early access now correctly bypasses both schedule account-age and net-participation requirements for users explicitly granted that override.",
-              "userImpact": true
             },
-            {
-              "text": "A variable mismatch that prevented 1-hour subscriber reminder emails from sending has been fixed, restoring expected reminder delivery.",
-              "userImpact": true
-            }
-          ]
-        },
-        {
-          "title": "Check-in workflow and map export improvements",
-          "type": "improvement",
-          "items": [
-            {
-              "text": "NCS quick-entry now supports choosing station status at creation time on both desktop and mobile forms.",
-              "userImpact": true
-            },
-            {
-              "text": "Away check-ins now render with a distinct yellow highlight, and Mobile check-ins are automatically prioritized near the top of the list after NCS rows.",
-              "userImpact": true
-            },
-            {
-              "text": "Map tiles now render with export-safe CORS settings so Net Report PDF map captures no longer come out blank.",
-              "userImpact": true
-            },
-            {
-              "text": "Create Schedule/Edit Schedule screens now use contextual labels for ad-hoc and one-time nets (Create Net/Edit Net), reducing workflow confusion.",
-              "userImpact": true
-            }
-          ]
-        },
-        {
-          "title": "Location visibility and correction tools",
-          "type": "fix",
-          "items": [
-            {
-              "text": "Profile now surfaces active GPS-derived live location and provides a one-click clear action, fixing cases where stale live location overrode the intended profile grid square during check-ins.",
-              "userImpact": true
-            }
-          ]
-        },
-        {
-          "title": "Chat enhancements: reactions and pasted images",
-          "type": "feature",
-          "items": [
             {
               "text": "Chat messages now support hover reactions (👍 🙂 🙁 ❤️ ✅) with live per-message counts synchronized to all connected clients.",
               "userImpact": true
             },
             {
               "text": "You can now paste PNG/JPEG/WEBP images directly into chat. The app uploads, generates thumbnails, embeds inline previews, and opens full images in a lightbox.",
+              "userImpact": true
+            },
+            {
+              "text": "NCS quick-entry now supports choosing station status at creation time on both desktop and mobile forms.",
+              "userImpact": true
+            }
+          ]
+        },
+        {
+          "title": "Bug Fixes (highest impact first)",
+          "type": "fix",
+          "items": [
+            {
+              "text": "Check-in Map PDF export from the map window no longer produces a blank white page. The exporter now captures the live map element so Leaflet tiles and overlays render correctly.",
+              "importance": "critical",
+              "userImpact": true
+            },
+            {
+              "text": "What's New / Changelog PDF exports now preserve emoji reactions (for example 👍 🙂 ❤️ ✅) using inline emoji rendering instead of broken glyph fallback.",
+              "importance": "high",
+              "userImpact": true
+            },
+            {
+              "text": "Changelog PDF text wrapping now handles mixed text-and-emoji lines more reliably, reducing malformed spacing and symbol corruption in exported files.",
+              "importance": "high",
+              "userImpact": true
+            },
+            {
+              "text": "Map tiles now render with export-safe CORS settings so Net Report PDF map captures no longer come out blank.",
+              "importance": "high",
+              "userImpact": true
+            },
+            {
+              "text": "A variable mismatch that prevented 1-hour subscriber reminder emails from sending has been fixed, restoring expected reminder delivery.",
+              "importance": "high",
+              "userImpact": true
+            },
+            {
+              "text": "Early access now correctly bypasses both schedule account-age and net-participation requirements for users explicitly granted that override.",
+              "importance": "medium",
+              "userImpact": true
+            },
+            {
+              "text": "The Net Staff modal now refreshes immediately after manager transfer, so the add-staff dropdown no longer shows stale options from the previous owner.",
+              "importance": "medium",
+              "userImpact": true
+            },
+            {
+              "text": "Profile now surfaces active GPS-derived live location and provides a one-click clear action, fixing cases where stale live location overrode the intended profile grid square during check-ins.",
+              "importance": "medium",
+              "userImpact": true
+            }
+          ]
+        },
+        {
+          "title": "Improvements",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Away check-ins now render with a distinct yellow highlight, and Mobile check-ins are automatically prioritized near the top of the list after NCS rows.",
+              "userImpact": true
+            },
+            {
+              "text": "Create Schedule/Edit Schedule screens now use contextual labels for ad-hoc and one-time nets (Create Net/Edit Net), reducing workflow confusion.",
+              "userImpact": true
+            },
+            {
+              "text": "The Net Staff action label now reads 'Create schedule' instead of 'Push staff to schedule' for clearer wording.",
               "userImpact": true
             }
           ]
