@@ -6,6 +6,16 @@
       "date": "2026-06-03",
       "sections": [
         {
+          "title": "UI Improvement: Reorganized Net Toolbar",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Toolbar buttons are now organized into two distinct rows: the top row contains net operations (check in/out, start, close, manage roles), and the bottom row contains net functions (export, import, reports, archive, delete). This makes it easier to find the right button at a glance. Tip: hover over any icon button with your mouse to reveal its function.",
+              "userImpact": true
+            }
+          ]
+        },
+        {
           "title": "New Feature: Import Check-ins from CSV",
           "type": "feature",
           "items": [

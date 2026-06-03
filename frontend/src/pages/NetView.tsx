@@ -2093,9 +2093,12 @@ const NetView: React.FC = () => {
               </Box>
             </Grid>
             <Grid item xs={12} md={4} sx={{ pl: { md: 0.5 } }}>
-              {/* Toolbar buttons. On mobile we shrink button padding/min-width
-                  so the full row of icon buttons (Start/Check-in/Close + exports
-                  + admin actions) fits without wrapping to a second row. */}
+              {/* Two-row toolbar:
+                  Row 1 = net operations (start, check-in, close, roles, navigation)
+                  Row 2 = net functions  (export, import, reports, archive, delete)
+                  Hover over any icon button to reveal its function. */}
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, alignItems: { xs: 'flex-start', md: 'flex-end' } }}>
+              {/* ===== ROW 1: NET OPERATIONS ===== */}
               <Box
                 sx={{
                   display: 'flex',
@@ -2424,18 +2427,6 @@ const NetView: React.FC = () => {
                   </Tooltip>
                 )}
                 {canManage && (net.status === 'active' || net.status === 'lobby') && (
-                  <Tooltip title="Import check-ins from CSV">
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      onClick={handleOpenImportDialog}
-                      sx={{ minWidth: 'auto', px: 1, color: '#2e7d32', borderColor: '#2e7d32', '&:hover': { borderColor: '#2e7d32', backgroundColor: 'rgba(46, 125, 50, 0.08)' } }}
-                    >
-                      <UploadFileIcon fontSize="small" />
-                    </Button>
-                  </Tooltip>
-                )}
-                {canManage && (net.status === 'active' || net.status === 'lobby') && (
                   <Tooltip title="Close net">
                     <Button 
                       size="small" 
@@ -2448,137 +2439,114 @@ const NetView: React.FC = () => {
                     </Button>
                   </Tooltip>
                 )}
-                {net.status === 'closed' && (
-                  <>
-                    <Tooltip title="Export check-ins to CSV">
-                      <Button 
-                        size="small"
-                        variant="outlined" 
-                        onClick={handleExportCSV}
-                        sx={{ minWidth: 'auto', px: 1, color: '#4caf50', borderColor: '#4caf50', '&:hover': { borderColor: '#4caf50', backgroundColor: 'rgba(76, 175, 80, 0.08)' } }}
-                      >
-                        <DownloadIcon fontSize="small" />
-                      </Button>
-                    </Tooltip>
-                    {canManage && (
-                      <Tooltip title="Import check-ins from CSV">
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          onClick={handleOpenImportDialog}
-                          sx={{ minWidth: 'auto', px: 1, color: '#2e7d32', borderColor: '#2e7d32', '&:hover': { borderColor: '#2e7d32', backgroundColor: 'rgba(46, 125, 50, 0.08)' } }}
-                        >
-                          <UploadFileIcon fontSize="small" />
-                        </Button>
-                      </Tooltip>
-                    )}
-                    <Tooltip title="Download ICS-309 Communications Log">
-                      <Button 
-                        size="small"
-                        variant="outlined" 
-                        onClick={handleExportICS309}
-                        sx={{ minWidth: 'auto', px: 1, color: '#009688', borderColor: '#009688', '&:hover': { borderColor: '#009688', backgroundColor: 'rgba(0, 150, 136, 0.08)' } }}
-                      >
-                        <DescriptionIcon fontSize="small" />
-                      </Button>
-                    </Tooltip>
-                    <Tooltip title="Generate comprehensive net report (PDF)">
-                      <Button 
-                        size="small"
-                        variant="outlined" 
-                        onClick={() => navigate(`/nets/${netId}/report`)}
-                        sx={{ minWidth: 'auto', px: 1, color: '#4caf50', borderColor: '#4caf50', '&:hover': { borderColor: '#4caf50', backgroundColor: 'rgba(76, 175, 80, 0.08)' } }}
-                      >
-                        <PictureAsPdfIcon fontSize="small" />
-                      </Button>
-                    </Tooltip>
-                    {canManage && (
-                      <Tooltip title="Archive net">
-                        <Button 
-                          size="small"
-                          variant="outlined" 
-                          onClick={handleArchive}
-                          sx={{ minWidth: 'auto', px: 1, borderColor: 'grey.400' }}
-                        >
-                          <ArchiveIcon fontSize="small" />
-                        </Button>
-                      </Tooltip>
-                    )}
-                    {isAdmin && (
-                      <Tooltip title="Delete net">
-                        <Button 
-                          size="small"
-                          variant="outlined" 
-                          color="error"
-                          onClick={handleDelete}
-                          sx={{ minWidth: 'auto', px: 1 }}
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </Button>
-                      </Tooltip>
-                    )}
-                  </>
+              </Box>
+              {/* ===== ROW 2: NET FUNCTIONS (exports, imports, reports, archive, delete) ===== */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  gap: { xs: 0.25, md: 0.5 },
+                  flexWrap: 'wrap',
+                  alignItems: 'center',
+                  justifyContent: { xs: 'flex-start', md: 'flex-end' },
+                  '& .MuiButton-root': {
+                    px: { xs: 0.5, md: 1 },
+                    minWidth: { xs: 32, md: 'auto' },
+                  },
+                }}
+              >
+                {/* Export CSV — closed and archived */}
+                {(net.status === 'closed' || net.status === 'archived') && (
+                  <Tooltip title="Export check-ins to CSV">
+                    <Button 
+                      size="small"
+                      variant="outlined" 
+                      onClick={handleExportCSV}
+                      sx={{ minWidth: 'auto', px: 1, color: '#4caf50', borderColor: '#4caf50', '&:hover': { borderColor: '#4caf50', backgroundColor: 'rgba(76, 175, 80, 0.08)' } }}
+                    >
+                      <DownloadIcon fontSize="small" />
+                    </Button>
+                  </Tooltip>
                 )}
-                {/* ========== ARCHIVED NET TOOLBAR BUTTONS ========== */}
-                {net.status === 'archived' && (
-                  <>
-                    <Tooltip title="Export check-ins to CSV">
-                      <Button 
-                        size="small"
-                        variant="outlined" 
-                        onClick={handleExportCSV}
-                        sx={{ minWidth: 'auto', px: 1, color: '#4caf50', borderColor: '#4caf50', '&:hover': { borderColor: '#4caf50', backgroundColor: 'rgba(76, 175, 80, 0.08)' } }}
-                      >
-                        <DownloadIcon fontSize="small" />
-                      </Button>
-                    </Tooltip>
-                    {canManage && (
-                      <Tooltip title="Import check-ins from CSV">
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          onClick={handleOpenImportDialog}
-                          sx={{ minWidth: 'auto', px: 1, color: '#2e7d32', borderColor: '#2e7d32', '&:hover': { borderColor: '#2e7d32', backgroundColor: 'rgba(46, 125, 50, 0.08)' } }}
-                        >
-                          <UploadFileIcon fontSize="small" />
-                        </Button>
-                      </Tooltip>
-                    )}
-                    <Tooltip title="Download ICS-309 Communications Log">
-                      <Button 
-                        size="small"
-                        variant="outlined" 
-                        onClick={handleExportICS309}
-                        sx={{ minWidth: 'auto', px: 1, color: '#009688', borderColor: '#009688', '&:hover': { borderColor: '#009688', backgroundColor: 'rgba(0, 150, 136, 0.08)' } }}
-                      >
-                        <DescriptionIcon fontSize="small" />
-                      </Button>
-                    </Tooltip>
-                    <Tooltip title="Generate comprehensive net report (PDF)">
-                      <Button 
-                        size="small"
-                        variant="outlined" 
-                        onClick={() => navigate(`/nets/${netId}/report`)}
-                        sx={{ minWidth: 'auto', px: 1, color: '#4caf50', borderColor: '#4caf50', '&:hover': { borderColor: '#4caf50', backgroundColor: 'rgba(76, 175, 80, 0.08)' } }}
-                      >
-                        <PictureAsPdfIcon fontSize="small" />
-                      </Button>
-                    </Tooltip>
-                    {canManage && (
-                      <Tooltip title="Unarchive net - restore to closed status">
-                        <Button 
-                          size="small"
-                          variant="outlined" 
-                          onClick={handleUnarchive}
-                          sx={{ minWidth: 'auto', px: 1, borderColor: 'grey.400' }}
-                        >
-                          <UnarchiveIcon fontSize="small" />
-                        </Button>
-                      </Tooltip>
-                    )}
-                  </>
+                {/* Import CSV — open, closed, and archived nets (canManage) */}
+                {canManage && (net.status === 'active' || net.status === 'lobby' || net.status === 'closed' || net.status === 'archived') && (
+                  <Tooltip title="Import check-ins from CSV">
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={handleOpenImportDialog}
+                      sx={{ minWidth: 'auto', px: 1, color: '#2e7d32', borderColor: '#2e7d32', '&:hover': { borderColor: '#2e7d32', backgroundColor: 'rgba(46, 125, 50, 0.08)' } }}
+                    >
+                      <UploadFileIcon fontSize="small" />
+                    </Button>
+                  </Tooltip>
                 )}
-                {/* ========== DELETE BUTTON FOR DRAFT/ARCHIVED NETS ========== */}
+                {/* ICS-309 Communications Log — closed and archived */}
+                {(net.status === 'closed' || net.status === 'archived') && (
+                  <Tooltip title="Download ICS-309 Communications Log">
+                    <Button 
+                      size="small"
+                      variant="outlined" 
+                      onClick={handleExportICS309}
+                      sx={{ minWidth: 'auto', px: 1, color: '#009688', borderColor: '#009688', '&:hover': { borderColor: '#009688', backgroundColor: 'rgba(0, 150, 136, 0.08)' } }}
+                    >
+                      <DescriptionIcon fontSize="small" />
+                    </Button>
+                  </Tooltip>
+                )}
+                {/* PDF Report — closed and archived */}
+                {(net.status === 'closed' || net.status === 'archived') && (
+                  <Tooltip title="Generate comprehensive net report (PDF)">
+                    <Button 
+                      size="small"
+                      variant="outlined" 
+                      onClick={() => navigate(`/nets/${netId}/report`)}
+                      sx={{ minWidth: 'auto', px: 1, color: '#4caf50', borderColor: '#4caf50', '&:hover': { borderColor: '#4caf50', backgroundColor: 'rgba(76, 175, 80, 0.08)' } }}
+                    >
+                      <PictureAsPdfIcon fontSize="small" />
+                    </Button>
+                  </Tooltip>
+                )}
+                {/* Archive — closed (canManage) */}
+                {canManage && net.status === 'closed' && (
+                  <Tooltip title="Archive net">
+                    <Button 
+                      size="small"
+                      variant="outlined" 
+                      onClick={handleArchive}
+                      sx={{ minWidth: 'auto', px: 1, borderColor: 'grey.400' }}
+                    >
+                      <ArchiveIcon fontSize="small" />
+                    </Button>
+                  </Tooltip>
+                )}
+                {/* Delete — closed (isAdmin) */}
+                {isAdmin && net.status === 'closed' && (
+                  <Tooltip title="Delete net">
+                    <Button 
+                      size="small"
+                      variant="outlined" 
+                      color="error"
+                      onClick={handleDelete}
+                      sx={{ minWidth: 'auto', px: 1 }}
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </Button>
+                  </Tooltip>
+                )}
+                {/* Unarchive — archived (canManage) */}
+                {canManage && net.status === 'archived' && (
+                  <Tooltip title="Unarchive net - restore to closed status">
+                    <Button 
+                      size="small"
+                      variant="outlined" 
+                      onClick={handleUnarchive}
+                      sx={{ minWidth: 'auto', px: 1, borderColor: 'grey.400' }}
+                    >
+                      <UnarchiveIcon fontSize="small" />
+                    </Button>
+                  </Tooltip>
+                )}
+                {/* Delete — draft or archived (canManage) */}
                 {canManage && (net.status === 'draft' || net.status === 'archived') && (
                   <Tooltip title="Delete net">
                     <Button 
@@ -2592,6 +2560,7 @@ const NetView: React.FC = () => {
                     </Button>
                   </Tooltip>
                 )}
+              </Box>
               </Box>
             </Grid>
           </Grid>
