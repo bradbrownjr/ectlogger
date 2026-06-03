@@ -1105,17 +1105,35 @@ const NetView: React.FC = () => {
 
     const sampleMarker = 'ECTLOGGER_SAMPLE_ROW';
     const sampleRows = [
+      // Required-fields hint row — auto-ignored on import via sampleMarker
       [
-        '19:32:10',
-        'ZZ0SAMPLE1',
-        'Sample Operator',
-        'FN31pr',
+        'REQUIRED',
+        'REQUIRED',
+        'optional',
+        'optional',
+        'optional',
+        'optional',
+        'optional',
+        'optional',
+        'optional',
+        'optional',
+        'optional',
+        'optional',
+        'optional',
+        'optional',
+        `${sampleMarker} - REQUIRED FIELDS: Check-in Time, Callsign — all others optional`,
+      ],
+      [
+        '7:32 PM',
+        'N0CLL',
+        'Jane Smith',
+        'Portland, ME',
         net?.frequencies?.[0] ? formatFrequencyDisplay(net.frequencies[0]) : '',
-        'SPOTTER-123',
-        'Light rain',
-        'Battery',
+        'YO248',
+        'Clear skies, calm winds',
+        'Commercial',
         '50W',
-        'Signal report 5x9',
+        '',
         `${sampleMarker} - DELETE SAMPLE ROWS BEFORE IMPORT`,
         '',
         'checked_in',
@@ -1123,23 +1141,22 @@ const NetView: React.FC = () => {
         'Sample poll answer',
       ],
       [
-        '19:34:22',
-        'ZZ0SAMPLE2',
-        'Second Sample',
-        'FN30',
+        '7:34 PM',
+        'N1CLL',
+        'John Doe',
+        'FN43ab',
         '',
         '',
         '',
         '',
         '',
         '',
-        sampleMarker,
-        '',
-        'listening',
+        `${sampleMarker} - handwritten`,
+        'N0CLL',
+        'relay',
         '',
         '',
       ],
-      ['', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
     ];
 
     const escapeCsvCell = (value: string) => {
@@ -4733,7 +4750,7 @@ const NetView: React.FC = () => {
               disabled={csvImporting}
               sx={{ alignSelf: 'flex-start' }}
             >
-              Export Template
+              Import Template
             </Button>
 
             <Box

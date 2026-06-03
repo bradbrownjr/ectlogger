@@ -6,34 +6,16 @@
       "date": "2026-06-03",
       "sections": [
         {
-          "title": "New Features",
+          "title": "New Feature: Import Check-ins from CSV",
           "type": "feature",
           "items": [
             {
-              "text": "📥 CSV check-in import for closed/archived nets — upload a CSV file to bulk-import check-ins from external sources. The importer auto-detects operator-friendly date/time formats (M/D/YYYY, h:mm AM/PM, ISO, etc.), handles US vs British date ambiguity by checking net window, and validates timezone with an explicit UTC checkbox and timezone dropdown. Rows are inserted chronologically among existing check-ins.",
+              "text": "Net managers can now import check-ins into any closed or archived net from a CSV file — perfect for logging stations that participated outside ECTLogger (paper logs, other software, or phone check-ins). Open the net, click the green import button in the toolbar, download the Import Template to see the format, fill it in, and upload.",
               "userImpact": true
             },
             {
-              "text": "Timezone controls in CSV import dialog — choose your import timezone or check \"Assume UTC\" to override. Explicit timezone markers in CSV rows (Z, UTC, GMT, ±HH:MM) always take precedence. Sample rows are auto-ignored via marker detection.",
+              "text": "Flexible time formats accepted — M/D/YYYY h:mm AM/PM, 24-hour, ISO, and time-only. Choose your timezone or check 'Assume UTC'. Imported check-ins slot in chronologically alongside existing ones.",
               "userImpact": true
-            },
-            {
-              "text": "Export Template button in import dialog — downloads a CSV file with headers and two sample data rows (marked for auto-ignore) so you can see the expected format and reuse it as a starting point.",
-              "userImpact": true
-            }
-          ]
-        },
-        {
-          "title": "Improvements",
-          "type": "improvement",
-          "items": [
-            {
-              "text": "CSV import validation now reports row-numbered errors with plain-language descriptions. Each error names the raw value, the parsing issue or the window boundary it violated.",
-              "userImpact": true
-            },
-            {
-              "text": "Backend CSV import logic refactored into a dedicated service module (backend/app/services/csv_import.py) to reduce memory footprint on limited VPS resources for large-net operations.",
-              "userImpact": false
             }
           ]
         }
