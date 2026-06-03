@@ -1,13 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException, status, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, HTTPException, status, WebSocket, WebSocketDisconnect, UploadFile, File, Form
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 import csv
 import io
 import json
+import re
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from app.database import get_db
 from app.models import Net, NetStatus, User, Frequency, NetRole, net_frequencies, CheckIn, NetTemplate, UserRole
 from app.schemas import NetCreate, NetUpdate, NetResponse, FrequencyResponse, NetTemplateLinkRequest, public_display_name
@@ -1106,6 +1108,408 @@ async def export_net_csv(
         media_type="text/csv",
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
+
+
+@router.post("/{net_id}/import/csv")
+async def import_net_csv(
+    net_id: int,
+    file: UploadFile = File(...),
+    timezone_name: str = Form("UTC"),
+    assume_utc: bool = Form(False),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Import net check-ins from CSV (supports closed/archived nets)."""
+    result = await db.execute(
+        select(Net).options(
+            selectinload(Net.frequencies)
+        ).where(Net.id == net_id)
+    )
+    net = result.scalar_one_or_none()
+
+    if not net:
+        raise HTTPException(status_code=404, detail="Net not found")
+
+    if not await check_net_permission(db, net, current_user, required_roles=["NCS", "LOGGER", "RELAY"]):
+        raise HTTPException(status_code=403, detail="Not authorized to import into this net")
+
+    if net.status in (NetStatus.DRAFT, NetStatus.SCHEDULED):
+        raise HTTPException(
+            status_code=400,
+            detail="CSV import is only available for lobby, active, closed, or archived nets"
+        )
+
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="No CSV file uploaded")
+
+    raw_bytes = await file.read()
+    if not raw_bytes:
+        raise HTTPException(status_code=400, detail="Uploaded file is empty")
+
+    try:
+        csv_text = raw_bytes.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        csv_text = raw_bytes.decode("latin-1")
+
+    reader = csv.DictReader(io.StringIO(csv_text))
+    if not reader.fieldnames:
+        raise HTTPException(status_code=400, detail="CSV header row is missing")
+
+    def normalize_key(value: str) -> str:
+        return "".join(ch for ch in (value or "").strip().lower() if ch.isalnum())
+
+    def normalize_status(value: str) -> str:
+        cleaned = (value or "").strip().lower().replace("-", "_").replace(" ", "_")
+        while "__" in cleaned:
+            cleaned = cleaned.replace("__", "_")
+        return cleaned
+
+    status_map = {
+        "checkedin": StationStatus.CHECKED_IN,
+        "checked_in": StationStatus.CHECKED_IN,
+        "hastraffic": StationStatus.HAS_TRAFFIC,
+        "has_traffic": StationStatus.HAS_TRAFFIC,
+        "listening": StationStatus.LISTENING,
+        "relay": StationStatus.RELAY,
+        "away": StationStatus.AWAY,
+        "announcements": StationStatus.ANNOUNCEMENTS,
+        "mobile": StationStatus.MOBILE,
+        "checkedout": StationStatus.CHECKED_OUT,
+        "checked_out": StationStatus.CHECKED_OUT,
+    }
+
+    header_lookup = {normalize_key(name): name for name in (reader.fieldnames or [])}
+
+    def get_value(row: dict, *aliases: str) -> str:
+        for alias in aliases:
+            key = header_lookup.get(normalize_key(alias))
+            if key is None:
+                continue
+            value = row.get(key)
+            if value is None:
+                continue
+            text = str(value).strip()
+            if text:
+                return text
+        return ""
+
+    def format_freq(freq: Frequency) -> str:
+        if freq.frequency:
+            return f"{freq.frequency} {freq.mode or ''}".strip()
+        if freq.network:
+            return f"{freq.network} TG{freq.talkgroup or ''}".strip()
+        return ""
+
+    frequency_token_to_id: dict[str, int] = {}
+    for freq in net.frequencies:
+        tokens = set()
+        formatted = format_freq(freq)
+        if formatted:
+            tokens.add(formatted.strip().lower())
+        if freq.frequency:
+            tokens.add(freq.frequency.strip().lower())
+            if freq.mode:
+                tokens.add(f"{freq.frequency.strip()} {freq.mode.strip()}".lower())
+        if freq.network:
+            tokens.add(freq.network.strip().lower())
+            if freq.talkgroup:
+                tokens.add(f"{freq.network.strip()} tg{freq.talkgroup.strip()}".lower())
+                tokens.add(f"{freq.network.strip()} {freq.talkgroup.strip()}".lower())
+        for token in tokens:
+            if token and token not in frequency_token_to_id:
+                frequency_token_to_id[token] = freq.id
+
+    def parse_available_frequency_ids(raw_value: str) -> list[int]:
+        if not raw_value:
+            return []
+        candidate_tokens = [part.strip().lower() for part in raw_value.split(",") if part.strip()]
+        parsed_ids: list[int] = []
+        for token in candidate_tokens:
+            freq_id = frequency_token_to_id.get(token)
+            if freq_id and freq_id not in parsed_ids:
+                parsed_ids.append(freq_id)
+        if not parsed_ids:
+            exact = frequency_token_to_id.get(raw_value.strip().lower())
+            if exact:
+                parsed_ids.append(exact)
+        return parsed_ids
+
+    def to_utc_naive(value: Optional[datetime]) -> Optional[datetime]:
+        if value is None:
+            return None
+        if value.tzinfo is not None:
+            return value.astimezone(timezone.utc).replace(tzinfo=None)
+        return value
+
+    net_window_start = to_utc_naive(net.started_at or net.created_at)
+    close_base = to_utc_naive(net.closed_at)
+    net_window_end = (close_base + timedelta(minutes=10)) if close_base else (datetime.utcnow() + timedelta(minutes=10))
+
+    try:
+        import_zone = ZoneInfo("UTC") if assume_utc else ZoneInfo(timezone_name)
+    except ZoneInfoNotFoundError:
+        raise HTTPException(status_code=400, detail=f"Invalid import timezone '{timezone_name}'")
+
+    explicit_tz_pattern = re.compile(r"(Z|UTC|GMT|[+-]\d{2}:?\d{2})$", re.IGNORECASE)
+
+    def has_explicit_timezone(value: str) -> bool:
+        return bool(explicit_tz_pattern.search(value.strip()))
+
+    def normalize_explicit_timezone_text(value: str) -> str:
+        cleaned = value.strip()
+        cleaned = re.sub(r"\s+(UTC|GMT)$", " +0000", cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r"\s+Z$", " +0000", cleaned, flags=re.IGNORECASE)
+        return cleaned
+
+    def local_naive_to_utc(naive_value: datetime) -> datetime:
+        if assume_utc:
+            return naive_value
+        return naive_value.replace(tzinfo=import_zone).astimezone(timezone.utc).replace(tzinfo=None)
+
+    def parse_checkin_timestamp(raw_value: str) -> tuple[Optional[datetime], Optional[str]]:
+        if not raw_value:
+            return None, None
+
+        value = raw_value.strip()
+        if not value:
+            return None, None
+
+        explicit_tz = has_explicit_timezone(value)
+        normalized = normalize_explicit_timezone_text(value)
+
+        # ISO-style parser first (works for full datetimes and offsets)
+        try:
+            parsed_iso = datetime.fromisoformat(normalized.replace("Z", "+00:00"))
+            if parsed_iso.tzinfo is not None:
+                return parsed_iso.astimezone(timezone.utc).replace(tzinfo=None), None
+            return local_naive_to_utc(parsed_iso), None
+        except ValueError:
+            pass
+
+        # Full datetime candidates supporting both US and British date ordering
+        full_formats = [
+            "%m/%d/%Y %I:%M %p",
+            "%m/%d/%Y %H:%M",
+            "%d/%m/%Y %I:%M %p",
+            "%d/%m/%Y %H:%M",
+            "%m/%d/%Y %I:%M:%S %p",
+            "%m/%d/%Y %H:%M:%S",
+            "%d/%m/%Y %I:%M:%S %p",
+            "%d/%m/%Y %H:%M:%S",
+            "%Y-%m-%d %I:%M %p",
+            "%Y-%m-%d %H:%M",
+            "%Y-%m-%d %I:%M:%S %p",
+            "%Y-%m-%d %H:%M:%S",
+        ]
+
+        # Explicit timezone datetime candidates
+        full_tz_formats = [
+            "%m/%d/%Y %I:%M %p %z",
+            "%m/%d/%Y %H:%M %z",
+            "%d/%m/%Y %I:%M %p %z",
+            "%d/%m/%Y %H:%M %z",
+            "%Y-%m-%d %I:%M %p %z",
+            "%Y-%m-%d %H:%M %z",
+            "%m/%d/%Y %I:%M:%S %p %z",
+            "%m/%d/%Y %H:%M:%S %z",
+            "%d/%m/%Y %I:%M:%S %p %z",
+            "%d/%m/%Y %H:%M:%S %z",
+            "%Y-%m-%d %I:%M:%S %p %z",
+            "%Y-%m-%d %H:%M:%S %z",
+        ]
+
+        utc_candidates: list[datetime] = []
+
+        if explicit_tz:
+            offset_friendly = re.sub(r"([+-]\d{2}):(\d{2})$", r"\1\2", normalized)
+            for fmt in full_tz_formats:
+                try:
+                    parsed = datetime.strptime(offset_friendly, fmt)
+                    utc_candidates.append(parsed.astimezone(timezone.utc).replace(tzinfo=None))
+                except ValueError:
+                    continue
+        else:
+            for fmt in full_formats:
+                try:
+                    parsed = datetime.strptime(normalized, fmt)
+                    utc_candidates.append(local_naive_to_utc(parsed))
+                except ValueError:
+                    continue
+
+        # Time-only candidates (e.g., 2:24 PM, 2:24, 14:24)
+        time_formats = ["%I:%M %p", "%H:%M", "%I:%M:%S %p", "%H:%M:%S"]
+        parsed_time = None
+        for fmt in time_formats:
+            try:
+                parsed_time = datetime.strptime(normalized, fmt).time()
+                break
+            except ValueError:
+                continue
+
+        if parsed_time and net_window_start and net_window_end:
+            day_cursor = net_window_start.date()
+            while day_cursor <= net_window_end.date():
+                naive_candidate = datetime.combine(day_cursor, parsed_time)
+                utc_candidates.append(local_naive_to_utc(naive_candidate))
+                day_cursor += timedelta(days=1)
+
+        if not utc_candidates:
+            return None, (
+                f"could not parse check-in time '{raw_value}'. Supported examples: 6/3/2026 2:24 PM, "
+                "3/6/2026 14:24, 2026-06-03 14:24, 2:24 PM, 2:24, 14:24."
+            )
+
+        deduped_candidates = sorted(set(utc_candidates))
+        if net_window_start and net_window_end:
+            in_window = [dt for dt in deduped_candidates if net_window_start <= dt <= net_window_end]
+            if len(in_window) == 1:
+                return in_window[0], None
+            if len(in_window) > 1:
+                return None, (
+                    f"time '{raw_value}' is ambiguous (US vs British date ordering). Use ISO format "
+                    "YYYY-MM-DD HH:MM with timezone (or check UTC)."
+                )
+
+        # If we parsed but no candidate fits the net window, return first parsed value
+        # for precise out-of-window reporting.
+        return deduped_candidates[0], None
+
+    def validate_timestamp_for_net(timestamp: datetime, raw_value: str) -> Optional[str]:
+        if not net_window_start:
+            return None
+        if timestamp < net_window_start:
+            return (
+                f"time '{raw_value}' resolves to {timestamp.strftime('%Y-%m-%d %H:%M:%S')} UTC, which is before "
+                f"the allowed window start {net_window_start.strftime('%Y-%m-%d %H:%M:%S')} UTC"
+            )
+        if net_window_end and timestamp > net_window_end:
+            return (
+                f"time '{raw_value}' resolves to {timestamp.strftime('%Y-%m-%d %H:%M:%S')} UTC, which is after "
+                f"the allowed window end {net_window_end.strftime('%Y-%m-%d %H:%M:%S')} UTC"
+            )
+        return None
+
+    sample_row_marker = "ECTLOGGER_SAMPLE_ROW"
+
+    def should_ignore_sample_row(row: dict) -> bool:
+        values = [str(v).strip() for v in row.values() if v is not None and str(v).strip()]
+        if not values:
+            return True
+        joined_upper = " ".join(values).upper()
+        if sample_row_marker in joined_upper:
+            return True
+        callsign_text = get_value(row, "Callsign", "Call Sign", "Call").upper().strip()
+        if callsign_text.startswith("SAMPLE") or callsign_text.startswith("ZZ0SAMPLE"):
+            return True
+        return False
+
+    imported_rows: list[CheckIn] = []
+    errors: list[str] = []
+    skipped = 0
+
+    for row_number, row in enumerate(reader, start=2):
+        if should_ignore_sample_row(row):
+            skipped += 1
+            continue
+
+        callsign_raw = get_value(row, "Callsign", "Call Sign", "Call")
+        callsign = callsign_raw.upper().strip()
+        if not callsign:
+            skipped += 1
+            errors.append(f"Row {row_number}: missing callsign")
+            continue
+
+        if not all(ch.isalnum() or ch == "/" for ch in callsign):
+            skipped += 1
+            errors.append(f"Row {row_number}: invalid callsign '{callsign}'")
+            continue
+
+        status_raw = get_value(row, "Status", "Station Status")
+        parsed_status = StationStatus.CHECKED_IN
+        if status_raw:
+            status_key = normalize_status(status_raw)
+            parsed_status = status_map.get(status_key)
+            if not parsed_status:
+                skipped += 1
+                errors.append(f"Row {row_number}: unrecognized status '{status_raw}'")
+                continue
+
+        available_freq_ids = parse_available_frequency_ids(
+            get_value(row, "Available Frequencies", "Available Frequency", "Frequencies")
+        )
+
+        raw_checkin_time = get_value(row, "Check-in Time", "Check In Time", "Time", "Timestamp", "Checked In At")
+        checked_in_at, parse_error = parse_checkin_timestamp(raw_checkin_time)
+        if parse_error:
+            skipped += 1
+            errors.append(f"Row {row_number}: {parse_error}")
+            continue
+        if checked_in_at:
+            timestamp_error = validate_timestamp_for_net(checked_in_at, raw_checkin_time)
+            if timestamp_error:
+                skipped += 1
+                errors.append(f"Row {row_number}: {timestamp_error}")
+                continue
+
+        linked_user_id = None
+        user_result = await db.execute(
+            select(User).where(
+                (User.callsign == callsign)
+                | (User.gmrs_callsign == callsign)
+                | (User.callsigns.like(f'%"{callsign}"%'))
+            )
+        )
+        matched_user = user_result.scalar_one_or_none()
+        if matched_user:
+            linked_user_id = matched_user.id
+
+        row_payload = {
+            "net_id": net.id,
+            "user_id": linked_user_id,
+            "callsign": callsign,
+            "name": get_value(row, "Name", "Operator", "Operator Name"),
+            "location": get_value(row, "Location", "QTH", "Grid", "Grid Square"),
+            "skywarn_number": get_value(row, "Spotter #", "Skywarn #", "Skywarn Number"),
+            "weather_observation": get_value(row, "Weather Observation", "Weather"),
+            "power_source": get_value(row, "Power Src", "Power Source"),
+            "power": get_value(row, "Power"),
+            "feedback": get_value(row, "Feedback"),
+            "notes": get_value(row, "Notes"),
+            "relayed_by": get_value(row, "Relayed By", "Relayed", "Relay By").upper() or None,
+            "topic_response": get_value(row, "Topic Response"),
+            "poll_response": get_value(row, "Poll Response"),
+            "custom_fields": '{}',
+            "status": parsed_status,
+            "frequency_id": available_freq_ids[0] if available_freq_ids else None,
+            "available_frequencies": json.dumps(available_freq_ids),
+            "is_recheck": False,
+            "parent_check_in_id": None,
+            "checked_in_by_id": current_user.id,
+        }
+
+        if checked_in_at:
+            # Stable ordering for equal timestamps: keep CSV row order.
+            row_payload["checked_in_at"] = checked_in_at + timedelta(microseconds=len(imported_rows))
+
+        imported_rows.append(CheckIn(**row_payload))
+
+    if imported_rows:
+        db.add_all(imported_rows)
+        await db.commit()
+
+    max_errors = 50
+    truncated_errors = errors[:max_errors]
+    return {
+        "imported": len(imported_rows),
+        "skipped": skipped,
+        "errors": truncated_errors,
+        "error_count": len(errors),
+        "errors_truncated": len(errors) > max_errors,
+        "net_window_start": net_window_start.isoformat() if net_window_start else None,
+        "net_window_end": net_window_end.isoformat() if net_window_end else None,
+        "timezone_used": "UTC" if assume_utc else timezone_name,
+        "assume_utc": bool(assume_utc),
+    }
 
 
 @router.get("/{net_id}/export/ics309")

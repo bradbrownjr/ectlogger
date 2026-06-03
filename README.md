@@ -66,6 +66,7 @@ ECT and SKYWARN nets often move between frequencies to meet participants where t
 ### Analytics & Reporting
 
 - **📧 Emailed net closure reports** - Net participants can receive chat logs, check-in logs, topic answers, and poll results
+- **📥 CSV check-in import** - Closed/archived nets can import CSV logs from paper or external software, with row-level validation and clear errors
 - **📃 ICS-309 Communications Log** - For ARES and ECT nets, ICS-309 documents can be downloaded and emailed from closed nets
 - **📈 Statistics & Analytics** — Track participation trends, operator activity, and net performance with interactive charts
 - **🏆 Schedule Statistics & Leaderboards** — Per-schedule reporting with time-window filters (30d / 90d / 1y / all-time) and leaderboards for Check-ins, NCS, Logger, and Relay roles, plus a net history log with NCS callsigns

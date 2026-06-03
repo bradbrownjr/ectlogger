@@ -8,6 +8,7 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
+* **CSV check-in import for closed/archived nets** — Added an Import CSV workflow next to export actions so net managers can merge logs from paper or external tools after a net closes. Includes drag-and-drop upload, an exportable import template, and row-numbered validation errors in the dialog.
 * **Co-Manager controls in staff rows** — Owners/admins can now promote or demote authorized staff as **Co-Managers** directly from each row using a star icon. Co-Managers are clearly labeled and share owner-level schedule responsibility for owner-gated actions (such as ownership transfer, linking nets, merge, and delete), providing true backup coverage.
 * **Hover reactions in chat** — Chat now supports per-message reactions (👍 🙂 🙁 ❤️ ✅) with live counts synchronized across connected clients.
 * **Paste-to-chat images** — Users can paste PNG/JPEG/WEBP images directly into chat; uploads are resized, thumbnailed, rendered inline, and viewable in a full-image lightbox.
@@ -15,6 +16,9 @@ All notable changes to ECTLogger are documented here.
 
 ## Improvements
 
+* **Import time parsing and timezone controls** — CSV import now accepts simple date/time formats used by operators (for example `6/3/2026 2:24 PM`, `3/6/2026 14:24`, `2:24 PM`, `14:24`) and supports both US and British slash-date ordering.
+* **UTC checkbox + timezone selector on import** — Import dialog now includes a UTC toggle and timezone dropdown for national nets spanning multiple time zones. Explicit timezone markers in CSV values (`Z`, `UTC`, `GMT`, `+/-HH:MM`) are honored automatically.
+* **Import window safety checks** — Imported timestamps are validated against net open/lobby time through net close + 10 minutes. Out-of-window rows are skipped with clear row-numbered reasons.
 * **Away and Mobile visibility improvements** — Away rows now use a distinct yellow highlight, and Mobile stations are prioritized near the top of the check-in list (after NCS).
 * **Contextual create/edit labels** — Ad-hoc/one-time flows now show **Create Net / Edit Net** labels where appropriate instead of always saying Schedule.
 * **Clearer schedule action wording** — The Net Staff action label now reads **Create schedule** instead of **Push staff to schedule**.

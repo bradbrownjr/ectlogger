@@ -399,6 +399,48 @@ Both Topic and Poll columns are only visible when configured for the net. System
 - **CSV Export** — Download check-ins as a spreadsheet
 - **ICS-309 Export** — Official FEMA communication log format (enable in net settings)
 
+### Importing Check-ins from CSV
+
+Closed and archived nets now include an **Import CSV** button next to export actions. This is useful when multiple NCS operators are logging in parallel and some logs were captured on paper or in another tool.
+
+1. Open the closed or archived net.
+2. Click **Import CSV**.
+3. Optional: click **Export Template** to download the expected columns and sample rows.
+4. Choose a file by clicking the drop zone or drag and drop a CSV file.
+5. Set time interpretation:
+   - **UTC checked**: untagged timestamps are treated as UTC.
+   - **UTC unchecked**: untagged timestamps use the selected **Import Time Zone**.
+   - Timestamps with explicit markers (`Z`, `UTC`, `GMT`, `+/-HH:MM`) always use their explicit timezone.
+6. Click **Import CSV**.
+
+#### Accepted Date and Time Formats
+
+The importer accepts simple operator-friendly formats:
+
+- `6/3/2026 2:24 PM`
+- `3/6/2026 14:24`
+- `2026-06-03 14:24`
+- `2:24 PM`
+- `2:24`
+- `14:24`
+
+Both US and British slash-date ordering are supported. If a slash-date is ambiguous and cannot be resolved safely, the row is rejected with a row-numbered error.
+
+#### Timeframe Validation
+
+Imported timestamps are validated against the net timeline:
+
+- Earliest allowed: net open/lobby start.
+- Latest allowed: net close time plus 10 minutes.
+
+Rows outside this window are skipped and reported with clear row numbers and reason text.
+
+#### Checks and Balances
+
+- Row-level validation errors are shown in the import dialog with row numbers.
+- Sample rows from the exported template are marked and automatically ignored if left in the file.
+- Imports keep check-ins in chronological order based on parsed timestamp.
+
 ### Net Report (PDF)
 
 Generate a comprehensive multi-page PDF report for closed or archived nets:
