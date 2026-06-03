@@ -2424,6 +2424,18 @@ const NetView: React.FC = () => {
                   </Tooltip>
                 )}
                 {canManage && (net.status === 'active' || net.status === 'lobby') && (
+                  <Tooltip title="Import check-ins from CSV">
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={handleOpenImportDialog}
+                      sx={{ minWidth: 'auto', px: 1, color: '#2e7d32', borderColor: '#2e7d32', '&:hover': { borderColor: '#2e7d32', backgroundColor: 'rgba(46, 125, 50, 0.08)' } }}
+                    >
+                      <UploadFileIcon fontSize="small" />
+                    </Button>
+                  </Tooltip>
+                )}
+                {canManage && (net.status === 'active' || net.status === 'lobby') && (
                   <Tooltip title="Close net">
                     <Button 
                       size="small" 

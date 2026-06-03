@@ -10,7 +10,7 @@
           "type": "feature",
           "items": [
             {
-              "text": "Net managers can now import check-ins into any closed or archived net from a CSV file — perfect for logging stations that participated outside ECTLogger (paper logs, other software, or phone check-ins). Open the net, click the green import button in the toolbar, download the Import Template to see the format, fill it in, and upload.",
+              "text": "Net managers can now import check-ins into any open, closed, or archived net from a CSV file — perfect for logging stations that participated outside ECTLogger (paper logs, other software, or phone check-ins). Open the net, click the green import button in the toolbar, download the Import Template to see the format, fill it in, and upload.",
               "userImpact": true
             },
             {
