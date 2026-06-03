@@ -1,6 +1,44 @@
 {
-  "version": "2026.06.02c",
+  "version": "2026.06.03",
   "entries": [
+    {
+      "version": "2026.06.03",
+      "date": "2026-06-03",
+      "sections": [
+        {
+          "title": "New Features",
+          "type": "feature",
+          "items": [
+            {
+              "text": "📥 CSV check-in import for closed/archived nets — upload a CSV file to bulk-import check-ins from external sources. The importer auto-detects operator-friendly date/time formats (M/D/YYYY, h:mm AM/PM, ISO, etc.), handles US vs British date ambiguity by checking net window, and validates timezone with an explicit UTC checkbox and timezone dropdown. Rows are inserted chronologically among existing check-ins.",
+              "userImpact": true
+            },
+            {
+              "text": "Timezone controls in CSV import dialog — choose your import timezone or check \"Assume UTC\" to override. Explicit timezone markers in CSV rows (Z, UTC, GMT, ±HH:MM) always take precedence. Sample rows are auto-ignored via marker detection.",
+              "userImpact": true
+            },
+            {
+              "text": "Export Template button in import dialog — downloads a CSV file with headers and two sample data rows (marked for auto-ignore) so you can see the expected format and reuse it as a starting point.",
+              "userImpact": true
+            }
+          ]
+        },
+        {
+          "title": "Improvements",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "CSV import validation now reports row-numbered errors with plain-language descriptions. Each error names the raw value, the parsing issue or the window boundary it violated.",
+              "userImpact": true
+            },
+            {
+              "text": "Backend CSV import logic refactored into a dedicated service module (backend/app/services/csv_import.py) to reduce memory footprint on limited VPS resources for large-net operations.",
+              "userImpact": false
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.06.02c",
       "date": "2026-06-02",
