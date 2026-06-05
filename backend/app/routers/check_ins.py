@@ -406,3 +406,75 @@ async def delete_check_in(
     }, net_id)
     
     return None
+
+
+@router.post("/check-ins/{check_in_id}/toggle-hand", response_model=CheckInResponse)
+async def toggle_hand_raised(
+    check_in_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Toggle hand_raised status for a check-in.
+    
+    Permissions:
+    - User can raise their own hand
+    - Admin/owner/NCS/logger can raise/lower any participant's hand
+    """
+    result = await db.execute(
+        select(CheckIn).where(CheckIn.id == check_in_id)
+    )
+    check_in = result.scalar_one_or_none()
+    
+    if not check_in:
+        raise HTTPException(status_code=404, detail="Check-in not found")
+    
+    # Get the net to check user permissions and determine roles
+    result = await db.execute(select(Net).where(Net.id == check_in.net_id))
+    net = result.scalar_one_or_none()
+    
+    if not net:
+        raise HTTPException(status_code=404, detail="Net not found")
+    
+    # Check if user is authorized to toggle the hand
+    is_owner = net.owner_id == current_user.id
+    is_admin = current_user.role.value == "admin"
+    is_own_check_in = check_in.user_id == current_user.id
+    
+    # Check if user is NCS or logger for this net
+    is_ncs_or_logger = False
+    if not (is_owner or is_admin):
+        result = await db.execute(
+            select(NetRole).where(
+                NetRole.net_id == check_in.net_id,
+                NetRole.user_id == current_user.id,
+                NetRole.role.in_(["NCS", "LOGGER"])
+            )
+        )
+        is_ncs_or_logger = result.scalar_one_or_none() is not None
+    
+    # Permission check: allow if user is own, or is owner/admin/NCS/logger
+    if not (is_own_check_in or is_owner or is_admin or is_ncs_or_logger):
+        raise HTTPException(status_code=403, detail="Not authorized to toggle hand")
+    
+    # Toggle the hand_raised state
+    check_in.hand_raised = not check_in.hand_raised
+    await db.commit()
+    await db.refresh(check_in)
+    
+    # Broadcast hand state change via WebSocket
+    from app.main import manager
+    import datetime
+    await manager.broadcast({
+        "type": "hand_raised_changed",
+        "data": {
+            "id": check_in.id,
+            "net_id": check_in.net_id,
+            "callsign": check_in.callsign,
+            "hand_raised": check_in.hand_raised,
+            "updated_at": check_in.updated_at.isoformat() if hasattr(check_in.updated_at, 'isoformat') else str(check_in.updated_at)
+        },
+        "timestamp": datetime.datetime.utcnow().isoformat()
+    }, check_in.net_id)
+    
+    return CheckInResponse.from_orm(check_in)

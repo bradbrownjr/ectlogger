@@ -271,6 +271,7 @@ class CheckIn(Base):
     is_recheck = Column(Boolean, default=False)
     parent_check_in_id = Column(Integer, ForeignKey("check_ins.id", ondelete="SET NULL"), nullable=True)
     checked_in_by_id = Column(Integer, ForeignKey("users.id"))  # Who logged this check-in
+    hand_raised = Column(Boolean, default=False)  # Hand raised to indicate comments/questions
     
     checked_in_at = Column(DateTime(timezone=True), server_default=func.now())
     checked_out_at = Column(DateTime(timezone=True))

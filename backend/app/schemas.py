@@ -583,6 +583,7 @@ class CheckInUpdate(BaseModel):
     # Topic of the Week / Poll responses
     topic_response: Optional[str] = Field(None, max_length=2000)
     poll_response: Optional[str] = Field(None, max_length=255)
+    hand_raised: Optional[bool] = None
 
 
 class CheckInResponse(CheckInBase):
@@ -593,6 +594,7 @@ class CheckInResponse(CheckInBase):
     frequency_id: Optional[int] = None
     available_frequencies: List[int] = Field(default_factory=list)
     custom_fields: Optional[dict] = Field(default_factory=dict)
+    hand_raised: bool = False
     is_recheck: bool
     parent_check_in_id: Optional[int] = None
     checked_in_by_id: Optional[int] = None
