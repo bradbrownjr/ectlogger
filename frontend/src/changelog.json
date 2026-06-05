@@ -1,6 +1,26 @@
 {
-  "version": "2026.06.05g",
+  "version": "2026.06.05h",
   "entries": [
+    {
+      "version": "2026.06.05h",
+      "date": "2026-06-05",
+      "sections": [
+        {
+          "title": "Net Staff Dialog",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "The Net Staff dialog (purple people icon) is now tabbed with dedicated views for Net Control Stations, Rotation Order, Schedule, and Subscribers.",
+              "userImpact": true
+            },
+            {
+              "text": "Communication actions were added to the Net Staff dialog for authorized users: Email Staff, Email Subscribers, and Email ALL. Access is limited to admins, net managers, and co-managers/co-owners.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.06.05g",
       "date": "2026-06-05",

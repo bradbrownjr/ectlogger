@@ -1847,12 +1847,17 @@ async def email_net_subscribers(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """Send an email to all subscribers of the net's template (NCS/owner/admin only).
-    
-    Used to notify subscribers about cancellations, schedule changes, etc.
+    """Send an email to selected recipient groups for a net.
+
+    Allowed recipients:
+    - subscribers: subscribers of the net's template
+    - staff: schedule staff (+ manager) for templated nets, or assigned net NCS (+ owner)
+    - all: union of subscribers + staff
+
+    Permission: admin, net owner/manager, or active template co-manager.
     """
     from app.email_service import EmailService
-    from app.models import NetTemplateSubscription
+    from app.models import NetTemplateSubscription, TemplateStaff
     from jinja2 import Template
     
     result = await db.execute(
@@ -1863,13 +1868,27 @@ async def email_net_subscribers(
     if not net:
         raise HTTPException(status_code=404, detail="Net not found")
     
-    # Check permissions - NCS, Logger, owner, or admin
-    if not await check_net_permission(db, net, current_user, ["NCS", "Logger"]):
+    # Check permissions - admin, net owner, or active template co-manager.
+    is_admin = current_user.role == UserRole.ADMIN
+    is_owner = net.owner_id == current_user.id
+    is_co_manager = False
+    if net.template_id and not (is_admin or is_owner):
+        co_result = await db.execute(
+            select(TemplateStaff).where(
+                TemplateStaff.template_id == net.template_id,
+                TemplateStaff.user_id == current_user.id,
+                TemplateStaff.is_active == True,
+                TemplateStaff.is_co_manager == True,
+            )
+        )
+        is_co_manager = co_result.scalar_one_or_none() is not None
+
+    if not (is_admin or is_owner or is_co_manager):
         raise HTTPException(status_code=403, detail="Not authorized to send emails for this net")
-    
-    # Net must have a template to have subscribers
-    if not net.template_id:
-        raise HTTPException(status_code=400, detail="This net has no template - no subscribers to email")
+
+    recipient_group = (email_data.get('recipient_group') or 'subscribers').strip().lower()
+    if recipient_group not in {'subscribers', 'staff', 'all'}:
+        raise HTTPException(status_code=400, detail="recipient_group must be one of: subscribers, staff, all")
     
     subject = email_data.get('subject', '').strip()
     message = email_data.get('message', '').strip()
@@ -1877,18 +1896,64 @@ async def email_net_subscribers(
     if not subject or not message:
         raise HTTPException(status_code=400, detail="Subject and message are required")
     
-    # Get all subscribers who have email notifications enabled
-    result = await db.execute(
-        select(User)
-        .join(NetTemplateSubscription, NetTemplateSubscription.user_id == User.id)
-        .where(NetTemplateSubscription.template_id == net.template_id)
-        .where(User.email_notifications == True)
-        .where(User.is_active == True)
-    )
-    subscribers = result.scalars().all()
-    
-    if not subscribers:
-        raise HTTPException(status_code=400, detail="No subscribers with email notifications enabled")
+    recipients_by_id: dict[int, User] = {}
+
+    # Subscribers (templated nets only)
+    if recipient_group in {'subscribers', 'all'}:
+        if not net.template_id:
+            if recipient_group == 'subscribers':
+                raise HTTPException(status_code=400, detail="This net has no template - no subscribers to email")
+        else:
+            result = await db.execute(
+                select(User)
+                .join(NetTemplateSubscription, NetTemplateSubscription.user_id == User.id)
+                .where(NetTemplateSubscription.template_id == net.template_id)
+                .where(User.email_notifications == True)
+                .where(User.is_active == True)
+            )
+            for subscriber in result.scalars().all():
+                recipients_by_id[subscriber.id] = subscriber
+
+    # Staff recipients
+    if recipient_group in {'staff', 'all'}:
+        if net.template_id:
+            # Manager + active schedule staff
+            owner_result = await db.execute(select(User).where(User.id == net.owner_id))
+            owner_user = owner_result.scalar_one_or_none()
+            if owner_user and owner_user.email and owner_user.email_notifications and owner_user.is_active:
+                recipients_by_id[owner_user.id] = owner_user
+
+            staff_result = await db.execute(
+                select(User)
+                .join(TemplateStaff, TemplateStaff.user_id == User.id)
+                .where(TemplateStaff.template_id == net.template_id)
+                .where(TemplateStaff.is_active == True)
+                .where(User.email_notifications == True)
+                .where(User.is_active == True)
+            )
+            for staff_user in staff_result.scalars().all():
+                recipients_by_id[staff_user.id] = staff_user
+        else:
+            # Ad-hoc net fallback: owner + assigned NCS roles
+            owner_result = await db.execute(select(User).where(User.id == net.owner_id))
+            owner_user = owner_result.scalar_one_or_none()
+            if owner_user and owner_user.email and owner_user.email_notifications and owner_user.is_active:
+                recipients_by_id[owner_user.id] = owner_user
+
+            ncs_result = await db.execute(
+                select(User)
+                .join(NetRole, NetRole.user_id == User.id)
+                .where(NetRole.net_id == net.id)
+                .where(NetRole.role == 'NCS')
+                .where(User.email_notifications == True)
+                .where(User.is_active == True)
+            )
+            for ncs_user in ncs_result.scalars().all():
+                recipients_by_id[ncs_user.id] = ncs_user
+
+    recipients = [u for u in recipients_by_id.values() if u.email]
+    if not recipients:
+        raise HTTPException(status_code=400, detail="No recipients with email notifications enabled")
     
     # Create HTML email template
     html_template = Template("""
@@ -1934,16 +1999,17 @@ async def email_net_subscribers(
     sent_count = 0
     failed_count = 0
     
-    for subscriber in subscribers:
+    for recipient in recipients:
         try:
-            await EmailService.send_email(subscriber.email, f"[{net.name}] {subject}", html_content)
+            await EmailService.send_email(recipient.email, f"[{net.name}] {subject}", html_content)
             sent_count += 1
         except Exception as e:
             failed_count += 1
-            print(f"Failed to send email to {subscriber.email}: {e}")
+            print(f"Failed to send email to {recipient.email}: {e}")
     
     return {
+        "recipient_group": recipient_group,
         "sent": sent_count,
         "failed": failed_count,
-        "total_recipients": len(subscribers)
+        "total_recipients": len(recipients)
     }

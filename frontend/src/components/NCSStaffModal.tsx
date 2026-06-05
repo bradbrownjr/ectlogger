@@ -24,6 +24,8 @@ import {
   ListItem,
   ListItemText,
   ListItemSecondaryAction,
+  Tabs,
+  Tab,
   useMediaQuery,
   useTheme,
   Tooltip,
@@ -42,6 +44,7 @@ import SaveIcon from '@mui/icons-material/Save';
 import CloseIcon from '@mui/icons-material/Close';
 import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
+import EmailIcon from '@mui/icons-material/Email';
 import { ncsRotationApi, userApi, templateStaffApi, templateApi } from '../services/api';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -112,6 +115,22 @@ interface NetRole {
   assigned_at: string;
 }
 
+interface TemplateSubscriber {
+  id: number;
+  user_id: number;
+  user_email: string | null;
+  user_name: string | null;
+  user_callsign: string | null;
+  subscribed_at: string;
+}
+
+interface TemplateSummary {
+  id: number;
+  name: string;
+  schedule_type?: string;
+  schedule_config?: Record<string, any>;
+}
+
 interface User {
   id: number;
   callsign: string;
@@ -159,6 +178,15 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
   // so future nets opened from the schedule see them too.
   const [pushingStaff, setPushingStaff] = useState(false);
   const [pushStaffResult, setPushStaffResult] = useState<{ severity: 'success' | 'info' | 'error'; message: string } | null>(null);
+  const [activeTab, setActiveTab] = useState(0);
+  const [subscribers, setSubscribers] = useState<TemplateSubscriber[]>([]);
+  const [templateSummary, setTemplateSummary] = useState<TemplateSummary | null>(null);
+
+  // Email dialog state (staff/subscribers/all)
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [emailRecipientGroup, setEmailRecipientGroup] = useState<'staff' | 'subscribers' | 'all'>('staff');
+  const [emailForm, setEmailForm] = useState({ subject: '', message: '' });
+  const [emailSending, setEmailSending] = useState(false);
 
   const { user, isAuthenticated } = useAuth();
   const theme = useTheme();
@@ -167,6 +195,7 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
   // Determine context - are we looking at a schedule/template or a net?
   const isScheduleContext = !!schedule && !net;
   const isNetContext = !!net;
+  const templateId = isScheduleContext ? schedule?.id : (net?.template_id || null);
   
   // Permissions
   // The schedule "owner" is the Net Manager (ham-radio term) — the person
@@ -185,9 +214,15 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
     ? staff.some((s: StaffMember) => s.user_id === user?.id && s.is_co_manager && s.is_active)
     : false;
 
+  const isTemplateCoManagerInNetContext = isNetContext
+    ? staff.some((s: StaffMember) => s.user_id === user?.id && s.is_co_manager && s.is_active)
+    : false;
+
   // Check if user is in the rotation (for schedules)
   // Owners, admins, and co-managers can edit staff/rotation.
   const canEdit = isAuthenticated && (isOwner || isAdmin || isCoManager) && !isNetClosed;
+  const canCommunicate = isAuthenticated && (isOwner || isAdmin || isCoManager || isTemplateCoManagerInNetContext);
+  const canViewSubscribers = canCommunicate;
 
   // Title based on context
   const getTitle = () => {
@@ -226,6 +261,11 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
       setPendingManager(null);
       setLocalOwner(null);
       setPushStaffResult(null);
+      setActiveTab(0);
+      setSubscribers([]);
+      setTemplateSummary(null);
+      setEmailDialogOpen(false);
+      setEmailForm({ subject: '', message: '' });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, scheduleId, netId]);
@@ -252,10 +292,56 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
           const usersRes = await userApi.listDirectory();
           setUsers(usersRes.data);
         }
+
+        setTemplateSummary({
+          id: schedule.id,
+          name: schedule.name,
+        });
+
+        if (canViewSubscribers) {
+          const subscribersRes = await templateApi.listSubscriptions(schedule.id);
+          setSubscribers(subscribersRes.data || []);
+        } else {
+          setSubscribers([]);
+        }
       } else if (isNetContext && net) {
         // Fetch net roles
         const rolesRes = await api.get(`/nets/${net.id}/roles`);
         setNetRoles(rolesRes.data || []);
+
+        // For nets linked to schedules, also load schedule-level views
+        // (staff/rotation/schedule/subscribers) for tabbed modal sections.
+        if (net.template_id) {
+          const [tplRes, tplStaffRes, membersRes, scheduleRes] = await Promise.all([
+            templateApi.get(net.template_id),
+            templateStaffApi.list(net.template_id),
+            ncsRotationApi.listMembers(net.template_id),
+            ncsRotationApi.getSchedule(net.template_id, 12),
+          ]);
+
+          setTemplateSummary({
+            id: tplRes.data.id,
+            name: tplRes.data.name,
+            schedule_type: tplRes.data.schedule_type,
+            schedule_config: tplRes.data.schedule_config,
+          });
+          setStaff(tplStaffRes.data || []);
+          setMembers(membersRes.data || []);
+          setScheduleEntries(scheduleRes.data.schedule || []);
+
+          if (canViewSubscribers) {
+            const subscribersRes = await templateApi.listSubscriptions(net.template_id);
+            setSubscribers(subscribersRes.data || []);
+          } else {
+            setSubscribers([]);
+          }
+        } else {
+          setTemplateSummary(null);
+          setStaff([]);
+          setMembers([]);
+          setScheduleEntries([]);
+          setSubscribers([]);
+        }
         
         // Only fetch users list if user can edit
         if (canEdit) {
@@ -267,6 +353,38 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
       setError(getErrorMessage(err, 'Failed to load staff data'));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleOpenEmailDialog = (group: 'staff' | 'subscribers' | 'all') => {
+    setEmailRecipientGroup(group);
+    setEmailForm({ subject: '', message: '' });
+    setEmailDialogOpen(true);
+  };
+
+  const handleSendEmail = async () => {
+    if (!net || !emailForm.subject.trim() || !emailForm.message.trim()) return;
+
+    setEmailSending(true);
+    try {
+      const response = await api.post(`/nets/${net.id}/email-subscribers`, {
+        recipient_group: emailRecipientGroup,
+        subject: emailForm.subject,
+        message: emailForm.message,
+      });
+
+      setPushStaffResult({
+        severity: 'success',
+        message: `Email sent to ${response.data.sent} recipient(s) (${response.data.failed} failed).`,
+      });
+      setEmailDialogOpen(false);
+    } catch (err: any) {
+      setPushStaffResult({
+        severity: 'error',
+        message: getErrorMessage(err, 'Failed to send email'),
+      });
+    } finally {
+      setEmailSending(false);
     }
   };
 
@@ -397,20 +515,27 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
   const handleCreateRotationFromStaff = async () => {
     if (!schedule) return;
     
-    // Get staff members not already in rotation
-    const staffNotInRotation = staff.filter(
-      (s: StaffMember) => s.is_active && !members.some((m: RotationMember) => m.user_id === s.user_id)
+    const userIdsToAdd = new Set<number>(
+      staff
+        .filter((s: StaffMember) => s.is_active)
+        .map((s: StaffMember) => s.user_id)
     );
-    
-    if (staffNotInRotation.length === 0) {
-      setError('All active staff members are already in the rotation');
+    if (schedule.owner_id) {
+      userIdsToAdd.add(schedule.owner_id);
+    }
+
+    const missingUserIds = Array.from(userIdsToAdd).filter(
+      (userId) => !members.some((m: RotationMember) => m.user_id === userId)
+    );
+
+    if (missingUserIds.length === 0) {
+      setError('All active staff and the manager are already in the rotation');
       return;
     }
     
     try {
-      // Add each staff member to rotation
-      for (const s of staffNotInRotation) {
-        await ncsRotationApi.addMember(schedule.id, { user_id: s.user_id });
+      for (const userId of missingUserIds) {
+        await ncsRotationApi.addMember(schedule.id, { user_id: userId });
       }
       await fetchData();
     } catch (err: any) {
@@ -609,6 +734,237 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
 
   // Get NCS-only roles for display
   const ncsRoles = netRoles.filter((r: NetRole) => r.role === 'NCS');
+
+  const hasTemplateContext = !!templateId;
+
+  const renderRotationTab = () => {
+    if (!hasTemplateContext) {
+      return (
+        <Typography color="text.secondary" sx={{ py: 2 }}>
+          This net is not linked to a schedule, so there is no rotation order.
+        </Typography>
+      );
+    }
+
+    return (
+      <Box>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+          <Typography variant="subtitle2">Rotation Order</Typography>
+          {canEdit && members.length > 0 && isScheduleContext && (
+            <Button
+              size="small"
+              color="error"
+              variant="outlined"
+              startIcon={<DeleteIcon />}
+              onClick={handleClearAllMembers}
+            >
+              Clear All
+            </Button>
+          )}
+        </Box>
+        <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
+          Optional: cycle NCS duty automatically across upcoming scheduled nets. If empty, nets default to the Manager.
+        </Typography>
+
+        {canEdit && isScheduleContext && staff.filter((s: StaffMember) => s.is_active && !members.some((m: RotationMember) => m.user_id === s.user_id)).length > 0 && (
+          <Box sx={{ mb: 2 }}>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<AddIcon />}
+              onClick={handleCreateRotationFromStaff}
+              fullWidth={isMobile}
+            >
+              Add Staff to Rotation
+            </Button>
+          </Box>
+        )}
+
+        {members.length === 0 ? (
+          <Typography color="text.secondary" sx={{ py: 2 }}>
+            No rotation configured — nets default to the Manager.
+          </Typography>
+        ) : (
+          <List>
+            {members.map((member: RotationMember, idx: number) => (
+              <ListItem
+                key={member.id}
+                sx={{
+                  bgcolor: member.is_active ? 'background.paper' : 'action.disabledBackground',
+                  border: 1,
+                  borderColor: 'divider',
+                  borderRadius: 1,
+                  mb: 0.5,
+                }}
+              >
+                <DragIndicatorIcon sx={{ mr: 1, color: 'action.disabled' }} />
+                <ListItemText
+                  primary={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Chip label={`#${idx + 1}`} size="small" color="primary" variant="outlined" />
+                      <Typography>
+                        {member.user_callsign}
+                        {member.user_name && ` (${member.user_name})`}
+                      </Typography>
+                    </Box>
+                  }
+                />
+                {canEdit && isScheduleContext && (
+                  <ListItemSecondaryAction>
+                    <IconButton size="small" onClick={() => handleMoveMember(member.id, 'up')} disabled={idx === 0}>
+                      <ArrowUpwardIcon fontSize="small" />
+                    </IconButton>
+                    <IconButton size="small" onClick={() => handleMoveMember(member.id, 'down')} disabled={idx === members.length - 1}>
+                      <ArrowDownwardIcon fontSize="small" />
+                    </IconButton>
+                    <Tooltip title={member.is_active ? 'Skip (mark inactive)' : 'Include (mark active)'}>
+                      <IconButton size="small" onClick={() => handleToggleMemberActive(member)}>
+                        <BlockIcon fontSize="small" color={member.is_active ? 'action' : 'error'} />
+                      </IconButton>
+                    </Tooltip>
+                    <IconButton size="small" color="error" onClick={() => handleRemoveMember(member.id)}>
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </ListItemSecondaryAction>
+                )}
+              </ListItem>
+            ))}
+          </List>
+        )}
+      </Box>
+    );
+  };
+
+  const renderScheduleTab = () => {
+    if (!hasTemplateContext) {
+      return (
+        <Typography color="text.secondary" sx={{ py: 2 }}>
+          This net is not linked to a schedule.
+        </Typography>
+      );
+    }
+
+    return (
+      <Box>
+        <Typography variant="subtitle2" sx={{ mb: 1 }}>
+          Schedule
+        </Typography>
+        {templateSummary && (
+          <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
+            {templateSummary.name}
+            {templateSummary.schedule_type ? ` • ${templateSummary.schedule_type}` : ''}
+          </Typography>
+        )}
+
+        {scheduleEntries.length > 0 ? (
+          <TableContainer component={Paper} variant="outlined">
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Date</TableCell>
+                  <TableCell>NCS</TableCell>
+                  {canEdit && isScheduleContext && <TableCell align="right">Actions</TableCell>}
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {scheduleEntries.slice(0, 12).map((entry: ScheduleEntry, idx: number) => (
+                  <TableRow key={idx}>
+                    <TableCell>{formatDate(entry.date)}</TableCell>
+                    <TableCell>
+                      {entry.is_cancelled ? (
+                        <Chip icon={<BlockIcon />} label="Cancelled" size="small" color="default" />
+                      ) : (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Typography variant="body2">
+                            {entry.user_callsign || 'TBD'}
+                            {entry.user_name && ` (${entry.user_name})`}
+                          </Typography>
+                          {entry.is_override && <Chip label="Swap" size="small" color="warning" />}
+                        </Box>
+                      )}
+                    </TableCell>
+                    {canEdit && isScheduleContext && (
+                      <TableCell align="right">
+                        {entry.is_override && entry.override_id && (
+                          <Tooltip title="Revert to normal rotation">
+                            <IconButton size="small" onClick={() => handleCancelOverride(entry.override_id!)} color="error">
+                              <UndoIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                        {!entry.is_cancelled && !entry.is_override && (
+                          <Tooltip title="Swap or cancel">
+                            <IconButton size="small" onClick={() => handleOpenSwapDialog(entry)}>
+                              <SwapHorizIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        ) : (
+          <Typography color="text.secondary" sx={{ py: 2 }}>
+            No upcoming schedule entries.
+          </Typography>
+        )}
+      </Box>
+    );
+  };
+
+  const renderSubscribersTab = () => {
+    if (!hasTemplateContext) {
+      return (
+        <Typography color="text.secondary" sx={{ py: 2 }}>
+          This net is not linked to a schedule, so it has no subscriber list.
+        </Typography>
+      );
+    }
+
+    if (!canViewSubscribers) {
+      return (
+        <Typography color="text.secondary" sx={{ py: 2 }}>
+          Subscriber details are visible to admins, schedule managers, and co-managers.
+        </Typography>
+      );
+    }
+
+    return (
+      <Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+          <Typography variant="subtitle2">Subscribers</Typography>
+          <Chip label={`${subscribers.length} subscribed`} size="small" variant="outlined" />
+        </Box>
+        {subscribers.length === 0 ? (
+          <Typography color="text.secondary" sx={{ py: 2 }}>
+            No subscribers yet.
+          </Typography>
+        ) : (
+          <List dense>
+            {subscribers.map((subscriber) => (
+              <ListItem
+                key={subscriber.id}
+                sx={{ border: 1, borderColor: 'divider', borderRadius: 1, mb: 1 }}
+              >
+                <ListItemText
+                  primary={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                      <Typography fontWeight="bold">{subscriber.user_callsign || 'Unknown callsign'}</Typography>
+                      {subscriber.user_name && <Typography color="text.secondary">({subscriber.user_name})</Typography>}
+                    </Box>
+                  }
+                  secondary={subscriber.user_email || undefined}
+                />
+              </ListItem>
+            ))}
+          </List>
+        )}
+      </Box>
+    );
+  };
 
   // Render the staff list. Owners and admins see inline add/remove/toggle controls.
   const renderStaffList = () => {
@@ -883,201 +1239,25 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
               <CircularProgress />
             </Box>
           ) : (
-            <>
-              {/* Staff list - all authenticated users can view; owners/admins get inline edit controls */}
-              {renderStaffList()}
+            <Box>
+              <Tabs
+                value={activeTab}
+                onChange={(_: React.SyntheticEvent, next: number) => setActiveTab(next)}
+                variant={isMobile ? 'scrollable' : 'standard'}
+                scrollButtons="auto"
+                sx={{ mb: 2 }}
+              >
+                <Tab label="Net Control Stations" />
+                <Tab label="Rotation Order" />
+                <Tab label="Schedule" />
+                <Tab label="Subscribers" />
+              </Tabs>
 
-              {/* Rotation section - all users can view; edit controls restricted to owners/admins */}
-              {isScheduleContext && (members.length > 0 || scheduleEntries.length > 0 || canEdit) && (
-                <Box sx={{ mt: 3, pt: 3, borderTop: 1, borderColor: 'divider' }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                    <Typography variant="subtitle2">
-                      Rotation Order
-                    </Typography>
-                    {/* Clear All - owners/admins only */}
-                    {canEdit && members.length > 0 && (
-                      <Button
-                        size="small"
-                        color="error"
-                        variant="outlined"
-                        startIcon={<DeleteIcon />}
-                        onClick={handleClearAllMembers}
-                      >
-                        Clear All
-                      </Button>
-                    )}
-                  </Box>
-                  <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
-                    {canEdit
-                      ? 'Optional: cycle NCS duty automatically across upcoming scheduled nets. If empty, nets default to the Manager. Use "Add Staff to Rotation" to populate from your staff list.'
-                      : 'NCS duty cycles automatically across upcoming scheduled nets. If empty, nets default to the Manager.'}
-                  </Typography>
-
-                  {/* Add Staff to Rotation button - owners/admins only */}
-                  {canEdit && staff.filter((s: StaffMember) => s.is_active && !members.some((m: RotationMember) => m.user_id === s.user_id)).length > 0 && (
-                    <Box sx={{ mb: 2 }}>
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        startIcon={<AddIcon />}
-                        onClick={handleCreateRotationFromStaff}
-                        fullWidth={isMobile}
-                      >
-                        Add Staff to Rotation ({staff.filter((s: StaffMember) => s.is_active && !members.some((m: RotationMember) => m.user_id === s.user_id)).length} available)
-                      </Button>
-                    </Box>
-                  )}
-
-                  {/* Members list */}
-                  {members.length === 0 ? (
-                    <Box sx={{ textAlign: 'center', py: 2 }}>
-                      <Typography color="text.secondary" sx={{ mb: 1 }}>
-                        No rotation configured — nets default to the Manager.
-                      </Typography>
-                      {canEdit && (
-                        <Typography variant="caption" color="text.secondary">
-                          {staff.length > 0
-                            ? 'Use "Add Staff to Rotation" above to populate the order from your staff list.'
-                            : 'Add staff above first, then build the rotation from them.'}
-                        </Typography>
-                      )}
-                    </Box>
-                  ) : (
-                    <List>
-                      {members.map((member: RotationMember, idx: number) => (
-                        <ListItem
-                          key={member.id}
-                          sx={{
-                            bgcolor: member.is_active ? 'background.paper' : 'action.disabledBackground',
-                            border: 1,
-                            borderColor: 'divider',
-                            borderRadius: 1,
-                            mb: 0.5,
-                          }}
-                        >
-                          <DragIndicatorIcon sx={{ mr: 1, color: 'action.disabled' }} />
-                          <ListItemText
-                            primary={
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <Chip label={`#${idx + 1}`} size="small" color="primary" variant="outlined" />
-                                <Typography>
-                                  {member.user_callsign}
-                                  {member.user_name && ` (${member.user_name})`}
-                                </Typography>
-                                {!member.is_active && (
-                                  <Chip label="Inactive" size="small" color="default" />
-                                )}
-                              </Box>
-                            }
-                          />
-                          {/* Reorder / toggle / delete - owners/admins only */}
-                          {canEdit && (
-                            <ListItemSecondaryAction>
-                              <IconButton
-                                size="small"
-                                onClick={() => handleMoveMember(member.id, 'up')}
-                                disabled={idx === 0}
-                              >
-                                <ArrowUpwardIcon fontSize="small" />
-                              </IconButton>
-                              <IconButton
-                                size="small"
-                                onClick={() => handleMoveMember(member.id, 'down')}
-                                disabled={idx === members.length - 1}
-                              >
-                                <ArrowDownwardIcon fontSize="small" />
-                              </IconButton>
-                              <Tooltip title={member.is_active ? 'Skip (mark inactive)' : 'Include (mark active)'}>
-                                <IconButton size="small" onClick={() => handleToggleMemberActive(member)}>
-                                  <BlockIcon fontSize="small" color={member.is_active ? 'action' : 'error'} />
-                                </IconButton>
-                              </Tooltip>
-                              <IconButton size="small" color="error" onClick={() => handleRemoveMember(member.id)}>
-                                <DeleteIcon fontSize="small" />
-                              </IconButton>
-                            </ListItemSecondaryAction>
-                          )}
-                        </ListItem>
-                      ))}
-                    </List>
-                  )}
-
-                  {/* Upcoming schedule preview - visible to all */}
-                  {scheduleEntries.length > 0 && (
-                    <Box sx={{ mt: 3 }}>
-                      <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                        Upcoming Schedule
-                      </Typography>
-                      <TableContainer component={Paper} variant="outlined">
-                        <Table size="small">
-                          <TableHead>
-                            <TableRow>
-                              <TableCell>Date</TableCell>
-                              <TableCell>NCS</TableCell>
-                              {canEdit && <TableCell align="right">Actions</TableCell>}
-                            </TableRow>
-                          </TableHead>
-                          <TableBody>
-                            {scheduleEntries.slice(0, 8).map((entry: ScheduleEntry, idx: number) => (
-                              <TableRow
-                                key={idx}
-                                sx={{
-                                  bgcolor: entry.is_cancelled
-                                    ? 'action.disabledBackground'
-                                    : entry.is_override
-                                      ? 'warning.light'
-                                      : undefined,
-                                }}
-                              >
-                                <TableCell>{formatDate(entry.date)}</TableCell>
-                                <TableCell>
-                                  {entry.is_cancelled ? (
-                                    <Chip icon={<BlockIcon />} label="Cancelled" size="small" color="default" />
-                                  ) : (
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                      <Typography variant="body2">
-                                        {entry.user_callsign || 'TBD'}
-                                        {entry.user_name && ` (${entry.user_name})`}
-                                      </Typography>
-                                      {entry.is_override && (
-                                        <Chip label="Swap" size="small" color="warning" />
-                                      )}
-                                    </Box>
-                                  )}
-                                </TableCell>
-                                {/* Swap/cancel actions - owners/admins only */}
-                                {canEdit && (
-                                  <TableCell align="right">
-                                    {entry.is_override && entry.override_id && (
-                                      <Tooltip title="Revert to normal rotation">
-                                        <IconButton
-                                          size="small"
-                                          onClick={() => handleCancelOverride(entry.override_id!)}
-                                          color="error"
-                                        >
-                                          <UndoIcon fontSize="small" />
-                                        </IconButton>
-                                      </Tooltip>
-                                    )}
-                                    {!entry.is_cancelled && !entry.is_override && (
-                                      <Tooltip title="Swap or cancel">
-                                        <IconButton size="small" onClick={() => handleOpenSwapDialog(entry)}>
-                                          <SwapHorizIcon fontSize="small" />
-                                        </IconButton>
-                                      </Tooltip>
-                                    )}
-                                  </TableCell>
-                                )}
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </TableContainer>
-                    </Box>
-                  )}
-                </Box>
-              )}
-            </>
+              {activeTab === 0 && renderStaffList()}
+              {activeTab === 1 && renderRotationTab()}
+              {activeTab === 2 && renderScheduleTab()}
+              {activeTab === 3 && renderSubscribersTab()}
+            </Box>
           )}
         </DialogContent>
         
@@ -1115,8 +1295,82 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                 </Tooltip>
               )}
             </Box>
-            <Button onClick={onClose}>Close</Button>
+
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              {canCommunicate && isNetContext && (
+                <>
+                  <Button
+                    onClick={() => handleOpenEmailDialog('staff')}
+                    startIcon={<EmailIcon />}
+                    variant="outlined"
+                  >
+                    Email Staff
+                  </Button>
+                  {hasTemplateContext && (
+                    <Button
+                      onClick={() => handleOpenEmailDialog('subscribers')}
+                      startIcon={<EmailIcon />}
+                      variant="outlined"
+                    >
+                      Email Subscribers
+                    </Button>
+                  )}
+                  <Button
+                    onClick={() => handleOpenEmailDialog(hasTemplateContext ? 'all' : 'staff')}
+                    startIcon={<EmailIcon />}
+                    variant="contained"
+                  >
+                    Email ALL
+                  </Button>
+                </>
+              )}
+              <Button onClick={onClose}>Close</Button>
+            </Box>
           </Box>
+        </DialogActions>
+      </Dialog>
+
+      {/* Email dialog (staff/subscribers/all) */}
+      <Dialog open={emailDialogOpen} onClose={() => setEmailDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          Email {emailRecipientGroup === 'all' ? 'ALL' : emailRecipientGroup === 'staff' ? 'Staff' : 'Subscribers'} - {net?.name || schedule?.name}
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <TextField
+              label="Subject"
+              value={emailForm.subject}
+              onChange={(e) => setEmailForm({ ...emailForm, subject: e.target.value })}
+              required
+              fullWidth
+            />
+            <TextField
+              label="Message"
+              value={emailForm.message}
+              onChange={(e) => setEmailForm({ ...emailForm, message: e.target.value })}
+              onKeyDown={(e: React.KeyboardEvent) => {
+                if (e.key === 'Enter' && e.ctrlKey && emailForm.subject && emailForm.message && !emailSending) {
+                  e.preventDefault();
+                  handleSendEmail();
+                }
+              }}
+              required
+              multiline
+              rows={6}
+              fullWidth
+              helperText="Ctrl+Enter to send"
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEmailDialogOpen(false)}>Cancel</Button>
+          <Button
+            onClick={handleSendEmail}
+            variant="contained"
+            disabled={!emailForm.subject.trim() || !emailForm.message.trim() || emailSending}
+          >
+            {emailSending ? <CircularProgress size={20} /> : 'Send Email'}
+          </Button>
         </DialogActions>
       </Dialog>
       

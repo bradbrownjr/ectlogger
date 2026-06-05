@@ -15,6 +15,8 @@ All notable changes to ECTLogger are documented here.
 ## Improvements
 
 * **Subscriber visibility for managers** — Admins, schedule managers, and co-managers can now view the schedule subscriber list directly in the Net Staff tab, including callsign, name, and email for users who subscribed via the bell or reminder prompt.
+* **Tabbed Net Staff modal** — The Net Staff dialog opened from the purple people icon is now organized into dedicated tabs: **Net Control Stations**, **Rotation Order**, **Schedule**, and **Subscribers**.
+* **Role-gated email actions in Net Staff modal** — Added **Email Staff**, **Email Subscribers**, and **Email ALL** actions for admins, net managers, and co-managers/co-owners to quickly notify the right groups about cancellations, schedule changes, and net topics.
 
 ## Notes
 
