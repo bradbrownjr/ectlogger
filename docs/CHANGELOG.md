@@ -16,6 +16,10 @@ All notable changes to ECTLogger are documented here.
 * **Better avatar color distribution** — Expanded avatar color palette from 12 to 24 colors and improved seeding by combining callsign + name, significantly reducing color collisions among users.
 * **Auto-select frequency for single-frequency nets** — When a net has only one frequency configured, that frequency is automatically selected as active and assigned to check-ins. This simplifies the UI (no dropdown needed) and ensures check-ins are organized by frequency from the start, even before additional frequencies are added.
 
+## UX Improvements
+
+* **Step away feature** — Users can now click the pause icon (⏸️) to temporarily step away without checking out. Useful when you know you're next but have an emergent need (bathroom, etc.). The button appears in both the toolbar for your own check-in and in the Actions column. Click again to return.
+
 ---
 
 # June 2, 2026 (c)

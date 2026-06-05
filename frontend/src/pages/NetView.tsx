@@ -67,6 +67,7 @@ import TimerIcon from '@mui/icons-material/Timer';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutline';
 import { netApi, checkInApi, userApi, netRoleApi, templateApi } from '../services/api';
 import api from '../services/api';
 import { formatTimeWithDate } from '../utils/dateUtils';
@@ -2384,6 +2385,17 @@ const NetView: React.FC = () => {
                         <PanToolIcon fontSize="small" />
                       </Button>
                     </Tooltip>
+                    <Tooltip title={userActiveCheckIn?.status === 'away' ? 'Return from break' : 'Step away'}>
+                      <Button 
+                        size="small"
+                        variant="outlined"
+                        color={userActiveCheckIn?.status === 'away' ? 'warning' : 'inherit'}
+                        onClick={() => handleStatusChange(userActiveCheckIn.id, userActiveCheckIn?.status === 'away' ? 'checked_in' : 'away')}
+                        sx={{ minWidth: 'auto', px: 1 }}
+                      >
+                        <PauseCircleOutlineIcon fontSize="small" />
+                      </Button>
+                    </Tooltip>
                     <Tooltip title="Check out of net">
                       <Button 
                         size="small"
@@ -3069,6 +3081,16 @@ const NetView: React.FC = () => {
                       {/* Actions column - hand raise, active speaker and delete */}
                       {(canManage || checkIn.user_id === user?.id) && (
                       <TableCell sx={{ width: 70 }} onClick={(e) => e.stopPropagation()}>
+                        {/* Step away button - show for all check-ins if user can manage, or for own check-in */}
+                        <IconButton
+                          size="small"
+                          onClick={() => handleStatusChange(checkIn.id, checkIn.status === 'away' ? 'checked_in' : 'away')}
+                          color={checkIn.status === 'away' ? 'warning' : 'default'}
+                          title={checkIn.status === 'away' ? 'Return from break' : 'Step away'}
+                          sx={{ opacity: checkIn.status === 'away' ? 1 : 0.4 }}
+                        >
+                          <PauseCircleOutlineIcon fontSize="small" />
+                        </IconButton>
                         {/* Hand Raise button - show for all check-ins if user can manage, or for own check-in */}
                         <IconButton
                           size="small"
@@ -4181,6 +4203,9 @@ const NetView: React.FC = () => {
                           <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatTimeWithDate(checkIn.checked_in_at, user?.prefer_utc || false, net?.started_at)}</TableCell>
                           {(canManage || checkIn.user_id === user?.id) && (
                             <TableCell>
+                              <IconButton size="small" onClick={() => handleStatusChange(checkIn.id, checkIn.status === 'away' ? 'checked_in' : 'away')} color={checkIn.status === 'away' ? 'warning' : 'default'} title={checkIn.status === 'away' ? 'Return from break' : 'Step away'} sx={{ opacity: checkIn.status === 'away' ? 1 : 0.4 }}>
+                                <PauseCircleOutlineIcon fontSize="small" />
+                              </IconButton>
                               <IconButton size="small" onClick={() => handleToggleHand(checkIn.id)} color={checkIn.hand_raised ? 'warning' : 'default'} title={checkIn.hand_raised ? 'Lower hand' : 'Raise hand'} sx={{ opacity: checkIn.hand_raised ? 1 : 0.4 }}>
                                 <PanToolIcon fontSize="small" />
                               </IconButton>
