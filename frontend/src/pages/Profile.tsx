@@ -221,7 +221,7 @@ const Profile: React.FC = () => {
 
           {/* Profile photo section */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3, p: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}>
-            <UserAvatar avatarUrl={(user as any)?.avatar_url} callsign={user?.callsign} size={64} />
+            <UserAvatar avatarUrl={(user as any)?.avatar_url} callsign={user?.callsign} name={user?.name} size={64} />
             <Box sx={{ flex: 1 }}>
               <Typography variant="subtitle2" gutterBottom>Profile Photo</Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>

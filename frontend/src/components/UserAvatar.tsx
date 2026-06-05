@@ -1,9 +1,36 @@
 import React from 'react';
 import { Avatar, Box } from '@mui/material';
 
+// Visually distinct hues — enough contrast between adjacent entries.
+const AVATAR_COLORS = [
+  '#1565C0', // deep blue
+  '#2E7D32', // deep green
+  '#6A1B9A', // deep purple
+  '#AD1457', // deep pink
+  '#00695C', // teal
+  '#E65100', // deep orange
+  '#4527A0', // indigo
+  '#558B2F', // olive green
+  '#00838F', // cyan
+  '#C62828', // deep red
+  '#4E342E', // brown
+  '#37474F', // blue-grey
+];
+
+/** Deterministic color from callsign string — same person always same color. */
+function avatarColor(seed: string | null | undefined): string {
+  if (!seed) return AVATAR_COLORS[0];
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) {
+    hash = seed.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+
 interface UserAvatarProps {
   avatarUrl?: string | null;
   callsign?: string | null;
+  name?: string | null;
   size?: number;
   isOnline?: boolean;
 }
@@ -11,18 +38,22 @@ interface UserAvatarProps {
 /**
  * Compact user avatar with optional online presence badge.
  * Shows the Gravatar (or uploaded profile image) at the requested size.
- * Falls back to the first character of the callsign when no image is available.
+ * Falls back to the first character of the name (if available) then callsign.
+ * Placeholder color is derived from the callsign so each person gets a
+ * consistent, distinct color regardless of shared initials.
  * If isOnline is true, renders a small green dot in the bottom-right corner.
  */
 const UserAvatar: React.FC<UserAvatarProps> = ({
   avatarUrl,
   callsign,
+  name,
   size = 24,
   isOnline = false,
 }) => {
-  const initial = callsign ? callsign.charAt(0).toUpperCase() : '?';
+  const initial = (name || callsign || '?').charAt(0).toUpperCase();
   const fontSize = Math.max(8, Math.round(size * 0.45));
   const badgeSize = Math.max(5, Math.round(size * 0.28));
+  const bgColor = avatarColor(callsign);
 
   return (
     <Box sx={{ position: 'relative', display: 'inline-flex', flexShrink: 0 }}>
@@ -33,7 +64,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
           width: size,
           height: size,
           fontSize,
-          bgcolor: 'primary.main',
+          bgcolor: bgColor,
         }}
       >
         {!avatarUrl && initial}

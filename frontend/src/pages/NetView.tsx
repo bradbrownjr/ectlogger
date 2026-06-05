@@ -2861,6 +2861,7 @@ const NetView: React.FC = () => {
                             <UserAvatar
                               avatarUrl={checkIn.avatar_url}
                               callsign={checkIn.callsign}
+                              name={checkIn.name}
                               size={24}
                               isOnline={!!(checkIn.user_id && onlineUserIds.includes(checkIn.user_id))}
                             />
@@ -3285,6 +3286,7 @@ const NetView: React.FC = () => {
                             <UserAvatar
                               avatarUrl={checkIn.avatar_url}
                               callsign={checkIn.callsign}
+                              name={checkIn.name}
                               size={24}
                               isOnline={!!(checkIn.user_id && onlineUserIds.includes(checkIn.user_id))}
                             />
@@ -4139,6 +4141,7 @@ const NetView: React.FC = () => {
                               <UserAvatar
                                 avatarUrl={checkIn.avatar_url}
                                 callsign={checkIn.callsign}
+                                name={checkIn.name}
                                 size={24}
                                 isOnline={!!(checkIn.user_id && onlineUserIds.includes(checkIn.user_id))}
                               />
