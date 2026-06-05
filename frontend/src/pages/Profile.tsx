@@ -33,9 +33,11 @@ import BarChartIcon from '@mui/icons-material/BarChart';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import SettingsIcon from '@mui/icons-material/Settings';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
 import { useAuth } from '../contexts/AuthContext';
 import api, { statisticsApi } from '../services/api';
 import { exportElementToPdf } from '../utils/pdfExport';
+import UserAvatar from '../components/UserAvatar';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -69,6 +71,9 @@ const Profile: React.FC = () => {
   const [statsLoading, setStatsLoading] = useState(true);
   const [tabValue, setTabValue] = useState(0);
   const [exportingPdf, setExportingPdf] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
+  const avatarInputRef = React.useRef<HTMLInputElement>(null);
 
   // Handle PDF export for activity stats
   const handleExportActivityPdf = async () => {
@@ -83,6 +88,41 @@ const Profile: React.FC = () => {
       console.error('Failed to export PDF:', err);
     } finally {
       setExportingPdf(false);
+    }
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarError(null);
+    setAvatarUploading(true);
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      await api.post('/users/me/avatar', form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      const token = localStorage.getItem('token');
+      if (token) await login(token);
+    } catch (err: any) {
+      setAvatarError(err.response?.data?.detail || 'Upload failed. Use PNG, JPEG, or WebP under 2 MB.');
+    } finally {
+      setAvatarUploading(false);
+      if (avatarInputRef.current) avatarInputRef.current.value = '';
+    }
+  };
+
+  const handleAvatarDelete = async () => {
+    setAvatarError(null);
+    setAvatarUploading(true);
+    try {
+      await api.delete('/users/me/avatar');
+      const token = localStorage.getItem('token');
+      if (token) await login(token);
+    } catch (err: any) {
+      setAvatarError('Failed to remove photo.');
+    } finally {
+      setAvatarUploading(false);
     }
   };
   
@@ -178,6 +218,50 @@ const Profile: React.FC = () => {
 
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           {success && <Alert severity="success" sx={{ mb: 2 }}>Profile updated successfully!</Alert>}
+
+          {/* Profile photo section */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3, p: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}>
+            <UserAvatar avatarUrl={(user as any)?.avatar_url} callsign={user?.callsign} size={64} />
+            <Box sx={{ flex: 1 }}>
+              <Typography variant="subtitle2" gutterBottom>Profile Photo</Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                {(user as any)?.avatar_url?.startsWith('/api/avatars/')
+                  ? 'Using uploaded photo'
+                  : 'Using Gravatar (based on your email)'}
+              </Typography>
+              {avatarError && <Alert severity="error" sx={{ mb: 1, py: 0 }}>{avatarError}</Alert>}
+              <Stack direction="row" spacing={1}>
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  style={{ display: 'none' }}
+                  onChange={handleAvatarUpload}
+                />
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={avatarUploading ? <CircularProgress size={14} /> : <PhotoCameraIcon />}
+                  onClick={() => avatarInputRef.current?.click()}
+                  disabled={avatarUploading}
+                >
+                  {(user as any)?.avatar_url?.startsWith('/api/avatars/') ? 'Replace Photo' : 'Upload Photo'}
+                </Button>
+                {(user as any)?.avatar_url?.startsWith('/api/avatars/') && (
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    color="error"
+                    startIcon={<DeleteIcon />}
+                    onClick={handleAvatarDelete}
+                    disabled={avatarUploading}
+                  >
+                    Remove
+                  </Button>
+                )}
+              </Stack>
+            </Box>
+          </Box>
 
           <Box component="form" onSubmit={handleSubmit}>
             <TextField

@@ -1,6 +1,30 @@
 {
-  "version": "2026.06.05",
+  "version": "2026.06.05b",
   "entries": [
+    {
+      "version": "2026.06.05b",
+      "date": "2026-06-05",
+      "sections": [
+        {
+          "title": "New Feature: Profile Avatars",
+          "type": "feature",
+          "items": [
+            {
+              "text": "Profile photos now appear next to call signs in check-in rows and chat messages. Avatars are pulled automatically from Gravatar based on your account email — no setup required.",
+              "userImpact": true
+            },
+            {
+              "text": "Upload a custom profile photo from your Settings page to override Gravatar. Accepts PNG, JPEG, or WebP images up to 2 MB. Remove it anytime to revert to your Gravatar.",
+              "userImpact": true
+            },
+            {
+              "text": "The online presence indicator (green dot) now appears as a badge on the avatar instead of a separate dot alongside your call sign.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.06.05",
       "date": "2026-06-05",

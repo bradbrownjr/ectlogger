@@ -28,6 +28,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import { chatApi, ChatMessage, ChatImagePayload } from '../api/chat';
 import { useAuth } from '../contexts/AuthContext';
 import { formatTimeWithDate } from '../utils/dateUtils';
+import UserAvatar from './UserAvatar';
 
 interface ChatProps {
   netId: number;
@@ -365,22 +366,29 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
                 >
                   <ListItemText
                     primary={
-                      <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
-                        <Typography 
-                          component="span" 
-                          variant="subtitle2" 
-                          color="primary"
-                          sx={{ fontWeight: 'bold' }}
-                        >
-                          {message.callsign}
-                        </Typography>
-                        <Typography 
-                          component="span" 
-                          variant="caption" 
-                          color="text.secondary"
-                        >
-                          {formatTimeWithDate(message.created_at, user?.prefer_utc || false, netStartedAt)}
-                        </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                        <UserAvatar
+                          avatarUrl={message.avatar_url}
+                          callsign={message.callsign}
+                          size={24}
+                        />
+                        <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
+                          <Typography 
+                            component="span" 
+                            variant="subtitle2" 
+                            color="primary"
+                            sx={{ fontWeight: 'bold' }}
+                          >
+                            {message.callsign}
+                          </Typography>
+                          <Typography 
+                            component="span" 
+                            variant="caption" 
+                            color="text.secondary"
+                          >
+                            {formatTimeWithDate(message.created_at, user?.prefer_utc || false, netStartedAt)}
+                          </Typography>
+                        </Box>
                       </Box>
                     }
                     secondary={

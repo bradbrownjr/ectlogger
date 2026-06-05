@@ -130,6 +130,7 @@ class UserResponse(UserBase):
     created_at: datetime
     live_location: Optional[str] = None
     live_location_updated: Optional[datetime] = None
+    avatar_url: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -137,6 +138,7 @@ class UserResponse(UserBase):
     @classmethod
     def from_orm(cls, obj):
         import json
+        from app.utils import get_avatar_url
         # Deserialize callsigns JSON field
         if hasattr(obj, 'callsigns') and obj.callsigns:
             try:
@@ -145,6 +147,11 @@ class UserResponse(UserBase):
                 obj.callsigns = []
         else:
             obj.callsigns = []
+        # Compute avatar URL (Gravatar or custom upload)
+        obj.avatar_url = get_avatar_url(
+            getattr(obj, 'email', None),
+            getattr(obj, 'avatar_url', None),
+        )
         return super().from_orm(obj)
 
 
@@ -600,6 +607,7 @@ class CheckInResponse(CheckInBase):
     checked_in_by_id: Optional[int] = None
     checked_in_at: datetime
     checked_out_at: Optional[datetime] = None
+    avatar_url: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -607,6 +615,7 @@ class CheckInResponse(CheckInBase):
     @classmethod
     def from_orm(cls, obj):
         import json
+        from app.utils import get_avatar_url
         # Deserialize available_frequencies JSON field
         if hasattr(obj, 'available_frequencies') and obj.available_frequencies:
             try:
@@ -623,6 +632,14 @@ class CheckInResponse(CheckInBase):
                 obj.custom_fields = {}
         else:
             obj.custom_fields = {}
+        # Attach avatar from associated user (guests have no user, so None)
+        if obj.user:
+            obj.avatar_url = get_avatar_url(
+                getattr(obj.user, 'email', None),
+                getattr(obj.user, 'avatar_url', None),
+            )
+        else:
+            obj.avatar_url = None
         return super().from_orm(obj)
 
 
@@ -670,17 +687,27 @@ class ChatMessageResponse(BaseModel):
     is_system: bool = False
     created_at: datetime
     reactions: dict = {}  # emoji -> list of user_ids
+    avatar_url: Optional[str] = None
 
     class Config:
         from_attributes = True
     
     @classmethod
     def from_orm(cls, obj):
+        from app.utils import get_avatar_url
         # Build reactions dict: emoji -> sorted list of user_ids
         reactions: dict = {}
         for r in (obj.reactions if hasattr(obj, 'reactions') and obj.reactions else []):
             reactions.setdefault(r.emoji, [])
             reactions[r.emoji].append(r.user_id)
+
+        # Compute avatar URL from user relationship (None for system messages)
+        avatar_url = None
+        if obj.user and not (hasattr(obj, 'is_system') and obj.is_system):
+            avatar_url = get_avatar_url(
+                getattr(obj.user, 'email', None),
+                getattr(obj.user, 'avatar_url', None),
+            )
 
         # Include callsign from user relationship
         data = {
@@ -692,6 +719,7 @@ class ChatMessageResponse(BaseModel):
             'is_system': obj.is_system if hasattr(obj, 'is_system') else False,
             'created_at': obj.created_at,
             'reactions': reactions,
+            'avatar_url': avatar_url,
         }
         return cls(**data)
 

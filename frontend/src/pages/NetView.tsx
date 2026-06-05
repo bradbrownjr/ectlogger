@@ -81,6 +81,7 @@ import NetScript from '../components/NetScript';
 import Announcements from '../components/Announcements';
 import TopicHistory from '../components/TopicHistory';
 import FloatingWindow from '../components/FloatingWindow';
+import UserAvatar from '../components/UserAvatar';
 
 interface Net {
   id: number;
@@ -143,6 +144,8 @@ interface CheckIn {
   frequency_id?: number;
   available_frequencies?: number[];
   user_id?: number;
+  hand_raised?: boolean;
+  avatar_url?: string | null;
 }
 
 interface FieldDefinition {
@@ -2374,7 +2377,7 @@ const NetView: React.FC = () => {
                       <Button 
                         size="small"
                         variant="outlined"
-                        color={userActiveCheckIn?.hand_raised ? 'warning' : 'default'}
+                        color={userActiveCheckIn?.hand_raised ? 'warning' : 'inherit'}
                         onClick={() => handleToggleHand(userActiveCheckIn.id)}
                         sx={{ minWidth: 'auto', px: 1 }}
                       >
@@ -2855,18 +2858,12 @@ const NetView: React.FC = () => {
                           />
                         ) : (
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            {checkIn.user_id && onlineUserIds.includes(checkIn.user_id) && (
-                              <Box 
-                                sx={{ 
-                                  width: 8, 
-                                  height: 8, 
-                                  borderRadius: '50%', 
-                                  backgroundColor: 'success.main',
-                                  flexShrink: 0
-                                }} 
-                                title="Online"
-                              />
-                            )}
+                            <UserAvatar
+                              avatarUrl={checkIn.avatar_url}
+                              callsign={checkIn.callsign}
+                              size={24}
+                              isOnline={!!(checkIn.user_id && onlineUserIds.includes(checkIn.user_id))}
+                            />
                             <Box sx={{ fontWeight: 500 }}>
                               {checkIn.callsign}
                             </Box>
@@ -3285,9 +3282,12 @@ const NetView: React.FC = () => {
                         </TableCell>
                         <TableCell sx={{ whiteSpace: 'nowrap' }}>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            {checkIn.user_id && onlineUserIds.includes(checkIn.user_id) && (
-                              <Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: 'success.main', flexShrink: 0 }} />
-                            )}
+                            <UserAvatar
+                              avatarUrl={checkIn.avatar_url}
+                              callsign={checkIn.callsign}
+                              size={24}
+                              isOnline={!!(checkIn.user_id && onlineUserIds.includes(checkIn.user_id))}
+                            />
                             {checkIn.callsign}
                             {checkIn.relayed_by && (
                               <Tooltip title={`Relayed by ${checkIn.relayed_by}`} arrow>
@@ -4136,9 +4136,12 @@ const NetView: React.FC = () => {
                           </TableCell>
                           <TableCell>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                              {checkIn.user_id && onlineUserIds.includes(checkIn.user_id) && (
-                                <Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: 'success.main', flexShrink: 0 }} />
-                              )}
+                              <UserAvatar
+                                avatarUrl={checkIn.avatar_url}
+                                callsign={checkIn.callsign}
+                                size={24}
+                                isOnline={!!(checkIn.user_id && onlineUserIds.includes(checkIn.user_id))}
+                              />
                               {checkIn.callsign}
                               {checkIn.relayed_by && (
                                 <Tooltip title={`Relayed by ${checkIn.relayed_by}`} arrow><span>📡</span></Tooltip>

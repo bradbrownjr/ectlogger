@@ -1,12 +1,21 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from typing import List, Optional
+from pathlib import Path
+from io import BytesIO
+from PIL import Image
 from app.database import get_db
 from app.models import User, UserRole, Contact
 from app.schemas import UserResponse, UserUpdate, AdminUserCreate, CallsignLookupResponse, UserDirectoryEntry
 from app.dependencies import get_current_user, get_current_user_optional, get_admin_user
+
+AVATAR_DIR = Path(__file__).resolve().parents[2] / "data" / "avatars"
+AVATAR_DIR.mkdir(parents=True, exist_ok=True)
+AVATAR_MAX_BYTES = 2 * 1024 * 1024  # 2 MB
+AVATAR_MAX_DIM = 256
+AVATAR_ALLOWED_MIME = {"image/png", "image/jpeg", "image/webp"}
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -41,6 +50,57 @@ async def update_my_profile(
             status_code=status.HTTP_409_CONFLICT,
             detail="That callsign is already in use by another account."
         )
+    await db.refresh(current_user)
+    return UserResponse.from_orm(current_user)
+
+
+@router.post("/me/avatar", response_model=UserResponse)
+async def upload_my_avatar(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Upload a profile avatar image. Replaces any existing upload.
+    Accepted: PNG, JPEG, WebP. Max 2 MB. Resized to 256×256 max."""
+    if file.content_type not in AVATAR_ALLOWED_MIME:
+        raise HTTPException(status_code=400, detail="Unsupported image type. Use PNG, JPEG, or WebP.")
+
+    file_bytes = await file.read()
+    if len(file_bytes) > AVATAR_MAX_BYTES:
+        raise HTTPException(status_code=400, detail="Image too large (max 2 MB).")
+
+    try:
+        pil_image = Image.open(BytesIO(file_bytes))
+        pil_image.load()
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail="Invalid or corrupt image.") from exc
+
+    # Convert palette/transparent modes before JPEG save
+    if pil_image.mode in {"RGBA", "LA", "P"}:
+        pil_image = pil_image.convert("RGB")
+
+    pil_image.thumbnail((AVATAR_MAX_DIM, AVATAR_MAX_DIM), Image.Resampling.LANCZOS)
+
+    dest = AVATAR_DIR / f"{current_user.id}.jpg"
+    pil_image.save(str(dest), format="JPEG", quality=90)
+
+    current_user.avatar_url = f"/api/avatars/{current_user.id}.jpg"
+    await db.commit()
+    await db.refresh(current_user)
+    return UserResponse.from_orm(current_user)
+
+
+@router.delete("/me/avatar", response_model=UserResponse)
+async def delete_my_avatar(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Remove custom profile avatar, reverting to Gravatar."""
+    dest = AVATAR_DIR / f"{current_user.id}.jpg"
+    if dest.exists():
+        dest.unlink()
+    current_user.avatar_url = None
+    await db.commit()
     await db.refresh(current_user)
     return UserResponse.from_orm(current_user)
 

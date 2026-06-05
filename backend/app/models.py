@@ -88,6 +88,7 @@ class User(Base):
     prefer_utc = Column(Boolean, default=False)  # Display times in UTC instead of local time
     last_active = Column(DateTime(timezone=True))  # Last API request timestamp for online tracking
     schedule_age_bypass = Column(Boolean, default=False)  # Admin-granted early access to schedule creation
+    avatar_url = Column(String(500), nullable=True)  # Custom profile image URL; overrides Gravatar when set
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

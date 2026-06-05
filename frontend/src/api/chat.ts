@@ -11,6 +11,7 @@ export interface ChatMessage {
   created_at: string;
   is_system: boolean;
   reactions?: Record<string, number[]>;  // emoji -> [user_ids]
+  avatar_url?: string | null;
 }
 
 export interface ChatImagePayload {

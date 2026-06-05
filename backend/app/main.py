@@ -104,6 +104,11 @@ chat_images_dir = Path(__file__).resolve().parents[1] / "data" / "chat_images"
 chat_images_dir.mkdir(parents=True, exist_ok=True)
 app.mount("/api/chat-images", StaticFiles(directory=str(chat_images_dir)), name="chat-images")
 
+# Serve uploaded user avatars from backend/data/avatars
+avatars_dir = Path(__file__).resolve().parents[1] / "data" / "avatars"
+avatars_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/api/avatars", StaticFiles(directory=str(avatars_dir)), name="avatars")
+
 
 # WebSocket connection manager
 class ConnectionManager:
