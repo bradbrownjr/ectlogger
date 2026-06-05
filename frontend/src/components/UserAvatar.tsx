@@ -1,7 +1,7 @@
 import React from 'react';
 import { Avatar, Box } from '@mui/material';
 
-// Visually distinct hues — enough contrast between adjacent entries.
+// Visually distinct hues — 24 colors to minimize collisions across users.
 const AVATAR_COLORS = [
   '#1565C0', // deep blue
   '#2E7D32', // deep green
@@ -15,10 +15,23 @@ const AVATAR_COLORS = [
   '#C62828', // deep red
   '#4E342E', // brown
   '#37474F', // blue-grey
+  '#0097A7', // dark cyan
+  '#7B1FA2', // deep purple (alt)
+  '#C2185B', // pink
+  '#F57F17', // amber
+  '#00897B', // teal (alt)
+  '#1976D2', // light blue
+  '#388E3C', // green
+  '#7E57C2', // light purple
+  '#D32F2F', // red
+  '#F57C00', // orange
+  '#455A64', // slate
+  '#6D4C41', // brown (alt)
 ];
 
-/** Deterministic color from callsign string — same person always same color. */
-function avatarColor(seed: string | null | undefined): string {
+/** Deterministic color from callsign + name — combines both for better distribution. */
+function avatarColor(callsign: string | null | undefined, name: string | null | undefined): string {
+  const seed = `${callsign || ''}${name || ''}`;
   if (!seed) return AVATAR_COLORS[0];
   let hash = 0;
   for (let i = 0; i < seed.length; i++) {
@@ -53,7 +66,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
   const initial = (name || callsign || '?').charAt(0).toUpperCase();
   const fontSize = Math.max(8, Math.round(size * 0.45));
   const badgeSize = Math.max(5, Math.round(size * 0.28));
-  const bgColor = avatarColor(callsign);
+  const bgColor = avatarColor(callsign, name);
 
   return (
     <Box sx={{ position: 'relative', display: 'inline-flex', flexShrink: 0 }}>
