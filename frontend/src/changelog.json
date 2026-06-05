@@ -18,6 +18,30 @@
       ]
     },
     {
+      "version": "2026.06.05d",
+      "date": "2026-06-05",
+      "sections": [
+        {
+          "title": "Improvements",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Single-frequency nets are now auto-organized — When a net has only one frequency configured, that frequency is automatically selected and assigned to all check-ins. No manual frequency selection needed.",
+              "userImpact": true
+            },
+            {
+              "text": "Better avatar colors — Avatar color palette expanded from 12 to 24 colors and improved seeding (now combines callsign + name), significantly reducing color collisions among users.",
+              "userImpact": true
+            },
+            {
+              "text": "Gravatar improvements — Gravatar fallback now shows your name initial instead of your callsign, and server-side validation eliminates 404 errors in the browser console.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
+    {
       "version": "2026.06.05b",
       "date": "2026-06-04",
       "sections": [
@@ -55,30 +79,6 @@
             },
             {
               "text": "NCS and loggers can raise or lower any participant's hand directly from the action column in the check-in list. Work through the queue by toggling hands one at a time.",
-              "userImpact": true
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "version": "2026.06.05d",
-      "date": "2026-06-05",
-      "sections": [
-        {
-          "title": "Improvements",
-          "type": "improvement",
-          "items": [
-            {
-              "text": "Single-frequency nets are now auto-organized — When a net has only one frequency configured, that frequency is automatically selected and assigned to all check-ins. No manual frequency selection needed.",
-              "userImpact": true
-            },
-            {
-              "text": "Better avatar colors — Avatar color palette expanded from 12 to 24 colors and improved seeding (now combines callsign + name), significantly reducing color collisions among users.",
-              "userImpact": true
-            },
-            {
-              "text": "Gravatar improvements — Gravatar fallback now shows your name initial instead of your callsign, and server-side validation eliminates 404 errors in the browser console.",
               "userImpact": true
             }
           ]
