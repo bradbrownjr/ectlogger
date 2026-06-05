@@ -67,7 +67,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
           bgcolor: bgColor,
         }}
       >
-        {!avatarUrl && initial}
+        {initial}
       </Avatar>
       {isOnline && (
         <Box

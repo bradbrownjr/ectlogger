@@ -4,6 +4,14 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# June 5, 2026
+
+## Bug Fixes
+
+* **Gravatar fallback shows name initial** — When a Gravatar image fails to load (404), the avatar badge now displays the first character of the user's name instead of their callsign, maintaining consistency with non-Gravatar users.
+
+---
+
 # June 2, 2026 (c)
 
 ## New Features
