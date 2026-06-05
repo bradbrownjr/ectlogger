@@ -1309,27 +1309,38 @@ This is an automated message, please do not reply.
             'feature':     {'label': 'New Features',  'color': '#2e7d32', 'emoji': '✨'},
             'improvement': {'label': 'Improvements',  'color': '#0288d1', 'emoji': '🔧'},
             'bugfix':      {'label': 'Bug Fixes',     'color': '#ed6c02', 'emoji': '🐛'},
+            'fix':         {'label': 'Bug Fixes',     'color': '#ed6c02', 'emoji': '🐛'},
         }
 
-        sections_html_parts = []
+        # Collect all sections from all entries
+        all_sections = []
         for entry in entries:
             for section in entry.get('sections', []):
-                style = type_styles.get(section.get('type', 'improvement'),
-                                        type_styles['improvement'])
-                items_html = ''.join(
-                    f'<li style="margin-bottom: 8px;">{item.get("text", "")}</li>'
-                    for item in section.get('items', [])
-                )
-                sections_html_parts.append(f'''
-                <div style="margin-bottom: 24px;">
-                    <h3 style="color: {style['color']}; margin: 0 0 8px 0; font-size: 16px;">
-                        {style['emoji']} {section.get('title', style['label'])}
-                    </h3>
-                    <ul style="margin: 0; padding-left: 24px; color: #333;">
-                        {items_html}
-                    </ul>
-                </div>
-                ''')
+                all_sections.append(section)
+
+        # Sort sections by type priority to match in-app order:
+        # feature (0), improvement (1), fix/bugfix (2)
+        type_priority = {'feature': 0, 'improvement': 1, 'bugfix': 2, 'fix': 2}
+        all_sections.sort(key=lambda s: type_priority.get(s.get('type', 'improvement'), 1))
+
+        sections_html_parts = []
+        for section in all_sections:
+            style = type_styles.get(section.get('type', 'improvement'),
+                                    type_styles['improvement'])
+            items_html = ''.join(
+                f'<li style="margin-bottom: 8px;">{item.get("text", "")}</li>'
+                for item in section.get('items', [])
+            )
+            sections_html_parts.append(f'''
+            <div style="margin-bottom: 24px;">
+                <h3 style="color: {style['color']}; margin: 0 0 8px 0; font-size: 16px;">
+                    {style['emoji']} {section.get('title', style['label'])}
+                </h3>
+                <ul style="margin: 0; padding-left: 24px; color: #333;">
+                    {items_html}
+                </ul>
+            </div>
+            ''')
         sections_html = ''.join(sections_html_parts)
 
         unsubscribe_footer = EmailService.get_unsubscribe_footer(
