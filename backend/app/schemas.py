@@ -526,6 +526,24 @@ class NetTemplateSubscriptionResponse(BaseModel):
         from_attributes = True
 
 
+class NetTemplateSubscriptionDetailResponse(NetTemplateSubscriptionResponse):
+    user_email: Optional[EmailStr] = None
+    user_name: Optional[str] = None
+    user_callsign: Optional[str] = None
+
+    @classmethod
+    def from_orm_with_user(cls, subscription):
+        return cls(
+            id=subscription.id,
+            template_id=subscription.template_id,
+            user_id=subscription.user_id,
+            subscribed_at=subscription.subscribed_at,
+            user_email=subscription.user.email if subscription.user else None,
+            user_name=subscription.user.name if subscription.user else None,
+            user_callsign=subscription.user.callsign if subscription.user else None,
+        )
+
+
 # CheckIn Schemas
 class CheckInBase(BaseModel):
     callsign: str = Field(max_length=20, min_length=3, pattern=r'^[A-Z0-9/]+$')

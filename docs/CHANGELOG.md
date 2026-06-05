@@ -12,6 +12,10 @@ All notable changes to ECTLogger are documented here.
 * **Strafford County weekly net rotation backfill** — Added one-time migration `029_add_aa1gm_back_to_template8_rotation.py` to restore AA1GM to template 8's rotation after an unintended gap. The existing cycle order is preserved and AA1GM is appended to the end.
 * **Manager auto-inclusion restored for rotation build** — Fixed a regression in the schedule editor so **Build rotation from staff** always includes the schedule manager when missing, restoring the behavior documented in the 2026-05-20 release notes.
 
+## Improvements
+
+* **Subscriber visibility for managers** — Admins, schedule managers, and co-managers can now view the schedule subscriber list directly in the Net Staff tab, including callsign, name, and email for users who subscribed via the bell or reminder prompt.
+
 ## Notes
 
 * The migration above backfills template 8 only; it does not change global manager/owner auto-inclusion behavior for all schedules.

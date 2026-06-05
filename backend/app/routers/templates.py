@@ -6,7 +6,7 @@ from typing import List
 from datetime import datetime, timedelta, timezone
 from app.database import get_db
 from app.models import NetTemplate, NetTemplateSubscription, User, net_template_frequencies, Frequency, Net, NetStatus, NCSRotationMember, NetRole, CheckIn, AppSettings, UserRole, TemplateStaff, NCSScheduleOverride, TopicHistory
-from app.schemas import NetTemplateCreate, NetTemplateUpdate, NetTemplateResponse, NetTemplateSubscriptionResponse, NetResponse, TemplateMergeRequest, TemplateMergePreview, TemplateMergeConflict, TemplateMergeResponse, public_display_name
+from app.schemas import NetTemplateCreate, NetTemplateUpdate, NetTemplateResponse, NetTemplateSubscriptionResponse, NetTemplateSubscriptionDetailResponse, NetResponse, TemplateMergeRequest, TemplateMergePreview, TemplateMergeConflict, TemplateMergeResponse, public_display_name
 from app import schemas
 from app.dependencies import get_current_user, get_current_user_optional
 import json
@@ -897,14 +897,13 @@ async def unsubscribe_from_template(
     await db.commit()
 
 
-@router.get("/{template_id}/subscriptions", response_model=List[NetTemplateSubscriptionResponse])
+@router.get("/{template_id}/subscriptions", response_model=List[NetTemplateSubscriptionDetailResponse])
 async def list_template_subscriptions(
     template_id: int,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """List subscribers to a template (owner/admin only)"""
-    # Check if template exists and user has permission
+    """List subscribers to a template (admin, owner, or active co-manager only)."""
     result = await db.execute(
         select(NetTemplate).where(NetTemplate.id == template_id)
     )
@@ -912,17 +911,22 @@ async def list_template_subscriptions(
     
     if not template:
         raise HTTPException(status_code=404, detail="Template not found")
-    
-    # Check permissions (owner, admin, or NCS rotation member)
-    if not await check_template_permission(db, template, current_user):
+
+    is_admin = current_user.role == UserRole.ADMIN
+    is_owner = template.owner_id == current_user.id
+    is_co_manager = await is_active_co_manager(db, template.id, current_user.id)
+    if not (is_admin or is_owner or is_co_manager):
         raise HTTPException(status_code=403, detail="Not authorized to view subscriptions")
-    
+
     result = await db.execute(
-        select(NetTemplateSubscription).where(NetTemplateSubscription.template_id == template_id)
+        select(NetTemplateSubscription)
+        .options(selectinload(NetTemplateSubscription.user))
+        .where(NetTemplateSubscription.template_id == template_id)
+        .order_by(NetTemplateSubscription.subscribed_at.desc())
     )
     subscriptions = result.scalars().all()
-    
-    return [NetTemplateSubscriptionResponse.model_validate(s) for s in subscriptions]
+
+    return [NetTemplateSubscriptionDetailResponse.from_orm_with_user(s) for s in subscriptions]
 
 
 @router.post("/{template_id}/create-net", response_model=NetResponse)

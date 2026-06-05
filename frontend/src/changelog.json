@@ -1,6 +1,22 @@
 {
-  "version": "2026.06.05f",
+  "version": "2026.06.05g",
   "entries": [
+    {
+      "version": "2026.06.05g",
+      "date": "2026-06-05",
+      "sections": [
+        {
+          "title": "Schedule Management",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Admins, schedule managers, and co-managers can now view the subscriber list for a schedule directly in the Net Staff tab, including callsign, name, and email for everyone who clicked the bell or accepted reminder prompts.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.06.05f",
       "date": "2026-06-05",

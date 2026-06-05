@@ -110,6 +110,7 @@ export const templateApi = {
   list: (params?: { my_templates?: boolean; include_inactive?: boolean }) => 
     api.get('/templates/', { params }),
   get: (id: number) => api.get(`/templates/${id}`),
+  listSubscriptions: (id: number) => api.get(`/templates/${id}/subscriptions`),
   update: (id: number, data: any) => api.put(`/templates/${id}`, data),
   delete: (id: number) => api.delete(`/templates/${id}`),
   subscribe: (id: number) => api.post(`/templates/${id}/subscribe`),
