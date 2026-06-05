@@ -1,6 +1,30 @@
 {
-  "version": "2026.06.05h",
+  "version": "2026.06.05i",
   "entries": [
+    {
+      "version": "2026.06.05i",
+      "date": "2026-06-05",
+      "sections": [
+        {
+          "title": "Unified Email Dialog",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Consolidated the separate email buttons in the Net Staff dialog into a single blue 'Email' button with a new 'To' dropdown, supporting delivery to Net Staff, Net Subscribers, or both.",
+              "userImpact": true
+            },
+            {
+              "text": "Enabled email communication for schedule templates, allowing managers to email their staff and subscribers directly from the schedule views.",
+              "userImpact": true
+            },
+            {
+              "text": "Changed the Close/Cancel button in the Net Staff dialog to green since modifications are saved immediately.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.06.05h",
       "date": "2026-06-05",

@@ -29,6 +29,10 @@ import {
   useMediaQuery,
   useTheme,
   Tooltip,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
@@ -375,18 +379,23 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
     }
   };
 
-  const handleOpenEmailDialog = (group: 'staff' | 'subscribers' | 'all') => {
-    setEmailRecipientGroup(group);
+  const handleOpenEmailDialog = () => {
+    setEmailRecipientGroup('staff');
     setEmailForm({ subject: '', message: '' });
     setEmailDialogOpen(true);
   };
 
   const handleSendEmail = async () => {
-    if (!net || !emailForm.subject.trim() || !emailForm.message.trim()) return;
+    const targetId = isNetContext ? net?.id : (isScheduleContext ? schedule?.id : null);
+    if (!targetId || !emailForm.subject.trim() || !emailForm.message.trim()) return;
 
     setEmailSending(true);
     try {
-      const response = await api.post(`/nets/${net.id}/email-subscribers`, {
+      const url = isNetContext
+        ? `/nets/${targetId}/email-subscribers`
+        : `/templates/${targetId}/email-subscribers`;
+
+      const response = await api.post(url, {
         recipient_group: emailRecipientGroup,
         subject: emailForm.subject,
         message: emailForm.message,
@@ -1315,34 +1324,19 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
             </Box>
 
             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-              {canCommunicate && isNetContext && (
-                <>
-                  <Button
-                    onClick={() => handleOpenEmailDialog('staff')}
-                    startIcon={<EmailIcon />}
-                    variant="outlined"
-                  >
-                    Email Staff
-                  </Button>
-                  {hasTemplateContext && (
-                    <Button
-                      onClick={() => handleOpenEmailDialog('subscribers')}
-                      startIcon={<EmailIcon />}
-                      variant="outlined"
-                    >
-                      Email Subscribers
-                    </Button>
-                  )}
-                  <Button
-                    onClick={() => handleOpenEmailDialog(hasTemplateContext ? 'all' : 'staff')}
-                    startIcon={<EmailIcon />}
-                    variant="contained"
-                  >
-                    Email ALL
-                  </Button>
-                </>
+              {canCommunicate && (
+                <Button
+                  onClick={handleOpenEmailDialog}
+                  startIcon={<EmailIcon />}
+                  variant="contained"
+                  color="primary"
+                >
+                  Email
+                </Button>
               )}
-              <Button onClick={onClose}>Close</Button>
+              <Button onClick={onClose} color="success" variant="contained">
+                Close
+              </Button>
             </Box>
           </Box>
         </DialogActions>
@@ -1355,6 +1349,19 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
         </DialogTitle>
         <DialogContent>
           <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <FormControl fullWidth required>
+              <InputLabel id="email-recipient-group-label">To</InputLabel>
+              <Select
+                labelId="email-recipient-group-label"
+                value={emailRecipientGroup}
+                label="To"
+                onChange={(e) => setEmailRecipientGroup(e.target.value as 'staff' | 'subscribers' | 'all')}
+              >
+                <MenuItem value="staff">Net Staff</MenuItem>
+                {hasTemplateContext && <MenuItem value="subscribers">Net Subscribers</MenuItem>}
+                {hasTemplateContext && <MenuItem value="all">Both Staff and Subscribers</MenuItem>}
+              </Select>
+            </FormControl>
             <TextField
               label="Subject"
               value={emailForm.subject}

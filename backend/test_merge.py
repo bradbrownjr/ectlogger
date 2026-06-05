@@ -414,20 +414,20 @@ async def run_tests():
         t_b = (await db.execute(select(NetTemplate).where(NetTemplate.id == 2))).scalar_one()
 
         # Admin can merge any
-        assert await _check_merge_permission(t_a, admin) == True
-        assert await _check_merge_permission(t_b, admin) == True
+        assert await _check_merge_permission(t_a, admin, db) == True
+        assert await _check_merge_permission(t_b, admin, db) == True
         print("✓ Admin can merge any template")
 
         # Owner A can merge their own
-        assert await _check_merge_permission(t_a, owner_a) == True
+        assert await _check_merge_permission(t_a, owner_a, db) == True
         print("✓ Owner can merge their own template")
 
         # Owner A cannot merge B's
-        assert await _check_merge_permission(t_b, owner_a) == False
+        assert await _check_merge_permission(t_b, owner_a, db) == False
         print("✓ Owner CANNOT merge another owner's template")
 
         # Owner B cannot merge A's
-        assert await _check_merge_permission(t_a, owner_b) == False
+        assert await _check_merge_permission(t_a, owner_b, db) == False
         print("✓ Other owner CANNOT merge someone else's template")
 
     print("\n" + "=" * 60)

@@ -628,7 +628,7 @@ async def merge_templates(
     target = target_result.scalar_one_or_none()
     if not target:
         raise HTTPException(status_code=404, detail="Target template not found")
-    if not await _check_merge_permission(target, current_user):
+    if not await _check_merge_permission(target, current_user, db):
         raise HTTPException(status_code=403, detail="Not authorized to merge into this template")
 
     # Load source templates
@@ -642,7 +642,7 @@ async def merge_templates(
         raise HTTPException(status_code=404, detail=f"Source template(s) not found: {missing}")
 
     for source in sources:
-        if not await _check_merge_permission(source, current_user):
+        if not await _check_merge_permission(source, current_user, db):
             raise HTTPException(status_code=403, detail=f"Not authorized to merge template '{source.name}' (id={source.id})")
 
     source_ids = [s.id for s in sources]
@@ -1153,3 +1153,147 @@ async def add_topic_history(
     await db.refresh(topic_entry)
     
     return topic_entry
+
+
+@router.post("/{template_id}/email-subscribers", status_code=200)
+async def email_template_subscribers(
+    template_id: int,
+    email_data: dict,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Send an email to selected recipient groups for a schedule template.
+
+    Allowed recipients:
+    - subscribers: subscribers of the template
+    - staff: schedule staff (+ manager) for the template
+    - all: union of subscribers + staff
+
+    Permission: admin, template owner, or active template co-manager.
+    """
+    from app.email_service import EmailService
+    from app.models import NetTemplateSubscription, TemplateStaff
+    from app.utils import display_callsign
+    from jinja2 import Template
+    
+    result = await db.execute(
+        select(NetTemplate).where(NetTemplate.id == template_id)
+    )
+    template = result.scalar_one_or_none()
+    
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+    
+    # Check permissions - admin, template owner, or active template co-manager.
+    is_admin = current_user.role == UserRole.ADMIN
+    is_owner = template.owner_id == current_user.id
+    is_co_manager = await is_active_co_manager(db, template_id, current_user.id)
+
+    if not (is_admin or is_owner or is_co_manager):
+        raise HTTPException(status_code=403, detail="Not authorized to send emails for this template")
+
+    recipient_group = (email_data.get('recipient_group') or 'subscribers').strip().lower()
+    if recipient_group not in {'subscribers', 'staff', 'all'}:
+        raise HTTPException(status_code=400, detail="recipient_group must be one of: subscribers, staff, all")
+    
+    subject = email_data.get('subject', '').strip()
+    message = email_data.get('message', '').strip()
+    
+    if not subject or not message:
+        raise HTTPException(status_code=400, detail="Subject and message are required")
+    
+    recipients_by_id: dict[int, User] = {}
+
+    # Subscribers
+    if recipient_group in {'subscribers', 'all'}:
+        result = await db.execute(
+            select(User)
+            .join(NetTemplateSubscription, NetTemplateSubscription.user_id == User.id)
+            .where(NetTemplateSubscription.template_id == template_id)
+            .where(User.email_notifications == True)
+            .where(User.is_active == True)
+        )
+        for subscriber in result.scalars().all():
+            recipients_by_id[subscriber.id] = subscriber
+
+    # Staff recipients
+    if recipient_group in {'staff', 'all'}:
+        owner_result = await db.execute(select(User).where(User.id == template.owner_id))
+        owner_user = owner_result.scalar_one_or_none()
+        if owner_user and owner_user.email and owner_user.email_notifications and owner_user.is_active:
+            recipients_by_id[owner_user.id] = owner_user
+
+        staff_result = await db.execute(
+            select(User)
+            .join(TemplateStaff, TemplateStaff.user_id == User.id)
+            .where(TemplateStaff.template_id == template_id)
+            .where(TemplateStaff.is_active == True)
+            .where(User.email_notifications == True)
+            .where(User.is_active == True)
+        )
+        for staff_user in staff_result.scalars().all():
+            recipients_by_id[staff_user.id] = staff_user
+
+    recipients = [u for u in recipients_by_id.values() if u.email]
+    if not recipients:
+        raise HTTPException(status_code=400, detail="No recipients with email notifications enabled")
+    
+    # Create HTML email template
+    html_template = Template("""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background-color: #1976d2; color: white; padding: 20px; text-align: center; }
+            .content { padding: 20px; background-color: #f5f5f5; }
+            .net-name { font-weight: bold; color: #1976d2; }
+            .message { white-space: pre-wrap; background-color: white; padding: 15px; border-radius: 4px; margin-top: 10px; }
+            .footer { padding: 20px; text-align: center; font-size: 12px; color: #666; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h2>{{ subject }}</h2>
+            </div>
+            <div class="content">
+                <p>Regarding: <span class="net-name">{{ net_name }}</span></p>
+                <div class="message">{{ message }}</div>
+            </div>
+            <div class="footer">
+                <p>You're receiving this because you subscribed to this schedule.</p>
+                <p>Sent by: {{ sender_callsign }}</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """)
+    
+    html_content = html_template.render(
+        subject=subject,
+        net_name=template.name,
+        message=message,
+        sender_callsign=display_callsign(current_user)
+    )
+    
+    # Send emails
+    sent_count = 0
+    failed_count = 0
+    
+    for recipient in recipients:
+        try:
+            await EmailService.send_email(recipient.email, f"[{template.name}] {subject}", html_content)
+            sent_count += 1
+        except Exception as e:
+            failed_count += 1
+            print(f"Failed to send email to {recipient.email}: {e}")
+    
+    return {
+        "recipient_group": recipient_group,
+        "sent": sent_count,
+        "failed": failed_count,
+        "total_recipients": len(recipients)
+    }
+
