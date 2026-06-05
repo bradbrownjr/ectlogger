@@ -6,6 +6,14 @@ All notable changes to ECTLogger are documented here.
 
 # June 5, 2026
 
+## UX Improvements
+
+* **Step away feature** — Users can now click the pause icon (⏸️) to temporarily step away without checking out. Useful when you know you're next but have an emergent need (bathroom, etc.). The button appears in both the toolbar for your own check-in and in the Actions column. Click again to return.
+
+---
+
+# June 4, 2026
+
 ## Bug Fixes
 
 * **Gravatar fallback shows name initial** — When a Gravatar image fails to load (404), the avatar badge now displays the first character of the user's name instead of their callsign, maintaining consistency with non-Gravatar users.
@@ -15,10 +23,6 @@ All notable changes to ECTLogger are documented here.
 
 * **Better avatar color distribution** — Expanded avatar color palette from 12 to 24 colors and improved seeding by combining callsign + name, significantly reducing color collisions among users.
 * **Auto-select frequency for single-frequency nets** — When a net has only one frequency configured, that frequency is automatically selected as active and assigned to check-ins. This simplifies the UI (no dropdown needed) and ensures check-ins are organized by frequency from the start, even before additional frequencies are added.
-
-## UX Improvements
-
-* **Step away feature** — Users can now click the pause icon (⏸️) to temporarily step away without checking out. Useful when you know you're next but have an emergent need (bathroom, etc.). The button appears in both the toolbar for your own check-in and in the Actions column. Click again to return.
 
 ---
 

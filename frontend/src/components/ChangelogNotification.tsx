@@ -324,14 +324,12 @@ const ChangelogNotification: React.FC = () => {
     setSubscribed(!!user?.notify_whats_new);
   }, [user?.notify_whats_new]);
 
-  // Changelog dates are stored as the UTC calendar date of deployment.
-  // Parsing "YYYY-MM-DD" as an ISO date string yields midnight UTC; then
-  // toLocaleDateString() converts to the viewer's local timezone automatically.
-  // Do NOT use new Date(year, month-1, day) — that creates midnight LOCAL time
-  // and prevents the UTC→local conversion, causing off-by-one for US users
-  // when a release lands after ~8 PM EDT (midnight UTC next day).
+  // Dates in changelog.json represent the deployer's local calendar date.
+  // Appending T12:00:00Z (noon UTC) keeps the displayed date correct for all
+  // timezones from UTC-12 to UTC+12, avoiding the midnight-UTC off-by-one
+  // that caused EDT users to see releases dated one day in the past.
   const formatChangelogDate = (isoDate: string): string => {
-    const date = new Date(isoDate); // ISO date-only string = midnight UTC per spec
+    const date = new Date(isoDate + 'T12:00:00Z'); // noon UTC = same calendar date everywhere
     return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
   };
 
