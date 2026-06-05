@@ -469,8 +469,8 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
                       </Box>
                     }
                   />
-                  {/* Hover emoji toolbar */}
-                  {hoveredMessageId === message.id && user && (
+                  {/* Hover emoji toolbar — hidden on your own messages */}
+                  {hoveredMessageId === message.id && user && message.user_id !== user.id && (
                     <Box
                       sx={{
                         position: 'absolute',

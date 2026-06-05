@@ -198,8 +198,13 @@ async def add_reaction(
     result = await db.execute(
         select(ChatMessage).where(ChatMessage.id == message_id, ChatMessage.net_id == net_id)
     )
-    if not result.scalar_one_or_none():
+    msg = result.scalar_one_or_none()
+    if not msg:
         raise HTTPException(status_code=404, detail="Message not found")
+
+    # Users cannot react to their own messages
+    if msg.user_id == current_user.id:
+        raise HTTPException(status_code=403, detail="Cannot react to your own message")
 
     # Upsert: if reaction already exists, remove it (toggle off)
     existing = await db.execute(
@@ -220,7 +225,6 @@ async def add_reaction(
 
     # Broadcast updated reactions for this message
     from app.main import manager
-    import datetime
     reactions = await _get_message_reactions(db, message_id)
     await manager.broadcast({
         "type": "chat_reaction",
