@@ -9,6 +9,11 @@ All notable changes to ECTLogger are documented here.
 ## Bug Fixes
 
 * **Gravatar fallback shows name initial** — When a Gravatar image fails to load (404), the avatar badge now displays the first character of the user's name instead of their callsign, maintaining consistency with non-Gravatar users.
+* **Server-side Gravatar validation** — The backend now validates Gravatar existence before sending URLs to the frontend, eliminating 404 errors in the client console.
+
+## Improvements
+
+* **Better avatar color distribution** — Expanded avatar color palette from 12 to 24 colors and improved seeding by combining callsign + name, significantly reducing color collisions among users.
 
 ---
 
