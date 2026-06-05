@@ -14,6 +14,7 @@ All notable changes to ECTLogger are documented here.
 ## Improvements
 
 * **Better avatar color distribution** — Expanded avatar color palette from 12 to 24 colors and improved seeding by combining callsign + name, significantly reducing color collisions among users.
+* **Auto-select frequency for single-frequency nets** — When a net has only one frequency configured, that frequency is automatically selected as active and assigned to check-ins. This simplifies the UI (no dropdown needed) and ensures check-ins are organized by frequency from the start, even before additional frequencies are added.
 
 ---
 

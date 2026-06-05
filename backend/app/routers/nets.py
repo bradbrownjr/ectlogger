@@ -101,6 +101,11 @@ async def create_net(
     await db.commit()
     await db.refresh(net, ['frequencies'])
     
+    # Auto-select single frequency as active
+    if net.frequencies and len(net.frequencies) == 1:
+        net.active_frequency_id = net.frequencies[0].id
+        await db.commit()
+    
     return NetResponse.from_orm(net)
 
 
@@ -462,6 +467,10 @@ async def start_net(
     else:
         net.status = NetStatus.ACTIVE
         net.started_at = datetime.utcnow()
+    
+    # Auto-select single frequency as active if not already set
+    if not net.active_frequency_id and net.frequencies and len(net.frequencies) == 1:
+        net.active_frequency_id = net.frequencies[0].id
     
     await db.commit()
     await db.refresh(net, ['frequencies'])

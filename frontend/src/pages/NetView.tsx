@@ -3925,6 +3925,20 @@ const NetView: React.FC = () => {
                     </Button>
                   )}
                   
+                  {/* Single frequency display */}
+                  {net?.frequencies && net.frequencies.length === 1 && (
+                    <Box sx={{
+                      p: 1.5,
+                      bgcolor: 'action.hover',
+                      borderRadius: 1,
+                      textAlign: 'center',
+                      fontSize: '0.9rem',
+                      color: 'text.secondary'
+                    }}>
+                      📡 Frequency: {net.frequencies[0].frequency || net.frequencies[0].network || 'Unknown'}
+                    </Box>
+                  )}
+                  
                   {/* Status selector */}
                   <FormControl size="small" fullWidth>
                     <InputLabel>Status</InputLabel>
@@ -4701,6 +4715,19 @@ const NetView: React.FC = () => {
                   })
                 }
               />
+            )}
+            
+            {net?.frequencies && net.frequencies.length === 1 && (
+              <Box sx={{
+                p: 1.5,
+                bgcolor: 'action.hover',
+                borderRadius: 1,
+                textAlign: 'center',
+                fontSize: '0.9rem',
+                color: 'text.secondary'
+              }}>
+                📡 Frequency: {net.frequencies[0].frequency || net.frequencies[0].network || 'Unknown'}
+              </Box>
             )}
           </Box>
         </DialogContent>

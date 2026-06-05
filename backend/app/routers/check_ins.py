@@ -57,6 +57,11 @@ async def create_check_in(
             check_in_data.frequency_id = net.active_frequency_id
             if not check_in_data.available_frequency_ids:
                 check_in_data.available_frequency_ids = [net.active_frequency_id]
+        elif net.frequencies and len(net.frequencies) == 1:
+            # Auto-assign single frequency if no other frequency is active
+            check_in_data.frequency_id = net.frequencies[0].id
+            if not check_in_data.available_frequency_ids:
+                check_in_data.available_frequency_ids = [net.frequencies[0].id]
     
     # Validate available_frequency_ids against net's prescribed frequencies
     available_freq_ids = check_in_data.available_frequency_ids or []
