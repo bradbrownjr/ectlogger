@@ -1,6 +1,34 @@
 {
-  "version": "2026.06.05b",
+  "version": "2026.06.05c",
   "entries": [
+    {
+      "version": "2026.06.05c",
+      "date": "2026-06-05",
+      "sections": [
+        {
+          "title": "UX Improvements",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Step Away button — Click the pause icon (⏸️) in your toolbar or in the Actions column to temporarily step away without checking out. Useful when you know you're next but have an emergent need. Click again to return. The button only appears when the net is active or in lobby.",
+              "userImpact": true
+            },
+            {
+              "text": "Single-frequency nets are now auto-organized — When a net has only one frequency configured, that frequency is automatically selected and assigned to all check-ins. No manual frequency selection needed.",
+              "userImpact": true
+            },
+            {
+              "text": "Better avatar colors — Avatar color palette expanded from 12 to 24 colors and improved seeding (now combines callsign + name), significantly reducing color collisions among users.",
+              "userImpact": true
+            },
+            {
+              "text": "Gravatar improvements — Gravatar fallback now shows your name initial instead of your callsign, and server-side validation eliminates 404 errors in the browser console.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.06.05b",
       "date": "2026-06-05",
