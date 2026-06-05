@@ -2369,6 +2369,18 @@ const NetView: React.FC = () => {
                 )}
                 {isAuthenticated && (net.status === 'active' || net.status === 'lobby') && (
                   userActiveCheckIn ? (
+                    <>
+                    <Tooltip title={userActiveCheckIn?.hand_raised ? 'Lower hand' : 'Raise hand'}>
+                      <Button 
+                        size="small"
+                        variant="outlined"
+                        color={userActiveCheckIn?.hand_raised ? 'warning' : 'default'}
+                        onClick={() => handleToggleHand(userActiveCheckIn.id)}
+                        sx={{ minWidth: 'auto', px: 1 }}
+                      >
+                        <PanToolIcon fontSize="small" />
+                      </Button>
+                    </Tooltip>
                     <Tooltip title="Check out of net">
                       <Button 
                         size="small"
@@ -2380,6 +2392,7 @@ const NetView: React.FC = () => {
                         <LogoutIcon fontSize="small" />
                       </Button>
                     </Tooltip>
+                    </>
                   ) : (
                     <Tooltip title="Check into net">
                       <Button 
