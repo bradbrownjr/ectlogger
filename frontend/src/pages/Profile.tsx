@@ -227,7 +227,7 @@ const Profile: React.FC = () => {
               <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                 {(user as any)?.avatar_url?.startsWith('/api/avatars/')
                   ? 'Using uploaded photo'
-                  : 'Using Gravatar (based on your email)'}
+                  : 'Using Gravatar if available, otherwise your initials'}
               </Typography>
               {avatarError && <Alert severity="error" sx={{ mb: 1, py: 0 }}>{avatarError}</Alert>}
               <Stack direction="row" spacing={1}>

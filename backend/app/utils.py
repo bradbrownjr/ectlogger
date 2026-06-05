@@ -15,9 +15,9 @@ def get_avatar_url(email: Optional[str], custom_url: Optional[str] = None) -> st
     if custom_url:
         return custom_url
     if not email:
-        return "https://www.gravatar.com/avatar/00000000000000000000000000000000?s=128&d=mp&r=g"
+        return None
     h = hashlib.md5(email.strip().lower().encode()).hexdigest()
-    return f"https://www.gravatar.com/avatar/{h}?s=128&d=mp&r=g"
+    return f"https://www.gravatar.com/avatar/{h}?s=128&d=404&r=g"
 
 
 def display_callsign(user) -> str:
