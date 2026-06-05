@@ -48,6 +48,7 @@ import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import FastForwardIcon from '@mui/icons-material/FastForward';
 import SearchIcon from '@mui/icons-material/Search';
+import PanToolIcon from '@mui/icons-material/PanTool';
 import DescriptionIcon from '@mui/icons-material/Description';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import ArticleIcon from '@mui/icons-material/Article';
@@ -608,6 +609,13 @@ const NetView: React.FC = () => {
       } else if (message.type === 'check_in_deleted') {
         // Remove deleted check-in from local state
         setCheckIns(prev => prev.filter(ci => ci.id !== message.data?.id));
+      } else if (message.type === 'hand_raised_changed') {
+        // Update the hand_raised state for the affected check-in
+        setCheckIns(prev => prev.map(ci => 
+          ci.id === message.data?.id 
+            ? { ...ci, hand_raised: message.data.hand_raised }
+            : ci
+        ));
       } else if (message.type === 'net_started') {
         // Net has been started - refresh everything first, then highlight check-in
         // Use a small delay to ensure the net status update renders before highlighting
@@ -1682,6 +1690,21 @@ const NetView: React.FC = () => {
         data: { checkInId: newActiveSpeakerId },
         timestamp: new Date().toISOString()
       }));
+    }
+  };
+
+  const handleToggleHand = async (checkInId: number) => {
+    try {
+      const response = await checkInApi.toggleHand(checkInId);
+      // Update local state with the response
+      setCheckIns(prev => prev.map(ci => 
+        ci.id === checkInId 
+          ? { ...ci, hand_raised: response.data.hand_raised }
+          : ci
+      ));
+    } catch (error) {
+      console.error('Failed to toggle hand:', error);
+      setToastMessage('Failed to toggle hand');
     }
   };
 
@@ -3032,9 +3055,21 @@ const NetView: React.FC = () => {
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>
                         {formatTimeWithDate(checkIn.checked_in_at, user?.prefer_utc || false, net?.started_at)}
                       </TableCell>
-                      {/* Actions column - remove edit pencil, keep active speaker and delete */}
-                      {canManage && (
+                      {/* Actions column - hand raise, active speaker and delete */}
+                      {(canManage || checkIn.user_id === user?.id) && (
                       <TableCell sx={{ width: 70 }} onClick={(e) => e.stopPropagation()}>
+                        {/* Hand Raise button - show for all check-ins if user can manage, or for own check-in */}
+                        <IconButton
+                          size="small"
+                          onClick={() => handleToggleHand(checkIn.id)}
+                          color={checkIn.hand_raised ? 'warning' : 'default'}
+                          title={checkIn.hand_raised ? 'Lower hand' : 'Raise hand'}
+                          sx={{ opacity: checkIn.hand_raised ? 1 : 0.4 }}
+                        >
+                          <PanToolIcon fontSize="small" />
+                        </IconButton>
+                        {canManage && (
+                        <>
                         {(net.status === 'active' || net.status === 'lobby') && checkIn.status !== 'checked_out' && (
                           <IconButton
                             size="small"
@@ -3052,6 +3087,8 @@ const NetView: React.FC = () => {
                         >
                           <DeleteIcon fontSize="small" />
                         </IconButton>
+                        </>
+                        )}
                       </TableCell>
                       )}
                       <TableCell />
@@ -4109,12 +4146,19 @@ const NetView: React.FC = () => {
                           {net?.poll_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.poll_response || ''}</TableCell>}
                           {hasAnyRelayedBy && <TableCell>{checkIn.relayed_by || ''}</TableCell>}
                           <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatTimeWithDate(checkIn.checked_in_at, user?.prefer_utc || false, net?.started_at)}</TableCell>
-                          {canManage && (
+                          {(canManage || checkIn.user_id === user?.id) && (
                             <TableCell>
+                              <IconButton size="small" onClick={() => handleToggleHand(checkIn.id)} color={checkIn.hand_raised ? 'warning' : 'default'} title={checkIn.hand_raised ? 'Lower hand' : 'Raise hand'} sx={{ opacity: checkIn.hand_raised ? 1 : 0.4 }}>
+                                <PanToolIcon fontSize="small" />
+                              </IconButton>
+                              {canManage && (
+                              <>
                               {(net.status === 'active' || net.status === 'lobby') && checkIn.status !== 'checked_out' && (
                                 <IconButton size="small" onClick={() => handleSetActiveSpeaker(checkIn.id)} color={checkIn.id === activeSpeakerId ? 'primary' : 'default'} title="Mark as active speaker">🗣️</IconButton>
                               )}
                               <IconButton size="small" onClick={() => handleDeleteCheckIn(checkIn.id)} title="Delete"><DeleteIcon fontSize="small" /></IconButton>
+                              </>
+                              )}
                             </TableCell>
                           )}
                         </TableRow>

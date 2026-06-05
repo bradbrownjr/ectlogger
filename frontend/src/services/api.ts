@@ -100,6 +100,8 @@ export const checkInApi = {
     api.put(`/check-ins/check-ins/${id}`, data),
   delete: (id: number) => 
     api.delete(`/check-ins/check-ins/${id}`),
+  toggleHand: (id: number) =>
+    api.post(`/check-ins/check-ins/${id}/toggle-hand`),
 };
 
 // Template API
