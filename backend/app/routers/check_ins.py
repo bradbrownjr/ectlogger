@@ -236,7 +236,11 @@ async def create_check_in(
             # Contact auto-creation is best-effort — don't fail the check-in
             await db.rollback()
     
-    return CheckInResponse.from_orm(check_in)
+    # Re-fetch with user relationship loaded (needed for avatar_url in response)
+    result = await db.execute(
+        select(CheckIn).options(selectinload(CheckIn.user)).where(CheckIn.id == check_in.id)
+    )
+    return CheckInResponse.from_orm(result.scalar_one())
 
 
 @router.get("/nets/{net_id}/check-ins", response_model=List[CheckInResponse])
@@ -247,6 +251,7 @@ async def list_check_ins(
     """List all check-ins for a net"""
     result = await db.execute(
         select(CheckIn)
+        .options(selectinload(CheckIn.user))
         .where(CheckIn.net_id == net_id)
         .order_by(CheckIn.checked_in_at)
     )
@@ -262,7 +267,7 @@ async def get_check_in(
 ):
     """Get a specific check-in"""
     result = await db.execute(
-        select(CheckIn).where(CheckIn.id == check_in_id)
+        select(CheckIn).options(selectinload(CheckIn.user)).where(CheckIn.id == check_in_id)
     )
     check_in = result.scalar_one_or_none()
     
@@ -281,7 +286,7 @@ async def update_check_in(
 ):
     """Update a check-in"""
     result = await db.execute(
-        select(CheckIn).where(CheckIn.id == check_in_id)
+        select(CheckIn).options(selectinload(CheckIn.user)).where(CheckIn.id == check_in_id)
     )
     check_in = result.scalar_one_or_none()
     
@@ -329,7 +334,11 @@ async def update_check_in(
             sibling.checked_out_at = checkout_time
     
     await db.commit()
-    await db.refresh(check_in)
+    # Re-fetch with user relationship loaded (needed for avatar_url in response)
+    result = await db.execute(
+        select(CheckIn).options(selectinload(CheckIn.user)).where(CheckIn.id == check_in.id)
+    )
+    check_in = result.scalar_one()
     
     # Post system message for status changes
     from app.main import post_system_message
@@ -460,7 +469,11 @@ async def toggle_hand_raised(
     # Toggle the hand_raised state
     check_in.hand_raised = not check_in.hand_raised
     await db.commit()
-    await db.refresh(check_in)
+    # Re-fetch with user relationship loaded (needed for avatar_url in response)
+    result = await db.execute(
+        select(CheckIn).options(selectinload(CheckIn.user)).where(CheckIn.id == check_in.id)
+    )
+    check_in = result.scalar_one()
     
     # Broadcast hand state change via WebSocket
     from app.main import manager
