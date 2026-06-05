@@ -19,7 +19,7 @@
     },
     {
       "version": "2026.06.05b",
-      "date": "2026-06-05",
+      "date": "2026-06-04",
       "sections": [
         {
           "title": "New Feature: Profile Avatars",
@@ -43,7 +43,7 @@
     },
     {
       "version": "2026.06.05",
-      "date": "2026-06-05",
+      "date": "2026-06-04",
       "sections": [
         {
           "title": "New Feature: Raise Hand",
@@ -62,8 +62,8 @@
       ]
     },
     {
-      "version": "2026.06.04",
-      "date": "2026-06-04",
+      "version": "2026.06.05d",
+      "date": "2026-06-05",
       "sections": [
         {
           "title": "Improvements",
