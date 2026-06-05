@@ -10,6 +10,7 @@ All notable changes to ECTLogger are documented here.
 
 * **NCS and subscriber reminder delivery restored** — Fixed a reminder-log field mismatch (`net_date` vs `scheduled_date`) in the reminder service that prevented reminder sends from being logged and correctly deduplicated. This restores reliable 24-hour and 1-hour reminder processing.
 * **Strafford County weekly net rotation backfill** — Added one-time migration `029_add_aa1gm_back_to_template8_rotation.py` to restore AA1GM to template 8's rotation after an unintended gap. The existing cycle order is preserved and AA1GM is appended to the end.
+* **Manager auto-inclusion restored for rotation build** — Fixed a regression in the schedule editor so **Build rotation from staff** always includes the schedule manager when missing, restoring the behavior documented in the 2026-05-20 release notes.
 
 ## Notes
 

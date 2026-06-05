@@ -1,6 +1,23 @@
 {
-  "version": "2026.06.05e",
+  "version": "2026.06.05f",
   "entries": [
+    {
+      "version": "2026.06.05f",
+      "date": "2026-06-05",
+      "sections": [
+        {
+          "title": "Bug Fixes",
+          "type": "fix",
+          "items": [
+            {
+              "text": "Manager auto-inclusion restored for rotation build — 'Build rotation from staff' now always includes the schedule manager if missing, matching documented 2026.05.20 behavior.",
+              "importance": "high",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.06.05e",
       "date": "2026-06-05",

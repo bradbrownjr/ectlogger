@@ -755,16 +755,28 @@ const CreateSchedule: React.FC = () => {
   // members not already in the rotation, preserving existing rotation order.
   const handleBuildRotationFromStaff = async () => {
     if (!scheduleId) return;
-    const toAdd = staff.filter(
-      s => s.is_active && !rotationMembers.some(m => m.user_id === s.user_id)
+    const userIdsToAdd = new Set<number>(
+      staff
+        .filter(s => s.is_active)
+        .map(s => s.user_id)
     );
-    if (toAdd.length === 0) {
-      alert('All active staff are already in the rotation.');
+
+    // Per 2026.05.20 behavior: manager is always eligible and included.
+    if (ownerId) {
+      userIdsToAdd.add(ownerId);
+    }
+
+    const toAddIds = Array.from(userIdsToAdd).filter(
+      userId => !rotationMembers.some(m => m.user_id === userId)
+    );
+
+    if (toAddIds.length === 0) {
+      alert('All active staff and the manager are already in the rotation.');
       return;
     }
     try {
-      for (const s of toAdd) {
-        await ncsRotationApi.addMember(Number(scheduleId), { user_id: s.user_id });
+      for (const userId of toAddIds) {
+        await ncsRotationApi.addMember(Number(scheduleId), { user_id: userId });
       }
       await fetchRotationMembers();
     } catch (error: any) {
@@ -843,6 +855,12 @@ const CreateSchedule: React.FC = () => {
   ]);
   const availableUsersForRotation = users.filter(
     u => eligibleForRotationIds.has(u.id) && !rotationMembers.some(m => m.user_id === u.id)
+  );
+  const hasActiveStaffMissingFromRotation = staff.some(
+    s => s.is_active && !rotationMembers.some(m => m.user_id === s.user_id)
+  );
+  const managerMissingFromRotation = !!ownerId && !rotationMembers.some(
+    m => m.user_id === ownerId
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -1506,7 +1524,7 @@ const CreateSchedule: React.FC = () => {
                   <Typography variant="subtitle2">
                     NCS Rotation <Typography component="span" variant="caption" color="text.secondary">(optional)</Typography>
                   </Typography>
-                  {staff.some(s => s.is_active && !rotationMembers.some(m => m.user_id === s.user_id)) && (
+                  {(hasActiveStaffMissingFromRotation || managerMissingFromRotation) && (
                     <Button
                       type="button"
                       size="small"
