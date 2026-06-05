@@ -1,6 +1,28 @@
 {
-  "version": "2026.06.05c",
+  "version": "2026.06.05e",
   "entries": [
+    {
+      "version": "2026.06.05e",
+      "date": "2026-06-05",
+      "sections": [
+        {
+          "title": "Bug Fixes",
+          "type": "fix",
+          "items": [
+            {
+              "text": "NCS and subscriber reminder delivery restored — Fixed a reminder-log field mismatch that prevented 24-hour and 1-hour reminder emails from being recorded and reliably deduplicated.",
+              "importance": "critical",
+              "userImpact": true
+            },
+            {
+              "text": "Strafford County weekly net rotation backfill — Added a one-time migration to restore AA1GM to template #8 rotation after an unintended gap; existing operator order is preserved and AA1GM is appended.",
+              "importance": "high",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.06.05c",
       "date": "2026-06-05",

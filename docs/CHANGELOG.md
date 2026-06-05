@@ -6,6 +6,15 @@ All notable changes to ECTLogger are documented here.
 
 # June 5, 2026
 
+## Bug Fixes
+
+* **NCS and subscriber reminder delivery restored** — Fixed a reminder-log field mismatch (`net_date` vs `scheduled_date`) in the reminder service that prevented reminder sends from being logged and correctly deduplicated. This restores reliable 24-hour and 1-hour reminder processing.
+* **Strafford County weekly net rotation backfill** — Added one-time migration `029_add_aa1gm_back_to_template8_rotation.py` to restore AA1GM to template 8's rotation after an unintended gap. The existing cycle order is preserved and AA1GM is appended to the end.
+
+## Notes
+
+* The migration above backfills template 8 only; it does not change global manager/owner auto-inclusion behavior for all schedules.
+
 ## UX Improvements
 
 * **Step away feature** — Users can now click the pause icon (⏸️) to temporarily step away without checking out. Useful when you know you're next but have an emergent need (bathroom, etc.). The button appears in both the toolbar for your own check-in and in the Actions column. Click again to return.

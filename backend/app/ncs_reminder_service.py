@@ -201,7 +201,7 @@ class NCSReminderService:
         db, 
         template_id: int, 
         user_id: int, 
-        net_date, 
+        scheduled_date, 
         reminder_type: str
     ) -> bool:
         """Check if a reminder has already been sent"""
@@ -211,7 +211,7 @@ class NCSReminderService:
                 and_(
                     NCSReminderLog.template_id == template_id,
                     NCSReminderLog.user_id == user_id,
-                    NCSReminderLog.net_date == net_date,
+                    NCSReminderLog.scheduled_date == scheduled_date,
                     NCSReminderLog.reminder_type == reminder_type
                 )
             )
@@ -298,7 +298,7 @@ class NCSReminderService:
             reminder_log = NCSReminderLog(
                 template_id=template.id,
                 user_id=user.id,
-                net_date=scheduled_dt.date(),
+                scheduled_date=scheduled_dt.date(),
                 reminder_type=f"{hours_until}h",
                 sent_at=datetime.utcnow()
             )
@@ -454,7 +454,7 @@ class NCSReminderService:
         reminder_log = NCSReminderLog(
             template_id=template.id,
             user_id=user.id,
-            net_date=scheduled_dt.date(),
+            scheduled_date=scheduled_dt.date(),
             reminder_type="subscriber_1h",
             sent_at=datetime.utcnow()
         )
