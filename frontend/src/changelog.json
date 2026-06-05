@@ -1,6 +1,26 @@
 {
-  "version": "2026.06.03",
+  "version": "2026.06.05",
   "entries": [
+    {
+      "version": "2026.06.05",
+      "date": "2026-06-05",
+      "sections": [
+        {
+          "title": "New Feature: Raise Hand",
+          "type": "feature",
+          "items": [
+            {
+              "text": "Participants can now raise their hand during a net to signal they have comments or questions. Click the hand icon in your toolbar (next to check-out) to raise your hand — it lights up in orange so NCS can see it at a glance.",
+              "userImpact": true
+            },
+            {
+              "text": "NCS and loggers can raise or lower any participant's hand directly from the action column in the check-in list. Work through the queue by toggling hands one at a time.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.06.03",
       "date": "2026-06-03",
