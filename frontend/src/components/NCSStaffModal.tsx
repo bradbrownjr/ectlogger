@@ -206,7 +206,8 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
   const isOwner = isScheduleContext
     ? user?.id === schedule?.owner_id
     : user?.id === net?.owner_id;
-  const isAdmin = user?.role === 'admin';
+  const normalizedRole = (user?.role || '').toLowerCase();
+  const isAdmin = normalizedRole === 'admin';
   // Can't manage staff for closed nets
   const isNetClosed = isNetContext && net?.status === 'closed';
   // Co-managers (staff with is_co_manager flag) also get edit access
@@ -269,6 +270,24 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, scheduleId, netId]);
+
+  const visibleTabs: Array<{ key: 'ncs' | 'rotation' | 'schedule' | 'subscribers'; label: string }> = canCommunicate
+    ? [
+        { key: 'ncs', label: 'Net Control Stations' },
+        { key: 'rotation', label: 'Rotation Order' },
+        { key: 'schedule', label: 'Schedule' },
+        { key: 'subscribers', label: 'Subscribers' },
+      ]
+    : [
+        { key: 'ncs', label: 'Net Control Stations' },
+        { key: 'schedule', label: 'Schedule' },
+      ];
+
+  useEffect(() => {
+    if (activeTab >= visibleTabs.length) {
+      setActiveTab(0);
+    }
+  }, [activeTab, visibleTabs.length]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -1247,16 +1266,15 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                 scrollButtons="auto"
                 sx={{ mb: 2 }}
               >
-                <Tab label="Net Control Stations" />
-                <Tab label="Rotation Order" />
-                <Tab label="Schedule" />
-                <Tab label="Subscribers" />
+                {visibleTabs.map((tab) => (
+                  <Tab key={tab.key} label={tab.label} />
+                ))}
               </Tabs>
 
-              {activeTab === 0 && renderStaffList()}
-              {activeTab === 1 && renderRotationTab()}
-              {activeTab === 2 && renderScheduleTab()}
-              {activeTab === 3 && renderSubscribersTab()}
+              {visibleTabs[activeTab]?.key === 'ncs' && renderStaffList()}
+              {visibleTabs[activeTab]?.key === 'rotation' && renderRotationTab()}
+              {visibleTabs[activeTab]?.key === 'schedule' && renderScheduleTab()}
+              {visibleTabs[activeTab]?.key === 'subscribers' && renderSubscribersTab()}
             </Box>
           )}
         </DialogContent>
