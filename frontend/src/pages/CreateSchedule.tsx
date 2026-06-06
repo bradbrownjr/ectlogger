@@ -1744,7 +1744,6 @@ const CreateSchedule: React.FC = () => {
                                 <Chip label="Subscribed" size="small" color="primary" variant="outlined" />
                               </Box>
                             }
-                            secondary={subscriber.user_email || undefined}
                           />
                         </ListItem>
                       ))}

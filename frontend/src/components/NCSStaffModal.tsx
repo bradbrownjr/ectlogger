@@ -1110,7 +1110,6 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                       {subscriber.user_name && <Typography color="text.secondary">({subscriber.user_name})</Typography>}
                     </Box>
                   }
-                  secondary={subscriber.user_email || undefined}
                 />
               </ListItem>
             ))}
