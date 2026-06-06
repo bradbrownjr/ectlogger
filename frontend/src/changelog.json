@@ -1,6 +1,26 @@
 {
-  "version": "2026.06.05i",
+  "version": "2026.06.06",
   "entries": [
+    {
+      "version": "2026.06.06",
+      "date": "2026-06-06",
+      "sections": [
+        {
+          "title": "Drag-and-Drop Rotation Reordering",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "The dotted drag handles in the Rotation Order list are now fully interactive — grab any row and drag it to a new position to reorder the NCS rotation. Works in both the Net Staff dialog and the standalone Rotation modal.",
+              "userImpact": true
+            },
+            {
+              "text": "The up/down arrow buttons now reorder rows instantly without clearing or resizing the dialog. Changes are saved to the server in the background, and a red error toast appears at the bottom of the screen if the sync fails.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.06.05i",
       "date": "2026-06-05",

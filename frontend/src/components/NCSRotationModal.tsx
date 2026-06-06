@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -30,6 +30,7 @@ import {
   ListItemSecondaryAction,
   useMediaQuery,
   useTheme,
+  Snackbar,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
@@ -99,6 +100,9 @@ const NCSRotationModal: React.FC<NCSRotationModalProps> = ({
   const [swapUser, setSwapUser] = useState<User | null>(null);
   const [swapReason, setSwapReason] = useState('');
   const [isCancellation, setIsCancellation] = useState(false);
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
+  const dragItemIdx = useRef<number | null>(null);
+  const [reorderError, setReorderError] = useState<string | null>(null);
   
   const { user } = useAuth();
   const theme = useTheme();
@@ -204,24 +208,46 @@ const NCSRotationModal: React.FC<NCSRotationModalProps> = ({
 
   const handleMoveMember = async (memberId: number, direction: 'up' | 'down') => {
     if (!schedule) return;
-    
+
     const currentIndex = members.findIndex((m: RotationMember) => m.id === memberId);
     if (currentIndex === -1) return;
-    
+
     const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
     if (newIndex < 0 || newIndex >= members.length) return;
-    
-    // Create new order
+
+    // Optimistic update — swap immediately so the UI doesn't flash
     const newMembers = [...members];
     [newMembers[currentIndex], newMembers[newIndex]] = [newMembers[newIndex], newMembers[currentIndex]];
     const memberIds = newMembers.map(m => m.id);
-    
+    setMembers(newMembers);
+
     try {
       await ncsRotationApi.reorderMembers(schedule.id, memberIds);
-      await fetchData();
       onUpdate?.();
     } catch (err: any) {
-      setError(getErrorMessage(err, 'Failed to reorder members'));
+      setReorderError(getErrorMessage(err, 'Failed to sync rotation order — please try again.'));
+      await fetchData(); // revert on error
+      onUpdate?.();
+    }
+  };
+
+  const handleDragReorder = async (fromIdx: number, toIdx: number) => {
+    if (!schedule || fromIdx === toIdx) return;
+
+    // Optimistic update — reorder immediately so the UI doesn't flash
+    const newMembers = [...members];
+    const [moved] = newMembers.splice(fromIdx, 1);
+    newMembers.splice(toIdx, 0, moved);
+    const memberIds = newMembers.map(m => m.id);
+    setMembers(newMembers);
+
+    try {
+      await ncsRotationApi.reorderMembers(schedule.id, memberIds);
+      onUpdate?.();
+    } catch (err: any) {
+      setReorderError(getErrorMessage(err, 'Failed to sync rotation order — please try again.'));
+      await fetchData(); // revert on error
+      onUpdate?.();
     }
   };
 
@@ -471,17 +497,32 @@ const NCSRotationModal: React.FC<NCSRotationModalProps> = ({
                   ) : (
                     <List>
                       {members.map((member: RotationMember, idx: number) => (
-                        <ListItem
+                    <ListItem
                           key={member.id}
+                          draggable
+                          onDragStart={() => { dragItemIdx.current = idx; }}
+                          onDragOver={(e) => { e.preventDefault(); setDragOverIdx(idx); }}
+                          onDragEnd={() => {
+                            if (dragItemIdx.current !== null && dragOverIdx !== null) {
+                              handleDragReorder(dragItemIdx.current, dragOverIdx);
+                            }
+                            dragItemIdx.current = null;
+                            setDragOverIdx(null);
+                          }}
+                          onDrop={(e) => e.preventDefault()}
                           sx={{ 
                             bgcolor: member.is_active ? 'background.paper' : 'action.disabledBackground',
-                            border: 1,
-                            borderColor: 'divider',
+                            border: 2,
+                            borderColor: dragOverIdx === idx ? 'primary.main' : 'divider',
                             borderRadius: 1,
                             mb: 0.5,
+                            cursor: 'grab',
+                            transition: 'border-color 0.15s, box-shadow 0.15s',
+                            boxShadow: dragOverIdx === idx ? '0 0 0 2px rgba(25,118,210,0.25)' : 'none',
+                            '&:active': { cursor: 'grabbing' },
                           }}
                         >
-                          <DragIndicatorIcon sx={{ mr: 1, color: 'action.disabled' }} />
+                          <DragIndicatorIcon sx={{ mr: 1, color: 'action.active', cursor: 'grab' }} />
                           <ListItemText
                             primary={
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -607,6 +648,18 @@ const NCSRotationModal: React.FC<NCSRotationModalProps> = ({
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Reorder sync error toast */}
+      <Snackbar
+        open={!!reorderError}
+        autoHideDuration={5000}
+        onClose={() => setReorderError(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert severity="error" onClose={() => setReorderError(null)} sx={{ width: '100%' }}>
+          {reorderError}
+        </Alert>
+      </Snackbar>
     </>
   );
 };
