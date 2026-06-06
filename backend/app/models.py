@@ -94,7 +94,7 @@ class User(Base):
 
     # Relationships
     owned_nets = relationship("Net", back_populates="owner", foreign_keys="Net.owner_id")
-    owned_templates = relationship("NetTemplate", back_populates="owner")
+    owned_templates = relationship("NetTemplate", back_populates="owner", foreign_keys="NetTemplate.owner_id")
     template_subscriptions = relationship("NetTemplateSubscription", back_populates="user")
     check_ins = relationship("CheckIn", back_populates="user", foreign_keys="CheckIn.user_id")
     chat_messages = relationship("ChatMessage", back_populates="user")
@@ -170,7 +170,7 @@ class NetTemplate(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     # Relationships
-    owner = relationship("User", back_populates="owned_templates")
+    owner = relationship("User", back_populates="owned_templates", foreign_keys=[owner_id])
     fifth_week_user = relationship("User", foreign_keys=[fifth_week_user_id])
     frequencies = relationship("Frequency", secondary=net_template_frequencies)
     subscriptions = relationship("NetTemplateSubscription", back_populates="template", cascade="all, delete-orphan")
