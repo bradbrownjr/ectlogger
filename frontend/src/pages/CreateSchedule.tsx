@@ -1291,7 +1291,7 @@ const CreateSchedule: React.FC = () => {
                       <TextField
                         {...params}
                         margin="normal"
-                        label="Fifth Week Operator"
+                        label="Optional Fifth Week Operator"
                         helperText="Optional. Runs the net on months with a fifth week. The main rotation pauses and resumes the following week."
                       />
                     )}
