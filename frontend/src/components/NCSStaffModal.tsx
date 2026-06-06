@@ -853,51 +853,6 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
           Optional: cycle NCS duty automatically across upcoming scheduled nets. If empty, nets default to the Manager.
         </Typography>
 
-        {templateSummary?.schedule_type === 'weekly' && (
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
-              Fifth Week Operator
-            </Typography>
-            <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1.5 }}>
-              On months with a fifth Sunday (or whichever weekday this net falls on), this operator runs the net. The main rotation pauses and resumes the following week.
-            </Typography>
-
-            {canEdit && isScheduleContext ? (
-              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                <Autocomplete
-                  options={users}
-                  getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
-                  value={users.find((u: User) => u.id === templateSummary.fifth_week_user_id) || null}
-                  onChange={(_: any, value: User | null) => { void handleUpdateFifthWeekUser(value); }}
-                  renderInput={(params: any) => (
-                    <TextField
-                      {...params}
-                      size="small"
-                      label="Fifth Week Operator"
-                    />
-                  )}
-                  sx={{ flex: 1 }}
-                  disabled={fifthWeekSaving}
-                />
-                <Button
-                  size="small"
-                  variant="outlined"
-                  onClick={() => { void handleUpdateFifthWeekUser(null); }}
-                  disabled={fifthWeekSaving || !templateSummary.fifth_week_user_id}
-                >
-                  Clear
-                </Button>
-              </Box>
-            ) : (
-              <Typography variant="body2" color="text.secondary">
-                {templateSummary.fifth_week_user_callsign
-                  ? `${templateSummary.fifth_week_user_callsign}${templateSummary.fifth_week_user_name ? ` (${templateSummary.fifth_week_user_name})` : ''}`
-                  : 'Not configured'}
-              </Typography>
-            )}
-          </Box>
-        )}
-
         {canEdit && isScheduleContext && staff.filter((s: StaffMember) => s.is_active && !members.some((m: RotationMember) => m.user_id === s.user_id)).length > 0 && (
           <Box sx={{ mb: 2 }}>
             <Button
@@ -977,6 +932,51 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
               </ListItem>
             ))}
           </List>
+        )}
+
+        {templateSummary?.schedule_type === 'weekly' && (
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
+              Fifth Week Operator
+            </Typography>
+            <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1.5 }}>
+              On months with a fifth Sunday (or whichever weekday this net falls on), this operator runs the net. The main rotation pauses and resumes the following week.
+            </Typography>
+
+            {canEdit && isScheduleContext ? (
+              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                <Autocomplete
+                  options={users}
+                  getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
+                  value={users.find((u: User) => u.id === templateSummary.fifth_week_user_id) || null}
+                  onChange={(_: any, value: User | null) => { void handleUpdateFifthWeekUser(value); }}
+                  renderInput={(params: any) => (
+                    <TextField
+                      {...params}
+                      size="small"
+                      label="Fifth Week Operator"
+                    />
+                  )}
+                  sx={{ flex: 1 }}
+                  disabled={fifthWeekSaving}
+                />
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => { void handleUpdateFifthWeekUser(null); }}
+                  disabled={fifthWeekSaving || !templateSummary.fifth_week_user_id}
+                >
+                  Clear
+                </Button>
+              </Box>
+            ) : (
+              <Typography variant="body2" color="text.secondary">
+                {templateSummary.fifth_week_user_callsign
+                  ? `${templateSummary.fifth_week_user_callsign}${templateSummary.fifth_week_user_name ? ` (${templateSummary.fifth_week_user_name})` : ''}`
+                  : 'Not configured'}
+              </Typography>
+            )}
+          </Box>
         )}
       </Box>
     );

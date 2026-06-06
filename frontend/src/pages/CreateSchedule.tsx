@@ -1585,53 +1585,6 @@ const CreateSchedule: React.FC = () => {
                   </List>
                 )}
 
-                {canViewSubscribers && (
-                  <>
-                    <Divider sx={{ my: 3 }} />
-
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                      <Typography variant="subtitle2">Subscribers</Typography>
-                      <Chip label={`${subscribers.length} subscribed`} size="small" variant="outlined" />
-                    </Box>
-                    <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
-                      Users who clicked the bell or accepted the reminder prompt for this schedule.
-                    </Typography>
-
-                    {subscribers.length === 0 ? (
-                      <Typography color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
-                        No subscribers yet.
-                      </Typography>
-                    ) : (
-                      <List dense>
-                        {subscribers.map((subscriber) => (
-                          <ListItem
-                            key={subscriber.id}
-                            sx={{
-                              border: 1,
-                              borderColor: 'divider',
-                              borderRadius: 1,
-                              mb: 1,
-                            }}
-                          >
-                            <ListItemText
-                              primary={
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                                  <Typography fontWeight="bold">{subscriber.user_callsign || 'Unknown callsign'}</Typography>
-                                  {subscriber.user_name && (
-                                    <Typography color="text.secondary">({subscriber.user_name})</Typography>
-                                  )}
-                                  <Chip label="Subscribed" size="small" color="primary" variant="outlined" />
-                                </Box>
-                              }
-                              secondary={subscriber.user_email || undefined}
-                            />
-                          </ListItem>
-                        ))}
-                      </List>
-                    )}
-                  </>
-                )}
-
                 <Divider sx={{ my: 3 }} />
 
                 {/* ========== NCS ROTATION (OPTIONAL) ========== */}
@@ -1744,6 +1697,53 @@ const CreateSchedule: React.FC = () => {
                     </ListItem>
                   ))}
                 </List>
+              )}
+
+              {canViewSubscribers && (
+                <>
+                  <Divider sx={{ my: 3 }} />
+
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                    <Typography variant="subtitle2">Subscribers</Typography>
+                    <Chip label={`${subscribers.length} subscribed`} size="small" variant="outlined" />
+                  </Box>
+                  <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
+                    Users who clicked the bell or accepted the reminder prompt for this schedule.
+                  </Typography>
+
+                  {subscribers.length === 0 ? (
+                    <Typography color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
+                      No subscribers yet.
+                    </Typography>
+                  ) : (
+                    <List dense>
+                      {subscribers.map((subscriber) => (
+                        <ListItem
+                          key={subscriber.id}
+                          sx={{
+                            border: 1,
+                            borderColor: 'divider',
+                            borderRadius: 1,
+                            mb: 1,
+                          }}
+                        >
+                          <ListItemText
+                            primary={
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                                <Typography fontWeight="bold">{subscriber.user_callsign || 'Unknown callsign'}</Typography>
+                                {subscriber.user_name && (
+                                  <Typography color="text.secondary">({subscriber.user_name})</Typography>
+                                )}
+                                <Chip label="Subscribed" size="small" color="primary" variant="outlined" />
+                              </Box>
+                            }
+                            secondary={subscriber.user_email || undefined}
+                          />
+                        </ListItem>
+                      ))}
+                    </List>
+                  )}
+                </>
               )}
               </>
             )}
