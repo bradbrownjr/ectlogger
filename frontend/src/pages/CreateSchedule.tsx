@@ -268,6 +268,12 @@ const CreateSchedule: React.FC = () => {
     staff.some(s => s.user_id === currentUser.id && s.is_active && s.is_co_manager)
   );
 
+  const canConfigureFifthWeekOperator = !!currentUser && (
+    currentUser.role === 'admin' ||
+    currentUser.id === ownerId ||
+    staff.some(s => s.user_id === currentUser.id && s.is_active && s.is_co_manager)
+  );
+
   useEffect(() => {
     if (!isEdit || !scheduleId) return;
 
@@ -1275,20 +1281,22 @@ const CreateSchedule: React.FC = () => {
                     sx={{ minWidth: 150 }}
                   />
                 </Box>
-                <Autocomplete
-                  options={users}
-                  getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
-                  value={users.find((u: User) => u.id === fifthWeekUserId) || null}
-                  onChange={(_: any, value: User | null) => setFifthWeekUserId(value?.id ?? null)}
-                  renderInput={(params: any) => (
-                    <TextField
-                      {...params}
-                      margin="normal"
-                      label="Fifth week operator"
-                      helperText="Optional. Used only on 5th weekly occurrences (for example, a 5th Sunday)."
-                    />
-                  )}
-                />
+                {canConfigureFifthWeekOperator && (
+                  <Autocomplete
+                    options={users}
+                    getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
+                    value={users.find((u: User) => u.id === fifthWeekUserId) || null}
+                    onChange={(_: any, value: User | null) => setFifthWeekUserId(value?.id ?? null)}
+                    renderInput={(params: any) => (
+                      <TextField
+                        {...params}
+                        margin="normal"
+                        label="Fifth Week Operator"
+                        helperText="Optional. Runs the net on months with a fifth week. The main rotation pauses and resumes the following week."
+                      />
+                    )}
+                  />
+                )}
               </Box>
             )}
 

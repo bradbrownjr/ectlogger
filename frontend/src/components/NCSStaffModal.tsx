@@ -135,6 +135,9 @@ interface TemplateSummary {
   name: string;
   schedule_type?: string;
   schedule_config?: Record<string, any>;
+  fifth_week_user_id: number | null;
+  fifth_week_user_callsign: string | null;
+  fifth_week_user_name: string | null;
 }
 
 interface User {
@@ -190,6 +193,7 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
   const [reorderError, setReorderError] = useState<string | null>(null);
   const [subscribers, setSubscribers] = useState<TemplateSubscriber[]>([]);
   const [templateSummary, setTemplateSummary] = useState<TemplateSummary | null>(null);
+  const [fifthWeekSaving, setFifthWeekSaving] = useState(false);
 
   // Email dialog state (staff/subscribers/all)
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
@@ -305,7 +309,8 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
     try {
       if (isScheduleContext && schedule) {
         // Fetch template staff and rotation data separately
-        const [staffRes, membersRes, scheduleRes] = await Promise.all([
+        const [tplRes, staffRes, membersRes, scheduleRes] = await Promise.all([
+          templateApi.get(schedule.id),
           templateStaffApi.list(schedule.id),
           ncsRotationApi.listMembers(schedule.id),
           ncsRotationApi.getSchedule(schedule.id, 12), // 12 weeks ahead
@@ -322,8 +327,13 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
         }
 
         setTemplateSummary({
-          id: schedule.id,
-          name: schedule.name,
+          id: tplRes.data.id,
+          name: tplRes.data.name,
+          schedule_type: tplRes.data.schedule_type,
+          schedule_config: tplRes.data.schedule_config,
+          fifth_week_user_id: tplRes.data.fifth_week_user_id ?? null,
+          fifth_week_user_callsign: tplRes.data.fifth_week_user_callsign ?? null,
+          fifth_week_user_name: tplRes.data.fifth_week_user_name ?? null,
         });
 
         if (canViewSubscribers) {
@@ -352,6 +362,9 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
             name: tplRes.data.name,
             schedule_type: tplRes.data.schedule_type,
             schedule_config: tplRes.data.schedule_config,
+            fifth_week_user_id: tplRes.data.fifth_week_user_id ?? null,
+            fifth_week_user_callsign: tplRes.data.fifth_week_user_callsign ?? null,
+            fifth_week_user_name: tplRes.data.fifth_week_user_name ?? null,
           });
           setStaff(tplStaffRes.data || []);
           setMembers(membersRes.data || []);
@@ -790,6 +803,27 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
 
   const hasTemplateContext = !!templateId;
 
+  const handleUpdateFifthWeekUser = async (selected: User | null) => {
+    if (!schedule) return;
+    setFifthWeekSaving(true);
+    try {
+      await templateApi.update(schedule.id, { fifth_week_user_id: selected?.id ?? null });
+      setTemplateSummary(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          fifth_week_user_id: selected?.id ?? null,
+          fifth_week_user_callsign: selected?.callsign ?? null,
+          fifth_week_user_name: selected?.name ?? null,
+        };
+      });
+    } catch (err: any) {
+      setError(getErrorMessage(err, 'Failed to update fifth-week operator'));
+    } finally {
+      setFifthWeekSaving(false);
+    }
+  };
+
   const renderRotationTab = () => {
     if (!hasTemplateContext) {
       return (
@@ -818,6 +852,51 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
         <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
           Optional: cycle NCS duty automatically across upcoming scheduled nets. If empty, nets default to the Manager.
         </Typography>
+
+        {templateSummary?.schedule_type === 'weekly' && (
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
+              Fifth Week Operator
+            </Typography>
+            <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1.5 }}>
+              On months with a fifth Sunday (or whichever weekday this net falls on), this operator runs the net. The main rotation pauses and resumes the following week.
+            </Typography>
+
+            {canEdit && isScheduleContext ? (
+              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                <Autocomplete
+                  options={users}
+                  getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
+                  value={users.find((u: User) => u.id === templateSummary.fifth_week_user_id) || null}
+                  onChange={(_: any, value: User | null) => { void handleUpdateFifthWeekUser(value); }}
+                  renderInput={(params: any) => (
+                    <TextField
+                      {...params}
+                      size="small"
+                      label="Fifth Week Operator"
+                    />
+                  )}
+                  sx={{ flex: 1 }}
+                  disabled={fifthWeekSaving}
+                />
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => { void handleUpdateFifthWeekUser(null); }}
+                  disabled={fifthWeekSaving || !templateSummary.fifth_week_user_id}
+                >
+                  Clear
+                </Button>
+              </Box>
+            ) : (
+              <Typography variant="body2" color="text.secondary">
+                {templateSummary.fifth_week_user_callsign
+                  ? `${templateSummary.fifth_week_user_callsign}${templateSummary.fifth_week_user_name ? ` (${templateSummary.fifth_week_user_name})` : ''}`
+                  : 'Not configured'}
+              </Typography>
+            )}
+          </Box>
+        )}
 
         {canEdit && isScheduleContext && staff.filter((s: StaffMember) => s.is_active && !members.some((m: RotationMember) => m.user_id === s.user_id)).length > 0 && (
           <Box sx={{ mb: 2 }}>
