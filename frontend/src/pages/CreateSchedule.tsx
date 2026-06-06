@@ -905,6 +905,13 @@ const CreateSchedule: React.FC = () => {
   const availableUsersForRotation = users.filter(
     u => eligibleForRotationIds.has(u.id) && !rotationMembers.some(m => m.user_id === u.id)
   );
+  const eligibleForFifthWeekIds = new Set<number>([
+    ...eligibleForRotationIds,
+    ...(fifthWeekUserId ? [fifthWeekUserId] : []),
+  ]);
+  const availableUsersForFifthWeek = users.filter(
+    u => eligibleForFifthWeekIds.has(u.id)
+  );
   const hasActiveStaffMissingFromRotation = staff.some(
     s => s.is_active && !rotationMembers.some(m => m.user_id === s.user_id)
   );
@@ -1283,9 +1290,9 @@ const CreateSchedule: React.FC = () => {
                 </Box>
                 {canConfigureFifthWeekOperator && (
                   <Autocomplete
-                    options={users}
+                    options={availableUsersForFifthWeek}
                     getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
-                    value={users.find((u: User) => u.id === fifthWeekUserId) || null}
+                    value={availableUsersForFifthWeek.find((u: User) => u.id === fifthWeekUserId) || null}
                     onChange={(_: any, value: User | null) => setFifthWeekUserId(value?.id ?? null)}
                     renderInput={(params: any) => (
                       <TextField

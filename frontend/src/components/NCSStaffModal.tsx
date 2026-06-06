@@ -788,6 +788,12 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
   const availableStaffUsers = isScheduleContext
     ? users.filter((u: User) => u.id !== ownerId && !staff.some((s: StaffMember) => s.user_id === u.id))
     : users.filter((u: User) => u.id !== ownerId && !netRoles.some((r: NetRole) => r.user_id === u.id && r.role === 'NCS'));
+  const eligibleFifthWeekUserIds = new Set<number>([
+    ...(ownerId ? [ownerId] : []),
+    ...staff.filter((s: StaffMember) => s.is_active).map((s: StaffMember) => s.user_id),
+    ...(templateSummary?.fifth_week_user_id ? [templateSummary.fifth_week_user_id] : []),
+  ]);
+  const availableFifthWeekUsers = users.filter((u: User) => eligibleFifthWeekUserIds.has(u.id));
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -946,9 +952,9 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
             {canEdit && isScheduleContext ? (
               <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                 <Autocomplete
-                  options={users}
+                  options={availableFifthWeekUsers}
                   getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
-                  value={users.find((u: User) => u.id === templateSummary.fifth_week_user_id) || null}
+                  value={availableFifthWeekUsers.find((u: User) => u.id === templateSummary.fifth_week_user_id) || null}
                   onChange={(_: any, value: User | null) => { void handleUpdateFifthWeekUser(value); }}
                   renderInput={(params: any) => (
                     <TextField
