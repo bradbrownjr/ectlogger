@@ -392,6 +392,7 @@ class NetTemplateBase(BaseModel):
     field_config: Optional[dict] = None
     schedule_type: Optional[str] = Field(default='ad_hoc')  # ad_hoc, daily, weekly, monthly
     schedule_config: Optional[dict] = Field(default_factory=dict)  # {day_of_week, week_of_month, time}
+    fifth_week_user_id: Optional[int] = None
     ics309_enabled: bool = False  # Enable ICS-309 format for net close emails
     # Topic of the Week / Poll features
     topic_of_week_enabled: Optional[bool] = False
@@ -417,6 +418,7 @@ class NetTemplateUpdate(BaseModel):
     is_active: Optional[bool] = None
     schedule_type: Optional[str] = None
     schedule_config: Optional[dict] = None
+    fifth_week_user_id: Optional[int] = None
     owner_id: Optional[int] = None  # Allow changing the owner (admin only or current owner)
     ics309_enabled: Optional[bool] = None
     # Topic of the Week / Poll features
@@ -431,6 +433,8 @@ class NetTemplateResponse(NetTemplateBase):
     owner_id: int
     owner_callsign: Optional[str] = None
     owner_name: Optional[str] = None
+    fifth_week_user_callsign: Optional[str] = None
+    fifth_week_user_name: Optional[str] = None
     is_active: bool
     created_at: datetime
     frequencies: List[FrequencyResponse] = []
@@ -453,6 +457,9 @@ class NetTemplateResponse(NetTemplateBase):
             'owner_id': template.owner_id,
             'owner_callsign': owner_callsign,
             'owner_name': owner_name,
+            'fifth_week_user_id': template.fifth_week_user_id,
+            'fifth_week_user_callsign': template.fifth_week_user.callsign if template.fifth_week_user else None,
+            'fifth_week_user_name': template.fifth_week_user.name if template.fifth_week_user else None,
             'field_config': json.loads(template.field_config) if template.field_config else None,
             'schedule_type': template.schedule_type,
             'schedule_config': json.loads(template.schedule_config) if template.schedule_config else {},
@@ -942,6 +949,7 @@ class NCSScheduleEntry(BaseModel):
     user_callsign: Optional[str]
     user_email: Optional[str]
     is_override: bool = False
+    is_fifth_week: bool = False
     is_cancelled: bool = False
     override_reason: Optional[str] = None
     override_id: Optional[int] = None  # ID of the override, if this is an override
@@ -950,6 +958,9 @@ class NCSScheduleEntry(BaseModel):
 class NCSScheduleResponse(BaseModel):
     """Response containing the computed NCS schedule for multiple dates"""
     template_id: int
+    fifth_week_user_id: Optional[int] = None
+    fifth_week_user_callsign: Optional[str] = None
+    fifth_week_user_name: Optional[str] = None
     schedule: List[NCSScheduleEntry]
     rotation_members: List[NCSRotationMemberResponse]
 

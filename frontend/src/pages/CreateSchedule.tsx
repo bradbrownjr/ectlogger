@@ -216,6 +216,7 @@ const CreateSchedule: React.FC = () => {
     week_of_month: [], // e.g., [1, 3] for 1st and 3rd week
     time: '18:00'
   });
+  const [fifthWeekUserId, setFifthWeekUserId] = useState<number | null>(null);
 
   // Tab state
   const [activeTab, setActiveTab] = useState(0);
@@ -642,6 +643,7 @@ const CreateSchedule: React.FC = () => {
       setIsActive(Schedule.is_active);
       setScheduleType(Schedule.schedule_type || 'ad_hoc');
       setScheduleConfig(Schedule.schedule_config || { day_of_week: 1, week_of_month: [], time: '18:00' });
+      setFifthWeekUserId(Schedule.fifth_week_user_id ?? null);
     } catch (error) {
       console.error('Failed to fetch Schedule:', error);
     }
@@ -917,6 +919,7 @@ const CreateSchedule: React.FC = () => {
       is_active: isActive,
       schedule_type: scheduleType,
       schedule_config: scheduleConfig,
+      fifth_week_user_id: fifthWeekUserId,
       ics309_enabled: ics309Enabled,
       topic_of_week_enabled: topicOfWeekEnabled,
       topic_of_week_prompt: topicOfWeekPrompt || null,
@@ -1245,30 +1248,46 @@ const CreateSchedule: React.FC = () => {
             )}
 
             {scheduleType === 'weekly' && (
-              <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
-                <FormControl fullWidth>
-                  <InputLabel>Day of Week</InputLabel>
-                  <Select
-                    value={scheduleConfig.day_of_week}
-                    label="Day of Week"
-                    onChange={(e) => setScheduleConfig({ ...scheduleConfig, day_of_week: Number(e.target.value) })}
-                  >
-                    <MenuItem value={0}>Sunday</MenuItem>
-                    <MenuItem value={1}>Monday</MenuItem>
-                    <MenuItem value={2}>Tuesday</MenuItem>
-                    <MenuItem value={3}>Wednesday</MenuItem>
-                    <MenuItem value={4}>Thursday</MenuItem>
-                    <MenuItem value={5}>Friday</MenuItem>
-                    <MenuItem value={6}>Saturday</MenuItem>
-                  </Select>
-                </FormControl>
-                <TextField
-                  type="time"
-                  label={`Time (${timezoneAbbr})`}
-                  value={scheduleConfig.time}
-                  onChange={(e) => setScheduleConfig({ ...scheduleConfig, time: e.target.value })}
-                  InputLabelProps={{ shrink: true }}
-                  sx={{ minWidth: 150 }}
+              <Box sx={{ mt: 2 }}>
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                  <FormControl fullWidth>
+                    <InputLabel>Day of Week</InputLabel>
+                    <Select
+                      value={scheduleConfig.day_of_week}
+                      label="Day of Week"
+                      onChange={(e) => setScheduleConfig({ ...scheduleConfig, day_of_week: Number(e.target.value) })}
+                    >
+                      <MenuItem value={0}>Sunday</MenuItem>
+                      <MenuItem value={1}>Monday</MenuItem>
+                      <MenuItem value={2}>Tuesday</MenuItem>
+                      <MenuItem value={3}>Wednesday</MenuItem>
+                      <MenuItem value={4}>Thursday</MenuItem>
+                      <MenuItem value={5}>Friday</MenuItem>
+                      <MenuItem value={6}>Saturday</MenuItem>
+                    </Select>
+                  </FormControl>
+                  <TextField
+                    type="time"
+                    label={`Time (${timezoneAbbr})`}
+                    value={scheduleConfig.time}
+                    onChange={(e) => setScheduleConfig({ ...scheduleConfig, time: e.target.value })}
+                    InputLabelProps={{ shrink: true }}
+                    sx={{ minWidth: 150 }}
+                  />
+                </Box>
+                <Autocomplete
+                  options={users}
+                  getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
+                  value={users.find((u: User) => u.id === fifthWeekUserId) || null}
+                  onChange={(_: any, value: User | null) => setFifthWeekUserId(value?.id ?? null)}
+                  renderInput={(params: any) => (
+                    <TextField
+                      {...params}
+                      margin="normal"
+                      label="Fifth week operator"
+                      helperText="Optional. Used only on 5th weekly occurrences (for example, a 5th Sunday)."
+                    />
+                  )}
                 />
               </Box>
             )}

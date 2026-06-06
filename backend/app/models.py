@@ -151,6 +151,7 @@ class NetTemplate(Base):
     script = Column(Text)  # Net script template
     announcements = Column(Text)  # Default announcements/traffic carried forward to nets created from this schedule
     owner_id = Column(Integer, ForeignKey("users.id"))
+    fifth_week_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     field_config = Column(Text, default='{"name": {"enabled": true, "required": false}, "location": {"enabled": true, "required": false}, "skywarn_number": {"enabled": false, "required": false}, "weather_observation": {"enabled": false, "required": false}, "power_source": {"enabled": false, "required": false}, "power": {"enabled": false, "required": false}, "feedback": {"enabled": false, "required": false}, "notes": {"enabled": false, "required": false}}')
     is_active = Column(Boolean, default=True)
     ics309_enabled = Column(Boolean, default=False)  # Enable ICS-309 format for net close emails
@@ -170,6 +171,7 @@ class NetTemplate(Base):
 
     # Relationships
     owner = relationship("User", back_populates="owned_templates")
+    fifth_week_user = relationship("User", foreign_keys=[fifth_week_user_id])
     frequencies = relationship("Frequency", secondary=net_template_frequencies)
     subscriptions = relationship("NetTemplateSubscription", back_populates="template", cascade="all, delete-orphan")
     nets = relationship("Net", back_populates="template")

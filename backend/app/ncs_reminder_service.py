@@ -134,7 +134,9 @@ class NCSReminderService:
                 select(NetTemplate)
                 .options(
                     selectinload(NetTemplate.rotation_members).selectinload(NCSRotationMember.user),
-                    selectinload(NetTemplate.schedule_overrides),
+                    selectinload(NetTemplate.schedule_overrides).selectinload(NCSScheduleOverride.original_user),
+                    selectinload(NetTemplate.schedule_overrides).selectinload(NCSScheduleOverride.replacement_user),
+                    selectinload(NetTemplate.fifth_week_user),
                     selectinload(NetTemplate.frequencies)
                 )
                 .where(NetTemplate.is_active == True)

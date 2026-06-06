@@ -42,6 +42,7 @@ async def get_template_or_404(template_id: int, db: AsyncSession) -> NetTemplate
             selectinload(NetTemplate.schedule_overrides).selectinload(NCSScheduleOverride.original_user),
             selectinload(NetTemplate.schedule_overrides).selectinload(NCSScheduleOverride.replacement_user),
             selectinload(NetTemplate.staff).selectinload(TemplateStaff.user),
+            selectinload(NetTemplate.fifth_week_user),
         )
         .where(NetTemplate.id == template_id)
     )
@@ -137,6 +138,11 @@ def calculate_schedule_dates(template: NetTemplate, start_date: datetime, months
     return dates
 
 
+def is_fifth_occurrence(dt: datetime) -> bool:
+    """True if dt is the 5th occurrence of its weekday in its month."""
+    return (dt.day - 1) // 7 == 4
+
+
 def compute_ncs_schedule(
     template: NetTemplate,
     dates: List[datetime],
@@ -164,8 +170,16 @@ def compute_ncs_schedule(
     
     schedule = []
     member_count = len(active_members)
+    normal_index = 0
+    fifth_week_user = template.fifth_week_user
+    use_fifth_week_override = (
+        template.schedule_type == 'weekly'
+        and template.fifth_week_user_id is not None
+        and fifth_week_user is not None
+        and fifth_week_user.is_active
+    )
     
-    for i, date in enumerate(dates):
+    for date in dates:
         date_key = date.date()
         
         # Check for override
@@ -181,6 +195,7 @@ def compute_ncs_schedule(
                     user_callsign=None,
                     user_email=None,
                     is_override=True,
+                    is_fifth_week=False,
                     is_cancelled=True,
                     override_reason=override.reason,
                     override_id=override.id
@@ -194,13 +209,26 @@ def compute_ncs_schedule(
                     user_callsign=override.replacement_user.callsign if override.replacement_user else None,
                     user_email=override.replacement_user.email if override.replacement_user else None,
                     is_override=True,
+                    is_fifth_week=False,
                     is_cancelled=False,
                     override_reason=override.reason,
                     override_id=override.id
                 )
+        elif is_fifth_occurrence(date) and use_fifth_week_override:
+            entry = NCSScheduleEntry(
+                date=date,
+                user_id=template.fifth_week_user_id,
+                user_name=fifth_week_user.name if fifth_week_user else None,
+                user_callsign=fifth_week_user.callsign if fifth_week_user else None,
+                user_email=fifth_week_user.email if fifth_week_user else None,
+                is_override=False,
+                is_fifth_week=True,
+                is_cancelled=False,
+            )
         else:
             # Normal rotation
-            member = active_members[i % member_count]
+            member = active_members[normal_index % member_count]
+            normal_index += 1
             entry = NCSScheduleEntry(
                 date=date,
                 user_id=member.user_id,
@@ -208,6 +236,7 @@ def compute_ncs_schedule(
                 user_callsign=member.user.callsign if member.user else None,
                 user_email=member.user.email if member.user else None,
                 is_override=False,
+                is_fifth_week=False,
                 is_cancelled=False
             )
         
@@ -401,6 +430,9 @@ async def get_ncs_schedule(
     
     return NCSScheduleResponse(
         template_id=template_id,
+        fifth_week_user_id=template.fifth_week_user_id,
+        fifth_week_user_callsign=template.fifth_week_user.callsign if template.fifth_week_user else None,
+        fifth_week_user_name=template.fifth_week_user.name if template.fifth_week_user else None,
         schedule=schedule,
         rotation_members=[
             NCSRotationMemberResponse.from_orm_with_user(m)

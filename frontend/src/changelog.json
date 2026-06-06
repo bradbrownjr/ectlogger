@@ -1,6 +1,26 @@
 {
-  "version": "2026.06.06",
+  "version": "2026.06.06a",
   "entries": [
+    {
+      "version": "2026.06.06a",
+      "date": "2026-06-06",
+      "sections": [
+        {
+          "title": "Weekly NCS Rotation: Fifth-Week Override",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Weekly schedules now support an optional Fifth week operator. When a month has a 5th occurrence of the scheduled weekday, that operator is assigned and the normal rotation pauses for that date, then resumes in sequence on the next normal week.",
+              "userImpact": true
+            },
+            {
+              "text": "Schedule settings now include a weekly-only Fifth week operator picker, and schedule rows in Net Staff show a small 5th badge when this override is active.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.06.06",
       "date": "2026-06-06",

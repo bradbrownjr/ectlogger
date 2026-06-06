@@ -137,6 +137,12 @@ async def create_template(
         target_user = await db.execute(select(User).where(User.id == template_data.owner_id))
         if target_user.scalar_one_or_none():
             owner_id = template_data.owner_id
+
+    fifth_week_user_id = template_data.fifth_week_user_id
+    if fifth_week_user_id is not None:
+        result = await db.execute(select(User).where(User.id == fifth_week_user_id))
+        if result.scalar_one_or_none() is None:
+            raise HTTPException(status_code=404, detail="Fifth-week user not found")
     
     template = NetTemplate(
         name=template_data.name,
@@ -146,6 +152,7 @@ async def create_template(
         script=template_data.script,
         announcements=template_data.announcements,
         owner_id=owner_id,
+        fifth_week_user_id=fifth_week_user_id,
         field_config=field_config_json,
         schedule_type=template_data.schedule_type,
         schedule_config=schedule_config_json,
@@ -174,7 +181,10 @@ async def create_template(
     # Load frequencies
     result = await db.execute(
         select(NetTemplate)
-        .options(selectinload(NetTemplate.frequencies))
+        .options(
+            selectinload(NetTemplate.frequencies),
+            selectinload(NetTemplate.fifth_week_user),
+        )
         .where(NetTemplate.id == template.id)
     )
     template = result.scalar_one()
@@ -195,7 +205,8 @@ async def list_templates(
     query = select(NetTemplate).options(
         selectinload(NetTemplate.frequencies),
         selectinload(NetTemplate.owner),
-        selectinload(NetTemplate.rotation_members)
+        selectinload(NetTemplate.rotation_members),
+        selectinload(NetTemplate.fifth_week_user),
     )
     
     if not include_inactive:
@@ -266,7 +277,10 @@ async def get_template(
     """Get template by ID"""
     result = await db.execute(
         select(NetTemplate)
-        .options(selectinload(NetTemplate.frequencies))
+        .options(
+            selectinload(NetTemplate.frequencies),
+            selectinload(NetTemplate.fifth_week_user),
+        )
         .where(NetTemplate.id == template_id)
     )
     template = result.scalar_one_or_none()
@@ -338,6 +352,17 @@ async def update_template(
         template.schedule_type = template_data.schedule_type
     if template_data.schedule_config is not None:
         template.schedule_config = json.dumps(template_data.schedule_config)
+    if "fifth_week_user_id" in template_data.model_fields_set:
+        if template_data.fifth_week_user_id is None:
+            template.fifth_week_user_id = None
+        else:
+            fifth_week_user_result = await db.execute(
+                select(User).where(User.id == template_data.fifth_week_user_id)
+            )
+            fifth_week_user = fifth_week_user_result.scalar_one_or_none()
+            if not fifth_week_user:
+                raise HTTPException(status_code=404, detail="Fifth-week user not found")
+            template.fifth_week_user_id = template_data.fifth_week_user_id
     if template_data.ics309_enabled is not None:
         template.ics309_enabled = template_data.ics309_enabled
     if template_data.topic_of_week_enabled is not None:
@@ -389,7 +414,10 @@ async def update_template(
     # Reload with frequencies
     result = await db.execute(
         select(NetTemplate)
-        .options(selectinload(NetTemplate.frequencies))
+        .options(
+            selectinload(NetTemplate.frequencies),
+            selectinload(NetTemplate.fifth_week_user),
+        )
         .where(NetTemplate.id == template_id)
     )
     template = result.scalar_one()

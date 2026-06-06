@@ -105,6 +105,7 @@ interface ScheduleEntry {
   user_callsign: string | null;
   user_name: string | null;
   is_override: boolean;
+  is_fifth_week: boolean;
   is_cancelled: boolean;
   override_reason: string | null;
   override_id: number | null;
@@ -947,6 +948,7 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                             {entry.user_name && ` (${entry.user_name})`}
                           </Typography>
                           {entry.is_override && <Chip label="Swap" size="small" color="warning" />}
+                          {entry.is_fifth_week && <Chip label="5th" size="small" color="info" variant="outlined" />}
                         </Box>
                       )}
                     </TableCell>
