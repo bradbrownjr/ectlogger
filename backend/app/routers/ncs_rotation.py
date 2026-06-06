@@ -181,6 +181,7 @@ def compute_ncs_schedule(
     
     for date in dates:
         date_key = date.date()
+        is_fifth_week_slot = is_fifth_occurrence(date) and use_fifth_week_override
         
         # Check for override
         override = override_lookup.get(date_key)
@@ -214,7 +215,12 @@ def compute_ncs_schedule(
                     override_reason=override.reason,
                     override_id=override.id
                 )
-        elif is_fifth_occurrence(date) and use_fifth_week_override:
+            # Overrides should preserve the normal rotation progression so
+            # downstream assignments don't shift. The only exception is a
+            # configured fifth-week slot, which intentionally pauses rotation.
+            if not is_fifth_week_slot:
+                normal_index += 1
+        elif is_fifth_week_slot:
             entry = NCSScheduleEntry(
                 date=date,
                 user_id=template.fifth_week_user_id,
