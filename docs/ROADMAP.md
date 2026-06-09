@@ -1,7 +1,9 @@
 # ECT Logger — Product Roadmap
 
-*Last updated: 2026-06-09*  
+*Last updated: 2026-06-09 (rev 10)*  
 *Compiled from user feedback: AA1GM, KC1UIX, W1BKW, W1MTW, KC1JMH*
+
+> **Canonical location:** `docs/ROADMAP.md`. The root-level `ROADMAP.md` is a duplicate and should be deleted.
 
 ---
 
@@ -15,6 +17,84 @@ Items are grouped by milestone tier, then by theme within each tier. Each item c
 - 🔬 **Investigative** — needs reproduction before scoping
 
 Priority within each tier is roughly top-to-bottom. Items from conversations are attributed to their source where useful for context.
+
+---
+
+## Milestone 0 — Infrastructure (prerequisite to everything else)
+
+*These items must exist before the user base grows further. They protect the platform and operator confidence regardless of what feature is being worked on.*
+
+### Maintenance Mode
+
+**✨ Maintenance mode — in-app banner and server-side static fallback** *(KC1JMH)*  
+Two separate concerns, kept intentionally independent:
+
+---
+
+**1. In-app maintenance banner (DB-backed, Admin UI)**
+
+For use while the app is still running. Admin sets a notice and the app displays it to all users — useful for "expect instability tonight" or "deploying in 10 minutes."
+
+- New **Maintenance Banner** tab in the Admin panel (platform admins only)
+- Controls: on/off toggle, message text field, optional scheduled start/end datetime
+- When active, displays a dismissible banner sitewide (or a persistent non-dismissible one if the admin prefers)
+- Scheduled mode: banner appears automatically at the configured start time and clears at the end time
+- No shell access required. No Caddy involvement. Banner state lives in the database or a simple app-level config table.
+
+---
+
+**2. Server-side static maintenance page (flag file + `run.sh`)**
+
+For when the app is actually down — bad deploy, database outage, rendering failure (as seen 2026-06-09). The UI cannot help here; this is an SSH-only operation.
+
+- Static HTML file at `frontend/public/maintenance.html` — no React, no build step, no JS framework, no external dependencies
+- Maintenance is controlled via flags on `run.sh` (see below), the consolidated operational script:
+  - `./run --maintenance on` (also accepts `true` or `1`) — writes `INSTALL_DIR/maintenance.flag`, optionally writes a `maintenance.json` sidecar with message and ETA, reloads Caddy
+  - `./run --maintenance off` (also accepts `false` or `0`) — removes both files, reloads Caddy
+  - Short form: `-m on` / `-m off`
+- Caddy checks for the flag file on each request; if present, serves `maintenance.html` directly instead of proxying to the backend
+- The maintenance page fetches `maintenance.json` if available to display a custom message/ETA; falls back to generic copy if absent
+- `.env` variable `MAINTENANCE_MODE=true` as an alternative trigger, useful for Docker deployments where env vars are easier than flag files
+- The Admin panel documents this mechanism with the exact commands to run — it does not invoke them
+
+**`run.sh` — consolidated operational script**
+
+`start.sh` and `update.sh` consolidate into a single `run.sh` (also runnable as `./run`). One-time setup scripts (`install.sh`, `configure.sh`, `install-service.sh`, `verify-setup.sh`, `bootstrap.sh`, `migrate.sh`) are unaffected — they stay as-is.
+
+| Invocation | Behavior |
+|---|---|
+| `./run` | Prompt "check for updates?" with 5-second timeout (defaults to no), then start — same as current `start.sh` interactive behavior |
+| `./run --service` | Start in systemd service mode — skips update prompt entirely, same as current `start.sh --service` |
+| `./run -u` / `--update` | Run update check and apply if available, **then exit** — does not start the app |
+| `./run -m on` / `--maintenance on\|true\|1` | Enable maintenance mode, **then exit** — does not start the app |
+| `./run -m off` / `--maintenance off\|false\|0` | Disable maintenance mode, **then exit** — does not start the app |
+
+The `-u`, `-m on`, and `-m off` flags are action-and-exit operations. They never proceed to starting servers. Only bare `./run` and `./run --service` start the application.
+
+The update prompt is intentionally suppressed in `--service` mode to avoid blocking an unattended restart on a partially-baked commit. Updates are the operator's explicit choice, not automatic.
+
+**Migration checklist when `run.sh` is introduced:**
+- [ ] Add `run.sh` to the repo root
+- [ ] Update `ectlogger.service` `ExecStart` from `start.sh --service` to `run.sh --service`
+- [ ] Run `sudo systemctl daemon-reload` after updating the service file
+- [ ] Verify `sudo systemctl restart ectlogger` starts correctly from the new script
+- [ ] Keep `start.sh` and `update.sh` in place temporarily with a deprecation notice pointing to `run.sh`, remove in a subsequent release
+- [ ] Update `docs/PRODUCTION-DEPLOYMENT.md`, `docs/QUICKSTART.md`, and `docs/USER-GUIDE.md` to reference `run.sh`
+
+**Caddyfile pattern (for documentation and `configure.sh`):**
+```caddy
+@maintenance file INSTALL_DIR/maintenance.flag
+handle @maintenance {
+    root * INSTALL_DIR/frontend/public
+    rewrite * /maintenance.html
+    file_server
+}
+```
+
+**Maintenance page requirements:**
+- ECTLogger branding, mode label, custom message if set, ETA if set, admin callsign or status contact
+- Must render with zero external dependencies
+- Self-hosted instances use this fully independently of `app.ectlogger.us`
 
 ---
 
@@ -32,11 +112,6 @@ Every deployment resets browser sessions, forcing re-authentication via magic li
 **🐛 Archive/Delete blocked for net managers and co-managers** *(AA1GM)*  
 Joel (AA1GM) is the primary administrator of a net but clicking Archive does nothing. Net managers and co-managers should have at least the same archive/delete permissions as the NCS of that net. Investigate whether this is a frontend guard or a backend 403. Net ID 20 confirmed affected.
 
-### Reminders & Notifications
-
-✅ **1-hour net reminder fires too early and repeats every 15 minutes** *(AA1GM)* — **FIXED in 2026.06.09**  
-Root causes: timezone mismatch (using server local time instead of UTC) and broken deduplication (storing only date instead of full datetime). Fixed by using UTC consistently throughout and storing full scheduled datetime for proper deduplication.
-
 ### Check-in Ordering
 
 **🐛 Check-ins display out of chronological order** *(AA1GM)*  
@@ -53,17 +128,17 @@ Reaction controls have no purpose on a closed net. Suppress the emoji popup trig
 **🔧 Activity log minimized by default** *(W1MTW, KC1JMH)*  
 Several users found the activity log takes up too much space, especially on mobile. Default the pane to collapsed; the minimize button already exists (`_`). Update initial state only — user preference should persist within the session.
 
-**🔧 Profile photo must be square — enforce or auto-crop** *(W1MTW)*  
-Non-square images (e.g. 1920×1080) render sideways. Treat this as an immediate bug fix plus avatar UX upgrade: provide square crop with zoom at upload time (mobile and desktop), prevent unintended rotation, and only rotate when the user explicitly requests it. Also affects initial account setup on mobile.
+**🐛 Non-square profile photos render sideways** *(W1MTW)*  
+Images with non-square dimensions (e.g. 1920×1080) are displayed rotated. Immediate fix: add a validation message at upload time clearly stating the square requirement, and reject or warn on non-square uploads so users know what went wrong. Do not silently accept an image that will display broken. Rotation should never be applied without explicit user intent.
 
-**🔬 Mobile onboarding and responsive UI audit** *(W1MTW, KC1JMH)*  
-Review first-time user flow and mobile layouts for overflow, clipped content, unclear scrolling, and orientation assumptions. Validate that core onboarding and check-in tasks are fully usable in portrait mode on common phone sizes.
+**✨ In-browser image crop and zoom on upload** *(W1MTW)*  
+Replace the raw file-picker upload with a crop UI: after selecting a photo, present a square crop selector with pinch/scroll zoom (similar to Twitter, Discord, etc.). The user positions and sizes their crop region, and only the resulting square is uploaded to the server. This eliminates the sideways-image class of bugs entirely and matches user expectations set by every other platform that accepts avatars. Applies to profile setup and the profile edit page.
+
+**🔬 Mobile responsive UI audit** *(W1MTW)*  
+Several issues surfaced on mobile: account setup friction, elements potentially cut off or overflowing the canvas, possible landscape-only layouts, and ambiguous scroll affordances. Conduct a structured review of all primary user flows on narrow viewports (375px baseline): new user onboarding, profile setup, net view, check-in, and chat. Apply mobile UI best practices — no horizontal scroll, touch targets ≥ 44px, clear scroll indicators, no content requiring landscape. File individual bugs from the audit findings.
 
 **🔧 Self-check-in prompt is not obvious enough** *(KC1JMH)*  
 Logged-in users who need to check in don't notice the check-in row at the bottom of the screen. Replace the inline prompt with a modal dialog that is clearly dismissible, so new users understand what action is being requested.
-
-**🔧 Post-close archive reminder toast for NCS** *(KC1JMH)*  
-When NCS closes a net, show a brief reminder toast prompting them to archive the net when finished. Include an Archive action button directly in the toast. Duration target: about 10 seconds before fade-out (or follow the project UI timing standard if different). Intended to reduce closed-but-unarchived nets lingering on the Active Nets page.
 
 ### Net Reports
 
@@ -118,14 +193,23 @@ Option on net settings to leave the chat open for a configurable window (e.g. 15
 **✨ "Open in new tab" for Chat and Activity Log panes** *(AA1GM)*  
 Allow the chat and activity log floating windows to be popped out into a standalone browser tab, useful for dual-monitor setups. Interim workaround (detach within canvas, span browser window across monitors) should be documented. This is a non-trivial frontend architecture change — scope separately.
 
-### Relaying & Propagation Logging
+### Relaying & Propagation Mapping
 
-**✨ "Relayed by" field on check-in** *(KC1UIX)*  
-Optional field on each check-in to record which station relayed a transmission to NCS. This is additive (not a replacement) to the existing "Relay for stations NCS cannot hear" flag and supports propagation mapping between stations. Initial design direction: keep "Relayed by" and evaluate whether a companion "Can hear" field is needed for explicit station-to-station hearing data. Brad noted this needs logic/schema design before implementation.
+**✨ "Can hear" inter-station propagation logging** *(KC1UIX)*  
+During a net, NCS and operators need to log not just who NCS can hear, but which stations can hear each other. This data helps ARES teams assign local nets, identify relay chains, and plan for actual incident communications.
+
+The existing "Relay for stations NCS cannot hear" flag captures one direction of this. The new feature would add a "Can hear ___" field on each check-in row, allowing the NCS to record which other stations a given operator has confirmed hearing. Over time this builds a propagation map for the net's coverage area.
+
+Design questions to resolve before implementation:
+- Is this a multi-select (station A can hear B, C, and D), or logged as individual directional pairs?
+- Should the data be visualized — e.g. overlaid on the check-in map, or as a separate propagation graph?
+- Is this logged per-net or aggregated across nets for the same group?
+
+David's use case (YCECT combined repeater/simplex drills) should drive the initial spec.
 
 ### Trivia Integration
 
-**✨ Net trivia support** *(pending spec, back-burner)*  
+**✨ Net trivia support** *(back-burner, pending spec)*  
 Load trivia questions from a CSV file or URL. During a net, NCS can click a trivia icon on a check-in row to pose a question to that station and log correct/incorrect. Include trivia results in the net log, PDF report, and email summaries. Needs detailed spec before development begins.
 
 ---
@@ -139,24 +223,30 @@ Load trivia questions from a CSV file or URL. During a net, NCS can click a triv
 **🔧 Rolling magic link expiration** *(W1MTW, KC1JMH)*  
 TTL resets on each authenticated request so active users stay logged in indefinitely. Users who go weeks between uses re-authenticate at first access. Requires server-side session refresh logic.
 
-### ARES / Team Management Module
+### Team Management Module
 
-**✨ ECT / SKYWARN team management** *(KC1JMH poll)*  
-Track operator time toward ARRL ARES Form 2 reporting. Log member training and capabilities. Generate tabulated net time from existing net logs. Support a club logo in PDF net reports. Evaluate integration points with existing tools (volunteerhams, hamclubonline) — neither currently offers a public API. This is a substantial feature; scope as a separate module.
+**✨ Teams — ARES/SKYWARN team roster, training tracking, and ARRL Form 2 support** *(KC1JMH — back-burner)*  
+
+Full spec and design notes: [`docs/concepts/TEAM-MANAGEMENT-NOTES.md`](concepts/TEAM-MANAGEMENT-NOTES.md)
+
+Summary: a new **Teams** section (menu between Schedule and Stats) to replace spreadsheet-based ARES/SKYWARN team tracking with a role-controlled, self-service platform. Members manage their own profiles; team managers handle roster, approvals, and reporting. Net participation automatically rolls up to team records. Designed to facilitate ARES Form 2 and EMA hour reporting.
+
+Blocked on: core web app stability, self-hosting, and Docker packaging (see above) being in good shape first.
 
 ### Native Desktop Client
 
-**✨ Standalone NCS client application (Windows / macOS / Linux)** *(KC1JMH, back-burner)*  
-A native desktop application for NCS operators that:
-- Connects to either the hosted API (`app.ectlogger.us`) or a self-hosted instance
-- Operates in offline/degraded mode, buffering check-in data locally when the Internet is unavailable
-- Syncs to the API once connectivity is restored
-- Is intended for single-operator NCS use only — not a multi-user server
-- Targets emergency and storm event scenarios where connectivity is intermittent
+**✨ Standalone NCS client application (Windows / macOS / Linux)** *(KC1JMH — back-burner)*  
+A packaged desktop GUI application for NCS operators connecting to a hosted or self-hosted ECTLogger instance. Intended for single-operator NCS use; not a server. Targets scenarios where a browser is impractical but a full GUI is available. Proposed repo layout: `clients/windows/`, `clients/macos/`, `clients/linux/` with installable packages per release. Technology decision pending — evaluate Electron, Tauri, or native framework.
 
-Proposed repo layout: `clients/windows/`, `clients/macos/`, `clients/linux/`, with installable packages built and published for each release.
+### TUI / Packet Client
 
-Technology decision (to be made): evaluate Electron, Tauri, or a native framework against the requirement for offline buffering and OS packaging. Defer until core hosted web app stability and self-hosted Docker flow are complete. See `docs/concepts/TUI-PACKET-CLIENT.md` for related prior thinking.
+**✨ Terminal-first NCS client for low-bandwidth and degraded-link operations** *(KC1JMH — back-burner)*  
+
+Full spec and design notes: [`docs/concepts/TUI-PACKET-CLIENT.md`](concepts/TUI-PACKET-CLIENT.md)
+
+Summary: a terminal UI (TUI) client and packet-optimized command protocol for running nets over SSH, local console, or packet radio links (~1200 baud). Two command modes — full terminal and abbreviated packet — with offline command queuing and replay on reconnect. Future phase includes a Winlink gateway for form-based check-in submission. Distinct from the desktop GUI client above: this is the degraded-connectivity and emergency deployment path.
+
+This is separate from the standalone desktop client above. Both are back-burner until the web app and self-hosting are stable.
 
 ### Self-Hosting Enhancements
 
@@ -201,11 +291,4 @@ Items that were raised but need clarification, reproduction steps, or a design d
 | KC1UIX — David Lounsbury | YCECT multi-repeater SKYWARN |
 | W1BKW — Brian Wall | Regular participant, ham.live nets |
 | W1MTW — Mark | Net participant (mobile user) |
-| KC1JMH — Brad Brown | Developer / net manager |
-
----
-
-## Related Concept Notes
-
-- Team management brainstorming and privacy notes: [docs/concepts/TEAM-MANAGEMENT-NOTES.md](concepts/TEAM-MANAGEMENT-NOTES.md)
-
+| KC1JMH — Brad Brown | Developer / net manager / WSSM Club Secretary / Cumberland County ARES EC |
