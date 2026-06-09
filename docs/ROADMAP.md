@@ -1,6 +1,6 @@
 # ECT Logger — Product Roadmap
 
-*Last updated: 2026-06-09 (rev 10)*  
+*Last updated: 2026-06-09 (rev 11)*  
 *Compiled from user feedback: AA1GM, KC1UIX, W1BKW, W1MTW, KC1JMH*
 
 > **Canonical location:** `docs/ROADMAP.md`. The root-level `ROADMAP.md` is a duplicate and should be deleted.
@@ -96,6 +96,11 @@ handle @maintenance {
 - Must render with zero external dependencies
 - Self-hosted instances use this fully independently of `app.ectlogger.us`
 
+### Database Indexes
+
+**🔧 Add indexes on frequently sorted/filtered columns** *(KC1JMH)*  
+The `users` table is currently indexed only on unique-constraint columns (email, callsign, oauth_id, gmrs_callsign). The Admin UI sorts and filters against `last_active`, `created_at`, `is_active`, and `role` — none of which have indexes. At 47 users this is invisible, but the expected inbound migration from ham.live's closure could push that number sharply higher. Add non-unique indexes on `last_active`, `created_at`, `is_active`, and `role` via an Alembic migration before adoption accelerates.
+
 ---
 
 ## Milestone 1 — Immediate (next release cycle)
@@ -144,6 +149,19 @@ Logged-in users who need to check in don't notice the check-in row at the bottom
 
 **🔧 Replace raw JSON blob in PDF reports with "PHOTO"** *(KC1UIX)*  
 Chat image entries in the PDF report render the full `__CHAT_IMAGE__{...}` JSON string. Replace with the word `PHOTO` or a placeholder. Confirmed at `app.ectlogger.us/nets/22/report`.
+
+### Admin Panel Performance
+
+**🔧 Paginate the Admin users table and slim the list response** *(KC1JMH)*  
+The Admin users tab currently loads all users in one request. The backend at `GET /api/users` already accepts `skip` and `limit` query parameters but the frontend ignores them — `Admin.tsx` fetches `/users` with no pagination args, then sorts and filters the full result client-side.
+
+Three changes together:
+
+1. **Server-side `ORDER BY`** — add `order_by(User.last_active.desc().nullslast())` to the backend query so the default sort is handled by SQLite rather than computed in the browser after arrival.
+
+2. **Slim list schema** — introduce a `UserListItem` response model containing only the fields the table actually displays: `id`, `email`, `name`, `callsign`, `role`, `is_active`, `last_active`, `created_at`, `schedule_bypass`. The full preference payload (20+ fields) stays on `GET /api/users/{id}`. This is already the right call at 47 users; it matters at 500.
+
+3. **Pagination UI** — wire up the existing `skip`/`limit` params: 25 users per page by default, with standard Previous/Next controls and a "Show all" escape hatch for admins who need the full list. The existing client-side filter should operate against the current page while server-side filtering is not yet implemented.
 
 ---
 
@@ -223,6 +241,20 @@ Load trivia questions from a CSV file or URL. During a net, NCS can click a triv
 **🔧 Rolling magic link expiration** *(W1MTW, KC1JMH)*  
 TTL resets on each authenticated request so active users stay logged in indefinitely. Users who go weeks between uses re-authenticate at first access. Requires server-side session refresh logic.
 
+### Database Migration Path
+
+**✨ Migrate from SQLite to PostgreSQL ahead of expected growth** *(KC1JMH)*  
+ECTLogger runs SQLite today, which is appropriate for a low-concurrency single-server deployment. SQLite serializes all writes; under concurrent net sessions and real-time check-ins from multiple NCS operators at once, this will become a bottleneck. The ORM layer (SQLAlchemy async with `aiosqlite`) already supports PostgreSQL via `asyncpg` — the `DATABASE_URL` env var is the primary code-level change.
+
+Migration plan:
+- Provision a PostgreSQL instance on the IONOS VPS (or use a managed instance)
+- Run `alembic upgrade head` against the new database
+- Write a one-time data migration script to export SQLite rows and import into Postgres (preserve all timestamps and IDs)
+- Flip `DATABASE_URL`, restart, smoke-test
+- Keep the SQLite file as a backup for 30 days post-migration
+
+**Trigger:** migrate before the user base exceeds ~300 accounts or before any feature requiring high concurrent write throughput (e.g., simultaneous multi-net operation). The expected inbound migration from ham.live's closure makes this a near-term planning item rather than a back-burner one.
+
 ### Team Management Module
 
 **✨ Teams — ARES/SKYWARN team roster, training tracking, and ARRL Form 2 support** *(KC1JMH — back-burner)*  
@@ -270,7 +302,7 @@ Items that were raised but need clarification, reproduction steps, or a design d
 
 | Item | Source | Blocker |
 |---|---|---|
-| ham.live open-source evaluation | W1MTW | Not an ECT Logger issue; noted for competitive awareness only. |
+| ham.live closure — onboarding displaced users | KC1JMH | ham.live is shuttering. No action needed, but inbound user migration is expected. Infrastructure scaling items (DB indexes, pagination, PostgreSQL migration path) have been added to the roadmap in anticipation. Worth monitoring signup rate in coming weeks. |
 
 ---
 
