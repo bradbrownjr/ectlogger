@@ -1,6 +1,23 @@
 {
-  "version": "2026.06.06a",
+  "version": "2026.06.09",
   "entries": [
+    {
+      "version": "2026.06.09",
+      "date": "2026-06-09",
+      "sections": [
+        {
+          "title": "Bug Fixes",
+          "type": "fix",
+          "items": [
+            {
+              "text": "NCS and subscriber reminder emails were firing several hours early and repeating every 15 minutes due to a timezone mismatch and deduplication bug. Fixed by using UTC consistently and storing the full scheduled datetime (not just the date) in the reminder log.",
+              "importance": "critical",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.06.06a",
       "date": "2026-06-06",
@@ -21,33 +38,6 @@
         }
       ]
     },
-    {
-      "version": "2026.06.06",
-      "date": "2026-06-06",
-      "sections": [
-        {
-          "title": "Drag-and-Drop Rotation Reordering",
-          "type": "improvement",
-          "items": [
-            {
-              "text": "The dotted drag handles in the Rotation Order list are now fully interactive — grab any row and drag it to a new position to reorder the NCS rotation. Works in both the Net Staff dialog and the standalone Rotation modal.",
-              "userImpact": true
-            },
-            {
-              "text": "The up/down arrow buttons now reorder rows instantly without clearing or resizing the dialog. Changes are saved to the server in the background, and a red error toast appears at the bottom of the screen if the sync fails.",
-              "userImpact": true
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "version": "2026.06.05i",
-      "date": "2026-06-05",
-      "sections": [
-        {
-          "title": "Unified Email Dialog",
-          "type": "improvement",
           "items": [
             {
               "text": "Consolidated the separate email buttons in the Net Staff dialog into a single blue 'Email' button with a new 'To' dropdown, supporting delivery to Net Staff, Net Subscribers, or both.",

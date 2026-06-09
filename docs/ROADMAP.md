@@ -34,8 +34,8 @@ Joel (AA1GM) is the primary administrator of a net but clicking Archive does not
 
 ### Reminders & Notifications
 
-**🐛 1-hour net reminder fires too early and repeats every 15 minutes** *(AA1GM)*  
-The scheduled net reminder is triggering several hours before the actual net start time and then repeating every 15 minutes instead of firing once. Affects net subscriptions. Reproduce at `app.ectlogger.us/nets/23`. Check reminder scheduling logic and whether the repeat interval is being calculated correctly.
+✅ **1-hour net reminder fires too early and repeats every 15 minutes** *(AA1GM)* — **FIXED in 2026.06.09**  
+Root causes: timezone mismatch (using server local time instead of UTC) and broken deduplication (storing only date instead of full datetime). Fixed by using UTC consistently throughout and storing full scheduled datetime for proper deduplication.
 
 ### Check-in Ordering
 

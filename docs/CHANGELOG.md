@@ -4,6 +4,14 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# June 9, 2026
+
+## Bug Fixes
+
+* **NCS and subscriber reminders firing early and repeating every 15 minutes** — Fixed a critical bug causing reminders to fire several hours before nets and repeat every 15 minutes by queuing 4+ duplicate emails. Root causes: (1) timezone mismatch — code was using server local time instead of UTC to calculate hours-until, causing early fires on servers outside the net timezone; (2) broken deduplication — reminder log was storing only the date instead of full datetime, so every net on the same date was treated as a duplicate, but the ±30-minute window re-triggered every 15 minutes anyway. Fixed by using UTC consistently and storing the full scheduled datetime for proper deduplication.
+
+---
+
 # June 5, 2026
 
 ## Bug Fixes
