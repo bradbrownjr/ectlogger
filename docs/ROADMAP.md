@@ -1,6 +1,6 @@
 # ECT Logger — Product Roadmap
 
-*Last updated: 2026-06-08*  
+*Last updated: 2026-06-09*  
 *Compiled from user feedback: AA1GM, KC1UIX, W1BKW, W1MTW, KC1JMH*
 
 ---
@@ -31,6 +31,11 @@ Every deployment resets browser sessions, forcing re-authentication via magic li
 
 **🐛 Archive/Delete blocked for net managers and co-managers** *(AA1GM)*  
 Joel (AA1GM) is the primary administrator of a net but clicking Archive does nothing. Net managers and co-managers should have at least the same archive/delete permissions as the NCS of that net. Investigate whether this is a frontend guard or a backend 403. Net ID 20 confirmed affected.
+
+### Reminders & Notifications
+
+**🐛 1-hour net reminder fires too early and repeats every 15 minutes** *(AA1GM)*  
+The scheduled net reminder is triggering several hours before the actual net start time and then repeating every 15 minutes instead of firing once. Affects net subscriptions. Reproduce at `app.ectlogger.us/nets/23`. Check reminder scheduling logic and whether the repeat interval is being calculated correctly.
 
 ### Check-in Ordering
 

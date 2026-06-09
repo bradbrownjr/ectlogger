@@ -143,7 +143,7 @@ class NCSReminderService:
             )
             templates = result.scalars().all()
             
-            now = datetime.now()
+            now = datetime.utcnow()
             reminders_sent = 0
             
             for template in templates:
@@ -184,7 +184,7 @@ class NCSReminderService:
                             reminder_type = f"{reminder_hours}h"
                             already_sent = await self._check_reminder_sent(
                                 db, template.id, entry.user_id,
-                                scheduled_dt.date(), reminder_type
+                                scheduled_dt, reminder_type
                             )
                             
                             if not already_sent:
@@ -300,7 +300,7 @@ class NCSReminderService:
             reminder_log = NCSReminderLog(
                 template_id=template.id,
                 user_id=user.id,
-                scheduled_date=scheduled_dt.date(),
+                scheduled_date=scheduled_dt,
                 reminder_type=f"{hours_until}h",
                 sent_at=datetime.utcnow()
             )
@@ -337,7 +337,7 @@ class NCSReminderService:
             )
             templates = result.scalars().all()
             
-            now = datetime.now()
+            now = datetime.utcnow()
             reminders_sent = 0
             
             for template in templates:
@@ -380,7 +380,7 @@ class NCSReminderService:
                         db,
                         template.id,
                         user.id,
-                        next_date.date(),
+                        next_date, 
                         reminder_type
                     )
                     
@@ -456,7 +456,7 @@ class NCSReminderService:
         reminder_log = NCSReminderLog(
             template_id=template.id,
             user_id=user.id,
-            scheduled_date=scheduled_dt.date(),
+            scheduled_date=scheduled_dt,
             reminder_type="subscriber_1h",
             sent_at=datetime.utcnow()
         )
