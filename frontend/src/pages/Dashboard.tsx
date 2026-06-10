@@ -519,7 +519,7 @@ const Dashboard: React.FC = () => {
   // ========== NET CARD COMPONENT ==========
   const renderNetCard = (net: Net) => (
     <Card sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-      <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <CardContent sx={{ flex: 1 }}>
         {/* Title with Status */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
           <Typography 
@@ -540,8 +540,8 @@ const Dashboard: React.FC = () => {
         {/* Description */}
         <ExpandableDescription text={net.description} />
         
-        {/* Info List — mt: 'auto' pins this to the bottom of the flex-column CardContent */}
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75, mt: 'auto' }}>
+        {/* Info List */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
           {/* Time info based on status */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <AccessTimeIcon fontSize="small" color="action" />

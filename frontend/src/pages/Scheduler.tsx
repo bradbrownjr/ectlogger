@@ -531,7 +531,7 @@ const Scheduler: React.FC = () => {
     // (the Grid item is display:flex). minHeight gives short/lone cards
     // enough visual presence so the layout doesn't look uneven.
     <Card sx={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', minHeight: 260 }}>
-      <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <CardContent sx={{ flex: 1 }}>
         {/* Title */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
           <Typography variant="h6" component="h2">
@@ -545,8 +545,8 @@ const Scheduler: React.FC = () => {
         {/* Description */}
         <ExpandableDescription text={schedule.description} />
         
-        {/* Info List — mt: 'auto' pins this to the bottom of the flex-column CardContent */}
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75, mt: 'auto' }}>
+        {/* Info List */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
           {/* Schedule */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <CalendarMonthIcon fontSize="small" color="action" />
