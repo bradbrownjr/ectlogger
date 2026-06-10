@@ -1,8 +1,8 @@
 {
-  "version": "2026.06.10g",
+  "version": "2026.06.10h",
   "entries": [
     {
-      "version": "2026.06.10g",
+      "version": "2026.06.10h",
       "date": "2026-06-10",
       "sections": [
         {
@@ -53,6 +53,10 @@
             },
             {
               "text": "The Activity Log panel now loads collapsed by default, freeing up screen space especially on mobile. It expands with one click and your preference is remembered for the rest of your session.",
+              "userImpact": true
+            },
+            {
+              "text": "Net and schedule cards now truncate long descriptions to three lines with a Show more link, keeping the card grid visually uniform. The clock, frequency, and manager details are bottom-aligned across every card in a row so the action buttons always line up.",
               "userImpact": true
             }
           ]
