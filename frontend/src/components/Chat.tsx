@@ -110,6 +110,8 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
   }, [messages]);
 
   // Filter messages: Chat always shows only non-system messages
+  const netClosed = netStatus === 'closed' || netStatus === 'archived';
+
   const filteredMessages = messages.filter(m => {
       if (m.is_system) return false;
     // Then filter by search query if present
@@ -441,7 +443,7 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
                                 >
                                   <Box
                                     component="span"
-                                    onClick={() => handleReaction(message.id, emoji)}
+                                    onClick={!netClosed ? () => handleReaction(message.id, emoji) : undefined}
                                     sx={{
                                       display: 'inline-flex',
                                       alignItems: 'center',
@@ -450,12 +452,12 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
                                       py: 0.25,
                                       borderRadius: 3,
                                       fontSize: '0.75rem',
-                                      cursor: user ? 'pointer' : 'default',
+                                      cursor: user && !netClosed ? 'pointer' : 'default',
                                       border: 1,
                                       borderColor: userIds.includes(user?.id ?? -1) ? 'primary.main' : 'divider',
                                       backgroundColor: userIds.includes(user?.id ?? -1) ? 'primary.light' : 'action.hover',
                                       opacity: userIds.includes(user?.id ?? -1) ? 1 : 0.85,
-                                      '&:hover': user ? { borderColor: 'primary.main', opacity: 1 } : {},
+                                      '&:hover': user && !netClosed ? { borderColor: 'primary.main', opacity: 1 } : {},
                                     }}
                                   >
                                     {emoji} {userIds.length}
@@ -468,8 +470,8 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
                       </Box>
                     }
                   />
-                  {/* Hover emoji toolbar — hidden on your own messages */}
-                  {hoveredMessageId === message.id && user && message.user_id !== user.id && (
+                  {/* Hover emoji toolbar — hidden on your own messages and on closed/archived nets */}
+                  {hoveredMessageId === message.id && user && message.user_id !== user.id && !netClosed && (
                     <Box
                       sx={{
                         position: 'absolute',
