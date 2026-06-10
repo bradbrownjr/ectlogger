@@ -519,7 +519,7 @@ const Dashboard: React.FC = () => {
   // ========== NET CARD COMPONENT ==========
   const renderNetCard = (net: Net) => (
     <Card sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-      <CardContent sx={{ flex: 1 }}>
+      <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         {/* Title with Status */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
           <Typography 
