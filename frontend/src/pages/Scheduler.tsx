@@ -64,6 +64,7 @@ import ClearIcon from '@mui/icons-material/Clear';
 import { templateApi, netApi as _netApi, ncsRotationApi } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import NCSStaffModal from '../components/NCSStaffModal';
+import ExpandableDescription from '../components/ExpandableDescription';
 
 interface NextNCS {
   date: string;
@@ -542,9 +543,7 @@ const Scheduler: React.FC = () => {
         </Box>
         
         {/* Description */}
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-          {schedule.description || 'No description'}
-        </Typography>
+        <ExpandableDescription text={schedule.description} />
         
         {/* Info List */}
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>

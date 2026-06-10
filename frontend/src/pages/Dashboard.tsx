@@ -60,6 +60,7 @@ import EmailIcon from '@mui/icons-material/Email';
 import CircularProgress from '@mui/material/CircularProgress';
 import { netApi } from '../services/api';
 import NCSStaffModal from '../components/NCSStaffModal';
+import ExpandableDescription from '../components/ExpandableDescription';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { formatDateTime } from '../utils/dateUtils';
@@ -537,9 +538,7 @@ const Dashboard: React.FC = () => {
         </Box>
         
         {/* Description */}
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-          {net.description || 'No description'}
-        </Typography>
+        <ExpandableDescription text={net.description} />
         
         {/* Info List */}
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
