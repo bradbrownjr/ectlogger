@@ -37,6 +37,13 @@ export interface ChatMessageCreate {
   message: string;
 }
 
+const CHAT_IMAGE_PREFIX = '__CHAT_IMAGE__';
+
+/** Returns a display-safe version of a chat message, replacing image payloads with "[Photo]". */
+export function formatChatMessageText(message: string): string {
+  return message.startsWith(CHAT_IMAGE_PREFIX) ? '[Photo]' : message;
+}
+
 export const chatApi = {
   list: (netId: number) => api.get<ChatMessage[]>(`/chat/nets/${netId}/messages`),
 

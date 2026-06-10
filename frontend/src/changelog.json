@@ -1,8 +1,8 @@
 {
-  "version": "2026.06.10j",
+  "version": "2026.06.10k",
   "entries": [
     {
-      "version": "2026.06.10j",
+      "version": "2026.06.10k",
       "date": "2026-06-10",
       "sections": [
         {
@@ -35,6 +35,10 @@
             },
             {
               "text": "Login sessions now last 30 days and automatically renew — weekly net operators will stay signed in without ever needing to re-authenticate.",
+              "userImpact": true
+            },
+            {
+              "text": "Chat photos now show as \"[Photo]\" in Net Report and PDF exports. Previously, pasted images appeared as a raw internal JSON payload in the on-screen Net Report page and the exported PDF.",
               "userImpact": true
             }
           ]

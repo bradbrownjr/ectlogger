@@ -10,6 +10,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import html2canvas from 'html2canvas';
 import { displayCallsign } from './userDisplay';
+import { formatChatMessageText } from '../api/chat';
 
 // ========== INTERFACES ==========
 
@@ -481,7 +482,7 @@ export const exportNetReportPdf = async (data: NetReportPdfData): Promise<void> 
       body: chatMessages.map(msg => [
         formatTimeForPdf(msg.created_at, preferUtc),
         msg.is_system ? 'System' : (msg.callsign || 'Unknown'),
-        msg.message,
+        formatChatMessageText(msg.message),
       ]),
       margin: { left: margin, right: margin },
       theme: 'striped',

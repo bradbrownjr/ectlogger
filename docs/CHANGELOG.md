@@ -6,31 +6,25 @@ All notable changes to ECTLogger are documented here.
 
 # June 10, 2026
 
-## Improvements
-
-* **Paginated lists** — The Archived Nets dialog and the Admin users table now show 25 rows per page, with 50 or All options. Filters, searches, and column sorts all reset to page 1 automatically. The Admin users list also now arrives sorted most-recently-active first.
-
 ## Bug Fixes
 
 * **Archived nets disappear from the Nets list immediately** — If you navigated back to the Nets list before the 5-second archive undo window expired, the net would still appear in the list until you manually refreshed the page. The list now re-fetches automatically when you return to it.
-
 * **Profile photos from mobile phones no longer display sideways** — Portrait and landscape photos taken on phones embed an EXIF orientation tag instead of storing pixels upright. The avatar upload handler now applies that orientation correction before saving, so all photos display right-side up regardless of how the phone was held.
 * **Emoji reaction toolbar no longer shifts chat message text** — Hovering over a chat message to reveal the emoji reaction buttons was injecting 100px of extra padding-right into the message row, causing the message text to reflow into a narrower column on every hover. The toolbar now overlays the message content without affecting layout.
 * **Check-in list now displays in correct chronological order** — When a net is created from a schedule template, all template staff are pre-assigned NCS roles at the same timestamp. The check-in list was treating all of them as "active NCS" and promoting them to the top, pushing stations who checked in earlier (like KA1RAC) down the list. The NCS sort promotion now only applies to operators who were already checked in before the first non-NCS station joined, which is the correct definition of "running NCS." Operators who happen to have an NCS role but checked in later appear in natural chronological order.
 * **Archive and delete now work for net managers and co-managers** — Net managers and co-managers of the schedule a net was created from can now archive, unarchive, and delete nets they manage. Previously only the direct net owner or a site admin could perform these actions, causing a silent 403 for managers like Joel (AA1GM) trying to archive his own nets.
 * **Sessions no longer wiped during backend restarts** — The app previously logged users out any time the backend was briefly unavailable (e.g., during a deploy). The client now only clears a session on a deliberate 401 Unauthorized response; transient network errors and 5xx responses leave the stored token untouched so users remain signed in after a deploy.
 * **Sessions persist for 30 days with automatic rolling refresh** — Access tokens were previously set to a 24-hour lifetime, forcing weekly net operators to re-authenticate before each session. Tokens are now issued with a 30-day lifetime. Additionally, any token with fewer than 7 days remaining is silently refreshed on the next authenticated request, so active users never need to re-login.
+* **Chat photos now show as "[Photo]" in Net Report and PDF exports** — Chat messages containing pasted images were rendering the raw internal `__CHAT_IMAGE__{...}` JSON payload as plain text in the on-screen Net Report page and the exported PDF. They now display as `[Photo]`.
 
 ## Improvements
 
+* **Toolbar reorganized into Net Info and Net Actions rows** — The toolbar on the Net View page is now split into two logical rows: **Row 1 (Net Info)** contains read-only browsing tools (bulk check-in shortcut, search, map, stats, script, announcements, topic history, info URL, net info link) and **Row 2 (Net Actions)** contains all write/management controls (start, edit, roles, check-in, go live, close, import, export, PDF, archive, delete). Previously, action buttons mixed into Row 1 caused the toolbar to overflow into a third row on active nets with many features enabled — for example, the Import button would end up isolated on its own line.
 * **Session settings configurable in Admin panel** — Admins can now set session lifetime and toggle rolling renewal in Admin → Security → Session Settings, without editing server config files.
 * **Emoji reaction controls hidden on closed/archived nets** — The hover emoji toolbar no longer appears on closed or archived nets. Existing reaction counts remain visible for historical reference but are no longer interactive.
 * **Activity Log collapsed by default** — The Activity Log panel now loads minimized on every page visit, keeping more screen space available for the check-in list and chat — particularly useful on mobile. Clicking the expand button opens it as before, and the choice persists for the rest of the session.
 * **Net and schedule card polish** — Long descriptions on net and schedule cards are now truncated to three lines with an inline "Show more" link to read the rest.
-
-## UX Improvements
-
-* **Toolbar reorganized into Net Info and Net Actions rows** — The toolbar on the Net View page is now split into two logical rows: **Row 1 (Net Info)** contains read-only browsing tools (bulk check-in shortcut, search, map, stats, script, announcements, topic history, info URL, net info link) and **Row 2 (Net Actions)** contains all write/management controls (start, edit, roles, check-in, go live, close, import, export, PDF, archive, delete). Previously, action buttons mixed into Row 1 caused the toolbar to overflow into a third row on active nets with many features enabled — for example, the Import button would end up isolated on its own line.
+* **Paginated lists** — The Archived Nets dialog and the Admin users table now show 25 rows per page, with 50 or All options. Filters, searches, and column sorts all reset to page 1 automatically. The Admin users list also now arrives sorted most-recently-active first.
 
 ---
 

@@ -151,7 +151,7 @@ import {
   Cell,
 } from 'recharts';
 import { netApi, statisticsApi, checkInApi, netRoleApi } from '../services/api';
-import { chatApi, ChatMessage } from '../api/chat';
+import { chatApi, ChatMessage, formatChatMessageText } from '../api/chat';
 import { formatDateTime, formatTimeWithDate } from '../utils/dateUtils';
 import { useAuth } from '../contexts/AuthContext';
 import { exportElementToPdf } from '../utils/pdfExport';
@@ -1185,7 +1185,7 @@ const NetReport: React.FC = () => {
                           {msg.callsign || 'Unknown'}
                         </Typography>
                       </TableCell>
-                      <TableCell>{msg.message}</TableCell>
+                      <TableCell>{formatChatMessageText(msg.message)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
