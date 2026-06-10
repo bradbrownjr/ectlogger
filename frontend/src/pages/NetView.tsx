@@ -2498,17 +2498,7 @@ const NetView: React.FC = () => {
                               status: 'checked_in',
                             });
                           }
-                          if (canManageCheckIns) {
-                            // NCS/Logger: Scroll to and focus the callsign field
-                            const callsignField = document.querySelector('input[placeholder="Callsign"]') as HTMLInputElement;
-                            if (callsignField) {
-                              callsignField.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                              callsignField.focus();
-                            }
-                          } else {
-                            // Regular user: Open check-in dialog
-                            setCheckInDialogOpen(true);
-                          }
+                          setCheckInDialogOpen(true);
                         }}
                         sx={{
                           minWidth: 'auto',
