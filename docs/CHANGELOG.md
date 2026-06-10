@@ -6,6 +6,10 @@ All notable changes to ECTLogger are documented here.
 
 # June 10, 2026
 
+## Improvements
+
+* **Paginated lists** — The Archived Nets dialog and the Admin users table now show 25 rows per page, with 50 or All options. Filters, searches, and column sorts all reset to page 1 automatically. The Admin users list also now arrives sorted most-recently-active first.
+
 ## Bug Fixes
 
 * **Archived nets disappear from the Nets list immediately** — If you navigated back to the Nets list before the 5-second archive undo window expired, the net would still appear in the list until you manually refreshed the page. The list now re-fetches automatically when you return to it.

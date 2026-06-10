@@ -35,6 +35,7 @@ import {
   Collapse,
   Snackbar,
   Alert,
+  TablePagination,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
@@ -102,6 +103,8 @@ const Dashboard: React.FC = () => {
   const [archiveFilter, setArchiveFilter] = useState('');
   const [archiveDateFrom, setArchiveDateFrom] = useState('');
   const [archiveDateTo, setArchiveDateTo] = useState('');
+  const [archivedPage, setArchivedPage] = useState(0);
+  const [archivedPerPage, setArchivedPerPage] = useState(25);
   const [archiveSortField, setArchiveSortField] = useState<'name' | 'owner' | 'check_ins' | 'closed'>('closed');
   const [archiveSortDirection, setArchiveSortDirection] = useState<'asc' | 'desc'>('desc');
   // View mode and filter state - persist view preference
@@ -156,6 +159,7 @@ const Dashboard: React.FC = () => {
 
   const handleOpenArchived = () => {
     fetchArchivedNets();
+    setArchivedPage(0);
     setShowArchived(true);
   };
 
@@ -283,6 +287,7 @@ const Dashboard: React.FC = () => {
       setArchiveSortField(field);
       setArchiveSortDirection(field === 'closed' ? 'desc' : 'asc');
     }
+    setArchivedPage(0);
   };
 
   // Filter and sort archived nets
@@ -922,6 +927,7 @@ const Dashboard: React.FC = () => {
           setArchiveFilter('');
           setArchiveDateFrom('');
           setArchiveDateTo('');
+          setArchivedPage(0);
         }}
         maxWidth="md"
         fullWidth
@@ -933,6 +939,7 @@ const Dashboard: React.FC = () => {
             setArchiveFilter('');
             setArchiveDateFrom('');
             setArchiveDateTo('');
+            setArchivedPage(0);
           }}>
             <CloseIcon />
           </IconButton>
@@ -944,7 +951,7 @@ const Dashboard: React.FC = () => {
               size="small"
               placeholder="Search by net name or NCS callsign..."
               value={archiveFilter}
-              onChange={(e) => setArchiveFilter(e.target.value)}
+              onChange={(e) => { setArchiveFilter(e.target.value); setArchivedPage(0); }}
               sx={{ flexGrow: 1, minWidth: 200 }}
               InputProps={{
                 startAdornment: (
@@ -959,7 +966,7 @@ const Dashboard: React.FC = () => {
               type="date"
               label="From"
               value={archiveDateFrom}
-              onChange={(e) => setArchiveDateFrom(e.target.value)}
+              onChange={(e) => { setArchiveDateFrom(e.target.value); setArchivedPage(0); }}
               InputLabelProps={{ shrink: true }}
               sx={{ minWidth: 200, '& .MuiInputBase-input': { pl: 1.5 } }}
             />
@@ -968,7 +975,7 @@ const Dashboard: React.FC = () => {
               type="date"
               label="To"
               value={archiveDateTo}
-              onChange={(e) => setArchiveDateTo(e.target.value)}
+              onChange={(e) => { setArchiveDateTo(e.target.value); setArchivedPage(0); }}
               InputLabelProps={{ shrink: true }}
               sx={{ minWidth: 200, '& .MuiInputBase-input': { pl: 1.5 } }}
             />
@@ -983,6 +990,7 @@ const Dashboard: React.FC = () => {
               No nets match your search
             </Typography>
           ) : (
+            <>
             <TableContainer component={Paper} variant="outlined">
               <Table size="small">
                 <TableHead>
@@ -1027,7 +1035,7 @@ const Dashboard: React.FC = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {filteredArchivedNets.map((net) => (
+                  {(archivedPerPage === -1 ? filteredArchivedNets : filteredArchivedNets.slice(archivedPage * archivedPerPage, (archivedPage + 1) * archivedPerPage)).map((net) => (
                     <TableRow key={net.id} hover>
                       <TableCell>{net.name}</TableCell>
                       <TableCell>
@@ -1095,6 +1103,17 @@ const Dashboard: React.FC = () => {
                 </TableBody>
               </Table>
             </TableContainer>
+            <TablePagination
+              component="div"
+              count={filteredArchivedNets.length}
+              page={archivedPage}
+              onPageChange={(_, newPage) => setArchivedPage(newPage)}
+              rowsPerPage={archivedPerPage}
+              onRowsPerPageChange={(e) => { setArchivedPerPage(parseInt(e.target.value, 10)); setArchivedPage(0); }}
+              rowsPerPageOptions={[25, 50, { label: 'All', value: -1 }]}
+              labelRowsPerPage="Per page:"
+            />
+            </>
           )}
         </DialogContent>
       </Dialog>

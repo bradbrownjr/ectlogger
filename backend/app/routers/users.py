@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, nullslast
 from sqlalchemy.exc import IntegrityError
 from typing import List, Optional
 from pathlib import Path
@@ -144,7 +144,7 @@ async def list_users(
 ):
     """List all users (admin only)"""
     result = await db.execute(
-        select(User).offset(skip).limit(limit)
+        select(User).order_by(nullslast(User.last_active.desc())).offset(skip).limit(limit)
     )
     users = result.scalars().all()
     return [UserResponse.from_orm(user) for user in users]

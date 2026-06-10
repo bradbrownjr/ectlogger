@@ -157,16 +157,11 @@ Chat image entries in the PDF report render the full `__CHAT_IMAGE__{...}` JSON 
 
 ### Admin Panel Performance
 
-**🔧 Paginate the Admin users table and slim the list response** *(KC1JMH)*  
-The Admin users tab currently loads all users in one request. The backend at `GET /api/users` already accepts `skip` and `limit` query parameters but the frontend ignores them — `Admin.tsx` fetches `/users` with no pagination args, then sorts and filters the full result client-side.
+**🔧 ~~Paginate the Admin users table and slim the list response~~** *(KC1JMH)* — ✅ Done 2026-06-10 (partial)  
+Server-side `ORDER BY last_active DESC NULLS LAST` added. Frontend pagination implemented (25/page, 50, or All) using MUI `TablePagination` — filter/sort resets to page 1. Remaining: slim `UserListItem` response schema (still returns full `UserResponse`; low priority until user count grows significantly).
 
-Three changes together:
-
-1. **Server-side `ORDER BY`** — add `order_by(User.last_active.desc().nullslast())` to the backend query so the default sort is handled by SQLite rather than computed in the browser after arrival.
-
-2. **Slim list schema** — introduce a `UserListItem` response model containing only the fields the table actually displays: `id`, `email`, `name`, `callsign`, `role`, `is_active`, `last_active`, `created_at`, `schedule_bypass`. The full preference payload (20+ fields) stays on `GET /api/users/{id}`. This is already the right call at 47 users; it matters at 500.
-
-3. **Pagination UI** — wire up the existing `skip`/`limit` params: 25 users per page by default, with standard Previous/Next controls and a "Show all" escape hatch for admins who need the full list. The existing client-side filter should operate against the current page while server-side filtering is not yet implemented.
+**🔧 Paginate the Archived Nets dialog** — ✅ Done 2026-06-10  
+The Archived Nets dialog in the Dashboard now paginates at 25 per page (50 or All options). All existing filter (text search, date range) and sort controls reset to page 1 on change. Added because the archived nets list grows unboundedly as nets are logged and closed each week.
 
 ---
 

@@ -1,10 +1,20 @@
 {
-  "version": "2026.06.10i",
+  "version": "2026.06.10j",
   "entries": [
     {
-      "version": "2026.06.10i",
+      "version": "2026.06.10j",
       "date": "2026-06-10",
       "sections": [
+        {
+          "title": "Improvements",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "The Archived Nets list and the Admin users table now paginate at 25 rows per page, with options for 50 or All. Filters, searches, and sort changes automatically reset to page 1.",
+              "userImpact": true
+            }
+          ]
+        },
         {
           "title": "Bug Fixes",
           "type": "bugfix",

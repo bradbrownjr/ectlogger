@@ -37,6 +37,7 @@ import {
   Card,
   CardContent,
   InputAdornment,
+  TablePagination,
 } from '@mui/material';
 import BlockIcon from '@mui/icons-material/Block';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -253,6 +254,8 @@ const Admin: React.FC = () => {
   const [userFilter, setUserFilter] = useState('');
   const [userSortField, setUserSortField] = useState<UserSortField>('online');
   const [userSortDirection, setUserSortDirection] = useState<SortDirection>('desc');
+  const [usersPage, setUsersPage] = useState(0);
+  const [usersPerPage, setUsersPerPage] = useState(25);
   
   // Field filtering and sorting
   const [fieldFilter, setFieldFilter] = useState('');
@@ -699,9 +702,9 @@ const Admin: React.FC = () => {
       setUserSortDirection(userSortDirection === 'asc' ? 'desc' : 'asc');
     } else {
       setUserSortField(field);
-      // Default to desc for 'online' sort (online users first)
       setUserSortDirection(field === 'online' ? 'desc' : 'asc');
     }
+    setUsersPage(0);
   };
 
   // ========== FIELD FILTERING & SORTING ==========
@@ -1266,7 +1269,7 @@ const Admin: React.FC = () => {
               size="small"
               placeholder="Filter by email, name, callsign, or role..."
               value={userFilter}
-              onChange={(e) => setUserFilter(e.target.value)}
+              onChange={(e) => { setUserFilter(e.target.value); setUsersPage(0); }}
               sx={{ flexGrow: 1, maxWidth: 500 }}
               InputProps={{
                 startAdornment: (
@@ -1276,7 +1279,7 @@ const Admin: React.FC = () => {
                 ),
                 endAdornment: userFilter && (
                   <InputAdornment position="end">
-                    <IconButton size="small" onClick={() => setUserFilter('')}>
+                    <IconButton size="small" onClick={() => { setUserFilter(''); setUsersPage(0); }}>
                       <ClearIcon fontSize="small" />
                     </IconButton>
                   </InputAdornment>
@@ -1379,7 +1382,7 @@ const Admin: React.FC = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {sortedUsers.map((user) => {
+                {(usersPerPage === -1 ? sortedUsers : sortedUsers.slice(usersPage * usersPerPage, (usersPage + 1) * usersPerPage)).map((user) => {
                   const onlineStatus = getUserOnlineStatus(user);
                   return (
                   <TableRow key={user.id}>
@@ -1524,6 +1527,16 @@ const Admin: React.FC = () => {
               </TableBody>
             </Table>
           </TableContainer>
+          <TablePagination
+            component="div"
+            count={filteredUsers.length}
+            page={usersPage}
+            onPageChange={(_, newPage) => setUsersPage(newPage)}
+            rowsPerPage={usersPerPage}
+            onRowsPerPageChange={(e) => { setUsersPerPage(parseInt(e.target.value, 10)); setUsersPage(0); }}
+            rowsPerPageOptions={[25, 50, { label: 'All', value: -1 }]}
+            labelRowsPerPage="Per page:"
+          />
         </TabPanel>
 
         {/* ========== CONTACTS TAB ========== */}
