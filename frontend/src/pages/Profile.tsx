@@ -276,47 +276,43 @@ const Profile: React.FC = () => {
           {success && <Alert severity="success" sx={{ mb: 2 }}>Profile updated successfully!</Alert>}
 
           {/* Profile photo section */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3, p: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}>
-            <UserAvatar avatarUrl={(user as any)?.avatar_url} callsign={user?.callsign} name={user?.name} size={64} />
-            <Box sx={{ flex: 1 }}>
-              <Typography variant="subtitle2" gutterBottom>Profile Photo</Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                {(user as any)?.avatar_url?.startsWith('/api/avatars/')
-                  ? 'Using uploaded photo'
-                  : 'Using Gravatar if available, otherwise your initials'}
-              </Typography>
-              {avatarError && <Alert severity="error" sx={{ mb: 1, py: 0 }}>{avatarError}</Alert>}
-              <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
-                <input
-                  ref={avatarInputRef}
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp"
-                  style={{ display: 'none' }}
-                  onChange={handleAvatarUpload}
-                />
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 3, p: 3, border: 1, borderColor: 'divider', borderRadius: 1 }}>
+            <UserAvatar avatarUrl={(user as any)?.avatar_url} callsign={user?.callsign} name={user?.name} size={120} />
+            <Typography variant="subtitle2" sx={{ mt: 2 }}>Profile Photo</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2, textAlign: 'center' }}>
+              {(user as any)?.avatar_url?.startsWith('/api/avatars/')
+                ? 'Using uploaded photo'
+                : 'Using Gravatar if available, otherwise your initials'}
+            </Typography>
+            {avatarError && <Alert severity="error" sx={{ mb: 1, py: 0, width: '100%' }}>{avatarError}</Alert>}
+            <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', justifyContent: 'center', gap: 1 }}>
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                style={{ display: 'none' }}
+                onChange={handleAvatarUpload}
+              />
+              <Button
+                variant="outlined"
+                startIcon={avatarUploading ? <CircularProgress size={16} /> : <PhotoCameraIcon />}
+                onClick={() => avatarInputRef.current?.click()}
+                disabled={avatarUploading}
+              >
+                {(user as any)?.avatar_url?.startsWith('/api/avatars/') ? 'Replace Photo' : 'Upload Photo'}
+              </Button>
+              {(user as any)?.avatar_url?.startsWith('/api/avatars/') && (
                 <Button
-                  size="small"
                   variant="outlined"
-                  startIcon={avatarUploading ? <CircularProgress size={14} /> : <PhotoCameraIcon />}
-                  onClick={() => avatarInputRef.current?.click()}
+                  color="error"
+                  startIcon={<DeleteIcon />}
+                  onClick={handleAvatarDelete}
                   disabled={avatarUploading}
                 >
-                  {(user as any)?.avatar_url?.startsWith('/api/avatars/') ? 'Replace Photo' : 'Upload Photo'}
+                  Remove
                 </Button>
-                {(user as any)?.avatar_url?.startsWith('/api/avatars/') && (
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    color="error"
-                    startIcon={<DeleteIcon />}
-                    onClick={handleAvatarDelete}
-                    disabled={avatarUploading}
-                  >
-                    Remove
-                  </Button>
-                )}
-              </Stack>
-            </Box>
+              )}
+            </Stack>
           </Box>
 
           {/* ========== CROP DIALOG ========== */}
