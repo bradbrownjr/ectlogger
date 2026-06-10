@@ -286,7 +286,7 @@ const Profile: React.FC = () => {
                   : 'Using Gravatar if available, otherwise your initials'}
               </Typography>
               {avatarError && <Alert severity="error" sx={{ mb: 1, py: 0 }}>{avatarError}</Alert>}
-              <Stack direction="row" spacing={1}>
+              <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
                 <input
                   ref={avatarInputRef}
                   type="file"
