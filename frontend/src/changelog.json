@@ -1,6 +1,22 @@
 {
-  "version": "2026.06.10d",
+  "version": "2026.06.10e",
   "entries": [
+    {
+      "version": "2026.06.10e",
+      "date": "2026-06-10",
+      "sections": [
+        {
+          "title": "Bug Fixes",
+          "type": "bugfix",
+          "items": [
+            {
+              "text": "Emoji reaction toolbar no longer shifts chat message text when you hover. The toolbar now overlays the message without causing a layout reflow.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.06.10d",
       "date": "2026-06-10",

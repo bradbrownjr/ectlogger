@@ -361,7 +361,6 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
                     py: 0.25,
                     backgroundColor: message.user_id === user?.id ? 'action.selected' : 'transparent',
                     borderRadius: 1,
-                    pr: hoveredMessageId === message.id ? '100px' : 0.5,
                   }}
                 >
                   <ListItemText
