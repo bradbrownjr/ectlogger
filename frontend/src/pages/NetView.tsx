@@ -2121,11 +2121,11 @@ const NetView: React.FC = () => {
             </Grid>
             <Grid item xs={12} md={4} sx={{ pl: { md: 0.5 } }}>
               {/* Two-row toolbar:
-                  Row 1 = net operations (start, check-in, close, roles, navigation)
-                  Row 2 = net functions  (export, import, reports, archive, delete)
+                  Row 1 = net info  (read/view: search, map, stats, script, etc.)
+                  Row 2 = net actions (write/change: start, check-in, close, export, import, etc.)
                   Hover over any icon button to reveal its function. */}
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, alignItems: { xs: 'flex-start', md: 'flex-end' } }}>
-              {/* ===== ROW 1: NET OPERATIONS ===== */}
+              {/* ===== ROW 1: NET INFO ===== */}
               <Box
                 sx={{
                   display: 'flex',
@@ -2139,18 +2139,157 @@ const NetView: React.FC = () => {
                   },
                 }}
               >
-                {/* Start Net button - prominent, green, leftmost */}
+                {/* Bulk check-in shortcut */}
+                {(net.status === 'active' || net.status === 'lobby') && checkIns.length > 0 && (
+                  <Tooltip title="Bulk add multiple check-ins">
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={() => setBulkCheckInOpen(true)}
+                      sx={{ minWidth: 'auto', px: 1 }}
+                    >
+                      <FastForwardIcon fontSize="small" />
+                    </Button>
+                  </Tooltip>
+                )}
+                {checkIns.length > 0 && (
+                  <>
+                    <Tooltip title="Search check-ins">
+                      <Button
+                        size="small"
+                        variant={searchQuery ? "contained" : "outlined"}
+                        color="primary"
+                        onClick={() => setSearchOpen(true)}
+                        sx={{ minWidth: 'auto', px: 1 }}
+                      >
+                        <SearchIcon fontSize="small" />
+                      </Button>
+                    </Tooltip>
+                    <Tooltip title="View check-in locations on map">
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        color="primary"
+                        onClick={() => setMapOpen(true)}
+                        sx={{ minWidth: 'auto', px: 1 }}
+                      >
+                        <MapIcon fontSize="small" />
+                      </Button>
+                    </Tooltip>
+                    {net.stream_url && (
+                      <Tooltip title="Listen to net audio">
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          onClick={() => window.open(net.stream_url, '_blank')}
+                          sx={{ minWidth: 'auto', px: 1, color: '#9c27b0', borderColor: '#9c27b0', '&:hover': { borderColor: '#9c27b0', backgroundColor: 'rgba(156, 39, 176, 0.08)' } }}
+                        >
+                          <VolumeUpIcon fontSize="small" />
+                        </Button>
+                      </Tooltip>
+                    )}
+                    <Tooltip title="Net statistics">
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        onClick={() => navigate(`/statistics/nets/${netId}`)}
+                        sx={{ minWidth: 'auto', px: 1, color: '#ff9800', borderColor: '#ff9800', '&:hover': { borderColor: '#ff9800', backgroundColor: 'rgba(255, 152, 0, 0.08)' } }}
+                      >
+                        <BarChartIcon fontSize="small" />
+                      </Button>
+                    </Tooltip>
+                    {net.script && (
+                      <Tooltip title="View net script">
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          onClick={() => setScriptOpen(true)}
+                          sx={{ minWidth: 'auto', px: 1, borderColor: 'grey.400' }}
+                        >
+                          <ArticleIcon fontSize="small" />
+                        </Button>
+                      </Tooltip>
+                    )}
+                    {net.announcements && (
+                      <Tooltip title="View announcements / general traffic">
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          onClick={() => setAnnouncementsOpen(true)}
+                          sx={{ minWidth: 'auto', px: 1, borderColor: 'grey.400' }}
+                        >
+                          <CampaignIcon fontSize="small" />
+                        </Button>
+                      </Tooltip>
+                    )}
+                    {net.template_id && (
+                      <Tooltip title="View prior topics">
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          onClick={() => setTopicHistoryOpen(true)}
+                          sx={{ minWidth: 'auto', px: 1, borderColor: 'grey.400' }}
+                        >
+                          <HistoryIcon fontSize="small" />
+                        </Button>
+                      </Tooltip>
+                    )}
+                  </>
+                )}
+                {net.info_url && (
+                  <Tooltip title="Net/Club info">
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      color="primary"
+                      onClick={() => window.open(net.info_url, '_blank')}
+                      sx={{ minWidth: 'auto', px: 1 }}
+                    >
+                      <LanguageIcon fontSize="small" />
+                    </Button>
+                  </Tooltip>
+                )}
+                {/* Info page link — shown for non-managers and on all inactive net states */}
+                {!(canManage && (net.status === 'active' || net.status === 'lobby')) && (
+                  <Tooltip title="View net info">
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      color="primary"
+                      onClick={() => navigate(`/nets/${netId}/info`)}
+                      sx={{ minWidth: 'auto', px: 1 }}
+                    >
+                      <InfoIcon fontSize="small" />
+                    </Button>
+                  </Tooltip>
+                )}
+              </Box>
+              {/* ===== ROW 2: NET ACTIONS (start, roles, check-in, close, export, import, archive, delete) ===== */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  gap: { xs: 0.25, md: 0.5 },
+                  flexWrap: 'wrap',
+                  alignItems: 'center',
+                  justifyContent: { xs: 'flex-start', md: 'flex-end' },
+                  '& .MuiButton-root': {
+                    px: { xs: 0.5, md: 1 },
+                    minWidth: { xs: 32, md: 'auto' },
+                  },
+                }}
+              >
+                {/* Start Net - draft/scheduled */}
                 {canStartNet && (net.status === 'draft' || net.status === 'scheduled') && (
                   <>
                     <Tooltip title="Start the net">
-                      <Button 
-                        size="small" 
-                        variant="contained" 
+                      <Button
+                        size="small"
+                        variant="contained"
                         color="success"
-                        onClick={handleStartNetClick} 
+                        onClick={handleStartNetClick}
                         disabled={startingNet}
-                        sx={{ 
-                          minWidth: 'auto', 
+                        sx={{
+                          minWidth: 'auto',
                           px: 1,
                           ...(highlightStartNet && {
                             animation: `${pulseAnimationGreen} 1s infinite`,
@@ -2186,12 +2325,13 @@ const NetView: React.FC = () => {
                     )}
                   </>
                 )}
+                {/* Edit and Roles - draft/scheduled */}
                 {canManage && (net.status === 'draft' || net.status === 'scheduled') && (
                   <>
                     <Tooltip title="Edit net settings">
-                      <Button 
-                        size="small" 
-                        variant="outlined" 
+                      <Button
+                        size="small"
+                        variant="outlined"
                         onClick={() => navigate(`/nets/${netId}/edit`)}
                         sx={{ minWidth: 'auto', px: 1 }}
                       >
@@ -2199,9 +2339,9 @@ const NetView: React.FC = () => {
                       </Button>
                     </Tooltip>
                     <Tooltip title="Assign NCS and logger roles (any assigned NCS can start the net)">
-                      <Button 
-                        size="small" 
-                        variant="outlined" 
+                      <Button
+                        size="small"
+                        variant="outlined"
                         onClick={() => {
                           fetchAllUsers();
                           setRoleDialogOpen(true);
@@ -2213,121 +2353,13 @@ const NetView: React.FC = () => {
                     </Tooltip>
                   </>
                 )}
-                {(net.status === 'active' || net.status === 'lobby') && checkIns.length > 0 && (
-                  <Tooltip title="Bulk add multiple check-ins">
-                    <Button 
-                      size="small" 
-                      variant="outlined" 
-                      onClick={() => setBulkCheckInOpen(true)}
-                      sx={{ minWidth: 'auto', px: 1 }}
-                    >
-                      <FastForwardIcon fontSize="small" />
-                    </Button>
-                  </Tooltip>
-                )}
-                {checkIns.length > 0 && (
-                  <>
-                    <Tooltip title="Search check-ins">
-                      <Button 
-                        size="small" 
-                        variant={searchQuery ? "contained" : "outlined"}
-                        color="primary"
-                        onClick={() => setSearchOpen(true)}
-                        sx={{ minWidth: 'auto', px: 1 }}
-                      >
-                        <SearchIcon fontSize="small" />
-                      </Button>
-                    </Tooltip>
-                    <Tooltip title="View check-in locations on map">
-                      <Button 
-                        size="small" 
-                        variant="outlined" 
-                        color="primary"
-                        onClick={() => setMapOpen(true)}
-                        sx={{ minWidth: 'auto', px: 1 }}
-                      >
-                        <MapIcon fontSize="small" />
-                      </Button>
-                    </Tooltip>
-                    {net.stream_url && (
-                      <Tooltip title="Listen to net audio">
-                        <Button 
-                          size="small" 
-                          variant="outlined" 
-                          onClick={() => window.open(net.stream_url, '_blank')}
-                          sx={{ minWidth: 'auto', px: 1, color: '#9c27b0', borderColor: '#9c27b0', '&:hover': { borderColor: '#9c27b0', backgroundColor: 'rgba(156, 39, 176, 0.08)' } }}
-                        >
-                          <VolumeUpIcon fontSize="small" />
-                        </Button>
-                      </Tooltip>
-                    )}
-                    <Tooltip title="Net statistics">
-                      <Button 
-                        size="small" 
-                        variant="outlined" 
-                        onClick={() => navigate(`/statistics/nets/${netId}`)}
-                        sx={{ minWidth: 'auto', px: 1, color: '#ff9800', borderColor: '#ff9800', '&:hover': { borderColor: '#ff9800', backgroundColor: 'rgba(255, 152, 0, 0.08)' } }}
-                      >
-                        <BarChartIcon fontSize="small" />
-                      </Button>
-                    </Tooltip>
-                    {net.script && (
-                      <Tooltip title="View net script">
-                        <Button 
-                          size="small" 
-                          variant="outlined" 
-                          onClick={() => setScriptOpen(true)}
-                          sx={{ minWidth: 'auto', px: 1, borderColor: 'grey.400' }}
-                        >
-                          <ArticleIcon fontSize="small" />
-                        </Button>
-                      </Tooltip>
-                    )}
-                    {net.announcements && (
-                      <Tooltip title="View announcements / general traffic">
-                        <Button 
-                          size="small" 
-                          variant="outlined" 
-                          onClick={() => setAnnouncementsOpen(true)}
-                          sx={{ minWidth: 'auto', px: 1, borderColor: 'grey.400' }}
-                        >
-                          <CampaignIcon fontSize="small" />
-                        </Button>
-                      </Tooltip>
-                    )}
-                    {net.template_id && (
-                      <Tooltip title="View prior topics">
-                        <Button 
-                          size="small" 
-                          variant="outlined" 
-                          onClick={() => setTopicHistoryOpen(true)}
-                          sx={{ minWidth: 'auto', px: 1, borderColor: 'grey.400' }}
-                        >
-                          <HistoryIcon fontSize="small" />
-                        </Button>
-                      </Tooltip>
-                    )}
-                  </>
-                )}
-                {net.info_url && (
-                  <Tooltip title="Net/Club info">
-                    <Button 
-                      size="small" 
-                      variant="outlined" 
-                      color="primary"
-                      onClick={() => window.open(net.info_url, '_blank')}
-                      sx={{ minWidth: 'auto', px: 1 }}
-                    >
-                      <LanguageIcon fontSize="small" />
-                    </Button>
-                  </Tooltip>
-                )}
-                {canManage && (net.status === 'active' || net.status === 'lobby') ? (
+                {/* Edit, Roles, Claim NCS - active/lobby */}
+                {canManage && (net.status === 'active' || net.status === 'lobby') && (
                   <>
                     <Tooltip title="Edit net settings">
-                      <Button 
-                        size="small" 
-                        variant="outlined" 
+                      <Button
+                        size="small"
+                        variant="outlined"
                         onClick={() => navigate(`/nets/${netId}/edit`)}
                         sx={{ minWidth: 'auto', px: 1, borderColor: 'grey.400' }}
                       >
@@ -2335,9 +2367,9 @@ const NetView: React.FC = () => {
                       </Button>
                     </Tooltip>
                     <Tooltip title="Manage NCS and logger roles">
-                      <Button 
-                        size="small" 
-                        variant="outlined" 
+                      <Button
+                        size="small"
+                        variant="outlined"
                         onClick={() => {
                           fetchAllUsers();
                           setRoleDialogOpen(true);
@@ -2348,9 +2380,9 @@ const NetView: React.FC = () => {
                       </Button>
                     </Tooltip>
                     {!hasNCS && (
-                      <Button 
-                        size="small" 
-                        variant="contained" 
+                      <Button
+                        size="small"
+                        variant="contained"
                         color="warning"
                         onClick={handleClaimNCS}
                       >
@@ -2358,24 +2390,13 @@ const NetView: React.FC = () => {
                       </Button>
                     )}
                   </>
-                ) : (
-                  <Tooltip title="View net info">
-                    <Button 
-                      size="small" 
-                      variant="outlined" 
-                      color="primary"
-                      onClick={() => navigate(`/nets/${netId}/info`)}
-                      sx={{ minWidth: 'auto', px: 1 }}
-                    >
-                      <InfoIcon fontSize="small" />
-                    </Button>
-                  </Tooltip>
                 )}
+                {/* Check-in / user status buttons - active/lobby */}
                 {isAuthenticated && (net.status === 'active' || net.status === 'lobby') && (
                   userActiveCheckIn ? (
                     <>
                     <Tooltip title={userActiveCheckIn?.hand_raised ? 'Lower hand' : 'Raise hand'}>
-                      <Button 
+                      <Button
                         size="small"
                         variant="outlined"
                         color={userActiveCheckIn?.hand_raised ? 'warning' : 'inherit'}
@@ -2386,7 +2407,7 @@ const NetView: React.FC = () => {
                       </Button>
                     </Tooltip>
                     <Tooltip title={userActiveCheckIn?.status === 'away' ? 'Return from break' : 'Step away'}>
-                      <Button 
+                      <Button
                         size="small"
                         variant="outlined"
                         color={userActiveCheckIn?.status === 'away' ? 'warning' : 'inherit'}
@@ -2397,9 +2418,9 @@ const NetView: React.FC = () => {
                       </Button>
                     </Tooltip>
                     <Tooltip title="Check out of net">
-                      <Button 
+                      <Button
                         size="small"
-                        variant="outlined" 
+                        variant="outlined"
                         color="error"
                         onClick={handleCheckOut}
                         sx={{ minWidth: 'auto', px: 1 }}
@@ -2410,16 +2431,16 @@ const NetView: React.FC = () => {
                     </>
                   ) : (
                     <Tooltip title="Check into net">
-                      <Button 
+                      <Button
                         size="small"
-                        variant="contained" 
+                        variant="contained"
                         color="primary"
                         onClick={() => {
                           // Pre-fill form with user's profile data
                           if (user) {
                             // Use grid square if location_awareness is enabled and available, otherwise use profile location
-                            const locationValue = (user.location_awareness && gridSquare) 
-                              ? gridSquare 
+                            const locationValue = (user.location_awareness && gridSquare)
+                              ? gridSquare
                               : (user.location || '');
                             setCheckInForm({
                               callsign: getAppropriateCallsign(),
@@ -2451,8 +2472,8 @@ const NetView: React.FC = () => {
                             setCheckInDialogOpen(true);
                           }
                         }}
-                        sx={{ 
-                          minWidth: 'auto', 
+                        sx={{
+                          minWidth: 'auto',
                           px: 1,
                           ...(highlightCheckIn && {
                             animation: `${pulseAnimation} 1s infinite`,
@@ -2464,12 +2485,13 @@ const NetView: React.FC = () => {
                     </Tooltip>
                   )
                 )}
+                {/* Go Live - lobby */}
                 {canManage && net.status === 'lobby' && (
                   <Tooltip title="Go live - Start the net officially and notify subscribers">
-                    <Button 
-                      size="small" 
-                      variant="contained" 
-                      color="success" 
+                    <Button
+                      size="small"
+                      variant="contained"
+                      color="success"
                       onClick={handleGoLive}
                       sx={{ minWidth: 'auto', px: 1 }}
                     >
@@ -2477,12 +2499,13 @@ const NetView: React.FC = () => {
                     </Button>
                   </Tooltip>
                 )}
+                {/* Close Net - active/lobby */}
                 {canManage && (net.status === 'active' || net.status === 'lobby') && (
                   <Tooltip title="Close net">
-                    <Button 
-                      size="small" 
-                      variant="contained" 
-                      color="error" 
+                    <Button
+                      size="small"
+                      variant="contained"
+                      color="error"
                       onClick={() => setCloseNetDialogOpen(true)}
                       sx={{ minWidth: 'auto', px: 1 }}
                     >
@@ -2490,27 +2513,12 @@ const NetView: React.FC = () => {
                     </Button>
                   </Tooltip>
                 )}
-              </Box>
-              {/* ===== ROW 2: NET FUNCTIONS (exports, imports, reports, archive, delete) ===== */}
-              <Box
-                sx={{
-                  display: 'flex',
-                  gap: { xs: 0.25, md: 0.5 },
-                  flexWrap: 'wrap',
-                  alignItems: 'center',
-                  justifyContent: { xs: 'flex-start', md: 'flex-end' },
-                  '& .MuiButton-root': {
-                    px: { xs: 0.5, md: 1 },
-                    minWidth: { xs: 32, md: 'auto' },
-                  },
-                }}
-              >
                 {/* Export CSV — closed and archived */}
                 {(net.status === 'closed' || net.status === 'archived') && (
                   <Tooltip title="Export check-ins to CSV">
-                    <Button 
+                    <Button
                       size="small"
-                      variant="outlined" 
+                      variant="outlined"
                       onClick={handleExportCSV}
                       sx={{ minWidth: 'auto', px: 1, color: '#4caf50', borderColor: '#4caf50', '&:hover': { borderColor: '#4caf50', backgroundColor: 'rgba(76, 175, 80, 0.08)' } }}
                     >
@@ -2534,9 +2542,9 @@ const NetView: React.FC = () => {
                 {/* ICS-309 Communications Log — closed and archived */}
                 {(net.status === 'closed' || net.status === 'archived') && (
                   <Tooltip title="Download ICS-309 Communications Log">
-                    <Button 
+                    <Button
                       size="small"
-                      variant="outlined" 
+                      variant="outlined"
                       onClick={handleExportICS309}
                       sx={{ minWidth: 'auto', px: 1, color: '#009688', borderColor: '#009688', '&:hover': { borderColor: '#009688', backgroundColor: 'rgba(0, 150, 136, 0.08)' } }}
                     >
@@ -2547,9 +2555,9 @@ const NetView: React.FC = () => {
                 {/* PDF Report — closed and archived */}
                 {(net.status === 'closed' || net.status === 'archived') && (
                   <Tooltip title="Generate comprehensive net report (PDF)">
-                    <Button 
+                    <Button
                       size="small"
-                      variant="outlined" 
+                      variant="outlined"
                       onClick={() => navigate(`/nets/${netId}/report`)}
                       sx={{ minWidth: 'auto', px: 1, color: '#4caf50', borderColor: '#4caf50', '&:hover': { borderColor: '#4caf50', backgroundColor: 'rgba(76, 175, 80, 0.08)' } }}
                     >
@@ -2560,9 +2568,9 @@ const NetView: React.FC = () => {
                 {/* Archive — closed (canManage) */}
                 {canManage && net.status === 'closed' && (
                   <Tooltip title="Archive net">
-                    <Button 
+                    <Button
                       size="small"
-                      variant="outlined" 
+                      variant="outlined"
                       onClick={handleArchive}
                       sx={{ minWidth: 'auto', px: 1, borderColor: 'grey.400' }}
                     >
@@ -2573,9 +2581,9 @@ const NetView: React.FC = () => {
                 {/* Delete — closed (isAdmin) */}
                 {isAdmin && net.status === 'closed' && (
                   <Tooltip title="Delete net">
-                    <Button 
+                    <Button
                       size="small"
-                      variant="outlined" 
+                      variant="outlined"
                       color="error"
                       onClick={handleDelete}
                       sx={{ minWidth: 'auto', px: 1 }}
@@ -2587,9 +2595,9 @@ const NetView: React.FC = () => {
                 {/* Unarchive — archived (canManage) */}
                 {canManage && net.status === 'archived' && (
                   <Tooltip title="Unarchive net - restore to closed status">
-                    <Button 
+                    <Button
                       size="small"
-                      variant="outlined" 
+                      variant="outlined"
                       onClick={handleUnarchive}
                       sx={{ minWidth: 'auto', px: 1, borderColor: 'grey.400' }}
                     >
@@ -2600,9 +2608,9 @@ const NetView: React.FC = () => {
                 {/* Delete — draft or archived (canManage) */}
                 {canManage && (net.status === 'draft' || net.status === 'archived') && (
                   <Tooltip title="Delete net">
-                    <Button 
+                    <Button
                       size="small"
-                      variant="outlined" 
+                      variant="outlined"
                       color="error"
                       onClick={handleDelete}
                       sx={{ minWidth: 'auto', px: 1 }}

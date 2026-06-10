@@ -4,6 +4,14 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# June 10, 2026
+
+## UX Improvements
+
+* **Toolbar reorganized into Net Info and Net Actions rows** — The toolbar on the Net View page is now split into two logical rows: **Row 1 (Net Info)** contains read-only browsing tools (bulk check-in shortcut, search, map, stats, script, announcements, topic history, info URL, net info link) and **Row 2 (Net Actions)** contains all write/management controls (start, edit, roles, check-in, go live, close, import, export, PDF, archive, delete). Previously, action buttons mixed into Row 1 caused the toolbar to overflow into a third row on active nets with many features enabled — for example, the Import button would end up isolated on its own line.
+
+---
+
 # June 9, 2026
 
 ## Bug Fixes

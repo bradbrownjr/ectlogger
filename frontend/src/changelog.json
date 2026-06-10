@@ -1,6 +1,22 @@
 {
-  "version": "2026.06.09",
+  "version": "2026.06.10",
   "entries": [
+    {
+      "version": "2026.06.10",
+      "date": "2026-06-10",
+      "sections": [
+        {
+          "title": "Toolbar: Net Info and Net Actions",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "The toolbar on the Net View page is now organized into two clear rows: Net Info (search, map, stats, script, announcements, topic history, info URL) and Net Actions (start, edit, roles, check-in, close, import, export, archive, delete). This prevents the toolbar from spilling into a third row on active nets with many features enabled.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.06.09",
       "date": "2026-06-09",
