@@ -66,10 +66,10 @@ class User(Base):
     callsign = Column(String(50), unique=True, index=True)  # Primary callsign (Amateur Radio)
     gmrs_callsign = Column(String(50), unique=True, index=True, nullable=True)  # GMRS callsign (e.g., WROP123)
     callsigns = Column(Text, default='[]')  # JSON array of additional callsigns
-    role = Column(Enum(UserRole), default=UserRole.USER)
+    role = Column(Enum(UserRole), default=UserRole.USER, index=True)
     oauth_provider = Column(String(50))  # google, microsoft, github, email
     oauth_id = Column(String(255), unique=True, index=True)
-    is_active = Column(Boolean, default=True)
+    is_active = Column(Boolean, default=True, index=True)
     email_notifications = Column(Boolean, default=True)  # Master switch for all emails
     notify_net_start = Column(Boolean, default=True)  # Notify when subscribed net starts
     notify_net_close = Column(Boolean, default=True)  # Notify when subscribed net closes (with log)
@@ -86,10 +86,10 @@ class User(Base):
     live_location = Column(String(50))  # GPS-derived grid square (updated automatically)
     live_location_updated = Column(DateTime(timezone=True))  # When live_location was last updated
     prefer_utc = Column(Boolean, default=False)  # Display times in UTC instead of local time
-    last_active = Column(DateTime(timezone=True))  # Last API request timestamp for online tracking
+    last_active = Column(DateTime(timezone=True), index=True)  # Last API request timestamp for online tracking
     schedule_age_bypass = Column(Boolean, default=False)  # Admin-granted early access to schedule creation
     avatar_url = Column(String(500), nullable=True)  # Custom profile image URL; overrides Gravatar when set
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     # Relationships
