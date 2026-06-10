@@ -46,6 +46,10 @@
             {
               "text": "Admins can now configure session lifetime and rolling renewal in Admin → Security → Session Settings, without editing server config files.",
               "userImpact": true
+            },
+            {
+              "text": "Emoji reaction controls are now hidden on closed and archived nets. Existing reaction counts remain visible for historical reference but are no longer interactive.",
+              "userImpact": true
             }
           ]
         }

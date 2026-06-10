@@ -18,6 +18,7 @@ All notable changes to ECTLogger are documented here.
 ## Improvements
 
 * **Session settings configurable in Admin panel** — Admins can now set session lifetime and toggle rolling renewal in Admin → Security → Session Settings, without editing server config files.
+* **Emoji reaction controls hidden on closed/archived nets** — The hover emoji toolbar no longer appears on closed or archived nets. Existing reaction counts remain visible for historical reference but are no longer interactive.
 
 ## UX Improvements
 
