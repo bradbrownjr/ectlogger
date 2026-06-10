@@ -1727,6 +1727,73 @@ async def claim_ncs_role(
     return {"message": "NCS role claimed successfully"}
 
 
+@router.put("/{net_id}/roles/toggle-self")
+async def toggle_self_net_role(
+    net_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Allow an NCS-role operator to toggle their own active/inactive status on a net."""
+    result = await db.execute(select(Net).where(Net.id == net_id))
+    net = result.scalar_one_or_none()
+    if not net:
+        raise HTTPException(status_code=404, detail="Net not found")
+
+    result = await db.execute(
+        select(NetRole).where(NetRole.net_id == net_id, NetRole.user_id == current_user.id, NetRole.role == "NCS")
+    )
+    role = result.scalar_one_or_none()
+    if not role:
+        raise HTTPException(status_code=403, detail="You do not have an NCS role on this net")
+
+    currently_active = role.is_active if role.is_active is not None else True
+
+    # Prevent stepping down if you are the only active NCS on an active net
+    if currently_active and net.status == NetStatus.ACTIVE:
+        result = await db.execute(
+            select(NetRole).where(
+                NetRole.net_id == net_id,
+                NetRole.role == "NCS",
+                NetRole.is_active == True  # noqa: E712
+            )
+        )
+        active_ncs = result.scalars().all()
+        if len(active_ncs) <= 1:
+            raise HTTPException(
+                status_code=400,
+                detail="You are the only active NCS. Assign another NCS before stepping down."
+            )
+
+    role.is_active = not currently_active
+    await db.commit()
+    await db.refresh(role)
+
+    from app.main import manager, post_system_message
+    import datetime
+    await manager.broadcast({
+        "type": "role_change",
+        "data": {
+            "net_id": net_id,
+            "user_id": current_user.id,
+            "role": "NCS",
+            "is_active": role.is_active,
+            "assigned_at": role.assigned_at.isoformat() if hasattr(role.assigned_at, 'isoformat') else str(role.assigned_at)
+        },
+        "timestamp": datetime.datetime.utcnow().isoformat()
+    }, net_id)
+
+    action = "stepped up to NCS" if role.is_active else "stepped down to participant"
+    await post_system_message(net_id, f"{display_callsign(current_user)} {action}", db)
+
+    return {
+        "id": role.id,
+        "user_id": role.user_id,
+        "role": role.role,
+        "is_active": role.is_active,
+        "assigned_at": role.assigned_at.isoformat() if hasattr(role.assigned_at, 'isoformat') else str(role.assigned_at)
+    }
+
+
 @router.get("/{net_id}/roles")
 async def list_net_roles(
     net_id: int,
@@ -1755,6 +1822,7 @@ async def list_net_roles(
                 "role": role.role,
                 "active_frequency_id": role.active_frequency_id,
                 "assigned_at": role.assigned_at,
+                "is_active": role.is_active if role.is_active is not None else True,
             }
             if is_authed:
                 entry["email"] = role.user.email

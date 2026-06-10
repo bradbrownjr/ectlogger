@@ -1,8 +1,8 @@
 {
-  "version": "2026.06.10l",
+  "version": "2026.06.10m",
   "entries": [
     {
-      "version": "2026.06.10l",
+      "version": "2026.06.10m",
       "date": "2026-06-10",
       "sections": [
         {
@@ -73,6 +73,10 @@
             },
             {
               "text": "NCS operators viewing a net they haven't checked into now see two check-in options in the prompt: \"Check In as NCS\" and \"Check In as Participant\". Both open the standard check-in dialog instead of scrolling to the inline NCS form.",
+              "userImpact": true
+            },
+            {
+              "text": "NCS operators can now toggle their active role directly from the toolbar. The crown icon button steps you down to participant (losing NCS badge and management controls) or back up to NCS — without losing your permanent role assignment. The button is only visible to operators who have an NCS role on the current net and have checked in.",
               "userImpact": true
             }
           ]

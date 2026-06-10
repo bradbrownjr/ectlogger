@@ -232,6 +232,7 @@ class NetRole(Base):
     role = Column(String(50), nullable=False)  # NCS, LOGGER, RELAY
     active_frequency_id = Column(Integer, ForeignKey("frequencies.id", ondelete="SET NULL"), nullable=True)  # Frequency this NCS is monitoring
     assigned_at = Column(DateTime(timezone=True), server_default=func.now())
+    is_active = Column(Boolean, default=True)  # False when operator has temporarily stepped down to participant
 
     # Relationships
     net = relationship("Net", back_populates="net_roles")

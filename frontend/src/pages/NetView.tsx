@@ -68,6 +68,7 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutline';
+import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium';
 import { netApi, checkInApi, userApi, netRoleApi, templateApi } from '../services/api';
 import api from '../services/api';
 import { formatTimeWithDate } from '../utils/dateUtils';
@@ -172,6 +173,7 @@ interface NetRole {
   role: string;
   active_frequency_id?: number;
   assigned_at: string;
+  is_active?: boolean;
 }
 
 // NCS color palette - works in both light and dark modes
@@ -1754,9 +1756,12 @@ const NetView: React.FC = () => {
   
   // Check if user has NCS or Logger role
   const userNetRole = netRoles.find((role: any) => role.user_id === user?.id);
-  const isNCS = userNetRole && userNetRole.role === 'NCS';
+  // isAssignedNCS: has the NCS role record regardless of active state (used for toggle button visibility)
+  const isAssignedNCS = userNetRole?.role === 'NCS';
+  // isNCS: actively operating as NCS (has role AND is_active is not false)
+  const isNCS = isAssignedNCS && userNetRole?.is_active !== false;
   // Role is stored as uppercase 'NCS' or 'LOGGER' in the database
-  const isNCSOrLogger = userNetRole && (userNetRole.role === 'NCS' || userNetRole.role === 'LOGGER');
+  const isNCSOrLogger = userNetRole && (userNetRole.role === 'NCS' && userNetRole.is_active !== false || userNetRole.role === 'LOGGER');
   
   // NCS users can manage the net (edit settings, close, etc.) - they're co-owners
   const canManage = isOwner || isAdmin || isNCS;
@@ -2418,6 +2423,27 @@ const NetView: React.FC = () => {
                         <PanToolIcon fontSize="small" />
                       </Button>
                     </Tooltip>
+                    {/* Role toggle — only visible to operators with an NCS assignment */}
+                    {isAssignedNCS && (
+                      <Tooltip title={isNCS ? 'Step down — stop acting as NCS' : 'Step up — take NCS role'}>
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          color={isNCS ? 'primary' : 'inherit'}
+                          onClick={async () => {
+                            try {
+                              await netRoleApi.toggleSelf(Number(netId));
+                              await fetchNetRoles();
+                            } catch (err: any) {
+                              setToastMessage(err.response?.data?.detail || 'Could not toggle NCS role');
+                            }
+                          }}
+                          sx={{ minWidth: 'auto', px: 1 }}
+                        >
+                          <WorkspacePremiumIcon fontSize="small" />
+                        </Button>
+                      </Tooltip>
+                    )}
                     <Tooltip title={userActiveCheckIn?.status === 'away' ? 'Return from break' : 'Step away'}>
                       <Button
                         size="small"

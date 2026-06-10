@@ -203,6 +203,7 @@ export const statisticsApi = {
 // Net Role API (for NCS frequency claiming)
 export const netRoleApi = {
   list: (netId: number) => api.get(`/nets/${netId}/roles`),
+  toggleSelf: (netId: number) => api.put(`/nets/${netId}/roles/toggle-self`),
   claimFrequency: (netId: number, roleId: number, frequencyId: number) =>
     api.put(`/nets/${netId}/roles/${roleId}/frequency/${frequencyId}`),
   clearFrequency: (netId: number, roleId: number) =>
