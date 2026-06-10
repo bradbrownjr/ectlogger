@@ -25,6 +25,9 @@ All notable changes to ECTLogger are documented here.
 * **Activity Log collapsed by default** — The Activity Log panel now loads minimized on every page visit, keeping more screen space available for the check-in list and chat — particularly useful on mobile. Clicking the expand button opens it as before, and the choice persists for the rest of the session.
 * **Net and schedule card polish** — Long descriptions on net and schedule cards are now truncated to three lines with an inline "Show more" link to read the rest.
 * **Paginated lists** — The Archived Nets dialog and the Admin users table now show 25 rows per page, with 50 or All options. Filters, searches, and column sorts all reset to page 1 automatically. The Admin users list also now arrives sorted most-recently-active first.
+
+## New Features
+
 * **NCS check-in prompt now offers a role choice** — NCS operators who haven't yet checked in now see two buttons in the check-in prompt: "Check In as NCS" and "Check In as Participant". Both open the standard check-in dialog. Previously, clicking "Check In" scrolled down to the inline NCS entry form, which was confusing for operators who just wanted to observe before joining.
 * **NCS role toggle in toolbar** — NCS operators can now step down to participant (or back up to NCS) using the crown icon in the toolbar. Stepping down removes the NCS badge and management controls for that session without losing the permanent role assignment. Stepping back up restores full NCS status. The button only appears for operators with an NCS assignment who are checked in. The last active NCS on an active net cannot step down.
 
