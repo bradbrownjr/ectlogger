@@ -12,67 +12,19 @@
             {
               "text": "Profile photos taken on mobile phones now display upright. Previously, portrait or landscape photos were saved sideways because the server ignored the EXIF orientation tag embedded by the camera.",
               "userImpact": true
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "version": "2026.06.10e",
-      "date": "2026-06-10",
-      "sections": [
-        {
-          "title": "Bug Fixes",
-          "type": "bugfix",
-          "items": [
+            },
             {
               "text": "Emoji reaction toolbar no longer shifts chat message text when you hover. The toolbar now overlays the message without causing a layout reflow.",
               "userImpact": true
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "version": "2026.06.10d",
-      "date": "2026-06-10",
-      "sections": [
-        {
-          "title": "Bug Fixes",
-          "type": "bugfix",
-          "items": [
+            },
             {
               "text": "Check-in list now displays in correct chronological order. When a net is created from a template, all staff are pre-assigned NCS roles at the same timestamp — this was causing up to 5 operators to be promoted above stations who checked in earlier. Only operators who were already checked in before the first non-NCS station joined are now treated as active NCS for display ordering.",
               "userImpact": true
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "version": "2026.06.10c",
-      "date": "2026-06-10",
-      "sections": [
-        {
-          "title": "Bug Fixes",
-          "type": "bugfix",
-          "items": [
+            },
             {
               "text": "Net managers and co-managers can now archive, unarchive, and delete nets they manage. Previously only the direct net owner or a site admin could perform these actions.",
               "userImpact": true
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "version": "2026.06.10b",
-      "date": "2026-06-10",
-      "sections": [
-        {
-          "title": "Bug Fixes",
-          "type": "bugfix",
-          "items": [
+            },
             {
               "text": "Sessions are no longer wiped when the backend briefly restarts during a deploy. The app now only logs you out on an explicit authentication failure, not on transient server errors.",
               "userImpact": true
@@ -88,23 +40,11 @@
           "type": "improvement",
           "items": [
             {
-              "text": "Admins can now configure session lifetime and rolling renewal in Admin → Security → Session Settings, without editing server config files.",
-              "userImpact": true
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "version": "2026.06.10",
-      "date": "2026-06-10",
-      "sections": [
-        {
-          "title": "Toolbar: Net Info and Net Actions",
-          "type": "improvement",
-          "items": [
-            {
               "text": "The toolbar on the Net View page is now organized into two clear rows: Net Info (search, map, stats, script, announcements, topic history, info URL) and Net Actions (start, edit, roles, check-in, close, import, export, archive, delete). This prevents the toolbar from spilling into a third row on active nets with many features enabled.",
+              "userImpact": true
+            },
+            {
+              "text": "Admins can now configure session lifetime and rolling renewal in Admin → Security → Session Settings, without editing server config files.",
               "userImpact": true
             }
           ]
@@ -117,7 +57,7 @@
       "sections": [
         {
           "title": "Bug Fixes",
-          "type": "fix",
+          "type": "bugfix",
           "items": [
             {
               "text": "NCS and subscriber reminder emails were firing several hours early and repeating every 15 minutes due to a timezone mismatch and deduplication bug. Fixed by using UTC consistently and storing the full scheduled datetime (not just the date) in the reminder log.",
@@ -133,35 +73,23 @@
       "date": "2026-06-06",
       "sections": [
         {
-          "title": "Weekly NCS Rotation: Fifth-Week Override",
+          "title": "Improvements",
           "type": "improvement",
           "items": [
             {
-              "text": "Weekly schedules now support an optional Fifth week operator. When a month has a 5th occurrence of the scheduled weekday, that operator is assigned and the normal rotation pauses for that date, then resumes in sequence on the next normal week.",
+              "text": "Drag-and-drop rotation reordering — The dotted drag handles in the Rotation Order list are now fully interactive. Grab any row and drag it to a new position to reorder the NCS rotation. Works in both the Net Staff dialog and the standalone Rotation modal.",
               "userImpact": true
             },
             {
-              "text": "Schedule settings now include a weekly-only Fifth week operator picker, and schedule rows in Net Staff show a small 5th badge when this override is active.",
-              "userImpact": true
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "version": "2026.06.06",
-      "date": "2026-06-06",
-      "sections": [
-        {
-          "title": "Drag-and-Drop Rotation Reordering",
-          "type": "improvement",
-          "items": [
-            {
-              "text": "The dotted drag handles in the Rotation Order list are now fully interactive — grab any row and drag it to a new position to reorder the NCS rotation. Works in both the Net Staff dialog and the standalone Rotation modal.",
+              "text": "The up/down arrow buttons now reorder rows instantly without clearing or resizing the dialog. Changes are saved to the server in the background, and a red error toast appears if the sync fails.",
               "userImpact": true
             },
             {
-              "text": "The up/down arrow buttons now reorder rows instantly without clearing or resizing the dialog. Changes are saved to the server in the background, and a red error toast appears at the bottom of the screen if the sync fails.",
+              "text": "Fifth-week operator override — Weekly schedules now support an optional fifth-week operator. When a month has a 5th occurrence of the scheduled weekday, that operator is assigned and the normal rotation pauses, then resumes in sequence on the next normal week.",
+              "userImpact": true
+            },
+            {
+              "text": "Schedule settings now include a weekly-only Fifth week operator picker, and schedule rows in Net Staff show a small '5th' badge when this override is active.",
               "userImpact": true
             }
           ]
@@ -173,85 +101,8 @@
       "date": "2026-06-05",
       "sections": [
         {
-          "title": "Unified Email Dialog",
-          "type": "improvement",
-          "items": [
-            {
-              "text": "Consolidated the separate email buttons in the Net Staff dialog into a single blue 'Email' button with a new 'To' dropdown, supporting delivery to Net Staff, Net Subscribers, or both.",
-              "userImpact": true
-            },
-            {
-              "text": "Enabled email communication for schedule templates, allowing managers to email their staff and subscribers directly from the schedule views.",
-              "userImpact": true
-            },
-            {
-              "text": "Changed the Close/Cancel button in the Net Staff dialog to green since modifications are saved immediately.",
-              "userImpact": true
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "version": "2026.06.05h",
-      "date": "2026-06-05",
-      "sections": [
-        {
-          "title": "Net Staff Dialog",
-          "type": "improvement",
-          "items": [
-            {
-              "text": "The Net Staff dialog (purple people icon) is now tabbed with dedicated views for Net Control Stations, Rotation Order, Schedule, and Subscribers.",
-              "userImpact": true
-            },
-            {
-              "text": "Communication actions were added to the Net Staff dialog for authorized users: Email Staff, Email Subscribers, and Email ALL. Access is limited to admins, net managers, and co-managers/co-owners.",
-              "userImpact": true
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "version": "2026.06.05g",
-      "date": "2026-06-05",
-      "sections": [
-        {
-          "title": "Schedule Management",
-          "type": "improvement",
-          "items": [
-            {
-              "text": "Admins, schedule managers, and co-managers can now view the subscriber list for a schedule directly in the Net Staff tab, including callsign, name, and email for everyone who clicked the bell or accepted reminder prompts.",
-              "userImpact": true
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "version": "2026.06.05f",
-      "date": "2026-06-05",
-      "sections": [
-        {
           "title": "Bug Fixes",
-          "type": "fix",
-          "items": [
-            {
-              "text": "Manager auto-inclusion restored for rotation build — 'Build rotation from staff' now always includes the schedule manager if missing, matching documented 2026.05.20 behavior.",
-              "importance": "high",
-              "userImpact": true
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "version": "2026.06.05e",
-      "date": "2026-06-05",
-      "sections": [
-        {
-          "title": "Bug Fixes",
-          "type": "fix",
+          "type": "bugfix",
           "items": [
             {
               "text": "NCS and subscriber reminder delivery restored — Fixed a reminder-log field mismatch that prevented 24-hour and 1-hour reminder emails from being recorded and reliably deduplicated.",
@@ -262,35 +113,22 @@
               "text": "Strafford County weekly net rotation backfill — Added a one-time migration to restore AA1GM to template #8 rotation after an unintended gap; existing operator order is preserved and AA1GM is appended.",
               "importance": "high",
               "userImpact": true
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "version": "2026.06.05c",
-      "date": "2026-06-05",
-      "sections": [
-        {
-          "title": "UX Improvements",
-          "type": "improvement",
-          "items": [
+            },
             {
-              "text": "Step Away button — Click the pause icon (⏸️) in your toolbar or in the Actions column to temporarily step away without checking out. Useful when you know you're next but have an emergent need. Click again to return. The button only appears when the net is active or in lobby.",
+              "text": "Manager auto-inclusion restored for rotation build — 'Build rotation from staff' now always includes the schedule manager if missing, matching documented 2026.05.20 behavior.",
+              "importance": "high",
               "userImpact": true
             }
           ]
-        }
-      ]
-    },
-    {
-      "version": "2026.06.05d",
-      "date": "2026-06-05",
-      "sections": [
+        },
         {
           "title": "Improvements",
           "type": "improvement",
           "items": [
+            {
+              "text": "Step Away button — Click the pause icon (⏸️) in your toolbar or the Actions column to temporarily step away without checking out. Click again to return. The button appears only when the net is active or in lobby.",
+              "userImpact": true
+            },
             {
               "text": "Single-frequency nets are now auto-organized — When a net has only one frequency configured, that frequency is automatically selected and assigned to all check-ins. No manual frequency selection needed.",
               "userImpact": true
@@ -302,6 +140,30 @@
             {
               "text": "Gravatar improvements — Gravatar fallback now shows your name initial instead of your callsign, and server-side validation eliminates 404 errors in the browser console.",
               "userImpact": true
+            },
+            {
+              "text": "Admins, schedule managers, and co-managers can now view the subscriber list for a schedule directly in the Net Staff tab, including callsign, name, and email for everyone who clicked the bell or accepted reminder prompts.",
+              "userImpact": true
+            },
+            {
+              "text": "The Net Staff dialog (purple people icon) is now tabbed with dedicated views for Net Control Stations, Rotation Order, Schedule, and Subscribers.",
+              "userImpact": true
+            },
+            {
+              "text": "Communication actions added to the Net Staff dialog: Email Staff, Email Subscribers, and Email ALL. Access is limited to admins, net managers, and co-managers/co-owners.",
+              "userImpact": true
+            },
+            {
+              "text": "Consolidated the separate email buttons in the Net Staff dialog into a single 'Email' button with a 'To' dropdown, supporting delivery to Net Staff, Net Subscribers, or both.",
+              "userImpact": true
+            },
+            {
+              "text": "Email communication is now enabled for schedule templates, allowing managers to email their staff and subscribers directly from the schedule views.",
+              "userImpact": true
+            },
+            {
+              "text": "The Close/Cancel button in the Net Staff dialog is now green since modifications are saved immediately.",
+              "userImpact": true
             }
           ]
         }
@@ -312,9 +174,17 @@
       "date": "2026-06-04",
       "sections": [
         {
-          "title": "New Feature: Profile Avatars",
+          "title": "New Features",
           "type": "feature",
           "items": [
+            {
+              "text": "Raise Hand — Participants can now raise their hand during a net to signal they have comments or questions. Click the hand icon in your toolbar (next to check-out) to raise your hand — it lights up in orange so NCS can see it at a glance.",
+              "userImpact": true
+            },
+            {
+              "text": "NCS and loggers can raise or lower any participant's hand directly from the action column in the check-in list. Work through the queue by toggling hands one at a time.",
+              "userImpact": true
+            },
             {
               "text": "Profile photos now appear next to call signs in check-in rows and chat messages. Avatars are pulled automatically from Gravatar based on your account email — no setup required.",
               "userImpact": true
@@ -332,49 +202,29 @@
       ]
     },
     {
-      "version": "2026.06.05",
-      "date": "2026-06-04",
-      "sections": [
-        {
-          "title": "New Feature: Raise Hand",
-          "type": "feature",
-          "items": [
-            {
-              "text": "Participants can now raise their hand during a net to signal they have comments or questions. Click the hand icon in your toolbar (next to check-out) to raise your hand — it lights up in orange so NCS can see it at a glance.",
-              "userImpact": true
-            },
-            {
-              "text": "NCS and loggers can raise or lower any participant's hand directly from the action column in the check-in list. Work through the queue by toggling hands one at a time.",
-              "userImpact": true
-            }
-          ]
-        }
-      ]
-    },
-    {
       "version": "2026.06.03",
       "date": "2026-06-03",
       "sections": [
         {
-          "title": "UI Improvement: Reorganized Net Toolbar",
-          "type": "improvement",
+          "title": "New Features",
+          "type": "feature",
           "items": [
             {
-              "text": "Toolbar buttons are now organized into two distinct rows: the top row contains net operations (check in/out, start, close, manage roles), and the bottom row contains net functions (export, import, reports, archive, delete). This makes it easier to find the right button at a glance. Tip: hover over any icon button with your mouse to reveal its function.",
+              "text": "Import Check-ins from CSV — Net managers can now import check-ins into any open, closed, or archived net from a CSV file — perfect for logging stations that participated outside ECTLogger (paper logs, other software, or phone check-ins). Open the net, click the green import button in the toolbar, download the Import Template to see the format, fill it in, and upload.",
+              "userImpact": true
+            },
+            {
+              "text": "Flexible time formats accepted for CSV imports — M/D/YYYY h:mm AM/PM, 24-hour, ISO, and time-only. Choose your timezone or check 'Assume UTC'. Imported check-ins slot in chronologically alongside existing ones.",
               "userImpact": true
             }
           ]
         },
         {
-          "title": "New Feature: Import Check-ins from CSV",
-          "type": "feature",
+          "title": "Improvements",
+          "type": "improvement",
           "items": [
             {
-              "text": "Net managers can now import check-ins into any open, closed, or archived net from a CSV file — perfect for logging stations that participated outside ECTLogger (paper logs, other software, or phone check-ins). Open the net, click the green import button in the toolbar, download the Import Template to see the format, fill it in, and upload.",
-              "userImpact": true
-            },
-            {
-              "text": "Flexible time formats accepted — M/D/YYYY h:mm AM/PM, 24-hour, ISO, and time-only. Choose your timezone or check 'Assume UTC'. Imported check-ins slot in chronologically alongside existing ones.",
+              "text": "Toolbar buttons are now organized into two distinct rows: the top row contains net operations (check in/out, start, close, manage roles), and the bottom row contains net functions (export, import, reports, archive, delete). Tip: hover over any icon button to reveal its function.",
               "userImpact": true
             }
           ]
@@ -390,15 +240,15 @@
           "type": "feature",
           "items": [
             {
-              "text": "Owners/admins can now promote or demote authorized staff as Co-Managers directly from each staff row using a star icon. Co-Managers are clearly labeled and share owner-level schedule responsibility for owner-gated actions (for example ownership transfer, linking nets, merge, and delete), providing true backup coverage.",
+              "text": "Co-Manager promotion — Owners and admins can now promote or demote authorized staff as Co-Managers directly from each staff row using a star icon. Co-Managers share owner-level schedule responsibility for owner-gated actions (ownership transfer, linking nets, merge, and delete).",
               "userImpact": true
             },
             {
-              "text": "Chat messages now support hover reactions (👍 🙂 🙁 ❤️ ✅) with live per-message counts synchronized to all connected clients.",
+              "text": "Chat emoji reactions — Chat messages now support hover reactions (👍 🙂 🙁 ❤️ ✅) with live per-message counts synchronized to all connected clients.",
               "userImpact": true
             },
             {
-              "text": "You can now paste PNG/JPEG/WEBP images directly into chat. The app uploads, generates thumbnails, embeds inline previews, and opens full images in a lightbox.",
+              "text": "Paste images into chat — You can now paste PNG/JPEG/WEBP images directly into chat. The app uploads, generates thumbnails, embeds inline previews, and opens full images in a lightbox.",
               "userImpact": true
             },
             {
@@ -408,8 +258,8 @@
           ]
         },
         {
-          "title": "Bug Fixes (highest impact first)",
-          "type": "fix",
+          "title": "Bug Fixes",
+          "type": "bugfix",
           "items": [
             {
               "text": "Check-in Map PDF export from the map window no longer produces a blank white page. The exporter now captures the live map element so Leaflet tiles and overlays render correctly.",
@@ -478,13 +328,12 @@
       "date": "2026-05-27",
       "sections": [
         {
-          "title": "NCS swap: replacement dropdown now shows all users",
-          "type": "fix",
+          "title": "Bug Fixes",
+          "type": "bugfix",
           "items": [
             {
               "text": "The Replacement NCS dropdown when swapping a scheduled net now lists all net staff members and the net manager — previously it only showed people already in the rotation, so eligible operators were missing.",
               "userImpact": true
-
             }
           ]
         }
@@ -495,8 +344,8 @@
       "date": "2026-05-25",
       "sections": [
         {
-          "title": "PDF report: smaller files and no split rows",
-          "type": "fix",
+          "title": "Bug Fixes",
+          "type": "bugfix",
           "items": [
             {
               "text": "Net Report PDFs are now roughly 75% smaller. The export now uses JPEG compression instead of lossless PNG, so a 30 MB report will typically come out under 5 MB with no visible loss of quality.",
@@ -505,19 +354,7 @@
             {
               "text": "Table rows are no longer cut in half at a page boundary. The exporter now detects where each row sits on the canvas and moves the page cut to the gap between rows.",
               "userImpact": true
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "version": "2026.05.25",
-      "date": "2026-05-25",
-      "sections": [
-        {
-          "title": "Net duration fixed on Net Report",
-          "type": "fix",
-          "items": [
+            },
             {
               "text": "Net Report no longer shows '—' for duration on nets where the go-live timer did not fire. Duration is now calculated from the scheduled start time or first check-in as a fallback.",
               "userImpact": true
@@ -525,13 +362,7 @@
             {
               "text": "Closing a net now backfills the start time if it was never recorded, so historical reports remain accurate.",
               "userImpact": true
-            }
-          ]
-        },
-        {
-          "title": "Net start time no longer shifts when editing",
-          "type": "fix",
-          "items": [
+            },
             {
               "text": "Editing a net's topic or other details via the 'Save for this Net' form no longer shifts the scheduled start time by several hours. The time zone was being applied twice during the save — this is now corrected.",
               "userImpact": true
@@ -539,7 +370,7 @@
           ]
         },
         {
-          "title": "Monthly net scheduling improvements",
+          "title": "Improvements",
           "type": "improvement",
           "items": [
             {
@@ -567,7 +398,7 @@
       "date": "2026-05-20",
       "sections": [
         {
-          "title": "Net Staff & Rotation improvements",
+          "title": "Improvements",
           "type": "improvement",
           "items": [
             {
@@ -591,18 +422,8 @@
       "date": "2026-05-10",
       "sections": [
         {
-          "title": "UI polish",
-          "type": "improvement",
-          "items": [
-            {
-              "text": "Panel header bars (Chat, Activity Log, check-in table) now use the correct background color in both light and dark mode, matching the page header for better visual consistency.",
-              "userImpact": true
-            }
-          ]
-        },
-        {
-          "title": "Net Report map fixes",
-          "type": "fix",
+          "title": "Bug Fixes",
+          "type": "bugfix",
           "items": [
             {
               "text": "Net Report maps now always display in light mode (OpenStreetMap tiles), ensuring the printed or exported PDF is always legible regardless of your dark-mode setting.",
@@ -610,6 +431,16 @@
             },
             {
               "text": "Net Report maps now show a 'Loading map...' spinner overlay while tiles are being fetched, so it's clear the map is loading rather than appearing blank.",
+              "userImpact": true
+            }
+          ]
+        },
+        {
+          "title": "Improvements",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Panel header bars (Chat, Activity Log, check-in table) now use the correct background color in both light and dark mode, matching the page header for better visual consistency.",
               "userImpact": true
             }
           ]
@@ -621,11 +452,19 @@
       "date": "2026-05-09",
       "sections": [
         {
-          "title": "Row-per-event re-check model",
+          "title": "New Features",
           "type": "feature",
           "items": [
             {
-              "text": "Each re-check-in now creates a new database row instead of overwriting the original. This preserves the full event history for a net.",
+              "text": "Activity Log panel — The right sidebar on active nets is now split into two stacked panels: Chat (operator-to-operator conversation) and Activity Log (system events like check-ins and status changes). Both panels can be minimized or popped out independently.",
+              "userImpact": true
+            },
+            {
+              "text": "The eyeball toggle for hiding system messages from Chat has been removed — system messages now live exclusively in the Activity Log.",
+              "userImpact": true
+            },
+            {
+              "text": "Row-per-event re-check model — Each re-check-in now creates a new database row instead of overwriting the original, preserving the full event history for a net.",
               "userImpact": true
             },
             {
@@ -643,95 +482,41 @@
           ]
         },
         {
-          "title": "TypeScript cleanup",
-          "type": "improvement",
+          "title": "Bug Fixes",
+          "type": "bugfix",
           "items": [
             {
-              "text": "Resolved all TypeScript strict-mode errors across the frontend codebase.",
-              "userImpact": false
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "version": "2026.05.09",
-      "date": "2026-05-09",
-      "sections": [
-        {
-          "title": "Activity Log panel",
-          "type": "feature",
-          "items": [
-            {
-              "text": "The right sidebar on active nets is now split into two stacked panels: Chat (operator-to-operator conversation) and a new Activity Log that shows only system events like check-ins and status changes. Both panels can be minimized or popped out independently.",
-              "userImpact": true
-            },
-            {
-              "text": "The eyeball toggle for hiding system messages from Chat has been removed — system messages now live exclusively in the Activity Log.",
+              "text": "Saving your profile with an empty callsign field was failing for new accounts. Blank callsign and GMRS callsign fields are now correctly treated as 'not set'.",
               "userImpact": true
             }
           ]
         },
         {
-          "title": "Richer activity log messages",
+          "title": "Improvements",
           "type": "improvement",
           "items": [
             {
               "text": "Check-in system messages now include the frequency and the callsign of the operator who logged the check-in — for example: \"W1CRR has checked in from Springfield — 147.345 MHz FM (logged by KC1JMH)\".",
               "userImpact": true
-            }
-          ]
-        },
-        {
-          "title": "GMRS callsign support",
-          "type": "improvement",
-          "items": [
+            },
             {
-              "text": "Users who hold only a GMRS license (no amateur callsign) now display their GMRS callsign everywhere in the app — in the nav bar, check-in lists, activity log messages, PDF exports, and email reminders.",
-              "userImpact": true
-            }
-          ]
-        },
-        {
-          "title": "Fix: Profile save failed for new accounts",
-          "type": "bugfix",
-          "items": [
-            {
-              "text": "Saving your profile with an empty callsign field was failing for new accounts. This is now fixed — blank callsign and GMRS callsign fields are correctly treated as \"not set\".",
-              "userImpact": true
-            }
-          ]
-        },
-        {
-          "title": "Net wizard validation",
-          "type": "improvement",
-          "items": [
-            {
-              "text": "The Create Net wizard now prevents you from advancing past the Name tab without entering a net name, and past the Frequencies tab without selecting at least one frequency. An inline hint explains what's needed.",
-              "userImpact": true
-            }
-          ]
-        },
-        {
-          "title": "Bulk check-in: additional fields",
-          "type": "improvement",
-          "items": [
-            {
-              "text": "The Bulk Check-In tool now supports SKYWARN number, weather observation, feedback, and any custom fields defined for the net.",
-              "userImpact": true
-            }
-          ]
-        },
-        {
-          "title": "Net Report PDF improvements",
-          "type": "improvement",
-          "items": [
-            {
-              "text": "The map in exported PDFs now always uses light tiles, regardless of whether you're in dark mode.",
+              "text": "Users who hold only a GMRS license now display their GMRS callsign everywhere in the app — in the nav bar, check-in lists, activity log messages, PDF exports, and email reminders.",
               "userImpact": true
             },
             {
-              "text": "Check-in rows no longer split across page breaks in exported PDFs.",
+              "text": "The Create Net wizard now prevents you from advancing past the Name tab without entering a net name, and past the Frequencies tab without selecting at least one frequency.",
+              "userImpact": true
+            },
+            {
+              "text": "The Bulk Check-In tool now supports SKYWARN number, weather observation, feedback, and any custom fields defined for the net.",
+              "userImpact": true
+            },
+            {
+              "text": "The map in exported Net Report PDFs now always uses light tiles, regardless of whether you're in dark mode.",
+              "userImpact": true
+            },
+            {
+              "text": "Check-in rows no longer split across page breaks in exported Net Report PDFs.",
               "userImpact": true
             },
             {
@@ -741,6 +526,10 @@
             {
               "text": "The net header section in exported PDFs now uses a full-width stacked layout so long net names and date/time information are never cut off.",
               "userImpact": true
+            },
+            {
+              "text": "Resolved all TypeScript strict-mode errors across the frontend codebase.",
+              "userImpact": false
             }
           ]
         }
@@ -751,21 +540,21 @@
       "date": "2026-05-08",
       "sections": [
         {
-          "title": "Early schedule access for trusted users",
+          "title": "New Features",
           "type": "feature",
           "items": [
             {
-              "text": "Admins can now grant individual users early access to schedule creation before their account reaches the minimum age requirement. Look for the timer icon in the Actions column of the Users tab — orange means the account is still under the age limit, click it to grant early access. Click the green timer to revoke it.",
+              "text": "Early schedule access — Admins can now grant individual users early access to schedule creation before their account reaches the minimum age requirement. Look for the timer icon in the Actions column of the Users tab — orange means the account is still under the age limit, click it to grant early access. Click the green timer to revoke it.",
               "userImpact": true
             }
           ]
         },
         {
-          "title": "Fix: Schedule Creation Limits saving failed with 'Not Found'",
+          "title": "Bug Fixes",
           "type": "bugfix",
           "items": [
             {
-              "text": "Saving the Schedule Creation Limits settings (minimum account age, minimum net participations, maximum per day) was failing silently with a 404 error. This is now fixed. Setting the minimum account age to 0 to disable it now also works correctly.",
+              "text": "Saving the Schedule Creation Limits settings (minimum account age, minimum net participations, maximum per day) was failing silently with a 404 error. Setting the minimum account age to 0 to disable it now also works correctly.",
               "userImpact": true
             }
           ]
@@ -777,21 +566,11 @@
       "date": "2026-04-28",
       "sections": [
         {
-          "title": "Net Manager and NCS shown separately",
-          "type": "improvement",
-          "items": [
-            {
-              "text": "Net cards on the Active Nets page and schedule cards on the Scheduler now list the Net Manager (the person who owns the net or schedule) and the current/next Net Control Station as separate lines, so it's clear when the manager and the operator on the air are different people.",
-              "userImpact": true
-            }
-          ]
-        },
-        {
-          "title": "Net owners can delete their own nets",
+          "title": "New Features",
           "type": "feature",
           "items": [
             {
-              "text": "If you own a net, you can now delete it in any state — draft, scheduled, active, or closed — without needing an admin. The trash icon shows up on every card you can manage.",
+              "text": "Net owners can now delete their own nets in any state — draft, scheduled, active, or closed — without needing an admin. The trash icon shows up on every card you can manage.",
               "userImpact": true
             },
             {
@@ -799,7 +578,17 @@
               "userImpact": true
             },
             {
-              "text": "For active nets, the delete dialog now offers a yellow Close & Archive button — closes the net normally (emailing the full log to the owner) and immediately archives it, so a manager who wants to keep the record of a test or training run can do it in one click.",
+              "text": "For active nets, the delete dialog now offers a Close & Archive button — closes the net normally (emailing the full log to the owner) and immediately archives it, so a manager who wants to keep the record of a test or training run can do it in one click.",
+              "userImpact": true
+            }
+          ]
+        },
+        {
+          "title": "Improvements",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Net cards on the Active Nets page and schedule cards on the Scheduler now list the Net Manager and the current/next Net Control Station as separate lines, so it's clear when the manager and the operator on the air are different people.",
               "userImpact": true
             }
           ]
@@ -811,43 +600,31 @@
       "date": "2026-04-25",
       "sections": [
         {
-          "title": "Save edits back to the schedule",
+          "title": "New Features",
           "type": "feature",
           "items": [
             {
-              "text": "The Edit Net page now has two save buttons: \"Save for this Net\" (the everyday save, only affects the current net) and \"Save to Schedule\" (pushes your edits back to the parent schedule so future nets opened from it inherit the new values). A confirmation dialog lists exactly what will be overwritten.",
+              "text": "Save edits back to the schedule — The Edit Net page now has two save buttons: 'Save for this Net' (only affects the current net) and 'Save to Schedule' (pushes your edits back to the parent schedule so future nets inherit the new values). A confirmation dialog lists exactly what will be overwritten.",
               "userImpact": true
             },
             {
-              "text": "The Net Staff dialog (when opened from a scheduled net) now has a \"Push staff to schedule\" button that copies the net's NCS operators into the schedule's authorized staff list. Operators already on the schedule are skipped, so it's safe to repeat.",
+              "text": "The Net Staff dialog (when opened from a scheduled net) now has a 'Push staff to schedule' button that copies the net's NCS operators into the schedule's authorized staff list. Operators already on the schedule are skipped, so it's safe to repeat.",
               "userImpact": true
             },
             {
-              "text": "Schedules now carry stream URL and announcements. Values you set on the schedule propagate to new nets opened from it, and the new \"Save to Schedule\" action can promote in-the-moment edits back to the schedule's defaults.",
+              "text": "Schedules now carry stream URL and announcements. Values you set on the schedule propagate to new nets opened from it, and the new 'Save to Schedule' action can promote in-the-moment edits back to the schedule's defaults.",
               "userImpact": true
             }
           ]
         },
         {
-          "title": "Save edits back to the schedule",
+          "title": "Bug Fixes",
           "type": "bugfix",
           "items": [
             {
               "text": "Fixed a long-standing gap where a schedule's info URL, script, stream URL, and announcements were ignored when opening a net from it. Newly opened nets now inherit those values from the schedule.",
               "userImpact": true
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "version": "2026.04.25",
-      "date": "2026-04-25",
-      "sections": [
-        {
-          "title": "Net Staff & NCS Rotation",
-          "type": "bugfix",
-          "items": [
+            },
             {
               "text": "Schedule managers who aren't global admins can now add staff and build NCS rotations. Previously the operator picker silently returned no results unless you were an admin.",
               "userImpact": true
@@ -855,11 +632,11 @@
           ]
         },
         {
-          "title": "Net Staff & NCS Rotation",
+          "title": "Improvements",
           "type": "improvement",
           "items": [
             {
-              "text": "The schedule editor's Net Staff tab is now a clear two-step workflow: first add Authorized Net Staff (operators who can start and run nets), then optionally build an NCS Rotation order. A \"Build rotation from staff\" button populates the rotation in one click.",
+              "text": "The schedule editor's Net Staff tab is now a clear two-step workflow: first add Authorized Net Staff (operators who can start and run nets), then optionally build an NCS Rotation order. A 'Build rotation from staff' button populates the rotation in one click.",
               "userImpact": true
             },
             {
@@ -867,15 +644,9 @@
               "userImpact": true
             },
             {
-              "text": "Operator pickers now show a \"No other users available\" message when empty, so failures stop being silent.",
+              "text": "Operator pickers now show a 'No other users available' message when empty, so failures stop being silent.",
               "userImpact": true
-            }
-          ]
-        },
-        {
-          "title": "Privacy",
-          "type": "improvement",
-          "items": [
+            },
             {
               "text": "Guest viewers (not logged in) now see only callsign and first name for net managers and NCS — surnames and email addresses are no longer exposed on public net and template listings.",
               "userImpact": true
@@ -889,67 +660,27 @@
       "date": "2026-04-24",
       "sections": [
         {
-          "title": "Changelog Downloads & What's New Email Digest",
+          "title": "New Features",
           "type": "feature",
           "items": [
             {
-              "text": "Two new download icons in the What's New dialog: the page icon downloads just the latest version's changelog as a PDF, the open-book icon downloads the entire changelog history.",
+              "text": "Changelog download buttons — Two new download icons in the What's New dialog: the page icon downloads just the latest version's changelog as a PDF, the open-book icon downloads the entire changelog history.",
               "userImpact": true
             },
             {
-              "text": "New \"What's New emails\" opt-in on your Profile page sends a single 8 AM digest the morning after each release summarizing all new features and fixes from the prior day. No spam — silent on days with no updates. Off by default.",
+              "text": "What's New email digest — A new opt-in on your Profile page sends a single 8 AM digest the morning after each release summarizing all new features and fixes from the prior day. Silent on days with no updates. Off by default.",
               "userImpact": true
             },
             {
-              "text": "Sparkling Subscribe button right in the What's New dialog turns the digest on (or off) in one click — no need to dig into Profile settings.",
+              "text": "Subscribe button in the What's New dialog turns the digest on (or off) in one click — no need to dig into Profile settings.",
               "userImpact": true
             },
             {
-              "text": "Digests fire at 8 AM in your local timezone (auto-detected from your browser the first time you subscribe), with America/Los_Angeles as a polite fallback if your timezone isn't set.",
+              "text": "Digests fire at 8 AM in your local timezone (auto-detected from your browser the first time you subscribe), with America/Los_Angeles as a fallback if your timezone isn't set.",
               "userImpact": true
             },
             {
               "text": "Every What's New email includes a one-click unsubscribe link that opts you out of just the digest — your other notification preferences are untouched.",
-              "userImpact": true
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "version": "2026.04.24b",
-      "date": "2026-04-24",
-      "sections": [
-        {
-          "title": "Schedule Editor & Staff Modal Cleanup",
-          "type": "improvement",
-          "items": [
-            {
-              "text": "The \"Owner / Default NCS\" selector moved from the Basic Info tab to the Net Staff tab on the Edit Schedule page, where it is now labeled \"Schedule Manager\" — keeping the Manager and the rotation in one place.",
-              "userImpact": true
-            },
-            {
-              "text": "The Net Staff modal (opened from a schedule card) now lets the current Manager or an admin transfer ownership inline. Click the pencil next to the Manager name to pick a new operator.",
-              "userImpact": true
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "version": "2026.04.24",
-      "date": "2026-04-24",
-      "sections": [
-        {
-          "title": "Net Manager Terminology & Staff Management Fixes",
-          "type": "improvement",
-          "items": [
-            {
-              "text": "Renamed \"Host\" to \"Manager\" throughout the schedule and net pages to match standard ham-radio Net Manager terminology. The schedule owner is now displayed as the Manager.",
-              "userImpact": true
-            },
-            {
-              "text": "The Manager (schedule owner) is always implicitly listed as an authorized Net Control Station — they don't need to be added to the staff list to run nets.",
               "userImpact": true
             }
           ]
@@ -959,11 +690,33 @@
           "type": "bugfix",
           "items": [
             {
-              "text": "Active staff members and NCS rotation members can now manage a schedule's staff list and rotation, not just the owner. Previously the \"Manage Staff\" and \"Manage Rotation\" tabs were hidden from anyone who wasn't the owner or an admin.",
+              "text": "Active staff members and NCS rotation members can now manage a schedule's staff list and rotation, not just the owner. Previously the 'Manage Staff' and 'Manage Rotation' tabs were hidden from anyone who wasn't the owner or an admin.",
               "userImpact": true
             },
             {
               "text": "Fixed permission inconsistency where the NCS rotation/staff endpoints rejected active staff members even though the rest of the template management endpoints accepted them.",
+              "userImpact": true
+            }
+          ]
+        },
+        {
+          "title": "Improvements",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "The 'Owner / Default NCS' selector moved from the Basic Info tab to the Net Staff tab on the Edit Schedule page, where it is now labeled 'Schedule Manager' — keeping the Manager and the rotation in one place.",
+              "userImpact": true
+            },
+            {
+              "text": "The Net Staff modal (opened from a schedule card) now lets the current Manager or an admin transfer ownership inline. Click the pencil next to the Manager name to pick a new operator.",
+              "userImpact": true
+            },
+            {
+              "text": "Renamed 'Host' to 'Manager' throughout the schedule and net pages to match standard ham-radio Net Manager terminology.",
+              "userImpact": true
+            },
+            {
+              "text": "The Manager (schedule owner) is always implicitly listed as an authorized Net Control Station — they don't need to be added to the staff list to run nets.",
               "userImpact": true
             }
           ]
@@ -975,19 +728,19 @@
       "date": "2026-04-22",
       "sections": [
         {
-          "title": "Mobile & Status Selector Improvements",
+          "title": "Improvements",
           "type": "improvement",
           "items": [
             {
-              "text": "Status dropdowns on the check-in list now show a text label next to each emoji icon (e.g., 👂 Listening only, 📢 Announcements) so new NCS users don’t have to memorize the icon legend.",
+              "text": "Status dropdowns on the check-in list now show a text label next to each emoji icon (e.g., 👂 Listening only, 📢 Announcements) so new NCS users don't have to memorize the icon legend.",
               "userImpact": true
             },
             {
-              "text": "Mobile net header is more compact: the duration chip drops the “Duration:” prefix, the edit-times pencil moved off the header, and toolbar buttons shrink to fit on a single row.",
+              "text": "Mobile net header is more compact: the duration chip drops the 'Duration:' prefix, the edit-times pencil moved off the header, and toolbar buttons shrink to fit on a single row.",
               "userImpact": true
             },
             {
-              "text": "Mobile “New Check-in” form is now collapsible and starts collapsed — attendees of nets they aren’t logging no longer have to scroll past a tall form.",
+              "text": "Mobile 'New Check-in' form is now collapsible and starts collapsed — attendees of nets they aren't logging no longer have to scroll past a tall form.",
               "userImpact": true
             }
           ]
@@ -999,35 +752,11 @@
       "date": "2026-04-21",
       "sections": [
         {
-          "title": "Schedule Statistics Tweaks",
-          "type": "improvement",
-          "items": [
-            {
-              "text": "Schedule statistics now defaults to the last 1 year so monthly nets and occasional SKYWARN activations always show meaningful counts. The 30/90 day and all-time filters are still available.",
-              "userImpact": true
-            },
-            {
-              "text": "PDF export now includes all four leaderboards (Check-ins, NCS, Logger, Relay) instead of only the tab that was visible on screen.",
-              "userImpact": true
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "version": "2026.04.21b",
-      "date": "2026-04-21",
-      "sections": [
-        {
-          "title": "Schedule Statistics Overhaul",
+          "title": "New Features",
           "type": "feature",
           "items": [
             {
-              "text": "Schedule statistics page now has time-window filters (30 days, 90 days, 1 year, all-time) and defaults to the last 30 days.",
-              "userImpact": true
-            },
-            {
-              "text": "New Leaderboards tab on schedule stats: top check-ins, NCS operators, Loggers, and Relay stations — each scoped to the selected time window.",
+              "text": "Schedule Statistics overhaul — The schedule statistics page now has time-window filters (30 days, 90 days, 1 year, all-time) and a new Leaderboards tab showing top check-ins, NCS operators, Loggers, and Relay stations — each scoped to the selected time window.",
               "userImpact": true
             },
             {
@@ -1037,29 +766,13 @@
             {
               "text": "Export to PDF button on schedule statistics for a one-click performance report.",
               "userImpact": true
+            },
+            {
+              "text": "Link Existing Net to Schedule — Schedule owners and admins can now attach an ad-hoc or misfiled net to a schedule from the schedule statistics page so its check-ins count toward the schedule's history.",
+              "userImpact": true
             }
           ]
         },
-        {
-          "title": "Improvements",
-          "type": "improvement",
-          "items": [
-            {
-              "text": "Replaced the strict \"Regular Operators (50%+)\" view with a top-20 check-in leaderboard so long-running nets with operator turnover always show meaningful results.",
-              "userImpact": true
-            },
-            {
-              "text": "Schedule cards on the Scheduler page now stretch to equal heights within a row and have a minimum height for a more uniform, professional appearance.",
-              "userImpact": true
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "version": "2026.04.21",
-      "date": "2026-04-21",
-      "sections": [
         {
           "title": "Bug Fixes",
           "type": "bugfix",
@@ -1071,11 +784,23 @@
           ]
         },
         {
-          "title": "New Features",
-          "type": "feature",
+          "title": "Improvements",
+          "type": "improvement",
           "items": [
             {
-              "text": "Link Existing Net to Schedule — schedule owners and admins can now attach an ad-hoc or misfiled net to a schedule from the schedule statistics page so its check-ins count toward the schedule’s history.",
+              "text": "Replaced the strict 'Regular Operators (50%+)' view with a top-20 check-in leaderboard so long-running nets with operator turnover always show meaningful results.",
+              "userImpact": true
+            },
+            {
+              "text": "Schedule cards on the Scheduler page now stretch to equal heights within a row and have a minimum height for a more uniform, professional appearance.",
+              "userImpact": true
+            },
+            {
+              "text": "Schedule statistics now defaults to the last 1 year so monthly nets and occasional SKYWARN activations always show meaningful counts. The 30/90 day and all-time filters are still available.",
+              "userImpact": true
+            },
+            {
+              "text": "PDF export for schedule statistics now includes all four leaderboards (Check-ins, NCS, Logger, Relay) instead of only the tab that was visible on screen.",
               "userImpact": true
             }
           ]
@@ -1091,7 +816,7 @@
           "type": "feature",
           "items": [
             {
-              "text": "Merge Schedules — combine multiple net schedules into one. All nets, subscribers, staff, and NCS rotation members are moved to the master schedule. Accessible via the merge button on the Scheduler page.",
+              "text": "Merge Schedules — Combine multiple net schedules into one. All nets, subscribers, staff, and NCS rotation members are moved to the master schedule. Accessible via the merge button on the Scheduler page.",
               "userImpact": true
             }
           ]
@@ -1107,7 +832,7 @@
           "type": "feature",
           "items": [
             {
-              "text": "Auto-start nets — lobby nets now automatically go live at their scheduled start time. NCS can still start early manually.",
+              "text": "Auto-start nets — Lobby nets now automatically go live at their scheduled start time. NCS can still start early manually.",
               "userImpact": true
             },
             {
@@ -1115,7 +840,7 @@
               "userImpact": true
             },
             {
-              "text": "Check-in prompt — authenticated users viewing an active or lobby net are prompted with a notification asking if they'd like to check in, with a one-click Check In button.",
+              "text": "Check-in prompt — Authenticated users viewing an active or lobby net are prompted with a notification asking if they'd like to check in, with a one-click Check In button.",
               "userImpact": true
             },
             {
@@ -1129,7 +854,7 @@
           "type": "bugfix",
           "items": [
             {
-              "text": "Check-ins count now shows total participants including checked-out stations, with a separate \"Checked Out\" chip. Previously, checked-out stations were excluded from the count.",
+              "text": "Check-ins count now shows total participants including checked-out stations, with a separate 'Checked Out' chip. Previously, checked-out stations were excluded from the count.",
               "userImpact": true
             },
             {
@@ -1157,7 +882,7 @@
               "userImpact": true
             },
             {
-              "text": "PDF filename now includes the net's start date and time (e.g., \"ARES_Net_Report_2026-03-12_1930.pdf\") instead of the export date.",
+              "text": "PDF filename now includes the net's start date and time (e.g., 'ARES_Net_Report_2026-03-12_1930.pdf') instead of the export date.",
               "userImpact": true
             }
           ]
@@ -1173,27 +898,15 @@
           "type": "feature",
           "items": [
             {
-              "text": "Check-In Map on the Statistics page — shows a geographic map of approximate regions where check-ins have originated (by grid square or state/province), without revealing individual locations.",
-              "userImpact": true
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "version": "2026.02.26",
-      "date": "2026-02-26",
-      "sections": [
-        {
-          "title": "New Features",
-          "type": "feature",
-          "items": [
-            {
-              "text": "Callsign auto-fill now uses contacts directory — when NCS enters a callsign, name, location, and SKYWARN number are auto-filled from the user's account or from prior check-in history. Fields remain editable.",
+              "text": "Callsign auto-fill now uses the contacts directory — when NCS enters a callsign, name, location, and SKYWARN number are auto-filled from the user's account or from prior check-in history. Fields remain editable.",
               "userImpact": true
             },
             {
               "text": "Admin Contacts tab — manage station contacts, fix misspelled names, add emails, and send invites to create user accounts.",
+              "userImpact": true
+            },
+            {
+              "text": "Check-In Map on the Statistics page — shows a geographic map of approximate regions where check-ins have originated (by grid square or state/province), without revealing individual locations.",
               "userImpact": true
             }
           ]
@@ -1209,21 +922,19 @@
           "type": "bugfix",
           "items": [
             {
+              "text": "Logger role now works correctly — loggers can change check-in statuses and use the check-in entry form. Previously, only NCS and above could perform these actions due to a role-name mismatch.",
+              "userImpact": true
+            },
+            {
               "text": "Check-in location map now plots all stations, including those that checked out during the net — checked-out stations still participated and are shown.",
               "userImpact": true
             },
             {
-              "text": "Location parser now recognizes full state names (e.g., \"Skowhegan Maine\") in addition to abbreviations, so more check-in locations are mapped correctly.",
+              "text": "Location parser now recognizes full state names (e.g., 'Skowhegan Maine') in addition to abbreviations, so more check-in locations are mapped correctly.",
               "userImpact": true
             }
           ]
-        }
-      ]
-    },
-    {
-      "version": "2026.02.23b",
-      "date": "2026-02-23",
-      "sections": [
+        },
         {
           "title": "Improvements",
           "type": "improvement",
@@ -1235,22 +946,6 @@
             {
               "text": "What's New dialog now shows the correct local date for changelog entries regardless of timezone. Same-day releases are merged into a single section.",
               "userImpact": false
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "version": "2026.02.23",
-      "date": "2026-02-23",
-      "sections": [
-        {
-          "title": "Bug Fixes",
-          "type": "bugfix",
-          "items": [
-            {
-              "text": "Logger role now works correctly — loggers can change check-in statuses and use the check-in entry form. Previously, only NCS and above could perform these actions due to a role-name mismatch.",
-              "userImpact": true
             }
           ]
         }
@@ -1311,62 +1006,68 @@
               "userImpact": true
             },
             {
-              "text": "Announcements / General Traffic - Separate field from net script for listing upcoming events and announcements. Visible to all via megaphone icon. Supports Markdown.",
+              "text": "Announcements / General Traffic — Separate field from net script for listing upcoming events and announcements. Visible to all via megaphone icon. Supports Markdown.",
               "userImpact": true
             },
             {
-              "text": "Prior Topics Log - Tracks previously used \"Topic of the Week\" prompts to avoid repetition. View via history icon for template-based nets.",
+              "text": "Prior Topics Log — Tracks previously used 'Topic of the Week' prompts to avoid repetition. View via history icon for template-based nets.",
               "userImpact": true
             },
             {
-              "text": "Audio Stream URL - Add Shoutcast/Broadcastify stream links to nets for in-browser listening",
+              "text": "Audio Stream URL — Add Shoutcast/Broadcastify stream links to nets for in-browser listening.",
               "userImpact": true
             },
             {
-              "text": "Unarchive button added directly to the Archived Nets list",
+              "text": "Unarchive button added directly to the Archived Nets list.",
               "userImpact": true
             },
             {
-              "text": "In-App Changelog floating button (Whats New) with unread indicator",
+              "text": "In-App Changelog floating button (What's New) with unread indicator.",
               "userImpact": true
             },
             {
-              "text": "Consistent Action Button Colors - All buttons now use consistent colors throughout the UI (blue for view/search, purple for people/staff, orange for stats, green for exports, teal for ICS-309, red for delete/close) making them easier to find",
+              "text": "Consistent Action Button Colors — All buttons now use consistent colors throughout the UI (blue for view/search, purple for people/staff, orange for stats, green for exports, teal for ICS-309, red for delete/close) making them easier to find.",
               "userImpact": true
             }
           ]
         },
         {
-          "title": "Bug Fixes & Improvements",
+          "title": "Bug Fixes",
           "type": "bugfix",
           "items": [
             {
-              "text": "Net staff members can now create and start nets (not just rotation members)",
+              "text": "Net staff members can now create and start nets (not just rotation members).",
               "userImpact": true
             },
             {
-              "text": "WebSocket connections now auto-reconnect if disconnected unexpectedly",
+              "text": "WebSocket connections now auto-reconnect if disconnected unexpectedly.",
               "userImpact": true
             },
             {
-              "text": "Users can now check out their own check-in (previously only NCS/Logger could)",
+              "text": "Users can now check out their own check-in (previously only NCS/Logger could).",
               "userImpact": true
             },
             {
-              "text": "Role assignments (NCS, Logger, Relay) are now logged in chat",
-              "userImpact": true
-            },
-            {
-              "text": "Improved map PDF export reliability",
-              "userImpact": true
-            },
-            {
-              "text": "Net closure now immediately updates all connected clients",
+              "text": "Net closure now immediately updates all connected clients.",
               "userImpact": false
             },
             {
-              "text": "Fixed dead WebSocket connections being kept in memory",
+              "text": "Fixed dead WebSocket connections being kept in memory.",
               "userImpact": false
+            }
+          ]
+        },
+        {
+          "title": "Improvements",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Role assignments (NCS, Logger, Relay) are now logged in chat.",
+              "userImpact": true
+            },
+            {
+              "text": "Improved map PDF export reliability.",
+              "userImpact": true
             }
           ]
         }
@@ -1381,11 +1082,11 @@
           "type": "feature",
           "items": [
             {
-              "text": "Email unsubscribe links in all notification emails",
+              "text": "Email unsubscribe links in all notification emails.",
               "userImpact": true
             },
             {
-              "text": "Subscription prompt after check-in when a scheduled net closes",
+              "text": "Subscription prompt after check-in when a scheduled net closes.",
               "userImpact": true
             }
           ]
@@ -1395,11 +1096,11 @@
           "type": "improvement",
           "items": [
             {
-              "text": "Admin Users list now shows three-tier online status (green/yellow/red)",
+              "text": "Admin Users list now shows three-tier online status (green/yellow/red).",
               "userImpact": false
             },
             {
-              "text": "PDF exports now force light mode for better printing",
+              "text": "PDF exports now force light mode for better printing.",
               "userImpact": true
             }
           ]
@@ -1415,23 +1116,23 @@
           "type": "feature",
           "items": [
             {
-              "text": "Lobby Mode - NCS can start nets early with countdown to official start",
+              "text": "Lobby Mode — NCS can start nets early with countdown to official start.",
               "userImpact": true
             },
             {
-              "text": "Unarchive Nets - Restore archived nets to closed status",
+              "text": "Unarchive Nets — Restore archived nets to closed status.",
               "userImpact": true
             },
             {
-              "text": "Net Report (PDF) - Comprehensive multi-page PDF reports for closed nets",
+              "text": "Net Report (PDF) — Comprehensive multi-page PDF reports for closed nets.",
               "userImpact": true
             },
             {
-              "text": "Inline Check-In Editing - Click any row to edit directly",
+              "text": "Inline Check-In Editing — Click any row to edit directly.",
               "userImpact": true
             },
             {
-              "text": "Countdown Timer - Shows time until scheduled net start",
+              "text": "Countdown Timer — Shows time until scheduled net start.",
               "userImpact": true
             }
           ]

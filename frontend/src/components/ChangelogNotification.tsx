@@ -341,7 +341,17 @@ const ChangelogNotification: React.FC = () => {
     const last = groupedEntries[groupedEntries.length - 1];
     if (last && last.date === entry.date) {
       last.versions.push(entry.version);
-      last.sections.push(...entry.sections.map(s => ({ ...s, items: [...s.items] })));
+      // Merge items into an existing section with the same type+title; otherwise append.
+      for (const section of entry.sections) {
+        const existing = last.sections.find(
+          s => normalizeSectionType(s.type) === normalizeSectionType(section.type) && s.title === section.title
+        );
+        if (existing) {
+          existing.items.push(...section.items);
+        } else {
+          last.sections.push({ ...section, items: [...section.items] });
+        }
+      }
     } else {
       groupedEntries.push({ date: entry.date, versions: [entry.version], sections: entry.sections.map(s => ({ ...s, items: [...s.items] })) });
     }

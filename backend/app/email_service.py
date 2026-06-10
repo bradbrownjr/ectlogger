@@ -1312,16 +1312,28 @@ This is an automated message, please do not reply.
             'fix':         {'label': 'Bug Fixes',     'color': '#ed6c02', 'emoji': '🐛'},
         }
 
-        # Collect all sections from all entries
-        all_sections = []
+        # Collect sections from all entries, merging same-type + same-title sections
+        # so each category heading appears exactly once in the email.
+        type_priority = {'feature': 0, 'improvement': 1, 'bugfix': 2, 'fix': 2}
+        section_order: list = []
+        merged: dict = {}
         for entry in entries:
             for section in entry.get('sections', []):
-                all_sections.append(section)
-
-        # Sort sections by type priority to match in-app order:
-        # feature (0), improvement (1), fix/bugfix (2)
-        type_priority = {'feature': 0, 'improvement': 1, 'bugfix': 2, 'fix': 2}
-        all_sections.sort(key=lambda s: type_priority.get(s.get('type', 'improvement'), 1))
+                norm_type = 'fix' if section.get('type') == 'bugfix' else section.get('type', 'improvement')
+                key = (norm_type, section.get('title', ''))
+                if key in merged:
+                    merged[key]['items'].extend(section.get('items', []))
+                else:
+                    merged[key] = {
+                        'title': section.get('title', ''),
+                        'type': section.get('type', 'improvement'),
+                        'items': list(section.get('items', [])),
+                    }
+                    section_order.append(key)
+        all_sections = sorted(
+            [merged[k] for k in section_order],
+            key=lambda s: type_priority.get(s.get('type', 'improvement'), 1),
+        )
 
         sections_html_parts = []
         for section in all_sections:
