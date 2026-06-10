@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { displayCallsign } from '../utils/userDisplay';
 import { useNavigate } from 'react-router-dom';
+import Cropper from 'react-easy-crop';
+import type { Area } from 'react-easy-crop';
 import {
   Container,
   Paper,
@@ -26,6 +28,11 @@ import {
   TableRow,
   Tabs,
   Tab,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Slider,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -60,6 +67,20 @@ function TabPanel(props: TabPanelProps) {
   );
 }
 
+async function getCroppedImg(imageSrc: string, pixelCrop: Area): Promise<Blob> {
+  const image = new Image();
+  image.src = imageSrc;
+  await new Promise<void>((resolve) => { image.onload = () => resolve(); });
+  const canvas = document.createElement('canvas');
+  canvas.width = pixelCrop.width;
+  canvas.height = pixelCrop.height;
+  const ctx = canvas.getContext('2d')!;
+  ctx.drawImage(image, pixelCrop.x, pixelCrop.y, pixelCrop.width, pixelCrop.height, 0, 0, pixelCrop.width, pixelCrop.height);
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('Canvas is empty')), 'image/jpeg', 0.95);
+  });
+}
+
 const Profile: React.FC = () => {
   const { user, login } = useAuth();
   const navigate = useNavigate();
@@ -74,6 +95,13 @@ const Profile: React.FC = () => {
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const avatarInputRef = React.useRef<HTMLInputElement>(null);
+
+  // Crop dialog state
+  const [cropDialogOpen, setCropDialogOpen] = useState(false);
+  const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
 
   // Handle PDF export for activity stats
   const handleExportActivityPdf = async () => {
@@ -91,24 +119,46 @@ const Profile: React.FC = () => {
     }
   };
 
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // File selected → read as data URL and open crop dialog
+  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (avatarInputRef.current) avatarInputRef.current.value = '';
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImageSrc(reader.result as string);
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
+      setCroppedAreaPixels(null);
+      setCropDialogOpen(true);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const onCropComplete = useCallback((_: Area, pixels: Area) => {
+    setCroppedAreaPixels(pixels);
+  }, []);
+
+  // Crop confirmed → extract pixels via canvas → upload
+  const handleCropConfirm = async () => {
+    if (!imageSrc || !croppedAreaPixels) return;
     setAvatarError(null);
     setAvatarUploading(true);
+    setCropDialogOpen(false);
     try {
+      const blob = await getCroppedImg(imageSrc, croppedAreaPixels);
       const form = new FormData();
-      form.append('file', file);
+      form.append('file', blob, 'avatar.jpg');
       await api.post('/users/me/avatar', form, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       const token = localStorage.getItem('token');
       if (token) await login(token);
     } catch (err: any) {
-      setAvatarError(err.response?.data?.detail || 'Upload failed. Use PNG, JPEG, or WebP under 2 MB.');
+      setAvatarError(err.response?.data?.detail || 'Upload failed.');
     } finally {
       setAvatarUploading(false);
-      if (avatarInputRef.current) avatarInputRef.current.value = '';
+      setImageSrc(null);
     }
   };
 
@@ -262,6 +312,46 @@ const Profile: React.FC = () => {
               </Stack>
             </Box>
           </Box>
+
+          {/* ========== CROP DIALOG ========== */}
+          <Dialog open={cropDialogOpen} onClose={() => setCropDialogOpen(false)} maxWidth="sm" fullWidth>
+            <DialogTitle>Crop Profile Photo</DialogTitle>
+            <DialogContent sx={{ p: 0 }}>
+              {imageSrc && (
+                <>
+                  <Box sx={{ position: 'relative', width: '100%', height: 360, bgcolor: 'black' }}>
+                    <Cropper
+                      image={imageSrc}
+                      crop={crop}
+                      zoom={zoom}
+                      aspect={1}
+                      cropShape="round"
+                      showGrid={false}
+                      onCropChange={setCrop}
+                      onZoomChange={setZoom}
+                      onCropComplete={onCropComplete}
+                    />
+                  </Box>
+                  <Box sx={{ px: 3, pt: 2, pb: 1 }}>
+                    <Typography variant="body2" color="text.secondary" gutterBottom>Zoom</Typography>
+                    <Slider
+                      value={zoom}
+                      min={1}
+                      max={3}
+                      step={0.05}
+                      onChange={(_, val) => setZoom(val as number)}
+                    />
+                  </Box>
+                </>
+              )}
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => { setCropDialogOpen(false); setImageSrc(null); }}>Cancel</Button>
+              <Button variant="contained" onClick={handleCropConfirm} disabled={!croppedAreaPixels}>
+                Crop &amp; Upload
+              </Button>
+            </DialogActions>
+          </Dialog>
 
           <Box component="form" onSubmit={handleSubmit}>
             <TextField

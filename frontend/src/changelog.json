@@ -1,8 +1,8 @@
 {
-  "version": "2026.06.10m",
+  "version": "2026.06.10n",
   "entries": [
     {
-      "version": "2026.06.10m",
+      "version": "2026.06.10n",
       "date": "2026-06-10",
       "sections": [
         {
@@ -73,6 +73,10 @@
           "title": "New Features",
           "type": "feature",
           "items": [
+            {
+              "text": "Profile photo uploads now include an in-browser crop and zoom step. After selecting a photo, a dialog lets you drag to position and scroll or pinch to zoom before uploading. Only the cropped square is sent to the server, so portrait, landscape, and oddly-framed photos always produce a clean avatar.",
+              "userImpact": true
+            },
             {
               "text": "Admins can now configure session lifetime and rolling renewal in Admin → Security → Session Settings, without editing server config files.",
               "userImpact": true

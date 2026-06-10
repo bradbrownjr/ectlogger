@@ -27,6 +27,7 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
+* **In-browser crop and zoom for profile photos** — After selecting a photo, a dialog lets you drag to position and scroll or pinch to zoom before uploading. Only the cropped square is sent to the server, so portrait, landscape, and oddly-framed photos always produce a clean avatar.
 * **Session settings configurable in Admin panel** — Admins can now set session lifetime and toggle rolling renewal in Admin → Security → Session Settings, without editing server config files.
 * **NCS check-in prompt now offers a role choice** — NCS operators who haven't yet checked in now see two buttons in the check-in prompt: "Check In as NCS" and "Check In as Participant". Both open the standard check-in dialog. Previously, clicking "Check In" scrolled down to the inline NCS entry form, which was confusing for operators who just wanted to observe before joining.
 * **NCS role toggle in toolbar** — NCS operators can now step down to participant (or back up to NCS) using the crown icon in the toolbar. Stepping down removes the NCS badge and management controls for that session without losing the permanent role assignment. Stepping back up restores full NCS status. The button only appears for operators with an NCS assignment who are checked in. The last active NCS on an active net cannot step down.
