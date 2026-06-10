@@ -314,7 +314,8 @@ const NetView: React.FC = () => {
     return localStorage.getItem('dockedPanel_chat_minimized') === 'true';
   });
   const [activityLogMinimized, setActivityLogMinimized] = useState(() => {
-    return localStorage.getItem('dockedPanel_activityLog_minimized') === 'true';
+    const stored = localStorage.getItem('dockedPanel_activityLog_minimized');
+    return stored === null ? true : stored === 'true';
   });
   const [activityLogDetached, setActivityLogDetached] = useState(() => {
     return localStorage.getItem('floatingWindow_activityLog_detached') === 'true';

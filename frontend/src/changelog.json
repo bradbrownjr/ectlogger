@@ -50,6 +50,10 @@
             {
               "text": "Emoji reaction controls are now hidden on closed and archived nets. Existing reaction counts remain visible for historical reference but are no longer interactive.",
               "userImpact": true
+            },
+            {
+              "text": "The Activity Log panel now loads collapsed by default, freeing up screen space especially on mobile. It expands with one click and your preference is remembered for the rest of your session.",
+              "userImpact": true
             }
           ]
         }
