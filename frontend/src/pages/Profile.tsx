@@ -85,7 +85,7 @@ async function getCroppedImg(imageSrc: string, pixelCrop: Area): Promise<Blob> {
 const Profile: React.FC = () => {
   const { user, login } = useAuth();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -247,7 +247,10 @@ const Profile: React.FC = () => {
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <Tabs
             value={tabValue}
-            onChange={(_, newValue) => setTabValue(newValue)}
+            onChange={(_, newValue) => {
+              setTabValue(newValue);
+              setSearchParams(newValue > 0 ? { tab: String(newValue) } : {});
+            }}
             aria-label="profile tabs"
           >
             <Tab
