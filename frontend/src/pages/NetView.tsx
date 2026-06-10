@@ -2423,6 +2423,17 @@ const NetView: React.FC = () => {
                         <PanToolIcon fontSize="small" />
                       </Button>
                     </Tooltip>
+                    <Tooltip title={userActiveCheckIn?.status === 'away' ? 'Return from break' : 'Step away'}>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        color={userActiveCheckIn?.status === 'away' ? 'warning' : 'inherit'}
+                        onClick={() => handleStatusChange(userActiveCheckIn.id, userActiveCheckIn?.status === 'away' ? 'checked_in' : 'away')}
+                        sx={{ minWidth: 'auto', px: 1 }}
+                      >
+                        <PauseCircleOutlineIcon fontSize="small" />
+                      </Button>
+                    </Tooltip>
                     {/* Role toggle — only visible to operators with an NCS assignment */}
                     {isAssignedNCS && (
                       <Tooltip title={isNCS ? 'Step down — stop acting as NCS' : 'Step up — take NCS role'}>
@@ -2444,17 +2455,6 @@ const NetView: React.FC = () => {
                         </Button>
                       </Tooltip>
                     )}
-                    <Tooltip title={userActiveCheckIn?.status === 'away' ? 'Return from break' : 'Step away'}>
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        color={userActiveCheckIn?.status === 'away' ? 'warning' : 'inherit'}
-                        onClick={() => handleStatusChange(userActiveCheckIn.id, userActiveCheckIn?.status === 'away' ? 'checked_in' : 'away')}
-                        sx={{ minWidth: 'auto', px: 1 }}
-                      >
-                        <PauseCircleOutlineIcon fontSize="small" />
-                      </Button>
-                    </Tooltip>
                     <Tooltip title="Check out of net">
                       <Button
                         size="small"
