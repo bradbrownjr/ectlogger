@@ -1,6 +1,6 @@
 # ECT Logger — Product Roadmap
 
-*Last updated: 2026-06-10 (rev 12)*  
+*Last updated: 2026-06-10 (rev 13)*  
 *Compiled from user feedback: AA1GM, KC1UIX, W1BKW, W1MTW, KC1JMH*
 
 > **Canonical location:** `docs/ROADMAP.md`. The root-level `ROADMAP.md` is a duplicate and should be deleted.
@@ -23,6 +23,8 @@ Priority within each tier is roughly top-to-bottom. Items from conversations are
 ## Milestone 0 — Infrastructure (prerequisite to everything else)
 
 *These items must exist before the user base grows further. They protect the platform and operator confidence regardless of what feature is being worked on.*
+
+> **Note (2026-06-10):** Milestone 1 bugs were addressed first because several were blocking active nets. Milestone 0 items remain pending and should be scheduled before the user base grows significantly.
 
 ### Maintenance Mode
 
@@ -109,32 +111,32 @@ The `users` table is currently indexed only on unique-constraint columns (email,
 
 ### Auth & Sessions
 
-**🐛 Sessions don't persist across deploys / expire too quickly** *(W1MTW, KC1JMH)*  
+**🐛 ~~Sessions don't persist across deploys / expire too quickly~~** *(W1MTW, KC1JMH)* — ✅ Done 2026-06-10  
 Every deployment resets browser sessions, forcing re-authentication via magic link. Independently, session lifetime is too short for regular users. Fix: implement rolling expiry on the server side (reset TTL on each authenticated request), and make client-side session storage survive deployments. Target: no re-login required for an operator who checks in to a weekly net regularly.
 
 ### Net Management Permissions
 
-**🐛 Archive/Delete blocked for net managers and co-managers** *(AA1GM)*  
+**🐛 ~~Archive/Delete blocked for net managers and co-managers~~** *(AA1GM)* — ✅ Done 2026-06-10  
 Joel (AA1GM) is the primary administrator of a net but clicking Archive does nothing. Net managers and co-managers should have at least the same archive/delete permissions as the NCS of that net. Investigate whether this is a frontend guard or a backend 403. Net ID 20 confirmed affected.
 
 ### Check-in Ordering
 
-**🐛 Check-ins display out of chronological order** *(AA1GM)*  
+**🐛 ~~Check-ins display out of chronological order~~** *(AA1GM)* — ✅ Done 2026-06-10  
 Entries #6 and #7 in net 20 appear in a different order than they were logged by the NCS. The existing mobile-station promotion feature (intentional re-ordering) is not the cause — Joel confirmed no self-check-ins occurred. Investigate whether account-holder check-ins are being sorted above guest check-ins regardless of timestamp. Pull net 20 logs and compare `checked_in_at` timestamps against display order.
 
 ### Chat & UI Polish
 
-**🐛 Emoji reaction popup shifts and reflows chat text** *(KC1JMH)*  
+**🐛 ~~Emoji reaction popup shifts and reflows chat text~~** *(KC1JMH)* — ✅ Done 2026-06-10  
 The emoji picker appears inline rather than as an overlay, causing visible text reflow in the chat panel. Should render as a floating layer (e.g. MUI Popper) that does not affect document flow.
 
-**🔧 Hide emoji picker after net closes**  
+**🔧 ~~Hide emoji picker after net closes~~** — ✅ Done 2026-06-10  
 Reaction controls have no purpose on a closed net. Suppress the emoji popup trigger once `net.status === 'closed'`.
 
 **🔧 Activity log minimized by default** *(W1MTW, KC1JMH)*  
 Several users found the activity log takes up too much space, especially on mobile. Default the pane to collapsed; the minimize button already exists (`_`). Update initial state only — user preference should persist within the session.
 
-**🐛 Non-square profile photos render sideways** *(W1MTW)*  
-Images with non-square dimensions (e.g. 1920×1080) are displayed rotated. Immediate fix: add a validation message at upload time clearly stating the square requirement, and reject or warn on non-square uploads so users know what went wrong. Do not silently accept an image that will display broken. Rotation should never be applied without explicit user intent.
+**🐛 ~~Non-square profile photos render sideways~~** *(W1MTW)* — ✅ Done 2026-06-10  
+Images with non-square dimensions (e.g. 1920×1080) are displayed rotated. Fixed by applying `ImageOps.exif_transpose()` on the server at upload time — this physically rotates pixel data to match the EXIF orientation tag the camera embedded, which represents the camera's own record of how the photo was taken. The in-browser crop feature (below) remains on the roadmap as the fuller solution.
 
 **✨ In-browser image crop and zoom on upload** *(W1MTW)*  
 Replace the raw file-picker upload with a crop UI: after selecting a photo, present a square crop selector with pinch/scroll zoom (similar to Twitter, Discord, etc.). The user positions and sizes their crop region, and only the resulting square is uploaded to the server. This eliminates the sideways-image class of bugs entirely and matches user expectations set by every other platform that accepts avatars. Applies to profile setup and the profile edit page.
