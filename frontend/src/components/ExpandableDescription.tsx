@@ -24,9 +24,7 @@ const ExpandableDescription: React.FC<Props> = ({ text, sx }) => {
   }, [description]);
 
   return (
-    // flex: 1 lets the card's flex-column layout push the info-icon row to the
-    // bottom of every card in a row, keeping them vertically aligned.
-    <Box sx={{ mb: 1.5, flex: 1, ...sx }}>
+    <Box sx={{ mb: 1.5, ...sx }}>
       <Typography
         ref={ref as React.Ref<HTMLElement>}
         variant="body2"

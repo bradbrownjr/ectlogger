@@ -545,8 +545,8 @@ const Scheduler: React.FC = () => {
         {/* Description */}
         <ExpandableDescription text={schedule.description} />
         
-        {/* Info List */}
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+        {/* Info List — mt: 'auto' pins this to the bottom of the flex-column CardContent */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75, mt: 'auto' }}>
           {/* Schedule */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <CalendarMonthIcon fontSize="small" color="action" />

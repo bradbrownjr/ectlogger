@@ -540,8 +540,8 @@ const Dashboard: React.FC = () => {
         {/* Description */}
         <ExpandableDescription text={net.description} />
         
-        {/* Info List */}
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+        {/* Info List — mt: 'auto' pins this to the bottom of the flex-column CardContent */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75, mt: 'auto' }}>
           {/* Time info based on status */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <AccessTimeIcon fontSize="small" color="action" />
