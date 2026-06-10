@@ -286,7 +286,7 @@ npm audit
 
 2. **Rate Limiting Scope**: Current rate limiting is per-IP. Consider adding per-user rate limits for authenticated endpoints.
 
-3. **Session Management**: JWT tokens valid until expiration. No token revocation mechanism implemented. Consider adding token blacklist for logout/ban functionality.
+3. **Session Management**: Session lifetime (default 30 days) and rolling renewal are configurable in Admin → Security → Session Settings. When rolling renewal is on, tokens refresh silently when fewer than 7 days remain. No token revocation mechanism is implemented; consider adding a token blacklist for logout/ban functionality.
 
 4. **Audit Logging**: Basic logging implemented. Consider adding comprehensive audit trail for sensitive operations.
 

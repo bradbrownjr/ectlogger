@@ -778,6 +778,9 @@ class AppSettingsResponse(BaseModel):
     schedule_min_account_age_days: int = 7
     schedule_min_net_participations: int = 1
     schedule_max_per_day: int = 5
+    # Session settings
+    session_lifetime_days: int = 30
+    session_rolling_renewal: bool = True
 
     class Config:
         from_attributes = True
@@ -790,6 +793,9 @@ class AppSettingsUpdate(BaseModel):
     schedule_min_account_age_days: Optional[int] = None
     schedule_min_net_participations: Optional[int] = None
     schedule_max_per_day: Optional[int] = None
+    # Session settings
+    session_lifetime_days: Optional[int] = None
+    session_rolling_renewal: Optional[bool] = None
 
 
 # Field Definition Schemas

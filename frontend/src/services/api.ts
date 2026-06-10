@@ -21,9 +21,15 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle 401 responses
+// Handle responses: persist refreshed token and handle 401 logout
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    const newToken = response.headers['x-new-token'];
+    if (newToken) {
+      localStorage.setItem('token', newToken);
+    }
+    return response;
+  },
   (error) => {
     if (error.response?.status === 401) {
       // Don't redirect to login if we're already verifying a magic link

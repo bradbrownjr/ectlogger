@@ -121,7 +121,7 @@ The login page informs users of the configured expiration:
 2. **Email Security**: Requires access to user's email account
 3. **Trusted Operators**: System designed for vetted emergency communications personnel
 4. **Limited Scope**: Application manages emergency net logs, not sensitive personal data
-5. **Session Management**: Separate access token expiration (30 minutes default) provides additional security layer
+5. **Session Management**: Sessions last 30 days by default and automatically renew when nearing expiry, so active operators are never interrupted. Both the lifetime and rolling-renewal behavior are configurable in Admin → Security → Session Settings. Re-authentication is only required after the configured lifetime of complete inactivity.
 
 ### Additional Security Measures
 
@@ -196,7 +196,7 @@ However, this defeats the purpose of the enhancement. Consider using at least 1 
 
 ## Related Configuration
 
-- `ACCESS_TOKEN_EXPIRE_MINUTES`: Session token expiration (default: 30 minutes)
+- **Session lifetime and rolling renewal**: Configurable in the Admin panel → Security tab → Session Settings. The default is 30 days with rolling renewal enabled. No `.env` change needed. `ACCESS_TOKEN_EXPIRE_MINUTES` in `.env` sets the fallback used on first run before the admin has saved any value.
 - `SECRET_KEY`: JWT signing key (must be secure)
 - `SMTP_*`: Email delivery configuration (required for magic links)
 

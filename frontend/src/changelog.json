@@ -1,6 +1,30 @@
 {
-  "version": "2026.06.10",
+  "version": "2026.06.10b",
   "entries": [
+    {
+      "version": "2026.06.10b",
+      "date": "2026-06-10",
+      "sections": [
+        {
+          "title": "Bug Fixes",
+          "type": "bugfix",
+          "items": [
+            {
+              "text": "Sessions are no longer wiped when the backend briefly restarts during a deploy. The app now only logs you out on an explicit authentication failure, not on transient server errors.",
+              "userImpact": true
+            },
+            {
+              "text": "Login sessions now last 30 days and automatically renew — weekly net operators will stay signed in without ever needing to re-authenticate.",
+              "userImpact": true
+            },
+            {
+              "text": "Admins can now configure session lifetime and rolling renewal in Admin → Security → Session Settings, without editing server config files.",
+              "userImpact": false
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.06.10",
       "date": "2026-06-10",

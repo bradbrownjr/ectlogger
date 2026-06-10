@@ -267,6 +267,13 @@ const Admin: React.FC = () => {
   });
   const [scheduleSettingsLoading, setScheduleSettingsLoading] = useState(false);
   const [scheduleSettingsSaving, setScheduleSettingsSaving] = useState(false);
+
+  // Session settings state
+  const [sessionSettings, setSessionSettings] = useState({
+    session_lifetime_days: 30,
+    session_rolling_renewal: true,
+  });
+  const [sessionSettingsSaving, setSessionSettingsSaving] = useState(false);
   
   // Contacts state
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -832,6 +839,10 @@ const Admin: React.FC = () => {
         schedule_min_net_participations: response.data.schedule_min_net_participations ?? 1,
         schedule_max_per_day: response.data.schedule_max_per_day ?? 5,
       });
+      setSessionSettings({
+        session_lifetime_days: response.data.session_lifetime_days ?? 30,
+        session_rolling_renewal: response.data.session_rolling_renewal ?? true,
+      });
     } catch (error) {
       console.error('Failed to fetch schedule settings:', error);
     } finally {
@@ -849,6 +860,19 @@ const Admin: React.FC = () => {
       setSnackbar({ open: true, message, severity: 'error' });
     } finally {
       setScheduleSettingsSaving(false);
+    }
+  };
+
+  const handleSaveSessionSettings = async () => {
+    setSessionSettingsSaving(true);
+    try {
+      await api.put('/settings', sessionSettings);
+      setSnackbar({ open: true, message: 'Session settings saved', severity: 'success' });
+    } catch (error: any) {
+      const message = error.response?.data?.detail || 'Failed to save session settings';
+      setSnackbar({ open: true, message, severity: 'error' });
+    } finally {
+      setSessionSettingsSaving(false);
     }
   };
 
@@ -2385,6 +2409,58 @@ const Admin: React.FC = () => {
                       </Box>
                     </Box>
                   )}
+                </CardContent>
+              </Card>
+
+              {/* Session Settings Card */}
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    <SecurityIcon sx={{ verticalAlign: 'middle', mr: 1 }} />
+                    Session Settings
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                    Control how long user sessions last and whether they renew automatically. Changes apply to newly issued tokens only — existing sessions keep their current expiry.
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                    <TextField
+                      label="Session Lifetime (days)"
+                      type="number"
+                      value={sessionSettings.session_lifetime_days}
+                      onChange={(e) => setSessionSettings({
+                        ...sessionSettings,
+                        session_lifetime_days: Math.max(1, parseInt(e.target.value) || 1),
+                      })}
+                      inputProps={{ min: 1, max: 365 }}
+                      helperText="How long a login session lasts before the user must re-authenticate. Default: 30 days."
+                      fullWidth
+                    />
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <Box>
+                        <Typography variant="body1">Rolling renewal</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          When enabled, sessions with fewer than 7 days remaining are silently refreshed on each request, so active users are never logged out.
+                        </Typography>
+                      </Box>
+                      <Switch
+                        checked={sessionSettings.session_rolling_renewal}
+                        onChange={(e) => setSessionSettings({
+                          ...sessionSettings,
+                          session_rolling_renewal: e.target.checked,
+                        })}
+                      />
+                    </Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                      <Button
+                        variant="contained"
+                        onClick={handleSaveSessionSettings}
+                        disabled={sessionSettingsSaving}
+                        startIcon={sessionSettingsSaving ? <CircularProgress size={20} /> : null}
+                      >
+                        {sessionSettingsSaving ? 'Saving...' : 'Save Settings'}
+                      </Button>
+                    </Box>
+                  </Box>
                 </CardContent>
               </Card>
             </Box>

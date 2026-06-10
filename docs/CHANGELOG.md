@@ -6,6 +6,11 @@ All notable changes to ECTLogger are documented here.
 
 # June 10, 2026
 
+## Bug Fixes
+
+* **Sessions no longer wiped during backend restarts** — The app previously logged users out any time the backend was briefly unavailable (e.g., during a deploy). The client now only clears a session on a deliberate 401 Unauthorized response; transient network errors and 5xx responses leave the stored token untouched so users remain signed in after a deploy.
+* **Sessions persist for 30 days with automatic rolling refresh** — Access tokens were previously set to a 24-hour lifetime, forcing weekly net operators to re-authenticate before each session. Tokens are now issued with a 30-day lifetime. Additionally, any token with fewer than 7 days remaining is silently refreshed on the next authenticated request, so active users never need to re-login. Both the lifetime and rolling-renewal behavior are now configurable in Admin → Security → Session Settings.
+
 ## UX Improvements
 
 * **Toolbar reorganized into Net Info and Net Actions rows** — The toolbar on the Net View page is now split into two logical rows: **Row 1 (Net Info)** contains read-only browsing tools (bulk check-in shortcut, search, map, stats, script, announcements, topic history, info URL, net info link) and **Row 2 (Net Actions)** contains all write/management controls (start, edit, roles, check-in, go live, close, import, export, PDF, archive, delete). Previously, action buttons mixed into Row 1 caused the toolbar to overflow into a third row on active nets with many features enabled — for example, the Import button would end up isolated on its own line.

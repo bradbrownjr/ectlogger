@@ -1,14 +1,15 @@
-from fastapi import Depends, HTTPException, status, Request
+from fastapi import Depends, HTTPException, status, Request, Response
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import Optional
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from app.database import get_db
 from app.models import User, UserRole
-from app.auth import verify_token
+from app.auth import verify_token, create_access_token
 from app.logger import logger
 from app.security import get_client_ip
+from app.session_config import get_session_config
 
 security = HTTPBearer()
 optional_security = HTTPBearer(auto_error=False)
@@ -16,6 +17,7 @@ optional_security = HTTPBearer(auto_error=False)
 
 async def get_current_user(
     request: Request,
+    response: Response,
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: AsyncSession = Depends(get_db)
 ) -> User:
@@ -72,7 +74,18 @@ async def get_current_user(
     # Update last_active timestamp for online tracking
     user.last_active = datetime.now(timezone.utc)
     await db.commit()
-    
+
+    # Rolling refresh: if enabled and fewer than 7 days remain, issue a new
+    # token so active users never have to re-authenticate.
+    lifetime_days, rolling_renewal = await get_session_config(db)
+    exp = payload.get("exp")
+    if rolling_renewal and exp and (exp - datetime.now(timezone.utc).timestamp()) < 7 * 24 * 60 * 60:
+        new_token = create_access_token(
+            data={"sub": str(user.id)},
+            expires_delta=timedelta(days=lifetime_days),
+        )
+        response.headers["X-New-Token"] = new_token
+
     return user
 
 

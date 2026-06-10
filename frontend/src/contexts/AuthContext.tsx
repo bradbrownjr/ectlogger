@@ -62,7 +62,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(userData);
     } catch (error: any) {
       console.error('[AUTH] Failed to fetch user:', error.response?.status, error.response?.data);
-      logout();
+      // Only clear the session on an explicit 401 (invalid/expired token).
+      // Network errors and 5xx responses are transient (backend restarting
+      // during a deploy) — the token is still valid, so leave it in place.
+      if (error.response?.status === 401) {
+        logout();
+      }
     } finally {
       setLoading(false);
     }

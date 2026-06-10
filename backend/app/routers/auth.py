@@ -3,6 +3,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from authlib.integrations.starlette_client import OAuth
+from app.session_config import get_session_config
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models import User, UserRole, Contact
@@ -206,10 +207,11 @@ async def verify_magic_link(
     
     logger.auth_success(user.email, client_ip)
     
-    # Create access token (sub must be string per JWT spec)
+    # Create access token using admin-configured lifetime
+    lifetime_days, _ = await get_session_config(db)
     access_token = create_access_token(
         data={"sub": str(user.id)},
-        expires_delta=timedelta(minutes=settings.access_token_expire_minutes)
+        expires_delta=timedelta(days=lifetime_days)
     )
     
     logger.debug("API", "Access token created successfully", ip=client_ip)

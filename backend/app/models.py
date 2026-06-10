@@ -526,5 +526,9 @@ class AppSettings(Base):
     schedule_min_account_age_days = Column(Integer, default=7)  # Minimum days since account creation
     schedule_min_net_participations = Column(Integer, default=1)  # Minimum net check-ins
     schedule_max_per_day = Column(Integer, default=5)  # Maximum schedules per day
-    
+
+    # Session / authentication settings
+    session_lifetime_days = Column(Integer, default=30)  # JWT lifetime in days
+    session_rolling_renewal = Column(Boolean, default=True)  # Auto-refresh when < 7 days remain
+
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

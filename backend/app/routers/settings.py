@@ -61,12 +61,18 @@ async def get_settings(
     """Get application settings (any authenticated user can read)"""
     settings = await get_or_create_settings(db)
     
+    return _build_settings_response(settings)
+
+
+def _build_settings_response(settings: AppSettings) -> AppSettingsResponse:
     return AppSettingsResponse(
         default_field_config=json.loads(settings.default_field_config) if settings.default_field_config else {},
         field_labels=json.loads(settings.field_labels) if settings.field_labels else {},
         schedule_min_account_age_days=settings.schedule_min_account_age_days if settings.schedule_min_account_age_days is not None else 7,
         schedule_min_net_participations=settings.schedule_min_net_participations if settings.schedule_min_net_participations is not None else 1,
-        schedule_max_per_day=settings.schedule_max_per_day if settings.schedule_max_per_day is not None else 5
+        schedule_max_per_day=settings.schedule_max_per_day if settings.schedule_max_per_day is not None else 5,
+        session_lifetime_days=settings.session_lifetime_days if settings.session_lifetime_days is not None else 30,
+        session_rolling_renewal=settings.session_rolling_renewal if settings.session_rolling_renewal is not None else True,
     )
 
 
@@ -79,35 +85,36 @@ async def update_settings(
     """Update application settings (admin only)"""
     if current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Admin access required")
-    
+
     settings = await get_or_create_settings(db)
-    
+
     if settings_update.default_field_config is not None:
         settings.default_field_config = json.dumps(settings_update.default_field_config)
-    
+
     if settings_update.field_labels is not None:
         settings.field_labels = json.dumps(settings_update.field_labels)
-    
+
     # Schedule creation limits
     if settings_update.schedule_min_account_age_days is not None:
         settings.schedule_min_account_age_days = settings_update.schedule_min_account_age_days
-    
+
     if settings_update.schedule_min_net_participations is not None:
         settings.schedule_min_net_participations = settings_update.schedule_min_net_participations
-    
+
     if settings_update.schedule_max_per_day is not None:
         settings.schedule_max_per_day = settings_update.schedule_max_per_day
-    
+
+    # Session settings
+    if settings_update.session_lifetime_days is not None:
+        settings.session_lifetime_days = max(1, settings_update.session_lifetime_days)
+
+    if settings_update.session_rolling_renewal is not None:
+        settings.session_rolling_renewal = settings_update.session_rolling_renewal
+
     await db.commit()
     await db.refresh(settings)
-    
-    return AppSettingsResponse(
-        default_field_config=json.loads(settings.default_field_config) if settings.default_field_config else {},
-        field_labels=json.loads(settings.field_labels) if settings.field_labels else {},
-        schedule_min_account_age_days=settings.schedule_min_account_age_days if settings.schedule_min_account_age_days is not None else 7,
-        schedule_min_net_participations=settings.schedule_min_net_participations if settings.schedule_min_net_participations is not None else 1,
-        schedule_max_per_day=settings.schedule_max_per_day if settings.schedule_max_per_day is not None else 5
-    )
+
+    return _build_settings_response(settings)
 
 
 @router.get("/field-labels")
