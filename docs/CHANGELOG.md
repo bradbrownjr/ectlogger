@@ -8,6 +8,8 @@ All notable changes to ECTLogger are documented here.
 
 ## Bug Fixes
 
+* **Archived nets disappear from the Nets list immediately** — If you navigated back to the Nets list before the 5-second archive undo window expired, the net would still appear in the list until you manually refreshed the page. The list now re-fetches automatically when you return to it.
+
 * **Profile photos from mobile phones no longer display sideways** — Portrait and landscape photos taken on phones embed an EXIF orientation tag instead of storing pixels upright. The avatar upload handler now applies that orientation correction before saving, so all photos display right-side up regardless of how the phone was held.
 * **Emoji reaction toolbar no longer shifts chat message text** — Hovering over a chat message to reveal the emoji reaction buttons was injecting 100px of extra padding-right into the message row, causing the message text to reflow into a narrower column on every hover. The toolbar now overlays the message content without affecting layout.
 * **Check-in list now displays in correct chronological order** — When a net is created from a schedule template, all template staff are pre-assigned NCS roles at the same timestamp. The check-in list was treating all of them as "active NCS" and promoting them to the top, pushing stations who checked in earlier (like KA1RAC) down the list. The NCS sort promotion now only applies to operators who were already checked in before the first non-NCS station joined, which is the correct definition of "running NCS." Operators who happen to have an NCS role but checked in later appear in natural chronological order.

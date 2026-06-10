@@ -1,14 +1,18 @@
 {
-  "version": "2026.06.10h",
+  "version": "2026.06.10i",
   "entries": [
     {
-      "version": "2026.06.10h",
+      "version": "2026.06.10i",
       "date": "2026-06-10",
       "sections": [
         {
           "title": "Bug Fixes",
           "type": "bugfix",
           "items": [
+            {
+              "text": "Archived nets now disappear from the Nets list immediately after archiving. Previously, if you navigated back to the Nets list before the 5-second undo window expired, the net would still appear until you refreshed the page.",
+              "userImpact": true
+            },
             {
               "text": "Profile photos taken on mobile phones now display upright. Previously, portrait or landscape photos were saved sideways because the server ignored the EXIF orientation tag embedded by the camera.",
               "userImpact": true

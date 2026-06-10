@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { displayCallsign } from '../utils/userDisplay';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Container,
   Grid,
@@ -119,13 +119,14 @@ const Dashboard: React.FC = () => {
   // Snackbar state for toast notifications
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' | 'info' }>({ open: false, message: '', severity: 'info' });
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, isAuthenticated } = useAuth();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   useEffect(() => {
     fetchNets();
-  }, []);
+  }, [location.key]);
 
   const fetchNets = async () => {
     try {
