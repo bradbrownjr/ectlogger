@@ -34,10 +34,6 @@
               "userImpact": true
             },
             {
-              "text": "Login sessions now last 30 days and automatically renew — weekly net operators will stay signed in without ever needing to re-authenticate.",
-              "userImpact": true
-            },
-            {
               "text": "Chat photos now show as \"[Photo]\" in Net Report and PDF exports. Previously, pasted images appeared as a raw internal JSON payload in the on-screen Net Report page and the exported PDF.",
               "userImpact": true
             }
@@ -52,7 +48,7 @@
               "userImpact": true
             },
             {
-              "text": "Admins can now configure session lifetime and rolling renewal in Admin → Security → Session Settings, without editing server config files.",
+              "text": "Login sessions now last 30 days and automatically renew — weekly net operators will stay signed in without ever needing to re-authenticate.",
               "userImpact": true
             },
             {
@@ -77,6 +73,10 @@
           "title": "New Features",
           "type": "feature",
           "items": [
+            {
+              "text": "Admins can now configure session lifetime and rolling renewal in Admin → Security → Session Settings, without editing server config files.",
+              "userImpact": true
+            },
             {
               "text": "NCS operators viewing a net they haven't checked into now see two check-in options in the prompt: \"Check In as NCS\" and \"Check In as Participant\". Both open the standard check-in dialog instead of scrolling to the inline NCS form.",
               "userImpact": true
