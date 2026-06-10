@@ -25,7 +25,7 @@
           "items": [
             {
               "text": "Admins can now configure session lifetime and rolling renewal in Admin → Security → Session Settings, without editing server config files.",
-              "userImpact": false
+              "userImpact": true
             }
           ]
         }
