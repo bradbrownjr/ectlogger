@@ -1,6 +1,6 @@
 # ECT Logger — Product Roadmap
 
-*Last updated: 2026-06-09 (rev 11)*  
+*Last updated: 2026-06-10 (rev 12)*  
 *Compiled from user feedback: AA1GM, KC1UIX, W1BKW, W1MTW, KC1JMH*
 
 > **Canonical location:** `docs/ROADMAP.md`. The root-level `ROADMAP.md` is a duplicate and should be deleted.
@@ -144,6 +144,9 @@ Several issues surfaced on mobile: account setup friction, elements potentially 
 
 **🔧 Self-check-in prompt is not obvious enough** *(KC1JMH)*  
 Logged-in users who need to check in don't notice the check-in row at the bottom of the screen. Replace the inline prompt with a modal dialog that is clearly dismissible, so new users understand what action is being requested.
+
+**🔧 Net staff self-check-in should not assume NCS role** *(KC1JMH)*  
+When a co-manager or NCS-role user loads a lobby or active net page, the current UI assumes they intend to check in as Net Control Station. That assumption is wrong — they may simply be observing or monitoring. The self-check-in dialog (above) should ask: "Check in as Net Control Station or Standard Station?" This prevents accidental NCS takeovers when a second licensed NCS joins a net as a participant. Implement together with the self-check-in dialog improvement above.
 
 ### Net Reports
 
