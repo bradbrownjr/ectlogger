@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { displayCallsign } from '../utils/userDisplay';
-import { 
-  AppBar, 
-  Toolbar, 
-  Typography, 
-  Button, 
-  Box, 
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  Button,
+  Box,
   IconButton,
   Drawer,
   List,
@@ -17,12 +17,14 @@ import {
   useMediaQuery,
   useTheme,
   Tooltip,
+  Menu,
+  MenuItem,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useThemeMode } from '../contexts/ThemeContext';
 import { useLocation } from '../contexts/LocationContext';
-import LogoutIcon from '@mui/icons-material/Logout';
+import UserAvatar from './UserAvatar';
 import LoginIcon from '@mui/icons-material/Login';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
@@ -32,6 +34,7 @@ import EventIcon from '@mui/icons-material/Event';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import PersonIcon from '@mui/icons-material/Person';
+import LogoutIcon from '@mui/icons-material/Logout';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import GridOnIcon from '@mui/icons-material/GridOn';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
@@ -51,21 +54,19 @@ const NavbarClock: React.FC<NavbarClockProps> = ({ compact = false }) => {
 
   const localTime = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
   const utcTime = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' });
-  // Get timezone abbreviation (e.g., EST, PST, CST)
   const localTz = time.toLocaleTimeString('en-US', { timeZoneName: 'short' }).split(' ').pop() || 'Local';
 
-  const tooltipContent = gridSquare 
+  const tooltipContent = gridSquare
     ? `${localTz}: ${localTime} | UTC: ${utcTime} | Grid: ${gridSquare}`
     : `${localTz}: ${localTime} | UTC: ${utcTime}`;
 
-  // Compact mobile version - single line
   if (compact) {
     return (
       <Tooltip title={tooltipContent}>
-        <Box 
-          sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
             gap: 0.5,
             bgcolor: 'rgba(0,0,0,0.15)',
             px: 1,
@@ -91,13 +92,12 @@ const NavbarClock: React.FC<NavbarClockProps> = ({ compact = false }) => {
     );
   }
 
-  // Full desktop version
   return (
     <Tooltip title={tooltipContent}>
-      <Box 
-        sx={{ 
-          display: 'flex', 
-          alignItems: 'center', 
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
           gap: 0.5,
           bgcolor: 'rgba(0,0,0,0.15)',
           px: 1.5,
@@ -145,27 +145,26 @@ const Navbar: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [userMenuAnchor, setUserMenuAnchor] = useState<HTMLElement | null>(null);
 
   const handleLogout = () => {
     logout();
     navigate('/login');
     setDrawerOpen(false);
+    setUserMenuAnchor(null);
   };
 
   const handleNavigate = (path: string) => {
     navigate(path);
     setDrawerOpen(false);
+    setUserMenuAnchor(null);
   };
 
-  const menuItems = [
+  const navItems = [
     { label: 'Nets', path: '/dashboard', icon: <RadioIcon /> },
     { label: 'Schedule', path: '/scheduler', icon: <EventIcon /> },
     { label: 'Stats', path: '/statistics', icon: <BarChartIcon /> },
   ];
-
-  if (isAuthenticated && user?.role === 'admin') {
-    menuItems.push({ label: 'Admin', path: '/admin/users', icon: <AdminPanelSettingsIcon /> });
-  }
 
   return (
     <AppBar position="static">
@@ -178,16 +177,13 @@ const Navbar: React.FC = () => {
         >
           📻 ECTLogger
         </Typography>
-        
+
         <NavbarClock compact={isMobile} />
-        
+
         <Box sx={{ flexGrow: 1 }} />
-        
+
         {isMobile ? (
           <>
-            <IconButton color="inherit" onClick={toggleColorMode} title={`Switch to ${mode === 'light' ? 'dark' : 'light'} mode`}>
-              {mode === 'light' ? <Brightness4Icon /> : <Brightness7Icon />}
-            </IconButton>
             <IconButton
               color="inherit"
               edge="end"
@@ -202,7 +198,7 @@ const Navbar: React.FC = () => {
             >
               <Box sx={{ width: 250 }} role="presentation">
                 <List>
-                  {menuItems.map((item) => (
+                  {navItems.map((item) => (
                     <ListItem key={item.path} disablePadding>
                       <ListItemButton onClick={() => handleNavigate(item.path)}>
                         <ListItemIcon>{item.icon}</ListItemIcon>
@@ -211,10 +207,10 @@ const Navbar: React.FC = () => {
                     </ListItem>
                   ))}
                   <ListItem disablePadding>
-                    <ListItemButton 
-                      component="a" 
-                      href="https://ectlogger.us" 
-                      target="_blank" 
+                    <ListItemButton
+                      component="a"
+                      href="https://ectlogger.us"
+                      target="_blank"
                       rel="noopener noreferrer"
                       onClick={() => setDrawerOpen(false)}
                     >
@@ -224,76 +220,135 @@ const Navbar: React.FC = () => {
                   </ListItem>
                 </List>
                 <Divider />
-                <List>
-                  {isAuthenticated && (
+                {isAuthenticated ? (
+                  <List>
                     <ListItem disablePadding>
                       <ListItemButton onClick={() => handleNavigate('/profile')}>
                         <ListItemIcon><PersonIcon /></ListItemIcon>
-                        <ListItemText primary={displayCallsign(user) || 'Profile'} />
+                        <ListItemText primary="Profile" secondary={displayCallsign(user)} />
                       </ListItemButton>
                     </ListItem>
-                  )}
-                  {isAuthenticated ? (
+                    <ListItem disablePadding>
+                      <ListItemButton onClick={() => handleNavigate('/profile?tab=1')}>
+                        <ListItemIcon><BarChartIcon /></ListItemIcon>
+                        <ListItemText primary="Personal Stats" />
+                      </ListItemButton>
+                    </ListItem>
+                    {user?.role === 'admin' && (
+                      <ListItem disablePadding>
+                        <ListItemButton onClick={() => handleNavigate('/admin/users')}>
+                          <ListItemIcon><AdminPanelSettingsIcon /></ListItemIcon>
+                          <ListItemText primary="Admin" />
+                        </ListItemButton>
+                      </ListItem>
+                    )}
+                    <ListItem disablePadding>
+                      <ListItemButton onClick={() => { toggleColorMode(); setDrawerOpen(false); }}>
+                        <ListItemIcon>{mode === 'light' ? <Brightness4Icon /> : <Brightness7Icon />}</ListItemIcon>
+                        <ListItemText primary={mode === 'light' ? 'Switch to Dark' : 'Switch to Light'} />
+                      </ListItemButton>
+                    </ListItem>
                     <ListItem disablePadding>
                       <ListItemButton onClick={handleLogout}>
                         <ListItemIcon><LogoutIcon /></ListItemIcon>
                         <ListItemText primary="Logout" />
                       </ListItemButton>
                     </ListItem>
-                  ) : (
+                  </List>
+                ) : (
+                  <List>
                     <ListItem disablePadding>
                       <ListItemButton onClick={() => handleNavigate('/login')}>
                         <ListItemIcon><LoginIcon /></ListItemIcon>
                         <ListItemText primary="Login" />
                       </ListItemButton>
                     </ListItem>
-                  )}
-                </List>
+                  </List>
+                )}
               </Box>
             </Drawer>
           </>
         ) : (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Button color="inherit" onClick={() => navigate('/dashboard')}>
-              Nets
-            </Button>
-            <Button color="inherit" onClick={() => navigate('/scheduler')}>
-              Schedule
-            </Button>
-            <Button color="inherit" onClick={() => navigate('/statistics')}>
-              Stats
-            </Button>
-            {isAuthenticated && user?.role === 'admin' && (
-              <Button color="inherit" onClick={() => navigate('/admin/users')}>
-                Admin
+            {navItems.map((item) => (
+              <Button key={item.path} color="inherit" onClick={() => navigate(item.path)}>
+                {item.label}
               </Button>
-            )}
-            <Button 
-              color="inherit" 
-              href="https://ectlogger.us" 
+            ))}
+            <Button
+              color="inherit"
+              href="https://ectlogger.us"
               target="_blank"
               rel="noopener noreferrer"
             >
               Docs
             </Button>
-            {isAuthenticated && (
-              <Button 
-                color="inherit" 
-                onClick={() => navigate('/profile')}
-                sx={{ textTransform: 'none' }}
-              >
-                {displayCallsign(user)}
-              </Button>
-            )}
-            <IconButton color="inherit" onClick={toggleColorMode} title={`Switch to ${mode === 'light' ? 'dark' : 'light'} mode`}>
-              {mode === 'light' ? <Brightness4Icon /> : <Brightness7Icon />}
-            </IconButton>
+
             {isAuthenticated ? (
-              <Button color="inherit" startIcon={<LogoutIcon />} onClick={handleLogout}>
-                Logout
-              </Button>
+              <>
+                {/* ===== USER AVATAR MENU ===== */}
+                <Tooltip title={displayCallsign(user) || 'Account'}>
+                  <IconButton
+                    onClick={(e) => setUserMenuAnchor(e.currentTarget)}
+                    sx={{ p: 0.5 }}
+                  >
+                    <UserAvatar
+                      avatarUrl={(user as any)?.avatar_url}
+                      callsign={user?.callsign}
+                      name={user?.name}
+                      size={32}
+                    />
+                  </IconButton>
+                </Tooltip>
+                <Menu
+                  anchorEl={userMenuAnchor}
+                  open={Boolean(userMenuAnchor)}
+                  onClose={() => setUserMenuAnchor(null)}
+                  anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                  transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                  slotProps={{ paper: { sx: { minWidth: 200, mt: 0.5 } } }}
+                >
+                  {/* Identity header */}
+                  <Box sx={{ px: 2, py: 1, pointerEvents: 'none' }}>
+                    <Typography variant="subtitle2">{displayCallsign(user)}</Typography>
+                    <Typography variant="caption" color="text.secondary">{user?.email}</Typography>
+                  </Box>
+                  <Divider />
+
+                  <MenuItem onClick={() => handleNavigate('/profile')}>
+                    <ListItemIcon><PersonIcon fontSize="small" /></ListItemIcon>
+                    Profile
+                  </MenuItem>
+                  <MenuItem onClick={() => handleNavigate('/profile?tab=1')}>
+                    <ListItemIcon><BarChartIcon fontSize="small" /></ListItemIcon>
+                    Personal Stats
+                  </MenuItem>
+                  {user?.role === 'admin' && (
+                    <MenuItem onClick={() => handleNavigate('/admin/users')}>
+                      <ListItemIcon><AdminPanelSettingsIcon fontSize="small" /></ListItemIcon>
+                      Admin
+                    </MenuItem>
+                  )}
+
+                  <Divider />
+
+                  <MenuItem onClick={() => { toggleColorMode(); setUserMenuAnchor(null); }}>
+                    <ListItemIcon>
+                      {mode === 'light' ? <Brightness4Icon fontSize="small" /> : <Brightness7Icon fontSize="small" />}
+                    </ListItemIcon>
+                    {mode === 'light' ? 'Switch to Dark' : 'Switch to Light'}
+                  </MenuItem>
+
+                  <Divider />
+
+                  <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>
+                    <ListItemIcon><LogoutIcon fontSize="small" sx={{ color: 'error.main' }} /></ListItemIcon>
+                    Logout
+                  </MenuItem>
+                </Menu>
+              </>
             ) : (
-              <Button color="inherit" onClick={() => navigate('/login')}>
+              <Button color="inherit" startIcon={<LoginIcon />} onClick={() => navigate('/login')}>
                 Login
               </Button>
             )}

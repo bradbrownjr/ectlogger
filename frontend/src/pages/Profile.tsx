@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { displayCallsign } from '../utils/userDisplay';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import Cropper from 'react-easy-crop';
 import type { Area } from 'react-easy-crop';
 import {
@@ -84,13 +84,17 @@ async function getCroppedImg(imageSrc: string, pixelCrop: Area): Promise<Blob> {
 const Profile: React.FC = () => {
   const { user, login } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [newCallsign, setNewCallsign] = useState('');
   const [userStats, setUserStats] = useState<any>(null);
   const [statsLoading, setStatsLoading] = useState(true);
-  const [tabValue, setTabValue] = useState(0);
+  const [tabValue, setTabValue] = useState(() => {
+    const tab = parseInt(searchParams.get('tab') || '0', 10);
+    return isNaN(tab) ? 0 : tab;
+  });
   const [exportingPdf, setExportingPdf] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
