@@ -72,9 +72,10 @@ class NCSReminderService:
         from app.routers.nets import net_frequencies as net_freq_table
         import json
 
-        # Look for any non-closed net for this template within ±4 hours
-        window_start = scheduled_dt - timedelta(hours=4)
-        window_end = scheduled_dt + timedelta(hours=4)
+        # Look for any non-closed net for this template at exactly this scheduled time
+        # (±5 min tolerance guards against floating-point datetime drift between scheduler runs)
+        window_start = scheduled_dt - timedelta(minutes=5)
+        window_end = scheduled_dt + timedelta(minutes=5)
         result = await db.execute(
             select(Net)
             .where(
@@ -266,15 +267,15 @@ class NCSReminderService:
                 if net_id:
                     net_url = f"{settings.frontend_url}/nets/{net_id}"
             else:
-                # 1h reminder — net should already exist; just find it
+                # 1h reminder — net should already exist; find by exact scheduled time
                 result = await db.execute(
                     select(Net)
                     .where(
                         and_(
                             Net.template_id == template.id,
                             Net.status.notin_(['closed', 'archived']),
-                            Net.scheduled_start_time >= scheduled_dt - timedelta(hours=4),
-                            Net.scheduled_start_time <= scheduled_dt + timedelta(hours=4),
+                            Net.scheduled_start_time >= scheduled_dt - timedelta(minutes=5),
+                            Net.scheduled_start_time <= scheduled_dt + timedelta(minutes=5),
                         )
                     )
                 )
