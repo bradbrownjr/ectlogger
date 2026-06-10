@@ -151,7 +151,7 @@ When making **user-impacting changes** (new features, workflow changes, UI chang
 1. Edit `frontend/src/changelog.json` — this is the **single source of truth**. The in-app `ChangelogNotification.tsx` dialog AND the backend `whats_new_service.py` daily digest email both read from this file, so they never drift apart.
 2. **Always run `date` in the terminal first** to determine today's local date (default timezone: America/New_York, UTC-5 EST / UTC-4 EDT).
 3. **Check whether today's date already has an entry** in `entries`. If it does, **add items to the existing sections** — do NOT create a new entry. Only create a new entry when no entry exists for today's date.
-4. The top-level `version` and the entry's `version` field use format `YYYY.MM.DD`. Append a letter suffix (`b`, `c`, ...) only when you need to trigger a new What's New badge for a second deploy on the same day (e.g., a critical hotfix after users have already seen today's entry). Do not increment the suffix for every commit.
+4. The top-level `version` and the entry's `version` field use format `YYYY.MM.DD`. The badge fires whenever the top-level `version` string changes from the value the user last saw. **Bump the suffix** (`b`, `c`, ...) any time you add changelog items to a version the user has already seen — i.e., the badge has already appeared and been cleared for the current version. Do not bump on every commit; only bump when users need to be notified of new content they haven't seen yet.
 5. **Use only these three section titles and matching types — no others:**
    - `"New Features"` + `"type": "feature"`
    - `"Improvements"` + `"type": "improvement"`
