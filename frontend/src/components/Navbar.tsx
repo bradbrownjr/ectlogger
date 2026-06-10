@@ -34,6 +34,7 @@ import EventIcon from '@mui/icons-material/Event';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import PersonIcon from '@mui/icons-material/Person';
+import SettingsIcon from '@mui/icons-material/Settings';
 import LogoutIcon from '@mui/icons-material/Logout';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import GridOnIcon from '@mui/icons-material/GridOn';
@@ -230,6 +231,12 @@ const Navbar: React.FC = () => {
                     </ListItem>
                     <ListItem disablePadding>
                       <ListItemButton onClick={() => handleNavigate('/profile?tab=1')}>
+                        <ListItemIcon><SettingsIcon /></ListItemIcon>
+                        <ListItemText primary="Settings" />
+                      </ListItemButton>
+                    </ListItem>
+                    <ListItem disablePadding>
+                      <ListItemButton onClick={() => handleNavigate('/profile?tab=2')}>
                         <ListItemIcon><BarChartIcon /></ListItemIcon>
                         <ListItemText primary="Personal Stats" />
                       </ListItemButton>
@@ -320,6 +327,10 @@ const Navbar: React.FC = () => {
                     Profile
                   </MenuItem>
                   <MenuItem onClick={() => handleNavigate('/profile?tab=1')}>
+                    <ListItemIcon><SettingsIcon fontSize="small" /></ListItemIcon>
+                    Settings
+                  </MenuItem>
+                  <MenuItem onClick={() => handleNavigate('/profile?tab=2')}>
                     <ListItemIcon><BarChartIcon fontSize="small" /></ListItemIcon>
                     Personal Stats
                   </MenuItem>

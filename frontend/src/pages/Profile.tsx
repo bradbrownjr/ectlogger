@@ -38,6 +38,7 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import PersonIcon from '@mui/icons-material/Person';
 import SettingsIcon from '@mui/icons-material/Settings';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
@@ -244,34 +245,37 @@ const Profile: React.FC = () => {
     <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
       <Paper sx={{ p: 4 }}>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs 
-            value={tabValue} 
+          <Tabs
+            value={tabValue}
             onChange={(_, newValue) => setTabValue(newValue)}
             aria-label="profile tabs"
           >
-            <Tab 
-              icon={<SettingsIcon />} 
-              iconPosition="start" 
-              label="Settings" 
+            <Tab
+              icon={<PersonIcon />}
+              iconPosition="start"
+              label="Profile"
               id="profile-tab-0"
               aria-controls="profile-tabpanel-0"
             />
-            <Tab 
-              icon={<BarChartIcon />} 
-              iconPosition="start" 
-              label="Activity" 
+            <Tab
+              icon={<SettingsIcon />}
+              iconPosition="start"
+              label="Settings"
               id="profile-tab-1"
               aria-controls="profile-tabpanel-1"
+            />
+            <Tab
+              icon={<BarChartIcon />}
+              iconPosition="start"
+              label="Activity"
+              id="profile-tab-2"
+              aria-controls="profile-tabpanel-2"
             />
           </Tabs>
         </Box>
 
-        {/* Settings Tab */}
+        {/* ========== Profile Tab ========== */}
         <TabPanel value={tabValue} index={0}>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Update your name and callsign. This information will be displayed to other users instead of your email address.
-          </Typography>
-
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           {success && <Alert severity="success" sx={{ mb: 2 }}>Profile updated successfully!</Alert>}
 
@@ -413,7 +417,7 @@ const Profile: React.FC = () => {
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                 Add other callsigns you use (Amateur Radio, GMRS, tactical, etc.)
               </Typography>
-              
+
               <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
                 <TextField
                   size="small"
@@ -445,7 +449,7 @@ const Profile: React.FC = () => {
                   Add
                 </Button>
               </Box>
-              
+
               {formData.callsigns.length > 0 && (
                 <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                   {formData.callsigns.map((cs) => (
@@ -465,7 +469,34 @@ const Profile: React.FC = () => {
               )}
             </Box>
 
-            <Box sx={{ mt: 3, mb: 2 }}>
+            <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
+              <Button
+                type="submit"
+                variant="contained"
+                disabled={saving || !formData.name}
+                fullWidth
+              >
+                {saving ? 'Saving...' : 'Save Changes'}
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={() => navigate('/dashboard')}
+                disabled={saving}
+                fullWidth
+              >
+                Cancel
+              </Button>
+            </Box>
+          </Box>
+        </TabPanel>
+
+        {/* ========== Settings Tab ========== */}
+        <TabPanel value={tabValue} index={1}>
+          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+          {success && <Alert severity="success" sx={{ mb: 2 }}>Settings updated successfully!</Alert>}
+
+          <Box component="form" onSubmit={handleSubmit}>
+            <Box sx={{ mt: 1, mb: 2 }}>
               <FormControlLabel
                 control={
                   <Switch
@@ -670,8 +701,8 @@ const Profile: React.FC = () => {
           </Box>
         </TabPanel>
 
-        {/* Activity Tab */}
-        <TabPanel value={tabValue} index={1}>
+        {/* ========== Activity Tab ========== */}
+        <TabPanel value={tabValue} index={2}>
           {statsLoading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
               <CircularProgress />
