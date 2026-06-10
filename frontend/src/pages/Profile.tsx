@@ -91,10 +91,12 @@ const Profile: React.FC = () => {
   const [newCallsign, setNewCallsign] = useState('');
   const [userStats, setUserStats] = useState<any>(null);
   const [statsLoading, setStatsLoading] = useState(true);
-  const [tabValue, setTabValue] = useState(() => {
+  const [tabValue, setTabValue] = useState(0);
+
+  useEffect(() => {
     const tab = parseInt(searchParams.get('tab') || '0', 10);
-    return isNaN(tab) ? 0 : tab;
-  });
+    setTabValue(isNaN(tab) ? 0 : tab);
+  }, [searchParams]);
   const [exportingPdf, setExportingPdf] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);

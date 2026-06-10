@@ -27,6 +27,7 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
+* **Avatar menu in the nav bar** — The callsign text in the nav bar has been replaced with your avatar. Clicking it opens a menu with Profile, Personal Stats, Admin (if applicable), Dark/Light mode toggle, and Logout — consolidating controls that were previously scattered across the top bar. On mobile, the same items appear at the bottom of the slide-out drawer.
 * **In-browser crop and zoom for profile photos** — After selecting a photo, a dialog lets you drag to position and scroll or pinch to zoom before uploading. Only the cropped square is sent to the server, so portrait, landscape, and oddly-framed photos always produce a clean avatar.
 * **Session settings configurable in Admin panel** — Admins can now set session lifetime and toggle rolling renewal in Admin → Security → Session Settings, without editing server config files.
 * **NCS check-in prompt now offers a role choice** — NCS operators who haven't yet checked in now see two buttons in the check-in prompt: "Check In as NCS" and "Check In as Participant". Both open the standard check-in dialog. Previously, clicking "Check In" scrolled down to the inline NCS entry form, which was confusing for operators who just wanted to observe before joining.

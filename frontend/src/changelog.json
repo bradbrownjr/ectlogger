@@ -1,8 +1,8 @@
 {
-  "version": "2026.06.10n",
+  "version": "2026.06.10o",
   "entries": [
     {
-      "version": "2026.06.10n",
+      "version": "2026.06.10o",
       "date": "2026-06-10",
       "sections": [
         {
@@ -73,6 +73,10 @@
           "title": "New Features",
           "type": "feature",
           "items": [
+            {
+              "text": "The nav bar callsign has been replaced with your avatar. Clicking it opens a menu with Profile, Personal Stats, Admin (if applicable), Dark/Light mode toggle, and Logout — consolidating controls that were previously scattered across the top bar.",
+              "userImpact": true
+            },
             {
               "text": "Profile photo uploads now include an in-browser crop and zoom step. After selecting a photo, a dialog lets you drag to position and scroll or pinch to zoom before uploading. Only the cropped square is sent to the server, so portrait, landscape, and oddly-framed photos always produce a clean avatar.",
               "userImpact": true
