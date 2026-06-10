@@ -5,7 +5,7 @@ from sqlalchemy.exc import IntegrityError
 from typing import List, Optional
 from pathlib import Path
 from io import BytesIO
-from PIL import Image
+from PIL import Image, ImageOps
 from app.database import get_db
 from app.models import User, UserRole, Contact
 from app.schemas import UserResponse, UserUpdate, AdminUserCreate, CallsignLookupResponse, UserDirectoryEntry
@@ -74,6 +74,10 @@ async def upload_my_avatar(
         pil_image.load()
     except Exception as exc:
         raise HTTPException(status_code=400, detail="Invalid or corrupt image.") from exc
+
+    # Physically rotate pixels to match EXIF orientation so portrait/landscape
+    # mobile photos are stored upright rather than sideways.
+    pil_image = ImageOps.exif_transpose(pil_image)
 
     # Convert palette/transparent modes before JPEG save
     if pil_image.mode in {"RGBA", "LA", "P"}:

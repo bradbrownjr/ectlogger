@@ -1,6 +1,22 @@
 {
-  "version": "2026.06.10e",
+  "version": "2026.06.10f",
   "entries": [
+    {
+      "version": "2026.06.10f",
+      "date": "2026-06-10",
+      "sections": [
+        {
+          "title": "Bug Fixes",
+          "type": "bugfix",
+          "items": [
+            {
+              "text": "Profile photos taken on mobile phones now display upright. Previously, portrait or landscape photos were saved sideways because the server ignored the EXIF orientation tag embedded by the camera.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.06.10e",
       "date": "2026-06-10",
