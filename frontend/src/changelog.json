@@ -1,6 +1,22 @@
 {
-  "version": "2026.06.10c",
+  "version": "2026.06.10d",
   "entries": [
+    {
+      "version": "2026.06.10d",
+      "date": "2026-06-10",
+      "sections": [
+        {
+          "title": "Bug Fixes",
+          "type": "bugfix",
+          "items": [
+            {
+              "text": "Check-in list now displays in correct chronological order. When a net is created from a template, all staff are pre-assigned NCS roles at the same timestamp — this was causing up to 5 operators to be promoted above stations who checked in earlier. Only operators who were already checked in before the first non-NCS station joined are now treated as active NCS for display ordering.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.06.10c",
       "date": "2026-06-10",

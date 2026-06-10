@@ -1836,6 +1836,15 @@ const NetView: React.FC = () => {
     }
   };
 
+  // Only promote NCS users who checked in before the first non-NCS station.
+  // Template staff are bulk-assigned NCS roles at the same timestamp when a net
+  // is created from a template, which would otherwise promote all of them above
+  // chronological order. An NCS who joins late (after regular stations) stays
+  // in their natural check-in position.
+  const firstNonNcsCheckInTime = checkIns
+    .filter((ci: CheckIn) => !ncsRoles.some((r: any) => r.user_id === ci.user_id))
+    .reduce((min: number, ci: CheckIn) => Math.min(min, new Date(ci.checked_in_at).getTime()), Infinity);
+
   // Filter check-ins based on search query AND frequency filter
   const filteredCheckIns = checkIns.filter((checkIn: CheckIn) => {
     // First apply search filter
@@ -1872,8 +1881,10 @@ const NetView: React.FC = () => {
     // Sort order: NCS first → Mobile second → then original checked_in_at order.
     // Mobile stations may only be reachable briefly, so they surface immediately
     // after NCS to ensure their comments are captured before they drop off.
-    const aIsNcs = ncsRoles.some((r: any) => r.user_id === a.user_id);
-    const bIsNcs = ncsRoles.some((r: any) => r.user_id === b.user_id);
+    const aIsNcs = ncsRoles.some((r: any) => r.user_id === a.user_id) &&
+                   new Date(a.checked_in_at).getTime() < firstNonNcsCheckInTime;
+    const bIsNcs = ncsRoles.some((r: any) => r.user_id === b.user_id) &&
+                   new Date(b.checked_in_at).getTime() < firstNonNcsCheckInTime;
     if (aIsNcs !== bIsNcs) return aIsNcs ? -1 : 1;
     const aIsMobile = a.status === 'mobile';
     const bIsMobile = b.status === 'mobile';
