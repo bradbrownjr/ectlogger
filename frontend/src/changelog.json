@@ -1,8 +1,8 @@
 {
-  "version": "2026.06.10k",
+  "version": "2026.06.10l",
   "entries": [
     {
-      "version": "2026.06.10k",
+      "version": "2026.06.10l",
       "date": "2026-06-10",
       "sections": [
         {
@@ -69,6 +69,10 @@
             },
             {
               "text": "The Archived Nets list and the Admin users table now paginate at 25 rows per page, with options for 50 or All. Filters, searches, and sort changes automatically reset to page 1.",
+              "userImpact": true
+            },
+            {
+              "text": "NCS operators viewing a net they haven't checked into now see two check-in options in the prompt: \"Check In as NCS\" and \"Check In as Participant\". Both open the standard check-in dialog instead of scrolling to the inline NCS form.",
               "userImpact": true
             }
           ]

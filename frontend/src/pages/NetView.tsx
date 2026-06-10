@@ -5028,49 +5028,58 @@ const NetView: React.FC = () => {
         message={net?.status === 'lobby' ? 'The lobby is open! Would you like to check in?' : 'This net is active. Would you like to check in?'}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
         action={
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <Button
-              color="primary"
-              size="small"
-              variant="contained"
-              onClick={() => {
-                setCheckInPromptOpen(false);
-                // Pre-fill form with user's profile data and open check-in
-                if (user) {
-                  const locationValue = (user.location_awareness && gridSquare)
-                    ? gridSquare
-                    : (user.location || '');
-                  setCheckInForm({
-                    callsign: getAppropriateCallsign(),
-                    name: user.name || '',
-                    location: locationValue,
-                    skywarn_number: '',
-                    weather_observation: '',
-                    power_source: '',
-                    power: '',
-                    feedback: '',
-                    notes: '',
-                    relayed_by: '',
-                    available_frequency_ids: [],
-                    custom_fields: {},
-                    topic_response: '',
-                    poll_response: '',
-                    status: 'checked_in',
-                  });
-                }
-                if (canManageCheckIns) {
-                  const callsignField = document.querySelector('input[placeholder="Callsign"]') as HTMLInputElement;
-                  if (callsignField) {
-                    callsignField.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    callsignField.focus();
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            {isNCS ? (
+              <>
+                <Button
+                  color="primary"
+                  size="small"
+                  variant="contained"
+                  onClick={() => {
+                    setCheckInPromptOpen(false);
+                    if (user) {
+                      const locationValue = (user.location_awareness && gridSquare) ? gridSquare : (user.location || '');
+                      setCheckInForm({ callsign: getAppropriateCallsign(), name: user.name || '', location: locationValue, skywarn_number: '', weather_observation: '', power_source: '', power: '', feedback: '', notes: '', relayed_by: '', available_frequency_ids: [], custom_fields: {}, topic_response: '', poll_response: '', status: 'checked_in' });
+                    }
+                    setCheckInDialogOpen(true);
+                  }}
+                >
+                  Check In as NCS
+                </Button>
+                <Button
+                  color="inherit"
+                  size="small"
+                  variant="outlined"
+                  sx={{ borderColor: 'rgba(255,255,255,0.5)', color: 'inherit' }}
+                  onClick={() => {
+                    setCheckInPromptOpen(false);
+                    if (user) {
+                      const locationValue = (user.location_awareness && gridSquare) ? gridSquare : (user.location || '');
+                      setCheckInForm({ callsign: getAppropriateCallsign(), name: user.name || '', location: locationValue, skywarn_number: '', weather_observation: '', power_source: '', power: '', feedback: '', notes: '', relayed_by: '', available_frequency_ids: [], custom_fields: {}, topic_response: '', poll_response: '', status: 'checked_in' });
+                    }
+                    setCheckInDialogOpen(true);
+                  }}
+                >
+                  Check In as Participant
+                </Button>
+              </>
+            ) : (
+              <Button
+                color="primary"
+                size="small"
+                variant="contained"
+                onClick={() => {
+                  setCheckInPromptOpen(false);
+                  if (user) {
+                    const locationValue = (user.location_awareness && gridSquare) ? gridSquare : (user.location || '');
+                    setCheckInForm({ callsign: getAppropriateCallsign(), name: user.name || '', location: locationValue, skywarn_number: '', weather_observation: '', power_source: '', power: '', feedback: '', notes: '', relayed_by: '', available_frequency_ids: [], custom_fields: {}, topic_response: '', poll_response: '', status: 'checked_in' });
                   }
-                } else {
                   setCheckInDialogOpen(true);
-                }
-              }}
-            >
-              Check In
-            </Button>
+                }}
+              >
+                Check In
+              </Button>
+            )}
             <Button color="inherit" size="small" onClick={() => setCheckInPromptOpen(false)}>
               Dismiss
             </Button>
