@@ -149,15 +149,17 @@ When adding or changing features, **always update relevant documentation**:
 When making **user-impacting changes** (new features, workflow changes, UI changes), update the in-app changelog:
 
 1. Edit `frontend/src/changelog.json` — this is the **single source of truth**. The in-app `ChangelogNotification.tsx` dialog AND the backend `whats_new_service.py` daily digest email both read from this file, so they never drift apart.
-2. Increment the top-level `version` field (format: `YYYY.MM.DD` using the **author's local calendar date** at time of change, or `YYYY.MM.DDx` for multiple updates on same day, e.g., `2026.01.25b`). Dates are stored as fixed calendar labels and displayed as-written — no UTC conversion is applied.
-   - **Always run `date` in the terminal before writing a changelog entry** to get the current UTC time, then convert to the author's local timezone (default: America/New_York, UTC-5 EST / UTC-4 EDT) to determine the correct calendar date.
-3. Prepend a new object to the `entries` array with:
-   - `version`: Same as the top-level `version`
-   - `date`: ISO date string `YYYY-MM-DD`
-   - `sections`: Array of `{ title, type: 'feature'|'improvement'|'bugfix', items: [{ text, userImpact? }] }`
-   - Mark `userImpact: true` on items that directly affect user workflow
+2. **Always run `date` in the terminal first** to determine today's local date (default timezone: America/New_York, UTC-5 EST / UTC-4 EDT).
+3. **Check whether today's date already has an entry** in `entries`. If it does, **add items to the existing sections** — do NOT create a new entry. Only create a new entry when no entry exists for today's date.
+4. The top-level `version` and the entry's `version` field use format `YYYY.MM.DD`. Append a letter suffix (`b`, `c`, ...) only when you need to trigger a new What's New badge for a second deploy on the same day (e.g., a critical hotfix after users have already seen today's entry). Do not increment the suffix for every commit.
+5. **Use only these three section titles and matching types — no others:**
+   - `"New Features"` + `"type": "feature"`
+   - `"Improvements"` + `"type": "improvement"`
+   - `"Bug Fixes"` + `"type": "bugfix"`
+   Put the feature name in the item text, not in the section title.
+6. Each entry's `sections` array: `{ title, type, items: [{ text, userImpact? }] }`. Mark `userImpact: true` on items that directly affect user workflow.
 
-Users see a red badge on the info icon (lower-left) until they view the changelog. User-impacting items are highlighted in the dialog. The badge only reappears when the version string changes, so always bump the version when deploying user-facing changes. Subscribed users (Profile → "What's New emails") also receive a consolidated 8 AM email digest the morning after a release.
+Users see a red badge on the info icon (lower-left) until they view the changelog. The badge only reappears when the top-level `version` string changes, so only bump it when deploying user-facing changes. Subscribed users (Profile → "What's New emails") also receive a consolidated 8 AM email digest the morning after a release.
 
 ### Development Workflow
 1. Make changes locally
