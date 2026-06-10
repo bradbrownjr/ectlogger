@@ -6,16 +6,6 @@
       "date": "2026-06-10",
       "sections": [
         {
-          "title": "Improvements",
-          "type": "improvement",
-          "items": [
-            {
-              "text": "The Archived Nets list and the Admin users table now paginate at 25 rows per page, with options for 50 or All. Filters, searches, and sort changes automatically reset to page 1.",
-              "userImpact": true
-            }
-          ]
-        },
-        {
           "title": "Bug Fixes",
           "type": "bugfix",
           "items": [
@@ -71,6 +61,10 @@
             },
             {
               "text": "Net and schedule cards now truncate long descriptions to three lines with a Show more link, keeping the card grid visually uniform.",
+              "userImpact": true
+            },
+            {
+              "text": "The Archived Nets list and the Admin users table now paginate at 25 rows per page, with options for 50 or All. Filters, searches, and sort changes automatically reset to page 1.",
               "userImpact": true
             }
           ]
