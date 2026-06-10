@@ -16,7 +16,13 @@
             {
               "text": "Login sessions now last 30 days and automatically renew — weekly net operators will stay signed in without ever needing to re-authenticate.",
               "userImpact": true
-            },
+            }
+          ]
+        },
+        {
+          "title": "Improvements",
+          "type": "improvement",
+          "items": [
             {
               "text": "Admins can now configure session lifetime and rolling renewal in Admin → Security → Session Settings, without editing server config files.",
               "userImpact": false
