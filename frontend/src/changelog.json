@@ -1,6 +1,22 @@
 {
-  "version": "2026.06.10b",
+  "version": "2026.06.10c",
   "entries": [
+    {
+      "version": "2026.06.10c",
+      "date": "2026-06-10",
+      "sections": [
+        {
+          "title": "Bug Fixes",
+          "type": "bugfix",
+          "items": [
+            {
+              "text": "Net managers and co-managers can now archive, unarchive, and delete nets they manage. Previously only the direct net owner or a site admin could perform these actions.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.06.10b",
       "date": "2026-06-10",

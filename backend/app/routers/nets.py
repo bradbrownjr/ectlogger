@@ -17,7 +17,7 @@ from app.services.csv_import import (
     process_csv_rows,
 )
 from app.database import get_db
-from app.models import Net, NetStatus, User, Frequency, NetRole, net_frequencies, CheckIn, NetTemplate, UserRole
+from app.models import Net, NetStatus, User, Frequency, NetRole, net_frequencies, CheckIn, NetTemplate, TemplateStaff, UserRole
 from app.schemas import NetCreate, NetUpdate, NetResponse, FrequencyResponse, NetTemplateLinkRequest, public_display_name
 from app.dependencies import get_current_user, get_current_user_optional
 from app.email_service import EmailService
@@ -49,7 +49,7 @@ async def check_net_permission(db: AsyncSession, net: Net, user: User, required_
     # Owner and admin always have permission
     if net.owner_id == user.id or user.role.value == "admin":
         return True
-    
+
     # Check if user has required role for this net
     if required_roles:
         result = await db.execute(
@@ -61,7 +61,51 @@ async def check_net_permission(db: AsyncSession, net: Net, user: User, required_
         )
         if result.scalar_one_or_none():
             return True
-    
+
+    return False
+
+
+async def check_net_lifecycle_permission(db: AsyncSession, net: Net, user: User) -> bool:
+    """Check if user can archive or delete a net.
+
+    Allowed: net owner, site admin, NCS role on this net, or manager/co-manager
+    of the template this net was created from.
+    """
+    if net.owner_id == user.id or user.role.value == "admin":
+        return True
+
+    # NCS role on this specific net
+    ncs_result = await db.execute(
+        select(NetRole).where(
+            NetRole.net_id == net.id,
+            NetRole.user_id == user.id,
+            NetRole.role == "NCS",
+        )
+    )
+    if ncs_result.scalar_one_or_none():
+        return True
+
+    # Template manager or co-manager (net auto-created from a schedule)
+    if net.template_id:
+        tmpl_result = await db.execute(
+            select(NetTemplate).where(
+                NetTemplate.id == net.template_id,
+                NetTemplate.owner_id == user.id,
+            )
+        )
+        if tmpl_result.scalar_one_or_none():
+            return True
+
+        co_mgr_result = await db.execute(
+            select(TemplateStaff).where(
+                TemplateStaff.template_id == net.template_id,
+                TemplateStaff.user_id == user.id,
+                TemplateStaff.is_co_manager == True,
+            )
+        )
+        if co_mgr_result.scalar_one_or_none():
+            return True
+
     return False
 
 
@@ -1368,8 +1412,7 @@ async def delete_net(
     if not net:
         raise HTTPException(status_code=404, detail="Net not found")
     
-    # Check permissions
-    if net.owner_id != current_user.id and current_user.role.value != "admin":
+    if not await check_net_lifecycle_permission(db, net, current_user):
         raise HTTPException(status_code=403, detail="Not authorized to delete this net")
     
     await db.delete(net)
@@ -1393,8 +1436,7 @@ async def archive_net(
     if not net:
         raise HTTPException(status_code=404, detail="Net not found")
     
-    # Check permissions
-    if net.owner_id != current_user.id and current_user.role.value != "admin":
+    if not await check_net_lifecycle_permission(db, net, current_user):
         raise HTTPException(status_code=403, detail="Not authorized to archive this net")
     
     if net.status != NetStatus.CLOSED:
@@ -1422,8 +1464,7 @@ async def unarchive_net(
     if not net:
         raise HTTPException(status_code=404, detail="Net not found")
     
-    # Check permissions - owner, admin, or NCS can unarchive
-    if not await check_net_permission(db, net, current_user, ["NCS"]):
+    if not await check_net_lifecycle_permission(db, net, current_user):
         raise HTTPException(status_code=403, detail="Not authorized to unarchive this net")
     
     if net.status != NetStatus.ARCHIVED:
