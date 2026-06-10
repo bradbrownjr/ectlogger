@@ -56,7 +56,7 @@
               "userImpact": true
             },
             {
-              "text": "Net and schedule cards now truncate long descriptions to three lines with a Show more link, keeping the card grid visually uniform. The clock, frequency, and manager details are bottom-aligned across every card in a row so the action buttons always line up.",
+              "text": "Net and schedule cards now truncate long descriptions to three lines with a Show more link, keeping the card grid visually uniform.",
               "userImpact": true
             }
           ]

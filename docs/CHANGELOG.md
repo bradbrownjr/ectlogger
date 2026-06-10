@@ -20,7 +20,7 @@ All notable changes to ECTLogger are documented here.
 * **Session settings configurable in Admin panel** — Admins can now set session lifetime and toggle rolling renewal in Admin → Security → Session Settings, without editing server config files.
 * **Emoji reaction controls hidden on closed/archived nets** — The hover emoji toolbar no longer appears on closed or archived nets. Existing reaction counts remain visible for historical reference but are no longer interactive.
 * **Activity Log collapsed by default** — The Activity Log panel now loads minimized on every page visit, keeping more screen space available for the check-in list and chat — particularly useful on mobile. Clicking the expand button opens it as before, and the choice persists for the rest of the session.
-* **Net and schedule card polish** — Long descriptions on net and schedule cards are now truncated to three lines with an inline "Show more" link to read the rest. The clock, frequency, and manager info rows are bottom-aligned across every card in a row so the action buttons always line up, regardless of description length.
+* **Net and schedule card polish** — Long descriptions on net and schedule cards are now truncated to three lines with an inline "Show more" link to read the rest.
 
 ## UX Improvements
 
