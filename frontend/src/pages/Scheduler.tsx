@@ -2,7 +2,6 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Container,
-  Grid,
   Card,
   CardContent,
   CardActions,
@@ -360,34 +359,38 @@ const Scheduler: React.FC = () => {
 
   // ========== CARD VIEW RENDERER ==========
   const renderCardView = () => (
-    <Grid container spacing={3} sx={{ alignItems: 'stretch' }}>
+    <Box
+      sx={{
+        display: 'grid',
+        gridTemplateColumns: { xs: '1fr', sm: 'repeat(auto-fit, minmax(300px, 1fr))' },
+        gap: { xs: 2, sm: 3 },
+      }}
+    >
       {filteredSchedules.map((schedule: Schedule) => (
-        <Grid item xs={12} sm={6} md={4} key={schedule.id} sx={{ display: 'flex' }}>
-          <Box
-            sx={{
-              width: '100%',
-              position: 'relative',
-              opacity: mergeMode && !canMerge(schedule) ? 0.4 : 1,
-              pointerEvents: mergeMode && !canMerge(schedule) ? 'none' : 'auto',
-            }}
-          >
-            {/* Merge mode checkbox overlay on top-right of card */}
-            {mergeMode && canMerge(schedule) && (
-              <Checkbox
-                checked={mergeSelected.has(schedule.id)}
-                onChange={() => handleToggleMergeSelect(schedule.id)}
-                sx={{
-                  position: 'absolute', top: 4, right: 4, zIndex: 2,
-                  bgcolor: 'background.paper', borderRadius: 1,
-                  boxShadow: 1,
-                }}
-              />
-            )}
-            {renderScheduleCard(schedule)}
-          </Box>
-        </Grid>
+        <Box
+          key={schedule.id}
+          sx={{
+            position: 'relative',
+            opacity: mergeMode && !canMerge(schedule) ? 0.4 : 1,
+            pointerEvents: mergeMode && !canMerge(schedule) ? 'none' : 'auto',
+          }}
+        >
+          {/* Merge mode checkbox overlay on top-right of card */}
+          {mergeMode && canMerge(schedule) && (
+            <Checkbox
+              checked={mergeSelected.has(schedule.id)}
+              onChange={() => handleToggleMergeSelect(schedule.id)}
+              sx={{
+                position: 'absolute', top: 4, right: 4, zIndex: 2,
+                bgcolor: 'background.paper', borderRadius: 1,
+                boxShadow: 1,
+              }}
+            />
+          )}
+          {renderScheduleCard(schedule)}
+        </Box>
       ))}
-    </Grid>
+    </Box>
   );
 
   // ========== LIST VIEW RENDERER ==========

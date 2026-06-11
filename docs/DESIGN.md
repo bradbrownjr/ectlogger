@@ -216,6 +216,42 @@ no export yet available.
 
 ---
 
+## Card Grids
+
+Use CSS Grid with `auto-fit` instead of MUI `Grid container/item` for card layouts.
+`auto-fit` collapses empty column tracks, so a page with 2 cards shows 2 comfortably
+wide columns instead of 2 narrow cards with an empty third slot.
+
+```tsx
+<Box
+  sx={{
+    display: 'grid',
+    gridTemplateColumns: { xs: '1fr', sm: 'repeat(auto-fit, minmax(300px, 1fr))' },
+    gap: { xs: 2, sm: 3 },
+  }}
+>
+  {items.map(item => (
+    <Box key={item.id} sx={{ display: 'flex' }}>
+      <ItemCard item={item} />
+    </Box>
+  ))}
+</Box>
+```
+
+Column behaviour with `minmax(300px, 1fr)`:
+
+| Viewport | Columns |
+|---|---|
+| < ~648 px | 1 (xs override) |
+| ~648–996 px | 2 |
+| 996 px+ | 3 |
+| Any width, ≤ 2 items | Items expand to fill available columns (no gap) |
+
+Do **not** use `auto-fill` for card grids — it preserves empty tracks, creating the
+same gap problem that `auto-fit` solves.
+
+---
+
 ## Mobile / Responsive
 
 ### Touch targets

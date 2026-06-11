@@ -3,7 +3,6 @@ import { displayCallsign } from '../utils/userDisplay';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Container,
-  Grid,
   Card,
   CardContent,
   CardActions,
@@ -363,14 +362,23 @@ const Dashboard: React.FC = () => {
   });
 
   // ========== CARD VIEW RENDERER ==========
+  // auto-fit collapses empty column tracks, so 2 cards fill 2 columns instead of
+  // leaving a gap where a 3rd card would go. minmax(300px, 1fr) wraps to fewer
+  // columns before cards get narrower than 300px.
   const renderCardView = () => (
-    <Grid container spacing={3} sx={{ alignItems: 'stretch' }}>
+    <Box
+      sx={{
+        display: 'grid',
+        gridTemplateColumns: { xs: '1fr', sm: 'repeat(auto-fit, minmax(300px, 1fr))' },
+        gap: { xs: 2, sm: 3 },
+      }}
+    >
       {filteredNets.map((net: Net) => (
-        <Grid item xs={12} sm={6} md={4} key={net.id} sx={{ display: 'flex' }}>
+        <Box key={net.id} sx={{ display: 'flex' }}>
           {renderNetCard(net)}
-        </Grid>
+        </Box>
       ))}
-    </Grid>
+    </Box>
   );
 
   // ========== LIST VIEW RENDERER ==========
