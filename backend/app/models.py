@@ -532,4 +532,12 @@ class AppSettings(Base):
     session_lifetime_days = Column(Integer, default=30)  # JWT lifetime in days
     session_rolling_renewal = Column(Boolean, default=True)  # Auto-refresh when < 7 days remain
 
+    # Maintenance banner (in-app, DB-backed)
+    maintenance_banner_enabled = Column(Boolean, default=False)
+    maintenance_banner_message = Column(Text, nullable=True)
+    maintenance_banner_dismissible = Column(Boolean, default=True)
+    # When set, banner is only active within this window (null = always active when enabled)
+    maintenance_banner_scheduled_start = Column(DateTime(timezone=True), nullable=True)
+    maintenance_banner_scheduled_end = Column(DateTime(timezone=True), nullable=True)
+
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

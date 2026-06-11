@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from typing import List
+from typing import List, Optional
+from datetime import datetime, timezone
 import json
 
 from app.database import get_db
@@ -73,6 +74,11 @@ def _build_settings_response(settings: AppSettings) -> AppSettingsResponse:
         schedule_max_per_day=settings.schedule_max_per_day if settings.schedule_max_per_day is not None else 5,
         session_lifetime_days=settings.session_lifetime_days if settings.session_lifetime_days is not None else 30,
         session_rolling_renewal=settings.session_rolling_renewal if settings.session_rolling_renewal is not None else True,
+        maintenance_banner_enabled=settings.maintenance_banner_enabled or False,
+        maintenance_banner_message=settings.maintenance_banner_message,
+        maintenance_banner_dismissible=settings.maintenance_banner_dismissible if settings.maintenance_banner_dismissible is not None else True,
+        maintenance_banner_scheduled_start=settings.maintenance_banner_scheduled_start,
+        maintenance_banner_scheduled_end=settings.maintenance_banner_scheduled_end,
     )
 
 
@@ -111,10 +117,58 @@ async def update_settings(
     if settings_update.session_rolling_renewal is not None:
         settings.session_rolling_renewal = settings_update.session_rolling_renewal
 
+    # Maintenance banner
+    if settings_update.maintenance_banner_enabled is not None:
+        settings.maintenance_banner_enabled = settings_update.maintenance_banner_enabled
+
+    if settings_update.maintenance_banner_message is not None:
+        settings.maintenance_banner_message = settings_update.maintenance_banner_message
+
+    if settings_update.maintenance_banner_dismissible is not None:
+        settings.maintenance_banner_dismissible = settings_update.maintenance_banner_dismissible
+
+    if "maintenance_banner_scheduled_start" in settings_update.model_fields_set:
+        settings.maintenance_banner_scheduled_start = settings_update.maintenance_banner_scheduled_start
+
+    if "maintenance_banner_scheduled_end" in settings_update.model_fields_set:
+        settings.maintenance_banner_scheduled_end = settings_update.maintenance_banner_scheduled_end
+
     await db.commit()
     await db.refresh(settings)
 
     return _build_settings_response(settings)
+
+
+@router.get("/maintenance-banner")
+async def get_maintenance_banner(db: AsyncSession = Depends(get_db)):
+    """Public endpoint: returns the effective maintenance banner state.
+
+    Computes whether the banner is currently active based on the enabled flag
+    and optional scheduled window. No authentication required so the banner
+    can be shown to logged-out visitors.
+    """
+    settings = await get_or_create_settings(db)
+
+    if not settings.maintenance_banner_enabled:
+        return {"active": False, "message": None, "dismissible": True}
+
+    now = datetime.now(timezone.utc)
+
+    # Check scheduled window
+    if settings.maintenance_banner_scheduled_start or settings.maintenance_banner_scheduled_end:
+        start = settings.maintenance_banner_scheduled_start
+        end = settings.maintenance_banner_scheduled_end
+
+        if start and now < start:
+            return {"active": False, "message": None, "dismissible": True}
+        if end and now > end:
+            return {"active": False, "message": None, "dismissible": True}
+
+    return {
+        "active": True,
+        "message": settings.maintenance_banner_message,
+        "dismissible": settings.maintenance_banner_dismissible if settings.maintenance_banner_dismissible is not None else True,
+    }
 
 
 @router.get("/field-labels")

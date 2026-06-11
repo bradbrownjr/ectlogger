@@ -24,6 +24,7 @@ import Unsubscribe from './pages/Unsubscribe';
 import Navbar from './components/Navbar';
 import ProfileSetupDialog from './components/ProfileSetupDialog';
 import ChangelogNotification from './components/ChangelogNotification';
+import MaintenanceBanner from './components/MaintenanceBanner';
 
 const getDesignTokens = (mode: PaletteMode) => ({
   palette: {
@@ -93,6 +94,7 @@ const AppRoutes: React.FC = () => {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
       <Navbar />
+      <MaintenanceBanner />
       {isAuthenticated && <ProfileSetupDialog />}
       {showChangelog && <ChangelogNotification />}
       <Box component="main" sx={{ flexGrow: 1, bgcolor: 'background.default', display: 'flex', flexDirection: 'column', overflow: 'auto', minHeight: 0 }}>

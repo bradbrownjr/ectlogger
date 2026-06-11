@@ -781,6 +781,12 @@ class AppSettingsResponse(BaseModel):
     # Session settings
     session_lifetime_days: int = 30
     session_rolling_renewal: bool = True
+    # Maintenance banner
+    maintenance_banner_enabled: bool = False
+    maintenance_banner_message: Optional[str] = None
+    maintenance_banner_dismissible: bool = True
+    maintenance_banner_scheduled_start: Optional[datetime] = None
+    maintenance_banner_scheduled_end: Optional[datetime] = None
 
     class Config:
         from_attributes = True
@@ -796,6 +802,12 @@ class AppSettingsUpdate(BaseModel):
     # Session settings
     session_lifetime_days: Optional[int] = None
     session_rolling_renewal: Optional[bool] = None
+    # Maintenance banner
+    maintenance_banner_enabled: Optional[bool] = None
+    maintenance_banner_message: Optional[str] = None
+    maintenance_banner_dismissible: Optional[bool] = None
+    maintenance_banner_scheduled_start: Optional[datetime] = None
+    maintenance_banner_scheduled_end: Optional[datetime] = None
 
 
 # Field Definition Schemas

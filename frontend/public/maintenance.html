@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ECTLogger — Maintenance</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0d1b2a;
+      color: #e0e8f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .card {
+      background: #1a2a3a;
+      border: 1px solid #2a3d52;
+      border-radius: 12px;
+      padding: 3rem 2.5rem;
+      max-width: 560px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+
+    .logo {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      color: #5ba3e8;
+      margin-bottom: 0.25rem;
+    }
+
+    .logo span { color: #90caf9; }
+
+    .tagline {
+      font-size: 0.85rem;
+      color: #6a8a9f;
+      margin-bottom: 2.5rem;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      display: block;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #e0e8f0;
+      margin-bottom: 0.75rem;
+    }
+
+    .message {
+      font-size: 1rem;
+      color: #8aacbf;
+      line-height: 1.6;
+      margin-bottom: 1.5rem;
+    }
+
+    .eta-block {
+      background: #152232;
+      border: 1px solid #2a4060;
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      margin-bottom: 1.5rem;
+      font-size: 0.9rem;
+      color: #5ba3e8;
+      display: none;
+    }
+
+    .eta-block.visible { display: block; }
+
+    .contact {
+      font-size: 0.85rem;
+      color: #5a7a8f;
+      margin-top: 2rem;
+      border-top: 1px solid #2a3d52;
+      padding-top: 1.5rem;
+    }
+
+    .contact a { color: #5ba3e8; text-decoration: none; }
+    .contact a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">ECT<span>Logger</span></div>
+    <div class="tagline">Emergency Communications Net Logger</div>
+
+    <span class="icon" aria-hidden="true">&#x1F6E0;&#xFE0F;</span>
+    <h1>Scheduled Maintenance</h1>
+
+    <p class="message" id="msg">
+      ECTLogger is temporarily offline for scheduled maintenance.
+      We'll be back shortly.
+    </p>
+
+    <div class="eta-block" id="eta-block">
+      <strong>Estimated return:</strong> <span id="eta-value"></span>
+    </div>
+
+    <div class="contact">
+      For urgent assistance, contact the net administrator.
+    </div>
+  </div>
+
+  <script>
+    // Attempt to load a maintenance.json sidecar written by run.sh --maintenance on
+    // If absent or unreachable, the page shows generic copy. No external dependencies.
+    (function () {
+      var req = new XMLHttpRequest();
+      req.open('GET', '/maintenance.json', true);
+      req.timeout = 3000;
+      req.onload = function () {
+        if (req.status !== 200) return;
+        try {
+          var data = JSON.parse(req.responseText);
+          if (data.message) {
+            document.getElementById('msg').textContent = data.message;
+          }
+          if (data.eta) {
+            document.getElementById('eta-value').textContent = data.eta;
+            document.getElementById('eta-block').classList.add('visible');
+          }
+        } catch (_) {}
+      };
+      req.send();
+    })();
+  </script>
+</body>
+</html>

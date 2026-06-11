@@ -4,6 +4,16 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# June 11, 2026
+
+## New Features
+
+* **Maintenance Banner** — Admins can now display a sitewide warning banner from the new Maintenance tab in the Admin panel. The banner supports a custom message, dismissible or persistent mode, and an optional scheduled start/end window so it appears and clears automatically without manual intervention. The banner is served via a public API endpoint and is visible to logged-out users as well.
+* **Server-side maintenance page** — A static `maintenance.html` page is included in the frontend build. Operators can activate it with `./run --maintenance on` over SSH when the app is completely down (bad deploy, DB outage). Caddy then serves the static page directly instead of proxying to the backend. An optional `--message` and `--eta` flag writes a `maintenance.json` sidecar that the page fetches and displays.
+* **`run.sh` — consolidated operational script** — `start.sh` and `update.sh` are consolidated into a single `run.sh`. Bare `./run` behaves identically to the old `start.sh`; `./run --service` for systemd; `./run -u` to apply updates and exit; `./run -m on|off` to toggle server-side maintenance mode and exit. The old scripts remain in place temporarily.
+
+---
+
 # June 10, 2026
 
 ## Bug Fixes

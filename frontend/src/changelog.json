@@ -1,6 +1,22 @@
 {
-  "version": "2026.06.10o",
+  "version": "2026.06.11",
   "entries": [
+    {
+      "version": "2026.06.11",
+      "date": "2026-06-11",
+      "sections": [
+        {
+          "title": "New Features",
+          "type": "feature",
+          "items": [
+            {
+              "text": "Maintenance Banner: Admins can now display a sitewide warning banner from the new Maintenance tab in the Admin panel. Supports a custom message, dismissible or persistent mode, and an optional scheduled start/end window so the banner appears and clears automatically without manual intervention.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.06.10o",
       "date": "2026-06-10",
