@@ -302,6 +302,8 @@ const Admin: React.FC = () => {
   const [inlineEditContactValues, setInlineEditContactValues] = useState<Record<string, string>>({});
   const [inlineEditContactFocusField, setInlineEditContactFocusField] = useState<string | null>(null);
   const inlineEditContactRowRef = useRef<HTMLTableRowElement | null>(null);
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
   // Add contact dialog (for creating new contacts only)
   const [addContactDialogOpen, setAddContactDialogOpen] = useState(false);
   const [addContactForm, setAddContactForm] = useState({
@@ -1241,6 +1243,23 @@ const Admin: React.FC = () => {
     }
   };
 
+  // Swipe left/right to switch tabs on touch devices
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null || touchStartY.current === null) return;
+    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+    const deltaY = e.changedTouches[0].clientY - touchStartY.current;
+    touchStartX.current = null;
+    touchStartY.current = null;
+    // Ignore short swipes and vertical scrolls
+    if (Math.abs(deltaX) < 50 || Math.abs(deltaY) > Math.abs(deltaX)) return;
+    setTabValue(v => deltaX < 0 ? Math.min(v + 1, 5) : Math.max(v - 1, 0));
+  };
+
   // Get user online status: 'online' (green, <5min), 'away' (yellow, 5-15min), 'offline' (red/none, >15min)
   type OnlineStatus = 'online' | 'away' | 'offline';
   
@@ -1289,12 +1308,22 @@ const Admin: React.FC = () => {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Paper sx={{ p: 3 }}>
+      <Paper sx={{ p: 3 }} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
         <Typography variant="h4" component="h1" sx={{ mb: 2 }}>
           Admin
         </Typography>
 
-        <Tabs value={tabValue} onChange={(_, newValue) => setTabValue(newValue)} sx={{ borderBottom: 1, borderColor: 'divider' }}>
+        <Tabs
+          value={tabValue}
+          onChange={(_, newValue) => setTabValue(newValue)}
+          variant="scrollable"
+          scrollButtons={false}
+          sx={{
+            borderBottom: 1,
+            borderColor: 'divider',
+            '& .MuiTab-root': { minWidth: { xs: 72, sm: 100 }, px: { xs: 1, sm: 2 } },
+          }}
+        >
           <Tab label="Users" id="admin-tab-0" aria-controls="admin-tabpanel-0" icon={<PersonAddIcon />} iconPosition="start" />
           <Tab label="Contacts" id="admin-tab-1" aria-controls="admin-tabpanel-1" icon={<ContactsIcon />} iconPosition="start" />
           <Tab label="Check-in Fields" id="admin-tab-2" aria-controls="admin-tabpanel-2" icon={<EditIcon />} iconPosition="start" />

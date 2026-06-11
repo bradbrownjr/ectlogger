@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { displayCallsign } from '../utils/userDisplay';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Cropper from 'react-easy-crop';
@@ -102,6 +102,26 @@ const Profile: React.FC = () => {
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const avatarInputRef = React.useRef<HTMLInputElement>(null);
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
+
+  // Swipe left/right to switch tabs on touch devices
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null || touchStartY.current === null) return;
+    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+    const deltaY = e.changedTouches[0].clientY - touchStartY.current;
+    touchStartX.current = null;
+    touchStartY.current = null;
+    if (Math.abs(deltaX) < 50 || Math.abs(deltaY) > Math.abs(deltaX)) return;
+    const next = deltaX < 0 ? Math.min(tabValue + 1, 2) : Math.max(tabValue - 1, 0);
+    setTabValue(next);
+    setSearchParams(next > 0 ? { tab: String(next) } : {});
+  };
 
   // Crop dialog state
   const [cropDialogOpen, setCropDialogOpen] = useState(false);
@@ -243,7 +263,7 @@ const Profile: React.FC = () => {
 
   return (
     <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
-      <Paper sx={{ p: 4 }}>
+      <Paper sx={{ p: { xs: 2, sm: 4 } }} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <Tabs
             value={tabValue}
@@ -252,6 +272,9 @@ const Profile: React.FC = () => {
               setSearchParams(newValue > 0 ? { tab: String(newValue) } : {});
             }}
             aria-label="profile tabs"
+            variant="scrollable"
+            scrollButtons={false}
+            sx={{ '& .MuiTab-root': { minWidth: { xs: 80, sm: 120 }, px: { xs: 1.5, sm: 2 } } }}
           >
             <Tab
               icon={<PersonIcon />}
