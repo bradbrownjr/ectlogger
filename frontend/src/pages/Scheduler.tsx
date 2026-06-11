@@ -362,7 +362,7 @@ const Scheduler: React.FC = () => {
     <Box
       sx={{
         display: 'grid',
-        gridTemplateColumns: { xs: '1fr', sm: 'repeat(auto-fit, minmax(300px, 1fr))' },
+        gridTemplateColumns: { xs: '1fr', sm: 'repeat(auto-fit, minmax(max(300px, calc(100% / 6 - 20px)), 1fr))' },
         gap: { xs: 2, sm: 3 },
       }}
     >

@@ -12,6 +12,12 @@ All notable changes to ECTLogger are documented here.
 * **Server-side maintenance page** — A static `maintenance.html` page is included in the frontend build. Operators can activate it with `./run --maintenance on` over SSH when the app is completely down (bad deploy, DB outage). Caddy then serves the static page directly instead of proxying to the backend. An optional `--message` and `--eta` flag writes a `maintenance.json` sidecar that the page fetches and displays.
 * **`run.sh` — consolidated operational script** — `start.sh` and `update.sh` are consolidated into a single `run.sh`. Bare `./run` behaves identically to the old `start.sh`; `./run --service` for systemd; `./run -u` to apply updates and exit; `./run -m on|off` to toggle server-side maintenance mode and exit. The old scripts remain in place temporarily.
 
+## Improvements
+
+* **Adaptive card grids** — The Nets dashboard and Schedule pages now use a CSS auto-fit grid that scales from 1 column on mobile up to 6 columns on ultrawide monitors. Cards fill available space evenly and never leave an empty gap when fewer cards are present.
+* **Scrollable tabs with swipe support** — Tabs on the Admin and Profile pages now shrink and scroll horizontally on narrow viewports without visible arrow buttons, and support swipe-left/right gestures on mobile to switch between tabs.
+* **Uniform FAB sizing** — All floating action buttons (Create, Filter, Archive, Merge) are now a consistent 56 px large size across every page.
+
 ---
 
 # June 10, 2026

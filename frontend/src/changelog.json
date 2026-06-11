@@ -1,8 +1,8 @@
 {
-  "version": "2026.06.11",
+  "version": "2026.06.11b",
   "entries": [
     {
-      "version": "2026.06.11",
+      "version": "2026.06.11b",
       "date": "2026-06-11",
       "sections": [
         {
@@ -12,6 +12,24 @@
             {
               "text": "Maintenance Banner: Admins can now display a sitewide warning banner from the new Maintenance tab in the Admin panel. Supports a custom message, dismissible or persistent mode, and an optional scheduled start/end window so the banner appears and clears automatically without manual intervention.",
               "userImpact": true
+            }
+          ]
+        },
+        {
+          "title": "Improvements",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Card grids on the Nets dashboard and Schedule pages now scale from 1 column on mobile up to 6 columns on ultrawide monitors, and always fill available space without leaving empty gaps when fewer cards are present.",
+              "userImpact": true
+            },
+            {
+              "text": "Tabs on the Admin and Profile pages now shrink and scroll horizontally on narrow viewports, and support swipe-left/right gestures on mobile to switch between tabs.",
+              "userImpact": true
+            },
+            {
+              "text": "FAB buttons (Create, Filter, Archive, Merge) are now a uniform size across all pages.",
+              "userImpact": false
             }
           ]
         }

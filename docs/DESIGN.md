@@ -226,7 +226,7 @@ wide columns instead of 2 narrow cards with an empty third slot.
 <Box
   sx={{
     display: 'grid',
-    gridTemplateColumns: { xs: '1fr', sm: 'repeat(auto-fit, minmax(300px, 1fr))' },
+    gridTemplateColumns: { xs: '1fr', sm: 'repeat(auto-fit, minmax(max(300px, calc(100% / 6 - 20px)), 1fr))' },
     gap: { xs: 2, sm: 3 },
   }}
 >
@@ -238,14 +238,22 @@ wide columns instead of 2 narrow cards with an empty third slot.
 </Box>
 ```
 
-Column behaviour with `minmax(300px, 1fr)`:
+The `max(300px, calc(100% / 6 - 20px))` formula has two regimes:
+- **Below ~1920 px**: `300px` dominates — auto-fit adds columns as the viewport widens.
+- **Above ~1920 px**: `100%/6 - 20px` dominates — the minimum grows to prevent a 7th
+  column from ever fitting, capping the grid at 6 on ultrawide monitors.
+
+Column behaviour:
 
 | Viewport | Columns |
 |---|---|
-| < ~648 px | 1 (xs override) |
-| ~648–996 px | 2 |
-| 996 px+ | 3 |
-| Any width, ≤ 2 items | Items expand to fill available columns (no gap) |
+| < ~600 px | 1 (xs override forces single column) |
+| ~600–900 px | 2 |
+| ~900–1200 px | 3 |
+| ~1200–1500 px | 4 |
+| ~1500–1920 px | 5 |
+| 1920 px+ (ultrawide) | 6 (capped) |
+| Any width, fewer items than columns | Items expand to fill (no gap) |
 
 Do **not** use `auto-fill` for card grids — it preserves empty tracks, creating the
 same gap problem that `auto-fit` solves.

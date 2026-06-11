@@ -363,13 +363,13 @@ const Dashboard: React.FC = () => {
 
   // ========== CARD VIEW RENDERER ==========
   // auto-fit collapses empty column tracks, so 2 cards fill 2 columns instead of
-  // leaving a gap where a 3rd card would go. minmax(300px, 1fr) wraps to fewer
-  // columns before cards get narrower than 300px.
+  // leaving a gap where a 3rd card would go. max(300px, calc(100%/6 - 20px)) caps
+  // at 6 columns on ultrawide by raising the min once 100%/6 exceeds 300px.
   const renderCardView = () => (
     <Box
       sx={{
         display: 'grid',
-        gridTemplateColumns: { xs: '1fr', sm: 'repeat(auto-fit, minmax(300px, 1fr))' },
+        gridTemplateColumns: { xs: '1fr', sm: 'repeat(auto-fit, minmax(max(300px, calc(100% / 6 - 20px)), 1fr))' },
         gap: { xs: 2, sm: 3 },
       }}
     >
