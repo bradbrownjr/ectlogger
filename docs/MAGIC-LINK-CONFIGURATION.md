@@ -107,11 +107,13 @@ async def send_magic_link(email: str, token: str, expire_days: int = 30):
 
 The login page informs users of the configured expiration:
 
+{% raw %}
 ```tsx
 <Typography variant="caption" display="block" sx={{ mt: 1 }} color="text.secondary" align="center">
   Magic links are valid for 30 days, keeping you connected during extended emergency events.
 </Typography>
 ```
+{% endraw %}
 
 ## Security Considerations
 

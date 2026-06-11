@@ -50,6 +50,7 @@ or `size="small"` on any FAB — this was a prior inconsistency that has been
 corrected. The default large size gives a consistent 56 px touch target across
 the app.
 
+{% raw %}
 ```tsx
 // Correct
 <Fab color="primary" aria-label="create net" sx={{ position: 'fixed', bottom: 16, right: 16 }}>
@@ -59,6 +60,7 @@ the app.
 // Wrong — do not mix explicit size on some but not others
 <Fab size="medium" ...>
 ```
+{% endraw %}
 
 ### Positioning
 FABs stack from right to left at `bottom: 16, right: 16`. Each subsequent FAB adds
@@ -104,6 +106,7 @@ This lets the tab bar scroll natively on touch/narrow viewports without visible
 arrow buttons. Pair with responsive `minWidth` and `px` to shrink tabs before
 overflow is needed.
 
+{% raw %}
 ```tsx
 <Tabs
   value={tabValue}
@@ -117,6 +120,7 @@ overflow is needed.
   }}
 >
 ```
+{% endraw %}
 
 Admin uses `minWidth: { xs: 72, sm: 100 }` (6 tabs).
 Profile uses `minWidth: { xs: 80, sm: 120 }` (3 tabs, more room per tab).
@@ -222,6 +226,7 @@ Use CSS Grid with `auto-fit` instead of MUI `Grid container/item` for card layou
 `auto-fit` collapses empty column tracks, so a page with 2 cards shows 2 comfortably
 wide columns instead of 2 narrow cards with an empty third slot.
 
+{% raw %}
 ```tsx
 <Box
   sx={{
@@ -237,6 +242,7 @@ wide columns instead of 2 narrow cards with an empty third slot.
   ))}
 </Box>
 ```
+{% endraw %}
 
 The `max(300px, calc(100% / 6 - 20px))` formula has two regimes:
 - **Below ~1920 px**: `300px` dominates — auto-fit adds columns as the viewport widens.
@@ -277,9 +283,11 @@ The app uses MUI's default breakpoints (`xs: 0, sm: 600, md: 900, lg: 1200`).
 
 ### Paper padding on mobile
 Use responsive padding on `<Paper>` to reclaim space on small screens:
+{% raw %}
 ```tsx
 <Paper sx={{ p: { xs: 2, sm: 4 } }}>
 ```
+{% endraw %}
 
 ---
 
@@ -305,6 +313,7 @@ Render the `<Alert>` directly inside the flex column; do **not** wrap it in MUI
 stretch to fill the flex parent, causing the banner text to be clipped on pages
 with wide content. The conditional `return null` pattern already handles show/hide.
 
+{% raw %}
 ```tsx
 // Correct — direct render, full flex width
 if (!banner?.active || dismissed) return null;
@@ -313,6 +322,7 @@ return <Alert variant="filled" severity="warning" sx={{ borderRadius: 0 }} ...>;
 // Wrong — Collapse wrapper clips text on some pages
 return <Collapse in><Alert ...></Collapse>;
 ```
+{% endraw %}
 
 ### Polling interval
 The public `/api/settings/maintenance-banner` endpoint is lightweight and
@@ -352,6 +362,7 @@ Every changelog item renders with a tinted background box regardless of
 "User Impact" chip. Do **not** make the background conditional on `userImpact` —
 all items should have uniform visual treatment.
 
+{% raw %}
 ```tsx
 // Correct — background always applied
 sx={{ backgroundColor: alpha(theme.palette.primary.main, 0.08), borderRadius: 1, ... }}
@@ -359,3 +370,4 @@ sx={{ backgroundColor: alpha(theme.palette.primary.main, 0.08), borderRadius: 1,
 // Wrong — creates inconsistent appearance for non-userImpact items
 ...(item.userImpact && { backgroundColor: ... })
 ```
+{% endraw %}
