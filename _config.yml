@@ -23,3 +23,13 @@ exclude:
   - __pycache__/
   - "*.pyc"
   - .gitignore
+
+# Disable Liquid template processing for all pages.
+# The docs contain code examples with {{ }} syntax (JSX, MUI sx props) that
+# Jekyll would otherwise try to evaluate as Liquid template variables, causing
+# build failures. None of the docs use Liquid intentionally.
+defaults:
+  - scope:
+      path: ""
+    values:
+      render_with_liquid: false
