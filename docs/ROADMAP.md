@@ -100,8 +100,8 @@ handle @maintenance {
 
 ### Database Indexes
 
-**🔧 Add indexes on frequently sorted/filtered columns** *(KC1JMH)*  
-The `users` table is currently indexed only on unique-constraint columns (email, callsign, oauth_id, gmrs_callsign). The Admin UI sorts and filters against `last_active`, `created_at`, `is_active`, and `role` — none of which have indexes. At 47 users this is invisible, but the expected inbound migration from ham.live's closure could push that number sharply higher. Add non-unique indexes on `last_active`, `created_at`, `is_active`, and `role` via an Alembic migration before adoption accelerates.
+**✅ Add indexes on frequently sorted/filtered columns** *(KC1JMH)*  
+Completed in migration 032. Indexes on `last_active`, `created_at`, `is_active`, and `role` are live on production.
 
 ---
 
