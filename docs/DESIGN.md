@@ -283,6 +283,50 @@ Use responsive padding on `<Paper>` to reclaim space on small screens:
 
 ---
 
+## Sitewide Alert Banners (`MaintenanceBanner.tsx`)
+
+### Color / visibility
+Always use `variant="filled"` on the MUI `<Alert>`. The default standard variant
+applies a very low-opacity tint for `severity="warning"` in dark mode — nearly
+invisible on a dark background. `variant="filled"` gives a solid high-contrast
+amber background in both themes.
+
+```tsx
+// Correct
+<Alert variant="filled" severity="warning" ...>
+
+// Wrong — invisible in dark mode
+<Alert severity="warning" ...>
+```
+
+### Layout — no Collapse wrapper
+Render the `<Alert>` directly inside the flex column; do **not** wrap it in MUI
+`<Collapse>`. `Collapse` adds nested wrapper divs whose width does not automatically
+stretch to fill the flex parent, causing the banner text to be clipped on pages
+with wide content. The conditional `return null` pattern already handles show/hide.
+
+```tsx
+// Correct — direct render, full flex width
+if (!banner?.active || dismissed) return null;
+return <Alert variant="filled" severity="warning" sx={{ borderRadius: 0 }} ...>;
+
+// Wrong — Collapse wrapper clips text on some pages
+return <Collapse in><Alert ...></Collapse>;
+```
+
+### Polling interval
+The public `/api/settings/maintenance-banner` endpoint is lightweight and
+unauthenticated. Poll every **10 seconds** so enable/disable changes are
+reflected within one poll cycle rather than requiring a page reload. 60-second
+intervals leave users staring at a stale banner state for up to a minute.
+
+### Dismissed state reset
+Clear the `dismissed` flag on both transitions — inactive→active AND active→inactive
+— so re-enabling the banner after an admin disables it always shows it again without
+a page reload.
+
+---
+
 ## What's New / Changelog (`frontend/src/changelog.json`)
 
 Add an entry to the **current release version** object whenever a user-facing

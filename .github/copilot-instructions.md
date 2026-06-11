@@ -26,6 +26,7 @@ Key rules enforced there:
 - Identical controls must look identical across pages (symmetry and uniformity principle).
 - Minimum touch target 44 × 44 px for primary actions.
 - In `ChangelogNotification.tsx`, every changelog item always gets the tinted background box. Do NOT make it conditional on `userImpact`. Only bold text and the "User Impact" chip are conditional.
+- In `MaintenanceBanner.tsx`: always use `variant="filled"` on `<Alert>` (standard warning is invisible in dark mode), never wrap in `<Collapse>` (clips text), and poll at 10 s not 60 s. See DESIGN.md "Sitewide Alert Banners" for full rules.
 
 **Before adding new development patterns, read [`docs/DEVELOPMENT.md`](../docs/DEVELOPMENT.md).**
 
