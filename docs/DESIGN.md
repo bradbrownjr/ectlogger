@@ -300,3 +300,18 @@ implementation details.
 
 The `whats_new_service.py` daily digest email reads the same file — do not
 maintain a separate list.
+
+### Item rendering rules (`ChangelogNotification.tsx`)
+
+Every changelog item renders with a tinted background box regardless of
+`userImpact`. The `userImpact` flag controls two things only: bold text and the
+"User Impact" chip. Do **not** make the background conditional on `userImpact` —
+all items should have uniform visual treatment.
+
+```tsx
+// Correct — background always applied
+sx={{ backgroundColor: alpha(theme.palette.primary.main, 0.08), borderRadius: 1, ... }}
+
+// Wrong — creates inconsistent appearance for non-userImpact items
+...(item.userImpact && { backgroundColor: ... })
+```
