@@ -132,27 +132,27 @@ The emoji picker appears inline rather than as an overlay, causing visible text 
 **🔧 ~~Hide emoji picker after net closes~~** — ✅ Done 2026-06-10  
 Reaction controls have no purpose on a closed net. Suppress the emoji popup trigger once `net.status === 'closed'`.
 
-**🔧 Activity log minimized by default** *(W1MTW, KC1JMH)*  
+**🔧 ~~Activity log minimized by default~~** *(W1MTW, KC1JMH)* — ✅ Done  
 Several users found the activity log takes up too much space, especially on mobile. Default the pane to collapsed; the minimize button already exists (`_`). Update initial state only — user preference should persist within the session.
 
 **🐛 ~~Non-square profile photos render sideways~~** *(W1MTW)* — ✅ Done 2026-06-10  
 Images with non-square dimensions (e.g. 1920×1080) are displayed rotated. Fixed by applying `ImageOps.exif_transpose()` on the server at upload time — this physically rotates pixel data to match the EXIF orientation tag the camera embedded, which represents the camera's own record of how the photo was taken. The in-browser crop feature (below) remains on the roadmap as the fuller solution.
 
-**✨ In-browser image crop and zoom on upload** *(W1MTW)*  
+**✨ ~~In-browser image crop and zoom on upload~~** *(W1MTW)* — ✅ Done  
 Replace the raw file-picker upload with a crop UI: after selecting a photo, present a square crop selector with pinch/scroll zoom (similar to Twitter, Discord, etc.). The user positions and sizes their crop region, and only the resulting square is uploaded to the server. This eliminates the sideways-image class of bugs entirely and matches user expectations set by every other platform that accepts avatars. Applies to profile setup and the profile edit page.
 
 **🔬 Mobile responsive UI audit** *(W1MTW)*  
 Several issues surfaced on mobile: account setup friction, elements potentially cut off or overflowing the canvas, possible landscape-only layouts, and ambiguous scroll affordances. Conduct a structured review of all primary user flows on narrow viewports (375px baseline): new user onboarding, profile setup, net view, check-in, and chat. Apply mobile UI best practices — no horizontal scroll, touch targets ≥ 44px, clear scroll indicators, no content requiring landscape. File individual bugs from the audit findings.
 
-**🔧 Self-check-in prompt is not obvious enough** *(KC1JMH)*  
+**🔧 ~~Self-check-in prompt is not obvious enough~~** *(KC1JMH)* — ✅ Done  
 Logged-in users who need to check in don't notice the check-in row at the bottom of the screen. Replace the inline prompt with a modal dialog that is clearly dismissible, so new users understand what action is being requested.
 
-**🔧 Net staff self-check-in should not assume NCS role** *(KC1JMH)*  
+**🔧 ~~Net staff self-check-in should not assume NCS role~~** *(KC1JMH)* — ✅ Done  
 When a co-manager or NCS-role user loads a lobby or active net page, the current UI assumes they intend to check in as Net Control Station. That assumption is wrong — they may simply be observing or monitoring. The self-check-in dialog (above) should ask: "Check in as Net Control Station or Standard Station?" This prevents accidental NCS takeovers when a second licensed NCS joins a net as a participant. Implement together with the self-check-in dialog improvement above.
 
 ### Net Reports
 
-**🔧 Replace raw JSON blob in PDF reports with "PHOTO"** *(KC1UIX)*  
+**🔧 ~~Replace raw JSON blob in PDF reports with "PHOTO"~~** *(KC1UIX)* — ✅ Done  
 Chat image entries in the PDF report render the full `__CHAT_IMAGE__{...}` JSON string. Replace with the word `PHOTO` or a placeholder. Confirmed at `app.ectlogger.us/nets/22/report`.
 
 ### Admin Panel Performance
