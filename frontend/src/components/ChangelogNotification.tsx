@@ -619,13 +619,11 @@ const ChangelogNotification: React.FC = () => {
                         key={itemIndex}
                         sx={{
                           mb: 0.5,
-                          ...(item.userImpact && {
-                            backgroundColor: alpha(theme.palette.primary.main, 0.08),
-                            borderRadius: 1,
-                            mx: -1,
-                            px: 1,
-                            py: 0.25,
-                          }),
+                          backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                          borderRadius: 1,
+                          mx: -1,
+                          px: 1,
+                          py: 0.25,
                         }}
                       >
                         <Typography
