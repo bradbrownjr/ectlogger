@@ -891,7 +891,6 @@ const Dashboard: React.FC = () => {
               aria-label="filter"
               sx={{ position: 'fixed', bottom: 16, right: 144 }}
               onClick={() => setShowFilter(!showFilter)}
-              size="medium"
             >
               <FilterListIcon />
             </Fab>

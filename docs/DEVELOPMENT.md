@@ -6,376 +6,226 @@
 ectlogger/
 ├── backend/
 │   ├── app/
-│   │   ├── __init__.py
-│   │   ├── main.py              # FastAPI application entry point
-│   │   ├── config.py            # Configuration settings
-│   │   ├── database.py          # Database connection and session
-│   │   ├── models.py            # SQLAlchemy models
-│   │   ├── schemas.py           # Pydantic schemas for validation
-│   │   ├── auth.py              # Authentication utilities
-│   │   ├── dependencies.py      # FastAPI dependencies
-│   │   ├── email_service.py     # Email notification service
-│   │   └── routers/
-│   │       ├── __init__.py
-│   │       ├── auth.py          # Authentication endpoints
-│   │       ├── users.py         # User management endpoints
-│   │       ├── nets.py          # Net management endpoints
-│   │       ├── check_ins.py     # Check-in endpoints
-│   │       └── frequencies.py   # Frequency management endpoints
+│   │   ├── main.py              # FastAPI app, CORS, rate limiting, WebSocket, routers
+│   │   ├── config.py            # Pydantic Settings (reads backend/.env)
+│   │   ├── database.py          # Async SQLAlchemy session factory
+│   │   ├── models.py            # All SQLAlchemy ORM models
+│   │   ├── schemas.py           # All Pydantic request/response schemas
+│   │   ├── auth.py              # JWT creation and verification
+│   │   ├── dependencies.py      # FastAPI dependency functions (get_current_user, etc.)
+│   │   ├── security.py          # Input sanitization, rate-limit helpers
+│   │   ├── session_config.py    # Session rolling-renewal logic
+│   │   ├── email_service.py     # Magic link, net notification, digest emails
+│   │   ├── ncs_reminder_service.py  # Background NCS reminder scheduler
+│   │   ├── whats_new_service.py     # Background "What's New" digest scheduler
+│   │   ├── logger.py            # Structured application logger
+│   │   ├── utils.py             # Shared utility functions
+│   │   ├── routers/
+│   │   │   ├── auth.py          # /auth — magic link, OAuth, JWT
+│   │   │   ├── users.py         # /users — profile, admin user management
+│   │   │   ├── nets.py          # /nets — net lifecycle, roles, invitations
+│   │   │   ├── check_ins.py     # /check-ins — check-in CRUD
+│   │   │   ├── frequencies.py   # /frequencies — global frequency library
+│   │   │   ├── templates.py     # /templates — net schedule templates
+│   │   │   ├── chat.py          # /chat — chat messages and images
+│   │   │   ├── settings.py      # /settings — AppSettings singleton, field definitions
+│   │   │   ├── ncs_rotation.py  # /ncs-rotation — rotation scheduling
+│   │   │   ├── security.py      # /security — Fail2Ban integration
+│   │   │   ├── statistics.py    # /statistics — platform, user, schedule stats
+│   │   │   ├── geocode.py       # /geocode — grid square lookup
+│   │   │   └── contacts.py      # /contacts — address book
+│   │   └── services/            # Non-router service classes
+│   ├── migrations/              # 034 numbered Python migration scripts (sqlite3 direct)
 │   └── requirements.txt
 ├── frontend/
 │   ├── src/
-│   │   ├── components/
-│   │   │   └── Navbar.tsx       # Navigation bar component
-│   │   ├── contexts/
-│   │   │   └── AuthContext.tsx  # Authentication context
-│   │   ├── pages/
-│   │   │   ├── Login.tsx        # Login page
-│   │   │   ├── Dashboard.tsx    # Main dashboard
-│   │   │   ├── NetView.tsx      # Net details and check-ins
-│   │   │   └── CreateNet.tsx    # Create new net
+│   │   ├── components/          # Reusable components (Navbar, UserAvatar, etc.)
+│   │   ├── contexts/            # React contexts (AuthContext, ThemeContext, LocationContext)
+│   │   ├── pages/               # Full-page components (one file per route)
 │   │   ├── services/
-│   │   │   └── api.ts           # API client and endpoints
-│   │   ├── App.tsx              # Main application component
-│   │   ├── main.tsx             # Application entry point
-│   │   └── vite-env.d.ts        # TypeScript declarations
-│   ├── index.html
-│   ├── package.json
-│   ├── tsconfig.json
-│   └── vite.config.ts
-├── .env.example
-├── .gitignore
-├── LICENSE
-├── README.md
-└── MANUAL-INSTALLATION.md
+│   │   │   └── api.ts           # Axios client, all API call functions
+│   │   ├── utils/               # dateUtils, pdfExport, userDisplay, etc.
+│   │   ├── App.tsx              # Router, theme, global layout
+│   │   ├── changelog.json       # Single source of truth for What's New content
+│   │   └── main.tsx             # React entry point
+│   └── public/
+│       └── maintenance.html     # Static maintenance page (no JS framework)
+├── docs/                        # All documentation
+│   ├── DESIGN.md                # UI patterns and conventions — read before adding UI
+│   ├── CHANGELOG.md             # Human-readable changelog
+│   ├── ROADMAP.md               # Canonical feature roadmap
+│   ├── PRODUCTION-DEPLOYMENT.md
+│   ├── QUICKSTART.md
+│   └── USER-GUIDE.md
+├── backend/.env                 # Local config (gitignored); copy from .env.example
+├── run.sh                       # Consolidated operational script (start/update/maintenance)
+├── start.sh                     # Deprecated — use run.sh
+├── update.sh                    # Still invoked by run.sh --update
+├── install.sh                   # One-time installation
+├── configure.sh                 # One-time Caddy/env configuration
+└── install-service.sh           # One-time systemd service installation
 ```
-
-## Key Features Implemented
-
-### Authentication
-- Magic link email authentication
-- OAuth2 support (Google, Microsoft, GitHub)
-- JWT token-based authentication
-- Role-based access control (Admin, NCS, User, Guest)
-
-### Net Management
-- Create, update, and delete nets
-- Start and close nets
-- Multi-frequency support with active frequency tracking
-- Net status tracking (Draft, Scheduled, Active, Closed)
-- NCS, logger, and relay role assignments
-- Net templates for reusable configurations
-- ICS-309 communication log mode
-
-### Multi-NCS Operations
-- Multiple NCS operators per net
-- Per-NCS frequency claiming (`NetRole.active_frequency_id`)
-- NCS color coding (unique colors for each NCS)
-- Visual hierarchy (👑 primary NCS, 🤴 secondary NCS)
-- Automatic frequency assignment when NCS creates check-ins
-
-### Check-ins
-- Create check-ins with required and optional fields
-- Recheck tracking (stations checking in multiple times)
-- Real-time updates via WebSocket
-- Status tracking (Checked In, Listening, Available, Away, Checked Out)
-- Frequency tracking per check-in (`frequency_id` and `available_frequency_ids`)
-- Bulk check-in for multiple stations
-- Search and filter by callsign, name, location, or frequency
-
-### Real-time Features
-- WebSocket connections for live net updates
-- Instant check-in notifications
-- Real-time frequency changes
-- Check-in deletion broadcasts
-- Live chat functionality
-- Online user tracking
-
-### Email Notifications
-- Magic link authentication emails
-- Net start notifications to subscribers
-- Net invitation emails
-- Net closure logs emailed to NCS
-
-## API Endpoints
-
-### Authentication (`/auth`)
-- `POST /auth/magic-link/request` - Request magic link
-- `POST /auth/magic-link/verify` - Verify magic link
-- `GET /auth/oauth/{provider}` - OAuth login
-- `GET /auth/oauth/{provider}/callback` - OAuth callback
-- `GET /auth/me` - Get current user
-
-### Users (`/users`)
-- `GET /users/me` - Get current user profile
-- `PUT /users/me` - Update current user profile
-- `GET /users/` - List all users (admin)
-- `GET /users/{user_id}` - Get user by ID
-- `PUT /users/{user_id}/role` - Update user role (admin)
-
-### Nets (`/nets`)
-- `POST /nets/` - Create net
-- `GET /nets/` - List nets (with status filter)
-- `GET /nets/{net_id}` - Get net details (includes `can_manage` permission flag)
-- `GET /nets/{net_id}/stats` - Get net statistics and online users
-- `PUT /nets/{net_id}` - Update net
-- `PUT /nets/{net_id}/template` - Link/unlink the net to a schedule (`{ "template_id": <int|null> }`). Requires net owner/admin; attaching also requires schedule owner/admin.
-- `POST /nets/{net_id}/start` - Start net
-- `POST /nets/{net_id}/close` - Close net
-- `DELETE /nets/{net_id}` - Delete net
-- `GET /nets/{net_id}/export/csv` - Export check-ins as CSV
-- `GET /nets/{net_id}/export/ics309` - Export as ICS-309 communication log
-
-### Net Roles (`/nets/{net_id}/roles`)
-- `GET /nets/{net_id}/roles` - List roles for a net
-- `POST /nets/{net_id}/roles` - Assign role to user
-- `DELETE /nets/{net_id}/roles/{role_id}` - Remove role
-- `PUT /nets/{net_id}/roles/{role_id}/frequency/{frequency_id}` - Claim frequency as NCS
-- `DELETE /nets/{net_id}/roles/{role_id}/frequency` - Release claimed frequency
-
-### Check-ins (`/check-ins`)
-- `POST /check-ins/nets/{net_id}/check-ins` - Create check-in
-- `GET /check-ins/nets/{net_id}/check-ins` - List check-ins
-- `GET /check-ins/check-ins/{check_in_id}` - Get check-in
-- `PUT /check-ins/check-ins/{check_in_id}` - Update check-in
-- `DELETE /check-ins/check-ins/{check_in_id}` - Delete check-in (broadcasts via WebSocket)
-
-### Frequencies (`/frequencies`)
-- `POST /frequencies/` - Create frequency
-- `GET /frequencies/` - List frequencies
-- `GET /frequencies/{frequency_id}` - Get frequency
-- `DELETE /frequencies/{frequency_id}` - Delete frequency
-
-### Templates (`/templates`)
-- `GET /templates/` - List net templates
-- `POST /templates/` - Create template from net
-- `GET /templates/{template_id}` - Get template
-- `DELETE /templates/{template_id}` - Delete template
-- `GET /templates/{template_id}/linkable-nets` - Nets the caller may attach to this template (their own, or all if admin); excludes nets already on this template
-
-### Statistics (`/statistics`)
-- `GET /statistics/platform` - Platform-wide statistics
-- `GET /statistics/user/{user_id}` - User participation statistics
-- `GET /statistics/template/{template_id}?days=<int>` - Schedule statistics. `days` window: `30`, `90`, `365`, or `0` for all-time (default `30`; range `0–3650`). Response includes summary counts, `instances[]` (with `name`, `closed_at`, `ncs_callsigns`), `check_in_leaderboard`, `ncs_leaderboard`, `logger_leaderboard`, `relay_leaderboard`, `filter_days`, and the legacy `regular_operators` (≥50% participation subset).
-
-### WebSocket
-- `WS /ws/nets/{net_id}?token={jwt}` - Real-time net updates
-  - Message types: `check_in`, `check_in_deleted`, `status_change`, `role_change`, `active_frequency`, `chat_message`, `net_started`, `active_speaker`
-
-## Database Models
-
-### User
-- Authentication and profile information
-- Role assignment (Admin, NCS, User, Guest)
-- Email and SMS notification preferences
-- SKYWARN spotter number
-
-### Net
-- Net metadata and status
-- Owner and frequency assignments
-- Start and close timestamps
-- Active frequency tracking
-
-### CheckIn
-- Station information (callsign, name, location)
-- Required and optional fields
-- Status and recheck tracking
-- Frequency assignment per check-in
-
-### Frequency
-- Frequency and mode information
-- Many-to-many relationship with nets
-
-### NetRole
-- User role assignments for specific nets
-- NCS, Logger, Relay designations
-
-### CustomField & CustomFieldValue
-- Dynamic form field creation
-- Field type support (text, number, textarea, select)
-- Per-net field requirements
-
-### ChatMessage
-- Real-time chat for active nets
-- Message history
-
-## Adding New Features
-
-### Adding a New Field to Check-ins
-
-1. **Backend**: Update `models.py`
-   ```python
-   # In CheckIn model
-   new_field = Column(String(255))
-   ```
-
-2. **Backend**: Update `schemas.py`
-   ```python
-   # In CheckInBase schema
-   new_field: Optional[str] = None
-   ```
-
-3. **Frontend**: Update check-in form in `NetView.tsx`
-   ```tsx
-   <TextField
-     label="New Field"
-     value={checkInForm.new_field}
-     onChange={(e) => setCheckInForm({...checkInForm, new_field: e.target.value})}
-   />
-   ```
-
-### Adding Custom Reports
-
-1. Create new router in `backend/app/routers/reports.py`
-2. Add database queries for report data
-3. Create frontend page in `frontend/src/pages/Reports.tsx`
-4. Add route to `App.tsx`
-
-### Adding SMS Notifications
-
-1. Integrate SMS service (Twilio, AWS SNS)
-2. Update `email_service.py` to include SMS sending
-3. Add SMS gateway configuration to user profiles
-4. Update notification triggers to send both email and SMS
-
-## Testing
-
-### Backend Testing
-
-```powershell
-cd backend
-pip install pytest pytest-asyncio httpx
-pytest
-```
-
-### Frontend Testing
-
-```powershell
-cd frontend
-npm install --save-dev vitest @testing-library/react
-npm test
-```
-
-## Code Style
-
-### Backend (Python)
-- Follow PEP 8
-- Use type hints
-- Async/await for database operations
-- Comprehensive error handling
-
-### Frontend (TypeScript)
-- Use TypeScript strict mode
-- Functional components with hooks
-- Material-UI design system
-- Proper prop typing
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Write tests
-5. Submit a pull request
-
-## Common Development Tasks
-
-### Adding a New Page
-
-1. Create component in `frontend/src/pages/`
-2. Add route in `App.tsx`
-3. Add navigation link if needed
-
-### Adding a New API Endpoint
-
-1. Define schema in `schemas.py`
-2. Add route in appropriate router file
-3. Update API client in `frontend/src/services/api.ts`
-4. Use in frontend components
-
-### Database Migrations (Future Enhancement)
-
-Consider adding Alembic for database migrations:
-```powershell
-cd backend
-alembic init alembic
-alembic revision --autogenerate -m "Initial migration"
-alembic upgrade head
-```
-
-## Performance Considerations
-
-- Use database indexes on frequently queried fields
-- Implement pagination for large lists
-- Use WebSocket selectively to reduce server load
-- Cache frequently accessed data
-- Optimize database queries with proper relationships
-
-## Security Best Practices
-
-- Always use HTTPS in production
-- Validate all user inputs
-- Use parameterized queries (SQLAlchemy handles this)
-- Implement rate limiting for API endpoints
-- Regularly update dependencies
-- Use environment variables for sensitive data
-- Implement proper CORS policies
 
 ---
 
-## 🗺️ Roadmap
+## UI Design Reference
 
-Future enhancements planned:
-
-### Completed
-- [x] ~~Participant station mapping~~ ✅
-
-### In Progress / Planned
-- [ ] Progressive Web App (PWA) for offline capability
-- [ ] SMS notifications via Twilio/AWS SNS
-- [ ] Advanced reporting and analytics
-- [ ] Export logs in multiple formats (CSV, PDF)
-- [ ] Mobile native apps (iOS/Android)
-- [ ] Integration with amateur radio logging software
-- [ ] Voice check-in via phone bridge
-- [ ] Automated NCS assistant features
-
-### Stretch Goals
-- [ ] [TUI/Packet Radio Client](concepts/TUI-PACKET-CLIENT.md) — Terminal-based client for packet radio and low-bandwidth operations
+Before adding any new UI element, read **[docs/DESIGN.md](DESIGN.md)**. It covers:
+- Floating Action Button sizing and positioning rules
+- Tab scrollability and swipe-to-switch pattern
+- Icon color conventions for toolbar buttons
+- Mobile touch targets and responsive breakpoints
+- Net View toolbar row structure
 
 ---
 
-## ✅ Tested Environments
+## Starting the App
 
-| Environment | Status | Notes |
-|-------------|--------|-------|
-| **Debian Trixie** | ✅ Tested | Python 3.13, production with Caddy reverse proxy |
-| **Windows 11** | ✅ Tested | Development with PowerShell scripts |
-| **Host Migration** | ✅ Tested | LAN to production domain migration |
-| **Windows Server** | ⬜ Untested | Should work with PowerShell scripts |
+```bash
+# Full stack — Linux/macOS
+./run                    # Interactive (prompts for update check)
+./run --service          # Systemd / headless mode
+
+# Full stack — Windows
+.\start.ps1
+
+# Backend only
+cd backend && source venv/bin/activate
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+# Frontend only
+cd frontend && npm run dev
+```
+
+**URLs**: Frontend :3000 | Backend :8000 | API Docs :8000/docs
 
 ---
 
-## 🤝 Contributing
+## Adding API Endpoints
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+1. Define Pydantic schemas in `schemas.py` with `Field()` validation
+2. Add route in `routers/*.py` with `Depends(get_current_user)` and `Depends(get_db)`
+3. Add client method in `frontend/src/services/api.ts`
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+Pattern for async DB queries (always eager-load to avoid lazy-load errors):
+```python
+result = await db.execute(
+    select(Net).options(selectinload(Net.frequencies)).where(Net.id == net_id)
+)
+net = result.scalar_one_or_none()
+```
 
-### Code Style
+Permission check helper:
+```python
+if not await check_net_permission(db, net, user, required_roles=["ncs", "logger"]):
+    raise HTTPException(status_code=403, detail="Permission denied")
+```
 
-#### Backend (Python)
-- Follow PEP 8
-- Use type hints
-- Async/await for database operations
-- Comprehensive error handling
+---
 
-#### Frontend (TypeScript)
-- Use TypeScript strict mode
-- Functional components with hooks
-- Material-UI design system
-- Proper prop typing
+## Database Migrations
+
+Migrations are individual Python scripts in `backend/migrations/`. They use
+`sqlite3` directly — no Alembic. The naming convention is `NNN_description.py`.
+
+```bash
+# Run on beta
+ssh bradb@10.6.26.3 "cd /home/bradb/ectlogger && python3 backend/migrations/034_add_maintenance_banner.py"
+
+# Run on production (activate venv first if the script imports SQLAlchemy)
+ssh ectlogger@app.ectlogger.us "cd ~/ectlogger && python3 backend/migrations/034_add_maintenance_banner.py"
+```
+
+Fresh installations do not run migrations — they get the current schema from `models.py` at startup.
+
+Migration template:
+```python
+import sqlite3, os
+
+def migrate():
+    db_path = os.path.join(os.path.dirname(__file__), '..', 'ectlogger.db')
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    try:
+        cursor.execute("PRAGMA table_info(my_table)")
+        columns = [row[1] for row in cursor.fetchall()]
+        if 'new_column' not in columns:
+            cursor.execute("ALTER TABLE my_table ADD COLUMN new_column TEXT")
+        conn.commit()
+        print("Migration NNN complete.")
+    except Exception as e:
+        conn.rollback(); raise
+    finally:
+        conn.close()
+
+if __name__ == "__main__":
+    migrate()
+```
+
+---
+
+## AppSettings Singleton
+
+Global settings live in a single `app_settings` row (id=1). Add new settings by:
+1. Adding columns to `AppSettings` in `models.py`
+2. Adding fields to `AppSettingsResponse` and `AppSettingsUpdate` in `schemas.py`
+3. Updating `_build_settings_response()` and the `update_settings` handler in `routers/settings.py`
+4. Writing a migration
+
+Public settings (readable without auth) get a dedicated endpoint in `settings.py`;
+admin-only settings go through the standard `GET /settings` / `PUT /settings` pair.
+
+---
+
+## WebSocket
+
+Endpoint: `WS /api/ws/nets/{net_id}?token=<jwt>`
+
+`ConnectionManager` in `main.py` tracks connections per net. Message types:
+`check_in_update`, `frequency_change`, `chat_message`, `online_users`, `net_started`,
+`active_speaker`, `check_in_deleted`, `role_change`, `active_frequency`.
+
+---
+
+## Changelog (user-facing)
+
+`frontend/src/changelog.json` is the **single source of truth**. Both the
+in-app `ChangelogNotification.tsx` dialog and the `whats_new_service.py` digest
+email read from this file. See [docs/DESIGN.md](DESIGN.md) for entry format rules.
+
+Always run `date` before writing a changelog entry. Today's date (America/New_York):
+
+```bash
+date
+```
+
+---
+
+## Deployment
+
+See `docs/PRODUCTION-DEPLOYMENT.md` for full deploy steps.
+
+Quick reference:
+```bash
+# Push, pull on prod, build frontend, restart
+git push origin main
+ssh ectlogger@app.ectlogger.us "cd ~/ectlogger && git pull origin main"
+ssh ectlogger@app.ectlogger.us "cd ~/ectlogger/frontend && npm run build"
+ssh ectlogger@app.ectlogger.us "sudo -n /usr/bin/systemctl restart ectlogger"
+ssh ectlogger@app.ectlogger.us "sudo -n /usr/bin/systemctl is-active ectlogger"
+```
+
+Passwordless sudo on production covers only: `restart ectlogger`, `is-active ectlogger`,
+`status ectlogger`, `journalctl -u ectlogger *`, and Fail2Ban client commands.
+Any other sudo operation (daemon-reload, service file edit) requires the ectlogger
+account password.
+
+---
+
+## Environments
+
+| Name | Host | Python | Notes |
+|---|---|---|---|
+| Production | `ectlogger@app.ectlogger.us` | 3.11.2 | Caddy, static build, port 8001 |
+| Beta | `bradb@10.6.26.3` | 3.13 | Vite dev server, port 8000, auto-reload |
+| Alpha | `bradb@10.6.26.6` | 3.13 | Feature testing before beta |

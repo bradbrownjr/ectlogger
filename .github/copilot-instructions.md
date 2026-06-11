@@ -15,6 +15,23 @@ ECTLogger is a real-time radio net logging application for Emergency Communicati
 - For large changes, get alignment on the plan before writing code.
 - Prefer cohesive refactors over layered quick fixes.
 
+## UI Design Reference
+
+**Before adding any new UI element, read [`docs/DESIGN.md`](../docs/DESIGN.md).**
+
+Key rules enforced there:
+- All `<Fab>` components use the default `large` size (56 px). Never set `size="medium"` or `size="small"` on a FAB.
+- All `<Tabs>` use `variant="scrollable" scrollButtons={false}` with responsive `minWidth`/`px` sx props, plus a touch swipe handler on the wrapping `<Paper>`.
+- Icon color conventions for toolbar buttons are fixed — check the table before picking a color.
+- Identical controls must look identical across pages (symmetry and uniformity principle).
+- Minimum touch target 44 × 44 px for primary actions.
+
+**Before adding new development patterns, read [`docs/DEVELOPMENT.md`](../docs/DEVELOPMENT.md).**
+
+It covers: file structure, migration template, AppSettings singleton pattern, deployment commands, and environment details.
+
+---
+
 ## Architecture
 
 ### Backend (`backend/app/`)

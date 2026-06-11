@@ -818,7 +818,6 @@ const Scheduler: React.FC = () => {
                 aria-label="merge schedules"
                 sx={{ position: 'fixed', bottom: 16, right: 144 }}
                 onClick={() => setMergeMode(true)}
-                size="medium"
               >
                 <CallMergeIcon />
               </Fab>
@@ -832,7 +831,6 @@ const Scheduler: React.FC = () => {
                 aria-label="cancel merge"
                 sx={{ position: 'fixed', bottom: 16, right: 144 }}
                 onClick={handleExitMergeMode}
-                size="medium"
               >
                 <ClearIcon />
               </Fab>
@@ -844,7 +842,6 @@ const Scheduler: React.FC = () => {
               aria-label="filter"
               sx={{ position: 'fixed', bottom: 16, right: 80 }}
               onClick={() => setShowFilter(!showFilter)}
-              size="medium"
             >
               <FilterListIcon />
             </Fab>
