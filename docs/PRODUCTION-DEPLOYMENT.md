@@ -111,11 +111,11 @@ VITE_API_URL=https://ectlogger.example.com/api
 FRONTEND_URL=https://ectlogger.example.com
 # If port 8000 is in use by another service, change this:
 BACKEND_PORT=8000
-# Tell start.sh that Caddy serves the frontend (skip Vite dev server)
+# Tell run.sh that Caddy serves the frontend (skip Vite dev server)
 SKIP_VITE=true
 ```
 
-> **Note:** The `SKIP_VITE=true` setting tells `start.sh` to NOT start the Vite development server. In production, Caddy serves the pre-built static files from `frontend/dist/`. If you run `./configure.sh`, this is automatically set when Caddy is detected.
+> **Note:** The `SKIP_VITE=true` setting tells `run.sh` to NOT start the Vite development server. In production, Caddy serves the pre-built static files from `frontend/dist/`. If you run `./configure.sh`, this is automatically set when Caddy is detected.
 
 **Rebuild frontend after changing .env:**
 ```bash
@@ -179,7 +179,7 @@ sudo systemctl reload caddy
 **Start ECTLogger backend:**
 ```bash
 sudo systemctl start ectlogger
-# Or manually: cd ~/ectlogger && ./start.sh
+# Or manually: cd ~/ectlogger && ./run --service
 ```
 
 ### 8. Access Your Application
@@ -426,7 +426,7 @@ Navigate to: `https://ectlogger.example.com`
 
 Since the reverse proxy forwards requests, the backend doesn't need to listen on all interfaces.
 
-**Edit systemd service or start.sh:**
+**Edit `run.sh` or the systemd service `ExecStart` line:**
 ```bash
 # Change from:
 uvicorn app.main:app --host 0.0.0.0 --port 8000
@@ -524,6 +524,44 @@ cp ~/ectlogger/ectlogger.db ~/backups/ectlogger-$(date +%Y%m%d).db
 
 # PostgreSQL
 pg_dump -U ectlogger ectlogger > ~/backups/ectlogger-$(date +%Y%m%d).sql
+```
+
+---
+
+## Maintenance Mode
+
+ECTLogger has two independent maintenance mechanisms.
+
+### 1. In-app banner (app is running)
+
+Use the **Admin panel → Maintenance tab** to display a sitewide warning banner to all users. No SSH required. Supports a custom message, dismissible or persistent mode, and an optional scheduled start/end window.
+
+### 2. Server-side static page (app is down)
+
+For complete outages (bad deploy, database failure), use `run.sh` over SSH to serve a static fallback page via Caddy instead of proxying to the backend.
+
+```bash
+# Enable maintenance mode (Caddy serves maintenance.html directly)
+cd ~/ectlogger && ./run --maintenance on
+cd ~/ectlogger && ./run --maintenance on --message "Deploying update" --eta "5 minutes"
+
+# Disable maintenance mode (Caddy resumes proxying to backend)
+cd ~/ectlogger && ./run --maintenance off
+```
+
+**Required Caddyfile snippet** (add before the `handle` block):
+```caddy
+@maintenance file /home/ectlogger/ectlogger/maintenance.flag
+handle @maintenance {
+    root * /home/ectlogger/ectlogger/frontend/public
+    rewrite * /maintenance.html
+    file_server
+}
+```
+
+Replace `/home/ectlogger/ectlogger` with your actual install path. After adding this, reload Caddy:
+```bash
+sudo systemctl reload caddy
 ```
 
 ---

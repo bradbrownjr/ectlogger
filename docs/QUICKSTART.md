@@ -31,7 +31,7 @@ This downloads the installer and shows you the command to run it. Just copy and 
 
 Works on Debian, Ubuntu, Fedora, RHEL, Rocky, and macOS.
 
-After it completes, just run `./start.sh` to launch!
+After it completes, just run `./run` to launch!
 
 ---
 
@@ -125,7 +125,7 @@ Open your browser to:
 
 #### Linux/macOS
 ```bash
-./start.sh
+./run
 ```
 
 #### Windows (PowerShell)

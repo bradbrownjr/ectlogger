@@ -76,12 +76,12 @@ The `-u`, `-m on`, and `-m off` flags are action-and-exit operations. They never
 The update prompt is intentionally suppressed in `--service` mode to avoid blocking an unattended restart on a partially-baked commit. Updates are the operator's explicit choice, not automatic.
 
 **Migration checklist when `run.sh` is introduced:**
-- [ ] Add `run.sh` to the repo root
-- [ ] Update `ectlogger.service` `ExecStart` from `start.sh --service` to `run.sh --service`
-- [ ] Run `sudo systemctl daemon-reload` after updating the service file
-- [ ] Verify `sudo systemctl restart ectlogger` starts correctly from the new script
-- [ ] Keep `start.sh` and `update.sh` in place temporarily with a deprecation notice pointing to `run.sh`, remove in a subsequent release
-- [ ] Update `docs/PRODUCTION-DEPLOYMENT.md`, `docs/QUICKSTART.md`, and `docs/USER-GUIDE.md` to reference `run.sh`
+- [x] Add `run.sh` to the repo root
+- [x] Update `ectlogger.service` `ExecStart` from `start.sh --service` to `run.sh --service`
+- [x] Run `sudo systemctl daemon-reload` after updating the service file
+- [x] Verify `sudo systemctl restart ectlogger` starts correctly from the new script
+- [x] Keep `start.sh` and `update.sh` in place temporarily with a deprecation notice pointing to `run.sh`, remove in a subsequent release
+- [x] Update `docs/PRODUCTION-DEPLOYMENT.md`, `docs/QUICKSTART.md`, and `docs/USER-GUIDE.md` to reference `run.sh`
 
 **Caddyfile pattern (for documentation and `configure.sh`):**
 ```caddy
