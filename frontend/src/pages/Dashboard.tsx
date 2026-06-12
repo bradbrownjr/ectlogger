@@ -35,6 +35,8 @@ import {
   Snackbar,
   Alert,
   TablePagination,
+  Checkbox,
+  FormControlLabel,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
@@ -88,6 +90,8 @@ interface Net {
   frequencies: any[];
   check_in_count?: number;
   can_manage?: boolean;
+  user_attended?: boolean | null;
+  user_ran?: boolean | null;
 }
 
 const Dashboard: React.FC = () => {
@@ -106,6 +110,8 @@ const Dashboard: React.FC = () => {
   const [archivedPerPage, setArchivedPerPage] = useState(25);
   const [archiveSortField, setArchiveSortField] = useState<'name' | 'owner' | 'check_ins' | 'closed'>('closed');
   const [archiveSortDirection, setArchiveSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [archiveShowAttended, setArchiveShowAttended] = useState(false);
+  const [archiveShowRan, setArchiveShowRan] = useState(false);
   // View mode and filter state - persist view preference
   const [viewMode, setViewMode] = useState<'card' | 'list'>(() => {
     const saved = localStorage.getItem('dashboard-view-mode');
@@ -307,20 +313,27 @@ const Dashboard: React.FC = () => {
       if (archiveDateFrom || archiveDateTo) {
         const closedDate = net.closed_at ? new Date(net.closed_at) : null;
         if (!closedDate) return false;
-        
+
         if (archiveDateFrom) {
           const fromDate = new Date(archiveDateFrom);
           fromDate.setHours(0, 0, 0, 0);
           if (closedDate < fromDate) return false;
         }
-        
+
         if (archiveDateTo) {
           const toDate = new Date(archiveDateTo);
           toDate.setHours(23, 59, 59, 999);
           if (closedDate > toDate) return false;
         }
       }
-      
+
+      // Personal filters (only meaningful when backend has populated the flags)
+      if (archiveShowAttended || archiveShowRan) {
+        const matchesAttended = archiveShowAttended && net.user_attended === true;
+        const matchesRan = archiveShowRan && net.user_ran === true;
+        if (!matchesAttended && !matchesRan) return false;
+      }
+
       return true;
     })
     .sort((a, b) => {
@@ -941,6 +954,8 @@ const Dashboard: React.FC = () => {
           setArchiveFilter('');
           setArchiveDateFrom('');
           setArchiveDateTo('');
+          setArchiveShowAttended(false);
+          setArchiveShowRan(false);
           setArchivedPage(0);
         }}
         maxWidth="md"
@@ -948,7 +963,7 @@ const Dashboard: React.FC = () => {
         PaperProps={{ sx: { m: { xs: 1, sm: 4 } } }}
       >
         <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          📦 Archived Nets ({filteredArchivedNets.length}{(archiveFilter || archiveDateFrom || archiveDateTo) ? ` of ${archivedNets.length}` : ''})
+          📦 Archived Nets ({filteredArchivedNets.length}{(archiveFilter || archiveDateFrom || archiveDateTo || archiveShowAttended || archiveShowRan) ? ` of ${archivedNets.length}` : ''})
           <IconButton onClick={() => {
             setShowArchived(false);
             setArchiveFilter('');
@@ -994,6 +1009,30 @@ const Dashboard: React.FC = () => {
               InputLabelProps={{ shrink: true }}
               sx={{ minWidth: 200, '& .MuiInputBase-input': { pl: 1.5 } }}
             />
+            {isAuthenticated && (
+              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      size="small"
+                      checked={archiveShowAttended}
+                      onChange={(e) => { setArchiveShowAttended(e.target.checked); setArchivedPage(0); }}
+                    />
+                  }
+                  label="Attended"
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      size="small"
+                      checked={archiveShowRan}
+                      onChange={(e) => { setArchiveShowRan(e.target.checked); setArchivedPage(0); }}
+                    />
+                  }
+                  label="Ran as NCS"
+                />
+              </Box>
+            )}
           </Box>
           
           {archivedNets.length === 0 ? (

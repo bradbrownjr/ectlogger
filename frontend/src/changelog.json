@@ -24,6 +24,10 @@
             {
               "text": "Profile Activity — Stat card drill-down: the four activity summary cards (Total Check-ins, Nets Joined, As NCS, Last 30 Days) are now clickable. Clicking a card expands a list of the underlying nets so you can see exactly which sessions make up each number and jump directly to any net report.",
               "userImpact": true
+            },
+            {
+              "text": "Archived Nets — personal filters: two new checkboxes (Attended / Ran as NCS) let you narrow the archive to nets you personally participated in. Checked-in users see only nets they attended; NCS operators see only nets they ran.",
+              "userImpact": true
             }
           ]
         }

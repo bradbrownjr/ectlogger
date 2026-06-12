@@ -202,6 +202,26 @@ async def list_nets(
         )
         user_ncs_net_ids = set(row[0] for row in ncs_result.fetchall())
 
+    # For archived net requests, compute personal attendance flags
+    user_attended_net_ids: set = set()
+    compute_user_flags = current_user is not None and status == NetStatus.ARCHIVED and bool(net_ids)
+    if compute_user_flags:
+        user_callsigns = [current_user.callsign] if current_user.callsign else []
+        if current_user.gmrs_callsign:
+            user_callsigns.append(current_user.gmrs_callsign)
+        try:
+            additional = json.loads(current_user.callsigns) if current_user.callsigns else []
+            user_callsigns.extend(additional)
+        except Exception:
+            pass
+        if user_callsigns:
+            attended_result = await db.execute(
+                select(CheckIn.net_id).distinct()
+                .where(CheckIn.net_id.in_(net_ids))
+                .where(CheckIn.callsign.in_(user_callsigns))
+            )
+            user_attended_net_ids = set(row[0] for row in attended_result.fetchall())
+
     # ========== CURRENT NCS PER NET ==========
     # For each net, find the most recently-assigned NCS user. The Net Manager
     # is the net's owner; the NCS is whoever is actually running the net on
@@ -233,6 +253,8 @@ async def list_nets(
             can_manage = is_owner or is_admin or is_ncs
 
         ncs_callsign, ncs_name = ncs_by_net.get(net.id, (None, None))
+        user_attended = (net.id in user_attended_net_ids) if compute_user_flags else None
+        user_ran = (net.owner_id == current_user.id) if compute_user_flags else None
         responses.append(NetResponse.from_orm(
             net,
             owner_callsign=net.owner.callsign if net.owner else None,
@@ -241,6 +263,8 @@ async def list_nets(
             can_manage=can_manage,
             ncs_callsign=ncs_callsign,
             ncs_name=public_display_name(ncs_name, current_user is not None),
+            user_attended=user_attended,
+            user_ran=user_ran,
         ))
     
     return responses
