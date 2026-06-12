@@ -2,11 +2,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, delete
 from sqlalchemy.orm import selectinload
-from typing import List, Optional
+from typing import List
 from datetime import datetime, timedelta, timezone
 from app.database import get_db
-from app.models import NetTemplate, NetTemplateSubscription, User, net_template_frequencies, Frequency, Net, NetStatus, NCSRotationMember, NetRole, CheckIn, AppSettings, UserRole, TemplateStaff, NCSScheduleOverride, TopicHistory, TemplateAnnouncement
-from app.schemas import NetTemplateCreate, NetTemplateUpdate, NetTemplateResponse, NetTemplateSubscriptionResponse, NetTemplateSubscriptionDetailResponse, NetResponse, TemplateMergeRequest, TemplateMergePreview, TemplateMergeConflict, TemplateMergeResponse, public_display_name, TemplateAnnouncementCreate, TemplateAnnouncementUpdate, TemplateAnnouncementResponse
+from app.models import NetTemplate, NetTemplateSubscription, User, net_template_frequencies, Frequency, Net, NetStatus, NCSRotationMember, NetRole, CheckIn, AppSettings, UserRole, TemplateStaff, NCSScheduleOverride, TopicHistory
+from app.schemas import NetTemplateCreate, NetTemplateUpdate, NetTemplateResponse, NetTemplateSubscriptionResponse, NetTemplateSubscriptionDetailResponse, NetResponse, TemplateMergeRequest, TemplateMergePreview, TemplateMergeConflict, TemplateMergeResponse, public_display_name
 from app import schemas
 from app.dependencies import get_current_user, get_current_user_optional
 import json
@@ -1327,98 +1327,3 @@ async def email_template_subscribers(
         "failed": failed_count,
         "total_recipients": len(recipients)
     }
-
-
-# ── Recurring Announcements ──────────────────────────────────────────────────
-
-async def _get_template_or_404(template_id: int, db: AsyncSession) -> NetTemplate:
-    result = await db.execute(select(NetTemplate).where(NetTemplate.id == template_id))
-    template = result.scalar_one_or_none()
-    if not template:
-        raise HTTPException(status_code=404, detail="Template not found")
-    return template
-
-
-@router.get("/{template_id}/announcements", response_model=List[TemplateAnnouncementResponse])
-async def list_template_announcements(
-    template_id: int,
-    db: AsyncSession = Depends(get_db),
-    current_user: Optional[User] = Depends(get_current_user_optional),
-):
-    """List recurring announcements for a template (public read)."""
-    await _get_template_or_404(template_id, db)
-    result = await db.execute(
-        select(TemplateAnnouncement)
-        .where(TemplateAnnouncement.template_id == template_id)
-        .order_by(TemplateAnnouncement.id)
-    )
-    return result.scalars().all()
-
-
-@router.post("/{template_id}/announcements", response_model=TemplateAnnouncementResponse, status_code=201)
-async def create_template_announcement(
-    template_id: int,
-    data: TemplateAnnouncementCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    """Add a recurring announcement to a template (owner/staff/admin only)."""
-    template = await _get_template_or_404(template_id, db)
-    if not await check_template_permission(db, template, current_user):
-        raise HTTPException(status_code=403, detail="Not authorized to manage this template")
-    announcement = TemplateAnnouncement(template_id=template_id, text=data.text.strip())
-    db.add(announcement)
-    await db.commit()
-    await db.refresh(announcement)
-    return announcement
-
-
-@router.put("/{template_id}/announcements/{ann_id}", response_model=TemplateAnnouncementResponse)
-async def update_template_announcement(
-    template_id: int,
-    ann_id: int,
-    data: TemplateAnnouncementUpdate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    """Edit a recurring announcement (owner/staff/admin only)."""
-    template = await _get_template_or_404(template_id, db)
-    if not await check_template_permission(db, template, current_user):
-        raise HTTPException(status_code=403, detail="Not authorized to manage this template")
-    result = await db.execute(
-        select(TemplateAnnouncement).where(
-            TemplateAnnouncement.id == ann_id,
-            TemplateAnnouncement.template_id == template_id,
-        )
-    )
-    announcement = result.scalar_one_or_none()
-    if not announcement:
-        raise HTTPException(status_code=404, detail="Announcement not found")
-    announcement.text = data.text.strip()
-    await db.commit()
-    await db.refresh(announcement)
-    return announcement
-
-
-@router.delete("/{template_id}/announcements/{ann_id}", status_code=204)
-async def delete_template_announcement(
-    template_id: int,
-    ann_id: int,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    """Delete a recurring announcement (owner/staff/admin only)."""
-    template = await _get_template_or_404(template_id, db)
-    if not await check_template_permission(db, template, current_user):
-        raise HTTPException(status_code=403, detail="Not authorized to manage this template")
-    result = await db.execute(
-        select(TemplateAnnouncement).where(
-            TemplateAnnouncement.id == ann_id,
-            TemplateAnnouncement.template_id == template_id,
-        )
-    )
-    announcement = result.scalar_one_or_none()
-    if not announcement:
-        raise HTTPException(status_code=404, detail="Announcement not found")
-    await db.delete(announcement)
-    await db.commit()

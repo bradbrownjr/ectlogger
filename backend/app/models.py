@@ -181,18 +181,6 @@ class NetTemplate(Base):
     rotation_members = relationship("NCSRotationMember", back_populates="template", cascade="all, delete-orphan", order_by="NCSRotationMember.position")
     schedule_overrides = relationship("NCSScheduleOverride", back_populates="template", cascade="all, delete-orphan")
     topic_history = relationship("TopicHistory", back_populates="template", cascade="all, delete-orphan")
-    recurring_announcements = relationship("TemplateAnnouncement", back_populates="template", cascade="all, delete-orphan", order_by="TemplateAnnouncement.id")
-
-
-class TemplateAnnouncement(Base):
-    __tablename__ = "template_announcements"
-
-    id = Column(Integer, primary_key=True, index=True)
-    template_id = Column(Integer, ForeignKey("net_templates.id", ondelete="CASCADE"), nullable=False)
-    text = Column(Text, nullable=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-
-    template = relationship("NetTemplate", back_populates="recurring_announcements")
 
 
 class NetTemplateSubscription(Base):

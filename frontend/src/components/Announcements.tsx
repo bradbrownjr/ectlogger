@@ -5,12 +5,7 @@ import {
   Box,
   Typography,
   useTheme,
-  Checkbox,
   Divider,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import MinimizeIcon from '@mui/icons-material/Minimize';
@@ -18,12 +13,7 @@ import CropSquareIcon from '@mui/icons-material/CropSquare';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { Rnd } from 'react-rnd';
 import ReactMarkdown from 'react-markdown';
-import { templateAnnouncementsApi } from '../services/api';
-
-interface RecurringAnnouncement {
-  id: number;
-  text: string;
-}
+import { templateApi } from '../services/api';
 
 interface AnnouncementsProps {
   open: boolean;
@@ -45,14 +35,15 @@ const Announcements: React.FC<AnnouncementsProps> = ({
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
   const [minimized, setMinimized] = useState(false);
-  const [recurringItems, setRecurringItems] = useState<RecurringAnnouncement[]>([]);
-  const [checkedIds, setCheckedIds] = useState<Set<number>>(new Set());
+  const [scheduleAnnouncements, setScheduleAnnouncements] = useState('');
 
   useEffect(() => {
     if (open && templateId) {
-      templateAnnouncementsApi.list(templateId)
-        .then(res => setRecurringItems(res.data))
-        .catch(() => setRecurringItems([]));
+      templateApi.get(templateId)
+        .then(res => setScheduleAnnouncements(res.data.announcements || ''))
+        .catch(() => setScheduleAnnouncements(''));
+    } else if (!templateId) {
+      setScheduleAnnouncements('');
     }
   }, [open, templateId]);
 
@@ -262,50 +253,26 @@ const Announcements: React.FC<AnnouncementsProps> = ({
               },
             }}
           >
-            {/* Recurring items from schedule */}
-            {recurringItems.length > 0 && (
+            {/* Schedule-level recurring announcements */}
+            {scheduleAnnouncements && (
               <>
-                <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600 }}>
-                  Recurring Items
-                </Typography>
-                <List dense disablePadding sx={{ mb: 1 }}>
-                  {recurringItems.map(item => (
-                    <ListItem key={item.id} disablePadding sx={{ alignItems: 'flex-start' }}>
-                      <ListItemIcon sx={{ minWidth: 36, mt: 0.5 }}>
-                        <Checkbox
-                          size="small"
-                          checked={checkedIds.has(item.id)}
-                          onChange={() =>
-                            setCheckedIds(prev => {
-                              const next = new Set(prev);
-                              next.has(item.id) ? next.delete(item.id) : next.add(item.id);
-                              return next;
-                            })
-                          }
-                          sx={{ p: 0 }}
-                        />
-                      </ListItemIcon>
-                      <ListItemText
-                        primary={item.text}
-                        primaryTypographyProps={{
-                          sx: {
-                            textDecoration: checkedIds.has(item.id) ? 'line-through' : 'none',
-                            color: checkedIds.has(item.id) ? 'text.disabled' : 'text.primary',
-                          },
-                        }}
-                      />
-                    </ListItem>
-                  ))}
-                </List>
-                {announcements && <Divider sx={{ my: 1.5 }} />}
+                <ReactMarkdown>{scheduleAnnouncements}</ReactMarkdown>
+                {announcements && <Divider sx={{ my: 2 }} />}
               </>
             )}
 
-            {/* Per-net announcements text */}
+            {/* Per-net announcements */}
             {announcements ? (
-              <ReactMarkdown>{announcements}</ReactMarkdown>
+              <>
+                {scheduleAnnouncements && (
+                  <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600, display: 'block', mb: 1 }}>
+                    Net Notes
+                  </Typography>
+                )}
+                <ReactMarkdown>{announcements}</ReactMarkdown>
+              </>
             ) : (
-              recurringItems.length === 0 && (
+              !scheduleAnnouncements && (
                 <Typography color="text.secondary" sx={{ fontStyle: 'italic' }}>
                   No announcements or general traffic have been added for this net.
                 </Typography>

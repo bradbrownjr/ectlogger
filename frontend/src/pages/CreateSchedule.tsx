@@ -56,8 +56,7 @@ import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
 import HorizontalRuleIcon from '@mui/icons-material/HorizontalRule';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
-import CampaignIcon from '@mui/icons-material/Campaign';
-import { templateApi, frequencyApi, userApi, ncsRotationApi, templateStaffApi, templateAnnouncementsApi } from '../services/api';
+import { templateApi, frequencyApi, userApi, ncsRotationApi, templateStaffApi } from '../services/api';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import BlockingAlert from '../components/BlockingAlert';
@@ -219,12 +218,9 @@ const CreateSchedule: React.FC = () => {
   });
   const [fifthWeekUserId, setFifthWeekUserId] = useState<number | null>(null);
 
-  // Recurring announcements (edit mode only)
-  const [recurringAnnouncements, setRecurringAnnouncements] = useState<{ id: number; text: string }[]>([]);
-  const [newAnnouncementText, setNewAnnouncementText] = useState('');
-  const [editingAnnouncementId, setEditingAnnouncementId] = useState<number | null>(null);
-  const [editingAnnouncementText, setEditingAnnouncementText] = useState('');
-  const [announcementSaving, setAnnouncementSaving] = useState(false);
+  // Recurring announcements (template-level markdown document)
+  const [announcements, setAnnouncements] = useState('');
+  const announcementsTextAreaRef = useRef<HTMLTextAreaElement>(null);
 
   // Tab state
   const [activeTab, setActiveTab] = useState(0);
@@ -658,13 +654,7 @@ const CreateSchedule: React.FC = () => {
       setScheduleType(Schedule.schedule_type || 'ad_hoc');
       setScheduleConfig(Schedule.schedule_config || { day_of_week: 1, week_of_month: [], time: '18:00' });
       setFifthWeekUserId(Schedule.fifth_week_user_id ?? null);
-      // Load recurring announcements
-      try {
-        const annResponse = await templateAnnouncementsApi.list(Number(scheduleId));
-        setRecurringAnnouncements(annResponse.data);
-      } catch {
-        // Non-fatal — announcements tab will show empty
-      }
+      setAnnouncements(Schedule.announcements || '');
     } catch (error) {
       console.error('Failed to fetch Schedule:', error);
     }
@@ -934,43 +924,41 @@ const CreateSchedule: React.FC = () => {
     m => m.user_id === ownerId
   );
 
-  const handleAddAnnouncement = async () => {
-    if (!scheduleId || !newAnnouncementText.trim()) return;
-    setAnnouncementSaving(true);
-    try {
-      const res = await templateAnnouncementsApi.create(Number(scheduleId), newAnnouncementText.trim());
-      setRecurringAnnouncements(prev => [...prev, res.data]);
-      setNewAnnouncementText('');
-    } catch (e) {
-      console.error('Failed to add announcement', e);
-    } finally {
-      setAnnouncementSaving(false);
+  const insertAnnouncementMarkdown = (prefix: string, suffix: string = '', placeholder: string = '', isLinePrefix: boolean = false) => {
+    const textarea = announcementsTextAreaRef.current;
+    if (!textarea) return;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const scrollTop = textarea.scrollTop;
+    let newText: string;
+    let newCursorStart: number;
+    let newCursorEnd: number;
+    if (isLinePrefix) {
+      const lineStart = announcements.lastIndexOf('\n', start - 1) + 1;
+      const lineEnd = announcements.indexOf('\n', end);
+      const actualLineEnd = lineEnd === -1 ? announcements.length : lineEnd;
+      const lineContent = announcements.substring(lineStart, actualLineEnd);
+      newText = announcements.substring(0, lineStart) + prefix + lineContent + announcements.substring(actualLineEnd);
+      newCursorStart = lineStart + prefix.length;
+      newCursorEnd = newCursorStart + lineContent.length;
+    } else {
+      const selectedText = announcements.substring(start, end);
+      const textToInsert = selectedText || placeholder;
+      newText = announcements.substring(0, start) + prefix + textToInsert + suffix + announcements.substring(end);
+      if (selectedText) {
+        newCursorStart = start + prefix.length;
+        newCursorEnd = newCursorStart + selectedText.length;
+      } else {
+        newCursorStart = start + prefix.length + textToInsert.length + suffix.length;
+        newCursorEnd = newCursorStart;
+      }
     }
-  };
-
-  const handleSaveAnnouncementEdit = async (id: number) => {
-    if (!scheduleId || !editingAnnouncementText.trim()) return;
-    setAnnouncementSaving(true);
-    try {
-      const res = await templateAnnouncementsApi.update(Number(scheduleId), id, editingAnnouncementText.trim());
-      setRecurringAnnouncements(prev => prev.map(a => a.id === id ? res.data : a));
-      setEditingAnnouncementId(null);
-      setEditingAnnouncementText('');
-    } catch (e) {
-      console.error('Failed to update announcement', e);
-    } finally {
-      setAnnouncementSaving(false);
-    }
-  };
-
-  const handleDeleteAnnouncement = async (id: number) => {
-    if (!scheduleId) return;
-    try {
-      await templateAnnouncementsApi.delete(Number(scheduleId), id);
-      setRecurringAnnouncements(prev => prev.filter(a => a.id !== id));
-    } catch (e) {
-      console.error('Failed to delete announcement', e);
-    }
+    setAnnouncements(newText);
+    setTimeout(() => {
+      textarea.focus({ preventScroll: true });
+      textarea.setSelectionRange(newCursorStart, newCursorEnd);
+      textarea.scrollTop = scrollTop;
+    }, 0);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -992,6 +980,7 @@ const CreateSchedule: React.FC = () => {
       topic_of_week_prompt: topicOfWeekPrompt || null,
       poll_enabled: pollEnabled,
       poll_question: pollQuestion || null,
+      announcements: announcements || null,
     };
     
     // Include owner_id if changed (for both create and edit)
@@ -1132,8 +1121,8 @@ const CreateSchedule: React.FC = () => {
             <Tab label="Net Staff" />
             <Tab label="Communication Plan" />
             <Tab label="Net Script" />
+            <Tab label="Announcements" />
             <Tab label="Check-In Fields" />
-            <Tab label="Announcements" icon={<CampaignIcon fontSize="small" />} iconPosition="start" />
           </Tabs>
         </Box>
 
@@ -2009,8 +1998,80 @@ This concludes tonight's net. 73 to all."
             </Box>
           </TabPanel>
 
-          {/* Tab 5: Check-In Fields */}
+          {/* Tab 5: Announcements */}
           <TabPanel value={activeTab} index={5}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Enter recurring announcements NCS reads each net — upcoming events, club reminders, network news, exam sessions, etc. Use Markdown for sections and formatting. This document is available in the Announcements window during every live net from this schedule.
+            </Typography>
+
+            {/* Formatting Toolbar */}
+            <Box sx={{ display: 'flex', gap: 0.5, mb: 1, p: 1, bgcolor: 'action.hover', borderRadius: 1 }}>
+              <Tooltip title="Heading 1">
+                <IconButton type="button" size="small" onClick={() => insertAnnouncementMarkdown('# ', '', '', true)} sx={{ fontWeight: 'bold', fontSize: '0.85rem' }}>
+                  H1
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Heading 2">
+                <IconButton type="button" size="small" onClick={() => insertAnnouncementMarkdown('## ', '', '', true)} sx={{ fontWeight: 'bold', fontSize: '0.8rem' }}>
+                  H2
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Heading 3">
+                <IconButton type="button" size="small" onClick={() => insertAnnouncementMarkdown('### ', '', '', true)} sx={{ fontWeight: 'bold', fontSize: '0.75rem' }}>
+                  H3
+                </IconButton>
+              </Tooltip>
+              <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
+              <Tooltip title="Bold (**text**)">
+                <IconButton type="button" size="small" onClick={() => insertAnnouncementMarkdown('**', '**', 'bold text')}>
+                  <FormatBoldIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Italic (*text*)">
+                <IconButton type="button" size="small" onClick={() => insertAnnouncementMarkdown('*', '*', 'italic text')}>
+                  <FormatItalicIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
+              <Tooltip title="Bulleted List">
+                <IconButton type="button" size="small" onClick={() => insertAnnouncementMarkdown('- ', '', '', true)}>
+                  <FormatListBulletedIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Numbered List">
+                <IconButton type="button" size="small" onClick={() => insertAnnouncementMarkdown('1. ', '', '', true)}>
+                  <FormatListNumberedIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Horizontal Rule">
+                <IconButton type="button" size="small" onClick={() => insertAnnouncementMarkdown('\n---\n', '', '')}>
+                  <HorizontalRuleIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Box>
+
+            <TextField
+              fullWidth
+              value={announcements}
+              onChange={(e) => setAnnouncements(e.target.value)}
+              multiline
+              rows={20}
+              inputRef={announcementsTextAreaRef}
+              placeholder="## DMR Network News&#10;&#10;## Reminders&#10;&#10;## Upcoming Events&#10;&#10;## Exam Sessions"
+              sx={{
+                '& .MuiInputBase-root': {
+                  fontFamily: 'monospace',
+                },
+              }}
+            />
+
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+              {announcements.length} characters • Supports Markdown formatting • Saved with the schedule on Save Changes
+            </Typography>
+          </TabPanel>
+
+          {/* Tab 6: Check-In Fields */}
+          <TabPanel value={activeTab} index={6}>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
               Configure which fields are available when stations check in to nets created from this schedule.
             </Typography>
@@ -2091,117 +2152,6 @@ This concludes tonight's net. 73 to all."
                 </TableBody>
               </Table>
             </TableContainer>
-          </TabPanel>
-
-          {/* Tab 6: Recurring Announcements */}
-          <TabPanel value={activeTab} index={6}>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Add announcements that should appear every week — upcoming events, club reminders, or anything NCS reads each net. These items appear in the Announcements window during a live net alongside any per-net notes.
-            </Typography>
-
-            {!isEdit ? (
-              <Typography color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                Save this schedule first, then return here to add recurring announcements.
-              </Typography>
-            ) : (
-              <>
-                {/* Existing items */}
-                {recurringAnnouncements.length === 0 && (
-                  <Typography color="text.secondary" sx={{ fontStyle: 'italic', mb: 2 }}>
-                    No recurring announcements yet. Add one below.
-                  </Typography>
-                )}
-                <List disablePadding sx={{ mb: 2 }}>
-                  {recurringAnnouncements.map((ann) => (
-                    <ListItem
-                      key={ann.id}
-                      disablePadding
-                      sx={{ py: 0.5, alignItems: 'flex-start' }}
-                      secondaryAction={
-                        editingAnnouncementId === ann.id ? (
-                          <Box sx={{ display: 'flex', gap: 0.5 }}>
-                            <IconButton
-                              size="small"
-                              onClick={() => handleSaveAnnouncementEdit(ann.id)}
-                              disabled={announcementSaving || !editingAnnouncementText.trim()}
-                            >
-                              <CheckIcon fontSize="small" />
-                            </IconButton>
-                            <IconButton
-                              size="small"
-                              onClick={() => { setEditingAnnouncementId(null); setEditingAnnouncementText(''); }}
-                            >
-                              <CloseIcon fontSize="small" />
-                            </IconButton>
-                          </Box>
-                        ) : (
-                          <Box sx={{ display: 'flex', gap: 0.5 }}>
-                            <IconButton
-                              size="small"
-                              onClick={() => { setEditingAnnouncementId(ann.id); setEditingAnnouncementText(ann.text); }}
-                            >
-                              <EditIcon fontSize="small" />
-                            </IconButton>
-                            <IconButton size="small" onClick={() => handleDeleteAnnouncement(ann.id)}>
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
-                          </Box>
-                        )
-                      }
-                    >
-                      <ListItemIcon sx={{ minWidth: 32, mt: 1 }}>
-                        <CampaignIcon fontSize="small" color="action" />
-                      </ListItemIcon>
-                      <ListItemText
-                        sx={{ pr: 12 }}
-                        primary={
-                          editingAnnouncementId === ann.id ? (
-                            <TextField
-                              fullWidth
-                              size="small"
-                              value={editingAnnouncementText}
-                              onChange={(e) => setEditingAnnouncementText(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') handleSaveAnnouncementEdit(ann.id);
-                                if (e.key === 'Escape') { setEditingAnnouncementId(null); setEditingAnnouncementText(''); }
-                              }}
-                              autoFocus
-                              multiline
-                              maxRows={4}
-                            />
-                          ) : (
-                            ann.text
-                          )
-                        }
-                      />
-                    </ListItem>
-                  ))}
-                </List>
-
-                {/* Add new item */}
-                <Divider sx={{ mb: 2 }} />
-                <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    placeholder="New announcement item…"
-                    value={newAnnouncementText}
-                    onChange={(e) => setNewAnnouncementText(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAddAnnouncement(); } }}
-                    multiline
-                    maxRows={4}
-                  />
-                  <Button
-                    variant="contained"
-                    onClick={handleAddAnnouncement}
-                    disabled={announcementSaving || !newAnnouncementText.trim()}
-                    sx={{ whiteSpace: 'nowrap', mt: 0 }}
-                  >
-                    Add
-                  </Button>
-                </Box>
-              </>
-            )}
           </TabPanel>
 
           {/* Navigation buttons */}
