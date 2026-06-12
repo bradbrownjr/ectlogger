@@ -12,6 +12,7 @@ import CropSquareIcon from '@mui/icons-material/CropSquare';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { Rnd } from 'react-rnd';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface NetScriptProps {
   open: boolean;
@@ -225,7 +226,7 @@ const NetScript: React.FC<NetScriptProps> = ({
             }}
           >
             {script ? (
-              <ReactMarkdown>{script}</ReactMarkdown>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{script}</ReactMarkdown>
             ) : (
               <Typography color="text.secondary" fontStyle="italic">No script defined for this net.</Typography>
             )}

@@ -12,6 +12,7 @@ import CropSquareIcon from '@mui/icons-material/CropSquare';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { Rnd } from 'react-rnd';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface AnnouncementsProps {
   open: boolean;
@@ -166,24 +167,25 @@ const Announcements: React.FC<AnnouncementsProps> = ({
         <Box
           className="drag-handle"
           sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
             px: 2,
             py: 1,
-            backgroundColor: isDarkMode ? '#2d2d2d' : '#f5f5f5',
-            borderBottom: `1px solid ${isDarkMode ? '#444' : '#e0e0e0'}`,
+            bgcolor: isDarkMode ? '#1565c0' : 'primary.main',
+            color: '#ffffff',
             cursor: 'move',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            userSelect: 'none',
+            flexShrink: 0,
           }}
         >
-          <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+          <Typography variant="subtitle1" fontWeight="bold">
             Net Notes
           </Typography>
-          <Box sx={{ display: 'flex', gap: 0.5 }}>
+          <Box>
             <IconButton
               size="small"
               onClick={handleOpenInNewTab}
+              sx={{ color: 'inherit', mr: 0.5 }}
               title="Open in new tab"
             >
               <OpenInNewIcon fontSize="small" />
@@ -191,14 +193,14 @@ const Announcements: React.FC<AnnouncementsProps> = ({
             <IconButton
               size="small"
               onClick={() => setMinimized(!minimized)}
-              title={minimized ? "Restore" : "Minimize"}
+              sx={{ color: 'inherit', mr: 0.5 }}
             >
               {minimized ? <CropSquareIcon fontSize="small" /> : <MinimizeIcon fontSize="small" />}
             </IconButton>
             <IconButton
               size="small"
               onClick={onClose}
-              title="Close"
+              sx={{ color: 'inherit' }}
             >
               <CloseIcon fontSize="small" />
             </IconButton>
@@ -239,7 +241,7 @@ const Announcements: React.FC<AnnouncementsProps> = ({
             }}
           >
             {announcements ? (
-              <ReactMarkdown>{announcements}</ReactMarkdown>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{announcements}</ReactMarkdown>
             ) : (
               <Typography color="text.secondary" sx={{ fontStyle: 'italic' }}>
                 No notes have been added for this net.

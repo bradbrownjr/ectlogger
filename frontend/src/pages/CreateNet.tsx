@@ -874,7 +874,7 @@ const CreateNet: React.FC = () => {
             <Tab label="Net Staff" />
             <Tab label="Communication Plan" />
             <Tab label="Net Script" />
-            <Tab label="Announcements" />
+            <Tab label="Net Notes" />
             <Tab label="Check-In Fields" />
           </Tabs>
         </Box>
@@ -1420,12 +1420,19 @@ This is **[CALLSIGN]**, closing the net at [TIME]. 73 to all.`}
         {/* Tab 5: Announcements / General Traffic */}
         <TabPanel value={activeTab} index={4}>
           <Typography variant="h6" gutterBottom>
-            Announcements / General Traffic
+            Net Notes
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            List announcements and general traffic items for NCS to reference during the net.
-            This is visible to all users viewing the net. Markdown formatting is supported.
+            Add notes specific to this net session — last-minute items, substitutions, or anything
+            that applies only today. Markdown formatting is supported.
           </Typography>
+          {templateId && (
+            <Alert severity="info" sx={{ mb: 2 }}>
+              Recurring weekly announcements (club news, events, reminders) are managed in the
+              Schedule editor under the Announcements tab. Those are separate from these per-net notes
+              and appear via the toolbar button during a live net.
+            </Alert>
+          )}
 
           <TextField
             fullWidth
