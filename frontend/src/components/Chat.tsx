@@ -373,19 +373,20 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
                           callsign={message.callsign}
                           size={24}
                         />
-                        <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
-                          <Typography 
-                            component="span" 
-                            variant="subtitle2" 
+                        <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, flexWrap: 'wrap' }}>
+                          <Typography
+                            component="span"
+                            variant="subtitle2"
                             color="primary"
                             sx={{ fontWeight: 'bold' }}
                           >
                             {message.callsign}
                           </Typography>
-                          <Typography 
-                            component="span" 
-                            variant="caption" 
+                          <Typography
+                            component="span"
+                            variant="caption"
                             color="text.secondary"
+                            sx={{ whiteSpace: 'nowrap' }}
                           >
                             {formatTimeWithDate(message.created_at, user?.prefer_utc || false, netStartedAt)}
                           </Typography>

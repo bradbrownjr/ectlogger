@@ -197,7 +197,7 @@ const Navbar: React.FC = () => {
               open={drawerOpen}
               onClose={() => setDrawerOpen(false)}
             >
-              <Box sx={{ width: 250 }} role="presentation">
+              <Box sx={{ width: { xs: 200, sm: 250 } }} role="presentation">
                 <List>
                   {navItems.map((item) => (
                     <ListItem key={item.path} disablePadding>

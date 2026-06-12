@@ -536,11 +536,18 @@ const Dashboard: React.FC = () => {
       <CardContent sx={{ flex: 1 }}>
         {/* Title with Status */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
-          <Typography 
-            variant="h6" 
+          <Typography
+            variant="h6"
             component="h2"
             onClick={() => navigate(`/nets/${net.id}`)}
-            sx={{ cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+            sx={{
+              cursor: 'pointer',
+              '&:hover': { textDecoration: 'underline' },
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+            }}
           >
             {net.name}
           </Typography>
@@ -626,7 +633,7 @@ const Dashboard: React.FC = () => {
           )}
         </Box>
       </CardContent>
-      <CardActions sx={{ justifyContent: 'space-between' }}>
+      <CardActions sx={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 0.5 }}>
         {/* View - always available, left side */}
         <Box>
           <Tooltip title="View net">
@@ -639,8 +646,8 @@ const Dashboard: React.FC = () => {
             </IconButton>
           </Tooltip>
         </Box>
-        
-        <Box>
+
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
           {/* Net staff - always visible */}
           <Tooltip title="View net staff">
             <IconButton

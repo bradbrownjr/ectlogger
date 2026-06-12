@@ -171,50 +171,44 @@ The Archived Nets dialog in the Dashboard now paginates at 25 per page (50 or Al
 
 ### High — Breaks usability on narrow screens
 
-**🔧 Table overflow — no mobile fallback** *(Dashboard, ScheduleStatistics, NetReport)*  
-Tables with many columns force horizontal clipping or unscrollable overflow on 375px screens. No card-view or column-hiding alternative exists for mobile.
-- [ ] Wrap all multi-column tables in `sx={{ overflowX: 'auto' }}` containers
-- [ ] On xs breakpoint, hide non-essential columns (e.g. hide "Closed" date, hide "Operators" from history table)
-- [ ] Consider a stacked card layout for the archived nets table in Dashboard
+**🔧 ~~Table overflow — no mobile fallback~~** *(Dashboard, Scheduler, ScheduleStatistics, NetReport)* — ✅ Done 2026-06-12  
+All multi-column tables (Dashboard list/archived, Scheduler list, NetReport check-in log + all sub-tables, ScheduleStatistics leaderboard) wrapped in scrollable containers so they scroll horizontally instead of overflowing the viewport.
+- [x] All TableContainer elements updated with `overflowX: auto`
+- [ ] On xs breakpoint, hide non-essential columns in the archived nets table (stretch goal)
+- [ ] Consider a stacked card layout for the archived nets table in Dashboard (stretch goal)
 
-**🔧 Dialog Paper overflows on 375px viewports** *(multiple pages)*  
-MUI dialogs with `maxWidth="sm" fullWidth` don't constrain their Paper to the viewport width on the narrowest phones, causing content to bleed off-screen.
-- [ ] Add `sx={{ '& .MuiDialog-paper': { maxWidth: { xs: 'calc(100vw - 16px)', sm: '600px' } } }}` to all dialogs, or extract a shared `ResponsiveDialog` wrapper
-- [ ] Reduce `DialogContent` horizontal padding on xs: `sx={{ px: { xs: 1.5, sm: 3 } }}`
+**🔧 ~~Dialog Paper overflows on 375px viewports~~** *(multiple pages)* — ✅ Done 2026-06-12  
+All dialogs now use 8px Paper margins on narrow phones (down from the default 32px), giving form fields significantly more room on 375px viewports.
+- [x] PaperProps margin breakpoints applied to all dialogs in Dashboard, Scheduler, NetView, ProfileSetupDialog, ScheduleStatistics
 
-**🔧 Check-in form rows don't stack on mobile** *(NetView)*  
-Form rows use `direction: 'row'` which doesn't wrap to column on narrow viewports. The collapsed state is also not visually distinct enough on mobile.
-- [ ] Set `flexDirection: { xs: 'column', sm: 'row' }` on all check-in form row containers
-- [ ] Verify collapsed state shows a clearly tappable expand affordance at all viewport widths
+**🔧 ~~Check-in form rows don't stack on mobile~~** *(NetView)* — ✅ Done (no change needed)  
+Verified the mobile check-in form already uses a column flex layout. The collapse/expand affordance (chevron IconButton) is clearly visible.
+- [x] Mobile form confirmed column-stacked with clear expand affordance
 
 ### Medium — Friction on mobile
 
 **🔧 Icon buttons below 44×44px touch target** *(Dashboard, Scheduler, Chat, NetReport)*  
-`size="small"` renders at 32×32px — below the WCAG minimum touch target. Difficult to tap on mobile, especially under vibration.
-- [ ] On xs viewports, increase effective tap area to ≥44×44px via `sx={{ p: { xs: 0.75, sm: 0.5 } }}` wrapper or responsive `minWidth`/`minHeight`
+`size="small"` renders at 32×32px. Per DESIGN.md, this is explicitly acceptable in dense data tables where space is the constraint; not a bug for these locations. Skipped.
 
-**🔧 FABs overlap bottom-right content on narrow screens** *(Dashboard, Scheduler)*  
-Three side-by-side FABs consume 160px of horizontal space at `bottom-right: 16`. Content behind them is inaccessible without scrolling.
-- [ ] Stack FABs vertically on mobile (each spaced 64px apart vertically, single column at right edge)
-- [ ] Increase container `pb` on xs to prevent FABs from covering last list row
+**🔧 ~~FABs overlap bottom-right content on narrow screens~~** *(Dashboard, Scheduler)* — ✅ Done (no change needed)  
+Both pages already have `pb: 12` (96px) on the main container, clearing the 72px FAB stack at the bottom.
 
-**🔧 BulkCheckIn panel hardcoded at 680px wide** *(NetView)*  
-FloatingWindow defaults to 680px which overflows any viewport narrower than ~700px.
-- [ ] Cap initial width: `Math.min(680, window.innerWidth - 20)` with a minimum of 300px
+**🔧 ~~BulkCheckIn panel hardcoded at 680px wide~~** *(NetView)* — ✅ Done 2026-06-12  
+Initial window width and minimum resize width are now clamped to `viewport width - 16px` so the panel fits on narrow screens.
 
-**🔧 Profile tab labels clip on mobile** *(Profile)*  
-Tabs at `minWidth: 80px` clip their text labels on 375px screens when multiple tabs are present.
-- [ ] Reduce `fontSize` and `px` padding on xs so labels remain readable without truncation
+**🔧 ~~Profile tab labels clip on mobile~~** *(Profile)* — ✅ Done (no change needed)  
+Profile tabs already use `scrollable` variant, `scrollButtons={false}`, and responsive `minWidth: 80px / px: 1.5` — no clipping occurs.
 
 **🔧 Long net/schedule names wrap 3+ lines in cards** *(Dashboard, Scheduler)*  
-No clamping or tooltip on card titles — long names consume excessive card height on single-column mobile layout.
-- [ ] Clamp to 2 lines (`display: '-webkit-box'; WebkitLineClamp: 2; overflow: hidden`) with full title in a `Tooltip`
+No clamping on card titles — long names consume excessive height on single-column mobile layout.
+- [ ] Clamp to 2 lines with ellipsis and full title in a Tooltip
 
 ### Low — Polish
 
 **🔧 Card action buttons wrap awkwardly on mobile** *(Dashboard, Scheduler)*
 **🔧 Chat message timestamp wraps mid-line** *(Chat)*
-**🔧 Filter TextField `maxWidth: 500` unnecessary on mobile** *(Dashboard, Scheduler)*
+**🔧 Filter search field has unnecessary desktop max-width** *(Dashboard, Scheduler)*  
+Already handled by flexGrow: 1 — no change needed.
 **🔧 Navbar drawer 250px (67% of 375px screen)** *(Navbar)* — reduce to 200px on xs
 
 ---

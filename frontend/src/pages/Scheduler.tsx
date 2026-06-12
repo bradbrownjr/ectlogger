@@ -537,7 +537,16 @@ const Scheduler: React.FC = () => {
       <CardContent sx={{ flex: 1 }}>
         {/* Title */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
-          <Typography variant="h6" component="h2">
+          <Typography
+            variant="h6"
+            component="h2"
+            sx={{
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+            }}
+          >
             {schedule.name}
           </Typography>
           {!schedule.is_active && (
