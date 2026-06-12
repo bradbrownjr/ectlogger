@@ -28,6 +28,10 @@
             {
               "text": "Net Settings: Mobile station sort is now optional — a new toggle controls whether mobile stations are promoted to the top of the check-in list. On by default; net managers who prefer strict chronological order can turn it off in net settings.",
               "userImpact": true
+            },
+            {
+              "text": "Schedule: Recurring Announcements — a new Announcements tab in the schedule editor lets NCS maintain a standing list of items to read each week (club events, upcoming trainings, etc.). During a live net, these appear in the Announcements window as a checklist so NCS can check off each item as it's announced.",
+              "userImpact": true
             }
           ]
         }

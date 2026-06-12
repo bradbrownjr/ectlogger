@@ -13,6 +13,7 @@ All notable changes to ECTLogger are documented here.
 * **Profile: Personal net history is now navigable** — Your activity summary and net list on the Activity tab are clickable. Select any summary card or net name to see the individual sessions behind it and open any net report directly.
 * **Archived Nets: Filter to nets you participated in** — Two checkboxes in the Archived Nets dialog let you narrow the list to nets you personally attended or ran as NCS, so you can find your own history without scrolling through everything.
 * **Net Settings: Mobile station sort is now optional** — A new toggle controls whether mobile stations are promoted to the top of the check-in list. On by default; net managers who prefer strict chronological order can turn it off in net settings.
+* **Schedule: Recurring Announcements** — A new Announcements tab in the schedule editor lets NCS maintain a standing list of items to read each week (club events, upcoming trainings, etc.). During a live net, the list appears in the Announcements window as a checklist so NCS can check off each item as it's announced.
 
 ---
 
