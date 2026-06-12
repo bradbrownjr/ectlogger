@@ -133,6 +133,16 @@ export const templateApi = {
     api.get(`/templates/${templateId}/linkable-nets`),
 };
 
+export const templateAnnouncementsApi = {
+  list: (templateId: number) => api.get(`/templates/${templateId}/announcements`),
+  create: (templateId: number, text: string) =>
+    api.post(`/templates/${templateId}/announcements`, { text }),
+  update: (templateId: number, annId: number, text: string) =>
+    api.put(`/templates/${templateId}/announcements/${annId}`, { text }),
+  delete: (templateId: number, annId: number) =>
+    api.delete(`/templates/${templateId}/announcements/${annId}`),
+};
+
 // Frequency API
 export const frequencyApi = {
   create: (data: any) => api.post('/frequencies', data),

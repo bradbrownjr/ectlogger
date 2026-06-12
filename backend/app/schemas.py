@@ -492,6 +492,24 @@ class NetTemplateResponse(NetTemplateBase):
         from_attributes = True
 
 
+class TemplateAnnouncementCreate(BaseModel):
+    text: str = Field(min_length=1, max_length=1000)
+
+
+class TemplateAnnouncementUpdate(BaseModel):
+    text: str = Field(min_length=1, max_length=1000)
+
+
+class TemplateAnnouncementResponse(BaseModel):
+    id: int
+    template_id: int
+    text: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
 class TemplateMergeRequest(BaseModel):
     """Request to merge multiple templates into a single target template"""
     target_template_id: int = Field(description="The template that will survive the merge")

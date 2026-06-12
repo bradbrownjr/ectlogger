@@ -5,6 +5,12 @@ import {
   Box,
   Typography,
   useTheme,
+  Checkbox,
+  Divider,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import MinimizeIcon from '@mui/icons-material/Minimize';
@@ -12,6 +18,12 @@ import CropSquareIcon from '@mui/icons-material/CropSquare';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { Rnd } from 'react-rnd';
 import ReactMarkdown from 'react-markdown';
+import { templateAnnouncementsApi } from '../services/api';
+
+interface RecurringAnnouncement {
+  id: number;
+  text: string;
+}
 
 interface AnnouncementsProps {
   open: boolean;
@@ -19,18 +31,30 @@ interface AnnouncementsProps {
   announcements: string;
   netName: string;
   netId: number;
+  templateId?: number;
 }
 
-const Announcements: React.FC<AnnouncementsProps> = ({ 
-  open, 
-  onClose, 
+const Announcements: React.FC<AnnouncementsProps> = ({
+  open,
+  onClose,
   announcements,
   netName,
-  netId: _netId
+  netId: _netId,
+  templateId,
 }) => {
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
   const [minimized, setMinimized] = useState(false);
+  const [recurringItems, setRecurringItems] = useState<RecurringAnnouncement[]>([]);
+  const [checkedIds, setCheckedIds] = useState<Set<number>>(new Set());
+
+  useEffect(() => {
+    if (open && templateId) {
+      templateAnnouncementsApi.list(templateId)
+        .then(res => setRecurringItems(res.data))
+        .catch(() => setRecurringItems([]));
+    }
+  }, [open, templateId]);
 
   // Window position and size state
   const [windowState, setWindowState] = useState({
@@ -238,12 +262,54 @@ const Announcements: React.FC<AnnouncementsProps> = ({
               },
             }}
           >
+            {/* Recurring items from schedule */}
+            {recurringItems.length > 0 && (
+              <>
+                <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600 }}>
+                  Recurring Items
+                </Typography>
+                <List dense disablePadding sx={{ mb: 1 }}>
+                  {recurringItems.map(item => (
+                    <ListItem key={item.id} disablePadding sx={{ alignItems: 'flex-start' }}>
+                      <ListItemIcon sx={{ minWidth: 36, mt: 0.5 }}>
+                        <Checkbox
+                          size="small"
+                          checked={checkedIds.has(item.id)}
+                          onChange={() =>
+                            setCheckedIds(prev => {
+                              const next = new Set(prev);
+                              next.has(item.id) ? next.delete(item.id) : next.add(item.id);
+                              return next;
+                            })
+                          }
+                          sx={{ p: 0 }}
+                        />
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={item.text}
+                        primaryTypographyProps={{
+                          sx: {
+                            textDecoration: checkedIds.has(item.id) ? 'line-through' : 'none',
+                            color: checkedIds.has(item.id) ? 'text.disabled' : 'text.primary',
+                          },
+                        }}
+                      />
+                    </ListItem>
+                  ))}
+                </List>
+                {announcements && <Divider sx={{ my: 1.5 }} />}
+              </>
+            )}
+
+            {/* Per-net announcements text */}
             {announcements ? (
               <ReactMarkdown>{announcements}</ReactMarkdown>
             ) : (
-              <Typography color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                No announcements or general traffic have been added for this net.
-              </Typography>
+              recurringItems.length === 0 && (
+                <Typography color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                  No announcements or general traffic have been added for this net.
+                </Typography>
+              )
             )}
           </Box>
         )}

@@ -56,7 +56,8 @@ import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
 import HorizontalRuleIcon from '@mui/icons-material/HorizontalRule';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
-import { templateApi, frequencyApi, userApi, ncsRotationApi, templateStaffApi } from '../services/api';
+import CampaignIcon from '@mui/icons-material/Campaign';
+import { templateApi, frequencyApi, userApi, ncsRotationApi, templateStaffApi, templateAnnouncementsApi } from '../services/api';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import BlockingAlert from '../components/BlockingAlert';
@@ -218,6 +219,13 @@ const CreateSchedule: React.FC = () => {
   });
   const [fifthWeekUserId, setFifthWeekUserId] = useState<number | null>(null);
 
+  // Recurring announcements (edit mode only)
+  const [recurringAnnouncements, setRecurringAnnouncements] = useState<{ id: number; text: string }[]>([]);
+  const [newAnnouncementText, setNewAnnouncementText] = useState('');
+  const [editingAnnouncementId, setEditingAnnouncementId] = useState<number | null>(null);
+  const [editingAnnouncementText, setEditingAnnouncementText] = useState('');
+  const [announcementSaving, setAnnouncementSaving] = useState(false);
+
   // Tab state
   const [activeTab, setActiveTab] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -232,10 +240,10 @@ const CreateSchedule: React.FC = () => {
   
   // Prevent double-click from accidentally submitting when advancing to final tab
   const handleNextTab = () => {
-    if (activeTab === 4) {
+    if (activeTab === 5) {
       // Going to final tab - briefly disable submit to prevent accidental double-click
       setIsTransitioning(true);
-      setActiveTab(5);
+      setActiveTab(6);
       setTimeout(() => setIsTransitioning(false), 500);
     } else {
       setActiveTab(activeTab + 1);
@@ -650,6 +658,13 @@ const CreateSchedule: React.FC = () => {
       setScheduleType(Schedule.schedule_type || 'ad_hoc');
       setScheduleConfig(Schedule.schedule_config || { day_of_week: 1, week_of_month: [], time: '18:00' });
       setFifthWeekUserId(Schedule.fifth_week_user_id ?? null);
+      // Load recurring announcements
+      try {
+        const annResponse = await templateAnnouncementsApi.list(Number(scheduleId));
+        setRecurringAnnouncements(annResponse.data);
+      } catch {
+        // Non-fatal — announcements tab will show empty
+      }
     } catch (error) {
       console.error('Failed to fetch Schedule:', error);
     }
@@ -919,6 +934,45 @@ const CreateSchedule: React.FC = () => {
     m => m.user_id === ownerId
   );
 
+  const handleAddAnnouncement = async () => {
+    if (!scheduleId || !newAnnouncementText.trim()) return;
+    setAnnouncementSaving(true);
+    try {
+      const res = await templateAnnouncementsApi.create(Number(scheduleId), newAnnouncementText.trim());
+      setRecurringAnnouncements(prev => [...prev, res.data]);
+      setNewAnnouncementText('');
+    } catch (e) {
+      console.error('Failed to add announcement', e);
+    } finally {
+      setAnnouncementSaving(false);
+    }
+  };
+
+  const handleSaveAnnouncementEdit = async (id: number) => {
+    if (!scheduleId || !editingAnnouncementText.trim()) return;
+    setAnnouncementSaving(true);
+    try {
+      const res = await templateAnnouncementsApi.update(Number(scheduleId), id, editingAnnouncementText.trim());
+      setRecurringAnnouncements(prev => prev.map(a => a.id === id ? res.data : a));
+      setEditingAnnouncementId(null);
+      setEditingAnnouncementText('');
+    } catch (e) {
+      console.error('Failed to update announcement', e);
+    } finally {
+      setAnnouncementSaving(false);
+    }
+  };
+
+  const handleDeleteAnnouncement = async (id: number) => {
+    if (!scheduleId) return;
+    try {
+      await templateAnnouncementsApi.delete(Number(scheduleId), id);
+      setRecurringAnnouncements(prev => prev.filter(a => a.id !== id));
+    } catch (e) {
+      console.error('Failed to delete announcement', e);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -1079,6 +1133,7 @@ const CreateSchedule: React.FC = () => {
             <Tab label="Communication Plan" />
             <Tab label="Net Script" />
             <Tab label="Check-In Fields" />
+            <Tab label="Announcements" icon={<CampaignIcon fontSize="small" />} iconPosition="start" />
           </Tabs>
         </Box>
 
@@ -2038,6 +2093,117 @@ This concludes tonight's net. 73 to all."
             </TableContainer>
           </TabPanel>
 
+          {/* Tab 6: Recurring Announcements */}
+          <TabPanel value={activeTab} index={6}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Add announcements that should appear every week — upcoming events, club reminders, or anything NCS reads each net. These items appear in the Announcements window during a live net alongside any per-net notes.
+            </Typography>
+
+            {!isEdit ? (
+              <Typography color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                Save this schedule first, then return here to add recurring announcements.
+              </Typography>
+            ) : (
+              <>
+                {/* Existing items */}
+                {recurringAnnouncements.length === 0 && (
+                  <Typography color="text.secondary" sx={{ fontStyle: 'italic', mb: 2 }}>
+                    No recurring announcements yet. Add one below.
+                  </Typography>
+                )}
+                <List disablePadding sx={{ mb: 2 }}>
+                  {recurringAnnouncements.map((ann) => (
+                    <ListItem
+                      key={ann.id}
+                      disablePadding
+                      sx={{ py: 0.5, alignItems: 'flex-start' }}
+                      secondaryAction={
+                        editingAnnouncementId === ann.id ? (
+                          <Box sx={{ display: 'flex', gap: 0.5 }}>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleSaveAnnouncementEdit(ann.id)}
+                              disabled={announcementSaving || !editingAnnouncementText.trim()}
+                            >
+                              <CheckIcon fontSize="small" />
+                            </IconButton>
+                            <IconButton
+                              size="small"
+                              onClick={() => { setEditingAnnouncementId(null); setEditingAnnouncementText(''); }}
+                            >
+                              <CloseIcon fontSize="small" />
+                            </IconButton>
+                          </Box>
+                        ) : (
+                          <Box sx={{ display: 'flex', gap: 0.5 }}>
+                            <IconButton
+                              size="small"
+                              onClick={() => { setEditingAnnouncementId(ann.id); setEditingAnnouncementText(ann.text); }}
+                            >
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                            <IconButton size="small" onClick={() => handleDeleteAnnouncement(ann.id)}>
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Box>
+                        )
+                      }
+                    >
+                      <ListItemIcon sx={{ minWidth: 32, mt: 1 }}>
+                        <CampaignIcon fontSize="small" color="action" />
+                      </ListItemIcon>
+                      <ListItemText
+                        sx={{ pr: 12 }}
+                        primary={
+                          editingAnnouncementId === ann.id ? (
+                            <TextField
+                              fullWidth
+                              size="small"
+                              value={editingAnnouncementText}
+                              onChange={(e) => setEditingAnnouncementText(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleSaveAnnouncementEdit(ann.id);
+                                if (e.key === 'Escape') { setEditingAnnouncementId(null); setEditingAnnouncementText(''); }
+                              }}
+                              autoFocus
+                              multiline
+                              maxRows={4}
+                            />
+                          ) : (
+                            ann.text
+                          )
+                        }
+                      />
+                    </ListItem>
+                  ))}
+                </List>
+
+                {/* Add new item */}
+                <Divider sx={{ mb: 2 }} />
+                <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    placeholder="New announcement item…"
+                    value={newAnnouncementText}
+                    onChange={(e) => setNewAnnouncementText(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAddAnnouncement(); } }}
+                    multiline
+                    maxRows={4}
+                  />
+                  <Button
+                    variant="contained"
+                    onClick={handleAddAnnouncement}
+                    disabled={announcementSaving || !newAnnouncementText.trim()}
+                    sx={{ whiteSpace: 'nowrap', mt: 0 }}
+                  >
+                    Add
+                  </Button>
+                </Box>
+              </>
+            )}
+          </TabPanel>
+
           {/* Navigation buttons */}
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3, pt: 2, borderTop: 1, borderColor: 'divider' }}>
             <Box sx={{ display: 'flex', gap: 2 }}>
@@ -2049,7 +2215,7 @@ This concludes tonight's net. 73 to all."
                   Previous
                 </Button>
               )}
-              {activeTab < 5 && (
+              {activeTab < 6 && (
                 <Button type="button" variant="outlined" onClick={handleNextTab} endIcon={<ArrowForwardIcon />}>
                   Next
                 </Button>

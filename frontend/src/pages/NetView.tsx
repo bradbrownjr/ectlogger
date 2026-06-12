@@ -2230,7 +2230,7 @@ const NetView: React.FC = () => {
                         </Button>
                       </Tooltip>
                     )}
-                    {net.announcements && (
+                    {(net.announcements || net.template_id) && (
                       <Tooltip title="View announcements / general traffic">
                         <Button
                           size="small"
@@ -5002,6 +5002,7 @@ const NetView: React.FC = () => {
         announcements={net?.announcements || ''}
         netName={net?.name || 'Net'}
         netId={Number(netId)}
+        templateId={net?.template_id ?? undefined}
       />
 
       {/* Topic History Dialog */}
