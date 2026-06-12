@@ -395,7 +395,7 @@ const Scheduler: React.FC = () => {
 
   // ========== LIST VIEW RENDERER ==========
   const renderListView = () => (
-    <TableContainer component={Paper}>
+    <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
       <Table size="small">
         <TableHead>
           <TableRow>
@@ -920,6 +920,7 @@ const Scheduler: React.FC = () => {
         onClose={() => !mergeLoading && setMergeDialogOpen(false)}
         maxWidth="sm"
         fullWidth
+        PaperProps={{ sx: { m: { xs: 1, sm: 4 } } }}
       >
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <CallMergeIcon color="warning" /> Merge Schedules
@@ -1061,6 +1062,7 @@ const Scheduler: React.FC = () => {
         onClose={() => setDeleteConfirmOpen(false)}
         maxWidth="sm"
         fullWidth
+        PaperProps={{ sx: { m: { xs: 1, sm: 4 } } }}
       >
         <DialogTitle>Delete "{scheduleToDelete?.name}"?</DialogTitle>
         <DialogContent>

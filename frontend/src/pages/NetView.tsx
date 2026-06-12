@@ -4431,10 +4431,11 @@ const NetView: React.FC = () => {
 
       {/* ========== SUBSCRIBE TO SCHEDULE DIALOG ========== */}
       {/* Shown after a net closes if user checked in and isn't already subscribed */}
-      <Dialog 
-        open={subscribeDialogOpen} 
+      <Dialog
+        open={subscribeDialogOpen}
         onClose={handleSkipSubscribe}
         maxWidth="sm"
+        PaperProps={{ sx: { m: { xs: 1, sm: 4 } } }}
       >
         <DialogTitle>
           📬 Subscribe to Future Nets?
@@ -4466,11 +4467,12 @@ const NetView: React.FC = () => {
       </Dialog>
 
       {/* Topic/Poll Configuration Dialog */}
-      <Dialog 
-        open={topicPollDialogOpen} 
-        onClose={() => setTopicPollDialogOpen(false)} 
-        maxWidth="sm" 
+      <Dialog
+        open={topicPollDialogOpen}
+        onClose={() => setTopicPollDialogOpen(false)}
+        maxWidth="sm"
         fullWidth
+        PaperProps={{ sx: { m: { xs: 1, sm: 4 } } }}
         onKeyDown={(e) => {
           if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -4516,7 +4518,7 @@ const NetView: React.FC = () => {
       </Dialog>
 
       {/* Role Management Dialog */}
-      <Dialog open={roleDialogOpen} onClose={() => setRoleDialogOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog open={roleDialogOpen} onClose={() => setRoleDialogOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { m: { xs: 1, sm: 4 } } }}>
         <DialogTitle>Manage Net Control Staff</DialogTitle>
         <DialogContent>
           <Box sx={{ pt: 2 }}>
@@ -4596,11 +4598,12 @@ const NetView: React.FC = () => {
       </Dialog>
 
       {/* Available Frequencies Dialog */}
-      <Dialog 
-        open={frequencyDialogOpen} 
-        onClose={() => setFrequencyDialogOpen(false)} 
-        maxWidth="sm" 
+      <Dialog
+        open={frequencyDialogOpen}
+        onClose={() => setFrequencyDialogOpen(false)}
+        maxWidth="sm"
         fullWidth
+        PaperProps={{ sx: { m: { xs: 1, sm: 4 } } }}
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
             e.preventDefault();
@@ -4650,11 +4653,12 @@ const NetView: React.FC = () => {
       </Dialog>
 
       {/* Check-In Dialog for Regular Users */}
-      <Dialog 
-        open={checkInDialogOpen} 
-        onClose={() => setCheckInDialogOpen(false)} 
-        maxWidth="md" 
+      <Dialog
+        open={checkInDialogOpen}
+        onClose={() => setCheckInDialogOpen(false)}
+        maxWidth="md"
         fullWidth
+        PaperProps={{ sx: { m: { xs: 1, sm: 4 } } }}
         disableRestoreFocus
         onKeyDown={(e) => {
           if (e.key === 'Enter' && !e.shiftKey) {
@@ -4837,7 +4841,7 @@ const NetView: React.FC = () => {
       />
 
       {/* CSV Import Dialog */}
-      <Dialog open={importDialogOpen} onClose={handleCloseImportDialog} maxWidth="sm" fullWidth>
+      <Dialog open={importDialogOpen} onClose={handleCloseImportDialog} maxWidth="sm" fullWidth PaperProps={{ sx: { m: { xs: 1, sm: 4 } } }}>
         <DialogTitle>Import Check-ins from CSV</DialogTitle>
         <DialogContent>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>

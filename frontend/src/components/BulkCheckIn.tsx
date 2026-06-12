@@ -114,9 +114,9 @@ const BulkCheckIn: React.FC<BulkCheckInProps> = ({ open, onClose, netId, onCheck
 
   // Window position and size state
   const [windowState, setWindowState] = useState({
-    x: Math.max(50, window.innerWidth - 720),
+    x: Math.max(0, window.innerWidth - 720),
     y: 100,
-    width: 680,
+    width: Math.min(680, window.innerWidth - 16),
     height: minimized ? 48 : 340,
   });
 
@@ -269,7 +269,7 @@ const BulkCheckIn: React.FC<BulkCheckInProps> = ({ open, onClose, netId, onCheck
             y: position.y,
           });
         }}
-        minWidth={500}
+        minWidth={Math.min(500, window.innerWidth - 16)}
         minHeight={minimized ? 48 : 280}
         bounds="window"
         dragHandleClassName="drag-handle"

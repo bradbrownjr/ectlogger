@@ -12,6 +12,10 @@
             {
               "text": "The PDF changelog export now features a styled layout matching the email digest: a blue header banner, color-coded section headings with emoji icons, and tinted item backgrounds.",
               "userImpact": false
+            },
+            {
+              "text": "Mobile responsive improvements: all data tables now scroll horizontally on narrow screens instead of overflowing, dialogs use tighter margins on small phones so more content is visible, and the Bulk Check-in window resizes to fit the viewport on mobile devices.",
+              "userImpact": true
             }
           ]
         }

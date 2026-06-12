@@ -135,7 +135,7 @@ const LeaderboardTable: React.FC<{
     );
   }
   return (
-    <TableContainer sx={{ maxHeight: 420 }}>
+    <TableContainer sx={{ maxHeight: 420, overflowX: 'auto' }}>
       <Table size="small" stickyHeader>
         <TableHead>
           <TableRow>
@@ -746,6 +746,7 @@ const ScheduleStatistics: React.FC = () => {
         onClose={() => !linkSubmitting && setLinkDialogOpen(false)}
         maxWidth="sm"
         fullWidth
+        PaperProps={{ sx: { m: { xs: 1, sm: 4 } } }}
       >
         <DialogTitle>Link Existing Net to {stats.template_name}</DialogTitle>
         <DialogContent>

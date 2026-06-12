@@ -1003,7 +1003,7 @@ const NetReport: React.FC = () => {
           <Assignment /> Check-in Log ({checkIns.length} event{checkIns.length !== 1 ? 's' : ''} &mdash; {stats.unique_callsigns} unique station{stats.unique_callsigns !== 1 ? 's' : ''}{stats.rechecks > 0 ? `, ${stats.rechecks} re-check${stats.rechecks !== 1 ? 's' : ''}` : ''})
         </Typography>
         
-        <TableContainer component={Paper} variant="outlined" sx={{ mb: 3 }}>
+        <TableContainer component={Paper} variant="outlined" sx={{ mb: 3, overflowX: 'auto' }}>
           <Table size="small">
             <TableHead>
               <TableRow sx={{ backgroundColor: theme.palette.action.hover }}>
@@ -1080,7 +1080,7 @@ const NetReport: React.FC = () => {
                 {topicPrompt}
               </Typography>
               {topicResponses.length > 0 ? (
-                <TableContainer>
+                <TableContainer sx={{ overflowX: 'auto' }}>
                   <Table size="small">
                     <TableHead>
                       <TableRow sx={{ backgroundColor: theme.palette.action.hover }}>
@@ -1136,7 +1136,7 @@ const NetReport: React.FC = () => {
                 </BarChart>
               </ResponsiveContainer>
               {/* Tabular fallback for PDF export */}
-              <TableContainer sx={{ mt: 2 }}>
+              <TableContainer sx={{ mt: 2, overflowX: 'auto' }}>
                 <Table size="small">
                   <TableHead>
                     <TableRow sx={{ backgroundColor: theme.palette.action.hover }}>
@@ -1165,7 +1165,7 @@ const NetReport: React.FC = () => {
               <ChatIcon /> Chat Messages ({userChatMessages.length} message{userChatMessages.length !== 1 ? 's' : ''})
             </Typography>
             
-            <TableContainer component={Paper} variant="outlined" sx={{ mb: 3 }}>
+            <TableContainer component={Paper} variant="outlined" sx={{ mb: 3, overflowX: 'auto' }}>
               <Table size="small">
                 <TableHead>
                   <TableRow sx={{ backgroundColor: theme.palette.action.hover }}>
@@ -1201,7 +1201,7 @@ const NetReport: React.FC = () => {
               <SystemLogIcon /> System Log ({systemLogMessages.length} event{systemLogMessages.length !== 1 ? 's' : ''})
             </Typography>
             
-            <TableContainer component={Paper} variant="outlined" sx={{ mb: 3 }}>
+            <TableContainer component={Paper} variant="outlined" sx={{ mb: 3, overflowX: 'auto' }}>
               <Table size="small">
                 <TableHead>
                   <TableRow sx={{ backgroundColor: theme.palette.action.hover }}>
@@ -1259,7 +1259,7 @@ const NetReport: React.FC = () => {
               <Divider sx={{ my: 2 }} />
 
               {/* ICS-309 Log Entries */}
-              <TableContainer>
+              <TableContainer sx={{ overflowX: 'auto' }}>
                 <Table size="small">
                   <TableHead>
                     <TableRow sx={{ backgroundColor: theme.palette.action.hover }}>

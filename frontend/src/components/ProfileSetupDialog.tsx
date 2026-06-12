@@ -54,7 +54,7 @@ const ProfileSetupDialog: React.FC = () => {
   };
 
   return (
-    <Dialog open={open} maxWidth="sm" fullWidth disableEscapeKeyDown>
+    <Dialog open={open} maxWidth="sm" fullWidth disableEscapeKeyDown PaperProps={{ sx: { m: { xs: 1, sm: 4 } } }}>
       <DialogTitle>Complete Your Profile</DialogTitle>
       <DialogContent>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>

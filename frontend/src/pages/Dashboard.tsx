@@ -383,7 +383,7 @@ const Dashboard: React.FC = () => {
 
   // ========== LIST VIEW RENDERER ==========
   const renderListView = () => (
-    <TableContainer component={Paper}>
+    <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
       <Table size="small">
         <TableHead>
           <TableRow>
@@ -938,6 +938,7 @@ const Dashboard: React.FC = () => {
         }}
         maxWidth="md"
         fullWidth
+        PaperProps={{ sx: { m: { xs: 1, sm: 4 } } }}
       >
         <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           📦 Archived Nets ({filteredArchivedNets.length}{(archiveFilter || archiveDateFrom || archiveDateTo) ? ` of ${archivedNets.length}` : ''})
@@ -998,7 +999,7 @@ const Dashboard: React.FC = () => {
             </Typography>
           ) : (
             <>
-            <TableContainer component={Paper} variant="outlined">
+            <TableContainer component={Paper} variant="outlined" sx={{ overflowX: 'auto' }}>
               <Table size="small">
                 <TableHead>
                   <TableRow>
@@ -1136,6 +1137,7 @@ const Dashboard: React.FC = () => {
         onClose={() => setDeleteConfirmOpen(false)}
         maxWidth="sm"
         fullWidth
+        PaperProps={{ sx: { m: { xs: 1, sm: 4 } } }}
       >
         <DialogTitle>Delete "{netToDelete?.name}"?</DialogTitle>
         <DialogContent>
@@ -1244,7 +1246,7 @@ const Dashboard: React.FC = () => {
       </Dialog>
 
       {/* ========== EMAIL SUBSCRIBERS DIALOG ========== */}
-      <Dialog open={emailDialogOpen} onClose={() => setEmailDialogOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog open={emailDialogOpen} onClose={() => setEmailDialogOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { m: { xs: 1, sm: 4 } } }}>
         <DialogTitle>Email Subscribers - {emailNet?.name}</DialogTitle>
         <DialogContent>
           <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>

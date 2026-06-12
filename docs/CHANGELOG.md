@@ -9,6 +9,7 @@ All notable changes to ECTLogger are documented here.
 ## Improvements
 
 * **Styled PDF changelog export** — The "Download changelog" PDF now features a layout matching the What's New email digest: a blue header banner, color-coded section headings with emoji icons, and tinted item backgrounds.
+* **Mobile responsive improvements** — All data tables now scroll horizontally on narrow screens instead of overflowing the viewport. Dialogs use tighter margins on small phones so form fields have more room. The Bulk Check-in floating window resizes to fit the viewport width on mobile devices.
 
 ---
 
