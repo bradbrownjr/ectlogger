@@ -170,6 +170,7 @@ const CreateNet: React.FC = () => {
   const [savingToSchedule, setSavingToSchedule] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scriptTextAreaRef = useRef<HTMLTextAreaElement>(null);
+  const announcementsTextAreaRef = useRef<HTMLTextAreaElement>(null);
   const navigate = useNavigate();
   const isEditMode = !!netId;
   
@@ -413,6 +414,26 @@ const CreateNet: React.FC = () => {
       };
       reader.readAsText(file);
     }
+  };
+
+  // Markdown formatting helper for announcements textarea
+  const insertAnnouncementMarkdown = (prefix: string, suffix: string = '', placeholder: string = '') => {
+    const textarea = announcementsTextAreaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = announcements.substring(start, end);
+    const textToInsert = selectedText || placeholder;
+
+    const newText = announcements.substring(0, start) + prefix + textToInsert + suffix + announcements.substring(end);
+    setAnnouncements(newText);
+
+    setTimeout(() => {
+      textarea.focus();
+      const newCursorPos = start + prefix.length + textToInsert.length + suffix.length;
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
+    }, 0);
   };
 
   // Markdown formatting helper
@@ -874,7 +895,7 @@ const CreateNet: React.FC = () => {
             <Tab label="Net Staff" />
             <Tab label="Communication Plan" />
             <Tab label="Net Script" />
-            <Tab label="Net Notes" />
+            <Tab label="Announcements" />
             <Tab label="Check-In Fields" />
           </Tabs>
         </Box>
@@ -1420,19 +1441,65 @@ This is **[CALLSIGN]**, closing the net at [TIME]. 73 to all.`}
         {/* Tab 5: Announcements / General Traffic */}
         <TabPanel value={activeTab} index={4}>
           <Typography variant="h6" gutterBottom>
-            Net Notes
+            Announcements / General Traffic
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Add notes specific to this net session — last-minute items, substitutions, or anything
-            that applies only today. Markdown formatting is supported.
+            List announcements and general traffic items for NCS to reference during the net.
+            This is visible to all users viewing the net. Use the formatting toolbar for markdown styling.
           </Typography>
           {templateId && (
             <Alert severity="info" sx={{ mb: 2 }}>
               Recurring weekly announcements (club news, events, reminders) are managed in the
-              Schedule editor under the Announcements tab. Those are separate from these per-net notes
-              and appear via the toolbar button during a live net.
+              Schedule editor under the Announcements tab. Those appear via the toolbar button during
+              a live net and are separate from these per-net notes.
             </Alert>
           )}
+
+          {/* Formatting Toolbar */}
+          <Box sx={{ display: 'flex', gap: 0.5, mb: 1, p: 1, bgcolor: 'action.hover', borderRadius: 1 }}>
+            <Tooltip title="Heading 1">
+              <IconButton size="small" onClick={() => insertAnnouncementMarkdown('# ', '', 'Heading')} sx={{ fontWeight: 'bold', fontSize: '0.85rem' }}>
+                H1
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Heading 2">
+              <IconButton size="small" onClick={() => insertAnnouncementMarkdown('## ', '', 'Heading')} sx={{ fontWeight: 'bold', fontSize: '0.8rem' }}>
+                H2
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Heading 3">
+              <IconButton size="small" onClick={() => insertAnnouncementMarkdown('### ', '', 'Heading')} sx={{ fontWeight: 'bold', fontSize: '0.75rem' }}>
+                H3
+              </IconButton>
+            </Tooltip>
+            <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
+            <Tooltip title="Bold (**text**)">
+              <IconButton size="small" onClick={() => insertAnnouncementMarkdown('**', '**', 'bold text')}>
+                <FormatBoldIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Italic (*text*)">
+              <IconButton size="small" onClick={() => insertAnnouncementMarkdown('*', '*', 'italic text')}>
+                <FormatItalicIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
+            <Tooltip title="Bulleted List">
+              <IconButton size="small" onClick={() => insertAnnouncementMarkdown('- ', '', 'List item')}>
+                <FormatListBulletedIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Numbered List">
+              <IconButton size="small" onClick={() => insertAnnouncementMarkdown('1. ', '', 'List item')}>
+                <FormatListNumberedIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Horizontal Rule">
+              <IconButton size="small" onClick={() => insertAnnouncementMarkdown('\n---\n', '', '')}>
+                <HorizontalRuleIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Box>
 
           <TextField
             fullWidth
@@ -1440,6 +1507,7 @@ This is **[CALLSIGN]**, closing the net at [TIME]. 73 to all.`}
             rows={15}
             value={announcements}
             onChange={(e: any) => setAnnouncements(e.target.value)}
+            inputRef={announcementsTextAreaRef}
             placeholder={`## Upcoming Events
 - **January 30, 2026** - Weekly training session at 7:00 PM
 - **February 15, 2026** - Emergency preparedness drill
