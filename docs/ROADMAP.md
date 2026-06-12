@@ -196,18 +196,33 @@ Allow NCS to maintain a running list of upcoming events to announce each week, s
 ### Theming
 
 **✨ User-selectable color themes** *(KC1JMH)*  
-Allow users to choose an accent color theme for the app from a curated palette library, persisted per user in their profile. The current single MUI blue theme becomes one of several named options.
+Allow users to choose a named color theme for the app from a hand-curated palette library. Each theme is a coordinated light/dark pair — selecting it works with the existing dark/light mode toggle automatically. Themes are per-user with a system-wide default that admins can change from the Admin panel.
 
-Design notes:
-- Palette source: **[Jam3/nice-color-palettes](https://github.com/Jam3/nice-color-palettes)** (MIT) — 1,000+ five-color palettes curated from ColourLovers. Attribution to Jam3 / Experience Monks required in the app's About or Settings UI per the MIT license.
-- Themes are implemented as MUI `createTheme()` overrides on the primary/secondary palette; dark/light mode preference remains a separate toggle.
-- A theme picker in Profile settings shows swatches; the selected theme token is saved to `users.theme` (new column).
-- Theme token is loaded once at login and injected into the React context so the MUI `ThemeProvider` hot-swaps without page reload.
-- Default theme: current ECTLogger blue (`#1976d2`) — no change for existing users until they opt in.
+**Palette source**  
+**[Jam3/nice-color-palettes](https://github.com/Jam3/nice-color-palettes)** (MIT) — 1,000+ five-color palettes curated from ColourLovers. From the full library, a small set of themes will be hand-picked: one light-mode palette and one complementary dark-mode palette per color family (blues, greens, reds, purples, etc.). Attribution to Jam3 / Experience Monks is required in the app's About or Settings UI per the MIT license terms.
 
-Open questions before implementation:
-- How many palettes to surface in the picker (a curated subset of 20–30, or a searchable library)?
-- Should themes be scoped to each user independently, or can admins set a default for the whole instance?
+**Theme structure**  
+Each named theme bundles a `light` and `dark` variant derived from Jam3 palettes in the same color family. MUI `createTheme()` maps the palette's primary and accent colors to `primary.main` and `secondary.main`; everything else (typography, spacing, component overrides) inherits from the base theme. The dark/light toggle remains a separate user preference that selects which variant of the active theme renders.
+
+**Preference hierarchy**  
+1. **User preference** — stored in `users.theme` (nullable string, e.g. `"ocean"`, `"forest"`). Null means "follow the system default."  
+2. **System default** — stored in `app_settings` (existing key/value config table) under key `default_theme`. Admins can change this from a new Theme tab in the Admin panel. Ships set to `"ectlogger-blue"` (the current `#1976d2` palette) so no visible change for existing deployments.
+
+When a user clears their preference or a new user registers, they automatically inherit whatever the admin has set as the system default. If the admin later changes the system default, only users with `users.theme = null` are affected.
+
+**Admin panel**  
+New "Themes" section in the Admin panel. Admins see the same swatch picker that users see, plus a "Set as system default" button. The current system default is highlighted with a badge. Changing it takes effect immediately for all users on the system default.
+
+**Implementation checklist** *(not started)*  
+- [ ] Curate the theme set: pick light + dark palette pairs per color family from Jam3 library
+- [ ] Define `THEMES` constant (token → `{ name, light: MuiPaletteOptions, dark: MuiPaletteOptions }`)
+- [ ] Add `theme` column to `users` table (migration)
+- [ ] Add `default_theme` key to `app_settings` (seed or migration)
+- [ ] Expose `GET /settings/theme` (public — needed before login for guests) and `PUT /admin/settings/theme` (admin only)
+- [ ] Add `PUT /users/me` support for `theme` field (already exists, just add the field)
+- [ ] Wrap app in a `ThemeContext` that resolves user → system → hardcoded fallback
+- [ ] Theme swatch picker component (reused in both Profile and Admin panel)
+- [ ] Add attribution credit in About / Settings footer
 
 ### User Identity
 
