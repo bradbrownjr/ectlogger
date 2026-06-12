@@ -40,6 +40,7 @@ import {
   Event,
   BarChart as BarChartIconMui,
   Link as LinkIcon,
+  OpenInNew as OpenInNewIcon,
   PictureAsPdf as PictureAsPdfIcon,
   EmojiEvents as EmojiEventsIcon,
 } from '@mui/icons-material';
@@ -700,6 +701,14 @@ const ScheduleStatistics: React.FC = () => {
                       <TableCell align="right">{instance.check_in_count}</TableCell>
                       <TableCell align="right">{instance.unique_operators}</TableCell>
                       <TableCell align="right">
+                        <Tooltip title="View net">
+                          <IconButton
+                            size="small"
+                            onClick={() => navigate(`/nets/${instance.net_id}`)}
+                          >
+                            <OpenInNewIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
                         <Tooltip title="View net statistics">
                           <IconButton
                             size="small"
