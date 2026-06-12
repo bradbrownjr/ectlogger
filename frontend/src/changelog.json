@@ -1,6 +1,22 @@
 {
-  "version": "2026.06.11b",
+  "version": "2026.06.12",
   "entries": [
+    {
+      "version": "2026.06.12",
+      "date": "2026-06-12",
+      "sections": [
+        {
+          "title": "Improvements",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "The PDF changelog export now features a styled layout matching the email digest: a blue header banner, color-coded section headings with emoji icons, and tinted item backgrounds.",
+              "userImpact": false
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.06.11b",
       "date": "2026-06-11",

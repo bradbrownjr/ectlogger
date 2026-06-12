@@ -401,10 +401,9 @@ const ChangelogNotification: React.FC = () => {
   };
 
   // ========== PDF EXPORT ==========
-  // Render the changelog as a text-native PDF (selectable text, small file
-  // size — same approach the net report PDF uses post-2026.03.12). One-shot
-  // helper builds a doc from a list of grouped entries; callers pass either
-  // just the latest day's group or the entire grouped list.
+  // Styled PDF that mirrors the email design: blue header banner, colored
+  // section headings with emoji icons (Twemoji images for correct rendering),
+  // and tinted item backgrounds matching the in-app dialog.
   const buildChangelogPdf = async (
     groups: { date: string; versions: string[]; sections: ChangelogSection[] }[],
     title: string,
@@ -423,58 +422,103 @@ const ChangelogNotification: React.FC = () => {
       }
     };
 
-    // Title
+    // Type colors and emoji mirror email_service.py type_styles
+    const TYPE_COLORS: Record<string, [number, number, number]> = {
+      feature:     [ 46, 125,  50],  // #2e7d32 green
+      improvement: [  2, 136, 209],  // #0288d1 blue
+      fix:         [237, 108,   2],  // #ed6c02 orange
+      bugfix:      [237, 108,   2],
+    };
+    const TYPE_EMOJI: Record<string, string> = {
+      feature:     '\u2728',
+      improvement: '\uD83D\uDD27',
+      fix:         '\uD83D\uDC1B',
+      bugfix:      '\uD83D\uDC1B',
+    };
+
+    // ---- Header banner (matches email gradient start color #1976d2) ----
+    const headerH = 72;
+    pdf.setFillColor(25, 118, 210);
+    pdf.roundedRect(margin, y, contentWidth, headerH, 6, 6, 'F');
+
     pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(18);
-    pdf.text(title, margin, y);
-    y += 22;
+    pdf.setFontSize(20);
+    pdf.setTextColor(255, 255, 255);
+    await renderEmojiAwareLine(pdf, splitByEmoji(title), margin + 16, y + 28, 20);
+
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(10);
-    pdf.setTextColor(120);
-    pdf.text(`Generated ${new Date().toLocaleString()}`, margin, y);
-    y += 18;
-    pdf.setTextColor(0);
+    pdf.setTextColor(210, 230, 255);
+    pdf.text(`Generated ${new Date().toLocaleString()}`, margin + 16, y + 52);
 
+    y += headerH + 28;
+
+    // ---- Entry groups ----
     for (const group of groups) {
-      ensureRoom(40);
-      // Date heading
+      ensureRoom(50);
+
       pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(13);
+      pdf.setFontSize(14);
+      pdf.setTextColor(33, 33, 33);
       pdf.text(formatChangelogDate(group.date), margin, y);
-      y += 16;
-      // Version chip(s)
+      y += 18;
+
       pdf.setFont('helvetica', 'normal');
       pdf.setFontSize(9);
-      pdf.setTextColor(100);
-      pdf.text(group.versions.map(v => `v${v}`).join('  ·  '), margin, y);
-      y += 14;
-      pdf.setTextColor(0);
+      pdf.setTextColor(140, 140, 140);
+      pdf.text(group.versions.map(v => `v${v}`).join('  \u00b7  '), margin, y);
+      y += 18;
 
       const orderedSections = getOrderedSections(group.sections);
       for (const section of orderedSections) {
-        ensureRoom(28);
+        ensureRoom(36);
+
+        const normType = normalizeSectionType(section.type);
+        const [r, g, b] = TYPE_COLORS[normType] ?? [50, 50, 50];
+        const sectionEmoji = TYPE_EMOJI[normType] ?? '';
+
+        // Colored left accent bar
+        pdf.setFillColor(r, g, b);
+        pdf.rect(margin, y - 12, 3, 16, 'F');
+
+        // Section heading: emoji + title in type color
         pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(11);
-        pdf.text(section.title, margin, y);
-        y += 14;
+        pdf.setFontSize(12);
+        pdf.setTextColor(r, g, b);
+        await renderEmojiAwareLine(pdf, splitByEmoji(`${sectionEmoji} ${section.title}`), margin + 8, y, 12);
+        y += 20;
+
         pdf.setFont('helvetica', 'normal');
         pdf.setFontSize(10);
+        pdf.setTextColor(40, 40, 40);
+
         for (const item of section.items) {
-          const bullet = '\u2022 ';
           const emojiWidthPt = 10;
-          const lineHeightPt = 12;
-          const wrappedLines = wrapEmojiAwareLine(pdf, bullet + item.text, contentWidth - 12, emojiWidthPt);
-          ensureRoom(wrappedLines.length * lineHeightPt + 4);
+          const lineHeightPt = 13;
+          const wrappedLines = wrapEmojiAwareLine(pdf, '\u2022 ' + item.text, contentWidth - 24, emojiWidthPt);
+          const itemH = wrappedLines.length * lineHeightPt + 6;
+          ensureRoom(itemH + 4);
+
+          // Subtle tinted background per item (matches in-app dialog)
+          pdf.setFillColor(245, 248, 255);
+          pdf.roundedRect(margin + 8, y - 11, contentWidth - 8, itemH, 2, 2, 'F');
+
           for (const line of wrappedLines) {
-            await renderEmojiAwareLine(pdf, line, margin + 6, y, emojiWidthPt);
+            await renderEmojiAwareLine(pdf, line, margin + 14, y, emojiWidthPt);
             y += lineHeightPt;
           }
-          y += 2;
+          y += 6;
         }
-        y += 6;
+        y += 10;
       }
-      y += 8;
+
+      // Hairline divider between date groups
+      pdf.setDrawColor(210, 220, 230);
+      pdf.setLineWidth(0.5);
+      pdf.line(margin, y, margin + contentWidth, y);
+      y += 18;
     }
+
     return pdf;
   };
 
@@ -484,13 +528,13 @@ const ChangelogNotification: React.FC = () => {
     const latest = groupedEntries[0];
     const pdf = await buildChangelogPdf(
       [latest],
-      `What's New in ECTLogger — ${formatChangelogDate(latest.date)}`,
+      `✨ What's New in ECTLogger — ${formatChangelogDate(latest.date)}`,
     );
     pdf.save(`ECTLogger_WhatsNew_${latest.date}.pdf`);
   };
 
   const handleDownloadAll = async () => {
-    const pdf = await buildChangelogPdf(groupedEntries, 'ECTLogger Changelog');
+    const pdf = await buildChangelogPdf(groupedEntries, '✨ ECTLogger Changelog');
     const now = new Date();
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     pdf.save(`ECTLogger_Changelog_${today}.pdf`);
