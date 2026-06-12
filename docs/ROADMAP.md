@@ -1,6 +1,6 @@
 # ECT Logger — Product Roadmap
 
-*Last updated: 2026-06-10 (rev 13)*  
+*Last updated: 2026-06-12 (rev 14)*  
 *Compiled from user feedback: AA1GM, KC1UIX, W1BKW, W1MTW, KC1JMH*
 
 > **Canonical location:** `docs/ROADMAP.md`. The root-level `ROADMAP.md` is a duplicate and should be deleted.
@@ -192,6 +192,22 @@ Allow NCS to maintain a running list of upcoming events to announce each week, s
 ## Milestone 3 — Medium-term
 
 *Meaningful new capabilities that don't require architectural changes.*
+
+### Theming
+
+**✨ User-selectable color themes** *(KC1JMH)*  
+Allow users to choose an accent color theme for the app from a curated palette library, persisted per user in their profile. The current single MUI blue theme becomes one of several named options.
+
+Design notes:
+- Palette source: **[Jam3/nice-color-palettes](https://github.com/Jam3/nice-color-palettes)** (MIT) — 1,000+ five-color palettes curated from ColourLovers. Attribution to Jam3 / Experience Monks required in the app's About or Settings UI per the MIT license.
+- Themes are implemented as MUI `createTheme()` overrides on the primary/secondary palette; dark/light mode preference remains a separate toggle.
+- A theme picker in Profile settings shows swatches; the selected theme token is saved to `users.theme` (new column).
+- Theme token is loaded once at login and injected into the React context so the MUI `ThemeProvider` hot-swaps without page reload.
+- Default theme: current ECTLogger blue (`#1976d2`) — no change for existing users until they opt in.
+
+Open questions before implementation:
+- How many palettes to surface in the picker (a curated subset of 20–30, or a searchable library)?
+- Should themes be scoped to each user independently, or can admins set a default for the whole instance?
 
 ### User Identity
 
