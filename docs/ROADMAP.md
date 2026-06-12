@@ -1,6 +1,6 @@
 # ECT Logger — Product Roadmap
 
-*Last updated: 2026-06-12 (rev 15)*  
+*Last updated: 2026-06-12 (rev 16)*  
 *Compiled from user feedback: AA1GM, KC1UIX, W1BKW, W1MTW, KC1JMH*
 
 > **Canonical location:** `docs/ROADMAP.md`. The root-level `ROADMAP.md` is a duplicate and should be deleted.
@@ -20,231 +20,9 @@ Priority within each tier is roughly top-to-bottom. Items from conversations are
 
 ---
 
-## Milestone 0 — Infrastructure (prerequisite to everything else)
-
-*These items must exist before the user base grows further. They protect the platform and operator confidence regardless of what feature is being worked on.*
-
-> **Note (2026-06-10):** Milestone 1 bugs were addressed first because several were blocking active nets. Milestone 0 items remain pending and should be scheduled before the user base grows significantly.
-
-### Maintenance Mode
-
-**✨ Maintenance mode — in-app banner and server-side static fallback** *(KC1JMH)*  
-Two separate concerns, kept intentionally independent:
-
----
-
-**1. In-app maintenance banner (DB-backed, Admin UI)**
-
-For use while the app is still running. Admin sets a notice and the app displays it to all users — useful for "expect instability tonight" or "deploying in 10 minutes."
-
-- New **Maintenance Banner** tab in the Admin panel (platform admins only)
-- Controls: on/off toggle, message text field, optional scheduled start/end datetime
-- When active, displays a dismissible banner sitewide (or a persistent non-dismissible one if the admin prefers)
-- Scheduled mode: banner appears automatically at the configured start time and clears at the end time
-- No shell access required. No Caddy involvement. Banner state lives in the database or a simple app-level config table.
-
----
-
-**2. Server-side static maintenance page (flag file + `run.sh`)**
-
-For when the app is actually down — bad deploy, database outage, rendering failure (as seen 2026-06-09). The UI cannot help here; this is an SSH-only operation.
-
-- Static HTML file at `frontend/public/maintenance.html` — no React, no build step, no JS framework, no external dependencies
-- Maintenance is controlled via flags on `run.sh` (see below), the consolidated operational script:
-  - `./run --maintenance on` (also accepts `true` or `1`) — writes `INSTALL_DIR/maintenance.flag`, optionally writes a `maintenance.json` sidecar with message and ETA, reloads Caddy
-  - `./run --maintenance off` (also accepts `false` or `0`) — removes both files, reloads Caddy
-  - Short form: `-m on` / `-m off`
-- Caddy checks for the flag file on each request; if present, serves `maintenance.html` directly instead of proxying to the backend
-- The maintenance page fetches `maintenance.json` if available to display a custom message/ETA; falls back to generic copy if absent
-- `.env` variable `MAINTENANCE_MODE=true` as an alternative trigger, useful for Docker deployments where env vars are easier than flag files
-- The Admin panel documents this mechanism with the exact commands to run — it does not invoke them
-
-**`run.sh` — consolidated operational script**
-
-`start.sh` and `update.sh` consolidate into a single `run.sh` (also runnable as `./run`). One-time setup scripts (`install.sh`, `configure.sh`, `install-service.sh`, `verify-setup.sh`, `bootstrap.sh`, `migrate.sh`) are unaffected — they stay as-is.
-
-| Invocation | Behavior |
-|---|---|
-| `./run` | Prompt "check for updates?" with 5-second timeout (defaults to no), then start — same as current `start.sh` interactive behavior |
-| `./run --service` | Start in systemd service mode — skips update prompt entirely, same as current `start.sh --service` |
-| `./run -u` / `--update` | Run update check and apply if available, **then exit** — does not start the app |
-| `./run -m on` / `--maintenance on\|true\|1` | Enable maintenance mode, **then exit** — does not start the app |
-| `./run -m off` / `--maintenance off\|false\|0` | Disable maintenance mode, **then exit** — does not start the app |
-
-The `-u`, `-m on`, and `-m off` flags are action-and-exit operations. They never proceed to starting servers. Only bare `./run` and `./run --service` start the application.
-
-The update prompt is intentionally suppressed in `--service` mode to avoid blocking an unattended restart on a partially-baked commit. Updates are the operator's explicit choice, not automatic.
-
-**Migration checklist when `run.sh` is introduced:**
-- [x] Add `run.sh` to the repo root
-- [x] Update `ectlogger.service` `ExecStart` from `start.sh --service` to `run.sh --service`
-- [x] Run `sudo systemctl daemon-reload` after updating the service file
-- [x] Verify `sudo systemctl restart ectlogger` starts correctly from the new script
-- [x] Keep `start.sh` and `update.sh` in place temporarily with a deprecation notice pointing to `run.sh`, remove in a subsequent release
-- [x] Update `docs/PRODUCTION-DEPLOYMENT.md`, `docs/QUICKSTART.md`, and `docs/USER-GUIDE.md` to reference `run.sh`
-
-**Caddyfile pattern (for documentation and `configure.sh`):**
-```caddy
-@maintenance file INSTALL_DIR/maintenance.flag
-handle @maintenance {
-    root * INSTALL_DIR/frontend/public
-    rewrite * /maintenance.html
-    file_server
-}
-```
-
-**Maintenance page requirements:**
-- ECTLogger branding, mode label, custom message if set, ETA if set, admin callsign or status contact
-- Must render with zero external dependencies
-- Self-hosted instances use this fully independently of `app.ectlogger.us`
-
-### Database Indexes
-
-**✅ Add indexes on frequently sorted/filtered columns** *(KC1JMH)*  
-Completed in migration 032. Indexes on `last_active`, `created_at`, `is_active`, and `role` are live on production.
-
----
-
-## Milestone 1 — Immediate (next release cycle)
-
-*Bugs and friction points blocking real operators during live nets.*
-
-### Auth & Sessions
-
-**🐛 ~~Sessions don't persist across deploys / expire too quickly~~** *(W1MTW, KC1JMH)* — ✅ Done 2026-06-10  
-Every deployment resets browser sessions, forcing re-authentication via magic link. Independently, session lifetime is too short for regular users. Fix: implement rolling expiry on the server side (reset TTL on each authenticated request), and make client-side session storage survive deployments. Target: no re-login required for an operator who checks in to a weekly net regularly.
-
-### Net Management Permissions
-
-**🐛 ~~Archive/Delete blocked for net managers and co-managers~~** *(AA1GM)* — ✅ Done 2026-06-10  
-Joel (AA1GM) is the primary administrator of a net but clicking Archive does nothing. Net managers and co-managers should have at least the same archive/delete permissions as the NCS of that net. Investigate whether this is a frontend guard or a backend 403. Net ID 20 confirmed affected.
-
-### Check-in Ordering
-
-**🐛 ~~Check-ins display out of chronological order~~** *(AA1GM)* — ✅ Done 2026-06-10  
-Entries #6 and #7 in net 20 appear in a different order than they were logged by the NCS. The existing mobile-station promotion feature (intentional re-ordering) is not the cause — Joel confirmed no self-check-ins occurred. Investigate whether account-holder check-ins are being sorted above guest check-ins regardless of timestamp. Pull net 20 logs and compare `checked_in_at` timestamps against display order.
-
-### Chat & UI Polish
-
-**🐛 ~~Emoji reaction popup shifts and reflows chat text~~** *(KC1JMH)* — ✅ Done 2026-06-10  
-The emoji picker appears inline rather than as an overlay, causing visible text reflow in the chat panel. Should render as a floating layer (e.g. MUI Popper) that does not affect document flow.
-
-**🔧 ~~Hide emoji picker after net closes~~** — ✅ Done 2026-06-10  
-Reaction controls have no purpose on a closed net. Suppress the emoji popup trigger once `net.status === 'closed'`.
-
-**🔧 ~~Activity log minimized by default~~** *(W1MTW, KC1JMH)* — ✅ Done  
-Several users found the activity log takes up too much space, especially on mobile. Default the pane to collapsed; the minimize button already exists (`_`). Update initial state only — user preference should persist within the session.
-
-**🐛 ~~Non-square profile photos render sideways~~** *(W1MTW)* — ✅ Done 2026-06-10  
-Images with non-square dimensions (e.g. 1920×1080) are displayed rotated. Fixed by applying `ImageOps.exif_transpose()` on the server at upload time — this physically rotates pixel data to match the EXIF orientation tag the camera embedded, which represents the camera's own record of how the photo was taken. The in-browser crop feature (below) remains on the roadmap as the fuller solution.
-
-**✨ ~~In-browser image crop and zoom on upload~~** *(W1MTW)* — ✅ Done  
-Replace the raw file-picker upload with a crop UI: after selecting a photo, present a square crop selector with pinch/scroll zoom (similar to Twitter, Discord, etc.). The user positions and sizes their crop region, and only the resulting square is uploaded to the server. This eliminates the sideways-image class of bugs entirely and matches user expectations set by every other platform that accepts avatars. Applies to profile setup and the profile edit page.
-
-**🔬 Mobile responsive UI audit** *(W1MTW)*  
-Several issues surfaced on mobile: account setup friction, elements potentially cut off or overflowing the canvas, possible landscape-only layouts, and ambiguous scroll affordances. Conduct a structured review of all primary user flows on narrow viewports (375px baseline): new user onboarding, profile setup, net view, check-in, and chat. Apply mobile UI best practices — no horizontal scroll, touch targets ≥ 44px, clear scroll indicators, no content requiring landscape. File individual bugs from the audit findings.
-
-**🔧 ~~Self-check-in prompt is not obvious enough~~** *(KC1JMH)* — ✅ Done  
-Logged-in users who need to check in don't notice the check-in row at the bottom of the screen. Replace the inline prompt with a modal dialog that is clearly dismissible, so new users understand what action is being requested.
-
-**🔧 ~~Net staff self-check-in should not assume NCS role~~** *(KC1JMH)* — ✅ Done  
-When a co-manager or NCS-role user loads a lobby or active net page, the current UI assumes they intend to check in as Net Control Station. That assumption is wrong — they may simply be observing or monitoring. The self-check-in dialog (above) should ask: "Check in as Net Control Station or Standard Station?" This prevents accidental NCS takeovers when a second licensed NCS joins a net as a participant. Implement together with the self-check-in dialog improvement above.
-
-### Net Reports
-
-**🔧 ~~Replace raw JSON blob in PDF reports with "PHOTO"~~** *(KC1UIX)* — ✅ Done  
-Chat image entries in the PDF report render the full `__CHAT_IMAGE__{...}` JSON string. Replace with the word `PHOTO` or a placeholder. Confirmed at `app.ectlogger.us/nets/22/report`.
-
-### Admin Panel Performance
-
-**🔧 ~~Paginate the Admin users table and slim the list response~~** *(KC1JMH)* — ✅ Done 2026-06-10 (partial)  
-Server-side `ORDER BY last_active DESC NULLS LAST` added. Frontend pagination implemented (25/page, 50, or All) using MUI `TablePagination` — filter/sort resets to page 1. Remaining: slim `UserListItem` response schema (still returns full `UserResponse`; low priority until user count grows significantly).
-
-**🔧 Paginate the Archived Nets dialog** — ✅ Done 2026-06-10  
-The Archived Nets dialog in the Dashboard now paginates at 25 per page (50 or All options). All existing filter (text search, date range) and sort controls reset to page 1 on change. Added because the archived nets list grows unboundedly as nets are logged and closed each week.
-
----
-
-## Milestone 2 — Mobile Responsive UI Fixes
-
-*Results of the June 12, 2026 mobile audit. 375px viewport baseline. Items listed in priority order within each severity tier.*
-
-### High — Breaks usability on narrow screens
-
-**🔧 ~~Table overflow — no mobile fallback~~** *(Dashboard, Scheduler, ScheduleStatistics, NetReport)* — ✅ Done 2026-06-12  
-All multi-column tables (Dashboard list/archived, Scheduler list, NetReport check-in log + all sub-tables, ScheduleStatistics leaderboard) wrapped in scrollable containers so they scroll horizontally instead of overflowing the viewport.
-- [x] All TableContainer elements updated with `overflowX: auto`
-- [ ] On xs breakpoint, hide non-essential columns in the archived nets table (stretch goal)
-- [ ] Consider a stacked card layout for the archived nets table in Dashboard (stretch goal)
-
-**🔧 ~~Dialog Paper overflows on 375px viewports~~** *(multiple pages)* — ✅ Done 2026-06-12  
-All dialogs now use 8px Paper margins on narrow phones (down from the default 32px), giving form fields significantly more room on 375px viewports.
-- [x] PaperProps margin breakpoints applied to all dialogs in Dashboard, Scheduler, NetView, ProfileSetupDialog, ScheduleStatistics
-
-**🔧 ~~Check-in form rows don't stack on mobile~~** *(NetView)* — ✅ Done (no change needed)  
-Verified the mobile check-in form already uses a column flex layout. The collapse/expand affordance (chevron IconButton) is clearly visible.
-- [x] Mobile form confirmed column-stacked with clear expand affordance
-
-### Medium — Friction on mobile
-
-**🔧 Icon buttons below 44×44px touch target** *(Dashboard, Scheduler, Chat, NetReport)*  
-`size="small"` renders at 32×32px. Per DESIGN.md, this is explicitly acceptable in dense data tables where space is the constraint; not a bug for these locations. Skipped.
-
-**🔧 ~~FABs overlap bottom-right content on narrow screens~~** *(Dashboard, Scheduler)* — ✅ Done (no change needed)  
-Both pages already have `pb: 12` (96px) on the main container, clearing the 72px FAB stack at the bottom.
-
-**🔧 ~~BulkCheckIn panel hardcoded at 680px wide~~** *(NetView)* — ✅ Done 2026-06-12  
-Initial window width and minimum resize width are now clamped to `viewport width - 16px` so the panel fits on narrow screens.
-
-**🔧 ~~Profile tab labels clip on mobile~~** *(Profile)* — ✅ Done (no change needed)  
-Profile tabs already use `scrollable` variant, `scrollButtons={false}`, and responsive `minWidth: 80px / px: 1.5` — no clipping occurs.
-
-**🔧 Long net/schedule names wrap 3+ lines in cards** *(Dashboard, Scheduler)*  
-No clamping on card titles — long names consume excessive height on single-column mobile layout.
-- [ ] Clamp to 2 lines with ellipsis and full title in a Tooltip
-
-### Low — Polish
-
-**🔧 Card action buttons wrap awkwardly on mobile** *(Dashboard, Scheduler)*
-**🔧 Chat message timestamp wraps mid-line** *(Chat)*
-**🔧 Filter search field has unnecessary desktop max-width** *(Dashboard, Scheduler)*  
-Already handled by flexGrow: 1 — no change needed.
-**🔧 Navbar drawer 250px (67% of 375px screen)** *(Navbar)* — reduce to 200px on xs
-
----
-
-## Milestone 3 — Near-term (next 1–2 sprints)
+## Milestone 1 — Near-term
 
 *Improvements that directly affect the quality of the primary use case (running a net).*
-
-### Net History Access
-
-**🔧 ~~Add "View Net" link directly from schedule history pane~~** *(W1BKW, KC1JMH)* — ✅ Done 2026-06-12  
-Added an OpenInNew icon button to each row of the Net History table on the Schedule Statistics page, navigating directly to `/nets/:id`.
-
-**🔧 Past net access: Activity drill-down and Archived Nets personal filters** *(W1BKW)*  
-The net view at `/nets/:id` is already public — closed and archived nets are fully viewable including chat history. The gap is navigation discoverability. Three improvements address this:
-
-**1A — Profile Activity: Favorite Nets drill-down** *(no backend changes)*  
-Net names in "Your Favorite Nets" are not yet clickable. Clicking a name should drill down to a list of all sessions from that schedule the user attended (one row per net instance, sorted by date), then clicking a session navigates to `/nets/:id`. Consistent behavior for all nets — standalone nets show a one-row list rather than navigating directly, to keep the flow uniform.
-
-**1B — Profile Activity: Stat cards drill-down**  
-The four stat cards (Total Check-ins, Nets Joined, As NCS, Last 30 Days) should be clickable. Clicking expands a filtered list below the cards:
-- Total Check-ins / Nets Joined: all attended nets from existing `nets_participated_list`
-- As NCS: requires new `nets_as_ncs_list` backend field (nets where user was owner or held NCS role)
-- Last 30 Days: `nets_participated_list` filtered to entries within the last 30 days
-
-Each list row links to `/nets/:id`.
-
-**2 — Archived Nets dialog: personal filters**  
-Add two checkboxes above the archived nets table (disabled for guests): "Nets I've attended" and "Nets I've run." Backend adds `user_attended` and `user_ran` boolean flags to each net in the list response when a user is authenticated (computed via bulk query, not per-net). Frontend filters client-side against those flags — no re-fetch on checkbox toggle.
-
-Implementation checklist:
-- [ ] 1A: Wire net name clicks in frequent_nets to drill-down list component
-- [ ] 1B: Make stat cards clickable, add drill-down list with date/NCS/check-in columns
-- [ ] 1B backend: Add `nets_as_ncs_list` to `UserStatsResponse` in `statistics.py`
-- [ ] 2 backend: Add `user_attended` / `user_ran` flags to archived nets list response
-- [ ] 2 frontend: Add checkboxes and client-side filter to Archived Nets dialog
 
 ### Check-in UX
 
@@ -254,11 +32,11 @@ The automatic promotion of mobile stations to the top of the check-in list is in
 ### Announcements
 
 **✨ Standalone Announcements dialog for recurring event lists** *(in testing)*  
-Allow NCS to maintain a running list of upcoming events to announce each week, separate from the per-net announcement field. This is noted as needing testing before release.
+Allow NCS to maintain a running list of upcoming events to announce each week, separate from the per-net announcement field. Needs testing before release.
 
 ---
 
-## Milestone 4 — Medium-term
+## Milestone 2 — Medium-term
 
 *Meaningful new capabilities that don't require architectural changes.*
 
@@ -343,14 +121,9 @@ Load trivia questions from a CSV file or URL. During a net, NCS can click a triv
 
 ---
 
-## Milestone 5 — Longer-term / Architectural
+## Milestone 3 — Longer-term / Architectural
 
 *Items that require significant new infrastructure, platform expansion, or external integrations.*
-
-### Session & Auth Architecture
-
-**🔧 Rolling magic link expiration** *(W1MTW, KC1JMH)*  
-TTL resets on each authenticated request so active users stay logged in indefinitely. Users who go weeks between uses re-authenticate at first access. Requires server-side session refresh logic.
 
 ### Database Migration Path
 
@@ -374,7 +147,7 @@ Full spec and design notes: [`docs/concepts/TEAM-MANAGEMENT-NOTES.md`](concepts/
 
 Summary: a new **Teams** section (menu between Schedule and Stats) to replace spreadsheet-based ARES/SKYWARN team tracking with a role-controlled, self-service platform. Members manage their own profiles; team managers handle roster, approvals, and reporting. Net participation automatically rolls up to team records. Designed to facilitate ARES Form 2 and EMA hour reporting.
 
-Blocked on: core web app stability, self-hosting, and Docker packaging (see above) being in good shape first.
+Blocked on: core web app stability, self-hosting, and Docker packaging being in good shape first.
 
 ### Native Desktop Client
 
@@ -413,7 +186,7 @@ Items that were raised but need clarification, reproduction steps, or a design d
 
 | Item | Source | Blocker |
 |---|---|---|
-| ham.live closure — onboarding displaced users | KC1JMH | ham.live is shuttering. No action needed, but inbound user migration is expected. Infrastructure scaling items (DB indexes, pagination, PostgreSQL migration path) have been added to the roadmap in anticipation. Worth monitoring signup rate in coming weeks. |
+| ham.live closure — onboarding displaced users | KC1JMH | ham.live is shuttering. No action needed, but inbound user migration is expected. Infrastructure scaling items (DB indexes, PostgreSQL migration path) have been added to the roadmap in anticipation. Worth monitoring signup rate in coming weeks. |
 
 ---
 
@@ -422,7 +195,7 @@ Items that were raised but need clarification, reproduction steps, or a design d
 | Item | Rationale |
 |---|---|
 | Disabling web self-check-in globally | Net managers can already configure this per-net if needed; a global kill switch is not warranted. |
-| Mobile station sort removal | Confirmed intentional and appreciated; making it optional (Milestone 2) is sufficient. |
+| Mobile station sort removal | Confirmed intentional and appreciated; making it optional (Milestone 1) is sufficient. |
 
 ---
 
