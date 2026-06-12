@@ -13,11 +13,12 @@ from app.models import Net, CheckIn, User, NetStatus, NetTemplate, NetTemplateSu
 from app.dependencies import get_current_user, get_current_user_optional
 import re
 from app.schemas import (
-    GlobalStatsResponse, 
-    NetStatsResponse, 
+    GlobalStatsResponse,
+    NetStatsResponse,
     UserStatsResponse,
     TimeSeriesDataPoint,
     NetParticipation,
+    NcsNetEntry,
     TopOperator,
     CheckInsByNet,
     FrequentNetStats,
@@ -559,7 +560,8 @@ async def _get_user_statistics(db: AsyncSession, user: User) -> UserStatsRespons
             nets_participated_list=[],
             check_ins_by_month=[],
             favorite_nets=[],
-            frequent_nets=[]
+            frequent_nets=[],
+            nets_as_ncs_list=[],
         )
     
     # Get all check-ins by this user's callsigns
@@ -576,11 +578,16 @@ async def _get_user_statistics(db: AsyncSession, user: User) -> UserStatsRespons
     # Last 30 days check-ins (ensure timezone-aware comparison)
     last_30_days_check_ins = sum(1 for c in check_ins if _ensure_tz_aware(c.checked_in_at) >= last_30d)
     
-    # Count nets as NCS/owner (user owns the net)
+    # Nets as NCS/owner (user owns the net)
     ncs_result = await db.execute(
-        select(func.count(Net.id)).where(Net.owner_id == user.id)
+        select(Net).where(Net.owner_id == user.id).order_by(Net.started_at.desc())
     )
-    nets_as_ncs = ncs_result.scalar() or 0
+    ncs_nets = ncs_result.scalars().all()
+    nets_as_ncs = len(ncs_nets)
+    nets_as_ncs_list = [
+        NcsNetEntry(net_id=n.id, net_name=n.name, started_at=n.started_at, closed_at=n.closed_at)
+        for n in ncs_nets
+    ]
     
     # Unique nets
     net_ids = set(c.net_id for c in check_ins)
@@ -703,7 +710,8 @@ async def _get_user_statistics(db: AsyncSession, user: User) -> UserStatsRespons
         nets_participated_list=nets_participated_list,
         check_ins_by_month=check_ins_by_month,
         favorite_nets=favorite_nets,
-        frequent_nets=frequent_nets[:10]  # Top 10
+        frequent_nets=frequent_nets[:10],
+        nets_as_ncs_list=nets_as_ncs_list,
     )
 
 

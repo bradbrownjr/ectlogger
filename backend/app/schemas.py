@@ -1064,6 +1064,14 @@ class NetParticipation(BaseModel):
     last_check_in: datetime
 
 
+class NcsNetEntry(BaseModel):
+    """A net where the user ran as NCS"""
+    net_id: int
+    net_name: str
+    started_at: Optional[datetime] = None
+    closed_at: Optional[datetime] = None
+
+
 class CheckInsByNet(BaseModel):
     """Check-in count for a net (used in favorites)"""
     net_id: int
@@ -1146,9 +1154,10 @@ class UserStatsResponse(BaseModel):
     nets_participated_list: List[NetParticipation] = []
     check_ins_by_month: List[TimeSeriesDataPoint] = []  # Last 12 months
     favorite_nets: List[CheckInsByNet] = []  # Top 5 nets by check-in count
-    
+
     # New field for recurring net participation
     frequent_nets: List[FrequentNetStats] = []  # Recurring nets with participation rates
+    nets_as_ncs_list: List[NcsNetEntry] = []  # Nets where user ran as NCS
 
 
 

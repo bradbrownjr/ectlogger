@@ -20,6 +20,10 @@
             {
               "text": "Profile Activity — Favorite Nets drill-down: clicking any net name in the Favorite Nets section now expands a session list showing every individual net from that schedule that you have attended, with dates and a direct link to the net report.",
               "userImpact": true
+            },
+            {
+              "text": "Profile Activity — Stat card drill-down: the four activity summary cards (Total Check-ins, Nets Joined, As NCS, Last 30 Days) are now clickable. Clicking a card expands a list of the underlying nets so you can see exactly which sessions make up each number and jump directly to any net report.",
+              "userImpact": true
             }
           ]
         }

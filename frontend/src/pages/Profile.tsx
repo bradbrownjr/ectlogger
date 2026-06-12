@@ -98,6 +98,7 @@ const Profile: React.FC = () => {
   const [statsLoading, setStatsLoading] = useState(true);
   const [tabValue, setTabValue] = useState(0);
   const [netDrillDown, setNetDrillDown] = useState<{ title: string; nets: any[] } | null>(null);
+  const [activeStatCard, setActiveStatCard] = useState<'total_check_ins' | 'nets_joined' | 'as_ncs' | 'last_30_days' | null>(null);
 
   useEffect(() => {
     const tab = parseInt(searchParams.get('tab') || '0', 10);
@@ -134,6 +135,54 @@ const Profile: React.FC = () => {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
+
+  const handleStatCardClick = (card: typeof activeStatCard) => {
+    setActiveStatCard(prev => (prev === card ? null : card));
+  };
+
+  const getStatCardDrillDown = (): { label: string; rows: any[]; columns: string[] } | null => {
+    if (!activeStatCard || !userStats) return null;
+    const participated: any[] = userStats.nets_participated_list ?? [];
+    if (activeStatCard === 'total_check_ins') {
+      return {
+        label: 'All nets by check-in count',
+        rows: [...participated].sort((a, b) => b.check_in_count - a.check_in_count),
+        columns: ['net', 'date', 'check_ins'],
+      };
+    }
+    if (activeStatCard === 'nets_joined') {
+      return {
+        label: 'All nets attended, most recent first',
+        rows: [...participated].sort(
+          (a, b) => new Date(b.last_check_in).getTime() - new Date(a.last_check_in).getTime()
+        ),
+        columns: ['net', 'date', 'check_ins'],
+      };
+    }
+    if (activeStatCard === 'as_ncs') {
+      const ncsList: any[] = userStats.nets_as_ncs_list ?? [];
+      return {
+        label: 'Nets you ran as NCS',
+        rows: [...ncsList].sort(
+          (a, b) => new Date(b.started_at ?? b.closed_at ?? 0).getTime() - new Date(a.started_at ?? a.closed_at ?? 0).getTime()
+        ),
+        columns: ['net', 'date'],
+      };
+    }
+    if (activeStatCard === 'last_30_days') {
+      const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+      return {
+        label: 'Nets attended in the last 30 days',
+        rows: [...participated]
+          .filter(p => new Date(p.last_check_in).getTime() >= cutoff)
+          .sort(
+            (a, b) => new Date(b.last_check_in).getTime() - new Date(a.last_check_in).getTime()
+          ),
+        columns: ['net', 'date', 'check_ins'],
+      };
+    }
+    return null;
+  };
 
   const handleFavoriteNetClick = (net: any) => {
     if (netDrillDown?.title === net.net_name) {
@@ -771,56 +820,103 @@ const Profile: React.FC = () => {
               
               {/* Content wrapper for PDF export */}
               <Box id="activity-stats-content">
-                <Grid container spacing={2} sx={{ mb: 3 }}>
-                  <Grid item xs={6} sm={3}>
-                    <Card variant="outlined">
-                      <CardContent sx={{ textAlign: 'center' }}>
-                        <Typography variant="h4" color="primary">
-                          {userStats.total_check_ins}
+                <Grid container spacing={2} sx={{ mb: 1 }}>
+                  {([
+                    { key: 'total_check_ins', value: userStats.total_check_ins, label: 'Total Check-ins' },
+                    { key: 'nets_joined', value: userStats.nets_participated, label: 'Nets Joined' },
+                    { key: 'as_ncs', value: userStats.nets_as_ncs, label: 'As NCS' },
+                    { key: 'last_30_days', value: userStats.last_30_days_check_ins, label: 'Last 30 Days' },
+                  ] as const).map(({ key, value, label }) => (
+                    <Grid item xs={6} sm={3} key={key}>
+                      <Card
+                        variant="outlined"
+                        onClick={() => handleStatCardClick(key)}
+                        sx={{
+                          cursor: 'pointer',
+                          borderColor: activeStatCard === key ? 'primary.main' : undefined,
+                          borderWidth: activeStatCard === key ? 2 : 1,
+                          transition: 'border-color 0.15s',
+                          '&:hover': { borderColor: 'primary.light' },
+                        }}
+                      >
+                        <CardContent sx={{ textAlign: 'center' }}>
+                          <Typography variant="h4" color="primary">{value}</Typography>
+                          <Typography variant="body2" color="text.secondary">{label}</Typography>
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  ))}
+                </Grid>
+
+                {(() => {
+                  const dd = getStatCardDrillDown();
+                  if (!dd) return null;
+                  return (
+                    <Box sx={{ mb: 3, pl: 1, borderLeft: 3, borderColor: 'primary.main' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, mt: 1 }}>
+                        <Tooltip title="Close">
+                          <IconButton size="small" onClick={() => setActiveStatCard(null)}>
+                            <CloseIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Typography variant="subtitle2">{dd.label}</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          ({dd.rows.length} net{dd.rows.length !== 1 ? 's' : ''})
                         </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          Total Check-ins
+                      </Box>
+                      {dd.rows.length === 0 ? (
+                        <Typography variant="body2" color="text.secondary" sx={{ pl: 1 }}>
+                          No records found.
                         </Typography>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                  <Grid item xs={6} sm={3}>
-                    <Card variant="outlined">
-                    <CardContent sx={{ textAlign: 'center' }}>
-                      <Typography variant="h4" color="primary">
-                        {userStats.nets_participated}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Nets Joined
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
-                <Grid item xs={6} sm={3}>
-                  <Card variant="outlined">
-                    <CardContent sx={{ textAlign: 'center' }}>
-                      <Typography variant="h4" color="primary">
-                        {userStats.nets_as_ncs}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        As NCS
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
-                <Grid item xs={6} sm={3}>
-                  <Card variant="outlined">
-                    <CardContent sx={{ textAlign: 'center' }}>
-                      <Typography variant="h4" color="primary">
-                        {userStats.last_30_days_check_ins}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Last 30 Days
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              </Grid>
+                      ) : (
+                        <TableContainer sx={{ overflowX: 'auto' }}>
+                          <Table size="small">
+                            <TableHead>
+                              <TableRow>
+                                <TableCell>Net Name</TableCell>
+                                <TableCell>Date</TableCell>
+                                {dd.columns.includes('check_ins') && (
+                                  <TableCell align="right">Check-ins</TableCell>
+                                )}
+                                <TableCell align="right">View</TableCell>
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {dd.rows.map((row: any) => {
+                                const dateVal = row.started_at ?? row.last_check_in;
+                                return (
+                                  <TableRow key={row.net_id} hover>
+                                    <TableCell>{row.net_name}</TableCell>
+                                    <TableCell>
+                                      {dateVal
+                                        ? new Date(dateVal).toLocaleDateString('en-US', {
+                                            year: 'numeric', month: 'short', day: 'numeric',
+                                          })
+                                        : '—'}
+                                    </TableCell>
+                                    {dd.columns.includes('check_ins') && (
+                                      <TableCell align="right">{row.check_in_count}</TableCell>
+                                    )}
+                                    <TableCell align="right">
+                                      <Tooltip title="View net">
+                                        <IconButton
+                                          size="small"
+                                          onClick={() => navigate(`/nets/${row.net_id}`)}
+                                        >
+                                          <OpenInNewIcon fontSize="small" />
+                                        </IconButton>
+                                      </Tooltip>
+                                    </TableCell>
+                                  </TableRow>
+                                );
+                              })}
+                            </TableBody>
+                          </Table>
+                        </TableContainer>
+                      )}
+                    </Box>
+                  );
+                })()}
 
               {userStats.frequent_nets && userStats.frequent_nets.length > 0 && (
                 <>
