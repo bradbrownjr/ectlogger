@@ -33,6 +33,8 @@ import {
   DialogContent,
   DialogActions,
   Slider,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -42,6 +44,8 @@ import PersonIcon from '@mui/icons-material/Person';
 import SettingsIcon from '@mui/icons-material/Settings';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
+import CloseIcon from '@mui/icons-material/Close';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { useAuth } from '../contexts/AuthContext';
 import api, { statisticsApi } from '../services/api';
 import { exportElementToPdf } from '../utils/pdfExport';
@@ -93,6 +97,7 @@ const Profile: React.FC = () => {
   const [userStats, setUserStats] = useState<any>(null);
   const [statsLoading, setStatsLoading] = useState(true);
   const [tabValue, setTabValue] = useState(0);
+  const [netDrillDown, setNetDrillDown] = useState<{ title: string; nets: any[] } | null>(null);
 
   useEffect(() => {
     const tab = parseInt(searchParams.get('tab') || '0', 10);
@@ -129,6 +134,23 @@ const Profile: React.FC = () => {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
+
+  const handleFavoriteNetClick = (net: any) => {
+    if (netDrillDown?.title === net.net_name) {
+      setNetDrillDown(null);
+      return;
+    }
+    const sessions = ((userStats?.nets_participated_list as any[]) || [])
+      .filter((p: any) =>
+        net.template_id != null
+          ? p.template_id === net.template_id
+          : p.net_name === net.net_name && p.template_id == null
+      )
+      .sort((a: any, b: any) =>
+        new Date(b.last_check_in).getTime() - new Date(a.last_check_in).getTime()
+      );
+    setNetDrillDown({ title: net.net_name, nets: sessions });
+  };
 
   // Handle PDF export for activity stats
   const handleExportActivityPdf = async () => {
@@ -820,10 +842,10 @@ const Profile: React.FC = () => {
                       </TableHead>
                       <TableBody>
                         {userStats.frequent_nets.slice(0, 5).map((net: any, index: number) => (
-                          <TableRow 
-                            key={net.net_name} 
+                          <TableRow
+                            key={net.net_name}
                             hover
-                            sx={{ 
+                            sx={{
                               backgroundColor: index === 0 ? 'rgba(255, 215, 0, 0.1)' : 'inherit',
                             }}
                           >
@@ -832,7 +854,18 @@ const Profile: React.FC = () => {
                                 {index === 0 && <EmojiEventsIcon sx={{ color: 'gold', fontSize: 20 }} />}
                                 {index === 1 && <EmojiEventsIcon sx={{ color: 'silver', fontSize: 20 }} />}
                                 {index === 2 && <EmojiEventsIcon sx={{ color: '#CD7F32', fontSize: 20 }} />}
-                                {net.net_name}
+                                <Typography
+                                  component="span"
+                                  sx={{
+                                    cursor: 'pointer',
+                                    color: 'primary.main',
+                                    '&:hover': { textDecoration: 'underline' },
+                                    fontWeight: netDrillDown?.title === net.net_name ? 'bold' : 'normal',
+                                  }}
+                                  onClick={() => handleFavoriteNetClick(net)}
+                                >
+                                  {net.net_name}
+                                </Typography>
                               </Box>
                             </TableCell>
                             <TableCell align="right">{net.check_ins}</TableCell>
@@ -844,6 +877,63 @@ const Profile: React.FC = () => {
                       </TableBody>
                     </Table>
                   </TableContainer>
+
+                  {netDrillDown && (
+                    <Box sx={{ mt: 2, pl: 1, borderLeft: 3, borderColor: 'primary.main' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                        <Tooltip title="Close">
+                          <IconButton size="small" onClick={() => setNetDrillDown(null)}>
+                            <CloseIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Typography variant="subtitle2">
+                          Sessions — {netDrillDown.title}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          ({netDrillDown.nets.length} session{netDrillDown.nets.length !== 1 ? 's' : ''})
+                        </Typography>
+                      </Box>
+                      {netDrillDown.nets.length === 0 ? (
+                        <Typography variant="body2" color="text.secondary" sx={{ pl: 1 }}>
+                          No session records found.
+                        </Typography>
+                      ) : (
+                        <TableContainer sx={{ overflowX: 'auto' }}>
+                          <Table size="small">
+                            <TableHead>
+                              <TableRow>
+                                <TableCell>Date</TableCell>
+                                <TableCell align="right">Check-ins</TableCell>
+                                <TableCell align="right">View</TableCell>
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {netDrillDown.nets.map((session: any) => (
+                                <TableRow key={session.net_id} hover>
+                                  <TableCell>
+                                    {new Date(session.last_check_in).toLocaleDateString('en-US', {
+                                      year: 'numeric', month: 'short', day: 'numeric',
+                                    })}
+                                  </TableCell>
+                                  <TableCell align="right">{session.check_in_count}</TableCell>
+                                  <TableCell align="right">
+                                    <Tooltip title="View net">
+                                      <IconButton
+                                        size="small"
+                                        onClick={() => navigate(`/nets/${session.net_id}`)}
+                                      >
+                                        <OpenInNewIcon fontSize="small" />
+                                      </IconButton>
+                                    </Tooltip>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </TableContainer>
+                      )}
+                    </Box>
+                  )}
                 </>
               )}
               </Box>

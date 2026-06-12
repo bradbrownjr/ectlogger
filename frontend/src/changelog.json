@@ -16,6 +16,10 @@
             {
               "text": "Mobile responsive improvements: all data tables now scroll horizontally on narrow screens instead of overflowing, dialogs use tighter margins on small phones so more content is visible, and the Bulk Check-in window resizes to fit the viewport on mobile devices.",
               "userImpact": true
+            },
+            {
+              "text": "Profile Activity — Favorite Nets drill-down: clicking any net name in the Favorite Nets section now expands a session list showing every individual net from that schedule that you have attended, with dates and a direct link to the net report.",
+              "userImpact": true
             }
           ]
         }

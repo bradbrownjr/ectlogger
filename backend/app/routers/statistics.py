@@ -605,9 +605,9 @@ async def _get_user_statistics(db: AsyncSession, user: User) -> UserStatsRespons
             net_participation[checkin.net_id]["last_check_in"] = checkin.checked_in_at
     
     nets_participated_list = [
-        NetParticipation(**{k: v for k, v in p.items() if k != "template_id"}) 
+        NetParticipation(**p)
         for p in sorted(
-            net_participation.values(), 
+            net_participation.values(),
             key=lambda x: -x["check_in_count"]
         )
     ]

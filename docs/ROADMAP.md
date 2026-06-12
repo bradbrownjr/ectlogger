@@ -222,8 +222,29 @@ Already handled by flexGrow: 1 — no change needed.
 **🔧 ~~Add "View Net" link directly from schedule history pane~~** *(W1BKW, KC1JMH)* — ✅ Done 2026-06-12  
 Added an OpenInNew icon button to each row of the Net History table on the Schedule Statistics page, navigating directly to `/nets/:id`.
 
-**🔧 Chat history accessible outside of net open times** *(W1BKW)*  
-Authenticated users want to retrieve chat links and conversation history from past nets without waiting for the next net session. The data already exists in the database. Ensure past net detail pages (including chat log) are accessible to authenticated users at any time, not just during the net window. The archive/circular button flow should be documented more prominently.
+**🔧 Past net access: Activity drill-down and Archived Nets personal filters** *(W1BKW)*  
+The net view at `/nets/:id` is already public — closed and archived nets are fully viewable including chat history. The gap is navigation discoverability. Three improvements address this:
+
+**1A — Profile Activity: Favorite Nets drill-down** *(no backend changes)*  
+Net names in "Your Favorite Nets" are not yet clickable. Clicking a name should drill down to a list of all sessions from that schedule the user attended (one row per net instance, sorted by date), then clicking a session navigates to `/nets/:id`. Consistent behavior for all nets — standalone nets show a one-row list rather than navigating directly, to keep the flow uniform.
+
+**1B — Profile Activity: Stat cards drill-down**  
+The four stat cards (Total Check-ins, Nets Joined, As NCS, Last 30 Days) should be clickable. Clicking expands a filtered list below the cards:
+- Total Check-ins / Nets Joined: all attended nets from existing `nets_participated_list`
+- As NCS: requires new `nets_as_ncs_list` backend field (nets where user was owner or held NCS role)
+- Last 30 Days: `nets_participated_list` filtered to entries within the last 30 days
+
+Each list row links to `/nets/:id`.
+
+**2 — Archived Nets dialog: personal filters**  
+Add two checkboxes above the archived nets table (disabled for guests): "Nets I've attended" and "Nets I've run." Backend adds `user_attended` and `user_ran` boolean flags to each net in the list response when a user is authenticated (computed via bulk query, not per-net). Frontend filters client-side against those flags — no re-fetch on checkbox toggle.
+
+Implementation checklist:
+- [ ] 1A: Wire net name clicks in frequent_nets to drill-down list component
+- [ ] 1B: Make stat cards clickable, add drill-down list with date/NCS/check-in columns
+- [ ] 1B backend: Add `nets_as_ncs_list` to `UserStatsResponse` in `statistics.py`
+- [ ] 2 backend: Add `user_attended` / `user_ran` flags to archived nets list response
+- [ ] 2 frontend: Add checkboxes and client-side filter to Archived Nets dialog
 
 ### Check-in UX
 
@@ -303,6 +324,17 @@ Design questions to resolve before implementation:
 - Is this logged per-net or aggregated across nets for the same group?
 
 David's use case (YCECT combined repeater/simplex drills) should drive the initial spec.
+
+### Help Menu and User Onboarding Walkthrough
+
+**✨ Replace "Docs" nav link with a Help menu** *(discoverability)*  
+The current "Docs" link in the navbar is a bare external link. Replace it with a Help menu containing three options:
+- **User Guide** — external link to documentation (existing behavior)
+- **Start Walkthrough** — launches the guided UI tour (works for new and returning users)
+- **About ECTLogger** — modal showing version, license credits (including Jam3 palette attribution), GitHub link
+
+**Guided walkthrough**  
+A step-by-step tour of the main UI surfaces using a library such as `react-joyride` or `driver.js`. Highlights key elements (Dashboard, check-in form, net view, Schedule Statistics, Profile Activity) with descriptive callouts. Auto-triggers for new users on first login (flag stored in `users` table or localStorage); re-triggerable at any time from the Help menu. Lets existing users self-serve when they encounter unfamiliar features rather than needing to label every icon.
 
 ### Trivia Integration
 

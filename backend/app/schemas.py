@@ -1058,6 +1058,7 @@ class NetParticipation(BaseModel):
     """User's participation in a specific net"""
     net_id: int
     net_name: str
+    template_id: Optional[int] = None
     check_in_count: int
     first_check_in: datetime
     last_check_in: datetime
