@@ -116,13 +116,14 @@ class Net(Base):
     template_id = Column(Integer, ForeignKey("net_templates.id"), nullable=True)
     field_config = Column(Text, default='{"name": {"enabled": true, "required": false}, "location": {"enabled": true, "required": false}, "skywarn_number": {"enabled": false, "required": false}, "weather_observation": {"enabled": false, "required": false}, "power_source": {"enabled": false, "required": false}, "power": {"enabled": false, "required": false}, "feedback": {"enabled": false, "required": false}, "notes": {"enabled": false, "required": false}}')  # JSON config for check-in fields
     ics309_enabled = Column(Boolean, default=False)  # Generate ICS-309 format on close
-    
+    mobile_priority_sort = Column(Boolean, default=True)  # Promote mobile stations above chronological order
+
     # Topic of the Week / Poll features for community nets
     topic_of_week_enabled = Column(Boolean, default=False)
     topic_of_week_prompt = Column(String(500))  # The topic question, e.g., "What's your favorite radio?"
     poll_enabled = Column(Boolean, default=False)
     poll_question = Column(String(500))  # The poll question, e.g., "What mode do you use most?"
-    
+
     scheduled_start_time = Column(DateTime(timezone=True))  # When the net is scheduled to start
     started_at = Column(DateTime(timezone=True))
     closed_at = Column(DateTime(timezone=True))
@@ -155,7 +156,8 @@ class NetTemplate(Base):
     field_config = Column(Text, default='{"name": {"enabled": true, "required": false}, "location": {"enabled": true, "required": false}, "skywarn_number": {"enabled": false, "required": false}, "weather_observation": {"enabled": false, "required": false}, "power_source": {"enabled": false, "required": false}, "power": {"enabled": false, "required": false}, "feedback": {"enabled": false, "required": false}, "notes": {"enabled": false, "required": false}}')
     is_active = Column(Boolean, default=True)
     ics309_enabled = Column(Boolean, default=False)  # Enable ICS-309 format for net close emails
-    
+    mobile_priority_sort = Column(Boolean, default=True)  # Promote mobile stations above chronological order
+
     # Topic of the Week / Poll features for community nets
     topic_of_week_enabled = Column(Boolean, default=False)
     topic_of_week_prompt = Column(String(500))  # Default topic question for nets from this template

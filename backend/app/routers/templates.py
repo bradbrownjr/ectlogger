@@ -365,6 +365,8 @@ async def update_template(
             template.fifth_week_user_id = template_data.fifth_week_user_id
     if template_data.ics309_enabled is not None:
         template.ics309_enabled = template_data.ics309_enabled
+    if template_data.mobile_priority_sort is not None:
+        template.mobile_priority_sort = template_data.mobile_priority_sort
     if template_data.topic_of_week_enabled is not None:
         template.topic_of_week_enabled = template_data.topic_of_week_enabled
     if template_data.topic_of_week_prompt is not None:
@@ -1081,6 +1083,7 @@ async def create_net_from_template(
         field_config=template.field_config,
         status=NetStatus.DRAFT,
         ics309_enabled=template.ics309_enabled or False,
+        mobile_priority_sort=template.mobile_priority_sort if template.mobile_priority_sort is not None else True,
         topic_of_week_enabled=template.topic_of_week_enabled or False,
         topic_of_week_prompt=template.topic_of_week_prompt,
         poll_enabled=template.poll_enabled or False,

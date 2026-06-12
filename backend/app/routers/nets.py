@@ -123,7 +123,14 @@ async def create_net(
         description=net_data.description,
         owner_id=current_user.id,
         status=NetStatus.DRAFT,
-        field_config=json.dumps(net_data.field_config) if net_data.field_config else None
+        field_config=json.dumps(net_data.field_config) if net_data.field_config else None,
+        ics309_enabled=net_data.ics309_enabled or False,
+        mobile_priority_sort=net_data.mobile_priority_sort if net_data.mobile_priority_sort is not None else True,
+        topic_of_week_enabled=net_data.topic_of_week_enabled or False,
+        topic_of_week_prompt=net_data.topic_of_week_prompt,
+        poll_enabled=net_data.poll_enabled or False,
+        poll_question=net_data.poll_question,
+        scheduled_start_time=net_data.scheduled_start_time,
     )
     db.add(net)
     await db.flush()

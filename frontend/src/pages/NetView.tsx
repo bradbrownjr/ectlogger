@@ -98,6 +98,7 @@ interface Net {
   template_id?: number;  // ID of the template this net was created from (for scheduled nets)
   active_frequency_id?: number;
   ics309_enabled?: boolean;
+  mobile_priority_sort?: boolean;
   // Topic of the Week / Poll features
   topic_of_week_enabled?: boolean;
   topic_of_week_prompt?: string;
@@ -1892,9 +1893,11 @@ const NetView: React.FC = () => {
     const bIsNcs = ncsRoles.some((r: any) => r.user_id === b.user_id) &&
                    new Date(b.checked_in_at).getTime() < firstNonNcsCheckInTime;
     if (aIsNcs !== bIsNcs) return aIsNcs ? -1 : 1;
-    const aIsMobile = a.status === 'mobile';
-    const bIsMobile = b.status === 'mobile';
-    if (aIsMobile !== bIsMobile) return aIsMobile ? -1 : 1;
+    if (net?.mobile_priority_sort !== false) {
+      const aIsMobile = a.status === 'mobile';
+      const bIsMobile = b.status === 'mobile';
+      if (aIsMobile !== bIsMobile) return aIsMobile ? -1 : 1;
+    }
     // Preserve server order (checked_in_at ascending)
     return new Date(a.checked_in_at).getTime() - new Date(b.checked_in_at).getTime();
   });

@@ -138,6 +138,7 @@ const CreateNet: React.FC = () => {
   const [script, setScript] = useState('');
   const [announcements, setAnnouncements] = useState('');
   const [ics309Enabled, setIcs309Enabled] = useState(false);
+  const [mobilePrioritySort, setMobilePrioritySort] = useState(true);
   // Topic of the Week / Poll features
   const [topicOfWeekEnabled, setTopicOfWeekEnabled] = useState(false);
   const [topicOfWeekPrompt, setTopicOfWeekPrompt] = useState('');
@@ -241,6 +242,7 @@ const CreateNet: React.FC = () => {
       setScript(response.data.script || '');
       setAnnouncements(response.data.announcements || '');
       setIcs309Enabled(response.data.ics309_enabled || false);
+      setMobilePrioritySort(response.data.mobile_priority_sort !== false);
       setTopicOfWeekEnabled(response.data.topic_of_week_enabled || false);
       setTopicOfWeekPrompt(response.data.topic_of_week_prompt || '');
       
@@ -500,6 +502,7 @@ const CreateNet: React.FC = () => {
           frequency_ids: selectedFrequencies,
           field_config: fieldConfig,
           ics309_enabled: ics309Enabled,
+          mobile_priority_sort: mobilePrioritySort,
           topic_of_week_enabled: topicOfWeekEnabled,
           topic_of_week_prompt: topicOfWeekPrompt || null,
           poll_enabled: pollEnabled,
@@ -518,6 +521,7 @@ const CreateNet: React.FC = () => {
           frequency_ids: selectedFrequencies,
           field_config: fieldConfig,
           ics309_enabled: ics309Enabled,
+          mobile_priority_sort: mobilePrioritySort,
           topic_of_week_enabled: topicOfWeekEnabled,
           topic_of_week_prompt: topicOfWeekPrompt || null,
           poll_enabled: pollEnabled,
@@ -956,6 +960,23 @@ const CreateNet: React.FC = () => {
               />
               <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
                 When enabled, net close emails will use the official ICS-309 format used by ARES, RACES, and EmComm organizations.
+              </Typography>
+            </Box>
+          )}
+
+          {!isInfoMode && (
+            <Box sx={{ mt: 2 }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={mobilePrioritySort}
+                    onChange={(e) => setMobilePrioritySort(e.target.checked)}
+                  />
+                }
+                label="Prioritize mobile stations in check-in list"
+              />
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
+                When enabled, mobile stations appear at the top of the check-in list (after NCS) so they can be called before they move out of range. Disable for strict chronological order.
               </Typography>
             </Box>
           )}

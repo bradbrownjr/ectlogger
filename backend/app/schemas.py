@@ -276,6 +276,7 @@ class NetBase(BaseModel):
     announcements: Optional[str] = Field(None, max_length=50000)
     field_config: Optional[dict] = None
     ics309_enabled: Optional[bool] = False
+    mobile_priority_sort: Optional[bool] = True
     # Topic of the Week / Poll features
     topic_of_week_enabled: Optional[bool] = False
     topic_of_week_prompt: Optional[str] = Field(None, max_length=500)
@@ -301,6 +302,7 @@ class NetUpdate(BaseModel):
     frequency_ids: Optional[List[int]] = Field(None, max_length=50)
     field_config: Optional[dict] = None
     ics309_enabled: Optional[bool] = None
+    mobile_priority_sort: Optional[bool] = None
     # Topic of the Week / Poll features
     topic_of_week_enabled: Optional[bool] = None
     topic_of_week_prompt: Optional[str] = Field(None, max_length=500)
@@ -365,6 +367,7 @@ class NetResponse(NetBase):
             'active_frequency_id': net.active_frequency_id,
             'field_config': json.loads(net.field_config) if net.field_config else None,
             'ics309_enabled': net.ics309_enabled or False,
+            'mobile_priority_sort': net.mobile_priority_sort if net.mobile_priority_sort is not None else True,
             'topic_of_week_enabled': net.topic_of_week_enabled or False,
             'topic_of_week_prompt': net.topic_of_week_prompt,
             'poll_enabled': net.poll_enabled or False,
@@ -398,6 +401,7 @@ class NetTemplateBase(BaseModel):
     schedule_config: Optional[dict] = Field(default_factory=dict)  # {day_of_week, week_of_month, time}
     fifth_week_user_id: Optional[int] = None
     ics309_enabled: bool = False  # Enable ICS-309 format for net close emails
+    mobile_priority_sort: Optional[bool] = True
     # Topic of the Week / Poll features
     topic_of_week_enabled: Optional[bool] = False
     topic_of_week_prompt: Optional[str] = Field(None, max_length=500)
@@ -425,6 +429,7 @@ class NetTemplateUpdate(BaseModel):
     fifth_week_user_id: Optional[int] = None
     owner_id: Optional[int] = None  # Allow changing the owner (admin only or current owner)
     ics309_enabled: Optional[bool] = None
+    mobile_priority_sort: Optional[bool] = None
     # Topic of the Week / Poll features
     topic_of_week_enabled: Optional[bool] = None
     topic_of_week_prompt: Optional[str] = Field(None, max_length=500)
@@ -468,6 +473,7 @@ class NetTemplateResponse(NetTemplateBase):
             'schedule_type': template.schedule_type,
             'schedule_config': json.loads(template.schedule_config) if template.schedule_config else {},
             'ics309_enabled': template.ics309_enabled or False,
+            'mobile_priority_sort': template.mobile_priority_sort if template.mobile_priority_sort is not None else True,
             'topic_of_week_enabled': template.topic_of_week_enabled or False,
             'topic_of_week_prompt': template.topic_of_week_prompt,
             'poll_enabled': template.poll_enabled or False,
