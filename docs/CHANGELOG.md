@@ -4,6 +4,14 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# June 12, 2026
+
+## Improvements
+
+* **Styled PDF changelog export** — The "Download changelog" PDF now features a layout matching the What's New email digest: a blue header banner, color-coded section headings with emoji icons, and tinted item backgrounds.
+
+---
+
 # June 11, 2026
 
 ## New Features
