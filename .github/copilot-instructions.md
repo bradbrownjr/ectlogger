@@ -163,6 +163,22 @@ When adding or changing features, **always update relevant documentation**:
 - `docs/CHANGELOG.md` — Add entry describing the change
 - `docs/DEVELOPMENT.md` — Update if adding new technical patterns or APIs
 
+### GitHub Pages / Jekyll Rules
+
+All `.md` files in this repo are rendered by Jekyll via GitHub Pages. Jekyll processes Markdown through the Liquid template engine **before** converting it to HTML, which means any `{{` or `}}` sequence in a doc file is parsed as a Liquid variable — even inside backtick code spans.
+
+**Never write bare `{{` or `}}` in docs.** This includes:
+- JSX `sx` props: `sx={{ ... }}`
+- Object literals: `{ key: { nested: value } }`
+- Any double-brace construct in inline code or fenced code blocks
+
+**Alternatives when documenting code patterns:**
+- Describe the pattern in plain English instead of quoting JSX verbatim.
+- If literal code is needed, wrap the block in `{% raw %}` / `{% endraw %}` tags — Jekyll strips these before rendering; they are invisible in the final output. (Note: they appear as literal text on GitHub.com's plain markdown view, so prefer plain-English descriptions in roadmap/changelog files and reserve `{% raw %}` for technical reference docs like DESIGN.md.)
+- For single occurrences, split the braces with a zero-width space or describe the intent without the literal syntax.
+
+This rule applies to: `docs/`, `README.md`, `CLAUDE.md`, and any other `.md` committed to the repo root or subdirectories.
+
 ### Changelog Notification (User-Impacting Changes)
 
 When making **user-impacting changes** (new features, workflow changes, UI changes), update the in-app changelog:
