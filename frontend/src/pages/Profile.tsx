@@ -99,6 +99,9 @@ const Profile: React.FC = () => {
   const [tabValue, setTabValue] = useState(0);
   const [netDrillDown, setNetDrillDown] = useState<{ title: string; nets: any[] } | null>(null);
   const [activeStatCard, setActiveStatCard] = useState<'total_check_ins' | 'nets_joined' | 'as_ncs' | 'last_30_days' | null>(null);
+  const [drillDownPage, setDrillDownPage] = useState(0);
+  const [netDrillDownPage, setNetDrillDownPage] = useState(0);
+  const DRILL_PAGE_SIZE = 25;
 
   useEffect(() => {
     const tab = parseInt(searchParams.get('tab') || '0', 10);
@@ -138,6 +141,7 @@ const Profile: React.FC = () => {
 
   const handleStatCardClick = (card: typeof activeStatCard) => {
     setActiveStatCard(prev => (prev === card ? null : card));
+    setDrillDownPage(0);
   };
 
   const getStatCardDrillDown = (): { label: string; rows: any[]; columns: string[] } | null => {
@@ -199,6 +203,7 @@ const Profile: React.FC = () => {
         new Date(b.last_check_in).getTime() - new Date(a.last_check_in).getTime()
       );
     setNetDrillDown({ title: net.net_name, nets: sessions });
+    setNetDrillDownPage(0);
   };
 
   // Handle PDF export for activity stats
@@ -882,7 +887,7 @@ const Profile: React.FC = () => {
                               </TableRow>
                             </TableHead>
                             <TableBody>
-                              {dd.rows.map((row: any) => {
+                              {dd.rows.slice(drillDownPage * DRILL_PAGE_SIZE, (drillDownPage + 1) * DRILL_PAGE_SIZE).map((row: any) => {
                                 const dateVal = row.started_at ?? row.last_check_in;
                                 return (
                                   <TableRow key={row.net_id} hover>
@@ -914,6 +919,15 @@ const Profile: React.FC = () => {
                           </Table>
                         </TableContainer>
                       )}
+                      {dd.rows.length > DRILL_PAGE_SIZE && (
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1, px: 0.5 }}>
+                          <Button size="small" disabled={drillDownPage === 0} onClick={() => setDrillDownPage(p => p - 1)}>Previous</Button>
+                          <Typography variant="caption" color="text.secondary">
+                            {drillDownPage * DRILL_PAGE_SIZE + 1}–{Math.min((drillDownPage + 1) * DRILL_PAGE_SIZE, dd.rows.length)} of {dd.rows.length}
+                          </Typography>
+                          <Button size="small" disabled={(drillDownPage + 1) * DRILL_PAGE_SIZE >= dd.rows.length} onClick={() => setDrillDownPage(p => p + 1)}>Next</Button>
+                        </Box>
+                      )}
                     </Box>
                   );
                 })()}
@@ -938,98 +952,100 @@ const Profile: React.FC = () => {
                       </TableHead>
                       <TableBody>
                         {userStats.frequent_nets.slice(0, 5).map((net: any, index: number) => (
-                          <TableRow
-                            key={net.net_name}
-                            hover
-                            sx={{
-                              backgroundColor: index === 0 ? 'rgba(255, 215, 0, 0.1)' : 'inherit',
-                            }}
-                          >
-                            <TableCell>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                {index === 0 && <EmojiEventsIcon sx={{ color: 'gold', fontSize: 20 }} />}
-                                {index === 1 && <EmojiEventsIcon sx={{ color: 'silver', fontSize: 20 }} />}
-                                {index === 2 && <EmojiEventsIcon sx={{ color: '#CD7F32', fontSize: 20 }} />}
-                                <Typography
-                                  component="span"
-                                  sx={{
-                                    cursor: 'pointer',
-                                    color: 'primary.main',
-                                    '&:hover': { textDecoration: 'underline' },
-                                    fontWeight: netDrillDown?.title === net.net_name ? 'bold' : 'normal',
-                                  }}
-                                  onClick={() => handleFavoriteNetClick(net)}
-                                >
-                                  {net.net_name}
-                                </Typography>
-                              </Box>
-                            </TableCell>
-                            <TableCell align="right">{net.check_ins}</TableCell>
-                            <TableCell align="right">
-                              {net.participation_rate ? `${(net.participation_rate * 100).toFixed(0)}%` : '-'}
-                            </TableCell>
-                          </TableRow>
+                          <React.Fragment key={net.net_name}>
+                            <TableRow
+                              hover
+                              sx={{
+                                backgroundColor: index === 0 ? 'rgba(255, 215, 0, 0.1)' : 'inherit',
+                                cursor: 'pointer',
+                              }}
+                              onClick={() => handleFavoriteNetClick(net)}
+                            >
+                              <TableCell>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  {index === 0 && <EmojiEventsIcon sx={{ color: 'gold', fontSize: 20 }} />}
+                                  {index === 1 && <EmojiEventsIcon sx={{ color: 'silver', fontSize: 20 }} />}
+                                  {index === 2 && <EmojiEventsIcon sx={{ color: '#CD7F32', fontSize: 20 }} />}
+                                  <Typography
+                                    component="span"
+                                    sx={{
+                                      color: 'primary.main',
+                                      '&:hover': { textDecoration: 'underline' },
+                                      fontWeight: netDrillDown?.title === net.net_name ? 'bold' : 'normal',
+                                    }}
+                                  >
+                                    {net.net_name}
+                                  </Typography>
+                                </Box>
+                              </TableCell>
+                              <TableCell align="right">{net.check_ins}</TableCell>
+                              <TableCell align="right">
+                                {net.participation_rate ? `${(net.participation_rate * 100).toFixed(0)}%` : '-'}
+                              </TableCell>
+                            </TableRow>
+                            {netDrillDown && netDrillDown.title === net.net_name && (
+                              <TableRow>
+                                <TableCell colSpan={3} sx={{ p: 0, bgcolor: 'action.hover' }}>
+                                  <Box sx={{ px: 2, py: 1.5 }}>
+                                    {netDrillDown.nets.length === 0 ? (
+                                      <Typography variant="body2" color="text.secondary">
+                                        No session records found.
+                                      </Typography>
+                                    ) : (
+                                      <>
+                                        <Table size="small">
+                                          <TableHead>
+                                            <TableRow>
+                                              <TableCell>Date</TableCell>
+                                              <TableCell align="right">Check-ins</TableCell>
+                                              <TableCell align="right">View</TableCell>
+                                            </TableRow>
+                                          </TableHead>
+                                          <TableBody>
+                                            {netDrillDown.nets
+                                              .slice(netDrillDownPage * DRILL_PAGE_SIZE, (netDrillDownPage + 1) * DRILL_PAGE_SIZE)
+                                              .map((session: any) => (
+                                                <TableRow key={session.net_id} hover>
+                                                  <TableCell>
+                                                    {new Date(session.last_check_in).toLocaleDateString('en-US', {
+                                                      year: 'numeric', month: 'short', day: 'numeric',
+                                                    })}
+                                                  </TableCell>
+                                                  <TableCell align="right">{session.check_in_count}</TableCell>
+                                                  <TableCell align="right">
+                                                    <Tooltip title="View net">
+                                                      <IconButton
+                                                        size="small"
+                                                        onClick={(e) => { e.stopPropagation(); navigate(`/nets/${session.net_id}`); }}
+                                                      >
+                                                        <OpenInNewIcon fontSize="small" />
+                                                      </IconButton>
+                                                    </Tooltip>
+                                                  </TableCell>
+                                                </TableRow>
+                                              ))}
+                                          </TableBody>
+                                        </Table>
+                                        {netDrillDown.nets.length > DRILL_PAGE_SIZE && (
+                                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
+                                            <Button size="small" disabled={netDrillDownPage === 0} onClick={(e) => { e.stopPropagation(); setNetDrillDownPage(p => p - 1); }}>Previous</Button>
+                                            <Typography variant="caption" color="text.secondary">
+                                              {netDrillDownPage * DRILL_PAGE_SIZE + 1}–{Math.min((netDrillDownPage + 1) * DRILL_PAGE_SIZE, netDrillDown.nets.length)} of {netDrillDown.nets.length}
+                                            </Typography>
+                                            <Button size="small" disabled={(netDrillDownPage + 1) * DRILL_PAGE_SIZE >= netDrillDown.nets.length} onClick={(e) => { e.stopPropagation(); setNetDrillDownPage(p => p + 1); }}>Next</Button>
+                                          </Box>
+                                        )}
+                                      </>
+                                    )}
+                                  </Box>
+                                </TableCell>
+                              </TableRow>
+                            )}
+                          </React.Fragment>
                         ))}
                       </TableBody>
                     </Table>
                   </TableContainer>
-
-                  {netDrillDown && (
-                    <Box sx={{ mt: 2, pl: 1, borderLeft: 3, borderColor: 'primary.main' }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                        <Tooltip title="Close">
-                          <IconButton size="small" onClick={() => setNetDrillDown(null)}>
-                            <CloseIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                        <Typography variant="subtitle2">
-                          Sessions — {netDrillDown.title}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          ({netDrillDown.nets.length} session{netDrillDown.nets.length !== 1 ? 's' : ''})
-                        </Typography>
-                      </Box>
-                      {netDrillDown.nets.length === 0 ? (
-                        <Typography variant="body2" color="text.secondary" sx={{ pl: 1 }}>
-                          No session records found.
-                        </Typography>
-                      ) : (
-                        <TableContainer sx={{ overflowX: 'auto' }}>
-                          <Table size="small">
-                            <TableHead>
-                              <TableRow>
-                                <TableCell>Date</TableCell>
-                                <TableCell align="right">Check-ins</TableCell>
-                                <TableCell align="right">View</TableCell>
-                              </TableRow>
-                            </TableHead>
-                            <TableBody>
-                              {netDrillDown.nets.map((session: any) => (
-                                <TableRow key={session.net_id} hover>
-                                  <TableCell>
-                                    {new Date(session.last_check_in).toLocaleDateString('en-US', {
-                                      year: 'numeric', month: 'short', day: 'numeric',
-                                    })}
-                                  </TableCell>
-                                  <TableCell align="right">{session.check_in_count}</TableCell>
-                                  <TableCell align="right">
-                                    <Tooltip title="View net">
-                                      <IconButton
-                                        size="small"
-                                        onClick={() => navigate(`/nets/${session.net_id}`)}
-                                      >
-                                        <OpenInNewIcon fontSize="small" />
-                                      </IconButton>
-                                    </Tooltip>
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </TableContainer>
-                      )}
-                    </Box>
-                  )}
                 </>
               )}
               </Box>
