@@ -53,6 +53,7 @@ import DescriptionIcon from '@mui/icons-material/Description';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import ArticleIcon from '@mui/icons-material/Article';
 import CampaignIcon from '@mui/icons-material/Campaign';
+import SpeakerNotesIcon from '@mui/icons-material/SpeakerNotes';
 import HistoryIcon from '@mui/icons-material/History';
 import GroupIcon from '@mui/icons-material/Group';
 import LoginIcon from '@mui/icons-material/Login';
@@ -81,6 +82,7 @@ import BulkCheckIn from '../components/BulkCheckIn';
 import SearchCheckIns from '../components/SearchCheckIns';
 import NetScript from '../components/NetScript';
 import Announcements from '../components/Announcements';
+import ScheduleAnnouncements from '../components/ScheduleAnnouncements';
 import TopicHistory from '../components/TopicHistory';
 import FloatingWindow from '../components/FloatingWindow';
 import UserAvatar from '../components/UserAvatar';
@@ -272,6 +274,7 @@ const NetView: React.FC = () => {
   const [startingNet, setStartingNet] = useState(false);
   const [scriptOpen, setScriptOpen] = useState(false);
   const [announcementsOpen, setAnnouncementsOpen] = useState(false);
+  const [scheduleAnnouncementsOpen, setScheduleAnnouncementsOpen] = useState(false);
   const [topicHistoryOpen, setTopicHistoryOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [csvImportFile, setCsvImportFile] = useState<File | null>(null);
@@ -2230,15 +2233,27 @@ const NetView: React.FC = () => {
                         </Button>
                       </Tooltip>
                     )}
-                    {(net.announcements || net.template_id) && (
-                      <Tooltip title="View announcements / general traffic">
+                    {net.template_id && (
+                      <Tooltip title="View schedule announcements">
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          onClick={() => setScheduleAnnouncementsOpen(true)}
+                          sx={{ minWidth: 'auto', px: 1, borderColor: 'grey.400' }}
+                        >
+                          <CampaignIcon fontSize="small" />
+                        </Button>
+                      </Tooltip>
+                    )}
+                    {net.announcements && (
+                      <Tooltip title="View net notes">
                         <Button
                           size="small"
                           variant="outlined"
                           onClick={() => setAnnouncementsOpen(true)}
                           sx={{ minWidth: 'auto', px: 1, borderColor: 'grey.400' }}
                         >
-                          <CampaignIcon fontSize="small" />
+                          <SpeakerNotesIcon fontSize="small" />
                         </Button>
                       </Tooltip>
                     )}
@@ -4995,15 +5010,24 @@ const NetView: React.FC = () => {
         netId={Number(netId)}
       />
 
-      {/* Announcements / General Traffic Viewer */}
+      {/* Per-net notes viewer */}
       <Announcements
         open={announcementsOpen}
         onClose={() => setAnnouncementsOpen(false)}
         announcements={net?.announcements || ''}
         netName={net?.name || 'Net'}
         netId={Number(netId)}
-        templateId={net?.template_id ?? undefined}
       />
+
+      {/* Schedule announcements viewer */}
+      {net?.template_id && (
+        <ScheduleAnnouncements
+          open={scheduleAnnouncementsOpen}
+          onClose={() => setScheduleAnnouncementsOpen(false)}
+          templateId={net.template_id}
+          netName={net?.name || 'Net'}
+        />
+      )}
 
       {/* Topic History Dialog */}
       {net?.template_id && (

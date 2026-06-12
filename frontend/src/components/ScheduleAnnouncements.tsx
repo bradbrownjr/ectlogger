@@ -12,35 +12,41 @@ import CropSquareIcon from '@mui/icons-material/CropSquare';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { Rnd } from 'react-rnd';
 import ReactMarkdown from 'react-markdown';
+import { templateApi } from '../services/api';
 
-interface AnnouncementsProps {
+interface ScheduleAnnouncementsProps {
   open: boolean;
   onClose: () => void;
-  announcements: string;
+  templateId: number;
   netName: string;
-  netId: number;
 }
 
-const Announcements: React.FC<AnnouncementsProps> = ({
+const ScheduleAnnouncements: React.FC<ScheduleAnnouncementsProps> = ({
   open,
   onClose,
-  announcements,
+  templateId,
   netName,
-  netId: _netId,
 }) => {
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
   const [minimized, setMinimized] = useState(false);
+  const [announcements, setAnnouncements] = useState('');
 
-  // Window position and size state
+  useEffect(() => {
+    if (open && templateId) {
+      templateApi.get(templateId)
+        .then(res => setAnnouncements(res.data.announcements || ''))
+        .catch(() => setAnnouncements(''));
+    }
+  }, [open, templateId]);
+
   const [windowState, setWindowState] = useState({
-    x: 50,
+    x: 100,
     y: 100,
     width: 500,
     height: minimized ? 48 : 400,
   });
 
-  // Update height when minimized state changes
   useEffect(() => {
     setWindowState(prev => ({
       ...prev,
@@ -49,10 +55,8 @@ const Announcements: React.FC<AnnouncementsProps> = ({
   }, [minimized]);
 
   const handleOpenInNewTab = () => {
-    // Open announcements in a new browser tab with markdown converted to HTML
     const newWindow = window.open('', '_blank');
     if (newWindow) {
-      // Simple markdown to HTML conversion
       const htmlContent = announcements
         .replace(/^### (.*$)/gim, '<h3>$1</h3>')
         .replace(/^## (.*$)/gim, '<h2>$1</h2>')
@@ -73,7 +77,7 @@ const Announcements: React.FC<AnnouncementsProps> = ({
         <!DOCTYPE html>
         <html>
         <head>
-          <title>Net Notes - ${netName}</title>
+          <title>Schedule Announcements - ${netName}</title>
           <style>
             body {
               font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -100,23 +104,18 @@ const Announcements: React.FC<AnnouncementsProps> = ({
             h1 { font-size: 1.5em; border-bottom: 1px solid #ddd; padding-bottom: 0.3em; }
             h2 { font-size: 1.3em; }
             h3 { font-size: 1.1em; }
-            ul, ol { margin: 0.5em 0; padding-left: 1.5em; }
+            ul, ol { padding-left: 1.5em; }
             li { margin: 0.3em 0; }
             hr { border: none; border-top: 1px solid #ddd; margin: 1.5em 0; }
             @media print {
-              body { background-color: white; }
-              .content { box-shadow: none; }
+              body { background: white; }
+              .content { box-shadow: none; border: 1px solid #ccc; }
             }
           </style>
         </head>
         <body>
-          <div class="header">
-            <h1>Net Notes</h1>
-            <p><strong>Net:</strong> ${netName}</p>
-          </div>
-          <div class="content">
-            ${htmlContent}
-          </div>
+          <h1 class="header">Schedule Announcements - ${netName}</h1>
+          <div class="content">${htmlContent}</div>
         </body>
         </html>
       `);
@@ -128,15 +127,13 @@ const Announcements: React.FC<AnnouncementsProps> = ({
 
   return (
     <Rnd
-      style={{
-        zIndex: 1300,
-      }}
+      style={{ zIndex: 1300 }}
       position={{ x: windowState.x, y: windowState.y }}
       size={{ width: windowState.width, height: windowState.height }}
-      onDragStop={(_e, d) => {
+      onDragStop={(_e: any, d: any) => {
         setWindowState(prev => ({ ...prev, x: d.x, y: d.y }));
       }}
-      onResizeStop={(_e, _direction, ref, _delta, position) => {
+      onResizeStop={(_e: any, _direction: any, ref: any, _delta: any, position: any) => {
         setWindowState({
           x: position.x,
           y: position.y,
@@ -148,7 +145,6 @@ const Announcements: React.FC<AnnouncementsProps> = ({
       minHeight={minimized ? 48 : 200}
       bounds="window"
       dragHandleClassName="drag-handle"
-      disableDragging={false}
       enableResizing={!minimized}
     >
       <Paper
@@ -162,7 +158,6 @@ const Announcements: React.FC<AnnouncementsProps> = ({
           overflow: 'hidden',
         }}
       >
-        {/* ========== TITLE BAR ========== */}
         <Box
           className="drag-handle"
           sx={{
@@ -178,34 +173,25 @@ const Announcements: React.FC<AnnouncementsProps> = ({
           }}
         >
           <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-            Net Notes
+            Schedule Announcements
           </Typography>
           <Box sx={{ display: 'flex', gap: 0.5 }}>
-            <IconButton
-              size="small"
-              onClick={handleOpenInNewTab}
-              title="Open in new tab"
-            >
+            <IconButton size="small" onClick={handleOpenInNewTab} title="Open in new tab">
               <OpenInNewIcon fontSize="small" />
             </IconButton>
             <IconButton
               size="small"
               onClick={() => setMinimized(!minimized)}
-              title={minimized ? "Restore" : "Minimize"}
+              title={minimized ? 'Restore' : 'Minimize'}
             >
               {minimized ? <CropSquareIcon fontSize="small" /> : <MinimizeIcon fontSize="small" />}
             </IconButton>
-            <IconButton
-              size="small"
-              onClick={onClose}
-              title="Close"
-            >
+            <IconButton size="small" onClick={onClose} title="Close">
               <CloseIcon fontSize="small" />
             </IconButton>
           </Box>
         </Box>
 
-        {/* ========== CONTENT AREA ========== */}
         {!minimized && (
           <Box
             sx={{
@@ -221,28 +207,21 @@ const Announcements: React.FC<AnnouncementsProps> = ({
               '& h1:first-of-type, & h2:first-of-type, & h3:first-of-type': {
                 mt: 0,
               },
-              '& ul, & ol': {
-                pl: 3,
-                my: 1,
-              },
-              '& li': {
-                my: 0.5,
-              },
+              '& ul, & ol': { pl: 3, my: 1 },
+              '& li': { my: 0.5 },
               '& hr': {
                 border: 'none',
                 borderTop: `1px solid ${isDarkMode ? '#444' : '#e0e0e0'}`,
                 my: 2,
               },
-              '& p': {
-                my: 1,
-              },
+              '& p': { my: 1 },
             }}
           >
             {announcements ? (
               <ReactMarkdown>{announcements}</ReactMarkdown>
             ) : (
               <Typography color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                No notes have been added for this net.
+                No schedule announcements have been defined.
               </Typography>
             )}
           </Box>
@@ -252,4 +231,4 @@ const Announcements: React.FC<AnnouncementsProps> = ({
   );
 };
 
-export default Announcements;
+export default ScheduleAnnouncements;
