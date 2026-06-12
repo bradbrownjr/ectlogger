@@ -194,6 +194,36 @@ When making **user-impacting changes** (new features, workflow changes, UI chang
    Put the feature name in the item text, not in the section title.
 6. Each entry's `sections` array: `{ title, type, items: [{ text, userImpact? }] }`. Mark `userImpact: true` on items that directly affect user workflow.
 
+### Changelog Item Format
+
+Every changelog item must follow this pattern — no exceptions:
+
+```
+Category: Short label — Full sentence explaining what changed and why the user benefits.
+```
+
+**Rules:**
+
+- **Category is always required.** Use the area of the app or scope the change affects: `Mobile`, `Profile`, `Archived Nets`, `Net View`, `Schedule`, `Admin`, `Check-in`, `Changelog PDF`, etc. Never write an item without a category prefix.
+- **Use a colon** (not an em-dash) to separate the category from the label. `Profile: Net history` not `Profile — Net history`.
+- **Always include the why.** The sentence after the dash answers: what can the user now do, or what problem went away? If it only says what changed technically and not why it helps, rewrite it.
+- **Write for operators, not developers.** Forbidden terms: "drill-down", "component", "endpoint", "schema", "refactor", "overflow", "boolean flag", "modal". Use plain language: "your past nets", "the list narrows", "you can now jump to".
+- **Group related changes under one item** when they serve the same user goal. Three UI changes that all help the user find past nets belong together, not as three separate entries.
+
+**In `CHANGELOG.md`**, the bold portion wraps the `Category: Label`, and a ` — ` separates it from the explanatory sentence:
+
+```
+* **Category: Label** — Sentence explaining the benefit.
+```
+
+**In `changelog.json`**, the entire item is one plain string in the same format:
+
+```
+"Category: Label — sentence explaining the benefit."
+```
+
+Both files must be updated together and must tell the same story.
+
 Users see a red badge on the info icon (lower-left) until they view the changelog. The badge only reappears when the top-level `version` string changes, so only bump it when deploying user-facing changes. Subscribed users (Profile → "What's New emails") also receive a consolidated 8 AM email digest the morning after a release.
 
 ### Development Workflow

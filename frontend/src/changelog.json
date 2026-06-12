@@ -10,23 +10,19 @@
           "type": "improvement",
           "items": [
             {
-              "text": "The PDF changelog export now features a styled layout matching the email digest: a blue header banner, color-coded section headings with emoji icons, and tinted item backgrounds.",
+              "text": "Changelog PDF: Styled layout — the PDF now matches the What's New email design with a color-coded header and labeled sections, making it easier to read and share.",
               "userImpact": false
             },
             {
-              "text": "Mobile responsive improvements: all data tables now scroll horizontally on narrow screens instead of overflowing, dialogs use tighter margins on small phones so more content is visible, and the Bulk Check-in window resizes to fit the viewport on mobile devices.",
+              "text": "Mobile: Narrow-screen layout fixes — data tables scroll horizontally instead of overflowing, and dialogs use compact margins on small phones so forms are fully usable without zooming.",
               "userImpact": true
             },
             {
-              "text": "Profile Activity — Favorite Nets drill-down: clicking any net name in the Favorite Nets section now expands a session list showing every individual net from that schedule that you have attended, with dates and a direct link to the net report.",
+              "text": "Profile: Personal net history is now navigable — your activity summary and net list on the Activity tab are clickable. Select any summary card or net name to see the individual sessions behind it and open any net report directly.",
               "userImpact": true
             },
             {
-              "text": "Profile Activity — Stat card drill-down: the four activity summary cards (Total Check-ins, Nets Joined, As NCS, Last 30 Days) are now clickable. Clicking a card expands a list of the underlying nets so you can see exactly which sessions make up each number and jump directly to any net report.",
-              "userImpact": true
-            },
-            {
-              "text": "Archived Nets — personal filters: two new checkboxes (Attended / Ran as NCS) let you narrow the archive to nets you personally participated in. Checked-in users see only nets they attended; NCS operators see only nets they ran.",
+              "text": "Archived Nets: Filter to nets you participated in — two checkboxes in the Archived Nets dialog let you narrow the list to nets you personally attended or ran as NCS, so you can find your own history without scrolling through everything.",
               "userImpact": true
             }
           ]

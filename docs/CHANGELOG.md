@@ -8,11 +8,10 @@ All notable changes to ECTLogger are documented here.
 
 ## Improvements
 
-* **Styled PDF changelog export** — The "Download changelog" PDF now features a layout matching the What's New email digest: a blue header banner, color-coded section headings with emoji icons, and tinted item backgrounds.
-* **Mobile responsive improvements** — All data tables now scroll horizontally on narrow screens instead of overflowing the viewport. Dialogs use tighter margins on small phones so form fields have more room. The Bulk Check-in floating window resizes to fit the viewport width on mobile devices.
-* **Profile Activity — Favorite Nets drill-down** — Clicking any net name in the Favorite Nets section expands a session list showing every individual net from that schedule you have attended, with the date and a direct link to the net report.
-* **Profile Activity — Stat card drill-down** — The four activity cards (Total Check-ins, Nets Joined, As NCS, Last 30 Days) are now clickable. Selecting a card expands a list of the nets behind that number so you can navigate directly to any net report.
-* **Archived Nets — personal filters** — Two new checkboxes in the Archived Nets dialog (Attended / Ran as NCS) let you narrow the list to nets you personally participated in or ran. Filters work alongside the existing text and date filters.
+* **Changelog PDF: Styled layout** — The PDF now matches the What's New email design with a color-coded header and labeled sections, making it easier to read and share.
+* **Mobile: Narrow-screen layout fixes** — Data tables scroll horizontally instead of overflowing, and dialogs use compact margins on small phones so forms are fully usable without zooming.
+* **Profile: Personal net history is now navigable** — Your activity summary and net list on the Activity tab are clickable. Select any summary card or net name to see the individual sessions behind it and open any net report directly.
+* **Archived Nets: Filter to nets you participated in** — Two checkboxes in the Archived Nets dialog let you narrow the list to nets you personally attended or ran as NCS, so you can find your own history without scrolling through everything.
 
 ---
 
