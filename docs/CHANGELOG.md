@@ -4,6 +4,15 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# June 18, 2026
+
+## Bug Fixes
+
+* **Net Reminders: Correct timing and no duplicates** — Reminder emails now arrive about one hour before a net in its own local time, instead of several hours early, and you receive a single reminder rather than a new one every 15 minutes. Reminders for nets that use a digital talkgroup also send reliably again. Root causes: scheduled net times were compared as if they were UTC instead of the net's local timezone (firing the window hours early); the next-net time drifted by fractions of a second each run so the "already sent" check never matched (re-sending every cycle); and the email's frequency formatting referenced fields that don't exist on digital/talkgroup frequencies (raising an error before the email could send).
+* **Sign In: Friendlier expired-link screen** — If a magic link has expired, the sign-in page now gives you a button to return and request a new one, and if you're already signed in on that device it simply confirms that instead of showing a verification error.
+
+---
+
 # June 12, 2026
 
 ## New Features

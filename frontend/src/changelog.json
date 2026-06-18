@@ -1,6 +1,26 @@
 {
-  "version": "2026.06.12",
+  "version": "2026.06.18",
   "entries": [
+    {
+      "version": "2026.06.18",
+      "date": "2026-06-18",
+      "sections": [
+        {
+          "title": "Bug Fixes",
+          "type": "bugfix",
+          "items": [
+            {
+              "text": "Net Reminders: Correct timing and no duplicates — reminder emails now arrive about one hour before a net in its own local time, instead of several hours early, and you receive a single reminder rather than a new one every 15 minutes. Reminders for nets that use a digital talkgroup also send reliably again.",
+              "userImpact": true
+            },
+            {
+              "text": "Sign In: Friendlier expired-link screen — if a magic link has expired, the sign-in page now gives you a button to return and request a new one, and if you're already signed in on that device it simply confirms that instead of showing a verification error.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.06.12",
       "date": "2026-06-12",

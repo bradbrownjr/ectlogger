@@ -17,7 +17,7 @@ from app.config import settings
 from app.logger import logger
 
 # Import the schedule calculation functions from the router
-from app.routers.ncs_rotation import compute_ncs_schedule, calculate_schedule_dates
+from app.routers.ncs_rotation import compute_ncs_schedule, calculate_schedule_dates, template_local_to_utc
 
 
 class NCSReminderService:
@@ -171,13 +171,16 @@ class NCSReminderService:
                 for entry in schedule:
                     if not entry.user_id or entry.is_cancelled:
                         continue
-                    
-                    scheduled_dt = entry.date
-                    
+
+                    # entry.date is a naive *local* datetime; convert to UTC so the
+                    # window math and dedup compare against datetime.utcnow() correctly.
+                    scheduled_local = entry.date
+                    scheduled_utc = template_local_to_utc(template, scheduled_local)
+
                     # Calculate hours until the net
-                    time_until = scheduled_dt - now
+                    time_until = scheduled_utc - now
                     hours_until = time_until.total_seconds() / 3600
-                    
+
                     # Check if we should send a reminder
                     for reminder_hours in self.REMINDER_HOURS:
                         # Check if we're within the reminder window (±30 minutes)
@@ -185,14 +188,14 @@ class NCSReminderService:
                             reminder_type = f"{reminder_hours}h"
                             already_sent = await self._check_reminder_sent(
                                 db, template.id, entry.user_id,
-                                scheduled_dt, reminder_type
+                                scheduled_utc, reminder_type
                             )
-                            
+
                             if not already_sent:
                                 user = await self._get_user(db, entry.user_id)
                                 if user and user.email:
                                     await self._send_reminder(
-                                        db, template, user, scheduled_dt, reminder_hours
+                                        db, template, user, scheduled_local, scheduled_utc, reminder_hours
                                     )
                                     reminders_sent += 1
             
@@ -229,14 +232,19 @@ class NCSReminderService:
         return result.scalar_one_or_none()
     
     async def _send_reminder(
-        self, 
-        db, 
-        template: NetTemplate, 
-        user: User, 
-        scheduled_dt: datetime,
+        self,
+        db,
+        template: NetTemplate,
+        user: User,
+        scheduled_local: datetime,
+        scheduled_utc: datetime,
         hours_until: int
     ):
-        """Send a reminder email and log it"""
+        """Send a reminder email and log it.
+
+        scheduled_local is the net's local wall-clock time (used for email display);
+        scheduled_utc is the UTC equivalent (used for net lookups and dedup logging).
+        """
         try:
             # Format frequencies for the email
             frequencies = []
@@ -246,10 +254,10 @@ class NCSReminderService:
                         'frequency': str(freq.frequency),
                         'mode': freq.mode
                     })
-                elif freq.talkgroup_name:
+                elif freq.talkgroup:
                     frequencies.append({
-                        'talkgroup_name': freq.talkgroup_name,
-                        'talkgroup_id': freq.talkgroup_id
+                        'talkgroup_name': freq.network or freq.talkgroup,
+                        'talkgroup_id': freq.talkgroup
                     })
             
             # Get operator name and callsign
@@ -263,7 +271,7 @@ class NCSReminderService:
             # direct link to the waiting net in their email.
             net_url = None
             if hours_until >= 20:  # ~24h window
-                net_id = await self._get_or_create_scheduled_net(db, template, scheduled_dt)
+                net_id = await self._get_or_create_scheduled_net(db, template, scheduled_utc)
                 if net_id:
                     net_url = f"{settings.frontend_url}/nets/{net_id}"
             else:
@@ -274,43 +282,43 @@ class NCSReminderService:
                         and_(
                             Net.template_id == template.id,
                             Net.status.notin_(['closed', 'archived']),
-                            Net.scheduled_start_time >= scheduled_dt - timedelta(minutes=5),
-                            Net.scheduled_start_time <= scheduled_dt + timedelta(minutes=5),
+                            Net.scheduled_start_time >= scheduled_utc - timedelta(minutes=5),
+                            Net.scheduled_start_time <= scheduled_utc + timedelta(minutes=5),
                         )
                     )
                 )
                 existing = result.scalar_one_or_none()
                 if existing:
                     net_url = f"{settings.frontend_url}/nets/{existing.id}"
-            
+
             await EmailService.send_ncs_reminder(
                 to_email=user.email,
                 operator_name=operator_name,
                 operator_callsign=operator_callsign,
                 net_name=template.name,
-                net_date=scheduled_dt.strftime("%A, %B %d, %Y"),
-                net_time=scheduled_dt.strftime("%I:%M %p"),
+                net_date=scheduled_local.strftime("%A, %B %d, %Y"),
+                net_time=scheduled_local.strftime("%I:%M %p"),
                 frequencies=frequencies,
                 hours_until=hours_until,
                 scheduler_url=scheduler_url,
                 net_url=net_url,
                 unsubscribe_token=user.unsubscribe_token
             )
-            
-            # Log that we sent this reminder
+
+            # Log that we sent this reminder (keyed on UTC for stable dedup)
             reminder_log = NCSReminderLog(
                 template_id=template.id,
                 user_id=user.id,
-                scheduled_date=scheduled_dt,
+                scheduled_date=scheduled_utc,
                 reminder_type=f"{hours_until}h",
                 sent_at=datetime.utcnow()
             )
             db.add(reminder_log)
             await db.commit()
-            
+
             logger.info(
-                "NCS_REMINDER", 
-                f"Sent {hours_until}h reminder to {user.email} for {template.name} on {scheduled_dt.date()}"
+                "NCS_REMINDER",
+                f"Sent {hours_until}h reminder to {user.email} for {template.name} on {scheduled_local.date()}"
             )
             
         except Exception as e:
@@ -352,11 +360,13 @@ class NCSReminderService:
                     if not dates:
                         continue
                     
-                    next_date = dates[0]  # Get the next scheduled date
+                    next_local = dates[0]  # Next scheduled date (naive local time)
+                    # Convert to UTC so window math and dedup match datetime.utcnow().
+                    next_date = template_local_to_utc(template, next_local)
                 except Exception as e:
                     logger.error("SUBSCRIBER_REMINDER", f"Error calculating dates for template {template.id}: {str(e)}")
                     continue
-                
+
                 # Calculate hours until the net
                 time_until = next_date - now
                 hours_until = time_until.total_seconds() / 3600
@@ -390,7 +400,7 @@ class NCSReminderService:
                     
                     # Send the reminder
                     try:
-                        await self._send_subscriber_reminder(db, template, user, next_date)
+                        await self._send_subscriber_reminder(db, template, user, next_local, next_date)
                         reminders_sent += 1
                     except Exception as e:
                         logger.error("SUBSCRIBER_REMINDER", f"Failed to send reminder to {user.email}: {str(e)}")
@@ -403,9 +413,14 @@ class NCSReminderService:
         db,
         template: NetTemplate,
         user: User,
-        scheduled_dt: datetime
+        scheduled_local: datetime,
+        scheduled_utc: datetime
     ):
-        """Send a subscriber reminder email and log it"""
+        """Send a subscriber reminder email and log it.
+
+        scheduled_local is the net's local wall-clock time (used for email display);
+        scheduled_utc is the UTC equivalent (used for net lookup and dedup logging).
+        """
         # Format frequencies for the email
         frequencies = []
         for freq in template.frequencies:
@@ -414,16 +429,16 @@ class NCSReminderService:
                     'frequency': str(freq.frequency),
                     'mode': freq.mode
                 })
-            elif freq.talkgroup_name:
+            elif freq.talkgroup:
                 frequencies.append({
-                    'talkgroup_name': freq.talkgroup_name,
-                    'talkgroup_id': freq.talkgroup_id
+                    'talkgroup_name': freq.talkgroup,
+                    'talkgroup_id': freq.network
                 })
-        
+
         # Get user name and callsign
         recipient_name = user.name or display_callsign(user) or "Operator"
         recipient_callsign = display_callsign(user) or "N/A"
-        
+
         # Build net URL — find the open/scheduled net for this template
         net_url = f"{settings.frontend_url}/dashboard"
         result = await db.execute(
@@ -432,41 +447,41 @@ class NCSReminderService:
                 and_(
                     Net.template_id == template.id,
                     Net.status.notin_(['closed', 'archived']),
-                    Net.scheduled_start_time >= scheduled_dt - timedelta(hours=4),
-                    Net.scheduled_start_time <= scheduled_dt + timedelta(hours=4),
+                    Net.scheduled_start_time >= scheduled_utc - timedelta(hours=4),
+                    Net.scheduled_start_time <= scheduled_utc + timedelta(hours=4),
                 )
             )
         )
         existing_net = result.scalar_one_or_none()
         if existing_net:
             net_url = f"{settings.frontend_url}/nets/{existing_net.id}"
-        
+
         await EmailService.send_subscriber_reminder(
             to_email=user.email,
             recipient_name=recipient_name,
             recipient_callsign=recipient_callsign,
             net_name=template.name,
-            net_date=scheduled_dt.strftime("%A, %B %d, %Y"),
-            net_time=scheduled_dt.strftime("%I:%M %p"),
+            net_date=scheduled_local.strftime("%A, %B %d, %Y"),
+            net_time=scheduled_local.strftime("%I:%M %p"),
             frequencies=frequencies,
             net_url=net_url,
             unsubscribe_token=user.unsubscribe_token
         )
-        
-        # Log that we sent this reminder
+
+        # Log that we sent this reminder (keyed on UTC for stable dedup)
         reminder_log = NCSReminderLog(
             template_id=template.id,
             user_id=user.id,
-            scheduled_date=scheduled_dt,
+            scheduled_date=scheduled_utc,
             reminder_type="subscriber_1h",
             sent_at=datetime.utcnow()
         )
         db.add(reminder_log)
         await db.commit()
-        
+
         logger.info(
             "SUBSCRIBER_REMINDER",
-            f"Sent 1h reminder to {user.email} for {template.name} on {scheduled_dt.date()}"
+            f"Sent 1h reminder to {user.email} for {template.name} on {scheduled_local.date()}"
         )
 
 

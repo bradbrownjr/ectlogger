@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Container, Typography, CircularProgress, Box } from '@mui/material';
+import { Container, Typography, CircularProgress, Box, Button } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
 import { authApi } from '../services/api';
 
 const VerifyMagicLink: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const [error, setError] = useState<string>('');
   const [verifying, setVerifying] = useState(true);
 
@@ -15,7 +15,7 @@ const VerifyMagicLink: React.FC = () => {
     const verifyToken = async () => {
       const token = searchParams.get('token');
       const redirect = searchParams.get('redirect');
-      
+
       if (!token) {
         setError('No verification token provided');
         setVerifying(false);
@@ -46,6 +46,20 @@ const VerifyMagicLink: React.FC = () => {
             <CircularProgress size={60} sx={{ mb: 2 }} />
             <Typography variant="h5">Verifying your magic link...</Typography>
           </>
+        ) : isAuthenticated ? (
+          // The link failed, but an existing session is still valid (e.g. an older
+          // or already-used link clicked while signed in on this device).
+          <>
+            <Typography variant="h5" gutterBottom>
+              You're already signed in
+            </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+              That magic link is no longer valid, but you're still signed in on this device.
+            </Typography>
+            <Button variant="contained" onClick={() => navigate('/dashboard')}>
+              Go to Dashboard
+            </Button>
+          </>
         ) : (
           <>
             <Typography variant="h5" color="error" gutterBottom>
@@ -54,9 +68,12 @@ const VerifyMagicLink: React.FC = () => {
             <Typography variant="body1" color="text.secondary">
               {error}
             </Typography>
-            <Typography variant="body2" sx={{ mt: 2 }}>
-              Please request a new magic link from the login page.
+            <Typography variant="body2" sx={{ mt: 2, mb: 3 }}>
+              Magic links expire after a period of time. Request a new one to sign in.
             </Typography>
+            <Button variant="contained" onClick={() => navigate('/login')}>
+              Return to Sign In
+            </Button>
           </>
         )}
       </Box>

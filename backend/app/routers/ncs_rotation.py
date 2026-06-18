@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete, and_
 from sqlalchemy.orm import selectinload
 from typing import List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from dateutil.relativedelta import relativedelta
 from dateutil.rrule import rrule, DAILY, WEEKLY, MONTHLY
 import json
@@ -76,6 +76,24 @@ async def check_template_permission(template: NetTemplate, user: User, db: Async
     return False
 
 
+def template_local_to_utc(template: NetTemplate, local_dt: datetime) -> datetime:
+    """Convert a naive datetime expressed in the template's scheduling timezone to naive UTC.
+
+    calculate_schedule_dates() returns naive datetimes whose wall-clock value is the
+    net's *local* start time (from schedule_config 'time'/'timezone'). Callers that
+    compare against datetime.utcnow() (e.g. the reminder service) must convert first,
+    or reminders fire hours early. Returns a naive UTC datetime to match utcnow().
+    """
+    import zoneinfo
+    config = json.loads(template.schedule_config) if isinstance(template.schedule_config, str) else (template.schedule_config or {})
+    tz_name = config.get('timezone', 'America/New_York')
+    try:
+        local_tz = zoneinfo.ZoneInfo(tz_name)
+    except Exception:
+        local_tz = zoneinfo.ZoneInfo('America/New_York')
+    return local_dt.replace(tzinfo=local_tz).astimezone(timezone.utc).replace(tzinfo=None)
+
+
 def calculate_schedule_dates(template: NetTemplate, start_date: datetime, months_ahead: int = 6) -> List[datetime]:
     """Calculate all scheduled net dates based on template schedule config"""
     if template.schedule_type == 'ad_hoc':
@@ -95,14 +113,14 @@ def calculate_schedule_dates(template: NetTemplate, start_date: datetime, months
     
     if template.schedule_type == 'daily':
         rule = rrule(DAILY, dtstart=start_date, until=end_date)
-        dates = [dt.replace(hour=hour, minute=minute) for dt in rule]
+        dates = [dt.replace(hour=hour, minute=minute, second=0, microsecond=0) for dt in rule]
         
     elif template.schedule_type == 'weekly':
         day_of_week = config.get('day_of_week', 0)  # 0 = Sunday
         # Convert to Python weekday (0 = Monday)
         python_weekday = (day_of_week - 1) % 7 if day_of_week > 0 else 6
         rule = rrule(WEEKLY, byweekday=python_weekday, dtstart=start_date, until=end_date)
-        dates = [dt.replace(hour=hour, minute=minute) for dt in rule]
+        dates = [dt.replace(hour=hour, minute=minute, second=0, microsecond=0) for dt in rule]
         
     elif template.schedule_type == 'monthly':
         day_of_week = config.get('day_of_week', 0)
@@ -127,9 +145,9 @@ def calculate_schedule_dates(template: NetTemplate, start_date: datetime, months
             for week_num in weeks_of_month:
                 if week_num == 5:  # Last occurrence
                     if week_occurrences:
-                        dates.append(week_occurrences[-1].replace(hour=hour, minute=minute))
+                        dates.append(week_occurrences[-1].replace(hour=hour, minute=minute, second=0, microsecond=0))
                 elif 1 <= week_num <= len(week_occurrences):
-                    dates.append(week_occurrences[week_num - 1].replace(hour=hour, minute=minute))
+                    dates.append(week_occurrences[week_num - 1].replace(hour=hour, minute=minute, second=0, microsecond=0))
             
             current += relativedelta(months=1)
     
