@@ -751,6 +751,119 @@ This is an automated message, please do not reply.
         )
 
     @staticmethod
+    async def send_staff_reminder(
+        to_email: str,
+        recipient_name: str,
+        recipient_callsign: str,
+        net_name: str,
+        net_date: str,
+        net_time: str,
+        frequencies: list,
+        net_url: str,
+        lobby_url: str,
+        unsubscribe_token: str = None
+    ):
+        """Send net-start reminder to template staff 1 hour before the net"""
+        logger.info("EMAIL", f"Sending staff reminder to {to_email} for {net_name}")
+
+        freq_list = ""
+        for freq in frequencies:
+            if freq.get('frequency'):
+                freq_list += f"<li>{freq['frequency']} MHz - {freq.get('mode', 'N/A')}</li>"
+            elif freq.get('talkgroup_name'):
+                freq_list += f"<li>{freq['talkgroup_name']} (TG: {freq.get('talkgroup_id', 'N/A')})</li>"
+        if not freq_list:
+            freq_list = "<li>No frequencies configured</li>"
+
+        html_template = Template("""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .alert { background-color: #fff8e1; border-left: 4px solid #f9a825; padding: 15px; margin: 20px 0; border-radius: 4px; }
+                .details { background-color: #f5f5f5; padding: 15px; border-radius: 4px; margin: 20px 0; }
+                .buttons { margin: 20px 0; }
+                .button {
+                    display: inline-block;
+                    padding: 12px 24px;
+                    background-color: #1976d2;
+                    color: #ffffff !important;
+                    text-decoration: none;
+                    border-radius: 4px;
+                    font-weight: bold;
+                    margin-right: 12px;
+                }
+                .button-green {
+                    background-color: #2e7d32;
+                }
+                .footer { margin-top: 30px; font-size: 12px; color: #666; }
+                ul { margin: 10px 0; padding-left: 20px; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h2>&#128251; Net Control Reminder</h2>
+
+                <div class="alert">
+                    <strong>You are listed as one of the net control stations for this net. Remember, it begins in one hour!</strong>
+                </div>
+
+                <p>Hello {{ recipient_name }} ({{ recipient_callsign }}),</p>
+
+                <p>This is your one-hour heads-up that <strong>{{ net_name }}</strong> is coming up. If no one else has opened the lobby yet, please do so when you're ready.</p>
+
+                <div class="details">
+                    <h3>Net Details</h3>
+                    <p><strong>Net:</strong> {{ net_name }}</p>
+                    <p><strong>Date:</strong> {{ net_date }}</p>
+                    <p><strong>Time:</strong> {{ net_time }}</p>
+                    <p><strong>Frequencies:</strong></p>
+                    <ul>
+                        {{ freq_list }}
+                    </ul>
+                </div>
+
+                <div class="buttons">
+                    <a href="{{ net_url }}" class="button" style="color: #ffffff;">Access Net</a>
+                    <a href="{{ lobby_url }}" class="button button-green" style="color: #ffffff;">Open Lobby</a>
+                </div>
+
+                <p style="font-size: 13px; color: #555;">The <em>Open Lobby</em> button loads the net and opens the lobby immediately. Use <em>Access Net</em> to view first.</p>
+
+                <div class="footer">
+                    <p>This is an automated reminder from {{ app_name }}.</p>
+                    <p>You can disable these reminders in your profile settings.</p>
+                </div>
+
+                {{ unsubscribe_footer }}
+            </div>
+        </body>
+        </html>
+        """)
+
+        html_content = html_template.render(
+            recipient_name=recipient_name,
+            recipient_callsign=recipient_callsign,
+            net_name=net_name,
+            net_date=net_date,
+            net_time=net_time,
+            freq_list=freq_list,
+            net_url=net_url,
+            lobby_url=lobby_url,
+            app_name=settings.app_name,
+            unsubscribe_footer=EmailService.get_unsubscribe_footer(unsubscribe_token)
+        )
+
+        await EmailService.send_email(
+            to_email=to_email,
+            subject=f"📻 NCS Reminder: {net_name} starts in 1 hour — {net_time}",
+            html_content=html_content,
+            unsubscribe_token=unsubscribe_token
+        )
+
+    @staticmethod
     async def send_net_log(
         email: str, 
         net_name: str, 

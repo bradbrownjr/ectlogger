@@ -11,7 +11,7 @@ from sqlalchemy import select, and_
 from sqlalchemy.orm import selectinload
 from app.database import AsyncSessionLocal
 from app.utils import display_callsign
-from app.models import NetTemplate, NCSRotationMember, NCSReminderLog, NCSScheduleOverride, User, NetTemplateSubscription, Net, NetStatus
+from app.models import NetTemplate, NCSRotationMember, NCSReminderLog, NCSScheduleOverride, User, NetTemplateSubscription, Net, NetStatus, TemplateStaff
 from app.email_service import EmailService
 from app.config import settings
 from app.logger import logger
@@ -55,7 +55,9 @@ class NCSReminderService:
         """Main loop that periodically checks for reminders to send"""
         while self.running:
             try:
+                await self._check_and_auto_create_nets()
                 await self._check_and_send_ncs_reminders()
+                await self._check_and_send_staff_reminders()
                 await self._check_and_send_subscriber_reminders()
             except Exception as e:
                 logger.error("NCS_REMINDER", f"Error in reminder loop: {str(e)}")
@@ -124,6 +126,174 @@ class NCSReminderService:
             logger.error("NCS_REMINDER", f"Failed to auto-create net for template {template.id}: {e}")
             await db.rollback()
             return None
+
+    async def _check_and_auto_create_nets(self):
+        """Ensure a SCHEDULED net instance exists ~24h before every recurring template.
+
+        Decoupled from NCS rotation so nets without a rotation still appear on the
+        dashboard a full day in advance. _get_or_create_scheduled_net is idempotent,
+        so running this every 15 minutes is safe.
+        """
+        logger.debug("NCS_REMINDER", "Checking for nets to auto-create...")
+
+        async with AsyncSessionLocal() as db:
+            result = await db.execute(
+                select(NetTemplate)
+                .options(selectinload(NetTemplate.frequencies))
+                .where(NetTemplate.is_active == True)
+            )
+            templates = result.scalars().all()
+
+            now = datetime.utcnow()
+            created = 0
+
+            for template in templates:
+                if template.schedule_type == 'ad_hoc':
+                    continue
+                try:
+                    dates = calculate_schedule_dates(template, now, months_ahead=1)
+                    if not dates:
+                        continue
+                    next_local = dates[0]
+                    next_utc = template_local_to_utc(template, next_local)
+                except Exception as e:
+                    logger.error("NCS_REMINDER", f"Auto-create: error calculating dates for template {template.id}: {e}")
+                    continue
+
+                hours_until = (next_utc - now).total_seconds() / 3600
+                if abs(hours_until - 24) <= 0.5:
+                    net_id = await self._get_or_create_scheduled_net(db, template, next_utc)
+                    if net_id:
+                        created += 1
+
+            if created > 0:
+                logger.info("NCS_REMINDER", f"Auto-created {created} scheduled net(s)")
+
+    async def _check_and_send_staff_reminders(self):
+        """Send 1h reminders to all active template staff for upcoming nets.
+
+        Staff reminders are operational — they go to everyone listed as staff for
+        the template regardless of whether they've subscribed via the bell icon.
+        The master email_notifications switch is respected; notify_net_reminder is
+        not required (staff have a duty, not a passive preference).
+
+        Staff members who already received a subscriber_1h reminder for this
+        net are skipped to avoid a duplicate email.
+        """
+        logger.debug("NCS_REMINDER", "Checking for staff reminders to send...")
+
+        async with AsyncSessionLocal() as db:
+            result = await db.execute(
+                select(NetTemplate)
+                .options(
+                    selectinload(NetTemplate.frequencies),
+                    selectinload(NetTemplate.staff).selectinload(TemplateStaff.user),
+                )
+                .where(NetTemplate.is_active == True)
+            )
+            templates = result.scalars().all()
+
+            now = datetime.utcnow()
+            reminders_sent = 0
+
+            for template in templates:
+                active_staff = [s for s in template.staff if s.is_active and s.user]
+                if not active_staff:
+                    continue
+                if template.schedule_type == 'ad_hoc':
+                    continue
+
+                try:
+                    dates = calculate_schedule_dates(template, now, months_ahead=1)
+                    if not dates:
+                        continue
+                    next_local = dates[0]
+                    next_utc = template_local_to_utc(template, next_local)
+                except Exception as e:
+                    logger.error("NCS_REMINDER", f"Staff reminder: error calculating dates for template {template.id}: {e}")
+                    continue
+
+                hours_until = (next_utc - now).total_seconds() / 3600
+                if not (0.5 <= hours_until <= 1.5):
+                    continue
+
+                # Find the net instance (should exist from _check_and_auto_create_nets)
+                net_result = await db.execute(
+                    select(Net).where(
+                        and_(
+                            Net.template_id == template.id,
+                            Net.status.notin_(['closed', 'archived']),
+                            Net.scheduled_start_time >= next_utc - timedelta(minutes=5),
+                            Net.scheduled_start_time <= next_utc + timedelta(minutes=5),
+                        )
+                    )
+                )
+                existing_net = net_result.scalar_one_or_none()
+                if not existing_net:
+                    existing_net_id = await self._get_or_create_scheduled_net(db, template, next_utc)
+                    net_id = existing_net_id
+                else:
+                    net_id = existing_net.id
+
+                net_url = f"{settings.frontend_url}/nets/{net_id}" if net_id else f"{settings.frontend_url}/dashboard"
+                lobby_url = f"{net_url}?open_lobby=1" if net_id else net_url
+
+                frequencies = []
+                for freq in template.frequencies:
+                    if freq.frequency:
+                        frequencies.append({'frequency': str(freq.frequency), 'mode': freq.mode})
+                    elif freq.talkgroup:
+                        frequencies.append({
+                            'talkgroup_name': freq.network or freq.talkgroup,
+                            'talkgroup_id': freq.talkgroup,
+                        })
+
+                for staff_entry in active_staff:
+                    user = staff_entry.user
+                    if not user.email or not user.email_notifications:
+                        continue
+
+                    # Skip if they already received a subscriber reminder for this net
+                    already_got_subscriber = await self._check_reminder_sent(
+                        db, template.id, user.id, next_utc, "subscriber_1h"
+                    )
+                    if already_got_subscriber:
+                        continue
+
+                    already_sent = await self._check_reminder_sent(
+                        db, template.id, user.id, next_utc, "staff_1h"
+                    )
+                    if already_sent:
+                        continue
+
+                    try:
+                        await EmailService.send_staff_reminder(
+                            to_email=user.email,
+                            recipient_name=user.name or display_callsign(user) or "Operator",
+                            recipient_callsign=display_callsign(user) or "N/A",
+                            net_name=template.name,
+                            net_date=next_local.strftime("%A, %B %d, %Y"),
+                            net_time=next_local.strftime("%I:%M %p"),
+                            frequencies=frequencies,
+                            net_url=net_url,
+                            lobby_url=lobby_url,
+                            unsubscribe_token=user.unsubscribe_token,
+                        )
+                        db.add(NCSReminderLog(
+                            template_id=template.id,
+                            user_id=user.id,
+                            scheduled_date=next_utc,
+                            reminder_type="staff_1h",
+                            sent_at=datetime.utcnow(),
+                        ))
+                        await db.commit()
+                        reminders_sent += 1
+                        logger.info("NCS_REMINDER", f"Sent staff 1h reminder to {user.email} for {template.name} on {next_local.date()}")
+                    except Exception as e:
+                        logger.error("NCS_REMINDER", f"Failed to send staff reminder to {user.email}: {e}")
+
+            if reminders_sent > 0:
+                logger.info("NCS_REMINDER", f"Sent {reminders_sent} staff reminder(s)")
 
     async def _check_and_send_ncs_reminders(self):
         """Check for upcoming nets and send reminders if needed"""

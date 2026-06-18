@@ -16,6 +16,18 @@
             {
               "text": "Sign In: Friendlier expired-link screen — if a magic link has expired, the sign-in page now gives you a button to return and request a new one, and if you're already signed in on that device it simply confirms that instead of showing a verification error.",
               "userImpact": true
+            },
+            {
+              "text": "Schedule: Staff get 1-hour net reminders — everyone listed as net staff for a recurring schedule now receives a reminder email one hour before the net begins, with an Access Net button and an Open Lobby button that loads the net and opens the lobby in one click.",
+              "userImpact": true
+            },
+            {
+              "text": "Schedule: Scheduled nets appear on the dashboard automatically — nets are now created on the dashboard 24 hours before their scheduled start time for all recurring schedules, not only those with an NCS rotation configured.",
+              "userImpact": true
+            },
+            {
+              "text": "Schedule: Net staff can start and manage nets — users listed as staff for a schedule can now open the lobby, manage check-ins, and close nets created from that schedule, without needing to be the net owner or hold a pre-assigned NCS role.",
+              "userImpact": true
             }
           ]
         }

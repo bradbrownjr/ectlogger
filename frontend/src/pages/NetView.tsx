@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { displayCallsign } from '../utils/userDisplay';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Container,
   Paper,
@@ -117,6 +117,7 @@ interface Net {
   started_at?: string;
   closed_at?: string;
   created_at: string;
+  can_manage?: boolean;  // Server-computed; true for owner, admin, NCS, and active template staff
 }
 
 interface Frequency {
@@ -243,6 +244,7 @@ const COMMON_IMPORT_TIMEZONES = [
 
 const NetView: React.FC = () => {
   const { netId } = useParams<{ netId: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [net, setNet] = useState<Net | null>(null);
   const [checkIns, setCheckIns] = useState<CheckIn[]>([]);
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
@@ -451,6 +453,24 @@ const NetView: React.FC = () => {
       return () => clearTimeout(timer);
     }
   }, [net?.id]); // Only depend on net.id to run once
+
+  // Auto-open lobby when ?open_lobby=1 is present (from staff reminder email button).
+  // Fires once after the net and user permissions are loaded. Uses net.can_manage
+  // (server-computed, includes template staff) so the check resolves correctly
+  // without a forward reference to canStartNet.
+  useEffect(() => {
+    if (!net || !user) return;
+    if (searchParams.get('open_lobby') !== '1') return;
+    if (net.status !== 'draft' && net.status !== 'scheduled') return;
+    const serverSaysCanManage = !!net.can_manage;
+    const isOwnerOrAdmin = net.owner_id === user.id || user.role === 'admin';
+    if (!serverSaysCanManage && !isOwnerOrAdmin) return;
+
+    // Remove the param so a refresh doesn't re-trigger
+    setSearchParams(prev => { prev.delete('open_lobby'); return prev; }, { replace: true });
+    handleStartNet();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [net?.id, net?.can_manage, user?.id]); // Re-check when server permissions arrive
 
   // Countdown and duration timer effect - updates every second
   useEffect(() => {
@@ -1767,12 +1787,12 @@ const NetView: React.FC = () => {
   // Role is stored as uppercase 'NCS' or 'LOGGER' in the database
   const isNCSOrLogger = userNetRole && (userNetRole.role === 'NCS' && userNetRole.is_active !== false || userNetRole.role === 'LOGGER');
   
-  // NCS users can manage the net (edit settings, close, etc.) - they're co-owners
-  const canManage = isOwner || isAdmin || isNCS;
+  // NCS users can manage the net (edit settings, close, etc.) - they're co-owners.
+  // net.can_manage is also true for active template staff (set server-side).
+  const canManage = isOwner || isAdmin || isNCS || !!net?.can_manage;
   const canManageCheckIns = canManage || isNCSOrLogger;
-  
-  // NCS can start/manage the net even if they're not the owner
-  const canStartNet = canManage || isNCS;
+
+  const canStartNet = canManage;
   
   // Check if net has any NCS assigned
   const hasNCS = netRoles.some((role: any) => role.role === 'NCS');

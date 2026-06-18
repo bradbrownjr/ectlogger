@@ -10,6 +10,9 @@ All notable changes to ECTLogger are documented here.
 
 * **Net Reminders: Correct timing and no duplicates** — Reminder emails now arrive about one hour before a net in its own local time, instead of several hours early, and you receive a single reminder rather than a new one every 15 minutes. Reminders for nets that use a digital talkgroup also send reliably again. Root causes: scheduled net times were compared as if they were UTC instead of the net's local timezone (firing the window hours early); the next-net time drifted by fractions of a second each run so the "already sent" check never matched (re-sending every cycle); and the email's frequency formatting referenced fields that don't exist on digital/talkgroup frequencies (raising an error before the email could send).
 * **Sign In: Friendlier expired-link screen** — If a magic link has expired, the sign-in page now gives you a button to return and request a new one, and if you're already signed in on that device it simply confirms that instead of showing a verification error.
+* **Schedule: Staff get 1-hour net reminders** — Everyone listed as net staff for a recurring schedule now receives a reminder email one hour before the net begins, with an Access Net button and an Open Lobby button that loads the net and opens the lobby in one click.
+* **Schedule: Scheduled nets appear on the dashboard automatically** — Nets are now created on the dashboard 24 hours before their scheduled start time for all recurring schedules, not only those with an NCS rotation configured.
+* **Schedule: Net staff can start and manage nets** — Users listed as staff for a schedule can now open the lobby, manage check-ins, and close nets created from that schedule, without needing to be the net owner or hold a pre-assigned NCS role.
 
 ---
 

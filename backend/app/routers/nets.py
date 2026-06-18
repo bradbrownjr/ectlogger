@@ -309,7 +309,18 @@ async def get_net(
             )
         )
         is_ncs = ncs_result.scalar_one_or_none() is not None
-        can_manage = is_owner or is_admin or is_ncs
+        # Active template staff can manage nets created from their template
+        is_template_staff = False
+        if not (is_owner or is_admin or is_ncs) and net.template_id:
+            staff_result = await db.execute(
+                select(TemplateStaff).where(
+                    TemplateStaff.template_id == net.template_id,
+                    TemplateStaff.user_id == current_user.id,
+                    TemplateStaff.is_active == True,
+                )
+            )
+            is_template_staff = staff_result.scalar_one_or_none() is not None
+        can_manage = is_owner or is_admin or is_ncs or is_template_staff
 
     # ========== CURRENT NCS ==========
     # Look up the most-recently-assigned NCS user for this net so the UI
@@ -513,9 +524,21 @@ async def start_net(
     if not net:
         raise HTTPException(status_code=404, detail="Net not found")
     
-    # Check permissions - owner, admin, or NCS can start
+    # Check permissions - owner, admin, NCS, or active template staff can start
     if not await check_net_permission(db, net, current_user, ["NCS"]):
-        raise HTTPException(status_code=403, detail="Not authorized to start this net")
+        # Also allow active template staff for nets created from their template
+        if net.template_id:
+            staff_result = await db.execute(
+                select(TemplateStaff).where(
+                    TemplateStaff.template_id == net.template_id,
+                    TemplateStaff.user_id == current_user.id,
+                    TemplateStaff.is_active == True,
+                )
+            )
+            if not staff_result.scalar_one_or_none():
+                raise HTTPException(status_code=403, detail="Not authorized to start this net")
+        else:
+            raise HTTPException(status_code=403, detail="Not authorized to start this net")
     
     if net.status == NetStatus.ACTIVE:
         raise HTTPException(status_code=400, detail="Net is already active")
