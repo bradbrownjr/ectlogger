@@ -177,6 +177,30 @@ admin-only settings go through the standard `GET /settings` / `PUT /settings` pa
 
 ---
 
+## Date & Time Handling
+
+ECTLogger deals with two fundamentally different kinds of time, and they are stored differently **on purpose**:
+
+**1. Concrete net instances — stored in UTC.**
+`Net.scheduled_start_time` (and `started_at`, `closed_at`, etc.) are absolute instants. They are stored in UTC and rendered in each viewer's local time:
+
+- Manual creation converts the picker value with `new Date(...).toISOString()` (`CreateNet.tsx`).
+- Template-created nets convert local → UTC before storage (`routers/templates.py`).
+- The frontend renders with a per-user local/UTC choice (`formatDateTime(..., user.prefer_utc)` in `Dashboard.tsx`).
+
+This is what makes multi-timezone nets correct: the net happens at one instant, and a viewer in any zone sees it converted to their own clock.
+
+**2. Recurring schedule templates — stored as a local-time recurrence rule + IANA zone.**
+`NetTemplate.schedule_config` holds `time` (e.g. `"19:00"`), `timezone` (e.g. `"America/New_York"`), and day/week fields. This is a *rule*, not a timestamp, and it must stay in local time.
+
+> **Why not UTC?** A recurring rule like "every Thursday at 7 PM Eastern" cannot be expressed as a fixed UTC time, because daylight saving moves it twice a year (23:00 UTC in summer, 00:00 UTC in winter). Collapsing the rule to a single UTC offset would silently shift every net by an hour across a DST boundary. Storing local-time + IANA zone and converting **each computed occurrence** to UTC is exactly how the iCalendar standard handles this (RFC 5545: `DTSTART` + `TZID` + `RRULE`).
+
+**The rule that prevents reminder/scheduling bugs:** `calculate_schedule_dates()` (in `routers/ncs_rotation.py`) projects *naive local* datetimes from the template rule. Any consumer that compares those projections against "now" must first convert with `template_local_to_utc(template, dt)` — never compare a naive local datetime against `datetime.utcnow()`. (This was the root cause of the June 2026 early/duplicate-reminder bug.)
+
+**Current storage caveat (see ROADMAP — "UTC-aware datetime hardening"):** on SQLite, `DateTime(timezone=True)` does not actually persist an offset, so UTC instants are stored *naive by convention*. That is why several frontend call sites defensively append `'Z'` before parsing, and why backend boundary helpers return naive UTC. This convention is fragile and would break under PostgreSQL (`timestamptz` returns tz-aware values); the roadmap item tracks standardizing on tz-aware UTC end-to-end.
+
+---
+
 ## WebSocket
 
 Endpoint: `WS /api/ws/nets/{net_id}?token=<jwt>`
