@@ -371,3 +371,65 @@ sx={{ backgroundColor: alpha(theme.palette.primary.main, 0.08), borderRadius: 1,
 ...(item.userImpact && { backgroundColor: ... })
 ```
 {% endraw %}
+
+---
+
+## Paginated and Searchable Lists
+
+Any list that may grow unbounded over time must be paginated and searchable.
+Apply this standard whenever introducing a dialog, page, or panel that renders
+user-generated records (topics, check-ins, logs, messages, templates, etc.).
+
+### When to apply
+
+Apply pagination and search when **any** of the following are true:
+
+- The list has no natural upper bound (user-generated content that accumulates)
+- The list is expected to exceed ~15 rows in normal use
+- Rows contain freeform text that users will need to scan or find by keyword
+
+Short, bounded lists (e.g., a fixed set of roles, a 3-item dropdown) do not
+need this treatment.
+
+### Layout rules
+
+**Search bar:**
+
+- Always-visible `TextField` with a `SearchIcon` start adornment
+- `size="small"`, `fullWidth`, placed directly above the list
+- Placeholder: `"Search [items]..."` (e.g., `"Search topics..."`)
+- Client-side filtering on every keystroke; reset page to 1 on change
+- Show a centered empty-state message when the filter returns no results,
+  including the search term (e.g., `No topics match "foo".`)
+- Hide the search bar entirely when the list is still loading or empty
+
+**Pagination:**
+
+- Page size: **25 rows** for dialog lists; 50 rows is acceptable for full-page
+  tables where the user is actively browsing.
+- Use MUI `Pagination` with `size="small"` and `color="primary"`
+- Place pagination in the dialog footer (`DialogActions`) or at the bottom of
+  the page section, left-aligned, with any footer actions (Close, Save) on the
+  right.
+- When only one page exists, replace the `Pagination` control with a plain
+  result-count label (`"N topics"` or `"N matching 'query'"`).
+- `pageCount` must be at least 1: `Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))`
+
+**Row layout for timestamped records:**
+
+When each row has a date/timestamp and a content field, place them on a single
+horizontal line:
+
+- Date: `Typography variant="body2" color="text.secondary"`, fixed width (e.g.,
+  `width: 100`), `flexShrink: 0` so it never wraps
+- Content: `Typography variant="body1"`, fills remaining space
+- Container: `display: 'flex', alignItems: 'baseline', gap: 2`
+- Rows separated by `Divider` (not padding-only), except after the last row
+
+This keeps dates scannable in a left-anchored column while giving full width
+to the content.
+
+### Reference implementation
+
+`frontend/src/components/TopicHistory.tsx` — dialog list with search, 25-row
+pagination, and the date-left / content-right row layout.

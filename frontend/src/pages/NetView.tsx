@@ -5028,6 +5028,9 @@ const NetView: React.FC = () => {
         script={net?.script || ''}
         netName={net?.name || 'Net'}
         netId={Number(netId)}
+        templateId={net?.template_id}
+        canEdit={canManage && !!net?.template_id}
+        onSaved={(newScript) => setNet(prev => prev ? { ...prev, script: newScript } : prev)}
       />
 
       {/* Per-net notes viewer */}
@@ -5037,6 +5040,9 @@ const NetView: React.FC = () => {
         announcements={net?.announcements || ''}
         netName={net?.name || 'Net'}
         netId={Number(netId)}
+        templateId={net?.template_id}
+        canEdit={canManage && !!net?.template_id}
+        onSaved={(newAnnouncements) => setNet(prev => prev ? { ...prev, announcements: newAnnouncements } : prev)}
       />
 
       {/* Schedule announcements viewer */}

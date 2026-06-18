@@ -4,6 +4,25 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# June 18, 2026 (b)
+
+## New Features
+
+* **Net View: Edit Net Script and Announcements in-place** — NCS and net staff can now click the pencil icon in the floating Net Script or Announcements window to edit the content directly during the net, with a markdown formatting toolbar. Changes save to the schedule template immediately.
+
+## Improvements
+
+* **Net View: Floating windows remember scroll position after minimize** — The Net Script and Announcements windows now restore to the exact position you were reading when you minimize and reopen them, so you don't lose your place mid-net.
+* **Prior Topics: Redesigned with date-left layout, search, and pagination** — The topic history dialog now shows dates on the left of each row for quick scanning, includes a keyword search bar, and paginates at 25 rows per page.
+* **Schedule: Template list now paginates at 25 per page** — Large schedule lists page through 25 at a time rather than rendering an unbounded scroll.
+* **Admin: Contacts list now paginates at 25 per page** — The contacts tab now pages at 25 rows, consistent with the users tab.
+
+## Bug Fixes
+
+* **Net View: Bold and italic formatting now renders in Net Script and Announcements** — Text formatted with asterisks was showing raw markers instead of styled text due to a spacing quirk in the markdown standard; this is now corrected automatically.
+
+---
+
 # June 18, 2026
 
 ## Bug Fixes

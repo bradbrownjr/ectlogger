@@ -297,6 +297,8 @@ const Admin: React.FC = () => {
   const [contactFilter, setContactFilter] = useState('');
   const [contactSortField, setContactSortField] = useState<ContactSortField>('callsign');
   const [contactSortDirection, setContactSortDirection] = useState<SortDirection>('asc');
+  const [contactsPage, setContactsPage] = useState(0);
+  const [contactsPerPage, setContactsPerPage] = useState(25);
   // Inline editing state for contacts (matches check-in inline editing pattern)
   const [inlineEditingContactId, setInlineEditingContactId] = useState<number | null>(null);
   const [inlineEditContactValues, setInlineEditContactValues] = useState<Record<string, string>>({});
@@ -837,7 +839,13 @@ const Admin: React.FC = () => {
     return contactSortDirection === 'asc' ? comparison : -comparison;
   });
 
+  // Paginated slice of sorted contacts
+  const pagedContacts = contactsPerPage === -1
+    ? sortedContacts
+    : sortedContacts.slice(contactsPage * contactsPerPage, contactsPage * contactsPerPage + contactsPerPage);
+
   const handleContactSort = (field: ContactSortField) => {
+    setContactsPage(0); // Reset to first page on sort change
     if (contactSortField === field) {
       setContactSortDirection(contactSortDirection === 'asc' ? 'desc' : 'asc');
     } else {
@@ -1628,7 +1636,7 @@ const Admin: React.FC = () => {
               size="small"
               placeholder="Filter by callsign, name, location, or email..."
               value={contactFilter}
-              onChange={(e) => setContactFilter(e.target.value)}
+              onChange={(e) => { setContactFilter(e.target.value); setContactsPage(0); }}
               sx={{ flexGrow: 1, maxWidth: 500 }}
               InputProps={{
                 startAdornment: (
@@ -1726,7 +1734,7 @@ const Admin: React.FC = () => {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    sortedContacts.map((contact) => {
+                    pagedContacts.map((contact) => {
                       const isInlineEditing = inlineEditingContactId === contact.id;
                       return (
                       <TableRow
@@ -1853,6 +1861,18 @@ const Admin: React.FC = () => {
                 </TableBody>
               </Table>
             </TableContainer>
+          )}
+          {!contactsLoading && sortedContacts.length > 0 && (
+            <TablePagination
+              component="div"
+              count={sortedContacts.length}
+              page={contactsPage}
+              onPageChange={(_, newPage) => setContactsPage(newPage)}
+              rowsPerPage={contactsPerPage}
+              onRowsPerPageChange={(e) => { setContactsPerPage(parseInt(e.target.value, 10)); setContactsPage(0); }}
+              rowsPerPageOptions={[25, 50, { label: 'All', value: -1 }]}
+              labelRowsPerPage="Per page:"
+            />
           )}
         </TabPanel>
 

@@ -40,6 +40,7 @@ import {
   FormControl,
   FormControlLabel as MuiFormControlLabel,
   CircularProgress,
+  Pagination,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -143,6 +144,7 @@ const Scheduler: React.FC = () => {
   });
   const [showFilter, setShowFilter] = useState(false);
   const [scheduleFilter, setScheduleFilter] = useState('');
+  const [schedulePage, setSchedulePage] = useState(1);
   // ========== MERGE MODE STATE ==========
   const [mergeMode, setMergeMode] = useState(false);
   const [mergeSelected, setMergeSelected] = useState<Set<number>>(new Set());
@@ -349,13 +351,20 @@ const Scheduler: React.FC = () => {
       (schedule.owner_callsign?.toLowerCase() || '').includes(searchTerm) ||
       (schedule.owner_name?.toLowerCase() || '').includes(searchTerm) ||
       (schedule.nextNCS?.user_callsign?.toLowerCase() || '').includes(searchTerm) ||
-      schedule.frequencies.some((f: any) => 
+      schedule.frequencies.some((f: any) =>
         (f.frequency?.toLowerCase() || '').includes(searchTerm) ||
         (f.network?.toLowerCase() || '').includes(searchTerm) ||
         (f.talkgroup?.toLowerCase() || '').includes(searchTerm)
       )
     );
   });
+
+  const SCHEDULE_PAGE_SIZE = 25;
+  const schedulePageCount = Math.max(1, Math.ceil(filteredSchedules.length / SCHEDULE_PAGE_SIZE));
+  const pagedSchedules = filteredSchedules.slice(
+    (schedulePage - 1) * SCHEDULE_PAGE_SIZE,
+    schedulePage * SCHEDULE_PAGE_SIZE
+  );
 
   // ========== CARD VIEW RENDERER ==========
   const renderCardView = () => (
@@ -366,7 +375,7 @@ const Scheduler: React.FC = () => {
         gap: { xs: 2, sm: 3 },
       }}
     >
-      {filteredSchedules.map((schedule: Schedule) => (
+      {pagedSchedules.map((schedule: Schedule) => (
         <Box
           key={schedule.id}
           sx={{
@@ -410,7 +419,7 @@ const Scheduler: React.FC = () => {
           </TableRow>
         </TableHead>
         <TableBody>
-          {filteredSchedules.map((schedule: Schedule) => (
+          {pagedSchedules.map((schedule: Schedule) => (
             <TableRow
               key={schedule.id}
               hover
@@ -769,7 +778,7 @@ const Scheduler: React.FC = () => {
             size="small"
             placeholder="Filter by name, description, NCS, or frequency..."
             value={scheduleFilter}
-            onChange={(e) => setScheduleFilter(e.target.value)}
+            onChange={(e) => { setScheduleFilter(e.target.value); setSchedulePage(1); }}
             sx={{ flexGrow: 1, maxWidth: 500 }}
             InputProps={{
               startAdornment: (
@@ -813,10 +822,21 @@ const Scheduler: React.FC = () => {
             Clear filter
           </Button>
         </Box>
-      ) : viewMode === 'card' ? (
-        renderCardView()
       ) : (
-        renderListView()
+        <>
+          {viewMode === 'card' ? renderCardView() : renderListView()}
+          {schedulePageCount > 1 && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+              <Pagination
+                count={schedulePageCount}
+                page={schedulePage}
+                onChange={(_e, value) => setSchedulePage(value)}
+                size="small"
+                color="primary"
+              />
+            </Box>
+          )}
+        </>
       )}
 
       {/* ========== FLOATING ACTION BUTTONS ========== */}
