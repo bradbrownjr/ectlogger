@@ -4,6 +4,14 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# June 19, 2026 (d)
+
+## Improvements
+
+* **Dashboard: Active nets from a starred schedule automatically sort to the top** — If you've starred a schedule, any net running from it will float to the top of the active nets list too. You can also star or unstar directly from the net card.
+
+---
+
 # June 19, 2026 (c)
 
 ## New Features

@@ -58,6 +58,8 @@ import ViewModuleIcon from '@mui/icons-material/ViewModule';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import ClearIcon from '@mui/icons-material/Clear';
+import StarIcon from '@mui/icons-material/Star';
+import StarBorderIcon from '@mui/icons-material/StarBorder';
 import EmailIcon from '@mui/icons-material/Email';
 import CircularProgress from '@mui/material/CircularProgress';
 import { netApi } from '../services/api';
@@ -131,6 +133,24 @@ const Dashboard: React.FC = () => {
   const { user, isAuthenticated } = useAuth();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  // Share the same favorites store as the Scheduler page — keyed by schedule/template ID
+  const favKey = `scheduler-favorites-${user?.id ?? 'anon'}`;
+  const [favorites, setFavorites] = useState<Set<number>>(() => {
+    try {
+      const raw = localStorage.getItem(favKey);
+      return raw ? new Set<number>(JSON.parse(raw)) : new Set<number>();
+    } catch { return new Set<number>(); }
+  });
+
+  const toggleFavorite = (templateId: number) => {
+    setFavorites(prev => {
+      const next = new Set(prev);
+      if (next.has(templateId)) next.delete(templateId); else next.add(templateId);
+      try { localStorage.setItem(favKey, JSON.stringify([...next])); } catch {}
+      return next;
+    });
+  };
 
   useEffect(() => {
     fetchNets();
@@ -358,21 +378,27 @@ const Dashboard: React.FC = () => {
     });
 
   // ========== ACTIVE NETS FILTERING ==========
-  const filteredNets = nets.filter((net) => {
-    if (!netFilter) return true;
-    const searchTerm = netFilter.toLowerCase();
-    return (
-      net.name.toLowerCase().includes(searchTerm) ||
-      (net.description?.toLowerCase() || '').includes(searchTerm) ||
-      (net.owner_callsign?.toLowerCase() || '').includes(searchTerm) ||
-      (net.owner_name?.toLowerCase() || '').includes(searchTerm) ||
-      net.frequencies.some((f: any) => 
-        (f.frequency?.toLowerCase() || '').includes(searchTerm) ||
-        (f.network?.toLowerCase() || '').includes(searchTerm) ||
-        (f.talkgroup?.toLowerCase() || '').includes(searchTerm)
-      )
-    );
-  });
+  const filteredNets = nets
+    .filter((net) => {
+      if (!netFilter) return true;
+      const searchTerm = netFilter.toLowerCase();
+      return (
+        net.name.toLowerCase().includes(searchTerm) ||
+        (net.description?.toLowerCase() || '').includes(searchTerm) ||
+        (net.owner_callsign?.toLowerCase() || '').includes(searchTerm) ||
+        (net.owner_name?.toLowerCase() || '').includes(searchTerm) ||
+        net.frequencies.some((f: any) =>
+          (f.frequency?.toLowerCase() || '').includes(searchTerm) ||
+          (f.network?.toLowerCase() || '').includes(searchTerm) ||
+          (f.talkgroup?.toLowerCase() || '').includes(searchTerm)
+        )
+      );
+    })
+    .sort((a, b) => {
+      const aFav = a.template_id != null && favorites.has(a.template_id) ? 0 : 1;
+      const bFav = b.template_id != null && favorites.has(b.template_id) ? 0 : 1;
+      return aFav - bFav;
+    });
 
   // ========== CARD VIEW RENDERER ==========
   // auto-fit collapses empty column tracks, so 2 cards fill 2 columns instead of
@@ -411,7 +437,20 @@ const Dashboard: React.FC = () => {
           {filteredNets.map((net: Net) => (
             <TableRow key={net.id} hover sx={{ cursor: 'pointer' }} onClick={() => navigate(`/nets/${net.id}`)}>
               <TableCell>
-                <Typography variant="body2" fontWeight="medium">{net.name}</Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  {net.template_id != null && (
+                    <Tooltip title={favorites.has(net.template_id) ? 'Remove from favorites' : 'Add to favorites'}>
+                      <IconButton
+                        size="small"
+                        onClick={(e) => { e.stopPropagation(); toggleFavorite(net.template_id!); }}
+                        sx={{ color: favorites.has(net.template_id) ? 'warning.main' : 'action.disabled', p: 0.25 }}
+                      >
+                        {favorites.has(net.template_id) ? <StarIcon sx={{ fontSize: 16 }} /> : <StarBorderIcon sx={{ fontSize: 16 }} />}
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                  <Typography variant="body2" fontWeight="medium">{net.name}</Typography>
+                </Box>
                 {net.description && (
                   <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                     {net.description.length > 50 ? `${net.description.substring(0, 50)}...` : net.description}
@@ -560,15 +599,26 @@ const Dashboard: React.FC = () => {
               WebkitLineClamp: 2,
               WebkitBoxOrient: 'vertical',
               overflow: 'hidden',
+              flex: 1,
+              mr: 0.5,
             }}
           >
             {net.name}
           </Typography>
-          <Chip 
-            label={net.status} 
-            color={getStatusColor(net.status)} 
-            size="small"
-          />
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
+            <Chip label={net.status} color={getStatusColor(net.status)} size="small" />
+            {net.template_id != null && (
+              <Tooltip title={favorites.has(net.template_id) ? 'Remove from favorites' : 'Add to favorites'}>
+                <IconButton
+                  size="small"
+                  onClick={() => toggleFavorite(net.template_id!)}
+                  sx={{ color: favorites.has(net.template_id) ? 'warning.main' : 'action.disabled', p: 0.25 }}
+                >
+                  {favorites.has(net.template_id) ? <StarIcon fontSize="small" /> : <StarBorderIcon fontSize="small" />}
+                </IconButton>
+              </Tooltip>
+            )}
+          </Box>
         </Box>
         
         {/* Description */}

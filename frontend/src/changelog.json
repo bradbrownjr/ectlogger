@@ -1,6 +1,22 @@
 {
-  "version": "2026.06.19c",
+  "version": "2026.06.19d",
   "entries": [
+    {
+      "version": "2026.06.19d",
+      "date": "2026-06-19",
+      "sections": [
+        {
+          "title": "Improvements",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Dashboard: Active nets from a starred schedule automatically sort to the top — if you've starred a schedule, any net running from it will float to the top of the active nets list too. You can also star or unstar directly from the net card.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.06.19c",
       "date": "2026-06-19",
