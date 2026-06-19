@@ -35,6 +35,7 @@ interface ChatProps {
   netStartedAt?: string;
   netStatus?: string;
   searchQuery?: string;
+  canManage?: boolean;
   onNewMessage?: (message: ChatMessage) => void;
   onDetach?: () => void;
   minimized?: boolean;
@@ -45,7 +46,7 @@ interface ChatProps {
 const REACTION_EMOJIS = ['👍', '🙂', '🙁', '❤️', '✅'];
 const CHAT_IMAGE_PREFIX = '__CHAT_IMAGE__';
 
-const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery, onNewMessage, onDetach, minimized, onMinimize, onRestore }) => {
+const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery, canManage, onNewMessage, onDetach, minimized, onMinimize, onRestore }) => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -58,12 +59,12 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLUListElement>(null);
 
-  // Show toast when net is closed/archived
+  // Show toast when net is closed/archived — suppressed for managers since NetView shows the archive reminder instead
   useEffect(() => {
-    if (netStatus === 'closed' || netStatus === 'archived') {
+    if ((netStatus === 'closed' || netStatus === 'archived') && !canManage) {
       setShowClosedToast(true);
     }
-  }, [netStatus]);
+  }, [netStatus, canManage]);
 
   useEffect(() => {
     // Listen for chat_message events dispatched from NetView WebSocket

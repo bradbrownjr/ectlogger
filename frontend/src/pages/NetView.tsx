@@ -4115,7 +4115,7 @@ const NetView: React.FC = () => {
                 >
                   <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                     <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-                      <Chat netId={Number(netId)} netStartedAt={net?.started_at} netStatus={net?.status} searchQuery={searchQuery} onDetach={handleDetachChat}
+                      <Chat netId={Number(netId)} netStartedAt={net?.started_at} netStatus={net?.status} searchQuery={searchQuery} canManage={canManage} onDetach={handleDetachChat}
                         minimized={chatMinimized} onMinimize={() => setChatMinimized(true)} onRestore={() => setChatMinimized(false)} />
                     </Box>
                   </Box>
@@ -4437,7 +4437,7 @@ const NetView: React.FC = () => {
             minHeight={250}
             storageKey="chat"
           >
-            <Chat netId={Number(netId)} netStartedAt={net?.started_at} netStatus={net?.status} searchQuery={searchQuery} />
+            <Chat netId={Number(netId)} netStartedAt={net?.started_at} netStatus={net?.status} searchQuery={searchQuery} canManage={canManage} />
           </FloatingWindow>
         )}
 
@@ -5116,7 +5116,7 @@ const NetView: React.FC = () => {
       <Snackbar
         open={archiveReminderOpen}
         autoHideDuration={null}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
         message="Net closed — archive it when you're done to preserve your log and statistics."
         action={
           <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
