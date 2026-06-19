@@ -272,6 +272,9 @@ const NetView: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [closeNetDialogOpen, setCloseNetDialogOpen] = useState(false);
   const [subscribeDialogOpen, setSubscribeDialogOpen] = useState(false);  // Prompt to subscribe after net closes
+  const [archiveReminderOpen, setArchiveReminderOpen] = useState(false);
+  const [archiveHelpOpen, setArchiveHelpOpen] = useState(false);
+  const [archiveDeleteConfirmOpen, setArchiveDeleteConfirmOpen] = useState(false);
   const [subscribing, setSubscribing] = useState(false);
   const [startingNet, setStartingNet] = useState(false);
   const [scriptOpen, setScriptOpen] = useState(false);
@@ -938,11 +941,12 @@ const NetView: React.FC = () => {
           }
         }
       }
+      setArchiveReminderOpen(true);
     } catch (error) {
       console.error('Failed to close net:', error);
     }
   };
-  
+
   // Handle subscribing to the schedule template
   const handleSubscribe = async () => {
     if (!net?.template_id) return;
@@ -1262,8 +1266,7 @@ const NetView: React.FC = () => {
     }
   };
 
-  const handleDelete = async () => {
-    if (!confirm('Delete this net permanently? This cannot be undone.')) return;
+  const handleDeleteConfirmed = async () => {
     try {
       await api.delete(`/nets/${netId}`);
       navigate('/dashboard');
@@ -1271,6 +1274,11 @@ const NetView: React.FC = () => {
       console.error('Failed to delete net:', error);
       setToastMessage('Failed to delete net');
     }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm('Delete this net permanently? This cannot be undone.')) return;
+    await handleDeleteConfirmed();
   };
 
   // Get custom fields (non-builtin) that are enabled for this net
@@ -5091,6 +5099,151 @@ const NetView: React.FC = () => {
         <DialogActions>
           <Button onClick={() => setTimeEditDialogOpen(false)}>Cancel</Button>
           <Button variant="contained" onClick={handleSaveNetTimes}>Save</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ========== ARCHIVE REMINDER SNACKBAR ========== */}
+      {/* Shown to net managers after closing a net, offering archive or delete */}
+      <Snackbar
+        open={archiveReminderOpen}
+        autoHideDuration={null}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        message="Net closed — archive it when you're done to preserve your log and statistics."
+        action={
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+            <Tooltip title="What's the difference between archive and delete?">
+              <IconButton size="small" color="inherit" onClick={() => setArchiveHelpOpen(true)}>
+                <HelpOutlineIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Button
+              size="small"
+              variant="contained"
+              color="success"
+              onClick={() => {
+                setArchiveReminderOpen(false);
+                handleArchive();
+              }}
+            >
+              Archive Now
+            </Button>
+            <Button
+              size="small"
+              variant="contained"
+              color="error"
+              onClick={() => setArchiveDeleteConfirmOpen(true)}
+            >
+              Delete
+            </Button>
+            <Button
+              size="small"
+              color="inherit"
+              onClick={() => setArchiveReminderOpen(false)}
+            >
+              Dismiss
+            </Button>
+          </Box>
+        }
+      />
+
+      {/* ========== ARCHIVE vs DELETE HELP DIALOG ========== */}
+      <Dialog
+        open={archiveHelpOpen}
+        onClose={() => setArchiveHelpOpen(false)}
+        maxWidth="sm"
+        PaperProps={{ sx: { m: { xs: 1, sm: 4 } } }}
+      >
+        <DialogTitle>Archive vs. Delete</DialogTitle>
+        <DialogContent>
+          <Typography variant="subtitle2" gutterBottom sx={{ color: 'success.main', fontWeight: 'bold' }}>
+            Archive (recommended)
+          </Typography>
+          <Typography variant="body2" sx={{ mb: 2 }}>
+            Archiving hides the net from the active list but preserves everything: all check-ins, chat
+            messages, statistics, and PDF reports. Archived nets are fully searchable in the Archived
+            Nets list and remain available in net history. You can unarchive at any time.
+          </Typography>
+          <Typography variant="subtitle2" gutterBottom sx={{ color: 'error.main', fontWeight: 'bold' }}>
+            Delete (permanent)
+          </Typography>
+          <Typography variant="body2">
+            Deleting permanently removes the net and all its data — check-ins, chat, and statistics —
+            with no way to recover it. Use this only for test runs or entries you never want stored.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setArchiveHelpOpen(false)} variant="contained">Got It</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ========== DELETE CONFIRMATION FROM ARCHIVE REMINDER ========== */}
+      <Dialog
+        open={archiveDeleteConfirmOpen}
+        onClose={() => setArchiveDeleteConfirmOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{ sx: { m: { xs: 1, sm: 4 } } }}
+      >
+        <DialogTitle>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            Delete "{net?.name}"?
+            <Tooltip title="Learn about archive vs. delete">
+              <IconButton size="small" onClick={() => setArchiveHelpOpen(true)}>
+                <HelpOutlineIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <Typography sx={{ mb: 2 }}>
+            Deleting this net will <strong>permanently remove</strong> every record tied to it, including:
+          </Typography>
+          <Box component="ul" sx={{ mt: 0, mb: 2, pl: 3 }}>
+            <li><Typography variant="body2">All check-ins logged during this net</Typography></li>
+            <li><Typography variant="body2">All chat messages sent in this net</Typography></li>
+            <li><Typography variant="body2">Net statistics and history for this session</Typography></li>
+          </Box>
+          <Typography color="error" sx={{ mb: 2, fontWeight: 'bold' }}>
+            This cannot be undone.
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            If you only want to hide this net from the active list while keeping the log, choose
+            <strong> Archive Instead</strong>. Archived nets stay searchable in the Archived Nets
+            list and can be restored at any time.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button
+            onClick={() => setArchiveDeleteConfirmOpen(false)}
+            variant="contained"
+            color="primary"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={() => {
+              setArchiveDeleteConfirmOpen(false);
+              setArchiveReminderOpen(false);
+              handleArchive();
+            }}
+            variant="contained"
+            color="warning"
+            startIcon={<ArchiveIcon />}
+          >
+            Archive Instead
+          </Button>
+          <Button
+            onClick={async () => {
+              setArchiveDeleteConfirmOpen(false);
+              setArchiveReminderOpen(false);
+              await handleDeleteConfirmed();
+            }}
+            variant="contained"
+            color="error"
+            startIcon={<DeleteIcon />}
+          >
+            Delete Permanently
+          </Button>
         </DialogActions>
       </Dialog>
 
