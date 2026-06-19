@@ -1,6 +1,6 @@
 # ECT Logger — Product Roadmap
 
-*Last updated: 2026-06-18 (rev 17)*  
+*Last updated: 2026-06-19 (rev 18)*  
 *Compiled from user feedback: AA1GM, KC1UIX, W1BKW, W1MTW, KC1JMH*
 
 > **Canonical location:** `docs/ROADMAP.md`. The root-level `ROADMAP.md` is a duplicate and should be deleted.
@@ -20,23 +20,7 @@ Priority within each tier is roughly top-to-bottom. Items from conversations are
 
 ---
 
-## Milestone 1 — Near-term
-
-*Improvements that directly affect the quality of the primary use case (running a net).*
-
-### Check-in UX
-
-**🔧 Make mobile-station priority sort configurable** *(AA1GM)*  
-The automatic promotion of mobile stations to the top of the check-in list is intentional and appreciated by AA1GM. However, it should be an opt-in toggle on the net settings (on by default) so net managers who prefer strict chronological order can disable it.
-
-### Announcements
-
-**✨ Standalone Announcements dialog for recurring event lists** *(in testing)*  
-Allow NCS to maintain a running list of upcoming events to announce each week, separate from the per-net announcement field. Needs testing before release.
-
----
-
-## Milestone 2 — Medium-term
+## Milestone 1 — Medium-term
 
 *Meaningful new capabilities that don't require architectural changes.*
 
@@ -121,7 +105,7 @@ Load trivia questions from a CSV file or URL. During a net, NCS can click a triv
 
 ---
 
-## Milestone 3 — Longer-term / Architectural
+## Milestone 2 — Longer-term / Architectural
 
 *Items that require significant new infrastructure, platform expansion, or external integrations.*
 
