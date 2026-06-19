@@ -22,6 +22,9 @@ import {
   useTheme,
   Button,
   CircularProgress,
+  Dialog,
+  AppBar,
+  Toolbar,
 } from '@mui/material';
 import {
   ArrowBack,
@@ -33,6 +36,8 @@ import {
   PictureAsPdf,
   Map as MapIcon,
   Assessment,
+  Fullscreen as FullscreenIcon,
+  Close as CloseIcon,
 } from '@mui/icons-material';
 import {
   BarChart,
@@ -185,6 +190,7 @@ const NetStatistics: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<NetStats | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [expandedCard, setExpandedCard] = useState<string | null>(null);
 
   // Location map state
   const [checkIns, setCheckIns] = useState<CheckInRecord[]>([]);
@@ -504,9 +510,14 @@ const NetStatistics: React.FC = () => {
         {statusData.length > 0 && (
           <Grid item xs={12} md={chartMd}>
             <Paper sx={{ p: 3, height: '100%' }}>
-              <Typography variant="h6" gutterBottom>
-                Check-in Status
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                <Typography variant="h6">Check-in Status</Typography>
+                <Tooltip title="Expand">
+                  <IconButton size="small" onClick={() => setExpandedCard('status')} sx={{ ml: 'auto' }}>
+                    <FullscreenIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              </Box>
               <ResponsiveContainer width="100%" height={260}>
                 <PieChart>
                   <Pie
@@ -524,6 +535,10 @@ const NetStatistics: React.FC = () => {
                     ))}
                   </Pie>
                   <Legend verticalAlign="bottom" height={36} />
+                  <RechartsTooltip
+                    formatter={(value: number, name: string) => [value, name]}
+                    contentStyle={{ backgroundColor: theme.palette.background.paper, border: `1px solid ${theme.palette.divider}` }}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             </Paper>
@@ -535,9 +550,14 @@ const NetStatistics: React.FC = () => {
         {timelineData.length >= 2 && (
           <Grid item xs={12} md={chartMd}>
             <Paper sx={{ p: 3, height: '100%' }}>
-              <Typography variant="h6" gutterBottom>
-                Check-in Activity
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+                <Typography variant="h6">Check-in Activity</Typography>
+                <Tooltip title="Expand">
+                  <IconButton size="small" onClick={() => setExpandedCard('activity')} sx={{ ml: 'auto' }}>
+                    <FullscreenIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              </Box>
               <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
                 Check-ins per {binSize}-min window
               </Typography>
@@ -586,9 +606,14 @@ const NetStatistics: React.FC = () => {
         {showFrequency && (
           <Grid item xs={12} md={chartMd}>
             <Paper sx={{ p: 3, height: '100%' }}>
-              <Typography variant="h6" gutterBottom>
-                Check-ins by Frequency
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                <Typography variant="h6">Check-ins by Frequency</Typography>
+                <Tooltip title="Expand">
+                  <IconButton size="small" onClick={() => setExpandedCard('frequency')} sx={{ ml: 'auto' }}>
+                    <FullscreenIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              </Box>
               <ResponsiveContainer width="100%" height={250}>
                 <BarChart data={frequencyData} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
@@ -622,7 +647,16 @@ const NetStatistics: React.FC = () => {
                     {dualMapData && ' — split view: cluster detail (left) and full overview (right)'}
                   </Typography>
                 )}
-                {mapLoading && <CircularProgress size={14} sx={{ ml: 'auto' }} />}
+                <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  {mapLoading && <CircularProgress size={14} />}
+                  {mappedCheckIns.length > 0 && !mapLoading && (
+                    <Tooltip title="Expand">
+                      <IconButton size="small" onClick={() => setExpandedCard('map')}>
+                        <FullscreenIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                </Box>
               </Box>
               {mappedCheckIns.length > 0 && (
                 dualMapData ? (
@@ -767,6 +801,155 @@ const NetStatistics: React.FC = () => {
         </Grid>
       </Grid>
       </Box>
+
+      {/* ========== FULLSCREEN EXPAND DIALOG ========== */}
+      <Dialog fullScreen open={expandedCard !== null} onClose={() => setExpandedCard(null)}>
+        <AppBar sx={{ position: 'relative' }} elevation={1}>
+          <Toolbar>
+            <Typography variant="h6" sx={{ flex: 1 }}>
+              {expandedCard === 'status' && 'Check-in Status'}
+              {expandedCard === 'activity' && `Check-in Activity — ${binSize}-min windows`}
+              {expandedCard === 'frequency' && 'Check-ins by Frequency'}
+              {expandedCard === 'map' && `Check-in Locations (${mappedCheckIns.length} plotted)`}
+            </Typography>
+            <IconButton color="inherit" edge="end" onClick={() => setExpandedCard(null)}>
+              <CloseIcon />
+            </IconButton>
+          </Toolbar>
+        </AppBar>
+
+        <Box sx={{ p: 3, height: 'calc(100vh - 64px)', display: 'flex', flexDirection: 'column' }}>
+
+          {/* ---- Expanded: Status Pie ---- */}
+          {expandedCard === 'status' && statusData.length > 0 && (
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={statusData} cx="50%" cy="45%" outerRadius="35%" dataKey="value"
+                  label={({ percent }) => percent > 0.04 ? `${(percent * 100).toFixed(0)}%` : ''}
+                  labelLine={{ stroke: '#666', strokeWidth: 1 }}
+                >
+                  {statusData.map((_, index) => (
+                    <Cell key={`exp-cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Legend />
+                <RechartsTooltip
+                  formatter={(value: number, name: string) => [value, name]}
+                  contentStyle={{ backgroundColor: theme.palette.background.paper, border: `1px solid ${theme.palette.divider}` }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
+
+          {/* ---- Expanded: Activity Area Chart ---- */}
+          {expandedCard === 'activity' && timelineData.length >= 2 && (
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={timelineData} margin={{ top: 10, right: 30, left: 0, bottom: 10 }}>
+                <defs>
+                  <linearGradient id="expandedActivityGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={theme.palette.success.main} stopOpacity={0.4} />
+                    <stop offset="95%" stopColor={theme.palette.success.main} stopOpacity={0.02} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                <XAxis dataKey="label" tick={{ fontSize: 13 }}
+                  interval={Math.max(0, Math.floor(timelineData.length / 12) - 1)} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 13 }}
+                  label={{ value: 'Check-ins', angle: -90, position: 'insideLeft', offset: 12, style: { fontSize: 13 } }} />
+                <RechartsTooltip
+                  formatter={(value: number) => [value, `check-ins in ${binSize}m`]}
+                  contentStyle={{ backgroundColor: theme.palette.background.paper, border: `1px solid ${theme.palette.divider}` }}
+                />
+                <Area type="basis" dataKey="count" stroke={theme.palette.success.main} strokeWidth={2.5}
+                  fill="url(#expandedActivityGradient)" dot={false} activeDot={{ r: 6 }} />
+              </AreaChart>
+            </ResponsiveContainer>
+          )}
+
+          {/* ---- Expanded: Frequency Bar Chart ---- */}
+          {expandedCard === 'frequency' && showFrequency && (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={frequencyData} layout="vertical" margin={{ top: 10, right: 40, left: 10, bottom: 10 }}>
+                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                <XAxis type="number" tick={{ fontSize: 13 }} />
+                <YAxis dataKey="name" type="category" width={160} tick={{ fontSize: 13 }} />
+                <RechartsTooltip
+                  contentStyle={{ backgroundColor: theme.palette.background.paper, border: `1px solid ${theme.palette.divider}` }}
+                />
+                <Bar dataKey="count" fill={theme.palette.primary.main} radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+
+          {/* ---- Expanded: Map ---- */}
+          {expandedCard === 'map' && mappedCheckIns.length > 0 && (
+            dualMapData ? (
+              <Grid container spacing={2} sx={{ flex: 1, overflow: 'hidden' }}>
+                <Grid item xs={12} md={6}>
+                  <Box sx={{ height: 'calc(100vh - 130px)', borderRadius: 1, overflow: 'hidden' }}>
+                    <MapContainer key="exp-cluster" center={[39.8283, -98.5795]} zoom={4}
+                      style={{ height: '100%', width: '100%' }} scrollWheelZoom>
+                      <TileLayer attribution={tileAttribution} url={tileUrl} />
+                      <FitBoundsOnce positions={dualMapData.clusterPositions} />
+                      {mappedCheckIns.map(mapped => (
+                        <Marker key={`exp-c-${mapped.checkIn.id}`}
+                          position={[mapped.parsedLocation.lat, mapped.parsedLocation.lon]}
+                          icon={statsMarkerIcon}>
+                          <Popup>
+                            <strong>{mapped.checkIn.callsign}</strong>
+                            {mapped.checkIn.name && <><br />{mapped.checkIn.name}</>}
+                            {mapped.checkIn.location && <><br /><span style={{ color: '#666' }}>{mapped.checkIn.location}</span></>}
+                          </Popup>
+                        </Marker>
+                      ))}
+                    </MapContainer>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <Box sx={{ height: 'calc(100vh - 130px)', borderRadius: 1, overflow: 'hidden' }}>
+                    <MapContainer key="exp-overview" center={[39.8283, -98.5795]} zoom={4}
+                      style={{ height: '100%', width: '100%' }} scrollWheelZoom>
+                      <TileLayer attribution={tileAttribution} url={tileUrl} />
+                      <FitBoundsOnce positions={dualMapData.allPositions} />
+                      {mappedCheckIns.map(mapped => (
+                        <Marker key={`exp-o-${mapped.checkIn.id}`}
+                          position={[mapped.parsedLocation.lat, mapped.parsedLocation.lon]}
+                          icon={statsMarkerIcon}>
+                          <Popup>
+                            <strong>{mapped.checkIn.callsign}</strong>
+                            {mapped.checkIn.name && <><br />{mapped.checkIn.name}</>}
+                            {mapped.checkIn.location && <><br /><span style={{ color: '#666' }}>{mapped.checkIn.location}</span></>}
+                          </Popup>
+                        </Marker>
+                      ))}
+                    </MapContainer>
+                  </Box>
+                </Grid>
+              </Grid>
+            ) : (
+              <Box sx={{ flex: 1, borderRadius: 1, overflow: 'hidden' }}>
+                <MapContainer key="exp-single" center={[39.8283, -98.5795]} zoom={4}
+                  style={{ height: '100%', width: '100%' }} scrollWheelZoom>
+                  <TileLayer attribution={tileAttribution} url={tileUrl} />
+                  <FitBoundsOnce positions={mappedCheckIns.map(m => [m.parsedLocation.lat, m.parsedLocation.lon] as [number, number])} />
+                  {mappedCheckIns.map(mapped => (
+                    <Marker key={`exp-${mapped.checkIn.id}`}
+                      position={[mapped.parsedLocation.lat, mapped.parsedLocation.lon]}
+                      icon={statsMarkerIcon}>
+                      <Popup>
+                        <strong>{mapped.checkIn.callsign}</strong>
+                        {mapped.checkIn.name && <><br />{mapped.checkIn.name}</>}
+                        {mapped.checkIn.location && <><br /><span style={{ color: '#666' }}>{mapped.checkIn.location}</span></>}
+                      </Popup>
+                    </Marker>
+                  ))}
+                </MapContainer>
+              </Box>
+            )
+          )}
+
+        </Box>
+      </Dialog>
     </Container>
   );
 };
