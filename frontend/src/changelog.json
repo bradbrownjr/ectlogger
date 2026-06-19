@@ -1,6 +1,30 @@
 {
-  "version": "2026.06.19",
+  "version": "2026.06.19b",
   "entries": [
+    {
+      "version": "2026.06.19b",
+      "date": "2026-06-19",
+      "sections": [
+        {
+          "title": "Improvements",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Net Statistics & PDF Report: Expand any chart or map to full screen — each card now has an expand icon in the corner. Click it to open that chart or map full screen for a bigger, clearer view. Press Escape or the X to go back.",
+              "userImpact": true
+            },
+            {
+              "text": "Net Statistics & PDF Report: Check-in Activity chart shows the flow of the net — a smooth wave chart now highlights when stations were busiest and when traffic quieted, replacing the old cumulative line.",
+              "userImpact": true
+            },
+            {
+              "text": "Net Statistics & PDF Report: Hover the status chart to see exact counts — mousing over a slice shows how many stations are in that status, not just the percentage.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.06.19",
       "date": "2026-06-19",
@@ -10,11 +34,11 @@
           "type": "improvement",
           "items": [
             {
-              "text": "Net Statistics: Charts now display side-by-side in a single row — the Check-in Status, Check-in Pace, and Check-ins by Frequency cards are arranged across one row so you can compare them at a glance without scrolling.",
+              "text": "Net Statistics: Charts now display side-by-side in a single row — the Check-in Status, Check-in Activity, and Check-ins by Frequency cards are arranged across one row so you can compare them at a glance without scrolling.",
               "userImpact": true
             },
             {
-              "text": "Net Statistics & PDF Report: Check-in Pace chart added to the PDF report — the cumulative arrivals chart that appears on the statistics page is now also included in the exported net report PDF.",
+              "text": "Net Statistics & PDF Report: Check-in Activity chart added to the PDF report — the activity chart that appears on the statistics page is now also included in the exported net report PDF.",
               "userImpact": true
             },
             {

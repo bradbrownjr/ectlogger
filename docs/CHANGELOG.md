@@ -4,12 +4,22 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# June 19, 2026 (b)
+
+## Improvements
+
+* **Net Statistics & PDF Report: Expand any chart or map to full screen** — Each card now has an expand icon in the corner. Click it to open that chart or map full screen for a bigger, clearer view. Press Escape or the X to go back.
+* **Net Statistics & PDF Report: Check-in Activity chart shows the flow of the net** — A smooth wave chart now highlights when stations were busiest and when traffic quieted, replacing the old cumulative line.
+* **Net Statistics & PDF Report: Hover the status chart to see exact counts** — Mousing over a slice shows how many stations are in that status, not just the percentage.
+
+---
+
 # June 19, 2026
 
 ## Improvements
 
-* **Net Statistics: Charts now display side-by-side in a single row** — The Check-in Status, Check-in Pace, and Check-ins by Frequency cards are arranged across one row so you can compare them at a glance without scrolling.
-* **Net Statistics & PDF Report: Check-in Pace chart added to the PDF report** — The cumulative arrivals chart that appears on the statistics page is now also included in the exported net report PDF.
+* **Net Statistics: Charts now display side-by-side in a single row** — The Check-in Status, Check-in Activity, and Check-ins by Frequency cards are arranged across one row so you can compare them at a glance without scrolling.
+* **Net Statistics & PDF Report: Check-in Activity chart added to the PDF report** — The activity chart that appears on the statistics page is now also included in the exported net report PDF.
 * **Net Statistics & PDF Report: Check-ins by Frequency chart only appears for multi-frequency nets** — The frequency breakdown chart is now hidden for nets that use a single frequency, where it added no useful information.
 
 ---
