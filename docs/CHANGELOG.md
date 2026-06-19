@@ -4,6 +4,14 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# June 19, 2026 (c)
+
+## New Features
+
+* **Scheduler: Star your favorite nets to keep them at the top** — Click the star icon on any net card or list row to pin it. Starred nets always appear first, no matter where they fall alphabetically.
+
+---
+
 # June 19, 2026 (b)
 
 ## Improvements

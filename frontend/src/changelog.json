@@ -1,6 +1,22 @@
 {
-  "version": "2026.06.19b",
+  "version": "2026.06.19c",
   "entries": [
+    {
+      "version": "2026.06.19c",
+      "date": "2026-06-19",
+      "sections": [
+        {
+          "title": "New Features",
+          "type": "feature",
+          "items": [
+            {
+              "text": "Scheduler: Star your favorite nets to keep them at the top — click the star icon on any net card or list row to pin it. Starred nets always appear first, no matter where they fall alphabetically.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.06.19b",
       "date": "2026-06-19",

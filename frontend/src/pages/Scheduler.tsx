@@ -61,6 +61,8 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
+import StarIcon from '@mui/icons-material/Star';
+import StarBorderIcon from '@mui/icons-material/StarBorder';
 import { templateApi, netApi as _netApi, ncsRotationApi } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import NCSStaffModal from '../components/NCSStaffModal';
@@ -161,6 +163,24 @@ const Scheduler: React.FC = () => {
   const { user, isAuthenticated } = useAuth();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  // Favorites — stored in localStorage per user so each person's pins survive a page reload
+  const favKey = `scheduler-favorites-${user?.id ?? 'anon'}`;
+  const [favorites, setFavorites] = useState<Set<number>>(() => {
+    try {
+      const raw = localStorage.getItem(favKey);
+      return raw ? new Set<number>(JSON.parse(raw)) : new Set<number>();
+    } catch { return new Set<number>(); }
+  });
+
+  const toggleFavorite = (id: number) => {
+    setFavorites(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      try { localStorage.setItem(favKey, JSON.stringify([...next])); } catch {}
+      return next;
+    });
+  };
 
   useEffect(() => {
     fetchSchedules();
@@ -342,22 +362,28 @@ const Scheduler: React.FC = () => {
   };
 
   // ========== SCHEDULE FILTERING ==========
-  const filteredSchedules = schedules.filter((schedule) => {
-    if (!scheduleFilter) return true;
-    const searchTerm = scheduleFilter.toLowerCase();
-    return (
-      schedule.name.toLowerCase().includes(searchTerm) ||
-      (schedule.description?.toLowerCase() || '').includes(searchTerm) ||
-      (schedule.owner_callsign?.toLowerCase() || '').includes(searchTerm) ||
-      (schedule.owner_name?.toLowerCase() || '').includes(searchTerm) ||
-      (schedule.nextNCS?.user_callsign?.toLowerCase() || '').includes(searchTerm) ||
-      schedule.frequencies.some((f: any) =>
-        (f.frequency?.toLowerCase() || '').includes(searchTerm) ||
-        (f.network?.toLowerCase() || '').includes(searchTerm) ||
-        (f.talkgroup?.toLowerCase() || '').includes(searchTerm)
-      )
-    );
-  });
+  const filteredSchedules = schedules
+    .filter((schedule) => {
+      if (!scheduleFilter) return true;
+      const searchTerm = scheduleFilter.toLowerCase();
+      return (
+        schedule.name.toLowerCase().includes(searchTerm) ||
+        (schedule.description?.toLowerCase() || '').includes(searchTerm) ||
+        (schedule.owner_callsign?.toLowerCase() || '').includes(searchTerm) ||
+        (schedule.owner_name?.toLowerCase() || '').includes(searchTerm) ||
+        (schedule.nextNCS?.user_callsign?.toLowerCase() || '').includes(searchTerm) ||
+        schedule.frequencies.some((f: any) =>
+          (f.frequency?.toLowerCase() || '').includes(searchTerm) ||
+          (f.network?.toLowerCase() || '').includes(searchTerm) ||
+          (f.talkgroup?.toLowerCase() || '').includes(searchTerm)
+        )
+      );
+    })
+    .sort((a, b) => {
+      const aFav = favorites.has(a.id) ? 0 : 1;
+      const bFav = favorites.has(b.id) ? 0 : 1;
+      return aFav - bFav;
+    });
 
   const SCHEDULE_PAGE_SIZE = 25;
   const schedulePageCount = Math.max(1, Math.ceil(filteredSchedules.length / SCHEDULE_PAGE_SIZE));
@@ -439,6 +465,15 @@ const Scheduler: React.FC = () => {
               )}
               <TableCell>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Tooltip title={favorites.has(schedule.id) ? 'Remove from favorites' : 'Add to favorites'}>
+                    <IconButton
+                      size="small"
+                      onClick={() => toggleFavorite(schedule.id)}
+                      sx={{ color: favorites.has(schedule.id) ? 'warning.main' : 'action.disabled', p: 0.25 }}
+                    >
+                      {favorites.has(schedule.id) ? <StarIcon sx={{ fontSize: 16 }} /> : <StarBorderIcon sx={{ fontSize: 16 }} />}
+                    </IconButton>
+                  </Tooltip>
                   <Typography variant="body2" fontWeight="medium">{schedule.name}</Typography>
                   {!schedule.is_active && <Chip label="Inactive" size="small" />}
                 </Box>
@@ -554,13 +589,24 @@ const Scheduler: React.FC = () => {
               WebkitLineClamp: 2,
               WebkitBoxOrient: 'vertical',
               overflow: 'hidden',
+              flex: 1,
+              mr: 0.5,
             }}
           >
             {schedule.name}
           </Typography>
-          {!schedule.is_active && (
-            <Chip label="Inactive" color="default" size="small" />
-          )}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
+            {!schedule.is_active && <Chip label="Inactive" color="default" size="small" />}
+            <Tooltip title={favorites.has(schedule.id) ? 'Remove from favorites' : 'Add to favorites'}>
+              <IconButton
+                size="small"
+                onClick={() => toggleFavorite(schedule.id)}
+                sx={{ color: favorites.has(schedule.id) ? 'warning.main' : 'action.disabled', p: 0.25 }}
+              >
+                {favorites.has(schedule.id) ? <StarIcon fontSize="small" /> : <StarBorderIcon fontSize="small" />}
+              </IconButton>
+            </Tooltip>
+          </Box>
         </Box>
         
         {/* Description */}
