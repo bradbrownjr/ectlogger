@@ -1,6 +1,22 @@
 {
-  "version": "2026.06.19d",
+  "version": "2026.06.19e",
   "entries": [
+    {
+      "version": "2026.06.19e",
+      "date": "2026-06-19",
+      "sections": [
+        {
+          "title": "New Features",
+          "type": "feature",
+          "items": [
+            {
+              "text": "Net View: Archive reminder after closing a net — when you close a net, a prompt appears offering to archive it right away (preserving all check-ins and stats) or delete it, with a help button explaining the difference.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.06.19d",
       "date": "2026-06-19",

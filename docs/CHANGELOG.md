@@ -4,6 +4,14 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# June 19, 2026 (e)
+
+## New Features
+
+* **Net View: Archive reminder after closing a net** — When you close a net, a prompt appears at the top of the screen offering to archive it right away (preserving all check-ins and statistics) or delete it permanently. A help button explains the difference between the two so you can choose confidently.
+
+---
+
 # June 19, 2026 (d)
 
 ## Improvements
