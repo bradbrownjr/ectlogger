@@ -309,6 +309,7 @@ const NetView: React.FC = () => {
   // Check-in prompt for authenticated users viewing active/lobby nets
   const [checkInPromptOpen, setCheckInPromptOpen] = useState(false);
   const checkInPromptShownRef = useRef(false);
+  const archiveReminderShownRef = useRef(false);
   // Inline editing state
   const [inlineEditingId, setInlineEditingId] = useState<number | null>(null);
   const [inlineEditValues, setInlineEditValues] = useState<Partial<CheckIn>>({});
@@ -582,6 +583,14 @@ const NetView: React.FC = () => {
       return () => clearTimeout(timer);
     }
   }, [net?.status, isAuthenticated, checkIns, user?.id]);
+
+  // Show archive reminder once per page load for closed nets when viewed by a manager or staff member
+  useEffect(() => {
+    if (net?.status === 'closed' && net?.can_manage && !archiveReminderShownRef.current) {
+      archiveReminderShownRef.current = true;
+      setArchiveReminderOpen(true);
+    }
+  }, [net?.status, net?.can_manage]);
 
   const handleDetachCheckInList = () => setCheckInListDetached(true);
   const handleAttachCheckInList = () => setCheckInListDetached(false);
