@@ -28,6 +28,7 @@ import {
   ListItem,
   ListItemText,
   Snackbar,
+  SnackbarContent,
   Autocomplete,
   Grid,
   Tooltip,
@@ -5117,43 +5118,35 @@ const NetView: React.FC = () => {
         open={archiveReminderOpen}
         autoHideDuration={null}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-        message="Net closed — archive it when you're done to preserve your log and statistics."
-        action={
-          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
-            <Tooltip title="What's the difference between archive and delete?">
-              <IconButton size="small" color="inherit" onClick={() => setArchiveHelpOpen(true)}>
-                <HelpOutlineIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            <Button
-              size="small"
-              variant="contained"
-              color="success"
-              onClick={() => {
-                setArchiveReminderOpen(false);
-                handleArchive();
-              }}
-            >
-              Archive Now
-            </Button>
-            <Button
-              size="small"
-              variant="contained"
-              color="error"
-              onClick={() => setArchiveDeleteConfirmOpen(true)}
-            >
-              Delete
-            </Button>
-            <Button
-              size="small"
-              color="inherit"
-              onClick={() => setArchiveReminderOpen(false)}
-            >
-              Dismiss
-            </Button>
-          </Box>
-        }
-      />
+      >
+        <SnackbarContent
+          message={
+            <Box>
+              <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1 }}>
+                <Typography variant="body2" component="span">
+                  Net closed — archive it when you're done to preserve your log and statistics.
+                </Typography>
+                <Tooltip title="What's the difference between archive and delete?">
+                  <IconButton size="small" color="inherit" onClick={() => setArchiveHelpOpen(true)} sx={{ ml: 1, mt: -0.5, flexShrink: 0 }}>
+                    <HelpOutlineIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+              <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+                <Button size="small" variant="contained" color="error" onClick={() => setArchiveDeleteConfirmOpen(true)}>
+                  Delete
+                </Button>
+                <Button size="small" variant="contained" color="success" onClick={() => { setArchiveReminderOpen(false); handleArchive(); }}>
+                  Archive Now
+                </Button>
+                <Button size="small" variant="contained" color="primary" onClick={() => setArchiveReminderOpen(false)}>
+                  Dismiss
+                </Button>
+              </Box>
+            </Box>
+          }
+        />
+      </Snackbar>
 
       {/* ========== ARCHIVE vs DELETE HELP DIALOG ========== */}
       <Dialog
