@@ -5124,7 +5124,7 @@ const NetView: React.FC = () => {
             <Box>
               <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1 }}>
                 <Typography variant="body2" component="span">
-                  Net closed — archive it when you're done to preserve your log and statistics.
+                  Net closed - Please archive it when you're done to hide it from the Active Nets dashboard and preserve your log and statistics.
                 </Typography>
                 <Tooltip title="What's the difference between archive and delete?">
                   <IconButton size="small" color="inherit" onClick={() => setArchiveHelpOpen(true)} sx={{ ml: 1, mt: -0.5, flexShrink: 0 }}>
