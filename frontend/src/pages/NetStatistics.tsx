@@ -367,6 +367,11 @@ const NetStatistics: React.FC = () => {
     count: value,
   }));
 
+  // Compute column width so visible charts always fill the full row
+  const showFrequency = stats.frequency_count > 1 && frequencyData.length > 0;
+  const chartCount = [statusData.length > 0, timelineData.length >= 2, showFrequency].filter(Boolean).length;
+  const chartMd = (chartCount === 3 ? 4 : chartCount === 2 ? 6 : 12) as 4 | 6 | 12;
+
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       {/* Header */}
@@ -482,7 +487,7 @@ const NetStatistics: React.FC = () => {
       <Grid container spacing={3}>
         {/* Status Breakdown */}
         {statusData.length > 0 && (
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} md={chartMd}>
             <Paper sx={{ p: 3, height: '100%' }}>
               <Typography variant="h6" gutterBottom>
                 Check-in Status
@@ -513,7 +518,7 @@ const NetStatistics: React.FC = () => {
         {/* ========== CHECK-IN PACE CHART ========== */}
         {/* Cumulative area chart showing how quickly stations checked in over time */}
         {timelineData.length >= 2 && (
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} md={chartMd}>
             <Paper sx={{ p: 3, height: '100%' }}>
               <Typography variant="h6" gutterBottom>
                 Check-in Pace
@@ -563,8 +568,8 @@ const NetStatistics: React.FC = () => {
         )}
 
         {/* Check-ins by Frequency — only shown when net has multiple frequencies */}
-        {stats.frequency_count > 1 && frequencyData.length > 0 && (
-          <Grid item xs={12} md={4}>
+        {showFrequency && (
+          <Grid item xs={12} md={chartMd}>
             <Paper sx={{ p: 3, height: '100%' }}>
               <Typography variant="h6" gutterBottom>
                 Check-ins by Frequency

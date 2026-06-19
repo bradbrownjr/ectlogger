@@ -560,6 +560,11 @@ const NetReport: React.FC = () => {
     count: value,
   }));
 
+  // Compute column width so visible charts always fill the full row
+  const showFrequency = net.frequencies.length > 1 && frequencyData.length > 0;
+  const chartCount = [statusData.length > 0, timelineData.length >= 2, showFrequency].filter(Boolean).length;
+  const chartMd = (chartCount === 3 ? 4 : chartCount === 2 ? 6 : 12) as 4 | 6 | 12;
+
   // Get NCS operators from net roles
   const ncsOperators = netRoles.filter(r => r.role === 'ncs');
 
@@ -776,7 +781,7 @@ const NetReport: React.FC = () => {
         <Grid container spacing={3} sx={{ mb: 3 }}>
           {/* Status Breakdown Pie Chart */}
           {statusData.length > 0 && (
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} md={chartMd}>
               <Paper variant="outlined" sx={{ p: 2, height: '100%' }}>
                 <Typography variant="subtitle1" fontWeight="medium" gutterBottom>
                   Check-in Status
@@ -807,7 +812,7 @@ const NetReport: React.FC = () => {
           {/* ========== CHECK-IN PACE CHART ========== */}
           {/* Cumulative area chart showing how quickly stations checked in over time */}
           {timelineData.length >= 2 && (
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} md={chartMd}>
               <Paper variant="outlined" sx={{ p: 2, height: '100%' }}>
                 <Typography variant="subtitle1" fontWeight="medium" gutterBottom>
                   Check-in Pace
@@ -853,8 +858,8 @@ const NetReport: React.FC = () => {
           )}
 
           {/* Frequency Bar Chart — only shown when net has multiple frequencies */}
-          {net.frequencies.length > 1 && frequencyData.length > 0 && (
-            <Grid item xs={12} md={4}>
+          {showFrequency && (
+            <Grid item xs={12} md={chartMd}>
               <Paper variant="outlined" sx={{ p: 2, height: '100%' }}>
                 <Typography variant="subtitle1" fontWeight="medium" gutterBottom>
                   Check-ins by Frequency
