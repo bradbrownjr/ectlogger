@@ -5052,6 +5052,7 @@ const NetView: React.FC = () => {
           onClose={() => setScheduleAnnouncementsOpen(false)}
           templateId={net.template_id}
           netName={net?.name || 'Net'}
+          canEdit={canManage}
         />
       )}
 
