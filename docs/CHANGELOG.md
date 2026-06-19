@@ -4,6 +4,16 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# June 19, 2026
+
+## Improvements
+
+* **Net Statistics: Charts now display side-by-side in a single row** — The Check-in Status, Check-in Pace, and Check-ins by Frequency cards are arranged across one row so you can compare them at a glance without scrolling.
+* **Net Statistics & PDF Report: Check-in Pace chart added to the PDF report** — The cumulative arrivals chart that appears on the statistics page is now also included in the exported net report PDF.
+* **Net Statistics & PDF Report: Check-ins by Frequency chart only appears for multi-frequency nets** — The frequency breakdown chart is now hidden for nets that use a single frequency, where it added no useful information.
+
+---
+
 # June 18, 2026 (b)
 
 ## New Features

@@ -151,6 +151,7 @@ interface NetStats {
   check_ins_timeline: TimeSeriesDataPoint[];
   top_operators: TopOperator[];
   check_ins_by_frequency: Record<string, number>;
+  frequency_count: number;
 }
 
 // Individual check-in record (for location map)
@@ -481,39 +482,21 @@ const NetStatistics: React.FC = () => {
       <Grid container spacing={3}>
         {/* Status Breakdown */}
         {statusData.length > 0 && (
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12} md={4}>
             <Paper sx={{ p: 3, height: '100%' }}>
               <Typography variant="h6" gutterBottom>
                 Check-in Status
               </Typography>
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={260}>
                 <PieChart>
                   <Pie
                     data={statusData}
                     cx="50%"
                     cy="45%"
-                    outerRadius={90}
+                    outerRadius={72}
                     fill="#8884d8"
                     dataKey="value"
-                    label={({ name, percent, x, y, midAngle }) => {
-                      // Position labels outside the pie with offset based on angle
-                      const RADIAN = Math.PI / 180;
-                      const radius = 110;
-                      const cx2 = x + (radius - 90) * Math.cos(-midAngle * RADIAN);
-                      const cy2 = y + (radius - 90) * Math.sin(-midAngle * RADIAN);
-                      return (
-                        <text
-                          x={cx2}
-                          y={cy2}
-                          fill={COLORS[statusData.findIndex(d => d.name === name) % COLORS.length]}
-                          textAnchor={cx2 > x ? 'start' : 'end'}
-                          dominantBaseline="central"
-                          fontSize={12}
-                        >
-                          {`${name} (${(percent * 100).toFixed(0)}%)`}
-                        </text>
-                      );
-                    }}
+                    label={({ percent }) => percent > 0.04 ? `${(percent * 100).toFixed(0)}%` : ''}
                     labelLine={{ stroke: '#666', strokeWidth: 1 }}
                   >
                     {statusData.map((_, index) => (
@@ -530,7 +513,7 @@ const NetStatistics: React.FC = () => {
         {/* ========== CHECK-IN PACE CHART ========== */}
         {/* Cumulative area chart showing how quickly stations checked in over time */}
         {timelineData.length >= 2 && (
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12} md={4}>
             <Paper sx={{ p: 3, height: '100%' }}>
               <Typography variant="h6" gutterBottom>
                 Check-in Pace
@@ -579,9 +562,9 @@ const NetStatistics: React.FC = () => {
           </Grid>
         )}
 
-        {/* Check-ins by Frequency */}
-        {frequencyData.length > 0 && (
-          <Grid item xs={12} md={6}>
+        {/* Check-ins by Frequency — only shown when net has multiple frequencies */}
+        {stats.frequency_count > 1 && frequencyData.length > 0 && (
+          <Grid item xs={12} md={4}>
             <Paper sx={{ p: 3, height: '100%' }}>
               <Typography variant="h6" gutterBottom>
                 Check-ins by Frequency

@@ -149,6 +149,9 @@ import {
   PieChart,
   Pie,
   Cell,
+  Legend,
+  AreaChart,
+  Area,
 } from 'recharts';
 import { netApi, statisticsApi, checkInApi, netRoleApi } from '../services/api';
 import { chatApi, ChatMessage, formatChatMessageText } from '../api/chat';
@@ -208,6 +211,12 @@ interface CheckIn {
   relayed_by?: string;
 }
 
+interface TimeSeriesDataPoint {
+  label: string;
+  value: number;
+  date: string;
+}
+
 interface NetStats {
   net_id: number;
   net_name: string;
@@ -220,6 +229,7 @@ interface NetStats {
   closed_at: string | null;
   status_counts: Record<string, number>;
   check_ins_by_frequency: Record<string, number>;
+  check_ins_timeline: TimeSeriesDataPoint[];
   top_operators: { callsign: string; check_in_count: number; first_check_in: string }[];
 }
 
@@ -479,6 +489,20 @@ const NetReport: React.FC = () => {
     const pts = mappedCheckIns.map(m => ({ lat: m.parsedLocation.lat, lon: m.parsedLocation.lon }));
     return computeDualMapData(pts);
   }, [mappedCheckIns]);
+
+  // Cumulative check-in pace data derived from the timeline
+  const timelineData = useMemo(() => {
+    if (!stats || !stats.check_ins_timeline || stats.check_ins_timeline.length < 2) return [];
+    const sorted = [...stats.check_ins_timeline].sort((a, b) => {
+      const parse = (lbl: string) => parseInt(lbl.replace('+', '').replace('m', ''), 10);
+      return parse(a.label) - parse(b.label);
+    });
+    let cumulative = 0;
+    return sorted.map(pt => {
+      cumulative += 1;
+      return { label: pt.label, cumulative };
+    });
+  }, [stats]);
 
   // ========== LOADING & ERROR STATES ==========
 
@@ -748,12 +772,12 @@ const NetReport: React.FC = () => {
           </Grid>
         </Grid>
 
-        {/* Charts Row */}
+        {/* Charts Row — all three charts fit one row */}
         <Grid container spacing={3} sx={{ mb: 3 }}>
           {/* Status Breakdown Pie Chart */}
           {statusData.length > 0 && (
-            <Grid item xs={12} md={6}>
-              <Paper variant="outlined" sx={{ p: 2 }}>
+            <Grid item xs={12} md={4}>
+              <Paper variant="outlined" sx={{ p: 2, height: '100%' }}>
                 <Typography variant="subtitle1" fontWeight="medium" gutterBottom>
                   Check-in Status
                 </Typography>
@@ -762,27 +786,76 @@ const NetReport: React.FC = () => {
                     <Pie
                       data={statusData}
                       cx="50%"
-                      cy="50%"
-                      outerRadius={70}
+                      cy="45%"
+                      outerRadius={60}
                       fill="#8884d8"
                       dataKey="value"
-                      label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                      label={({ percent }) => percent > 0.04 ? `${(percent * 100).toFixed(0)}%` : ''}
                       labelLine={{ stroke: '#666', strokeWidth: 1 }}
                     >
                       {statusData.map((_, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
+                    <Legend verticalAlign="bottom" height={36} />
                   </PieChart>
                 </ResponsiveContainer>
               </Paper>
             </Grid>
           )}
 
-          {/* Frequency Bar Chart */}
-          {frequencyData.length > 0 && (
-            <Grid item xs={12} md={6}>
-              <Paper variant="outlined" sx={{ p: 2 }}>
+          {/* ========== CHECK-IN PACE CHART ========== */}
+          {/* Cumulative area chart showing how quickly stations checked in over time */}
+          {timelineData.length >= 2 && (
+            <Grid item xs={12} md={4}>
+              <Paper variant="outlined" sx={{ p: 2, height: '100%' }}>
+                <Typography variant="subtitle1" fontWeight="medium" gutterBottom>
+                  Check-in Pace
+                </Typography>
+                <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
+                  Cumulative arrivals from net open
+                </Typography>
+                <ResponsiveContainer width="100%" height={170}>
+                  <AreaChart data={timelineData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
+                    <defs>
+                      <linearGradient id="reportPaceGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor={theme.palette.success.main} stopOpacity={0.35} />
+                        <stop offset="95%" stopColor={theme.palette.success.main} stopOpacity={0.02} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                    <XAxis
+                      dataKey="label"
+                      tick={{ fontSize: 10 }}
+                      interval={Math.max(0, Math.floor(timelineData.length / 5) - 1)}
+                    />
+                    <YAxis
+                      allowDecimals={false}
+                      tick={{ fontSize: 10 }}
+                      label={{ value: 'Check-ins', angle: -90, position: 'insideLeft', offset: 12, style: { fontSize: 10 } }}
+                    />
+                    <RechartsTooltip
+                      formatter={(value: number) => [value, 'Total checked in']}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="cumulative"
+                      stroke={theme.palette.success.main}
+                      strokeWidth={2}
+                      fill="url(#reportPaceGradient)"
+                      dot={{ r: 2, fill: theme.palette.success.main }}
+                      activeDot={{ r: 4 }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </Paper>
+            </Grid>
+          )}
+
+          {/* Frequency Bar Chart — only shown when net has multiple frequencies */}
+          {net.frequencies.length > 1 && frequencyData.length > 0 && (
+            <Grid item xs={12} md={4}>
+              <Paper variant="outlined" sx={{ p: 2, height: '100%' }}>
                 <Typography variant="subtitle1" fontWeight="medium" gutterBottom>
                   Check-ins by Frequency
                 </Typography>

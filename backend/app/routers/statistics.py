@@ -297,7 +297,8 @@ async def get_net_statistics(
         status_counts=status_counts,
         check_ins_timeline=check_ins_timeline,
         top_operators=top_operators,
-        check_ins_by_frequency=freq_counts
+        check_ins_by_frequency=freq_counts,
+        frequency_count=len(net.frequencies),
     )
 
 

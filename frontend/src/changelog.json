@@ -1,6 +1,30 @@
 {
-  "version": "2026.06.18b",
+  "version": "2026.06.19",
   "entries": [
+    {
+      "version": "2026.06.19",
+      "date": "2026-06-19",
+      "sections": [
+        {
+          "title": "Improvements",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Net Statistics: Charts now display side-by-side in a single row — the Check-in Status, Check-in Pace, and Check-ins by Frequency cards are arranged across one row so you can compare them at a glance without scrolling.",
+              "userImpact": true
+            },
+            {
+              "text": "Net Statistics & PDF Report: Check-in Pace chart added to the PDF report — the cumulative arrivals chart that appears on the statistics page is now also included in the exported net report PDF.",
+              "userImpact": true
+            },
+            {
+              "text": "Net Statistics & PDF Report: Check-ins by Frequency chart only appears for multi-frequency nets — the frequency breakdown chart is now hidden for nets that use a single frequency, where it added no useful information.",
+              "userImpact": false
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.06.18b",
       "date": "2026-06-18",

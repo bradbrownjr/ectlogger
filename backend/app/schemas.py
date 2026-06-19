@@ -1137,6 +1137,7 @@ class NetStatsResponse(BaseModel):
     check_ins_timeline: List[TimeSeriesDataPoint]  # Check-ins over time during net
     top_operators: List[TopOperator]  # All operators in this net, sorted by check-in count
     check_ins_by_frequency: dict  # {"146.520 MHz": 10, "Wires-X Room 12345": 5}
+    frequency_count: int = 0  # Total frequencies in the net's Communications Plan
 
 
 class FrequentNetStats(BaseModel):
