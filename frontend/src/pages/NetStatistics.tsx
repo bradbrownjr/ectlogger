@@ -306,18 +306,33 @@ const NetStatistics: React.FC = () => {
     return computeDualMapData(pts);
   }, [mappedCheckIns]);
 
-  // Prepare cumulative check-in pace data from timeline
-  const timelineData = useMemo(() => {
-    if (!stats || !stats.check_ins_timeline || stats.check_ins_timeline.length < 2) return [];
-    const sorted = [...stats.check_ins_timeline].sort((a, b) => {
-      const parse = (lbl: string) => parseInt(lbl.replace('+', '').replace('m', ''), 10);
-      return parse(a.label) - parse(b.label);
-    });
-    let cumulative = 0;
-    return sorted.map(pt => {
-      cumulative += 1;
-      return { label: pt.label, cumulative };
-    });
+  // Binned check-in activity: counts per adaptive time window, capped at last check-in
+  const { timelineData, binSize } = useMemo(() => {
+    const empty = { timelineData: [] as { label: string; count: number }[], binSize: 5 };
+    if (!stats?.check_ins_timeline || stats.check_ins_timeline.length < 2) return empty;
+
+    const parse = (lbl: string) => parseInt(lbl.replace('+', '').replace('m', ''), 10);
+    const minutes = stats.check_ins_timeline.map(pt => parse(pt.label)).filter(n => !isNaN(n));
+    const maxMinutes = Math.max(...minutes);
+
+    const bin = maxMinutes < 30 ? 2 : maxMinutes < 120 ? 5 : maxMinutes < 300 ? 10 : 15;
+    const numBins = Math.ceil(maxMinutes / bin) + 1;
+    const bins = new Array(numBins).fill(0);
+    for (const m of minutes) {
+      const idx = Math.floor(m / bin);
+      if (idx < numBins) bins[idx]++;
+    }
+
+    // Drop trailing empty bins (net left open after last check-in)
+    let last = bins.length - 1;
+    while (last > 0 && bins[last] === 0) last--;
+
+    const data = bins.slice(0, last + 1).map((count, i) => ({
+      label: `+${i * bin}m`,
+      count,
+    }));
+
+    return { timelineData: data, binSize: bin };
   }, [stats]);
 
   if (loading) {
@@ -515,22 +530,22 @@ const NetStatistics: React.FC = () => {
           </Grid>
         )}
 
-        {/* ========== CHECK-IN PACE CHART ========== */}
-        {/* Cumulative area chart showing how quickly stations checked in over time */}
+        {/* ========== CHECK-IN ACTIVITY CHART ========== */}
+        {/* Binned area chart showing check-in flow over time */}
         {timelineData.length >= 2 && (
           <Grid item xs={12} md={chartMd}>
             <Paper sx={{ p: 3, height: '100%' }}>
               <Typography variant="h6" gutterBottom>
-                Check-in Pace
+                Check-in Activity
               </Typography>
               <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
-                Cumulative arrivals from net open
+                Check-ins per {binSize}-min window
               </Typography>
               <ResponsiveContainer width="100%" height={262}>
                 <AreaChart data={timelineData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
                   <defs>
-                    <linearGradient id="paceGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={theme.palette.success.main} stopOpacity={0.35} />
+                    <linearGradient id="activityGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={theme.palette.success.main} stopOpacity={0.4} />
                       <stop offset="95%" stopColor={theme.palette.success.main} stopOpacity={0.02} />
                     </linearGradient>
                   </defs>
@@ -546,20 +561,20 @@ const NetStatistics: React.FC = () => {
                     label={{ value: 'Check-ins', angle: -90, position: 'insideLeft', offset: 12, style: { fontSize: 11 } }}
                   />
                   <RechartsTooltip
-                    formatter={(value: number) => [value, 'Total checked in']}
+                    formatter={(value: number) => [value, `check-ins in ${binSize}m`]}
                     contentStyle={{
                       backgroundColor: theme.palette.background.paper,
                       border: `1px solid ${theme.palette.divider}`,
                     }}
                   />
                   <Area
-                    type="monotone"
-                    dataKey="cumulative"
+                    type="basis"
+                    dataKey="count"
                     stroke={theme.palette.success.main}
                     strokeWidth={2}
-                    fill="url(#paceGradient)"
-                    dot={{ r: 3, fill: theme.palette.success.main }}
-                    activeDot={{ r: 5 }}
+                    fill="url(#activityGradient)"
+                    dot={false}
+                    activeDot={{ r: 4 }}
                   />
                 </AreaChart>
               </ResponsiveContainer>
