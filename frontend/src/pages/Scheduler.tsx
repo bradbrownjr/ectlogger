@@ -59,6 +59,7 @@ import ViewListIcon from '@mui/icons-material/ViewList';
 import CallMergeIcon from '@mui/icons-material/CallMerge';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import FilterListIcon from '@mui/icons-material/FilterList';
+import SortByAlphaIcon from '@mui/icons-material/SortByAlpha';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import StarIcon from '@mui/icons-material/Star';
@@ -139,10 +140,14 @@ const Scheduler: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [rotationModalOpen, setRotationModalOpen] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null);
-  // View mode and filter state - persist view preference
+  // View mode, sort order, and filter state - persist view/sort preference
   const [viewMode, setViewMode] = useState<'card' | 'list'>(() => {
     const saved = localStorage.getItem('scheduler-view-mode');
     return (saved === 'list' || saved === 'card') ? saved : 'card';
+  });
+  const [sortOrder, setSortOrder] = useState<'alpha' | 'date'>(() => {
+    const saved = localStorage.getItem('scheduler-sort-order');
+    return saved === 'date' ? 'date' : 'alpha';
   });
   const [showFilter, setShowFilter] = useState(false);
   const [scheduleFilter, setScheduleFilter] = useState('');
@@ -380,9 +385,18 @@ const Scheduler: React.FC = () => {
       );
     })
     .sort((a, b) => {
+      // Favorites always first
       const aFav = favorites.has(a.id) ? 0 : 1;
       const bFav = favorites.has(b.id) ? 0 : 1;
-      return aFav - bFav;
+      if (aFav !== bFav) return aFav - bFav;
+
+      if (sortOrder === 'date') {
+        const aDate = a.nextNCS?.date ? new Date(a.nextNCS.date).getTime() : Infinity;
+        const bDate = b.nextNCS?.date ? new Date(b.nextNCS.date).getTime() : Infinity;
+        if (aDate !== bDate) return aDate - bDate;
+      }
+      // Alphabetical (primary for alpha mode, tiebreaker for date mode)
+      return a.name.localeCompare(b.name);
     });
 
   const SCHEDULE_PAGE_SIZE = 25;
@@ -781,17 +795,52 @@ const Scheduler: React.FC = () => {
 
   return (
     <Container maxWidth="lg" sx={{ mt: { xs: 2, sm: 4 }, mb: 4, pb: 12, px: { xs: 1, sm: 3 } }}>
-      {/* ========== HEADER WITH VIEW TOGGLE ========== */}
+      {/* ========== HEADER WITH SORT, FILTER, AND VIEW TOGGLE ========== */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
         <Typography variant={isMobile ? "h5" : "h4"} component="h1">
           📅 {isMobile ? 'Schedule' : 'Net Schedule'}
         </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           {!isMobile && (
             <Typography variant="caption" color="text.secondary">
               Times in {Intl.DateTimeFormat().resolvedOptions().timeZone}
             </Typography>
           )}
+          {/* Sort order toggle */}
+          <ToggleButtonGroup
+            value={sortOrder}
+            exclusive
+            onChange={(_, newSort) => {
+              if (newSort) {
+                setSortOrder(newSort);
+                localStorage.setItem('scheduler-sort-order', newSort);
+              }
+            }}
+            size="small"
+          >
+            <ToggleButton value="alpha" aria-label="alphabetical sort">
+              <Tooltip title="Sort alphabetically">
+                <SortByAlphaIcon fontSize="small" />
+              </Tooltip>
+            </ToggleButton>
+            <ToggleButton value="date" aria-label="date sort">
+              <Tooltip title="Sort by next scheduled date">
+                <CalendarMonthIcon fontSize="small" />
+              </Tooltip>
+            </ToggleButton>
+          </ToggleButtonGroup>
+          {/* Filter button */}
+          <Tooltip title={showFilter ? 'Hide filter' : 'Filter schedules'}>
+            <IconButton
+              size="small"
+              color={showFilter ? 'primary' : 'default'}
+              onClick={() => setShowFilter(!showFilter)}
+              aria-label="filter"
+            >
+              <FilterListIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          {/* View mode toggle */}
           <ToggleButtonGroup
             value={viewMode}
             exclusive
@@ -914,16 +963,6 @@ const Scheduler: React.FC = () => {
               </Fab>
             </Tooltip>
           )}
-          <Tooltip title={showFilter ? "Hide filter" : "Filter schedules"}>
-            <Fab
-              color={showFilter ? "primary" : "default"}
-              aria-label="filter"
-              sx={{ position: 'fixed', bottom: 16, right: 80 }}
-              onClick={() => setShowFilter(!showFilter)}
-            >
-              <FilterListIcon />
-            </Fab>
-          </Tooltip>
           <Tooltip title="Create new schedule">
             <Fab
               color="primary"
