@@ -1,6 +1,26 @@
 {
-  "version": "2026.06.19e",
+  "version": "2026.06.20",
   "entries": [
+    {
+      "version": "2026.06.20",
+      "date": "2026-06-20",
+      "sections": [
+        {
+          "title": "New Features",
+          "type": "feature",
+          "items": [
+            {
+              "text": "Check-in List: Who is this? — click any avatar in the check-in list to see that operator's callsign, name, role in the current net, total check-ins, and the nets they attend most often.",
+              "userImpact": true
+            },
+            {
+              "text": "Net Settings: Post-close chat grace period — enable a 15, 30, or 60 minute window after closing a net during which chat remains open, so participants can finish off-air conversations before it goes read-only.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.06.19e",
       "date": "2026-06-19",

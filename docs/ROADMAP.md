@@ -1,6 +1,6 @@
 # ECT Logger — Product Roadmap
 
-*Last updated: 2026-06-19 (rev 18)*  
+*Last updated: 2026-06-20 (rev 19)*  
 *Compiled from user feedback: AA1GM, KC1UIX, W1BKW, W1MTW, KC1JMH*
 
 > **Canonical location:** `docs/ROADMAP.md`. The root-level `ROADMAP.md` is a duplicate and should be deleted.
@@ -55,18 +55,10 @@ New "Themes" section in the Admin panel. Admins see the same swatch picker that 
 - [ ] Theme swatch picker component (reused in both Profile and Admin panel)
 - [ ] Add attribution credit in About / Settings footer
 
-### User Identity
-
-**✨ "Who is this?" user profile popup** *(KC1JMH)*  
-Clicking a callsign or user icon anywhere in the app brings up a dialog showing: larger profile photo, callsign, name (no PII like email), check-in count for this net and across all nets, and current role if any. Visible to authenticated users; guests see callsign only.
-
 ### Manager Tooling
 
 **✨ Admin "view as standard user" impersonation mode** *(KC1JMH)*  
 A toggle button (padlock icon, near the dark/light mode switch) that strips admin-only UI elements from view without page reload, allowing admins to replicate what a regular user sees. Unlocking restores all admin UI. State is client-side only; no backend impersonation required. Useful for reproducing bug reports and guiding users through the app.
-
-**✨ Post-close chat grace period** *(W1BKW, KC1JMH)*  
-Option on net settings to leave the chat open for a configurable window (e.g. 15, 30, 60 minutes) after the net closes. After the grace period, chat goes read-only. Currently under consideration — gather more net manager input before finalizing.
 
 ### Multi-Window Support
 

@@ -4,6 +4,16 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# June 20, 2026
+
+## New Features
+
+* **Check-in List: Who is this?** — Click any avatar in the check-in list to see that operator's callsign, name, role in the current net, total check-ins, and the nets they attend most often.
+
+* **Net Settings: Post-close chat grace period** — Enable a 15, 30, or 60 minute window after closing a net during which chat remains open, so participants can finish off-air conversations before it goes read-only.
+
+---
+
 # June 19, 2026 (e)
 
 ## New Features
