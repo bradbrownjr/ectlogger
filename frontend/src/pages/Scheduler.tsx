@@ -806,6 +806,17 @@ const Scheduler: React.FC = () => {
               Times in {Intl.DateTimeFormat().resolvedOptions().timeZone}
             </Typography>
           )}
+          {/* Filter button */}
+          <Tooltip title={showFilter ? 'Hide filter' : 'Filter schedules'}>
+            <IconButton
+              size="small"
+              color={showFilter ? 'primary' : 'default'}
+              onClick={() => setShowFilter(!showFilter)}
+              aria-label="filter"
+            >
+              <FilterListIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
           {/* Sort order toggle */}
           <ToggleButtonGroup
             value={sortOrder}
@@ -829,17 +840,6 @@ const Scheduler: React.FC = () => {
               </Tooltip>
             </ToggleButton>
           </ToggleButtonGroup>
-          {/* Filter button */}
-          <Tooltip title={showFilter ? 'Hide filter' : 'Filter schedules'}>
-            <IconButton
-              size="small"
-              color={showFilter ? 'primary' : 'default'}
-              onClick={() => setShowFilter(!showFilter)}
-              aria-label="filter"
-            >
-              <FilterListIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
           {/* View mode toggle */}
           <ToggleButtonGroup
             value={viewMode}

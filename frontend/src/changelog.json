@@ -1,8 +1,8 @@
 {
-  "version": "2026.06.20",
+  "version": "2026.06.20b",
   "entries": [
     {
-      "version": "2026.06.20",
+      "version": "2026.06.20b",
       "date": "2026-06-20",
       "sections": [
         {
@@ -15,6 +15,22 @@
             },
             {
               "text": "Net Settings: Post-close chat grace period — enable a 15, 30, or 60 minute window after closing a net during which chat remains open, so participants can finish off-air conversations before it goes read-only.",
+              "userImpact": true
+            },
+            {
+              "text": "Net View: Presence dots on avatars — registered users now show a green dot when online and a gray dot when offline, so you can instantly tell who has a viewable profile versus a guest check-in.",
+              "userImpact": true
+            },
+            {
+              "text": "Net View: Clickable avatars in chat and Net Staff dialog — click any avatar in the chat panel or the Net Staff dialog to open that operator's profile popup.",
+              "userImpact": true
+            },
+            {
+              "text": "Schedule: Sort by alphabetical or next scheduled date — two sort buttons in the header let you order the schedule list A-Z or by upcoming date (unscheduled nets fall to the bottom). Your choice is remembered between visits.",
+              "userImpact": true
+            },
+            {
+              "text": "Schedule: Filter button moved to the header — the filter icon is now in the top-right toolbar alongside sort and view controls instead of a floating button at the bottom of the page.",
               "userImpact": true
             }
           ]

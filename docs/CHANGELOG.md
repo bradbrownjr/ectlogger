@@ -4,13 +4,21 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
-# June 20, 2026
+# June 20, 2026 (b)
 
 ## New Features
 
 * **Check-in List: Who is this?** — Click any avatar in the check-in list to see that operator's callsign, name, role in the current net, total check-ins, and the nets they attend most often.
 
 * **Net Settings: Post-close chat grace period** — Enable a 15, 30, or 60 minute window after closing a net during which chat remains open, so participants can finish off-air conversations before it goes read-only.
+
+* **Net View: Presence dots on avatars** — Registered users now show a green dot when online and a gray dot when offline, so you can instantly tell who has a viewable profile versus a guest check-in.
+
+* **Net View: Clickable avatars in chat and Net Staff dialog** — Click any avatar in the chat panel or the Net Staff dialog to open that operator's profile popup.
+
+* **Schedule: Sort by alphabetical or next scheduled date** — Two sort buttons in the header let you order the schedule list A-Z or by upcoming date (unscheduled nets fall to the bottom). Your choice is remembered between visits.
+
+* **Schedule: Filter button moved to the header** — The filter icon is now in the top-right toolbar alongside sort and view controls instead of a floating button at the bottom of the page.
 
 ---
 
