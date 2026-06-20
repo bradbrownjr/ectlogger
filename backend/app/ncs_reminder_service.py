@@ -119,6 +119,9 @@ class NCSReminderService:
                 await db.execute(
                     net_freq_table.insert().values(net_id=net.id, frequency_id=freq.id)
                 )
+            # Assign the duty NCS from the rotation as a NetRole so the
+            # dashboard can display who is running the net.
+            await self._assign_duty_ncs(db, net.id, template.id, scheduled_dt)
             await db.commit()
             logger.info("NCS_REMINDER", f"Auto-created net {net.id} for template {template.id} on {scheduled_dt.date()}")
             return net.id
@@ -126,6 +129,42 @@ class NCSReminderService:
             logger.error("NCS_REMINDER", f"Failed to auto-create net for template {template.id}: {e}")
             await db.rollback()
             return None
+
+    async def _assign_duty_ncs(self, db, net_id: int, template_id: int, scheduled_dt: datetime):
+        """Create a NetRole(NCS) for the rotation member whose turn falls on scheduled_dt.
+
+        Loads rotation members, overrides, and the fifth-week user fresh from the
+        database so this method is safe to call regardless of what relationships are
+        already eager-loaded on the template object.
+        """
+        from app.routers.ncs_rotation import compute_ncs_schedule
+        from sqlalchemy.orm import selectinload as _sil
+
+        # Load the template with the relationships compute_ncs_schedule needs
+        from app.models import NCSScheduleOverride as _Override
+        tpl_result = await db.execute(
+            select(NetTemplate)
+            .options(
+                _sil(NetTemplate.rotation_members),
+                _sil(NetTemplate.schedule_overrides).selectinload(_Override.replacement_user),
+                _sil(NetTemplate.fifth_week_user),
+            )
+            .where(NetTemplate.id == template_id)
+        )
+        tpl = tpl_result.scalar_one_or_none()
+        if not tpl or not tpl.rotation_members:
+            return
+
+        schedule = compute_ncs_schedule(
+            tpl,
+            [scheduled_dt],
+            tpl.rotation_members,
+            tpl.schedule_overrides,
+        )
+        if not schedule or not schedule[0].user_id or schedule[0].is_cancelled:
+            return
+
+        db.add(NetRole(net_id=net_id, user_id=schedule[0].user_id, role="NCS"))
 
     async def _check_and_auto_create_nets(self):
         """Ensure a SCHEDULED net instance exists ~24h before every recurring template.
