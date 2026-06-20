@@ -1,8 +1,8 @@
 {
-  "version": "2026.06.20b",
+  "version": "2026.06.20c",
   "entries": [
     {
-      "version": "2026.06.20b",
+      "version": "2026.06.20c",
       "date": "2026-06-20",
       "sections": [
         {
@@ -30,7 +30,11 @@
               "userImpact": true
             },
             {
-              "text": "Schedule: Filter button moved to the header — the filter icon is now in the top-right toolbar alongside sort and view controls instead of a floating button at the bottom of the page.",
+              "text": "Active Nets: Sort by status or alphabetical — a bolt icon sorts nets by activity (live nets first, then lobby, then upcoming scheduled nets in start-time order); A-Z sorts alphabetically. Your choice is remembered between visits.",
+              "userImpact": true
+            },
+            {
+              "text": "Active Nets and Schedule: Filter button moved to the header — the filter icon is now in the top-right toolbar alongside sort and view controls instead of a floating button at the bottom of the page.",
               "userImpact": true
             }
           ]

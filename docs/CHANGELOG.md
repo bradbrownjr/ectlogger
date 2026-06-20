@@ -4,7 +4,7 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
-# June 20, 2026 (b)
+# June 20, 2026 (c)
 
 ## New Features
 
@@ -18,7 +18,9 @@ All notable changes to ECTLogger are documented here.
 
 * **Schedule: Sort by alphabetical or next scheduled date** — Two sort buttons in the header let you order the schedule list A-Z or by upcoming date (unscheduled nets fall to the bottom). Your choice is remembered between visits.
 
-* **Schedule: Filter button moved to the header** — The filter icon is now in the top-right toolbar alongside sort and view controls instead of a floating button at the bottom of the page.
+* **Active Nets: Sort by status or alphabetical** — A bolt icon sorts nets by activity (live nets first, then lobby, then upcoming scheduled nets in start-time order); A-Z sorts alphabetically. Your choice is remembered between visits.
+
+* **Active Nets and Schedule: Filter button moved to the header** — The filter icon is now in the top-right toolbar alongside sort and view controls instead of a floating button at the bottom of the page.
 
 ---
 
