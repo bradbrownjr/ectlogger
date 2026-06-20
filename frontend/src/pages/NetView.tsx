@@ -26,6 +26,7 @@ import {
   MenuItem,
   List,
   ListItem,
+  ListItemAvatar,
   ListItemText,
   Snackbar,
   SnackbarContent,
@@ -177,6 +178,7 @@ interface NetRole {
   email: string;
   name?: string;
   callsign?: string;
+  avatar_url?: string | null;
   role: string;
   active_frequency_id?: number;
   assigned_at: string;
@@ -2974,7 +2976,8 @@ const NetView: React.FC = () => {
                                 callsign={checkIn.callsign}
                                 name={checkIn.name}
                                 size={24}
-                                isOnline={!!(checkIn.user_id && onlineUserIds.includes(checkIn.user_id))}
+                                hasProfile={!!checkIn.user_id}
+                              isOnline={!!(checkIn.user_id && onlineUserIds.includes(checkIn.user_id))}
                               />
                             </Box>
                             <Box sx={{ fontWeight: 500 }}>
@@ -3418,7 +3421,8 @@ const NetView: React.FC = () => {
                                 callsign={checkIn.callsign}
                                 name={checkIn.name}
                                 size={24}
-                                isOnline={!!(checkIn.user_id && onlineUserIds.includes(checkIn.user_id))}
+                                hasProfile={!!checkIn.user_id}
+                              isOnline={!!(checkIn.user_id && onlineUserIds.includes(checkIn.user_id))}
                               />
                             </Box>
                             {checkIn.callsign}
@@ -4131,6 +4135,7 @@ const NetView: React.FC = () => {
                     <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
                       <Chat netId={Number(netId)} netStartedAt={net?.started_at} netStatus={net?.status} searchQuery={searchQuery} canManage={canManage} onDetach={handleDetachChat}
                         chatGracePeriodMinutes={net?.chat_grace_period_minutes ?? undefined} closedAt={net?.closed_at}
+                        onlineUserIds={onlineUserIds} onProfileClick={(id) => setProfileUserId(id)}
                         minimized={chatMinimized} onMinimize={() => setChatMinimized(true)} onRestore={() => setChatMinimized(false)} />
                     </Box>
                   </Box>
@@ -4289,7 +4294,8 @@ const NetView: React.FC = () => {
                                 callsign={checkIn.callsign}
                                 name={checkIn.name}
                                 size={24}
-                                isOnline={!!(checkIn.user_id && onlineUserIds.includes(checkIn.user_id))}
+                                hasProfile={!!checkIn.user_id}
+                              isOnline={!!(checkIn.user_id && onlineUserIds.includes(checkIn.user_id))}
                               />
                               {checkIn.callsign}
                               {checkIn.relayed_by && (
@@ -4453,7 +4459,8 @@ const NetView: React.FC = () => {
             storageKey="chat"
           >
             <Chat netId={Number(netId)} netStartedAt={net?.started_at} netStatus={net?.status} searchQuery={searchQuery} canManage={canManage}
-              chatGracePeriodMinutes={net?.chat_grace_period_minutes ?? undefined} closedAt={net?.closed_at} />
+              chatGracePeriodMinutes={net?.chat_grace_period_minutes ?? undefined} closedAt={net?.closed_at}
+              onlineUserIds={onlineUserIds} onProfileClick={(id) => setProfileUserId(id)} />
           </FloatingWindow>
         )}
 
@@ -4644,7 +4651,7 @@ const NetView: React.FC = () => {
                 </Typography>
                 <List>
                   {netRoles.map((role) => (
-                    <ListItem 
+                    <ListItem
                       key={role.id}
                       secondaryAction={
                         <IconButton edge="end" onClick={() => handleRemoveRole(role.id)}>
@@ -4652,6 +4659,21 @@ const NetView: React.FC = () => {
                         </IconButton>
                       }
                     >
+                      <ListItemAvatar>
+                        <Box
+                          onClick={() => setProfileUserId(role.user_id)}
+                          sx={{ cursor: 'pointer', display: 'inline-flex' }}
+                        >
+                          <UserAvatar
+                            avatarUrl={role.avatar_url}
+                            callsign={role.callsign}
+                            name={role.name}
+                            size={36}
+                            hasProfile
+                            isOnline={onlineUserIds.includes(role.user_id)}
+                          />
+                        </Box>
+                      </ListItemAvatar>
                       <ListItemText
                         primary={displayCallsign(role) || role.email}
                         secondary={`${role.role} • ${new Date(role.assigned_at).toLocaleDateString()}`}

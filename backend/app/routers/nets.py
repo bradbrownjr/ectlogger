@@ -1865,6 +1865,7 @@ async def list_net_roles(
     # Build role list using eagerly loaded user data.
     # For unauthenticated callers we expose only callsign + first name so guests
     # can see who is running the net without leaking email or surnames.
+    from app.utils import get_avatar_url
     role_list = []
     is_authed = current_user is not None
     for role in roles:
@@ -1878,6 +1879,10 @@ async def list_net_roles(
                 "active_frequency_id": role.active_frequency_id,
                 "assigned_at": role.assigned_at,
                 "is_active": role.is_active if role.is_active is not None else True,
+                "avatar_url": get_avatar_url(
+                    role.user.email if is_authed else None,
+                    getattr(role.user, 'avatar_url', None),
+                ),
             }
             if is_authed:
                 entry["email"] = role.user.email

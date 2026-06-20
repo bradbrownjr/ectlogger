@@ -46,6 +46,8 @@ interface UserAvatarProps {
   name?: string | null;
   size?: number;
   isOnline?: boolean;
+  /** When true and not online, renders a gray presence dot so registered users are visually distinct from guests. */
+  hasProfile?: boolean;
 }
 
 /**
@@ -62,6 +64,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
   name,
   size = 24,
   isOnline = false,
+  hasProfile = false,
 }) => {
   const initial = (name || callsign || '?').charAt(0).toUpperCase();
   const fontSize = Math.max(8, Math.round(size * 0.45));
@@ -82,7 +85,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
       >
         {initial}
       </Avatar>
-      {isOnline && (
+      {(isOnline || hasProfile) && (
         <Box
           sx={{
             position: 'absolute',
@@ -91,7 +94,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
             width: badgeSize,
             height: badgeSize,
             borderRadius: '50%',
-            backgroundColor: 'success.main',
+            backgroundColor: isOnline ? 'success.main' : 'action.disabled',
             border: '1.5px solid',
             borderColor: 'background.paper',
             pointerEvents: 'none',

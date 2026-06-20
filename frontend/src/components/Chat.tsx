@@ -38,6 +38,8 @@ interface ChatProps {
   canManage?: boolean;
   chatGracePeriodMinutes?: number;
   closedAt?: string;
+  onlineUserIds?: number[];
+  onProfileClick?: (userId: number) => void;
   onNewMessage?: (message: ChatMessage) => void;
   onDetach?: () => void;
   minimized?: boolean;
@@ -48,7 +50,7 @@ interface ChatProps {
 const REACTION_EMOJIS = ['👍', '🙂', '🙁', '❤️', '✅'];
 const CHAT_IMAGE_PREFIX = '__CHAT_IMAGE__';
 
-const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery, canManage, chatGracePeriodMinutes, closedAt, onNewMessage, onDetach, minimized, onMinimize, onRestore }) => {
+const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery, canManage, chatGracePeriodMinutes, closedAt, onlineUserIds = [], onProfileClick, onNewMessage, onDetach, minimized, onMinimize, onRestore }) => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -387,11 +389,18 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
                   <ListItemText
                     primary={
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                        <UserAvatar
-                          avatarUrl={message.avatar_url}
-                          callsign={message.callsign}
-                          size={24}
-                        />
+                        <Box
+                          onClick={() => message.user_id && onProfileClick?.(message.user_id)}
+                          sx={{ cursor: message.user_id && onProfileClick ? 'pointer' : 'default', display: 'inline-flex' }}
+                        >
+                          <UserAvatar
+                            avatarUrl={message.avatar_url}
+                            callsign={message.callsign}
+                            size={24}
+                            hasProfile={!!message.user_id}
+                            isOnline={!!(message.user_id && onlineUserIds.includes(message.user_id))}
+                          />
+                        </Box>
                         <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, flexWrap: 'wrap' }}>
                           <Typography
                             component="span"
