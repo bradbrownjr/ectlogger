@@ -165,6 +165,9 @@ const CreateSchedule: React.FC = () => {
   const [infoUrl, setInfoUrl] = useState('');
   const [script, setScript] = useState('');
   const [ics309Enabled, setIcs309Enabled] = useState(false);
+  const [mobilePrioritySort, setMobilePrioritySort] = useState(true);
+  const [chatGracePeriodEnabled, setChatGracePeriodEnabled] = useState(false);
+  const [chatGracePeriodMinutes, setChatGracePeriodMinutes] = useState(15);
   const [topicOfWeekEnabled, setTopicOfWeekEnabled] = useState(false);
   const [topicOfWeekPrompt, setTopicOfWeekPrompt] = useState('');
   const [pollEnabled, setPollEnabled] = useState(false);
@@ -631,6 +634,10 @@ const CreateSchedule: React.FC = () => {
       setInfoUrl(Schedule.info_url || '');
       setScript(Schedule.script || '');
       setIcs309Enabled(Schedule.ics309_enabled || false);
+      setMobilePrioritySort(Schedule.mobile_priority_sort !== false);
+      const grace = Schedule.chat_grace_period_minutes;
+      setChatGracePeriodEnabled(!!grace);
+      if (grace) setChatGracePeriodMinutes(grace);
       setTopicOfWeekEnabled(Schedule.topic_of_week_enabled || false);
       setTopicOfWeekPrompt(Schedule.topic_of_week_prompt || '');
       setPollEnabled(Schedule.poll_enabled || false);
@@ -976,6 +983,8 @@ const CreateSchedule: React.FC = () => {
       schedule_config: scheduleConfig,
       fifth_week_user_id: fifthWeekUserId,
       ics309_enabled: ics309Enabled,
+      mobile_priority_sort: mobilePrioritySort,
+      chat_grace_period_minutes: chatGracePeriodEnabled ? chatGracePeriodMinutes : null,
       topic_of_week_enabled: topicOfWeekEnabled,
       topic_of_week_prompt: topicOfWeekPrompt || null,
       poll_enabled: pollEnabled,
@@ -1182,6 +1191,49 @@ const CreateSchedule: React.FC = () => {
               <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
                 When enabled, net close emails will use the official ICS-309 format used by ARES, RACES, and EmComm organizations.
               </Typography>
+            </Box>
+
+            <Box sx={{ ml: 1, mt: 2 }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={mobilePrioritySort}
+                    onChange={(e) => setMobilePrioritySort(e.target.checked)}
+                  />
+                }
+                label="Prioritize mobile stations in check-in list"
+              />
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
+                Mobile stations appear at the top of the check-in list (after NCS) so they can be called before they move out of range. Disable for strict chronological order.
+              </Typography>
+            </Box>
+
+            <Box sx={{ ml: 1, mt: 2 }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={chatGracePeriodEnabled}
+                    onChange={(e) => setChatGracePeriodEnabled(e.target.checked)}
+                  />
+                }
+                label="Keep chat open after closing"
+              />
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5, mb: chatGracePeriodEnabled ? 1 : 0 }}>
+                Chat stays open for a set time after the net closes, so participants can finish off-air conversations before it goes read-only.
+              </Typography>
+              {chatGracePeriodEnabled && (
+                <Box sx={{ ml: 4.5 }}>
+                  <Select
+                    size="small"
+                    value={chatGracePeriodMinutes}
+                    onChange={(e) => setChatGracePeriodMinutes(Number(e.target.value))}
+                  >
+                    <MenuItem value={15}>15 minutes</MenuItem>
+                    <MenuItem value={30}>30 minutes</MenuItem>
+                    <MenuItem value={60}>60 minutes</MenuItem>
+                  </Select>
+                </Box>
+              )}
             </Box>
 
             {/* Community Net Features */}
