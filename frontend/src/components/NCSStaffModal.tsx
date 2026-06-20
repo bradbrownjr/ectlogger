@@ -43,7 +43,6 @@ import AddIcon from '@mui/icons-material/Add';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import BlockIcon from '@mui/icons-material/Block';
-import PersonIcon from '@mui/icons-material/Person';
 import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
 import CloseIcon from '@mui/icons-material/Close';
@@ -53,6 +52,8 @@ import EmailIcon from '@mui/icons-material/Email';
 import { ncsRotationApi, userApi, templateStaffApi, templateApi } from '../services/api';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import UserAvatar from './UserAvatar';
+import UserProfileDialog from './UserProfileDialog';
 
 interface NCSStaffModalProps {
   open: boolean;
@@ -95,6 +96,7 @@ interface StaffMember {
   user_id: number;
   user_callsign: string;
   user_name: string | null;
+  avatar_url?: string | null;
   is_active: boolean;
   is_co_manager: boolean;
 }
@@ -117,6 +119,7 @@ interface NetRole {
   email: string;
   name: string | null;
   callsign: string;
+  avatar_url?: string | null;
   role: string;
   assigned_at: string;
 }
@@ -178,6 +181,7 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
   // Local override of the displayed manager so the new value sticks even
   // before the parent refetches and passes a fresh `schedule` prop.
   const [localOwner, setLocalOwner] = useState<{ id: number; callsign?: string; name?: string } | null>(null);
+  const [profileUserId, setProfileUserId] = useState<number | null>(null);
 
   // ========== PUSH-STAFF-TO-SCHEDULE STATE ==========
   // When viewing a net created from a schedule (template), the modal exposes
@@ -1159,7 +1163,17 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
           {/* Manager (owner) — always shown first */}
           <List dense>
             <ListItem sx={{ py: 0.5, bgcolor: 'action.hover', borderRadius: 1, mb: 0.5 }}>
-              <PersonIcon sx={{ mr: 1, color: 'primary.main' }} />
+              <Box
+                onClick={() => { const id = localOwner?.id ?? schedule?.owner_id; if (id) setProfileUserId(id); }}
+                sx={{ cursor: 'pointer', display: 'inline-flex', mr: 1 }}
+              >
+                <UserAvatar
+                  callsign={localOwner?.callsign ?? schedule?.owner_callsign}
+                  name={localOwner?.name ?? schedule?.owner_name}
+                  size={32}
+                  hasProfile
+                />
+              </Box>
               {editingManager ? (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexGrow: 1 }}>
                   <Autocomplete
@@ -1233,7 +1247,18 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                   mb: 0.5,
                 }}
               >
-                <PersonIcon sx={{ mr: 1, color: s.is_active ? 'primary.main' : 'action.disabled' }} />
+                <Box
+                  onClick={() => setProfileUserId(s.user_id)}
+                  sx={{ cursor: 'pointer', display: 'inline-flex', mr: 1 }}
+                >
+                  <UserAvatar
+                    avatarUrl={s.avatar_url}
+                    callsign={s.user_callsign}
+                    name={s.user_name}
+                    size={32}
+                    hasProfile
+                  />
+                </Box>
                 <ListItemText
                   primary={
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -1320,7 +1345,17 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
             {ncsRoles.length === 0 ? (
               /* No assigned NCS — show the owner as the default */
               <ListItem sx={{ py: 0.5, bgcolor: 'action.hover', borderRadius: 1 }}>
-                <PersonIcon sx={{ mr: 1, color: 'primary.main' }} />
+                <Box
+                  onClick={() => net?.owner_id && setProfileUserId(net.owner_id)}
+                  sx={{ cursor: net?.owner_id ? 'pointer' : 'default', display: 'inline-flex', mr: 1 }}
+                >
+                  <UserAvatar
+                    callsign={net?.owner_callsign}
+                    name={net?.owner_name}
+                    size={32}
+                    hasProfile={!!net?.owner_id}
+                  />
+                </Box>
                 <ListItemText
                   primary={
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -1336,7 +1371,18 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
             ) : (
               ncsRoles.map((role: NetRole) => (
                 <ListItem key={role.id} sx={{ py: 0.5 }}>
-                  <PersonIcon sx={{ mr: 1, color: 'primary.main' }} />
+                  <Box
+                    onClick={() => setProfileUserId(role.user_id)}
+                    sx={{ cursor: 'pointer', display: 'inline-flex', mr: 1 }}
+                  >
+                    <UserAvatar
+                      avatarUrl={role.avatar_url}
+                      callsign={role.callsign}
+                      name={role.name}
+                      size={32}
+                      hasProfile
+                    />
+                  </Box>
                   <ListItemText
                     primary={
                       <Typography variant="body2">
@@ -1592,6 +1638,13 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Who is this? profile popup */}
+      <UserProfileDialog
+        userId={profileUserId}
+        netId={net?.id}
+        onClose={() => setProfileUserId(null)}
+      />
 
       {/* Reorder sync error toast */}
       <Snackbar

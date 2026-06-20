@@ -1037,12 +1037,14 @@ class TemplateStaffResponse(BaseModel):
     user_email: Optional[str] = None
     user_name: Optional[str] = None
     user_callsign: Optional[str] = None
+    avatar_url: Optional[str] = None
 
     class Config:
         from_attributes = True
 
     @classmethod
     def from_orm_with_user(cls, staff):
+        from app.utils import get_avatar_url
         return cls(
             id=staff.id,
             template_id=staff.template_id,
@@ -1053,6 +1055,10 @@ class TemplateStaffResponse(BaseModel):
             user_email=staff.user.email if staff.user else None,
             user_name=staff.user.name if staff.user else None,
             user_callsign=staff.user.callsign if staff.user else None,
+            avatar_url=get_avatar_url(
+                staff.user.email if staff.user else None,
+                getattr(staff.user, 'avatar_url', None) if staff.user else None,
+            ),
         )
 
 
