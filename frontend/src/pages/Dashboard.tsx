@@ -489,10 +489,15 @@ const Dashboard: React.FC = () => {
                 <Chip label={net.status} color={getStatusColor(net.status)} size="small" />
               </TableCell>
               <TableCell>
-                {net.owner_callsign && (
+                {/* Show assigned NCS when set; fall back to net manager */}
+                {(net.ncs_callsign || net.owner_callsign) && (
                   <Typography variant="body2">
-                    {net.owner_callsign}
-                    {net.owner_name && <Typography component="span" variant="caption" color="text.secondary"> ({net.owner_name})</Typography>}
+                    {net.ncs_callsign || net.owner_callsign}
+                    {(net.ncs_callsign ? net.ncs_name : net.owner_name) && (
+                      <Typography component="span" variant="caption" color="text.secondary">
+                        {' '}({net.ncs_callsign ? net.ncs_name : net.owner_name})
+                      </Typography>
+                    )}
                   </Typography>
                 )}
               </TableCell>
@@ -711,9 +716,14 @@ const Dashboard: React.FC = () => {
           {/* ========== CURRENT / NEXT NCS ========== */}
           {/* Whoever is actually running the net (NetRole role='NCS'). For */}
           {/* draft/scheduled nets this is effectively the "next" NCS; for */}
-          {/* active or closed nets it's the operator who ran it. Suppressed */}
-          {/* when the NCS is the same person as the manager to avoid noise. */}
-          {net.ncs_callsign && net.ncs_callsign !== net.owner_callsign && (
+          {/* active or closed nets it's the operator who ran it. On active/ */}
+          {/* closed nets suppress when NCS == manager to avoid redundancy; */}
+          {/* on scheduled/draft always show so the duty operator is visible. */}
+          {net.ncs_callsign && (
+            (net.status === 'draft' || net.status === 'scheduled')
+              ? true
+              : net.ncs_callsign !== net.owner_callsign
+          ) && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <PersonIcon fontSize="small" color="action" />
               <Typography variant="body2" color="text.secondary">
