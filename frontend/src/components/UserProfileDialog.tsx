@@ -6,12 +6,8 @@ import {
   CircularProgress,
   Dialog,
   DialogContent,
-  DialogTitle,
   Divider,
   IconButton,
-  List,
-  ListItem,
-  ListItemText,
   Typography,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
@@ -81,14 +77,12 @@ const UserProfileDialog: React.FC<UserProfileDialogProps> = ({ userId, netId, on
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth PaperProps={{ sx: { m: { xs: 1, sm: 3 } } }}>
-      <DialogTitle sx={{ pb: 0, pr: 6 }}>
-        Who is this?
-        <IconButton onClick={onClose} size="small" sx={{ position: 'absolute', right: 8, top: 8 }}>
-          <CloseIcon fontSize="small" />
-        </IconButton>
-      </DialogTitle>
+      {/* Close button — no title bar */}
+      <IconButton onClick={onClose} size="small" sx={{ position: 'absolute', right: 8, top: 8, zIndex: 1 }}>
+        <CloseIcon fontSize="small" />
+      </IconButton>
 
-      <DialogContent>
+      <DialogContent sx={{ pt: 2.5, pb: 2 }}>
         {loading && (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
             <CircularProgress size={32} />
@@ -104,7 +98,7 @@ const UserProfileDialog: React.FC<UserProfileDialogProps> = ({ userId, netId, on
         {!loading && popup && (
           <Box>
             {/* Avatar + identity */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2, mt: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
               <Avatar
                 src={popup.avatar_url ?? undefined}
                 alt={popup.callsign}
@@ -155,42 +149,38 @@ const UserProfileDialog: React.FC<UserProfileDialogProps> = ({ userId, netId, on
             {/* Recent nets */}
             {popup.recent_nets.length > 0 && (
               <>
-                <Typography variant="subtitle2" sx={{ mb: 0.5 }}>Recent</Typography>
-                <List dense disablePadding sx={{ mb: 1.5 }}>
+                <Typography variant="subtitle2" sx={{ mb: 0.5, fontWeight: 'bold' }}>Recent</Typography>
+                <Box sx={{ mb: 1.5 }}>
                   {popup.recent_nets.map((n) => (
-                    <ListItem key={n.net_id} disablePadding>
-                      <ListItemText
-                        primary={n.net_name}
-                        secondary={formatDate(n.date)}
-                        primaryTypographyProps={{ variant: 'body2', noWrap: true }}
-                        secondaryTypographyProps={{ variant: 'caption' }}
-                      />
-                    </ListItem>
+                    <Box key={n.net_id} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.3 }}>
+                      <Typography variant="body2" noWrap sx={{ flex: 1, mr: 2 }}>
+                        {n.net_name}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0 }}>
+                        {formatDate(n.date)}
+                      </Typography>
+                    </Box>
                   ))}
-                </List>
+                </Box>
               </>
             )}
 
-            {/* Most-attended nets (only show if different from recent) */}
+            {/* Most-attended nets */}
             {popup.top_nets.length > 0 && (
               <>
-                <Typography variant="subtitle2" sx={{ mb: 0.5 }}>Most attended</Typography>
-                <List dense disablePadding>
-                  {popup.top_nets.map((n) => (
-                    <ListItem key={n.net_id} disablePadding
-                      secondaryAction={
-                        <Typography variant="caption" color="text.secondary">
-                          {n.check_in_count}x
-                        </Typography>
-                      }
-                    >
-                      <ListItemText
-                        primary={n.net_name}
-                        primaryTypographyProps={{ variant: 'body2', noWrap: true }}
-                      />
-                    </ListItem>
+                <Typography variant="subtitle2" sx={{ mb: 0.5, fontWeight: 'bold' }}>Most attended</Typography>
+                <Box>
+                  {popup.top_nets.map((n, i) => (
+                    <Box key={`${n.net_id}-${i}`} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.3 }}>
+                      <Typography variant="body2" noWrap sx={{ flex: 1, mr: 2 }}>
+                        {n.net_name}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0 }}>
+                        {n.check_in_count}x
+                      </Typography>
+                    </Box>
                   ))}
-                </List>
+                </Box>
               </>
             )}
           </Box>

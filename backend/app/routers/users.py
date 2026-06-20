@@ -259,10 +259,19 @@ async def get_user_popup(
 
     unique_nets = len(net_data)
 
-    # Recent nets: 5 most recently attended
+    # Recent nets: 5 most recently attended (by individual instance)
     recent_nets = sorted(net_data.values(), key=lambda x: x["date"], reverse=True)[:5]
-    # Top nets: 5 most frequently attended
-    top_nets = sorted(net_data.values(), key=lambda x: x["check_in_count"], reverse=True)[:5]
+
+    # Top nets: group individual instances by net name so recurring nets
+    # accumulate across sessions (e.g. "Office Hours Tech Net" = 8x, not 1x each)
+    by_name: dict = {}
+    for entry in net_data.values():
+        name = entry["net_name"]
+        if name not in by_name:
+            by_name[name] = {"net_id": entry["net_id"], "net_name": name,
+                             "date": entry["date"], "check_in_count": 0}
+        by_name[name]["check_in_count"] += entry["check_in_count"]
+    top_nets = sorted(by_name.values(), key=lambda x: x["check_in_count"], reverse=True)[:5]
 
     # Net role for the specified net (if provided)
     net_role = None
