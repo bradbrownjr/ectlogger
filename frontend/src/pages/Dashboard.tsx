@@ -57,6 +57,8 @@ import GroupsIcon from '@mui/icons-material/Groups';
 import ViewModuleIcon from '@mui/icons-material/ViewModule';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import FilterListIcon from '@mui/icons-material/FilterList';
+import SortByAlphaIcon from '@mui/icons-material/SortByAlpha';
+import BoltIcon from '@mui/icons-material/Bolt';
 import ClearIcon from '@mui/icons-material/Clear';
 import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
@@ -114,10 +116,14 @@ const Dashboard: React.FC = () => {
   const [archiveSortDirection, setArchiveSortDirection] = useState<'asc' | 'desc'>('desc');
   const [archiveShowAttended, setArchiveShowAttended] = useState(false);
   const [archiveShowRan, setArchiveShowRan] = useState(false);
-  // View mode and filter state - persist view preference
+  // View mode, sort order, and filter state - persist view/sort preference
   const [viewMode, setViewMode] = useState<'card' | 'list'>(() => {
     const saved = localStorage.getItem('dashboard-view-mode');
     return (saved === 'list' || saved === 'card') ? saved : 'card';
+  });
+  const [netSortOrder, setNetSortOrder] = useState<'status' | 'alpha'>(() => {
+    const saved = localStorage.getItem('dashboard-sort-order');
+    return saved === 'alpha' ? 'alpha' : 'status';
   });
   const [showFilter, setShowFilter] = useState(false);
   const [netFilter, setNetFilter] = useState('');
@@ -395,9 +401,31 @@ const Dashboard: React.FC = () => {
       );
     })
     .sort((a, b) => {
+      // Favorites always first
       const aFav = a.template_id != null && favorites.has(a.template_id) ? 0 : 1;
       const bFav = b.template_id != null && favorites.has(b.template_id) ? 0 : 1;
-      return aFav - bFav;
+      if (aFav !== bFav) return aFav - bFav;
+
+      if (netSortOrder === 'status') {
+        const statusPriority: Record<string, number> = { active: 0, lobby: 1, scheduled: 2, draft: 3 };
+        const aPri = statusPriority[a.status] ?? 4;
+        const bPri = statusPriority[b.status] ?? 4;
+        if (aPri !== bPri) return aPri - bPri;
+        // Within active/lobby: most recently started first
+        if (a.status === 'active' || a.status === 'lobby') {
+          const aTime = a.started_at ? new Date(a.started_at).getTime() : 0;
+          const bTime = b.started_at ? new Date(b.started_at).getTime() : 0;
+          if (aTime !== bTime) return bTime - aTime;
+        }
+        // Within scheduled/draft: soonest first
+        if (a.status === 'scheduled' || a.status === 'draft') {
+          const aTime = a.scheduled_start_time ? new Date(a.scheduled_start_time).getTime() : Infinity;
+          const bTime = b.scheduled_start_time ? new Date(b.scheduled_start_time).getTime() : Infinity;
+          if (aTime !== bTime) return aTime - bTime;
+        }
+      }
+      // Alphabetical (primary for alpha mode, tiebreaker for status mode)
+      return a.name.localeCompare(b.name);
     });
 
   // ========== CARD VIEW RENDERER ==========
@@ -863,12 +891,12 @@ const Dashboard: React.FC = () => {
 
   return (
     <Container maxWidth="lg" sx={{ mt: { xs: 2, sm: 4 }, mb: 4, pb: 12, px: { xs: 1, sm: 3 } }}>
-      {/* ========== HEADER WITH VIEW TOGGLE ========== */}
+      {/* ========== HEADER WITH SORT, FILTER, AND VIEW TOGGLE ========== */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
         <Typography variant={isMobile ? "h5" : "h4"} component="h1">
           📻 {isMobile ? 'Active' : 'Active Nets'}
         </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           {!isMobile && (
             <Typography variant="body2" color="text.secondary">
               {isAuthenticated ? (
@@ -878,6 +906,41 @@ const Dashboard: React.FC = () => {
               )}
             </Typography>
           )}
+          {/* Filter button */}
+          <Tooltip title={showFilter ? 'Hide filter' : 'Filter nets'}>
+            <IconButton
+              size="small"
+              color={showFilter ? 'primary' : 'default'}
+              onClick={() => setShowFilter(!showFilter)}
+              aria-label="filter"
+            >
+              <FilterListIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          {/* Sort order toggle */}
+          <ToggleButtonGroup
+            value={netSortOrder}
+            exclusive
+            onChange={(_, newSort) => {
+              if (newSort) {
+                setNetSortOrder(newSort);
+                localStorage.setItem('dashboard-sort-order', newSort);
+              }
+            }}
+            size="small"
+          >
+            <ToggleButton value="status" aria-label="sort by status">
+              <Tooltip title="Sort by status (active first, then next up)">
+                <BoltIcon fontSize="small" />
+              </Tooltip>
+            </ToggleButton>
+            <ToggleButton value="alpha" aria-label="sort alphabetically">
+              <Tooltip title="Sort alphabetically">
+                <SortByAlphaIcon fontSize="small" />
+              </Tooltip>
+            </ToggleButton>
+          </ToggleButtonGroup>
+          {/* View mode toggle */}
           <ToggleButtonGroup
             value={viewMode}
             exclusive
@@ -963,16 +1026,6 @@ const Dashboard: React.FC = () => {
       {/* ========== FLOATING ACTION BUTTONS ========== */}
       {isAuthenticated && (
         <>
-          <Tooltip title={showFilter ? "Hide filter" : "Filter nets"}>
-            <Fab
-              color={showFilter ? "primary" : "default"}
-              aria-label="filter"
-              sx={{ position: 'fixed', bottom: 16, right: 144 }}
-              onClick={() => setShowFilter(!showFilter)}
-            >
-              <FilterListIcon />
-            </Fab>
-          </Tooltip>
           <Tooltip title="View archived nets">
             <Fab
               color="default"
