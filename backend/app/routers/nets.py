@@ -126,6 +126,7 @@ async def create_net(
         field_config=json.dumps(net_data.field_config) if net_data.field_config else None,
         ics309_enabled=net_data.ics309_enabled or False,
         mobile_priority_sort=net_data.mobile_priority_sort if net_data.mobile_priority_sort is not None else True,
+        chat_grace_period_minutes=net_data.chat_grace_period_minutes,
         topic_of_week_enabled=net_data.topic_of_week_enabled or False,
         topic_of_week_prompt=net_data.topic_of_week_prompt,
         poll_enabled=net_data.poll_enabled or False,

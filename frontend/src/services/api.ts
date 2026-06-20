@@ -68,6 +68,8 @@ export const userApi = {
   // requiring admin access.
   listDirectory: () => api.get('/users/directory'),
   lookupByCallsign: (callsign: string) => api.get(`/users/lookup/${encodeURIComponent(callsign)}`),
+  getPopup: (userId: number, netId?: number) =>
+    api.get(`/users/${userId}/popup${netId ? `?net_id=${netId}` : ''}`),
 };
 
 // Net API

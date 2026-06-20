@@ -139,6 +139,8 @@ const CreateNet: React.FC = () => {
   const [announcements, setAnnouncements] = useState('');
   const [ics309Enabled, setIcs309Enabled] = useState(false);
   const [mobilePrioritySort, setMobilePrioritySort] = useState(true);
+  const [chatGracePeriodEnabled, setChatGracePeriodEnabled] = useState(false);
+  const [chatGracePeriodMinutes, setChatGracePeriodMinutes] = useState(15);
   // Topic of the Week / Poll features
   const [topicOfWeekEnabled, setTopicOfWeekEnabled] = useState(false);
   const [topicOfWeekPrompt, setTopicOfWeekPrompt] = useState('');
@@ -244,6 +246,9 @@ const CreateNet: React.FC = () => {
       setAnnouncements(response.data.announcements || '');
       setIcs309Enabled(response.data.ics309_enabled || false);
       setMobilePrioritySort(response.data.mobile_priority_sort !== false);
+      const grace = response.data.chat_grace_period_minutes;
+      setChatGracePeriodEnabled(!!grace);
+      if (grace) setChatGracePeriodMinutes(grace);
       setTopicOfWeekEnabled(response.data.topic_of_week_enabled || false);
       setTopicOfWeekPrompt(response.data.topic_of_week_prompt || '');
       
@@ -524,6 +529,7 @@ const CreateNet: React.FC = () => {
           field_config: fieldConfig,
           ics309_enabled: ics309Enabled,
           mobile_priority_sort: mobilePrioritySort,
+          chat_grace_period_minutes: chatGracePeriodEnabled ? chatGracePeriodMinutes : null,
           topic_of_week_enabled: topicOfWeekEnabled,
           topic_of_week_prompt: topicOfWeekPrompt || null,
           poll_enabled: pollEnabled,
@@ -543,13 +549,14 @@ const CreateNet: React.FC = () => {
           field_config: fieldConfig,
           ics309_enabled: ics309Enabled,
           mobile_priority_sort: mobilePrioritySort,
+          chat_grace_period_minutes: chatGracePeriodEnabled ? chatGracePeriodMinutes : null,
           topic_of_week_enabled: topicOfWeekEnabled,
           topic_of_week_prompt: topicOfWeekPrompt || null,
           poll_enabled: pollEnabled,
           poll_question: pollQuestion || null,
           scheduled_start_time: scheduledStartTimeISO,
         });
-        
+
         // Assign pending NCS users to the newly created net
         const newNetId = response.data.id;
         for (const ncsUser of pendingNCSUsers) {
@@ -999,6 +1006,36 @@ const CreateNet: React.FC = () => {
               <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
                 When enabled, mobile stations appear at the top of the check-in list (after NCS) so they can be called before they move out of range. Disable for strict chronological order.
               </Typography>
+            </Box>
+          )}
+
+          {!isInfoMode && (
+            <Box sx={{ mt: 2 }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={chatGracePeriodEnabled}
+                    onChange={(e) => setChatGracePeriodEnabled(e.target.checked)}
+                  />
+                }
+                label="Keep chat open after closing"
+              />
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5, mb: chatGracePeriodEnabled ? 1 : 0 }}>
+                Chat stays open for a set time after the net closes, so participants can wrap up off-air conversations before it goes read-only.
+              </Typography>
+              {chatGracePeriodEnabled && (
+                <Box sx={{ ml: 4.5 }}>
+                  <Select
+                    size="small"
+                    value={chatGracePeriodMinutes}
+                    onChange={(e) => setChatGracePeriodMinutes(Number(e.target.value))}
+                  >
+                    <MenuItem value={15}>15 minutes</MenuItem>
+                    <MenuItem value={30}>30 minutes</MenuItem>
+                    <MenuItem value={60}>60 minutes</MenuItem>
+                  </Select>
+                </Box>
+              )}
             </Box>
           )}
 

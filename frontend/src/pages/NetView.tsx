@@ -87,6 +87,7 @@ import ScheduleAnnouncements from '../components/ScheduleAnnouncements';
 import TopicHistory from '../components/TopicHistory';
 import FloatingWindow from '../components/FloatingWindow';
 import UserAvatar from '../components/UserAvatar';
+import UserProfileDialog from '../components/UserProfileDialog';
 
 interface Net {
   id: number;
@@ -102,6 +103,7 @@ interface Net {
   active_frequency_id?: number;
   ics309_enabled?: boolean;
   mobile_priority_sort?: boolean;
+  chat_grace_period_minutes?: number | null;
   // Topic of the Week / Poll features
   topic_of_week_enabled?: boolean;
   topic_of_week_prompt?: string;
@@ -276,6 +278,7 @@ const NetView: React.FC = () => {
   const [archiveReminderOpen, setArchiveReminderOpen] = useState(false);
   const [archiveHelpOpen, setArchiveHelpOpen] = useState(false);
   const [archiveDeleteConfirmOpen, setArchiveDeleteConfirmOpen] = useState(false);
+  const [profileUserId, setProfileUserId] = useState<number | null>(null);
   const [subscribing, setSubscribing] = useState(false);
   const [startingNet, setStartingNet] = useState(false);
   const [scriptOpen, setScriptOpen] = useState(false);
@@ -2962,13 +2965,18 @@ const NetView: React.FC = () => {
                           />
                         ) : (
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <UserAvatar
-                              avatarUrl={checkIn.avatar_url}
-                              callsign={checkIn.callsign}
-                              name={checkIn.name}
-                              size={24}
-                              isOnline={!!(checkIn.user_id && onlineUserIds.includes(checkIn.user_id))}
-                            />
+                            <Box
+                              onClick={() => checkIn.user_id && setProfileUserId(checkIn.user_id)}
+                              sx={{ cursor: checkIn.user_id ? 'pointer' : 'default', display: 'inline-flex' }}
+                            >
+                              <UserAvatar
+                                avatarUrl={checkIn.avatar_url}
+                                callsign={checkIn.callsign}
+                                name={checkIn.name}
+                                size={24}
+                                isOnline={!!(checkIn.user_id && onlineUserIds.includes(checkIn.user_id))}
+                              />
+                            </Box>
                             <Box sx={{ fontWeight: 500 }}>
                               {checkIn.callsign}
                             </Box>
@@ -3401,13 +3409,18 @@ const NetView: React.FC = () => {
                         </TableCell>
                         <TableCell sx={{ whiteSpace: 'nowrap' }}>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <UserAvatar
-                              avatarUrl={checkIn.avatar_url}
-                              callsign={checkIn.callsign}
-                              name={checkIn.name}
-                              size={24}
-                              isOnline={!!(checkIn.user_id && onlineUserIds.includes(checkIn.user_id))}
-                            />
+                            <Box
+                              onClick={() => checkIn.user_id && setProfileUserId(checkIn.user_id)}
+                              sx={{ cursor: checkIn.user_id ? 'pointer' : 'default', display: 'inline-flex' }}
+                            >
+                              <UserAvatar
+                                avatarUrl={checkIn.avatar_url}
+                                callsign={checkIn.callsign}
+                                name={checkIn.name}
+                                size={24}
+                                isOnline={!!(checkIn.user_id && onlineUserIds.includes(checkIn.user_id))}
+                              />
+                            </Box>
                             {checkIn.callsign}
                             {checkIn.relayed_by && (
                               <Tooltip title={`Relayed by ${checkIn.relayed_by}`} arrow>
@@ -4117,6 +4130,7 @@ const NetView: React.FC = () => {
                   <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                     <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
                       <Chat netId={Number(netId)} netStartedAt={net?.started_at} netStatus={net?.status} searchQuery={searchQuery} canManage={canManage} onDetach={handleDetachChat}
+                        chatGracePeriodMinutes={net?.chat_grace_period_minutes ?? undefined} closedAt={net?.closed_at}
                         minimized={chatMinimized} onMinimize={() => setChatMinimized(true)} onRestore={() => setChatMinimized(false)} />
                     </Box>
                   </Box>
@@ -4438,7 +4452,8 @@ const NetView: React.FC = () => {
             minHeight={250}
             storageKey="chat"
           >
-            <Chat netId={Number(netId)} netStartedAt={net?.started_at} netStatus={net?.status} searchQuery={searchQuery} canManage={canManage} />
+            <Chat netId={Number(netId)} netStartedAt={net?.started_at} netStatus={net?.status} searchQuery={searchQuery} canManage={canManage}
+              chatGracePeriodMinutes={net?.chat_grace_period_minutes ?? undefined} closedAt={net?.closed_at} />
           </FloatingWindow>
         )}
 
@@ -5111,6 +5126,13 @@ const NetView: React.FC = () => {
           <Button variant="contained" onClick={handleSaveNetTimes}>Save</Button>
         </DialogActions>
       </Dialog>
+
+      {/* ========== WHO IS THIS? PROFILE POPUP ========== */}
+      <UserProfileDialog
+        userId={profileUserId}
+        netId={netId ? Number(netId) : undefined}
+        onClose={() => setProfileUserId(null)}
+      />
 
       {/* ========== ARCHIVE REMINDER SNACKBAR ========== */}
       {/* Shown to net managers after closing a net, offering archive or delete */}

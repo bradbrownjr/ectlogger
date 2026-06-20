@@ -367,6 +367,8 @@ async def update_template(
         template.ics309_enabled = template_data.ics309_enabled
     if template_data.mobile_priority_sort is not None:
         template.mobile_priority_sort = template_data.mobile_priority_sort
+    if 'chat_grace_period_minutes' in template_data.model_fields_set:
+        template.chat_grace_period_minutes = template_data.chat_grace_period_minutes
     if template_data.topic_of_week_enabled is not None:
         template.topic_of_week_enabled = template_data.topic_of_week_enabled
     if template_data.topic_of_week_prompt is not None:
@@ -1084,6 +1086,7 @@ async def create_net_from_template(
         status=NetStatus.DRAFT,
         ics309_enabled=template.ics309_enabled or False,
         mobile_priority_sort=template.mobile_priority_sort if template.mobile_priority_sort is not None else True,
+        chat_grace_period_minutes=template.chat_grace_period_minutes,
         topic_of_week_enabled=template.topic_of_week_enabled or False,
         topic_of_week_prompt=template.topic_of_week_prompt,
         poll_enabled=template.poll_enabled or False,

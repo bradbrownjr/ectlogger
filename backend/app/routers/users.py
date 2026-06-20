@@ -8,7 +8,7 @@ from io import BytesIO
 from PIL import Image, ImageOps
 from app.database import get_db
 from app.models import User, UserRole, Contact
-from app.schemas import UserResponse, UserUpdate, AdminUserCreate, CallsignLookupResponse, UserDirectoryEntry
+from app.schemas import UserResponse, UserUpdate, AdminUserCreate, CallsignLookupResponse, UserDirectoryEntry, UserPopupResponse
 from app.dependencies import get_current_user, get_current_user_optional, get_admin_user
 
 AVATAR_DIR = Path(__file__).resolve().parents[2] / "data" / "avatars"
@@ -202,6 +202,91 @@ async def list_user_directory(
         UserDirectoryEntry(id=u.id, callsign=u.callsign, name=u.name)
         for u in users
     ]
+
+
+@router.get("/{user_id}/popup", response_model=UserPopupResponse)
+async def get_user_popup(
+    user_id: int,
+    net_id: Optional[int] = None,
+    db: AsyncSession = Depends(get_db)
+):
+    """Public-facing user profile summary for the 'Who is this?' popup.
+    No authentication required. Returns callsign, name, avatar, check-in stats,
+    recent nets, and most-attended nets. Optionally includes the user's role in
+    a specific net when net_id is provided."""
+    import json
+    from sqlalchemy.orm import selectinload
+    from app.models import CheckIn, NetRole
+    from app.utils import get_avatar_url
+
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Collect all callsigns associated with this user
+    user_callsigns = [user.callsign] if user.callsign else []
+    if getattr(user, 'gmrs_callsign', None):
+        user_callsigns.append(user.gmrs_callsign)
+    try:
+        additional = json.loads(user.callsigns) if user.callsigns else []
+        user_callsigns.extend(additional)
+    except Exception:
+        pass
+
+    # Fetch all check-ins for this user's callsigns, newest first
+    ci_result = await db.execute(
+        select(CheckIn)
+        .options(selectinload(CheckIn.net))
+        .where(CheckIn.callsign.in_(user_callsigns))
+        .order_by(CheckIn.checked_in_at.desc())
+    )
+    check_ins = ci_result.scalars().all()
+
+    total_check_ins = len(check_ins)
+
+    # Aggregate per-net stats
+    net_data: dict = {}
+    for ci in check_ins:
+        if ci.net_id not in net_data:
+            net_data[ci.net_id] = {
+                "net_id": ci.net_id,
+                "net_name": ci.net.name if ci.net else "Unknown",
+                "date": ci.checked_in_at,
+                "check_in_count": 0,
+            }
+        net_data[ci.net_id]["check_in_count"] += 1
+
+    unique_nets = len(net_data)
+
+    # Recent nets: 5 most recently attended
+    recent_nets = sorted(net_data.values(), key=lambda x: x["date"], reverse=True)[:5]
+    # Top nets: 5 most frequently attended
+    top_nets = sorted(net_data.values(), key=lambda x: x["check_in_count"], reverse=True)[:5]
+
+    # Net role for the specified net (if provided)
+    net_role = None
+    if net_id:
+        role_result = await db.execute(
+            select(NetRole).where(NetRole.net_id == net_id, NetRole.user_id == user_id)
+        )
+        role_obj = role_result.scalar_one_or_none()
+        if role_obj:
+            net_role = role_obj.role
+
+    avatar_url = get_avatar_url(user.email, user.avatar_url)
+
+    return UserPopupResponse(
+        user_id=user.id,
+        callsign=user.callsign or "",
+        name=user.name,
+        avatar_url=avatar_url,
+        net_role=net_role,
+        total_check_ins=total_check_ins,
+        unique_nets=unique_nets,
+        recent_nets=recent_nets,
+        top_nets=top_nets,
+    )
 
 
 @router.get("/{user_id}", response_model=UserResponse)

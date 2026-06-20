@@ -36,6 +36,8 @@ interface ChatProps {
   netStatus?: string;
   searchQuery?: string;
   canManage?: boolean;
+  chatGracePeriodMinutes?: number;
+  closedAt?: string;
   onNewMessage?: (message: ChatMessage) => void;
   onDetach?: () => void;
   minimized?: boolean;
@@ -46,7 +48,7 @@ interface ChatProps {
 const REACTION_EMOJIS = ['👍', '🙂', '🙁', '❤️', '✅'];
 const CHAT_IMAGE_PREFIX = '__CHAT_IMAGE__';
 
-const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery, canManage, onNewMessage, onDetach, minimized, onMinimize, onRestore }) => {
+const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery, canManage, chatGracePeriodMinutes, closedAt, onNewMessage, onDetach, minimized, onMinimize, onRestore }) => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -56,8 +58,23 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [hoveredMessageId, setHoveredMessageId] = useState<number | null>(null);
   const [lightboxImage, setLightboxImage] = useState<ChatImagePayload | null>(null);
+  const [now, setNow] = useState(() => Date.now());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLUListElement>(null);
+
+  // Tick every 30 s so grace period expiry is reflected without a page reload
+  useEffect(() => {
+    if (netStatus !== 'closed' || !chatGracePeriodMinutes || !closedAt) return;
+    const id = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, [netStatus, chatGracePeriodMinutes, closedAt]);
+
+  // Chat remains open while within the grace window after close
+  const isGracePeriodActive =
+    netStatus === 'closed' &&
+    !!chatGracePeriodMinutes &&
+    !!closedAt &&
+    now - new Date(closedAt).getTime() < chatGracePeriodMinutes * 60_000;
 
   // Show toast when net is closed/archived — suppressed for managers since NetView shows the archive reminder instead
   useEffect(() => {
@@ -111,7 +128,8 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
   }, [messages]);
 
   // Filter messages: Chat always shows only non-system messages
-  const netClosed = netStatus === 'closed' || netStatus === 'archived';
+  // Chat input is disabled when the net is closed/archived, unless still within the grace period
+  const netClosed = (netStatus === 'closed' && !isGracePeriodActive) || netStatus === 'archived';
 
   const filteredMessages = messages.filter(m => {
       if (m.is_system) return false;
@@ -190,7 +208,7 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
   };
 
   const handlePaste = async (e: React.ClipboardEvent<HTMLDivElement>) => {
-    if (!user || netStatus === 'closed' || netStatus === 'archived') return;
+    if (!user || netClosed) return;
 
     const file = Array.from(e.clipboardData.items)
       .map((item) => (item.kind === 'file' ? item.getAsFile() : null))
@@ -520,7 +538,7 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
         <div ref={messagesEndRef} />
       </List>
 
-      {netStatus !== 'closed' && netStatus !== 'archived' && (
+      {!netClosed && (
         <Box sx={{ p: 1, borderTop: 1, borderColor: 'divider', flexShrink: 0 }}>
           <Box sx={{ display: 'flex', gap: 1 }}>
             <TextField

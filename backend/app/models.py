@@ -117,6 +117,7 @@ class Net(Base):
     field_config = Column(Text, default='{"name": {"enabled": true, "required": false}, "location": {"enabled": true, "required": false}, "skywarn_number": {"enabled": false, "required": false}, "weather_observation": {"enabled": false, "required": false}, "power_source": {"enabled": false, "required": false}, "power": {"enabled": false, "required": false}, "feedback": {"enabled": false, "required": false}, "notes": {"enabled": false, "required": false}}')  # JSON config for check-in fields
     ics309_enabled = Column(Boolean, default=False)  # Generate ICS-309 format on close
     mobile_priority_sort = Column(Boolean, default=True)  # Promote mobile stations above chronological order
+    chat_grace_period_minutes = Column(Integer, nullable=True)  # Minutes to keep chat open after close; null = disabled
 
     # Topic of the Week / Poll features for community nets
     topic_of_week_enabled = Column(Boolean, default=False)
@@ -157,6 +158,7 @@ class NetTemplate(Base):
     is_active = Column(Boolean, default=True)
     ics309_enabled = Column(Boolean, default=False)  # Enable ICS-309 format for net close emails
     mobile_priority_sort = Column(Boolean, default=True)  # Promote mobile stations above chronological order
+    chat_grace_period_minutes = Column(Integer, nullable=True)  # Minutes to keep chat open after close; null = disabled
 
     # Topic of the Week / Poll features for community nets
     topic_of_week_enabled = Column(Boolean, default=False)

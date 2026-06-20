@@ -230,6 +230,26 @@ class ContactResponse(ContactBase):
         from_attributes = True
 
 
+# User Popup ("Who is this?") Schemas
+class PopupNetEntry(BaseModel):
+    net_id: int
+    net_name: str
+    date: Optional[datetime] = None
+    check_in_count: int = 0
+
+
+class UserPopupResponse(BaseModel):
+    user_id: int
+    callsign: str
+    name: Optional[str] = None
+    avatar_url: Optional[str] = None
+    net_role: Optional[str] = None
+    total_check_ins: int = 0
+    unique_nets: int = 0
+    recent_nets: List[PopupNetEntry] = []
+    top_nets: List[PopupNetEntry] = []
+
+
 # Frequency Schemas
 class FrequencyBase(BaseModel):
     frequency: Optional[str] = Field(None, max_length=50)
@@ -277,6 +297,7 @@ class NetBase(BaseModel):
     field_config: Optional[dict] = None
     ics309_enabled: Optional[bool] = False
     mobile_priority_sort: Optional[bool] = True
+    chat_grace_period_minutes: Optional[int] = None
     # Topic of the Week / Poll features
     topic_of_week_enabled: Optional[bool] = False
     topic_of_week_prompt: Optional[str] = Field(None, max_length=500)
@@ -303,6 +324,7 @@ class NetUpdate(BaseModel):
     field_config: Optional[dict] = None
     ics309_enabled: Optional[bool] = None
     mobile_priority_sort: Optional[bool] = None
+    chat_grace_period_minutes: Optional[int] = None
     # Topic of the Week / Poll features
     topic_of_week_enabled: Optional[bool] = None
     topic_of_week_prompt: Optional[str] = Field(None, max_length=500)
@@ -368,6 +390,7 @@ class NetResponse(NetBase):
             'field_config': json.loads(net.field_config) if net.field_config else None,
             'ics309_enabled': net.ics309_enabled or False,
             'mobile_priority_sort': net.mobile_priority_sort if net.mobile_priority_sort is not None else True,
+            'chat_grace_period_minutes': net.chat_grace_period_minutes,
             'topic_of_week_enabled': net.topic_of_week_enabled or False,
             'topic_of_week_prompt': net.topic_of_week_prompt,
             'poll_enabled': net.poll_enabled or False,
@@ -402,6 +425,7 @@ class NetTemplateBase(BaseModel):
     fifth_week_user_id: Optional[int] = None
     ics309_enabled: bool = False  # Enable ICS-309 format for net close emails
     mobile_priority_sort: Optional[bool] = True
+    chat_grace_period_minutes: Optional[int] = None
     # Topic of the Week / Poll features
     topic_of_week_enabled: Optional[bool] = False
     topic_of_week_prompt: Optional[str] = Field(None, max_length=500)
@@ -430,6 +454,7 @@ class NetTemplateUpdate(BaseModel):
     owner_id: Optional[int] = None  # Allow changing the owner (admin only or current owner)
     ics309_enabled: Optional[bool] = None
     mobile_priority_sort: Optional[bool] = None
+    chat_grace_period_minutes: Optional[int] = None
     # Topic of the Week / Poll features
     topic_of_week_enabled: Optional[bool] = None
     topic_of_week_prompt: Optional[str] = Field(None, max_length=500)
@@ -474,6 +499,7 @@ class NetTemplateResponse(NetTemplateBase):
             'schedule_config': json.loads(template.schedule_config) if template.schedule_config else {},
             'ics309_enabled': template.ics309_enabled or False,
             'mobile_priority_sort': template.mobile_priority_sort if template.mobile_priority_sort is not None else True,
+            'chat_grace_period_minutes': template.chat_grace_period_minutes,
             'topic_of_week_enabled': template.topic_of_week_enabled or False,
             'topic_of_week_prompt': template.topic_of_week_prompt,
             'poll_enabled': template.poll_enabled or False,
