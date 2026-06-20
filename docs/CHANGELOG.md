@@ -4,6 +4,14 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# June 20, 2026 (d)
+
+## Bug Fixes
+
+* **Dashboard: Scheduled net cards now show the correct Next NCS** — When a net is automatically created from a rotation schedule, the operator whose turn it is for that specific date is now correctly identified and displayed on the card. Previously the wrong name (or no name) could appear due to all rotation members being assigned simultaneously when the net was created.
+
+---
+
 # June 20, 2026 (c)
 
 ## New Features

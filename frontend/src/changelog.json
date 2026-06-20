@@ -1,10 +1,20 @@
 {
-  "version": "2026.06.20c",
+  "version": "2026.06.20d",
   "entries": [
     {
-      "version": "2026.06.20c",
+      "version": "2026.06.20d",
       "date": "2026-06-20",
       "sections": [
+        {
+          "title": "Bug Fixes",
+          "type": "fix",
+          "items": [
+            {
+              "text": "Dashboard: Scheduled net cards now show the correct Next NCS — when a net is automatically created from a rotation schedule, the operator whose turn it is for that date is correctly identified and displayed, rather than showing the net manager or no one.",
+              "userImpact": true
+            }
+          ]
+        },
         {
           "title": "New Features",
           "type": "feature",
