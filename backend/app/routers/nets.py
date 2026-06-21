@@ -983,8 +983,17 @@ async def close_net(
             freq_strings.append(f"{freq.network} TG{freq.talkgroup or ''}")
     
     # Send log email to all recipients based on their preference
-    ncs_callsign = display_callsign(owner) if owner else "Unknown"
-    ncs_name = owner.name or display_callsign(owner) if owner else "Unknown"
+    # Use the most recently assigned NCS role; fall back to owner if none is recorded.
+    ncs_role_result = await db.execute(
+        select(User.callsign, User.name)
+        .join(NetRole, NetRole.user_id == User.id)
+        .where(NetRole.net_id == net_id, NetRole.role == "NCS")
+        .order_by(NetRole.assigned_at.desc())
+        .limit(1)
+    )
+    ncs_role_row = ncs_role_result.first()
+    ncs_callsign = ncs_role_row[0] if ncs_role_row else (display_callsign(owner) if owner else "Unknown")
+    ncs_name = ncs_role_row[1] if ncs_role_row else (owner.name or display_callsign(owner) if owner else "Unknown")
     
     for email, recipient in recipients_to_notify:
         try:
@@ -1369,9 +1378,17 @@ async def export_net_ics309(
     freq_strings = [format_freq(f) for f in net.frequencies]
     freq_list = ", ".join(freq_strings) if freq_strings else "Multiple"
     
-    # Get NCS info
-    ncs_callsign = display_callsign(net.owner) if net.owner else "Unknown"
-    ncs_name = net.owner.name or display_callsign(net.owner) if net.owner else "Unknown"
+    # Get NCS info — prefer the most recently assigned NCS role; fall back to owner.
+    ncs_role_result = await db.execute(
+        select(User.callsign, User.name)
+        .join(NetRole, NetRole.user_id == User.id)
+        .where(NetRole.net_id == net_id, NetRole.role == "NCS")
+        .order_by(NetRole.assigned_at.desc())
+        .limit(1)
+    )
+    ncs_role_row = ncs_role_result.first()
+    ncs_callsign = ncs_role_row[0] if ncs_role_row else (display_callsign(net.owner) if net.owner else "Unknown")
+    ncs_name = ncs_role_row[1] if ncs_role_row else (net.owner.name or display_callsign(net.owner) if net.owner else "Unknown")
     
     # Format times
     started_at = net.started_at.strftime("%Y-%m-%d %H:%M:%S") if net.started_at else "N/A"
