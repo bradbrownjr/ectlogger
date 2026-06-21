@@ -187,10 +187,11 @@ When making **user-impacting changes** (new features, workflow changes, UI chang
 2. **Always run `date` in the terminal first** to determine today's local date (default timezone: America/New_York, UTC-5 EST / UTC-4 EDT).
 3. **Check whether today's date already has an entry** in `entries`. If it does, **add items to the existing sections** — do NOT create a new entry. Only create a new entry when no entry exists for today's date.
 4. The top-level `version` and the entry's `version` field use format `YYYY.MM.DD`. The badge fires whenever the top-level `version` string changes from the value the user last saw. **Bump the suffix** (`b`, `c`, ...) any time you add changelog items to a version the user has already seen — i.e., the badge has already appeared and been cleared for the current version. Do not bump on every commit; only bump when users need to be notified of new content they haven't seen yet.
-5. **Use only these three section titles and matching types — no others:**
+5. **Use only these four section titles and matching types — no others:**
    - `"New Features"` + `"type": "feature"`
    - `"Improvements"` + `"type": "improvement"`
    - `"Bug Fixes"` + `"type": "bugfix"`
+   - `"Branding"` + `"type": "branding"`
    Put the feature name in the item text, not in the section title.
 6. Each entry's `sections` array: `{ title, type, items: [{ text, userImpact? }] }`. Mark `userImpact: true` on items that directly affect user workflow.
 

@@ -65,7 +65,7 @@ interface ChangelogItem {
   importance?: 'critical' | 'high' | 'medium' | 'low';
 }
 
-type ChangelogSectionType = 'feature' | 'improvement' | 'bugfix' | 'fix';
+type ChangelogSectionType = 'feature' | 'improvement' | 'bugfix' | 'fix' | 'branding';
 
 interface ChangelogSection {
   title: string;
@@ -82,10 +82,11 @@ interface ChangelogEntry {
 const CHANGELOG_VERSION: string = (changelogData as { version: string }).version;
 const CHANGELOG: ChangelogEntry[] = (changelogData as { entries: ChangelogEntry[] }).entries;
 
-const SECTION_PRIORITY: Record<'feature' | 'fix' | 'improvement', number> = {
+const SECTION_PRIORITY: Record<'feature' | 'fix' | 'improvement' | 'branding', number> = {
   feature: 0,
   improvement: 1,
   fix: 2,
+  branding: 3,
 };
 
 const IMPORTANCE_PRIORITY: Record<'critical' | 'high' | 'medium' | 'low', number> = {
@@ -95,7 +96,7 @@ const IMPORTANCE_PRIORITY: Record<'critical' | 'high' | 'medium' | 'low', number
   low: 3,
 };
 
-const normalizeSectionType = (type: ChangelogSectionType): 'feature' | 'fix' | 'improvement' => {
+const normalizeSectionType = (type: ChangelogSectionType): 'feature' | 'fix' | 'improvement' | 'branding' => {
   if (type === 'bugfix') return 'fix';
   return type;
 };
@@ -563,6 +564,8 @@ const ChangelogNotification: React.FC = () => {
       case 'fix':
       case 'bugfix':
         return 'warning';
+      case 'branding':
+        return 'secondary';
       default:
         return 'default';
     }

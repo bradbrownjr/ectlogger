@@ -1,6 +1,34 @@
 {
-  "version": "2026.06.20d",
+  "version": "2026.06.21",
   "entries": [
+    {
+      "version": "2026.06.21",
+      "date": "2026-06-21",
+      "sections": [
+        {
+          "title": "Branding",
+          "type": "branding",
+          "items": [
+            {
+              "text": "Logo: New official ECTLogger logo — a radar ring circle with a Yagi antenna mast, station check-in dots, and a bold green checkmark. Replaces the FM radio emoji throughout the app.",
+              "userImpact": true
+            },
+            {
+              "text": "Logo: Browser tab favicon updated to the new logo (was previously missing).",
+              "userImpact": true
+            },
+            {
+              "text": "Active Nets: Page heading now uses a cell tower icon appropriate for nets on the air, instead of the retired FM radio emoji.",
+              "userImpact": true
+            },
+            {
+              "text": "Typography: Page heading weights and layouts standardized across Active Nets, Schedule, and Statistics so all three pages look visually consistent.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.06.20d",
       "date": "2026-06-20",

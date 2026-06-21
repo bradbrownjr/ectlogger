@@ -4,6 +4,18 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# June 21, 2026
+
+## Branding
+
+* **Logo: New official ECTLogger logo** — A radar ring circle with a Yagi antenna mast, station check-in dots, and a bold green checkmark replaces the FM radio emoji throughout the app, in emails, and in the browser tab favicon.
+
+* **Active Nets: Cell tower icon** — The Active Nets page heading now uses a cell tower icon fitting for nets on the air, replacing the retired FM radio emoji.
+
+* **Typography: Consistent page headings** — Heading weights and layouts standardized across Active Nets, Schedule, and Statistics so all three pages look visually uniform.
+
+---
+
 # June 20, 2026 (d)
 
 ## Bug Fixes

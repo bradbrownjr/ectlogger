@@ -1423,11 +1423,12 @@ This is an automated message, please do not reply.
             'improvement': {'label': 'Improvements',  'color': '#0288d1', 'emoji': '🔧'},
             'bugfix':      {'label': 'Bug Fixes',     'color': '#ed6c02', 'emoji': '🐛'},
             'fix':         {'label': 'Bug Fixes',     'color': '#ed6c02', 'emoji': '🐛'},
+            'branding':    {'label': 'Branding',      'color': '#7b1fa2', 'emoji': '🎨'},
         }
 
         # Collect sections from all entries, merging same-type + same-title sections
         # so each category heading appears exactly once in the email.
-        type_priority = {'feature': 0, 'improvement': 1, 'bugfix': 2, 'fix': 2}
+        type_priority = {'feature': 0, 'improvement': 1, 'bugfix': 2, 'fix': 2, 'branding': 3}
         section_order: list = []
         merged: dict = {}
         for entry in entries:
