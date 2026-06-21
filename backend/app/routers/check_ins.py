@@ -400,15 +400,14 @@ async def delete_check_in(
     is_owner = net.owner_id == current_user.id
     is_admin = current_user.role.value == "admin"
     if not is_owner and not is_admin:
-        ncs_result = await db.execute(
+        role_result = await db.execute(
             select(NetRole).where(
                 NetRole.net_id == net.id,
                 NetRole.user_id == current_user.id,
-                NetRole.role == "NCS",
+                NetRole.role.in_(["NCS", "LOGGER"]),
             )
         )
-        is_ncs = ncs_result.scalar_one_or_none() is not None
-        if not is_ncs:
+        if role_result.scalar_one_or_none() is None:
             raise HTTPException(status_code=403, detail="Not authorized")
     
     # Store net_id before deletion for broadcast
