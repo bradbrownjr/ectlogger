@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import AppLogo from './AppLogo';
 import { displayCallsign } from '../utils/userDisplay';
 import {
   AppBar,
@@ -176,7 +177,7 @@ const Navbar: React.FC = () => {
           sx={{ cursor: 'pointer', mr: 2 }}
           onClick={() => handleNavigate('/dashboard')}
         >
-          📻 ECTLogger
+          <AppLogo size={28} variant="nav" />&nbsp;ECTLogger
         </Typography>
 
         <NavbarClock compact={isMobile} />

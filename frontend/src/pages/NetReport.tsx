@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import AppLogo from '../components/AppLogo';
 import { displayCallsign } from '../utils/userDisplay';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
@@ -674,8 +675,8 @@ const NetReport: React.FC = () => {
         
         {/* ========== REPORT TITLE HEADER ========== */}
         <Box sx={{ textAlign: 'center', mb: 3, pb: 2, borderBottom: 2, borderColor: 'primary.main' }}>
-          <Typography variant="h3" fontWeight="bold" color="primary" gutterBottom>
-            📻 ECTLogger
+          <Typography variant="h3" fontWeight="bold" color="primary" gutterBottom sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5 }}>
+            <AppLogo size={48} variant="default" /> ECTLogger
           </Typography>
           <Typography variant="h5" fontWeight="medium" gutterBottom>
             Net Report

@@ -904,7 +904,7 @@ const Dashboard: React.FC = () => {
       {/* ========== HEADER WITH SORT, FILTER, AND VIEW TOGGLE ========== */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
         <Typography variant={isMobile ? "h5" : "h4"} component="h1">
-          📻 {isMobile ? 'Active' : 'Active Nets'}
+          {isMobile ? 'Active' : 'Active Nets'}
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           {!isMobile && (

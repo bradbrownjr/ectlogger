@@ -5,6 +5,40 @@ Consult it before adding new UI elements so the app stays visually coherent.
 
 ---
 
+## Logo
+
+The official ECTLogger logo is a radar-ring circle with a Yagi antenna mast, green station check-in dots, and a bold green checkmark overlay. It represents stations checking into a net through an antenna — the core function of the application.
+
+**Canonical SVG source:** `docs/assets/logo.svg`
+**React component:** `frontend/src/components/AppLogo.tsx`
+**Favicon:** `frontend/public/logo.svg`
+
+### Usage
+
+| Context | Component call | Notes |
+|---|---|---|
+| Navigation bar (blue AppBar) | `<AppLogo size={28} variant="nav" />` | White rings/antenna, bright green dots and checkmark |
+| Login page heading | `<AppLogo size={40} variant="default" />` | Standard light-bg palette |
+| Net Report print header | `<AppLogo size={48} variant="default" />` | Standard light-bg palette |
+| Dark-mode cards / panels | `<AppLogo size={32} variant="dark" />` | Dark fill, adjusted ring/antenna colors |
+| Email HTML bodies | Inline SVG at 28 px | Copy from `docs/assets/logo.svg`; email subjects keep the 📻 emoji |
+| Printed Net Script | Inline SVG at 32 px | Embedded directly in the generated HTML string |
+
+### Variants
+
+- **`default`** — Light background. Dark green border (`#1a6b2e`), light green rings, gray antenna, two-tone green checkmark.
+- **`nav`** — Blue or dark toolbar. White/translucent border and rings, white antenna, bright green (`#69f0ae`) dots and checkmark.
+- **`dark`** — Dark-mode surface. Dark green border, very dark rings, blue-gray antenna, slightly lighter green checkmark.
+
+### Do not
+
+- Recolor the checkmark to anything other than green — it is the brand accent.
+- Stretch the logo non-uniformly (always set equal `width` and `height`).
+- Use `variant="default"` on the blue AppBar — use `variant="nav"` so it reads on a colored background.
+- Replace the logo with the 📻 emoji anywhere in the UI — the emoji is reserved for email subject lines only.
+
+---
+
 ## Core Principles
 
 ### Symmetry and Uniformity
