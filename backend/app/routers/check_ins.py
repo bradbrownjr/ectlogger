@@ -393,12 +393,23 @@ async def delete_check_in(
     if not check_in:
         raise HTTPException(status_code=404, detail="Check-in not found")
     
-    # Check permissions (NCS, logger, or admin)
+    # Check permissions: owner, admin, or any NCS role on this net
     result = await db.execute(select(Net).where(Net.id == check_in.net_id))
     net = result.scalar_one_or_none()
-    
-    if net.owner_id != current_user.id and current_user.role.value != "admin":
-        raise HTTPException(status_code=403, detail="Not authorized")
+
+    is_owner = net.owner_id == current_user.id
+    is_admin = current_user.role.value == "admin"
+    if not is_owner and not is_admin:
+        ncs_result = await db.execute(
+            select(NetRole).where(
+                NetRole.net_id == net.id,
+                NetRole.user_id == current_user.id,
+                NetRole.role == "NCS",
+            )
+        )
+        is_ncs = ncs_result.scalar_one_or_none() is not None
+        if not is_ncs:
+            raise HTTPException(status_code=403, detail="Not authorized")
     
     # Store net_id before deletion for broadcast
     net_id = check_in.net_id
