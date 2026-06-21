@@ -80,7 +80,7 @@ On mobile (`xs`) the variant drops to `h5`; the icon scales proportionally (24 p
 
 | Page | Icon | Mobile label |
 |---|---|---|
-| Active Nets | `<AppLogo size={32} />` | "Active" |
+| Active Nets | `<CellTowerIcon sx={{ fontSize: 32, color: 'text.primary' }} />` | "Active" |
 | Net Schedule | 📅 inline emoji | "Schedule" |
 | Statistics | `<BarChartIcon sx={{ fontSize: 32, color: 'text.primary' }} />` | "Statistics" |
 

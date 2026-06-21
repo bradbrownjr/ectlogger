@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import AppLogo from '../components/AppLogo';
+import CellTowerIcon from '@mui/icons-material/CellTower';
 import { displayCallsign } from '../utils/userDisplay';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -905,7 +905,7 @@ const Dashboard: React.FC = () => {
       {/* ========== HEADER WITH SORT, FILTER, AND VIEW TOGGLE ========== */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
         <Typography variant={isMobile ? "h5" : "h4"} component="h1" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <AppLogo size={isMobile ? 24 : 32} />
+          <CellTowerIcon sx={{ fontSize: isMobile ? 24 : 32, color: 'text.primary' }} />
           {isMobile ? 'Active' : 'Active Nets'}
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
