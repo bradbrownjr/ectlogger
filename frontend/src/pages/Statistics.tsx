@@ -206,7 +206,7 @@ const Statistics: React.FC = () => {
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
         <Typography variant="h4" component="h1" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <BarChartIcon sx={{ fontSize: 32, color: 'text.primary' }} />
-          ECTLogger Statistics
+          Statistics
         </Typography>
         <Tooltip title="Export to PDF">
           <Button
