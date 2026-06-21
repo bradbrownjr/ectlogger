@@ -174,10 +174,10 @@ const Navbar: React.FC = () => {
         <Typography
           variant="h6"
           component="div"
-          sx={{ cursor: 'pointer', mr: 2 }}
+          sx={{ cursor: 'pointer', mr: 2, display: 'flex', alignItems: 'center', gap: 1 }}
           onClick={() => handleNavigate('/dashboard')}
         >
-          <AppLogo size={28} variant="nav" />&nbsp;ECTLogger
+          <AppLogo size={28} variant="nav" />ECTLogger
         </Typography>
 
         <NavbarClock compact={isMobile} />

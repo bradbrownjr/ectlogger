@@ -53,6 +53,53 @@ Common failure modes to avoid:
 - Spacing that varies between similar card types
 - Action buttons that appear at different vertical positions across pages
 
+### Branding
+
+The application name is **ECTLogger** — no spaces, camel-cased. Always paired with the logo when rendered as a heading or in the nav bar; never the logo alone, never the name alone in primary headings.
+
+The 📻 FM radio emoji is **retired from the UI** and reserved only for email subject lines (where it aids recognition in an inbox). Use the `AppLogo` component everywhere else.
+
+---
+
+## Typography
+
+MUI's default Roboto font stack is used throughout. Do not override `fontFamily` or set explicit `fontWeight` on page-level headings — use the variant's defaults so all pages look consistent.
+
+### Page heading standard
+
+Every top-level page heading uses this pattern:
+
+```
+<Typography variant="h4" component="h1" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+  <SomeIcon sx={{ fontSize: 32, color: 'text.primary' }} />
+  Page Title
+</Typography>
+```
+
+On mobile (`xs`) the variant drops to `h5`; the icon scales proportionally (24 px on mobile, 32 px on desktop).
+
+| Page | Icon | Mobile label |
+|---|---|---|
+| Active Nets | `<AppLogo size={32} />` | "Active" |
+| Net Schedule | 📅 inline emoji | "Schedule" |
+| Statistics | `<BarChartIcon sx={{ fontSize: 32, color: 'text.primary' }} />` | "Statistics" |
+
+**Rules:**
+- Never add `fontWeight="bold"` to a page `h4` heading — it makes that page visually heavier than its siblings.
+- Never nest a heading inside a `<Box>` with a subtitle below it just to add an icon — use the flex Typography pattern above.
+- Icons in page headings use `color: 'text.primary'`, not `color: 'primary.main'`, so they don't compete with action buttons.
+
+### Type scale
+
+| Role | Variant | Notes |
+|---|---|---|
+| Page title | `h4` (desktop) / `h5` (mobile) | With icon, flex row |
+| Section title | `h5` or `h6` | No icon |
+| Card title | `subtitle1` or `body1` with `fontWeight="medium"` | |
+| Body / description | `body1` | Default weight |
+| Caption / meta | `body2` or `caption` with `color="text.secondary"` | |
+| Chip / badge label | `caption` | |
+
 ### Professional UI
 - Every interactive element has a visible affordance (hover state, cursor change,
   or tooltip).

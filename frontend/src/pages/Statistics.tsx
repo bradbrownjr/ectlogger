@@ -204,17 +204,10 @@ const Statistics: React.FC = () => {
     <Container maxWidth="xl" sx={{ py: 4 }}>
       {/* Header with PDF export button */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <BarChartIcon sx={{ fontSize: 40, color: 'primary.main' }} />
-          <Box>
-            <Typography variant="h4" fontWeight="bold">
-              ECTLogger Statistics
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Platform activity and usage trends
-            </Typography>
-          </Box>
-        </Box>
+        <Typography variant="h4" component="h1" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <BarChartIcon sx={{ fontSize: 32, color: 'text.primary' }} />
+          ECTLogger Statistics
+        </Typography>
         <Tooltip title="Export to PDF">
           <Button
             variant="outlined"
