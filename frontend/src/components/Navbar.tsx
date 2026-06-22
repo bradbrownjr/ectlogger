@@ -7,6 +7,7 @@ import {
   Typography,
   Button,
   Box,
+  Chip,
   IconButton,
   Drawer,
   List,
@@ -40,6 +41,8 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import GridOnIcon from '@mui/icons-material/GridOn';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import LockIcon from '@mui/icons-material/Lock';
+import LockOpenIcon from '@mui/icons-material/LockOpen';
 
 interface NavbarClockProps {
   compact?: boolean;
@@ -142,7 +145,7 @@ const NavbarClock: React.FC<NavbarClockProps> = ({ compact = false }) => {
 
 const Navbar: React.FC = () => {
   const navigate = useNavigate();
-  const { user, logout, isAuthenticated } = useAuth();
+  const { user, logout, isAuthenticated, isActualAdmin, simulateRegularUser, toggleSimulateRegularUser } = useAuth();
   const { mode, toggleColorMode } = useThemeMode();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -183,6 +186,23 @@ const Navbar: React.FC = () => {
         <NavbarClock compact={isMobile} />
 
         <Box sx={{ flexGrow: 1 }} />
+
+        {/* Visible indicator when admin is simulating regular user */}
+        {simulateRegularUser && (
+          <Chip
+            label="User View"
+            size="small"
+            icon={<LockOpenIcon />}
+            onClick={toggleSimulateRegularUser}
+            sx={{
+              mr: 1,
+              color: 'warning.contrastText',
+              bgcolor: 'warning.main',
+              '& .MuiChip-icon': { color: 'warning.contrastText' },
+              cursor: 'pointer',
+            }}
+          />
+        )}
 
         {isMobile ? (
           <>
@@ -256,6 +276,16 @@ const Navbar: React.FC = () => {
                         <ListItemText primary={mode === 'light' ? 'Switch to Dark' : 'Switch to Light'} />
                       </ListItemButton>
                     </ListItem>
+                    {isActualAdmin && (
+                      <ListItem disablePadding>
+                        <ListItemButton onClick={() => { toggleSimulateRegularUser(); setDrawerOpen(false); }}>
+                          <ListItemIcon>
+                            {simulateRegularUser ? <LockIcon /> : <LockOpenIcon />}
+                          </ListItemIcon>
+                          <ListItemText primary={simulateRegularUser ? 'Exit User View' : 'View as Regular User'} />
+                        </ListItemButton>
+                      </ListItem>
+                    )}
                     <ListItem disablePadding>
                       <ListItemButton onClick={handleLogout}>
                         <ListItemIcon><LogoutIcon /></ListItemIcon>
@@ -350,6 +380,16 @@ const Navbar: React.FC = () => {
                     </ListItemIcon>
                     {mode === 'light' ? 'Switch to Dark' : 'Switch to Light'}
                   </MenuItem>
+                  {isActualAdmin && (
+                    <MenuItem onClick={() => { toggleSimulateRegularUser(); setUserMenuAnchor(null); }}>
+                      <ListItemIcon>
+                        {simulateRegularUser
+                          ? <LockIcon fontSize="small" />
+                          : <LockOpenIcon fontSize="small" />}
+                      </ListItemIcon>
+                      {simulateRegularUser ? 'Exit User View' : 'View as Regular User'}
+                    </MenuItem>
+                  )}
 
                   <Divider />
 

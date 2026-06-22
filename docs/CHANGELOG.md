@@ -8,6 +8,8 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
+* **Admin: View as Regular User** — Admins can now temporarily simulate the regular user experience from the avatar menu (padlock icon, near the dark/light mode switch). Admin-only UI elements are hidden and an amber User View chip appears in the navbar as a reminder. Click the chip or choose Exit User View to restore full access. Useful for reproducing bug reports and guiding other operators through the app.
+
 * **Schedule: Auto-archive previous nets on new net creation** — When a new net is created from a recurring schedule (manually or by the automatic 24-hour pre-creation), all closed nets from that schedule are archived automatically. The dashboard stays clean without requiring manual cleanup after each session. Archived nets remain fully accessible and can be unarchived at any time.
 
 ## Bug Fixes

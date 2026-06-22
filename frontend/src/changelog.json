@@ -1,14 +1,18 @@
 {
-  "version": "2026.06.22b",
+  "version": "2026.06.22c",
   "entries": [
     {
-      "version": "2026.06.22b",
+      "version": "2026.06.22c",
       "date": "2026-06-22",
       "sections": [
         {
           "title": "New Features",
           "type": "feature",
           "items": [
+            {
+              "text": "Admin: View as Regular User — admins can now temporarily simulate the regular user experience from the avatar menu (padlock icon, near the dark/light mode switch). Admin-only UI elements are hidden and an amber User View chip appears in the navbar. Click the chip or choose Exit User View to restore full access. Useful for reproducing bug reports and guiding other operators.",
+              "userImpact": false
+            },
             {
               "text": "Schedule: Auto-archive previous nets on new net creation — when a new net is created from a recurring schedule (manually or by the automatic 24-hour pre-creation), all closed nets from that schedule are archived automatically so the dashboard stays clean without requiring manual cleanup after each session.",
               "userImpact": true

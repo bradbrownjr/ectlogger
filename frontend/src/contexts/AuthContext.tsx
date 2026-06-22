@@ -31,14 +31,20 @@ interface AuthContextType {
   login: (token: string) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
+  isActualAdmin: boolean;
+  simulateRegularUser: boolean;
+  toggleSimulateRegularUser: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [actualUser, setActualUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [simulateRegularUser, setSimulateRegularUser] = useState<boolean>(
+    () => localStorage.getItem('admin_simulate_user') === 'true'
+  );
 
   useEffect(() => {
     // Check for existing token on mount
@@ -59,7 +65,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ...response.data,
         role: response.data.role?.toLowerCase() || 'user'
       };
-      setUser(userData);
+      setActualUser(userData);
     } catch (error: any) {
       console.error('[AUTH] Failed to fetch user:', error.response?.status, error.response?.data);
       // Only clear the session on an explicit 401 (invalid/expired token).
@@ -81,9 +87,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('admin_simulate_user');
     setToken(null);
-    setUser(null);
+    setActualUser(null);
+    setSimulateRegularUser(false);
   };
+
+  const toggleSimulateRegularUser = () => {
+    setSimulateRegularUser(prev => {
+      const next = !prev;
+      localStorage.setItem('admin_simulate_user', String(next));
+      return next;
+    });
+  };
+
+  const isActualAdmin = actualUser?.role === 'admin';
+
+  // When simulating regular user, expose role as 'user' so all existing
+  // role checks in the UI automatically hide admin-only elements.
+  const user = (simulateRegularUser && isActualAdmin && actualUser)
+    ? { ...actualUser, role: 'user' }
+    : actualUser;
 
   if (loading) {
     return <div>Loading...</div>;
@@ -96,7 +120,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         token,
         login,
         logout,
-        isAuthenticated: !!token && !!user,
+        isAuthenticated: !!token && !!actualUser,
+        isActualAdmin,
+        simulateRegularUser,
+        toggleSimulateRegularUser,
       }}
     >
       {children}

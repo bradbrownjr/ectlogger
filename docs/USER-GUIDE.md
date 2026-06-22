@@ -551,6 +551,10 @@ Subscribe to nets you regularly participate in to receive email notifications wh
 
 Users with the Admin role have access to additional management features via the Admin page.
 
+### View as Regular User
+
+Admins can temporarily simulate the regular user experience to reproduce bug reports or guide other operators through the app. Click your avatar in the top-right corner and choose **View as Regular User** (padlock icon, near the dark/light mode switch). While active, admin-only UI elements are hidden and an amber **User View** chip appears in the navbar. Click the chip or return to the menu and choose **Exit User View** to restore full admin access. This is a client-side toggle only — no backend permissions change.
+
 ### User Management
 
 The Users tab shows all registered users with online presence indicators:

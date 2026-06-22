@@ -55,11 +55,6 @@ New "Themes" section in the Admin panel. Admins see the same swatch picker that 
 - [ ] Theme swatch picker component (reused in both Profile and Admin panel)
 - [ ] Add attribution credit in About / Settings footer
 
-### Manager Tooling
-
-**✨ Admin "view as standard user" impersonation mode** *(KC1JMH)*  
-A toggle button (padlock icon, near the dark/light mode switch) that strips admin-only UI elements from view without page reload, allowing admins to replicate what a regular user sees. Unlocking restores all admin UI. State is client-side only; no backend impersonation required. Useful for reproducing bug reports and guiding users through the app.
-
 ### Multi-Window Support
 
 **✨ "Open in new tab" for Chat and Activity Log panes** *(AA1GM)*  
