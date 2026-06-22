@@ -1307,7 +1307,134 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
         </Box>
       );
     } else if (isNetContext) {
-      // For nets - show assigned NCS roles (or owner if none assigned)
+      // If this net belongs to a rotation schedule, show the full rotation list
+      // and highlight today's duty NCS. Fall back to net-role list for ad-hoc nets.
+      const activeRotationMembers = members
+        .filter((m: RotationMember) => m.is_active)
+        .sort((a: RotationMember, b: RotationMember) => a.position - b.position);
+
+      if (activeRotationMembers.length > 0) {
+        const todayStr = new Date().toISOString().slice(0, 10);
+        const dutyEntry = scheduleEntries.find(
+          (e: ScheduleEntry) => e.date && e.date.slice(0, 10) === todayStr
+        );
+        const dutyUserId = dutyEntry?.user_id ?? null;
+        const assignedUserIds = new Set(ncsRoles.map((r: NetRole) => r.user_id));
+        const dutyIsSubstitute =
+          dutyEntry?.user_id != null &&
+          !activeRotationMembers.some((m: RotationMember) => m.user_id === dutyEntry.user_id);
+
+        return (
+          <Box>
+            <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+              NCS Rotation ({activeRotationMembers.length} members)
+            </Typography>
+
+            {canEdit && (
+              <Box sx={{ display: 'flex', gap: 1, mb: 2, flexDirection: isMobile ? 'column' : 'row' }}>
+                <Autocomplete
+                  options={availableStaffUsers}
+                  getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
+                  value={selectedUser}
+                  onChange={(_: any, value: User | null) => setSelectedUser(value)}
+                  noOptionsText={users.length === 0 ? 'Loading users…' : 'No other users available'}
+                  renderInput={(params: any) => (
+                    <TextField {...params} label="Assign NCS Override" size="small" />
+                  )}
+                  sx={{ flex: 1 }}
+                />
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={handleAddNetRole}
+                  disabled={!selectedUser}
+                >
+                  Assign
+                </Button>
+              </Box>
+            )}
+
+            <List dense>
+              {activeRotationMembers.map((member: RotationMember) => {
+                const isOnDuty = member.user_id === dutyUserId;
+                const isAssigned = assignedUserIds.has(member.user_id);
+                const netRole = ncsRoles.find((r: NetRole) => r.user_id === member.user_id);
+                return (
+                  <ListItem
+                    key={member.user_id}
+                    sx={{
+                      py: 0.5, borderRadius: 1, mb: 0.5,
+                      ...(isOnDuty && { bgcolor: 'success.light' }),
+                    }}
+                  >
+                    <Box
+                      onClick={() => setProfileUserId(member.user_id)}
+                      sx={{ cursor: 'pointer', display: 'inline-flex', mr: 1 }}
+                    >
+                      <UserAvatar
+                        callsign={member.user_callsign}
+                        name={member.user_name}
+                        size={32}
+                        hasProfile
+                      />
+                    </Box>
+                    <ListItemText
+                      primary={
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                          <Typography variant="body2" sx={isOnDuty ? { color: 'success.contrastText' } : {}}>
+                            {member.user_callsign}
+                            {member.user_name && ` (${member.user_name})`}
+                          </Typography>
+                          {isOnDuty && <Chip label="Today's NCS" size="small" color="success" />}
+                          {isAssigned && !isOnDuty && <Chip label="Assigned" size="small" color="primary" variant="outlined" />}
+                        </Box>
+                      }
+                    />
+                    {canEdit && isAssigned && netRole && (
+                      <ListItemSecondaryAction>
+                        <IconButton size="small" color="error" onClick={() => handleRemoveNetRole(netRole.id)}>
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </ListItemSecondaryAction>
+                    )}
+                  </ListItem>
+                );
+              })}
+
+              {/* Substitute NCS not in the regular rotation */}
+              {dutyIsSubstitute && dutyEntry && (
+                <ListItem sx={{ py: 0.5, borderRadius: 1, mb: 0.5, bgcolor: 'success.light' }}>
+                  <Box
+                    onClick={() => dutyEntry.user_id && setProfileUserId(dutyEntry.user_id)}
+                    sx={{ cursor: 'pointer', display: 'inline-flex', mr: 1 }}
+                  >
+                    <UserAvatar
+                      callsign={dutyEntry.user_callsign ?? undefined}
+                      name={dutyEntry.user_name}
+                      size={32}
+                      hasProfile
+                    />
+                  </Box>
+                  <ListItemText
+                    primary={
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="body2" sx={{ color: 'success.contrastText' }}>
+                          {dutyEntry.user_callsign}
+                          {dutyEntry.user_name && ` (${dutyEntry.user_name})`}
+                        </Typography>
+                        <Chip label="Today's NCS" size="small" color="success" />
+                        <Chip label="Substitute" size="small" variant="outlined" />
+                      </Box>
+                    }
+                  />
+                </ListItem>
+              )}
+            </List>
+          </Box>
+        );
+      }
+
+      // No rotation — show assigned NCS roles (or owner if none assigned)
       return (
         <Box>
           <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
@@ -1316,7 +1443,6 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
               : 'Net Control Station'}
           </Typography>
 
-          {/* Add NCS - owners/admins only */}
           {canEdit && (
             <Box sx={{ display: 'flex', gap: 1, mb: 2, flexDirection: isMobile ? 'column' : 'row' }}>
               <Autocomplete
@@ -1343,7 +1469,6 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
 
           <List dense>
             {ncsRoles.length === 0 ? (
-              /* No assigned NCS — show the owner as the default */
               <ListItem sx={{ py: 0.5, bgcolor: 'action.hover', borderRadius: 1 }}>
                 <Box
                   onClick={() => net?.owner_id && setProfileUserId(net.owner_id)}
