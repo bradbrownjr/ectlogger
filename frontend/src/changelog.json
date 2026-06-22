@@ -1,10 +1,20 @@
 {
-  "version": "2026.06.22",
+  "version": "2026.06.22b",
   "entries": [
     {
-      "version": "2026.06.22",
+      "version": "2026.06.22b",
       "date": "2026-06-22",
       "sections": [
+        {
+          "title": "New Features",
+          "type": "feature",
+          "items": [
+            {
+              "text": "Schedule: Auto-archive previous nets on new net creation — when a new net is created from a recurring schedule (manually or by the automatic 24-hour pre-creation), all closed nets from that schedule are archived automatically so the dashboard stays clean without requiring manual cleanup after each session.",
+              "userImpact": true
+            }
+          ]
+        },
         {
           "title": "Bug Fixes",
           "type": "bugfix",

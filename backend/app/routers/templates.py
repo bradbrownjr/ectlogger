@@ -9,6 +9,7 @@ from app.models import NetTemplate, NetTemplateSubscription, User, net_template_
 from app.schemas import NetTemplateCreate, NetTemplateUpdate, NetTemplateResponse, NetTemplateSubscriptionResponse, NetTemplateSubscriptionDetailResponse, NetResponse, TemplateMergeRequest, TemplateMergePreview, TemplateMergeConflict, TemplateMergeResponse, public_display_name
 from app import schemas
 from app.dependencies import get_current_user, get_current_user_optional
+from app.logger import logger
 import json
 
 router = APIRouter(prefix="/templates", tags=["templates"])
@@ -1112,7 +1113,26 @@ async def create_net_from_template(
         db.add(net_role)
     
     await db.commit()
-    
+
+    # Auto-archive all previously closed nets from the same schedule so the
+    # dashboard stays clean without requiring manual archiving after each net.
+    try:
+        closed_result = await db.execute(
+            select(Net).where(
+                Net.template_id == template_id,
+                Net.status == NetStatus.CLOSED,
+                Net.id != net.id
+            )
+        )
+        closed_nets = closed_result.scalars().all()
+        if closed_nets:
+            for closed_net in closed_nets:
+                closed_net.status = NetStatus.ARCHIVED
+            await db.commit()
+            logger.info("NET_CREATE", f"Auto-archived {len(closed_nets)} closed net(s) from template {template_id} on manual net creation")
+    except Exception as e:
+        logger.error("NET_CREATE", f"Failed to auto-archive closed nets for template {template_id}: {e}")
+
     # Reload with frequencies
     result = await db.execute(
         select(Net)
@@ -1120,7 +1140,7 @@ async def create_net_from_template(
         .where(Net.id == net.id)
     )
     net = result.scalar_one()
-    
+
     return NetResponse.from_orm(net)
 
 

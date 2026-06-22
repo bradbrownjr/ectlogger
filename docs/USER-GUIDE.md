@@ -390,6 +390,7 @@ Both Topic and Poll columns are only visible when configured for the net. System
 
 ### Archiving and Unarchiving
 
+- **Auto-archive** — When a new net is created from a recurring schedule (manually or automatically), any previously closed nets from that same schedule are archived automatically. This keeps the dashboard clean without requiring manual cleanup after each net. Archived nets remain fully accessible and can be unarchived at any time.
 - **Archive** — From a closed net, click the archive icon to hide it from the main dashboard. A 5-second UNDO toast lets you cancel if clicked accidentally.
 - **Unarchive** — From an archived net view, click the unarchive icon to restore it to closed status.
 - **Download Logs** — Both closed and archived nets have download buttons (CSV and ICS-309) available in the toolbar.

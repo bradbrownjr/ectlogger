@@ -124,6 +124,25 @@ class NCSReminderService:
             await self._assign_duty_ncs(db, net.id, template.id, scheduled_dt)
             await db.commit()
             logger.info("NCS_REMINDER", f"Auto-created net {net.id} for template {template.id} on {scheduled_dt.date()}")
+
+            # Auto-archive all previously closed nets from the same schedule.
+            try:
+                closed_result = await db.execute(
+                    select(Net).where(
+                        Net.template_id == template.id,
+                        Net.status == NetStatus.CLOSED,
+                        Net.id != net.id
+                    )
+                )
+                closed_nets = closed_result.scalars().all()
+                if closed_nets:
+                    for closed_net in closed_nets:
+                        closed_net.status = NetStatus.ARCHIVED
+                    await db.commit()
+                    logger.info("NCS_REMINDER", f"Auto-archived {len(closed_nets)} closed net(s) for template {template.id}")
+            except Exception as e:
+                logger.error("NCS_REMINDER", f"Failed to auto-archive closed nets for template {template.id}: {e}")
+
             return net.id
         except Exception as e:
             logger.error("NCS_REMINDER", f"Failed to auto-create net for template {template.id}: {e}")

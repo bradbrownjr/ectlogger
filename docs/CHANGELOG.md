@@ -6,6 +6,10 @@ All notable changes to ECTLogger are documented here.
 
 # June 22, 2026
 
+## New Features
+
+* **Schedule: Auto-archive previous nets on new net creation** — When a new net is created from a recurring schedule (manually or by the automatic 24-hour pre-creation), all closed nets from that schedule are archived automatically. The dashboard stays clean without requiring manual cleanup after each session. Archived nets remain fully accessible and can be unarchived at any time.
+
 ## Bug Fixes
 
 * **Schedule: Rotation reorder now updates the schedule immediately** — After moving members up or down in the rotation order, the schedule tab refreshes on the spot instead of showing the old order until the panel was closed and reopened.
