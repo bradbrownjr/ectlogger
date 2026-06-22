@@ -223,6 +223,7 @@ const NCSRotationModal: React.FC<NCSRotationModalProps> = ({
 
     try {
       await ncsRotationApi.reorderMembers(schedule.id, memberIds);
+      await fetchData(); // refresh schedule so it reflects the new rotation order
       onUpdate?.();
     } catch (err: any) {
       setReorderError(getErrorMessage(err, 'Failed to sync rotation order — please try again.'));
@@ -243,6 +244,7 @@ const NCSRotationModal: React.FC<NCSRotationModalProps> = ({
 
     try {
       await ncsRotationApi.reorderMembers(schedule.id, memberIds);
+      await fetchData(); // refresh schedule so it reflects the new rotation order
       onUpdate?.();
     } catch (err: any) {
       setReorderError(getErrorMessage(err, 'Failed to sync rotation order — please try again.'));
