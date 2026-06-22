@@ -4,6 +4,14 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# June 22, 2026
+
+## Bug Fixes
+
+* **Schedule: Rotation reorder now updates the schedule immediately** — After moving members up or down in the rotation order, the schedule tab refreshes on the spot instead of showing the old order until the panel was closed and reopened.
+
+---
+
 # June 21, 2026
 
 ## Branding
