@@ -10,6 +10,8 @@ All notable changes to ECTLogger are documented here.
 
 * **Schedule: Rotation reorder now updates the schedule immediately** — After moving members up or down in the rotation order, the schedule tab refreshes on the spot instead of showing the old order until the panel was closed and reopened.
 
+* **Schedule: Fixed rotation shift caused by swap overrides** — An active swap override on an upcoming date could shift every subsequent NCS assignment by one position, causing the wrong operator to be listed for every future net.
+
 ---
 
 # June 21, 2026
