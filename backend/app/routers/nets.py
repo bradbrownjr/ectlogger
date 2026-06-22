@@ -254,11 +254,13 @@ async def list_nets(
     for net in nets:
         # Check if user can manage this net
         can_manage = False
+        is_owner_or_ncs = False
         if current_user:
             is_owner = net.owner_id == current_user.id
             is_admin = current_user.role.value == "admin"
             is_ncs = net.id in user_ncs_net_ids
-            can_manage = is_owner or is_admin or is_ncs
+            is_owner_or_ncs = is_owner or is_ncs  # non-admin access; used by frontend simulation mode
+            can_manage = is_owner_or_ncs or is_admin
 
         ncs_callsign, ncs_name = ncs_by_net.get(net.id, (None, None))
         user_attended = (net.id in user_attended_net_ids) if compute_user_flags else None
@@ -269,6 +271,7 @@ async def list_nets(
             owner_name=public_display_name(net.owner.name if net.owner else None, current_user is not None),
             check_in_count=check_in_counts.get(net.id, 0),
             can_manage=can_manage,
+            is_owner_or_ncs=is_owner_or_ncs,
             ncs_callsign=ncs_callsign,
             ncs_name=public_display_name(ncs_name, current_user is not None),
             user_attended=user_attended,
@@ -298,6 +301,7 @@ async def get_net(
     
     # Compute can_manage for this user
     can_manage = False
+    is_owner_or_ncs = False
     if current_user:
         is_owner = net.owner_id == current_user.id
         is_admin = current_user.role.value == "admin"
@@ -321,7 +325,8 @@ async def get_net(
                 )
             )
             is_template_staff = staff_result.scalar_one_or_none() is not None
-        can_manage = is_owner or is_admin or is_ncs or is_template_staff
+        is_owner_or_ncs = is_owner or is_ncs or is_template_staff  # non-admin access; used by frontend simulation mode
+        can_manage = is_owner_or_ncs or is_admin
 
     # ========== CURRENT NCS ==========
     # Look up the most-recently-assigned NCS user for this net so the UI
@@ -343,6 +348,7 @@ async def get_net(
         owner_callsign=net.owner.callsign if net.owner else None,
         owner_name=public_display_name(net.owner.name if net.owner else None, current_user is not None),
         can_manage=can_manage,
+        is_owner_or_ncs=is_owner_or_ncs,
         ncs_callsign=ncs_callsign,
         ncs_name=public_display_name(ncs_name, current_user is not None),
     )

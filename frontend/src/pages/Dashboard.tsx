@@ -95,6 +95,7 @@ interface Net {
   frequencies: any[];
   check_in_count?: number;
   can_manage?: boolean;
+  is_owner_or_ncs?: boolean;
   user_attended?: boolean | null;
   user_ran?: boolean | null;
 }
@@ -137,7 +138,9 @@ const Dashboard: React.FC = () => {
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' | 'info' }>({ open: false, message: '', severity: 'info' });
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, simulateRegularUser } = useAuth();
+  // In admin simulation mode, use the non-admin permission flag so buttons reflect what a real user would see
+  const canManage = (net: Net) => simulateRegularUser ? (net.is_owner_or_ncs ?? false) : (net.can_manage ?? false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -535,7 +538,7 @@ const Dashboard: React.FC = () => {
                 {/* Active net delete: owner/admin/NCS can discard a net */}
                 {/* mid-flight (e.g. an aborted training run). Confirmation */}
                 {/* dialog warns about losing all check-ins and chat. */}
-                {(net.status === 'active' || net.status === 'lobby') && net.can_manage && (
+                {(net.status === 'active' || net.status === 'lobby') && canManage(net) && (
                   <Tooltip title="Delete">
                     <IconButton size="small" color="error" onClick={() => handleDeleteClick(net)}>
                       <DeleteIcon fontSize="small" />
@@ -543,7 +546,7 @@ const Dashboard: React.FC = () => {
                   </Tooltip>
                 )}
                 {/* Draft/Scheduled net actions */}
-                {(net.status === 'draft' || net.status === 'scheduled') && net.can_manage && (
+                {(net.status === 'draft' || net.status === 'scheduled') && canManage(net) && (
                   <>
                     {/* Email subscribers - only if net has a template */}
                     {net.template_id && (
@@ -579,7 +582,7 @@ const Dashboard: React.FC = () => {
                         <BarChartIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
-                    {net.can_manage && (
+                    {canManage(net) && (
                       <>
                         <Tooltip title="Export log">
                           <IconButton size="small" sx={{ color: '#4caf50' }} onClick={() => handleExportCSV(net)}>
@@ -778,7 +781,7 @@ const Dashboard: React.FC = () => {
           {/* Active/Lobby net - allow the owner (or admin/NCS) to delete */}
           {/* their own net. Useful for training/practice runs the owner */}
           {/* wants to discard. Confirmation dialog warns before deleting. */}
-          {(net.status === 'active' || net.status === 'lobby') && net.can_manage && (
+          {(net.status === 'active' || net.status === 'lobby') && canManage(net) && (
             <Tooltip title="Delete net">
               <IconButton
                 size="small"
@@ -800,7 +803,7 @@ const Dashboard: React.FC = () => {
             </Tooltip>
           )}
           {/* Draft/Scheduled net actions */}
-          {(net.status === 'draft' || net.status === 'scheduled') && net.can_manage && (
+          {(net.status === 'draft' || net.status === 'scheduled') && canManage(net) && (
             <>
               {/* Email subscribers - only if net has a template */}
               {net.template_id && (
@@ -844,7 +847,7 @@ const Dashboard: React.FC = () => {
           )}
           
           {/* Closed net actions */}
-          {net.status === 'closed' && net.can_manage && (
+          {net.status === 'closed' && canManage(net) && (
             <>
               <Tooltip title="Net statistics">
                 <IconButton
@@ -1244,7 +1247,7 @@ const Dashboard: React.FC = () => {
                             <PictureAsPdfIcon />
                           </IconButton>
                         </Tooltip>
-                        {(user?.role === 'admin' || net.can_manage) && (
+                        {(user?.role === 'admin' || canManage(net)) && (
                           <Tooltip title="Unarchive net">
                             <IconButton
                               size="small"
