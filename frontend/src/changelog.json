@@ -1,6 +1,22 @@
 {
-  "version": "2026.06.22c",
+  "version": "2026.06.24",
   "entries": [
+    {
+      "version": "2026.06.24",
+      "date": "2026-06-24",
+      "sections": [
+        {
+          "title": "Bug Fixes",
+          "type": "bugfix",
+          "items": [
+            {
+              "text": "Schedule: Date sort order — The net schedule list now ranks nets by their true next occurrence. Recurring nets always appear before one-time events, and nets that meet earlier in the week are no longer listed after nets that meet later.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.06.22c",
       "date": "2026-06-22",

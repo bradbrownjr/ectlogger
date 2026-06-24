@@ -4,6 +4,14 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# June 24, 2026
+
+## Bug Fixes
+
+* **Schedule: Date sort order** — The net schedule list now ranks nets by their true next occurrence. Recurring nets always appear before one-time events, and nets that meet earlier in the week are no longer listed after nets that meet later.
+
+---
+
 # June 22, 2026
 
 ## New Features
