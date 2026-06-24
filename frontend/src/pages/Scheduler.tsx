@@ -99,6 +99,52 @@ interface Schedule {
   nextNCS?: NextNCS | null;
 }
 
+// Compute the next real-world occurrence of a schedule for sorting purposes.
+// config.day_of_week uses 0=Sun..6=Sat, matching JS Date.getDay().
+const computeNextOccurrence = (schedule: Schedule): number => {
+  const { schedule_type: type, schedule_config: config } = schedule;
+  if (!type || type === 'ad_hoc' || type === 'one_time' || !config) return Infinity;
+
+  const now = new Date();
+  const [hour, minute] = (config.time || '19:00').split(':').map(Number);
+
+  if (type === 'daily') {
+    const next = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, minute, 0, 0);
+    if (next <= now) next.setDate(next.getDate() + 1);
+    return next.getTime();
+  }
+
+  if (type === 'weekly') {
+    const targetDay = config.day_of_week ?? 0;
+    const daysUntil = (targetDay - now.getDay() + 7) % 7;
+    const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + daysUntil, hour, minute, 0, 0);
+    if (next <= now) next.setDate(next.getDate() + 7);
+    return next.getTime();
+  }
+
+  if (type === 'monthly') {
+    const targetDay = config.day_of_week ?? 0;
+    const weeksOfMonth = config.week_of_month || [1];
+    const limit = new Date(now);
+    limit.setDate(limit.getDate() + 56);
+    const check = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, minute, 0, 0);
+    if (check <= now) check.setDate(check.getDate() + 1);
+    while (check <= limit) {
+      if (check.getDay() === targetDay) {
+        let occurrence = 0;
+        for (let d = 1; d <= check.getDate(); d++) {
+          if (new Date(check.getFullYear(), check.getMonth(), d).getDay() === targetDay) occurrence++;
+        }
+        if (weeksOfMonth.includes(occurrence)) return check.getTime();
+      }
+      check.setDate(check.getDate() + 1);
+    }
+    return Infinity;
+  }
+
+  return Infinity;
+};
+
 // Format schedule for display
 const formatSchedule = (schedule: Schedule): string => {
   if (!schedule.schedule_type || schedule.schedule_type === 'ad_hoc') {
@@ -396,8 +442,8 @@ const Scheduler: React.FC = () => {
         const bOneTime = b.schedule_type === 'one_time' ? 1 : 0;
         if (aOneTime !== bOneTime) return aOneTime - bOneTime;
 
-        const aDate = a.nextNCS?.date ? new Date(a.nextNCS.date).getTime() : Infinity;
-        const bDate = b.nextNCS?.date ? new Date(b.nextNCS.date).getTime() : Infinity;
+        const aDate = computeNextOccurrence(a);
+        const bDate = computeNextOccurrence(b);
         if (aDate !== bDate) return aDate - bDate;
       }
       // Alphabetical (primary for alpha mode, tiebreaker for date mode)
