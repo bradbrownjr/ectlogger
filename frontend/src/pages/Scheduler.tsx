@@ -391,6 +391,11 @@ const Scheduler: React.FC = () => {
       if (aFav !== bFav) return aFav - bFav;
 
       if (sortOrder === 'date') {
+        // one_time nets always sort after recurring nets
+        const aOneTime = a.schedule_type === 'one_time' ? 1 : 0;
+        const bOneTime = b.schedule_type === 'one_time' ? 1 : 0;
+        if (aOneTime !== bOneTime) return aOneTime - bOneTime;
+
         const aDate = a.nextNCS?.date ? new Date(a.nextNCS.date).getTime() : Infinity;
         const bDate = b.nextNCS?.date ? new Date(b.nextNCS.date).getTime() : Infinity;
         if (aDate !== bDate) return aDate - bDate;
