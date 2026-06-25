@@ -11,8 +11,11 @@ Run from the backend directory:
 Makes no writes.
 """
 import asyncio
+import logging
 import sys
 from datetime import datetime
+
+logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
 
 sys.path.insert(0, ".")
 
