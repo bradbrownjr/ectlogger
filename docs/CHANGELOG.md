@@ -8,6 +8,8 @@ All notable changes to ECTLogger are documented here.
 
 ## Bug Fixes
 
+* **Schedule: Net Control rotation now advances each week** — The upcoming Net Control Station moves to the next operator in the rotation every time the net meets, instead of always showing the first person on the list. The schedule is anchored to the net's first meeting date, so each operator gets their correct turn and the Next NCS no longer stays stuck on one person as the dates roll forward.
+
 * **Schedule: Date sort order** — The net schedule list now ranks nets by their true next occurrence. Recurring nets always appear before one-time events, and nets that meet earlier in the week are no longer listed after nets that meet later.
 
 ---

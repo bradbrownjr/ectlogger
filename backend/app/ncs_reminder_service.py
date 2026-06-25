@@ -17,7 +17,10 @@ from app.config import settings
 from app.logger import logger
 
 # Import the schedule calculation functions from the router
-from app.routers.ncs_rotation import compute_ncs_schedule, calculate_schedule_dates, template_local_to_utc
+from app.routers.ncs_rotation import (
+    compute_anchored_ncs_schedule, calculate_schedule_dates,
+    template_local_to_utc, template_utc_to_local,
+)
 
 
 class NCSReminderService:
@@ -156,10 +159,9 @@ class NCSReminderService:
         database so this method is safe to call regardless of what relationships are
         already eager-loaded on the template object.
         """
-        from app.routers.ncs_rotation import compute_ncs_schedule
         from sqlalchemy.orm import selectinload as _sil
 
-        # Load the template with the relationships compute_ncs_schedule needs
+        # Load the template with the relationships the schedule computation needs
         from app.models import NCSScheduleOverride as _Override
         tpl_result = await db.execute(
             select(NetTemplate)
@@ -174,9 +176,12 @@ class NCSReminderService:
         if not tpl or not tpl.rotation_members:
             return
 
-        schedule = compute_ncs_schedule(
+        # scheduled_dt is stored UTC; the anchored schedule works in the template's
+        # local-naive dates, so convert before matching the occurrence.
+        local_dt = template_utc_to_local(tpl, scheduled_dt)
+        schedule = compute_anchored_ncs_schedule(
             tpl,
-            [scheduled_dt],
+            [local_dt],
             tpl.rotation_members,
             tpl.schedule_overrides,
         )
@@ -386,7 +391,7 @@ class NCSReminderService:
                     dates = calculate_schedule_dates(template, start_date, months_ahead=1)
                     if not dates:
                         continue
-                    schedule = compute_ncs_schedule(
+                    schedule = compute_anchored_ncs_schedule(
                         template,
                         dates,
                         template.rotation_members,
