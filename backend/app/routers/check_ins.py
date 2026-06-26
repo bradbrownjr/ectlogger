@@ -362,7 +362,6 @@ async def update_check_in(
     
     # Broadcast status change via WebSocket
     from app.main import manager
-    import datetime
     await manager.broadcast({
         "type": "status_change",
         "data": {
@@ -373,7 +372,7 @@ async def update_check_in(
             "callsign": check_in.callsign,
             "updated_at": check_in.updated_at.isoformat() if hasattr(check_in.updated_at, 'isoformat') else str(check_in.updated_at)
         },
-        "timestamp": datetime.datetime.utcnow().isoformat()
+        "timestamp": datetime.now(UTC).isoformat()
     }, check_in.net_id)
     return CheckInResponse.from_orm(check_in)
 
