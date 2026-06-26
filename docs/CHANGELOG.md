@@ -4,6 +4,14 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# June 25, 2026
+
+## Bug Fixes
+
+* **Check-in: Self-checkout** — Checking yourself out of a net now works reliably. A hidden conflict in the backend caused a server error whenever any user tried to check themselves out; they were left stuck and had to set their status to Away as a workaround.
+
+---
+
 # June 24, 2026
 
 ## Bug Fixes
