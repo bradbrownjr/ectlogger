@@ -442,15 +442,19 @@ const NetView: React.FC = () => {
       let zoom = 1;
       if (h < 700) zoom = 0.8;
       else if (h < 800) zoom = 0.9;
-      // Zoom on <html> (not body) so vh units rescale with it, exactly like
-      // Ctrl/Cmd minus browser zoom -- no empty space at the bottom.
-      (document.documentElement.style as any).zoom = String(zoom);
+      // Zoom body so all MUI portals (dropdowns, dialogs) scale with it.
+      // --ect-app-h compensates the App shell's height so the layout still
+      // fills the full viewport after the zoom shrinks it (100vh alone does
+      // not account for CSS zoom, leaving a gap at the bottom).
+      (document.body.style as any).zoom = String(zoom);
+      document.documentElement.style.setProperty('--ect-app-h', zoom === 1 ? '100vh' : `${h / zoom}px`);
     };
     applyZoom();
     window.addEventListener('resize', applyZoom);
     return () => {
       window.removeEventListener('resize', applyZoom);
-      (document.documentElement.style as any).zoom = '1';
+      (document.body.style as any).zoom = '1';
+      document.documentElement.style.removeProperty('--ect-app-h');
     };
   }, []);
 

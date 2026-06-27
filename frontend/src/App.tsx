@@ -92,7 +92,7 @@ const AppRoutes: React.FC = () => {
   const showChangelog = !location.pathname.startsWith('/nets/') || location.pathname === '/nets/create';
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: 'var(--ect-app-h, 100vh)', overflow: 'hidden' }}>
       <Navbar />
       <MaintenanceBanner />
       {isAuthenticated && <ProfileSetupDialog />}
