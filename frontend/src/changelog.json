@@ -1,6 +1,22 @@
 {
-  "version": "2026.06.25",
+  "version": "2026.06.27",
   "entries": [
+    {
+      "version": "2026.06.27",
+      "date": "2026-06-27",
+      "sections": [
+        {
+          "title": "Improvements",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Net View: Low-resolution display support — The logging panel now scales to fit on shorter screens such as 13-inch MacBooks, small Windows laptops, and iPads in landscape, so the check-in entry fields are always reachable without needing to undock the window.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.06.25",
       "date": "2026-06-25",

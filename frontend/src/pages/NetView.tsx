@@ -432,6 +432,26 @@ const NetView: React.FC = () => {
     localStorage.setItem('floatingWindow_activityLog_detached', String(activityLogDetached));
   }, [activityLogDetached]);
 
+  // Apply viewport-height-based zoom on the net view so the logging panel fits on
+  // short/portrait desktop screens (e.g. 13" MacBooks, small Win11 laptops, iPads).
+  // Zoom is applied to document.body so MUI portals (dropdowns, dialogs) scale too.
+  // Restored to 1 on unmount so other pages are unaffected.
+  useEffect(() => {
+    const applyZoom = () => {
+      const h = window.innerHeight;
+      let zoom = 1;
+      if (h < 700) zoom = 0.8;
+      else if (h < 800) zoom = 0.9;
+      (document.body.style as any).zoom = String(zoom);
+    };
+    applyZoom();
+    window.addEventListener('resize', applyZoom);
+    return () => {
+      window.removeEventListener('resize', applyZoom);
+      (document.body.style as any).zoom = '1';
+    };
+  }, []);
+
   // Show start net reminder when viewing a draft/scheduled net that user can start
   // Only runs once when net data is first loaded
   useEffect(() => {

@@ -4,6 +4,14 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# June 27, 2026
+
+## Improvements
+
+* **Net View: Low-resolution display support** — The logging panel now scales to fit on shorter screens such as 13-inch MacBooks, small Windows laptops, and iPads in landscape, so the check-in entry fields are always reachable without needing to undock the window.
+
+---
+
 # June 25, 2026
 
 ## Bug Fixes
