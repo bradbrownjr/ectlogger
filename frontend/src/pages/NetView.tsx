@@ -442,13 +442,15 @@ const NetView: React.FC = () => {
       let zoom = 1;
       if (h < 700) zoom = 0.8;
       else if (h < 800) zoom = 0.9;
-      (document.body.style as any).zoom = String(zoom);
+      // Zoom on <html> (not body) so vh units rescale with it, exactly like
+      // Ctrl/Cmd minus browser zoom -- no empty space at the bottom.
+      (document.documentElement.style as any).zoom = String(zoom);
     };
     applyZoom();
     window.addEventListener('resize', applyZoom);
     return () => {
       window.removeEventListener('resize', applyZoom);
-      (document.body.style as any).zoom = '1';
+      (document.documentElement.style as any).zoom = '1';
     };
   }, []);
 
