@@ -20,6 +20,10 @@
             {
               "text": "NCS Reminder Email: The 1-hour reminder now always includes a direct lobby-open link. If the net had not yet been auto-created (for example, when the 24-hour pre-creation window was missed), the email previously fell back to a View Schedule button. The reminder now creates the net if needed and provides an Open Net link that opens the lobby in one click.",
               "userImpact": true
+            },
+            {
+              "text": "Net from Schedule: Only the duty NCS is now pre-assigned when manually creating a net from a schedule. Previously, all rotation members were assigned the NCS role at once, which caused the wrong operator to appear as primary NCS in the check-in list and confused who was actually running the net.",
+              "userImpact": true
             }
           ]
         }

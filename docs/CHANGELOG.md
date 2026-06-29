@@ -14,6 +14,8 @@ All notable changes to ECTLogger are documented here.
 
 * **NCS Reminder: 1-hour email now always includes a direct lobby link** — The 1-hour NCS duty reminder now provides a direct Open Net link that opens the lobby in one click. If the net had not yet been auto-created when the reminder fired, it is created now. Previously, if the 24-hour pre-creation window was missed, the email fell back to a View Schedule link, requiring the NCS to navigate manually.
 
+* **Net from Schedule: Duty NCS only pre-assigned at net creation** — When manually creating a net from a schedule, only the rotation-computed NCS for that date is now given the NCS role. Previously, all rotation members were assigned the NCS role simultaneously, which caused the wrong operator to appear as primary NCS and cluttered the check-in list with multiple NCS rows from the start.
+
 ---
 
 # June 27, 2026
