@@ -55,6 +55,15 @@ New "Themes" section in the Admin panel. Admins see the same swatch picker that 
 - [ ] Theme swatch picker component (reused in both Profile and Admin panel)
 - [ ] Add attribution credit in About / Settings footer
 
+### Net Scheduling
+
+**✨ Auto-open lobby before scheduled start** *(KC1JMH)*  
+Add a per-schedule setting (e.g. "Open lobby X minutes before start time") that automatically transitions a scheduled net into Lobby mode without requiring the NCS to click a link. The NCS could still open the lobby manually at any time — this is an optional server-side trigger for groups that always open the net at the same offset before their formal start. Requires:
+- New `auto_lobby_minutes` column on `NetTemplate` (nullable; null = disabled)
+- UI toggle + number input in the schedule editor (Net Settings tab)
+- Background task in the reminder/scheduler service to fire the transition at the right time
+- Guard to skip if the net is already in Lobby/Active state
+
 ### Multi-Window Support
 
 **✨ "Open in new tab" for Chat and Activity Log panes** *(AA1GM)*  

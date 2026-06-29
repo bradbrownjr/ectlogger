@@ -22,7 +22,7 @@
               "userImpact": true
             },
             {
-              "text": "Net from Schedule: Only the duty NCS is now pre-assigned when manually creating a net from a schedule. Previously, all rotation members were assigned the NCS role at once, which caused the wrong operator to appear as primary NCS in the check-in list and confused who was actually running the net.",
+              "text": "Net from Schedule: When a staff member manually creates a net from the schedule, they are now assigned as the NCS. Previously, every rotation member was assigned the NCS role simultaneously, causing the wrong operator to appear as primary NCS and cluttering the check-in list from the start.",
               "userImpact": true
             }
           ]

@@ -1103,31 +1103,11 @@ async def create_net_from_template(
             net_freq_table.insert().values(net_id=net.id, frequency_id=freq.id)
         )
     
-    # Assign only the duty NCS for the scheduled date rather than all rotation
-    # members. Assigning everyone caused confusing multi-NCS displays and meant
-    # the wrong operator appeared first in the check-in list.
-    if scheduled_start_time and template.rotation_members:
-        from app.models import NCSScheduleOverride as _Override
-        from sqlalchemy.orm import selectinload as _sil
-        from app.routers.ncs_rotation import compute_anchored_ncs_schedule, template_utc_to_local
-
-        tpl_result = await db.execute(
-            select(NetTemplate)
-            .options(
-                _sil(NetTemplate.rotation_members),
-                _sil(NetTemplate.schedule_overrides).selectinload(_Override.replacement_user),
-                _sil(NetTemplate.fifth_week_user),
-            )
-            .where(NetTemplate.id == template_id)
-        )
-        tpl = tpl_result.scalar_one_or_none()
-        if tpl and tpl.rotation_members:
-            local_dt = template_utc_to_local(tpl, scheduled_start_time)
-            schedule = compute_anchored_ncs_schedule(
-                tpl, [local_dt], tpl.rotation_members, tpl.schedule_overrides
-            )
-            if schedule and schedule[0].user_id and not schedule[0].is_cancelled:
-                db.add(NetRole(net_id=net.id, user_id=schedule[0].user_id, role="NCS"))
+    # When a staff member manually creates a net from the schedule they are
+    # taking responsibility for running it, so assign them as the NCS.
+    # The automatic path (reminder service auto-create) separately assigns the
+    # rotation-computed duty NCS via _assign_duty_ncs.
+    db.add(NetRole(net_id=net.id, user_id=current_user.id, role="NCS"))
 
     await db.commit()
 
