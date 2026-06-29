@@ -508,7 +508,7 @@ class NCSReminderService:
                 if net_id:
                     net_url = f"{settings.frontend_url}/nets/{net_id}"
             else:
-                # 1h reminder — net should already exist; find by exact scheduled time
+                # 1h reminder — find existing net; auto-create if the 24h window was missed
                 result = await db.execute(
                     select(Net)
                     .where(
@@ -522,7 +522,11 @@ class NCSReminderService:
                 )
                 existing = result.scalar_one_or_none()
                 if existing:
-                    net_url = f"{settings.frontend_url}/nets/{existing.id}"
+                    net_url = f"{settings.frontend_url}/nets/{existing.id}?open_lobby=1"
+                else:
+                    net_id = await self._get_or_create_scheduled_net(db, template, scheduled_utc)
+                    if net_id:
+                        net_url = f"{settings.frontend_url}/nets/{net_id}?open_lobby=1"
 
             await EmailService.send_ncs_reminder(
                 to_email=user.email,

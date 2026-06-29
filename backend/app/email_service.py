@@ -935,6 +935,13 @@ This is an automated message, please do not reply.
                     <p><strong>Total Check-ins:</strong> {{ check_in_count }}</p>
                 </div>
 
+                {% if topic_enabled and topic_prompt %}
+                <div class="poll-section" style="background-color: #e8f5e9; border-left: 4px solid #43a047;">
+                    <h3>📻 Topic of the Week</h3>
+                    <p><strong>Topic:</strong> {{ topic_prompt }}</p>
+                </div>
+                {% endif %}
+
                 {% if poll_enabled and poll_results %}
                 <div class="poll-section">
                     <h3>📊 Poll Results</h3>

@@ -1609,8 +1609,10 @@ const NetView: React.FC = () => {
             setToastMessage('Cannot assign roles to stations without user accounts');
             return;
           } else {
-            // Remove role if switching to a regular status
-            if (checkIn.user_id) {
+            // Only owner/admin may revoke a role when changing to a non-role status.
+            // Regular NCS users changing their own status must not trigger a DELETE they
+            // can't authorize (the backend rejects it with 403).
+            if (checkIn.user_id && (isOwner || isAdmin)) {
               const existingRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
               if (existingRole && owner?.id !== checkIn.user_id) {
                 await api.delete(`/nets/${netId}/roles/${existingRole.id}`);

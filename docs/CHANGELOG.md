@@ -4,6 +4,18 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# June 29, 2026
+
+## Bug Fixes
+
+* **Net View: NCS/staff status change via dropdown** — NCS and net staff members can now change their own status (Away, Checked Out, etc.) using the status dropdown in the check-in list. Previously, the dropdown triggered a role-removal call that only net owners and site admins can authorize, causing a silent failure for anyone else.
+
+* **Net Closure Email: Topic of the Week now shown** — The closure email now includes a dedicated "Topic of the Week" section above the check-in table, showing the topic prompt. The email already listed each operator's response in the table, but the question itself was missing, leaving recipients without context.
+
+* **NCS Reminder: 1-hour email now always includes a direct lobby link** — The 1-hour NCS duty reminder now provides a direct Open Net link that opens the lobby in one click. If the net had not yet been auto-created when the reminder fired, it is created now. Previously, if the 24-hour pre-creation window was missed, the email fell back to a View Schedule link, requiring the NCS to navigate manually.
+
+---
+
 # June 27, 2026
 
 ## Improvements

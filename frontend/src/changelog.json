@@ -1,6 +1,30 @@
 {
-  "version": "2026.06.27",
+  "version": "2026.06.29",
   "entries": [
+    {
+      "version": "2026.06.29",
+      "date": "2026-06-29",
+      "sections": [
+        {
+          "title": "Bug Fixes",
+          "type": "bugfix",
+          "items": [
+            {
+              "text": "Net View: NCS and net staff can now change their own status via the status dropdown. Previously, selecting a non-role status (Away, Checked Out, etc.) from the dropdown triggered a role-removal call that only net owners and admins can authorize, causing a silent failure for anyone else.",
+              "userImpact": true
+            },
+            {
+              "text": "Net Closure Email: Topic of the Week prompt now appears as a named section above the check-in table. The email already listed each operator's topic response in the table, but the topic question itself was never shown, leaving recipients without context.",
+              "userImpact": true
+            },
+            {
+              "text": "NCS Reminder Email: The 1-hour reminder now always includes a direct lobby-open link. If the net had not yet been auto-created (for example, when the 24-hour pre-creation window was missed), the email previously fell back to a View Schedule button. The reminder now creates the net if needed and provides an Open Net link that opens the lobby in one click.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.06.27",
       "date": "2026-06-27",
