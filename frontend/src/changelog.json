@@ -1,8 +1,8 @@
 {
-  "version": "2026.06.30",
+  "version": "2026.06.30b",
   "entries": [
     {
-      "version": "2026.06.30",
+      "version": "2026.06.30b",
       "date": "2026-06-30",
       "sections": [
         {
@@ -31,6 +31,16 @@
             },
             {
               "text": "About ECTLogger modal: Shows the current version, project links (GitHub, docs, issue tracker), and open-source license credits.",
+              "userImpact": true
+            }
+          ]
+        },
+        {
+          "title": "Improvements",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Profile: Callsign history — Changing your primary callsign now automatically preserves the old one so your check-in history and statistics follow you. Useful when upgrading your license class, requesting a vanity callsign, or moving to a new region.",
               "userImpact": true
             }
           ]

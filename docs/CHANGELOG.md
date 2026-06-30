@@ -20,6 +20,10 @@ All notable changes to ECTLogger are documented here.
 
 * **About ECTLogger modal** — Shows the current version, links to GitHub, documentation, and issue tracker, and open-source license credits (MIT; Jam3/nice-color-palettes attribution).
 
+## Improvements
+
+* **Profile: Callsign history** — Changing your primary callsign now automatically preserves the old one so your check-in history and statistics follow you. Useful when upgrading your license class, requesting a vanity callsign, or moving to a new region. Previous callsigns appear as read-only chips below the callsign field on your profile page.
+
 ---
 
 # June 29, 2026
