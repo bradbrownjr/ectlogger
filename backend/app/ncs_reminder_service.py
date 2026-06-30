@@ -215,7 +215,14 @@ class NCSReminderService:
                 if template.schedule_type == 'ad_hoc':
                     continue
                 try:
-                    dates = calculate_schedule_dates(template, now, months_ahead=1)
+                    # calculate_schedule_dates matches weekdays against the calendar
+                    # date of the datetime it's given, so it must be fed the template's
+                    # local "now" — not naive UTC. For evening-scheduled nets (e.g. 8 PM
+                    # Eastern = midnight UTC), naive UTC's calendar date is already
+                    # tomorrow during 8 PM-midnight local time, causing weekday matching
+                    # to skip the correct day and land a full week later.
+                    now_local = template_utc_to_local(template, now)
+                    dates = calculate_schedule_dates(template, now_local, months_ahead=1)
                     if not dates:
                         continue
                     next_local = dates[0]
@@ -268,7 +275,8 @@ class NCSReminderService:
                     continue
 
                 try:
-                    dates = calculate_schedule_dates(template, now, months_ahead=1)
+                    now_local = template_utc_to_local(template, now)
+                    dates = calculate_schedule_dates(template, now_local, months_ahead=1)
                     if not dates:
                         continue
                     next_local = dates[0]
@@ -385,9 +393,12 @@ class NCSReminderService:
                 # Skip templates with no rotation members
                 if not template.rotation_members:
                     continue
-                
-                # Calculate upcoming schedule dates for this template
-                start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+                # Calculate upcoming schedule dates for this template, anchored to the
+                # template's local midnight (not UTC midnight) so weekday matching
+                # doesn't skip a day for templates scheduled in the local evening.
+                now_local = template_utc_to_local(template, now)
+                start_date = now_local.replace(hour=0, minute=0, second=0, microsecond=0)
                 try:
                     dates = calculate_schedule_dates(template, start_date, months_ahead=1)
                     if not dates:
@@ -594,10 +605,11 @@ class NCSReminderService:
                 
                 # Calculate the next scheduled date for this template
                 try:
-                    dates = calculate_schedule_dates(template, now, months_ahead=1)
+                    now_local = template_utc_to_local(template, now)
+                    dates = calculate_schedule_dates(template, now_local, months_ahead=1)
                     if not dates:
                         continue
-                    
+
                     next_local = dates[0]  # Next scheduled date (naive local time)
                     # Convert to UTC so window math and dedup match datetime.utcnow().
                     next_date = template_local_to_utc(template, next_local)
