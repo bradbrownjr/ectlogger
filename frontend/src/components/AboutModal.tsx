@@ -55,26 +55,6 @@ const AboutModal: React.FC<AboutModalProps> = ({ open, onClose }) => {
               GitHub Repository
               <OpenInNewIcon sx={{ fontSize: 14 }} />
             </Link>
-            <Link
-              href="https://github.com/bradbrownjr/ectlogger/issues"
-              target="_blank"
-              rel="noopener noreferrer"
-              sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
-              underline="hover"
-            >
-              Report an Issue
-              <OpenInNewIcon sx={{ fontSize: 14 }} />
-            </Link>
-            <Link
-              href="https://ectlogger.us"
-              target="_blank"
-              rel="noopener noreferrer"
-              sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
-              underline="hover"
-            >
-              Documentation
-              <OpenInNewIcon sx={{ fontSize: 14 }} />
-            </Link>
           </Box>
 
           <Divider flexItem />
