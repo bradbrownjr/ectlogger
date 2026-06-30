@@ -81,6 +81,7 @@ class UserUpdate(BaseModel):
     skywarn_number: Optional[str] = Field(None, max_length=50)
     location: Optional[str] = Field(None, max_length=200)
     prefer_utc: Optional[bool] = None
+    walkthrough_seen: Optional[bool] = None
 
     @model_validator(mode='before')
     @classmethod
@@ -125,6 +126,7 @@ class UserResponse(UserBase):
     skywarn_number: Optional[str] = None
     location: Optional[str] = None
     prefer_utc: bool = False
+    walkthrough_seen: bool = False
     last_active: Optional[datetime] = None
     schedule_age_bypass: bool = False
     created_at: datetime

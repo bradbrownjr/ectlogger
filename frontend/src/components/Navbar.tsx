@@ -30,6 +30,7 @@ import UserAvatar from './UserAvatar';
 import FeedbackModal from './FeedbackModal';
 import AboutModal from './AboutModal';
 import WalkthroughModal from './WalkthroughModal';
+import { userApi } from '../services/api';
 import LoginIcon from '@mui/icons-material/Login';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
@@ -163,13 +164,12 @@ const Navbar: React.FC = () => {
   const [aboutOpen, setAboutOpen] = useState(false);
   const [walkthroughOpen, setWalkthroughOpen] = useState(false);
 
-  // Auto-launch walkthrough for first-time users
+  // Auto-launch walkthrough for first-time users (per-user DB flag, not localStorage)
   useEffect(() => {
-    if (isAuthenticated && !localStorage.getItem('walkthrough_seen')) {
-      localStorage.setItem('walkthrough_seen', 'true');
+    if (isAuthenticated && user && user.walkthrough_seen === false) {
       setWalkthroughOpen(true);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user?.walkthrough_seen]);
 
   const handleLogout = () => {
     logout();
@@ -492,7 +492,15 @@ const Navbar: React.FC = () => {
 
       <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
       <AboutModal open={aboutOpen} onClose={() => setAboutOpen(false)} />
-      <WalkthroughModal open={walkthroughOpen} onClose={() => setWalkthroughOpen(false)} />
+      <WalkthroughModal
+        open={walkthroughOpen}
+        onClose={() => {
+          setWalkthroughOpen(false);
+          if (user && !user.walkthrough_seen) {
+            userApi.updateProfile({ walkthrough_seen: true }).catch(() => {});
+          }
+        }}
+      />
     </>
   );
 };

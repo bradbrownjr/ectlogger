@@ -35,9 +35,10 @@ const STEPS: Step[] = [
     icon: <EditNoteIcon sx={{ fontSize: 48, color: 'primary.main' }} />,
     title: 'Running a Net',
     description:
-      'Inside a net, the check-in form is at the top. Enter a callsign and any ' +
-      'configured fields (name, location, weather, etc.) and click Check In. The ' +
-      'real-time chat and map are available as floating panels you can move and resize.',
+      'Inside a net, the check-in entry form is at the bottom of the check-in panel. ' +
+      'Enter a callsign and any configured fields (name, location, weather, etc.) and ' +
+      'click Check In. Real-time chat and a map are available as floating panels you ' +
+      'can move and resize.',
   },
   {
     icon: <EventIcon sx={{ fontSize: 48, color: 'primary.main' }} />,

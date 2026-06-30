@@ -11,6 +11,7 @@ interface User {
   location?: string;
   skywarn_number?: string;
   prefer_utc?: boolean;
+  walkthrough_seen?: boolean;
   show_activity_in_chat?: boolean;
   location_awareness?: boolean;
   live_location?: string;
