@@ -15,7 +15,7 @@ That's it! No password to remember.
 
 ### Setting Up Your Profile
 
-After signing in, complete your profile by clicking your name in the top-right corner and selecting **Profile**. The profile page has two tabs: **Settings** and **Activity**.
+After signing in, complete your profile by clicking your name in the top-right corner and selecting **Profile**. The profile page has three tabs: **Profile**, **Settings**, and **Activity**.
 
 #### Settings Tab
 
@@ -30,6 +30,10 @@ After signing in, complete your profile by clicking your name in the top-right c
 **Additional Callsigns**
 
 Add other callsigns you use (tactical callsigns, club calls, etc.). Type a callsign and press Enter or click Add. These appear as chips you can remove by clicking the X.
+
+**Previous Callsigns**
+
+If you update your primary Amateur Radio Call Sign, the old callsign is automatically saved here. Your full check-in history and statistics carry over — useful when upgrading your license class, requesting a vanity callsign, or changing regions. This list is read-only and managed by the system.
 
 **Display Preferences**
 
@@ -390,7 +394,8 @@ Both Topic and Poll columns are only visible when configured for the net. System
 
 ### Archiving and Unarchiving
 
-- **Auto-archive** — When a new net is created from a recurring schedule (manually or automatically), any previously closed nets from that same schedule are archived automatically. This keeps the dashboard clean without requiring manual cleanup after each net. Archived nets remain fully accessible and can be unarchived at any time.
+- **Auto-archive (recurring nets)** — When a new net is created from a recurring schedule (manually or automatically), any previously closed nets from that same schedule are archived automatically. This keeps the dashboard clean without requiring manual cleanup after each net. Archived nets remain fully accessible and can be unarchived at any time.
+- **Auto-archive (stale scheduled nets)** — A net in Scheduled status that was never opened is automatically archived 24 hours after its scheduled start time. If a net didn't happen, it disappears from the dashboard on its own.
 - **Archive** — From a closed net, click the archive icon to hide it from the main dashboard. A 5-second UNDO toast lets you cancel if clicked accidentally.
 - **Unarchive** — From an archived net view, click the unarchive icon to restore it to closed status.
 - **Download Logs** — Both closed and archived nets have download buttons (CSV and ICS-309) available in the toolbar.
@@ -585,8 +590,12 @@ The Users tab shows all registered users with online presence indicators:
 
 ## Getting Help
 
-- **Issues**: [GitHub Issues](https://github.com/bradbrownjr/ectlogger/issues)
-- **Questions**: Open a discussion on GitHub
+The **Help** menu in the top navigation bar provides four options:
+
+- **User Guide** — Opens this documentation site in a new tab.
+- **Start Walkthrough** — Launches a step-through tour of the main app areas: Dashboard, Running a Net, Schedule, Statistics, Profile & Settings, and the Help menu itself. The walkthrough launches automatically on your first login and can be restarted at any time from here.
+- **Submit Feedback** — Opens an in-app form to report a bug or request a feature. Submissions are delivered directly to the site administrator with your callsign and contact info included so they can follow up. Rate-limited to 5 submissions per hour.
+- **About ECTLogger** — Shows the current version, a link to the GitHub repository, open-source license credits, and the Honorable Mentions list of operators whose feedback helped shape the platform.
 
 ---
 
