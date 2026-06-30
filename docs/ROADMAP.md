@@ -1,6 +1,6 @@
 # ECT Logger — Product Roadmap
 
-*Last updated: 2026-06-30 (rev 23)*  
+*Last updated: 2026-06-30 (rev 24)*  
 *Compiled from user feedback: AA1GM, KC1UIX, W1BKW, W1MTW, KC1JMH*
 
 > **Canonical location:** `docs/ROADMAP.md`. The root-level `ROADMAP.md` is a duplicate and should be deleted.
@@ -63,6 +63,74 @@ Add a per-schedule setting (e.g. "Open lobby X minutes before start time") that 
 - UI toggle + number input in the schedule editor (Net Settings tab)
 - Background task in the reminder/scheduler service to fire the transition at the right time
 - Guard to skip if the net is already in Lobby/Active state
+
+### Admin Tooling
+
+**🔧 Power-user indicators in the Admin users list** *(KC1JMH)*  
+Surface three at-a-glance signals in the Admin → Users table so the operator can identify engaged, high-value users without cross-referencing other screens:
+
+- **NCS indicator** — flag users who hold (or have held) an NCS role on any net, so power users are immediately visible.
+- **Changelog subscriber indicator** — flag users who have opted into "What's New" emails (Profile → What's New emails), so the operator can see who is following development.
+- **MFA-enrolled indicator** — flag users who have enrolled a TOTP authenticator (`totp_enabled`), so the operator can see who can participate in authenticated nets. Depends on the MFA / TOTP feature below.
+
+Implementation notes:
+- NCS indicator: derive from `NetRole` rows where role = NCS for the user. Decide whether "is NCS on any net" is computed live (an `exists` subquery in the users list) or denormalized onto the user record for list performance. Render as a small badge/icon column.
+- Changelog subscriber: the subscription flag already exists for the daily digest (`whats_new_service.py`); surface it as a column/badge — no new data needed.
+- MFA-enrolled: read straight from the `totp_enabled` column added by the MFA feature; surface as a padlock badge consistent with the check-in authentication indicator (see Authenticated nets below).
+- Consider making both columns sortable/filterable so the operator can list all NCS operators or all subscribers in one click.
+
+### Check-in Grid Quality-of-Life
+
+**🔧 Freeze the check-in action button column during horizontal scroll** *(KC1JMH)*  
+On narrow screens or wide nets the check-in grid scrolls horizontally and the per-row action buttons — the primary controls for each station — scroll out of view. Pin/freeze the action column so it stays visible at the edge while the other fields scroll under it. Apply the same treatment consistently across the desktop inline table and any other horizontally-scrolling check-in view (see DESIGN.md "symmetry and uniformity"). Keep the frozen column's touch targets at the 44×44 px minimum.
+
+### Security & Authentication
+
+**✨ MFA / TOTP authenticator support** *(KC1JMH)*  
+Let users enroll a TOTP authenticator as a second factor. During enrollment, show **both** the QR code **and** the plain-text preshared secret (base32) with a copy button, so users can store the secret in a password vault (Bitwarden, 1Password) instead of a dedicated authenticator app if they prefer.
+
+Requirements:
+- New columns on `User`: `totp_secret` (with at-rest encryption considerations), `totp_enabled` (bool), and storage for backup/recovery codes.
+- Enrollment flow: generate a secret, render the QR from an `otpauth://` URI **and** display the secret string with a copy button, then verify a code before enabling.
+- Verification step at login (after magic-link / OAuth) when `totp_enabled` is set.
+- Backup/recovery codes for account recovery, plus a disable-MFA flow.
+- Suggested libraries: `pyotp` for TOTP, `qrcode` for QR generation (or render the `otpauth://` URI to a QR client-side).
+
+**✨ Authenticated nets — station identity verification via TOTP** *(KC1JMH)*  
+Builds directly on MFA. Adds a per-net "Authenticated net" toggle in the Edit Net settings, with subtext explaining that it lets check-ins prove their identity to net control. When enabled, a checked-in user can read the current code from their authenticator to NCS; an action button on the check-in row shows NCS the **expected** code for that station so they can confirm it matches and mark the station as identity-verified for the net.
+
+Requirements / design questions:
+- New `authenticated` (bool) toggle on the net/template, with descriptive subtext in the Edit Net toggles section.
+- Action button on check-in rows (NCS-only) that displays the currently-valid expected TOTP for the station's account.
+- Server endpoint: given the net and the check-in's user, return the currently-valid expected code(s) with a small skew window — permission-gated to NCS (and possibly Logger). The raw secret must **never** be sent to the client; only the computed code.
+- Record an "identity verified" state on the check-in once NCS affirms the match.
+- **Authentication status indicator** — each check-in row shows a padlock next to (or overlaid on) the station's profile icon: a closed padlock once identity is verified, an open padlock when it is not. This makes a station's authentication state readable at a glance for everyone viewing the net.
+- **Unenrolled stations** — if a user checks into an authenticated net without having enrolled MFA, they simply show the open-padlock (unauthenticated) state. ECTLogger does not block or auto-reject them; it is left to NCS to decide how to respond. The indicator just makes the unauthenticated status visible.
+- Verification is only offered on nets flagged `authenticated`; on all other nets no padlock is shown.
+- **Dependency:** requires the MFA / TOTP support above to exist first.
+
+### Formal Traffic & Forms (Radiograms)
+
+**✨ Radiogram and form support for handling formal traffic on nets** *(KC1JMH)*  
+Let NCS and users originate, relay, and deliver formal written traffic (ARRL Radiograms and other standard forms) within ECTLogger, with results stored against the net and retrievable later.
+
+Scope:
+- **Forms data model** — a `Form` table for submitted form instances (plus a form-definition / `FormField` template structure), each instance optionally linked to a `Net` so forms can also be filed outside a net. Store submitter, timestamps, form type, and field values.
+- **Forms navbar menu** — a new "Forms" section in the navbar to view submitted forms, file a form outside a net, and (admin) add or edit form definitions and their fields.
+- **On-net entry** — NCS/users fill a form during a net and the result is stored with that net.
+- **Delivery** — forms filled by a user are emailed to that user, reusing the existing SMTP path.
+- **Automation to keep entry quick** — auto-fill of date/time fields, automatic word/group count for the radiogram text (the "check"), and validation so operators never hand-count.
+- **Stats** — add a "traffic handled" count to per-net stats and global stats, and surface it in the net log / PDF report / email summary.
+- **ICS-309 integration** — for nets that have ICS-309 enabled, traffic logged via forms is recorded on the net's ICS-309 communications log, so formal traffic appears alongside the rest of the net's logged activity in the export.
+
+Design questions to resolve before implementation:
+- Which forms ship first? ARRL Radiogram (NTS) is the obvious first; ICS-213 general message is a likely second. Are form definitions hardcoded templates or fully admin-editable schemas?
+- How is the radiogram modeled — a generic field schema covers ICS-style forms, but the radiogram preamble (number, precedence, handling, station of origin, check, place of origin, time/date) may warrant dedicated structure.
+- Is "traffic handled" counted per form submitted, or per piece of traffic by disposition (originated vs. relayed vs. delivered)?
+- Retrieval and permissions: who can view a stored form — the submitter, the NCS of that net, admins?
+- PDF / printable output for forms, consistent with the existing ICS-309 export pattern.
+
+This is a substantial multi-part feature: sequence the data model + Forms menu first, then on-net entry and email delivery, then the stats rollup.
 
 ### Multi-Window Support
 
