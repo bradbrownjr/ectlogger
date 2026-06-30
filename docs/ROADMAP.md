@@ -1,6 +1,6 @@
 # ECT Logger — Product Roadmap
 
-*Last updated: 2026-06-20 (rev 19)*  
+*Last updated: 2026-06-30 (rev 20)*  
 *Compiled from user feedback: AA1GM, KC1UIX, W1BKW, W1MTW, KC1JMH*
 
 > **Canonical location:** `docs/ROADMAP.md`. The root-level `ROADMAP.md` is a duplicate and should be deleted.
@@ -93,6 +93,54 @@ The current "Docs" link in the navbar is a bare external link. Replace it with a
 
 **Guided walkthrough**  
 A step-by-step tour of the main UI surfaces using a library such as `react-joyride` or `driver.js`. Highlights key elements (Dashboard, check-in form, net view, Schedule Statistics, Profile Activity) with descriptive callouts. Auto-triggers for new users on first login (flag stored in `users` table or localStorage); re-triggerable at any time from the Help menu. Lets existing users self-serve when they encounter unfamiliar features rather than needing to label every icon.
+
+### Supporter / Funding Integration
+
+**✨ Optional Ko-fi supporter integration, admin-configured per deployment** *(sustainability)*
+
+> **Depends on:** *Help Menu and About modal* (above). The subtle "Support" entry point lives inside the About modal, so this item is sequenced to land **after** that ships.
+
+A subtle, never-obtrusive, never-gated way for operators to help cover an instance's hosting and development costs. ECTLogger stays 100% free; support is a quiet opt-in side door, not a paywall, modal, or nag. Because ECTLogger is open source and self-hosted by others, this ships as a **generic integration any operator can point at their own Ko-fi account from the Admin panel** — never hardcoded to one account, and disabled by default so a fresh clone shows nothing until configured.
+
+**Platform decision — Ko-fi, single platform.**  
+Ko-fi is the choice for US-based operators specifically: it lets a creator link **both Stripe and PayPal** side-by-side, while Buy Me a Coffee is Stripe-only and Stripe US cannot process PayPal — disqualifying it for the older, PayPal/Venmo-trusting ham audience. Ko-fi also takes **0% on one-time tips** (only the ~2.9% + $0.30 processor fee) and 5% on recurring memberships unless the operator pays Ko-fi Gold ($6/mo). Running two platforms at once was explicitly rejected: it creates donor choice-paralysis, double webhook maintenance, and fragmented goal tracking. (Source: design conversation, June 2026.)
+
+**Deployment-configurable settings (open-source requirement).**  
+New columns on the `AppSettings` singleton (see DEVELOPMENT.md "AppSettings singleton pattern"), all editable from a new **Support / Funding** section in the Admin panel (gated by the existing `role != ADMIN → 403` check):
+
+| Setting | Type / default | Public read? | Purpose |
+|---|---|---|---|
+| `kofi_enabled` | bool, default `false` | yes | Master switch; gates the entire feature |
+| `kofi_username` | string, nullable | yes | Builds the Ko-fi page / widget URL |
+| `kofi_webhook_token` | string, nullable | **no — write-only** | Verifies inbound webhooks |
+| `kofi_hosting_goal_amount` | int, nullable | yes | Monthly progress-bar target (per deployment) |
+| `kofi_hosting_goal_currency` | string, default `USD` | yes | Goal display currency |
+| `kofi_support_message` | text, nullable (may be blank) | yes | Operator's own pitch; blank renders a sensible default |
+
+**Secret handling:** the public `GET /settings` response (readable before login) must **never** return `kofi_webhook_token`. Expose a boolean `kofi_webhook_configured` instead; the raw token is settable only via the admin `PUT`. The Admin panel also displays this deployment's fixed webhook URL (`https://<your-host>/api/webhooks/donations`) for the operator to paste into their own Ko-fi dashboard.
+
+**Phase 1 — Config + subtle surface** *(not started)*
+- [ ] Migration: add the six `kofi_*` columns to `AppSettings`
+- [ ] Extend `AppSettingsResponse` / `AppSettingsUpdate` schemas and the `PUT /settings` handler, enforcing the write-only rule for `kofi_webhook_token`
+- [ ] Admin panel "Support / Funding" section (set values; show the deployment webhook URL)
+- [ ] "Support" link added inside the **About modal** — the single quiet entry point (no nags, no buttons beside action controls)
+- [ ] `/support` view: renders `kofi_support_message` (or default copy) plus the Ko-fi widget; renders **only when `kofi_enabled`**
+- [ ] Add `.github/FUNDING.yml` here and across the other ham repos (`hamalert-notifier`, `skywarn-activation-alerts`, `pktnet`, `radiomail.info`, etc.) for the native GitHub Sponsor button
+
+**Phase 2 — Supporter recognition ("sparkle")** *(not started)*
+- [ ] Migration: add `users.is_supporter` (bool) and `users.supporter_expires_at` (nullable, tz-aware UTC)
+- [ ] `routers/donations.py`: `POST /api/webhooks/donations` — verify the configured `kofi_webhook_token`, match payload `email` to `User.email`, set the flag (one-off tip → expires in 30 days; subscription → persists until a cancel/expiry event)
+- [ ] Daily expiry sweep that clears lapsed one-off sparkles (follows the existing `*_service.py` background pattern)
+- [ ] Surface `is_supporter` in the WebSocket user payload (`online_users`) and relevant user serializers
+- [ ] `UserAvatar.tsx`: conditional supporter style — a subtle gold ring with a soft glow and a periodic shine sweep, kept lightweight for the real-time UI. One component change propagates to Chat, NetView, Navbar, Profile, and NCSStaffModal
+- [ ] Decide edge cases: donor email ≠ account email (offer a "link my donation" note on `/support`); refunds/chargebacks strip the sparkle; anonymous tips count toward the goal but earn no sparkle
+
+**Phase 3 — Transparency** *(not started)*
+- [ ] Monthly progress bar driven by `kofi_hosting_goal_amount` (use Ko-fi's native goal widget first; build custom only if styling demands it)
+- [ ] Honest cost framing in the default `/support` copy: real monthly hosting figure, "always free" reassurance, and the "independent dev lab funds a suite of ham tools" ecosystem framing (the HamStudy / SignalStuff model)
+- [ ] Open Collective deferred — revisit only if donation volume ever justifies a public ledger
+
+**Trigger:** start after the Help Menu / About modal ships. Phase 1 alone satisfies the original goal (a subtle support link); Phases 2–3 are additive and carry no risk to core net logging.
 
 ### Trivia Integration
 
