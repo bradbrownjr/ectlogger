@@ -50,6 +50,7 @@ import MenuBookIcon from '@mui/icons-material/MenuBook';
 import TourIcon from '@mui/icons-material/Tour';
 import FeedbackIcon from '@mui/icons-material/Feedback';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 
 interface NavbarClockProps {
   compact?: boolean;
@@ -214,6 +215,7 @@ const Navbar: React.FC = () => {
       label: 'User Guide',
       icon: <MenuBookIcon fontSize="small" />,
       action: () => { closeHelpMenu(); setDrawerOpen(false); window.open('https://ectlogger.us', '_blank', 'noopener,noreferrer'); },
+      external: true,
     },
     {
       label: 'Start Walkthrough',
@@ -299,6 +301,7 @@ const Navbar: React.FC = () => {
                           <ListItemButton onClick={item.action}>
                             <ListItemIcon>{item.icon}</ListItemIcon>
                             <ListItemText primary={item.label} />
+                            {item.external && <OpenInNewIcon sx={{ fontSize: 14, opacity: 0.5, ml: 0.5 }} />}
                           </ListItemButton>
                         </ListItem>
                       ))}
@@ -397,6 +400,7 @@ const Navbar: React.FC = () => {
                     <MenuItem key={item.label} onClick={item.action}>
                       <ListItemIcon>{item.icon}</ListItemIcon>
                       {item.label}
+                      {item.external && <OpenInNewIcon sx={{ fontSize: 14, opacity: 0.5, ml: 0.5 }} />}
                     </MenuItem>
                   ))}
               </Menu>
