@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -82,8 +82,13 @@ interface WalkthroughModalProps {
 const WalkthroughModal: React.FC<WalkthroughModalProps> = ({ open, onClose }) => {
   const [step, setStep] = useState(0);
 
+  // Reset to step 0 when the dialog opens so re-launching always starts fresh
+  // without snapping back to step 0 during the close animation.
+  useEffect(() => {
+    if (open) setStep(0);
+  }, [open]);
+
   const handleClose = () => {
-    setStep(0);
     onClose();
   };
 
