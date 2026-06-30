@@ -66,6 +66,7 @@ class User(Base):
     callsign = Column(String(50), unique=True, index=True)  # Primary callsign (Amateur Radio)
     gmrs_callsign = Column(String(50), unique=True, index=True, nullable=True)  # GMRS callsign (e.g., WROP123)
     callsigns = Column(Text, default='[]')  # JSON array of additional callsigns
+    previous_callsigns = Column(Text, default='[]')  # JSON array of former primary callsigns (auto-populated on callsign change)
     role = Column(Enum(UserRole), default=UserRole.USER, index=True)
     oauth_provider = Column(String(50))  # google, microsoft, github, email
     oauth_id = Column(String(255), unique=True, index=True)

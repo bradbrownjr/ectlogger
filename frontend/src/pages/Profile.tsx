@@ -482,6 +482,20 @@ const Profile: React.FC = () => {
               inputProps={{ style: { textTransform: 'uppercase' } }}
             />
 
+            {/* Previous callsigns — read-only, auto-populated when primary callsign changes */}
+            {user?.previous_callsigns && user.previous_callsigns.length > 0 && (
+              <Box sx={{ mt: 0.5, mb: 1 }}>
+                <Typography variant="caption" color="text.secondary">
+                  Previous callsigns (your check-in history is retained for these):
+                </Typography>
+                <Stack direction="row" spacing={0.5} flexWrap="wrap" sx={{ mt: 0.5 }}>
+                  {user.previous_callsigns.map((cs) => (
+                    <Chip key={cs} label={cs} size="small" variant="outlined" sx={{ fontFamily: 'monospace' }} />
+                  ))}
+                </Stack>
+              </Box>
+            )}
+
             <TextField
               fullWidth
               label="GMRS Call Sign"

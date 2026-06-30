@@ -539,13 +539,18 @@ async def _get_user_statistics(db: AsyncSession, user: User) -> UserStatsRespons
     now = datetime.now(timezone.utc)
     last_30d = now - timedelta(days=30)
     
-    # Get all callsigns for this user
+    # Get all callsigns for this user (current, additional aliases, and previous)
     user_callsigns = [user.callsign] if user.callsign else []
     if user.gmrs_callsign:
         user_callsigns.append(user.gmrs_callsign)
     try:
         additional = json.loads(user.callsigns) if user.callsigns else []
         user_callsigns.extend(additional)
+    except:
+        pass
+    try:
+        previous = json.loads(user.previous_callsigns) if user.previous_callsigns else []
+        user_callsigns.extend(previous)
     except:
         pass
     

@@ -35,7 +35,23 @@ async def update_my_profile(
     """Update current user's profile"""
     import json
     
-    for field, value in user_update.dict(exclude_unset=True).items():
+    update_data = user_update.dict(exclude_unset=True)
+
+    # When the primary callsign changes, record the old one in previous_callsigns
+    # so check-in history and statistics follow the user across callsign changes.
+    if 'callsign' in update_data:
+        new_callsign = update_data['callsign']
+        old_callsign = current_user.callsign
+        if old_callsign and new_callsign and old_callsign.upper() != new_callsign.upper():
+            try:
+                prev = json.loads(current_user.previous_callsigns) if current_user.previous_callsigns else []
+            except (json.JSONDecodeError, TypeError):
+                prev = []
+            if old_callsign.upper() not in [cs.upper() for cs in prev]:
+                prev.append(old_callsign.upper())
+                current_user.previous_callsigns = json.dumps(prev)
+
+    for field, value in update_data.items():
         # Handle callsigns JSON field
         if field == 'callsigns' and value is not None:
             setattr(current_user, field, json.dumps(value))
@@ -224,13 +240,18 @@ async def get_user_popup(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Collect all callsigns associated with this user
+    # Collect all callsigns associated with this user (current, aliases, and previous)
     user_callsigns = [user.callsign] if user.callsign else []
     if getattr(user, 'gmrs_callsign', None):
         user_callsigns.append(user.gmrs_callsign)
     try:
         additional = json.loads(user.callsigns) if user.callsigns else []
         user_callsigns.extend(additional)
+    except Exception:
+        pass
+    try:
+        previous = json.loads(user.previous_callsigns) if user.previous_callsigns else []
+        user_callsigns.extend(previous)
     except Exception:
         pass
 

@@ -8,6 +8,7 @@ interface User {
   callsign?: string;
   gmrs_callsign?: string;
   callsigns?: string[];
+  previous_callsigns?: string[];
   location?: string;
   skywarn_number?: string;
   prefer_utc?: boolean;

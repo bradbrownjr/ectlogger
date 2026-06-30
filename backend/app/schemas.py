@@ -127,6 +127,7 @@ class UserResponse(UserBase):
     location: Optional[str] = None
     prefer_utc: bool = False
     walkthrough_seen: bool = False
+    previous_callsigns: List[str] = Field(default_factory=list)
     last_active: Optional[datetime] = None
     schedule_age_bypass: bool = False
     created_at: datetime
@@ -149,6 +150,14 @@ class UserResponse(UserBase):
                 obj.callsigns = []
         else:
             obj.callsigns = []
+        # Deserialize previous_callsigns JSON field
+        if hasattr(obj, 'previous_callsigns') and obj.previous_callsigns:
+            try:
+                obj.previous_callsigns = json.loads(obj.previous_callsigns) if isinstance(obj.previous_callsigns, str) else obj.previous_callsigns
+            except (json.JSONDecodeError, TypeError):
+                obj.previous_callsigns = []
+        else:
+            obj.previous_callsigns = []
         # Compute avatar URL (Gravatar or custom upload)
         obj.avatar_url = get_avatar_url(
             getattr(obj, 'email', None),
