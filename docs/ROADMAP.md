@@ -277,5 +277,5 @@ Items that were raised but need clarification, reproduction steps, or a design d
 | AA1GM — Joel Huntress | Net manager, Maine Dirigo DMR Net |
 | KC1UIX — David Lounsbury | YCECT multi-repeater SKYWARN |
 | W1BKW — Brian Wall | Regular participant, ham.live nets |
-| W1MTW — Mark | Net participant (mobile user) |
+| W1MTW — Mark Carlson | Net participant (mobile user) |
 | KC1JMH — Brad Brown | Developer / net manager / WSSM Club Secretary / Cumberland County ARES EC |

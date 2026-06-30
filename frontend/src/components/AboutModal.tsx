@@ -68,7 +68,7 @@ const AboutModal: React.FC<AboutModalProps> = ({ open, onClose }) => {
                   Honorable Mentions
                 </Typography>
                 <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
-                  Thank you for your invaluable feedback through feature requests and bug reports.
+                  Thank you for your invaluable feedback through feature requests and bug reports!
                 </Typography>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                   {honorableMentions.map((person) => (

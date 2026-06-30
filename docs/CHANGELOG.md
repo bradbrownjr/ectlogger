@@ -16,7 +16,7 @@ All notable changes to ECTLogger are documented here.
 
 * **Guided walkthrough** — A step-through tour covers the main app areas (Dashboard, Net View, Scheduler, Statistics, Profile, and the Help menu itself). Launches automatically for new users on their first login and can be relaunched at any time from Help.
 
-* **About: Honorable Mentions** — The About dialog recognizes operators who shaped ECTLogger through bug reports and feature requests: AA1GM (Joel Huntress), KC1UIX (David Lounsbury), W1BKW (Brian Wall), W1MTW (Mark).
+* **About: Honorable Mentions** — The About dialog recognizes operators who shaped ECTLogger through bug reports and feature requests: AA1GM (Joel Huntress), KC1UIX (David Lounsbury), W1BKW (Brian Wall), W1MTW (Mark Carlson).
 
 * **About ECTLogger modal** — Shows the current version, links to GitHub, documentation, and issue tracker, and open-source license credits (MIT; Jam3/nice-color-palettes attribution).
 
