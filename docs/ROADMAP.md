@@ -1,6 +1,6 @@
 # ECT Logger — Product Roadmap
 
-*Last updated: 2026-06-30 (rev 22)*  
+*Last updated: 2026-06-30 (rev 23)*  
 *Compiled from user feedback: AA1GM, KC1UIX, W1BKW, W1MTW, KC1JMH*
 
 > **Canonical location:** `docs/ROADMAP.md`. The root-level `ROADMAP.md` is a duplicate and should be deleted.
@@ -129,7 +129,28 @@ New columns on the `AppSettings` singleton (see DEVELOPMENT.md "AppSettings sing
 - [ ] Honest cost framing in the default `/support` copy: real monthly hosting figure, "always free" reassurance, and the "independent dev lab funds a suite of ham tools" ecosystem framing (the HamStudy / SignalStuff model)
 - [ ] Open Collective deferred — revisit only if donation volume ever justifies a public ledger
 
-**Trigger:** start after the Help Menu / About modal ships. Phase 1 alone satisfies the original goal (a subtle support link); Phases 2–3 are additive and carry no risk to core net logging.
+**Phase 4 — Recognition in the About modal** *(not started)*
+
+Top financial supporters and community contributors are acknowledged directly in the About modal — visible to every user, no login required. Two categories:
+
+- **Top Supporters** — operators who have contributed financially via Ko-fi, ordered by lifetime contribution amount. Shown as a short list (e.g., top 5) with callsign and a subtle supporter badge. A "View all supporters" link or secondary dialog lists the full roster.
+- **Honorable Mentions** — operators who have contributed invaluable feedback in the form of bug reports and feature requests. This group already exists in the "Feedback Attribution" table at the bottom of this roadmap and should be seeded from that list when the feature ships.
+
+**Data model notes:**
+- Top Supporters: derived from the `is_supporter` / donation webhook data added in Phase 2. Lifetime totals require accumulating amounts on the webhook handler (new `donor_lifetime_total` column, or a separate `donations` log table). Display requires explicit opt-in from the donor (a `show_in_credits` flag) to avoid surfacing anonymous tips.
+- Honorable Mentions: a lightweight `credits` table (or admin-managed JSON in `AppSettings`) with fields: `callsign`, `name`, `note` (optional), `category` (supporter | contributor). Admins add/remove entries from the Admin panel.
+
+**Implementation checklist** *(not started)*
+- [ ] Decide on data source for lifetime totals (accumulate on webhook vs. separate donations log)
+- [ ] Add `show_in_credits` opt-in flag to user/donor flow on `/support` page
+- [ ] Admin panel: "Credits" section to manage the Honorable Mentions list
+- [ ] `GET /api/credits` public endpoint returning top supporters + honorable mentions
+- [ ] About modal: "Top Supporters" section (short list) + "Honorable Mentions" section, both collapsed behind a "View contributors" expandable or secondary dialog
+- [ ] Seed Honorable Mentions from the Feedback Attribution table in this roadmap at launch
+
+**Trigger:** implement after Phase 2 (donor tracking) is in place. Honorable Mentions can ship independently of Phase 2 since they are admin-curated.
+
+**Trigger:** start after the Help Menu / About modal ships (done). Phase 1 alone satisfies the original goal (a subtle support link); Phases 2–4 are additive and carry no risk to core net logging.
 
 ### Trivia Integration
 
