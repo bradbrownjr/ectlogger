@@ -44,7 +44,6 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import LogoutIcon from '@mui/icons-material/Logout';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import GridOnIcon from '@mui/icons-material/GridOn';
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import LockIcon from '@mui/icons-material/Lock';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
@@ -380,7 +379,6 @@ const Navbar: React.FC = () => {
               {/* Help dropdown menu */}
               <Button
                 color="inherit"
-                startIcon={<HelpOutlineIcon />}
                 onClick={(e) => setHelpMenuAnchor(e.currentTarget)}
               >
                 Help
