@@ -6,7 +6,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from app.config import settings
 from app.database import init_db
-from app.routers import auth, users, nets, check_ins, frequencies, templates, chat, ncs_rotation, security, statistics, geocode, contacts
+from app.routers import auth, users, nets, check_ins, frequencies, templates, chat, ncs_rotation, security, statistics, geocode, contacts, feedback
 from app.routers import settings as app_settings_router
 from app.security import sanitize_html
 from app.ncs_reminder_service import ncs_reminder_service
@@ -99,6 +99,7 @@ app.include_router(security.router, prefix="/api")
 app.include_router(statistics.router, prefix="/api")
 app.include_router(geocode.router, prefix="/api")
 app.include_router(contacts.router, prefix="/api")
+app.include_router(feedback.router, prefix="/api")
 
 # Serve uploaded chat images from backend/data/chat_images
 chat_images_dir = Path(__file__).resolve().parents[1] / "data" / "chat_images"

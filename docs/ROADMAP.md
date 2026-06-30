@@ -1,6 +1,6 @@
 # ECT Logger — Product Roadmap
 
-*Last updated: 2026-06-30 (rev 21)*  
+*Last updated: 2026-06-30 (rev 22)*  
 *Compiled from user feedback: AA1GM, KC1UIX, W1BKW, W1MTW, KC1JMH*
 
 > **Canonical location:** `docs/ROADMAP.md`. The root-level `ROADMAP.md` is a duplicate and should be deleted.
@@ -83,33 +83,11 @@ Design questions to resolve before implementation:
 
 David's use case (YCECT combined repeater/simplex drills) should drive the initial spec.
 
-### Help Menu and User Onboarding Walkthrough
-
-**✨ Replace "Docs" nav link with a Help menu** *(discoverability)*  
-The current "Docs" link in the navbar is a bare external link. Replace it with a Help menu containing four options:
-- **User Guide** — external link to documentation (existing behavior)
-- **Start Walkthrough** — launches the guided UI tour (works for new and returning users)
-- **Submit Feedback** — opens the in-app bug / feature request form (see below)
-- **About ECTLogger** — modal showing version, license credits (including Jam3 palette attribution), GitHub link
-
-**Guided walkthrough**  
-A step-by-step tour of the main UI surfaces using a library such as `react-joyride` or `driver.js`. Highlights key elements (Dashboard, check-in form, net view, Schedule Statistics, Profile Activity) with descriptive callouts. Auto-triggers for new users on first login (flag stored in `users` table or localStorage); re-triggerable at any time from the Help menu. Lets existing users self-serve when they encounter unfamiliar features rather than needing to label every icon.
-
-**In-app feedback form (bug reports and feature requests)**  
-A "Submit Feedback" option in the Help menu opens a modal form. Users select a type (Bug Report or Feature Request), write a subject and description, and submit. On submission the backend emails every user with `role = ADMIN` on the instance using the existing `email_service`. The email includes the submitter's callsign, name, and email address so admins can follow up directly. The form is available to all authenticated users; no account-level permissions gate it. No external issue tracker or third-party service is involved — the email is the artifact.
-
-**Implementation checklist** *(not started)*
-- [ ] `POST /api/feedback` endpoint — accepts `type` (bug/feature), `subject`, `body`; reads all `role = ADMIN` users from the DB; sends one email per admin via `email_service`
-- [ ] Email template: plain and readable, includes submitter callsign / name / email, feedback type badge, subject, and full description body
-- [ ] Frontend `FeedbackModal.tsx`: type selector, subject field, description textarea, submit button with loading state; accessible from the Help menu
-- [ ] Add "Submit Feedback" as the third item in the Help menu dropdown (between Start Walkthrough and About ECTLogger)
-- [ ] Rate-limit the endpoint to prevent accidental or deliberate email floods (e.g., 5 submissions per user per hour)
-
 ### Supporter / Funding Integration
 
 **✨ Optional Ko-fi supporter integration, admin-configured per deployment** *(sustainability)*
 
-> **Depends on:** *Help Menu and About modal* (above). The subtle "Support" entry point lives inside the About modal, so this item is sequenced to land **after** that ships.
+> **Prerequisite:** *Help Menu and About modal* shipped in rev 22. The subtle "Support" entry point lives inside the About modal.
 
 A subtle, never-obtrusive, never-gated way for operators to help cover an instance's hosting and development costs. ECTLogger stays 100% free; support is a quiet opt-in side door, not a paywall, modal, or nag. Because ECTLogger is open source and self-hosted by others, this ships as a **generic integration any operator can point at their own Ko-fi account from the Admin panel** — never hardcoded to one account, and disabled by default so a fresh clone shows nothing until configured.
 

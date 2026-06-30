@@ -1,6 +1,34 @@
 {
-  "version": "2026.06.29",
+  "version": "2026.06.30",
   "entries": [
+    {
+      "version": "2026.06.30",
+      "date": "2026-06-30",
+      "sections": [
+        {
+          "title": "New Features",
+          "type": "feature",
+          "items": [
+            {
+              "text": "Help menu: The Docs nav link is now a Help menu with four options — User Guide (documentation), Start Walkthrough (guided tour), Submit Feedback (in-app bug/feature form), and About ECTLogger.",
+              "userImpact": true
+            },
+            {
+              "text": "Submit Feedback: Authenticated users can now report bugs or request features from the Help menu. The submission emails every admin on the instance so nothing falls through the cracks.",
+              "userImpact": true
+            },
+            {
+              "text": "Guided walkthrough: A step-through tour of the main app areas launches automatically for new users and is re-launchable at any time from the Help menu.",
+              "userImpact": true
+            },
+            {
+              "text": "About ECTLogger modal: Shows the current version, project links (GitHub, docs, issue tracker), and open-source license credits.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.06.29",
       "date": "2026-06-29",

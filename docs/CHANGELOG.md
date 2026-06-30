@@ -4,6 +4,20 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# June 30, 2026
+
+## New Features
+
+* **Help menu** — The "Docs" nav link is replaced by a Help dropdown with four options: User Guide (opens the documentation site), Start Walkthrough, Submit Feedback, and About ECTLogger.
+
+* **Submit Feedback** — Authenticated users can report bugs or request features directly from the Help menu. Submissions are emailed to every admin on the instance, with the submitter's callsign, name, and email included so admins can follow up. Rate-limited to 5 submissions per IP per hour.
+
+* **Guided walkthrough** — A step-through tour covers the main app areas (Dashboard, Net View, Scheduler, Statistics, Profile, and the Help menu itself). Launches automatically for new users on their first login and can be relaunched at any time from Help.
+
+* **About ECTLogger modal** — Shows the current version, links to GitHub, documentation, and issue tracker, and open-source license credits (MIT; Jam3/nice-color-palettes attribution).
+
+---
+
 # June 29, 2026
 
 ## Bug Fixes

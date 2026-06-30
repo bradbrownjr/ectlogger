@@ -213,6 +213,12 @@ export const netRoleApi = {
     api.delete(`/nets/${netId}/roles/${roleId}/frequency`),
 };
 
+// Feedback API
+export const feedbackApi = {
+  submit: (data: { type: 'bug' | 'feature'; subject: string; body: string }) =>
+    api.post('/feedback', data),
+};
+
 // Contact API (station contacts from check-in history)
 export const contactApi = {
   list: (search?: string) => api.get('/contacts', { params: search ? { search } : undefined }),

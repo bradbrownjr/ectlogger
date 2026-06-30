@@ -27,6 +27,9 @@ import { useAuth } from '../contexts/AuthContext';
 import { useThemeMode } from '../contexts/ThemeContext';
 import { useLocation } from '../contexts/LocationContext';
 import UserAvatar from './UserAvatar';
+import FeedbackModal from './FeedbackModal';
+import AboutModal from './AboutModal';
+import WalkthroughModal from './WalkthroughModal';
 import LoginIcon from '@mui/icons-material/Login';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
@@ -43,6 +46,10 @@ import GridOnIcon from '@mui/icons-material/GridOn';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import LockIcon from '@mui/icons-material/Lock';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
+import TourIcon from '@mui/icons-material/Tour';
+import FeedbackIcon from '@mui/icons-material/Feedback';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
 interface NavbarClockProps {
   compact?: boolean;
@@ -151,6 +158,18 @@ const Navbar: React.FC = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [userMenuAnchor, setUserMenuAnchor] = useState<HTMLElement | null>(null);
+  const [helpMenuAnchor, setHelpMenuAnchor] = useState<HTMLElement | null>(null);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
+  const [walkthroughOpen, setWalkthroughOpen] = useState(false);
+
+  // Auto-launch walkthrough for first-time users
+  useEffect(() => {
+    if (isAuthenticated && !localStorage.getItem('walkthrough_seen')) {
+      localStorage.setItem('walkthrough_seen', 'true');
+      setWalkthroughOpen(true);
+    }
+  }, [isAuthenticated]);
 
   const handleLogout = () => {
     logout();
@@ -165,249 +184,316 @@ const Navbar: React.FC = () => {
     setUserMenuAnchor(null);
   };
 
+  const closeHelpMenu = () => setHelpMenuAnchor(null);
+
+  const handleOpenFeedback = () => {
+    closeHelpMenu();
+    setDrawerOpen(false);
+    setFeedbackOpen(true);
+  };
+
+  const handleOpenAbout = () => {
+    closeHelpMenu();
+    setDrawerOpen(false);
+    setAboutOpen(true);
+  };
+
+  const handleOpenWalkthrough = () => {
+    closeHelpMenu();
+    setDrawerOpen(false);
+    setWalkthroughOpen(true);
+  };
+
   const navItems = [
     { label: 'Nets', path: '/dashboard', icon: <RadioIcon /> },
     { label: 'Schedule', path: '/scheduler', icon: <EventIcon /> },
     { label: 'Stats', path: '/statistics', icon: <BarChartIcon /> },
   ];
 
+  const helpMenuItems = [
+    {
+      label: 'User Guide',
+      icon: <MenuBookIcon fontSize="small" />,
+      action: () => { closeHelpMenu(); setDrawerOpen(false); window.open('https://ectlogger.us', '_blank', 'noopener,noreferrer'); },
+    },
+    {
+      label: 'Start Walkthrough',
+      icon: <TourIcon fontSize="small" />,
+      action: handleOpenWalkthrough,
+    },
+    {
+      label: 'Submit Feedback',
+      icon: <FeedbackIcon fontSize="small" />,
+      action: handleOpenFeedback,
+      authRequired: true,
+    },
+    {
+      label: 'About ECTLogger',
+      icon: <InfoOutlinedIcon fontSize="small" />,
+      action: handleOpenAbout,
+    },
+  ];
+
   return (
-    <AppBar position="static">
-      <Toolbar>
-        <Typography
-          variant="h6"
-          component="div"
-          sx={{ cursor: 'pointer', mr: 2, display: 'flex', alignItems: 'center', gap: 1 }}
-          onClick={() => handleNavigate('/dashboard')}
-        >
-          <AppLogo size={28} variant="nav" />ECTLogger
-        </Typography>
+    <>
+      <AppBar position="static">
+        <Toolbar>
+          <Typography
+            variant="h6"
+            component="div"
+            sx={{ cursor: 'pointer', mr: 2, display: 'flex', alignItems: 'center', gap: 1 }}
+            onClick={() => handleNavigate('/dashboard')}
+          >
+            <AppLogo size={28} variant="nav" />ECTLogger
+          </Typography>
 
-        <NavbarClock compact={isMobile} />
+          <NavbarClock compact={isMobile} />
 
-        <Box sx={{ flexGrow: 1 }} />
+          <Box sx={{ flexGrow: 1 }} />
 
-        {/* Visible indicator when admin is simulating regular user */}
-        {simulateRegularUser && (
-          <Chip
-            label="User View"
-            size="small"
-            icon={<LockOpenIcon />}
-            onClick={toggleSimulateRegularUser}
-            sx={{
-              mr: 1,
-              color: 'warning.contrastText',
-              bgcolor: 'warning.main',
-              '& .MuiChip-icon': { color: 'warning.contrastText' },
-              cursor: 'pointer',
-            }}
-          />
-        )}
+          {/* Visible indicator when admin is simulating regular user */}
+          {simulateRegularUser && (
+            <Chip
+              label="User View"
+              size="small"
+              icon={<LockOpenIcon />}
+              onClick={toggleSimulateRegularUser}
+              sx={{
+                mr: 1,
+                color: 'warning.contrastText',
+                bgcolor: 'warning.main',
+                '& .MuiChip-icon': { color: 'warning.contrastText' },
+                cursor: 'pointer',
+              }}
+            />
+          )}
 
-        {isMobile ? (
-          <>
-            <IconButton
-              color="inherit"
-              edge="end"
-              onClick={() => setDrawerOpen(true)}
-            >
-              <MenuIcon />
-            </IconButton>
-            <Drawer
-              anchor="right"
-              open={drawerOpen}
-              onClose={() => setDrawerOpen(false)}
-            >
-              <Box sx={{ width: { xs: 200, sm: 250 } }} role="presentation">
-                <List>
-                  {navItems.map((item) => (
-                    <ListItem key={item.path} disablePadding>
-                      <ListItemButton onClick={() => handleNavigate(item.path)}>
-                        <ListItemIcon>{item.icon}</ListItemIcon>
-                        <ListItemText primary={item.label} />
-                      </ListItemButton>
-                    </ListItem>
+          {isMobile ? (
+            <>
+              <IconButton
+                color="inherit"
+                edge="end"
+                onClick={() => setDrawerOpen(true)}
+              >
+                <MenuIcon />
+              </IconButton>
+              <Drawer
+                anchor="right"
+                open={drawerOpen}
+                onClose={() => setDrawerOpen(false)}
+              >
+                <Box sx={{ width: { xs: 200, sm: 250 } }} role="presentation">
+                  <List>
+                    {navItems.map((item) => (
+                      <ListItem key={item.path} disablePadding>
+                        <ListItemButton onClick={() => handleNavigate(item.path)}>
+                          <ListItemIcon>{item.icon}</ListItemIcon>
+                          <ListItemText primary={item.label} />
+                        </ListItemButton>
+                      </ListItem>
+                    ))}
+                    <Divider />
+                    {helpMenuItems
+                      .filter((item) => !item.authRequired || isAuthenticated)
+                      .map((item) => (
+                        <ListItem key={item.label} disablePadding>
+                          <ListItemButton onClick={item.action}>
+                            <ListItemIcon>{item.icon}</ListItemIcon>
+                            <ListItemText primary={item.label} />
+                          </ListItemButton>
+                        </ListItem>
+                      ))}
+                  </List>
+                  <Divider />
+                  {isAuthenticated ? (
+                    <List>
+                      <ListItem disablePadding>
+                        <ListItemButton onClick={() => handleNavigate('/profile')}>
+                          <ListItemIcon><PersonIcon /></ListItemIcon>
+                          <ListItemText primary="Profile" secondary={displayCallsign(user)} />
+                        </ListItemButton>
+                      </ListItem>
+                      <ListItem disablePadding>
+                        <ListItemButton onClick={() => handleNavigate('/profile?tab=1')}>
+                          <ListItemIcon><SettingsIcon /></ListItemIcon>
+                          <ListItemText primary="Settings" />
+                        </ListItemButton>
+                      </ListItem>
+                      <ListItem disablePadding>
+                        <ListItemButton onClick={() => handleNavigate('/profile?tab=2')}>
+                          <ListItemIcon><BarChartIcon /></ListItemIcon>
+                          <ListItemText primary="Personal Stats" />
+                        </ListItemButton>
+                      </ListItem>
+                      {user?.role === 'admin' && (
+                        <ListItem disablePadding>
+                          <ListItemButton onClick={() => handleNavigate('/admin/users')}>
+                            <ListItemIcon><AdminPanelSettingsIcon /></ListItemIcon>
+                            <ListItemText primary="Admin" />
+                          </ListItemButton>
+                        </ListItem>
+                      )}
+                      <ListItem disablePadding>
+                        <ListItemButton onClick={() => { toggleColorMode(); setDrawerOpen(false); }}>
+                          <ListItemIcon>{mode === 'light' ? <Brightness4Icon /> : <Brightness7Icon />}</ListItemIcon>
+                          <ListItemText primary={mode === 'light' ? 'Switch to Dark' : 'Switch to Light'} />
+                        </ListItemButton>
+                      </ListItem>
+                      {isActualAdmin && (
+                        <ListItem disablePadding>
+                          <ListItemButton onClick={() => { toggleSimulateRegularUser(); setDrawerOpen(false); }}>
+                            <ListItemIcon>
+                              {simulateRegularUser ? <LockIcon /> : <LockOpenIcon />}
+                            </ListItemIcon>
+                            <ListItemText primary={simulateRegularUser ? 'Exit User View' : 'View as Regular User'} />
+                          </ListItemButton>
+                        </ListItem>
+                      )}
+                      <ListItem disablePadding>
+                        <ListItemButton onClick={handleLogout}>
+                          <ListItemIcon><LogoutIcon /></ListItemIcon>
+                          <ListItemText primary="Logout" />
+                        </ListItemButton>
+                      </ListItem>
+                    </List>
+                  ) : (
+                    <List>
+                      <ListItem disablePadding>
+                        <ListItemButton onClick={() => handleNavigate('/login')}>
+                          <ListItemIcon><LoginIcon /></ListItemIcon>
+                          <ListItemText primary="Login" />
+                        </ListItemButton>
+                      </ListItem>
+                    </List>
+                  )}
+                </Box>
+              </Drawer>
+            </>
+          ) : (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              {navItems.map((item) => (
+                <Button key={item.path} color="inherit" onClick={() => navigate(item.path)}>
+                  {item.label}
+                </Button>
+              ))}
+
+              {/* Help dropdown menu */}
+              <Button
+                color="inherit"
+                startIcon={<HelpOutlineIcon />}
+                onClick={(e) => setHelpMenuAnchor(e.currentTarget)}
+              >
+                Help
+              </Button>
+              <Menu
+                anchorEl={helpMenuAnchor}
+                open={Boolean(helpMenuAnchor)}
+                onClose={closeHelpMenu}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                slotProps={{ paper: { sx: { minWidth: 200, mt: 0.5 } } }}
+              >
+                {helpMenuItems
+                  .filter((item) => !item.authRequired || isAuthenticated)
+                  .map((item) => (
+                    <MenuItem key={item.label} onClick={item.action}>
+                      <ListItemIcon>{item.icon}</ListItemIcon>
+                      {item.label}
+                    </MenuItem>
                   ))}
-                  <ListItem disablePadding>
-                    <ListItemButton
-                      component="a"
-                      href="https://ectlogger.us"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={() => setDrawerOpen(false)}
+              </Menu>
+
+              {isAuthenticated ? (
+                <>
+                  {/* ===== USER AVATAR MENU ===== */}
+                  <Tooltip title={displayCallsign(user) || 'Account'}>
+                    <IconButton
+                      onClick={(e) => setUserMenuAnchor(e.currentTarget)}
+                      sx={{ p: 0.5 }}
                     >
-                      <ListItemIcon><HelpOutlineIcon /></ListItemIcon>
-                      <ListItemText primary="Docs" />
-                    </ListItemButton>
-                  </ListItem>
-                </List>
-                <Divider />
-                {isAuthenticated ? (
-                  <List>
-                    <ListItem disablePadding>
-                      <ListItemButton onClick={() => handleNavigate('/profile')}>
-                        <ListItemIcon><PersonIcon /></ListItemIcon>
-                        <ListItemText primary="Profile" secondary={displayCallsign(user)} />
-                      </ListItemButton>
-                    </ListItem>
-                    <ListItem disablePadding>
-                      <ListItemButton onClick={() => handleNavigate('/profile?tab=1')}>
-                        <ListItemIcon><SettingsIcon /></ListItemIcon>
-                        <ListItemText primary="Settings" />
-                      </ListItemButton>
-                    </ListItem>
-                    <ListItem disablePadding>
-                      <ListItemButton onClick={() => handleNavigate('/profile?tab=2')}>
-                        <ListItemIcon><BarChartIcon /></ListItemIcon>
-                        <ListItemText primary="Personal Stats" />
-                      </ListItemButton>
-                    </ListItem>
-                    {user?.role === 'admin' && (
-                      <ListItem disablePadding>
-                        <ListItemButton onClick={() => handleNavigate('/admin/users')}>
-                          <ListItemIcon><AdminPanelSettingsIcon /></ListItemIcon>
-                          <ListItemText primary="Admin" />
-                        </ListItemButton>
-                      </ListItem>
-                    )}
-                    <ListItem disablePadding>
-                      <ListItemButton onClick={() => { toggleColorMode(); setDrawerOpen(false); }}>
-                        <ListItemIcon>{mode === 'light' ? <Brightness4Icon /> : <Brightness7Icon />}</ListItemIcon>
-                        <ListItemText primary={mode === 'light' ? 'Switch to Dark' : 'Switch to Light'} />
-                      </ListItemButton>
-                    </ListItem>
-                    {isActualAdmin && (
-                      <ListItem disablePadding>
-                        <ListItemButton onClick={() => { toggleSimulateRegularUser(); setDrawerOpen(false); }}>
-                          <ListItemIcon>
-                            {simulateRegularUser ? <LockIcon /> : <LockOpenIcon />}
-                          </ListItemIcon>
-                          <ListItemText primary={simulateRegularUser ? 'Exit User View' : 'View as Regular User'} />
-                        </ListItemButton>
-                      </ListItem>
-                    )}
-                    <ListItem disablePadding>
-                      <ListItemButton onClick={handleLogout}>
-                        <ListItemIcon><LogoutIcon /></ListItemIcon>
-                        <ListItemText primary="Logout" />
-                      </ListItemButton>
-                    </ListItem>
-                  </List>
-                ) : (
-                  <List>
-                    <ListItem disablePadding>
-                      <ListItemButton onClick={() => handleNavigate('/login')}>
-                        <ListItemIcon><LoginIcon /></ListItemIcon>
-                        <ListItemText primary="Login" />
-                      </ListItemButton>
-                    </ListItem>
-                  </List>
-                )}
-              </Box>
-            </Drawer>
-          </>
-        ) : (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            {navItems.map((item) => (
-              <Button key={item.path} color="inherit" onClick={() => navigate(item.path)}>
-                {item.label}
-              </Button>
-            ))}
-            <Button
-              color="inherit"
-              href="https://ectlogger.us"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Docs
-            </Button>
-
-            {isAuthenticated ? (
-              <>
-                {/* ===== USER AVATAR MENU ===== */}
-                <Tooltip title={displayCallsign(user) || 'Account'}>
-                  <IconButton
-                    onClick={(e) => setUserMenuAnchor(e.currentTarget)}
-                    sx={{ p: 0.5 }}
+                      <UserAvatar
+                        avatarUrl={(user as any)?.avatar_url}
+                        callsign={user?.callsign}
+                        name={user?.name}
+                        size={32}
+                      />
+                    </IconButton>
+                  </Tooltip>
+                  <Menu
+                    anchorEl={userMenuAnchor}
+                    open={Boolean(userMenuAnchor)}
+                    onClose={() => setUserMenuAnchor(null)}
+                    anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                    transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                    slotProps={{ paper: { sx: { minWidth: 200, mt: 0.5 } } }}
                   >
-                    <UserAvatar
-                      avatarUrl={(user as any)?.avatar_url}
-                      callsign={user?.callsign}
-                      name={user?.name}
-                      size={32}
-                    />
-                  </IconButton>
-                </Tooltip>
-                <Menu
-                  anchorEl={userMenuAnchor}
-                  open={Boolean(userMenuAnchor)}
-                  onClose={() => setUserMenuAnchor(null)}
-                  anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                  transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-                  slotProps={{ paper: { sx: { minWidth: 200, mt: 0.5 } } }}
-                >
-                  {/* Identity header */}
-                  <Box sx={{ px: 2, py: 1, pointerEvents: 'none' }}>
-                    <Typography variant="subtitle2">{displayCallsign(user)}</Typography>
-                    <Typography variant="caption" color="text.secondary">{user?.email}</Typography>
-                  </Box>
-                  <Divider />
+                    {/* Identity header */}
+                    <Box sx={{ px: 2, py: 1, pointerEvents: 'none' }}>
+                      <Typography variant="subtitle2">{displayCallsign(user)}</Typography>
+                      <Typography variant="caption" color="text.secondary">{user?.email}</Typography>
+                    </Box>
+                    <Divider />
 
-                  <MenuItem onClick={() => handleNavigate('/profile')}>
-                    <ListItemIcon><PersonIcon fontSize="small" /></ListItemIcon>
-                    Profile
-                  </MenuItem>
-                  <MenuItem onClick={() => handleNavigate('/profile?tab=1')}>
-                    <ListItemIcon><SettingsIcon fontSize="small" /></ListItemIcon>
-                    Settings
-                  </MenuItem>
-                  <MenuItem onClick={() => handleNavigate('/profile?tab=2')}>
-                    <ListItemIcon><BarChartIcon fontSize="small" /></ListItemIcon>
-                    Personal Stats
-                  </MenuItem>
-                  {user?.role === 'admin' && (
-                    <MenuItem onClick={() => handleNavigate('/admin/users')}>
-                      <ListItemIcon><AdminPanelSettingsIcon fontSize="small" /></ListItemIcon>
-                      Admin
+                    <MenuItem onClick={() => handleNavigate('/profile')}>
+                      <ListItemIcon><PersonIcon fontSize="small" /></ListItemIcon>
+                      Profile
                     </MenuItem>
-                  )}
+                    <MenuItem onClick={() => handleNavigate('/profile?tab=1')}>
+                      <ListItemIcon><SettingsIcon fontSize="small" /></ListItemIcon>
+                      Settings
+                    </MenuItem>
+                    <MenuItem onClick={() => handleNavigate('/profile?tab=2')}>
+                      <ListItemIcon><BarChartIcon fontSize="small" /></ListItemIcon>
+                      Personal Stats
+                    </MenuItem>
+                    {user?.role === 'admin' && (
+                      <MenuItem onClick={() => handleNavigate('/admin/users')}>
+                        <ListItemIcon><AdminPanelSettingsIcon fontSize="small" /></ListItemIcon>
+                        Admin
+                      </MenuItem>
+                    )}
 
-                  <Divider />
+                    <Divider />
 
-                  <MenuItem onClick={() => { toggleColorMode(); setUserMenuAnchor(null); }}>
-                    <ListItemIcon>
-                      {mode === 'light' ? <Brightness4Icon fontSize="small" /> : <Brightness7Icon fontSize="small" />}
-                    </ListItemIcon>
-                    {mode === 'light' ? 'Switch to Dark' : 'Switch to Light'}
-                  </MenuItem>
-                  {isActualAdmin && (
-                    <MenuItem onClick={() => { toggleSimulateRegularUser(); setUserMenuAnchor(null); }}>
+                    <MenuItem onClick={() => { toggleColorMode(); setUserMenuAnchor(null); }}>
                       <ListItemIcon>
-                        {simulateRegularUser
-                          ? <LockIcon fontSize="small" />
-                          : <LockOpenIcon fontSize="small" />}
+                        {mode === 'light' ? <Brightness4Icon fontSize="small" /> : <Brightness7Icon fontSize="small" />}
                       </ListItemIcon>
-                      {simulateRegularUser ? 'Exit User View' : 'View as Regular User'}
+                      {mode === 'light' ? 'Switch to Dark' : 'Switch to Light'}
                     </MenuItem>
-                  )}
+                    {isActualAdmin && (
+                      <MenuItem onClick={() => { toggleSimulateRegularUser(); setUserMenuAnchor(null); }}>
+                        <ListItemIcon>
+                          {simulateRegularUser
+                            ? <LockIcon fontSize="small" />
+                            : <LockOpenIcon fontSize="small" />}
+                        </ListItemIcon>
+                        {simulateRegularUser ? 'Exit User View' : 'View as Regular User'}
+                      </MenuItem>
+                    )}
 
-                  <Divider />
+                    <Divider />
 
-                  <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>
-                    <ListItemIcon><LogoutIcon fontSize="small" sx={{ color: 'error.main' }} /></ListItemIcon>
-                    Logout
-                  </MenuItem>
-                </Menu>
-              </>
-            ) : (
-              <Button color="inherit" startIcon={<LoginIcon />} onClick={() => navigate('/login')}>
-                Login
-              </Button>
-            )}
-          </Box>
-        )}
-      </Toolbar>
-    </AppBar>
+                    <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>
+                      <ListItemIcon><LogoutIcon fontSize="small" sx={{ color: 'error.main' }} /></ListItemIcon>
+                      Logout
+                    </MenuItem>
+                  </Menu>
+                </>
+              ) : (
+                <Button color="inherit" startIcon={<LoginIcon />} onClick={() => navigate('/login')}>
+                  Login
+                </Button>
+              )}
+            </Box>
+          )}
+        </Toolbar>
+      </AppBar>
+
+      <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
+      <AboutModal open={aboutOpen} onClose={() => setAboutOpen(false)} />
+      <WalkthroughModal open={walkthroughOpen} onClose={() => setWalkthroughOpen(false)} />
+    </>
   );
 };
 
