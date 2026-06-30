@@ -26,6 +26,10 @@
               "userImpact": true
             },
             {
+              "text": "About: Honorable Mentions — The About dialog now recognizes operators who have shaped ECTLogger through bug reports and feature requests.",
+              "userImpact": true
+            },
+            {
               "text": "About ECTLogger modal: Shows the current version, project links (GitHub, docs, issue tracker), and open-source license credits.",
               "userImpact": true
             }

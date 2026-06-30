@@ -14,6 +14,7 @@ import {
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import AppLogo from './AppLogo';
 import changelogData from '../changelog.json';
+import creditsData from '../credits.json';
 
 interface AboutModalProps {
   open: boolean;
@@ -22,6 +23,7 @@ interface AboutModalProps {
 
 const AboutModal: React.FC<AboutModalProps> = ({ open, onClose }) => {
   const version = changelogData.version;
+  const honorableMentions = creditsData.honorable_mentions;
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
@@ -56,6 +58,28 @@ const AboutModal: React.FC<AboutModalProps> = ({ open, onClose }) => {
               <OpenInNewIcon sx={{ fontSize: 14 }} />
             </Link>
           </Box>
+
+          {/* ========== HONORABLE MENTIONS ========== */}
+          {honorableMentions.length > 0 && (
+            <>
+              <Divider flexItem />
+              <Box sx={{ width: '100%' }}>
+                <Typography variant="caption" fontWeight="bold" color="text.secondary" display="block" sx={{ mb: 0.75 }}>
+                  Honorable Mentions
+                </Typography>
+                <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
+                  Thank you for your invaluable feedback through feature requests and bug reports.
+                </Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                  {honorableMentions.map((person) => (
+                    <Typography key={person.callsign} variant="caption" color="text.secondary">
+                      {person.callsign} — {person.name}
+                    </Typography>
+                  ))}
+                </Box>
+              </Box>
+            </>
+          )}
 
           <Divider flexItem />
 
