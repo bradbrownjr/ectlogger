@@ -8,6 +8,8 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
+* **Auto-archive stale scheduled nets** — A scheduled net that was never opened (never transitioned to Lobby or Active) is automatically archived 24 hours after its scheduled start time. Nets that didn't happen no longer linger on the Active Nets dashboard.
+
 * **Help menu** — The "Docs" nav link is replaced by a Help dropdown with four options: User Guide (opens the documentation site), Start Walkthrough, Submit Feedback, and About ECTLogger.
 
 * **Submit Feedback** — Authenticated users can report bugs or request features directly from the Help menu. Submissions are emailed to every admin on the instance, with the submitter's callsign, name, and email included so admins can follow up. Rate-limited to 5 submissions per IP per hour.

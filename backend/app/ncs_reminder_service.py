@@ -62,9 +62,10 @@ class NCSReminderService:
                 await self._check_and_send_ncs_reminders()
                 await self._check_and_send_staff_reminders()
                 await self._check_and_send_subscriber_reminders()
+                await self._check_and_archive_stale_scheduled_nets()
             except Exception as e:
                 logger.error("NCS_REMINDER", f"Error in reminder loop: {str(e)}")
-            
+
             # Wait before next check
             await asyncio.sleep(self.CHECK_INTERVAL_MINUTES * 60)
     
@@ -720,6 +721,44 @@ class NCSReminderService:
             "SUBSCRIBER_REMINDER",
             f"Sent 1h reminder to {user.email} for {template.name} on {scheduled_local.date()}"
         )
+
+
+    async def _check_and_archive_stale_scheduled_nets(self):
+        """Auto-archive SCHEDULED nets that were never opened 24+ hours after their start time.
+
+        Nets in SCHEDULED status were pre-created by the reminder service but never
+        transitioned to LOBBY or ACTIVE. If the start time has passed by more than
+        24 hours the net simply didn't happen — archive it so it stops appearing on
+        the dashboard.
+        """
+        logger.debug("NCS_REMINDER", "Checking for stale scheduled nets...")
+
+        async with AsyncSessionLocal() as db:
+            cutoff = datetime.utcnow() - timedelta(hours=24)
+            result = await db.execute(
+                select(Net).where(
+                    and_(
+                        Net.status == NetStatus.SCHEDULED,
+                        Net.scheduled_start_time.isnot(None),
+                        Net.scheduled_start_time < cutoff,
+                    )
+                )
+            )
+            stale = result.scalars().all()
+
+            if not stale:
+                return
+
+            for net in stale:
+                net.status = NetStatus.ARCHIVED
+                logger.info(
+                    "NCS_REMINDER",
+                    f"Auto-archived stale scheduled net {net.id} "
+                    f"({net.name}) — scheduled {net.scheduled_start_time}, never opened",
+                )
+
+            await db.commit()
+            logger.info("NCS_REMINDER", f"Auto-archived {len(stale)} stale scheduled net(s)")
 
 
 # Global instance

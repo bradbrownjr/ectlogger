@@ -10,6 +10,10 @@
           "type": "feature",
           "items": [
             {
+              "text": "Scheduled nets that are never opened now auto-archive 24 hours after their scheduled start time, keeping the Active Nets dashboard clean without requiring manual cleanup.",
+              "userImpact": true
+            },
+            {
               "text": "Help menu: The Docs nav link is now a Help menu with four options — User Guide (documentation), Start Walkthrough (guided tour), Submit Feedback (in-app bug/feature form), and About ECTLogger.",
               "userImpact": true
             },
