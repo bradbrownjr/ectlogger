@@ -52,30 +52,17 @@ Rule of thumb: Haiku and Sonnet can only maintain this codebase safely once file
 
 ~~**✨ Test suite + CI pipeline** — completed 2026-07-03~~
 
-**🔧 React error boundary** *(audit)*  
-No error boundary exists anywhere; one uncaught render error blanks the whole app — bad during a live net. Add an app-level boundary in `App.tsx` with a friendly "reload" fallback, plus a page-level boundary around `NetView` so a rendering fault in one pane can't kill an active logging session.  
-**Model:** Sonnet.
+~~**🔧 React error boundary** — completed 2026-07-03~~
 
-**🔧 WebSocket resilience (both ends)** *(audit)*  
-- Frontend (`NetView.tsx:719-730`): reconnect is a flat 3-second retry with no max attempts, no exponential backoff, and no cleanup if the component unmounts during the retry timeout (leak). Extract into a `useNetWebSocket` hook during the NetView split (0.4) with backoff + cleanup.
-- Backend (`main.py` ConnectionManager): no ping/heartbeat, so dead connections are only discovered when a broadcast fails; failures log via `print()` instead of the app logger.  
-**Model:** Sonnet.
+~~**🔧 WebSocket resilience (both ends)** — completed 2026-07-03~~
 
-**🔧 SMTP timeouts on all email sends** *(audit)*  
-`email_service.py` aiosmtplib calls have no explicit timeout. A hung SMTP server can stall the reminder/digest background loops. Add a timeout parameter to every SMTP operation.  
-**Model:** Haiku (mechanical once the timeout value is chosen).
+~~**🔧 SMTP timeouts on all email sends** — completed 2026-07-03~~
 
-**🔧 Validate `User.timezone` as a real IANA zone** *(audit)*  
-The timezone field accepts any string; `ncs_rotation.py` assumes validity and would raise at runtime on a bad value. Validate at the API boundary (Pydantic validator against `zoneinfo.available_timezones()`).  
-**Model:** Haiku.
+~~**🔧 Validate `User.timezone` as a real IANA zone** — completed 2026-07-03~~
 
-**🔧 FastAPI deprecation: `@app.on_event` → lifespan handler** *(audit — low urgency)*  
-`main.py:271/284` use the deprecated startup/shutdown event decorators. Migrate to the `lifespan` context manager pattern before a future FastAPI upgrade removes them.  
-**Model:** Haiku.
+~~**🔧 FastAPI deprecation: `@app.on_event` → lifespan handler** — completed 2026-07-03~~
 
-**🔧 Composite index candidates for hot query paths** *(audit — do before the ham.live signup wave)*  
-Migration 032 covers single-column User indexes, but the hottest read paths lack composites: `CheckIn(net_id, checked_in_at)` (time-series stats), `NetRole(net_id, role)` (NCS/Logger permission checks run on nearly every request). Measure first with `EXPLAIN QUERY PLAN` on a production-sized copy, then add only what shows a scan.  
-**Model:** Sonnet (measurement + migration); becomes part of the PostgreSQL prep in Milestone 2.
+~~**🔧 Composite index candidates for hot query paths** — migration 040 written 2026-07-03; run on prod after verifying with `EXPLAIN QUERY PLAN` — completed 2026-07-03~~
 
 ### 0.4 Modularity & componentization program
 
