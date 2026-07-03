@@ -288,13 +288,15 @@ Users see a red badge on the info icon (lower-left) until they view the changelo
 - **Deploy from GitHub** (preferred):
   ```bash
   # First commit and push locally, then pull on beta
-  ssh bradb@10.6.26.3 "cd /home/bradb/ectlogger && git pull origin main"
-  
-  # Restart backend
-  set -a; source ~/.ectlogger-deploy.env; set +a
-  ssh -t bradb@10.6.26.3 "echo '$SUDO_BETA' | sudo -S systemctl restart ectlogger"
+  # Note: beta is an LXC container on the same host — commands run directly, no SSH needed
+  cd /home/bradb/ectlogger && git pull origin main
+
+  # Restart backend (passwordless sudo configured for these exact commands)
+  sudo -n systemctl restart ectlogger
+  sudo -n systemctl is-active ectlogger
   ```
-- **Sudo password**: stored in `~/.ectlogger-deploy.env` as `SUDO_BETA`. Always source this file; never ask the user interactively.
+- **Sudo**: passwordless sudo configured for `stop`, `start`, `restart`, `is-active`, `status` on the `ectlogger` service via `/etc/sudoers.d/ectlogger`. Use `sudo -n` (non-interactive).
+- **SMTP**: set to `127.0.0.1` in `.env` so emails fail immediately — beta never sends real emails.
 - **Database**: SQLite at `/home/bradb/ectlogger/backend/ectlogger.db`
 
 ### Alpha (10.6.26.6)
