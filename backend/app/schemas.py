@@ -109,6 +109,15 @@ class UserUpdate(BaseModel):
                     raise ValueError(f'Callsign {callsign} must contain only uppercase letters, numbers, and forward slashes')
         return v
 
+    @field_validator('timezone')
+    @classmethod
+    def validate_timezone(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None:
+            from zoneinfo import available_timezones
+            if v not in available_timezones():
+                raise ValueError(f'"{v}" is not a valid IANA timezone')
+        return v
+
 
 class UserResponse(UserBase):
     id: int

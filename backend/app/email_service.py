@@ -121,8 +121,9 @@ This is an automated message, please do not reply.
                 password=settings.smtp_password,
                 use_tls=use_tls,
                 start_tls=(settings.smtp_port == 587),
+                timeout=30,
             )
-            
+
             logger.info("EMAIL", f"Email sent successfully to {to_email}")
             
         except aiosmtplib.SMTPException as e:
@@ -351,6 +352,7 @@ This is an automated message, please do not reply.
                 password=settings.smtp_password,
                 use_tls=use_tls,
                 start_tls=(settings.smtp_port == 587),
+                timeout=30,
             )
             logger.info("EMAIL", f"Email with attachment sent successfully to {to_email}")
         except Exception as e:
@@ -402,6 +404,7 @@ This is an automated message, please do not reply.
                 password=settings.smtp_password,
                 use_tls=use_tls,
                 start_tls=(settings.smtp_port == 587),
+                timeout=30,
             )
             logger.info("EMAIL", f"Email with attachments sent successfully to {to_email}")
         except Exception as e:

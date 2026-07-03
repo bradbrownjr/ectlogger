@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -37,11 +38,28 @@ def _is_primary_process() -> bool:
     except (ValueError, IndexError):
         return True
 
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    """Startup and shutdown lifecycle for the FastAPI application."""
+    await init_db()
+    asyncio.create_task(_ws_heartbeat_loop())
+    if _is_primary_process():
+        # Only the primary process (port 8001) runs background services to
+        # prevent duplicate emails from the secondary localhost process.
+        await ncs_reminder_service.start()
+        await whats_new_service.start()
+    else:
+        print("Secondary process (port 9999): background services skipped.")
+    yield
+    await ncs_reminder_service.stop()
+    await whats_new_service.stop()
+
+
 # Initialize rate limiter
 limiter = Limiter(key_func=get_remote_address, default_limits=["200 per minute"])
 
 # Disable redirect_slashes to prevent 307 redirects that break HTTPS behind reverse proxy
-app = FastAPI(title=settings.app_name, version="1.0.0", redirect_slashes=False)
+app = FastAPI(title=settings.app_name, version="1.0.0", redirect_slashes=False, lifespan=lifespan)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
@@ -283,26 +301,6 @@ async def websocket_endpoint(websocket: WebSocket, net_id: int, token: str = Non
     except Exception as e:
         manager.disconnect(websocket, net_id)
 
-
-@app.on_event("startup")
-async def startup_event():
-    """Initialize database and background services on startup"""
-    await init_db()
-    asyncio.create_task(_ws_heartbeat_loop())
-    if _is_primary_process():
-        # Only the primary process (port 8001) runs background services to
-        # prevent duplicate emails from the secondary localhost process.
-        await ncs_reminder_service.start()
-        await whats_new_service.start()
-    else:
-        print("Secondary process (port 9999): background services skipped.")
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Cleanup background services on shutdown"""
-    await ncs_reminder_service.stop()
-    await whats_new_service.stop()
 
 
 @app.get("/api")
