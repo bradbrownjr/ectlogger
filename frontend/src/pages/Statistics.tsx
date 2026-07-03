@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Container,
@@ -127,6 +127,25 @@ const Statistics: React.FC = () => {
   const [stats, setStats] = useState<GlobalStats | null>(null);
   const [chartTab, setChartTab] = useState(0);
   const [exporting, setExporting] = useState(false);
+
+  // Swipe-to-switch tabs on touch
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null || touchStartY.current === null) return;
+    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+    const deltaY = e.changedTouches[0].clientY - touchStartY.current;
+    touchStartX.current = null;
+    touchStartY.current = null;
+    if (Math.abs(deltaX) < 50 || Math.abs(deltaY) > Math.abs(deltaX)) return;
+    setChartTab(v => deltaX < 0 ? Math.min(v + 1, 3) : Math.max(v - 1, 0));
+  };
 
   // Handle PDF export
   const handleExportPdf = async () => {
@@ -337,13 +356,18 @@ const Statistics: React.FC = () => {
       </Grid>
 
       {/* Charts Section */}
-      <Paper sx={{ p: 3 }}>
-        <Tabs 
-          value={chartTab} 
+      <Paper sx={{ p: 3 }} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+        <Tabs
+          value={chartTab}
           onChange={(_, v) => setChartTab(v)}
-          sx={{ mb: 3 }}
-          variant={isMobile ? "scrollable" : "standard"}
-          scrollButtons="auto"
+          variant="scrollable"
+          scrollButtons={false}
+          sx={{
+            mb: 3,
+            borderBottom: 1,
+            borderColor: 'divider',
+            '& .MuiTab-root': { minWidth: { xs: 80, sm: 110 }, px: { xs: 1, sm: 2 } },
+          }}
         >
           <Tab label="Nets (Daily)" />
           <Tab label="Nets (Weekly)" />
