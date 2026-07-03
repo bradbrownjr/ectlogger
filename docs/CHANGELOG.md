@@ -4,6 +4,18 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# July 3, 2026
+
+## Bug Fixes
+
+* **Net View: Guest viewer crash fixed** — Unauthenticated viewers connecting to a net no longer crash the WebSocket session for everyone in the room. The server was referencing an authenticated-only variable when broadcasting presence updates, so any guest connection triggered a backend error that severed all connected clients.
+
+## Improvements
+
+* **Statistics: Swipe navigation on mobile** — The Statistics page chart tabs now support left/right swipe gestures to switch between charts on phones and tablets, consistent with the Admin and Profile pages. Tabs also scroll horizontally without visible arrow buttons on narrow screens.
+
+---
+
 # June 30, 2026
 
 ## New Features

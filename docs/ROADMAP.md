@@ -36,37 +36,21 @@ Rule of thumb: Haiku and Sonnet can only maintain this codebase safely once file
 
 ### 0.1 Confirmed bugs (fix first)
 
-**🐛 WebSocket guest messages crash the connection** *(audit)*  
-`backend/app/main.py:263` broadcasts `"user_id": user.id`, but `user` is only assigned inside the `if token:` branch (line 239). A guest (no token) or a user whose token fails verification who sends any WebSocket message raises `NameError`, which the bare `except Exception` at line 267 swallows by disconnecting them. Fix: use the already-computed `user_id` variable (line 225) instead of `user.id`. One-line fix; add a regression test when the test suite (0.3) exists.  
-**Model:** Haiku.
+~~**🐛 WebSocket guest messages crash the connection** — completed 2026-07-03~~
 
-**🐛 Statistics page Tabs violate DESIGN.md** *(audit)*  
-`frontend/src/pages/Statistics.tsx:341-346` uses `variant={isMobile ? "scrollable" : "standard"}` and `scrollButtons="auto"`. DESIGN.md requires all Tabs use `variant="scrollable" scrollButtons={false}` unconditionally, plus the responsive minWidth/px sx props and touch swipe handler. Bring this instance in line with CreateNet.tsx / CreateSchedule.tsx / Admin.tsx, which all comply.  
-**Model:** Haiku.
+~~**🐛 Statistics page Tabs violate DESIGN.md** — completed 2026-07-03~~
 
 ### 0.2 Orphaned code (verified zero references)
 
-**🔧 Delete `frontend/src/components/NCSRotationModal.tsx`** *(audit — 669 lines)*  
-Imported nowhere (verified by grep across all .ts/.tsx). Rotation management now lives in `NCSStaffModal.tsx`, `Scheduler.tsx`, and `CreateSchedule.tsx` (all of which use `ncsRotationApi` directly). This is a superseded predecessor, not a roadmap placeholder.  
-**Model:** Haiku (delete file, confirm build passes).
+~~**🔧 Delete `frontend/src/components/NCSRotationModal.tsx`** — completed 2026-07-03~~
 
-**🔧 Delete `frontend/src/utils/netReportPdf.ts`** *(audit — 617 lines)*  
-`exportNetReportPdf()` is imported nowhere. Superseded by `exportElementToPdf` in `utils/pdfExport.ts`, which `NetReport.tsx` uses.  
-**Model:** Haiku (delete file, confirm build passes).
+~~**🔧 Delete `frontend/src/utils/netReportPdf.ts`** — completed 2026-07-03~~
 
-**🔧 Relocate or remove `backend/test_merge.py` and `backend/test_stats.py`** *(audit)*  
-Two ad-hoc scripts at the backend root, outside any test runner. Fold them into the real test suite created in 0.3, or delete if their scenarios are covered there.  
-**Model:** Haiku (after 0.3 lands).
+~~**🔧 Relocate/remove `backend/test_merge.py` and `backend/test_stats.py`** — completed 2026-07-03~~
 
 ### 0.3 Guardrails that make small-model maintenance safe
 
-**✨ Test suite + CI pipeline** *(audit — the single biggest gap found)*  
-There is no automated test suite, no lint script, and no `.github/workflows/` CI. `frontend/package.json` has only dev/build/preview scripts. For Haiku/Sonnet agents to safely maintain this codebase, every change needs a mechanical pass/fail signal:
-- [ ] Backend: pytest + httpx `AsyncClient` smoke tests against a temp SQLite DB — auth flow, net lifecycle (create → lobby → active → close), check-in + recheck dedupe, permission checks (403 paths)
-- [ ] Frontend: add `"lint"` (ESLint) and `"typecheck"` (`tsc --noEmit`) scripts; ESLint with `no-unused-vars` catches future orphans at the door
-- [ ] GitHub Actions workflow: run pytest, tsc, ESLint, and `vite build` on every push to main
-- [ ] Document "run the suite before commit" in DEVELOPMENT.md (per the existing Regression Check Policy)  
-**Model:** Sonnet to scaffold the harness and first tests; Haiku to add cases afterward. This unlocks confident Haiku use everywhere else.
+~~**✨ Test suite + CI pipeline** — completed 2026-07-03~~
 
 **🔧 React error boundary** *(audit)*  
 No error boundary exists anywhere; one uncaught render error blanks the whole app — bad during a live net. Add an app-level boundary in `App.tsx` with a friendly "reload" fallback, plus a page-level boundary around `NetView` so a rendering fault in one pane can't kill an active logging session.  

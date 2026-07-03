@@ -1,6 +1,32 @@
 {
-  "version": "2026.06.30b",
+  "version": "2026.07.03",
   "entries": [
+    {
+      "version": "2026.07.03",
+      "date": "2026-07-03",
+      "sections": [
+        {
+          "title": "Bug Fixes",
+          "type": "bugfix",
+          "items": [
+            {
+              "text": "Net View: Guest viewer crash fixed — Unauthenticated viewers connecting to a net no longer crash the WebSocket session for everyone in the room. The server was referencing an authenticated-only variable when broadcasting presence updates, so any guest connection triggered a backend error that severed all connected clients.",
+              "userImpact": true
+            }
+          ]
+        },
+        {
+          "title": "Improvements",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Statistics: Swipe navigation on mobile — The Statistics page chart tabs now support left/right swipe gestures to switch between charts on phones and tablets, consistent with the Admin and Profile pages. Tabs also scroll horizontally without visible arrow buttons on narrow screens.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.06.30b",
       "date": "2026-06-30",
