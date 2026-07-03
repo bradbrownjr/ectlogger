@@ -101,6 +101,31 @@ cd frontend && npm run dev
 
 ---
 
+## Running the Test Suite
+
+Run these checks before every commit (CI enforces the same steps on push to main).
+
+**Backend (pytest):**
+
+```bash
+cd backend
+pip install -r requirements.txt -r requirements-test.txt  # first time only
+pytest
+```
+
+**Frontend (typecheck + lint + build):**
+
+```bash
+cd frontend
+npm run typecheck   # tsc --noEmit
+npm run lint        # ESLint — must exit 0 (warnings are OK, errors are not)
+npm run build       # vite build — confirms the bundle compiles
+```
+
+CI runs both jobs on every push via `.github/workflows/ci.yml`.
+
+---
+
 ## Adding API Endpoints
 
 1. Define Pydantic schemas in `schemas.py` with `Field()` validation

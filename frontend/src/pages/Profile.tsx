@@ -272,7 +272,7 @@ const Profile: React.FC = () => {
       await api.delete('/users/me/avatar');
       const token = localStorage.getItem('token');
       if (token) await login(token);
-    } catch (err: any) {
+    } catch (_err: any) {
       setAvatarError('Failed to remove photo.');
     } finally {
       setAvatarUploading(false);
