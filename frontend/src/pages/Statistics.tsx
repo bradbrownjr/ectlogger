@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
+import useApiData from '../hooks/useApiData';
 import {
   Box,
   Container,
@@ -122,9 +123,9 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, subtitle, icon, color
 const Statistics: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [stats, setStats] = useState<GlobalStats | null>(null);
+  const { data: stats, loading, error } = useApiData<GlobalStats>(
+    () => statisticsApi.getGlobal().then((r) => r.data),
+  );
   const [chartTab, setChartTab] = useState(0);
   const [exporting, setExporting] = useState(false);
 
@@ -161,24 +162,6 @@ const Statistics: React.FC = () => {
       setExporting(false);
     }
   };
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        setLoading(true);
-        const response = await statisticsApi.getGlobal();
-        setStats(response.data);
-        setError(null);
-      } catch (err: any) {
-        console.error('Failed to fetch statistics:', err);
-        setError(err.response?.data?.detail || 'Failed to load statistics');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStats();
-  }, []);
 
   const chartColors = {
     primary: theme.palette.primary.main,
