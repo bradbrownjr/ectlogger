@@ -1,6 +1,6 @@
 # ECT Logger — Product Roadmap
 
-*Last updated: 2026-07-03 (rev 25 — full codebase audit; added Milestone 0 and per-item model recommendations)*  
+*Last updated: 2026-07-03 (rev 26 — added component placement/reuse convention to Milestone 0.4; rev 25 — full codebase audit, Milestone 0, per-item model recommendations)*  
 *Compiled from user feedback: AA1GM, KC1UIX, W1BKW, W1MTW, KC1JMH*
 
 > **Canonical location:** `docs/ROADMAP.md`. ~~The root-level `ROADMAP.md` is a duplicate and should be deleted.~~ *Resolved: the root-level duplicate no longer exists as of 2026-07-03.*
@@ -131,7 +131,18 @@ Extract `app/permissions.py`: `check_net_permission`, `check_template_permission
 | `Scheduler.tsx` | 1,276 | Extract `ScheduleCard`; reuse `useFavorites` and view-toggle from Dashboard |
 | `NetView.tsx` | 5,410 | **Do last, after the hooks exist.** Extract: `NetViewHeader`, `CheckInForm`, `CheckInTable` (desktop), `CheckInMobileList`, the dialog cluster (CSV import, archive, role assignment as separate files), and `useNetWebSocket`. ~69 useState calls today; group related state into reducers as it moves |
 
-`NCSStaffModal.tsx` (1,789) and `Profile.tsx` (1,078) are cohesive enough to leave alone for now; revisit if they grow.  
+`NCSStaffModal.tsx` (1,789) and `Profile.tsx` (1,078) are cohesive enough to leave alone for now; revisit if they grow.
+
+**Placement and reuse convention** *(added rev 26 — the point of splitting is reuse, not just smaller files)*  
+Extractions are organized by *functionality*, and each extracted piece gets an explicit home based on its reuse scope:
+
+- **App-wide** → `frontend/src/hooks/` and `frontend/src/components/` root: `useLocalStorage`, `useDialog`, `useApiData`, `useSortableTable`, plus a generic `ConfirmDialog` (the delete/archive/close confirmation pattern currently re-implemented in Admin, NetView, Dashboard, and Scheduler).
+- **Shared between specific pages** → also `components/` root, named for the function not the page: `useFavorites` (Dashboard + Scheduler), the view-mode grid/list toggle (Dashboard + Scheduler), and the per-tab form panels that CreateNet and CreateSchedule near-duplicate today (Script, Announcements, Check-in Fields tabs) — extracting these once removes the standing risk of the two pages drifting apart.
+- **Page-local** → a page subfolder (`components/netview/`, `components/admin/`): the six Admin tabs, `NetViewHeader`, the NetView dialog cluster. Local until a second consumer appears; promotion to `components/` root is a rename, not a rewrite.
+- **Reuse candidates to verify during extraction, not assume**: a read-only variant of `CheckInTable` may be able to back `NetReport.tsx`'s check-in listing, and `useSortableTable` should back any future admin-style table (e.g., the power-user indicators item in Milestone 1). Confirm fit at extraction time; don't force a premature abstraction (KISS).
+
+Rule for sub-agents doing the splits: a component takes typed props and owns no page state it doesn't need — if an extracted piece still reaches back into its old page for state, the split isn't done. That's what makes these pieces safely editable by Haiku later and reusable elsewhere.
+
 **Model:** Sonnet for each page split, with an Opus review gate on the NetView split only (real-time state + WebSocket + inline editing interactions make it the riskiest change in this program). Admin tab extractions are Haiku-capable once Sonnet does the first one.
 
 ### 0.5 Migration hygiene policy *(process, not code)*
