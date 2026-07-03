@@ -1,9 +1,9 @@
 # ECT Logger — Product Roadmap
 
-*Last updated: 2026-06-30 (rev 24)*  
+*Last updated: 2026-07-03 (rev 25 — full codebase audit; added Milestone 0 and per-item model recommendations)*  
 *Compiled from user feedback: AA1GM, KC1UIX, W1BKW, W1MTW, KC1JMH*
 
-> **Canonical location:** `docs/ROADMAP.md`. The root-level `ROADMAP.md` is a duplicate and should be deleted.
+> **Canonical location:** `docs/ROADMAP.md`. ~~The root-level `ROADMAP.md` is a duplicate and should be deleted.~~ *Resolved: the root-level duplicate no longer exists as of 2026-07-03.*
 
 ---
 
@@ -18,6 +18,131 @@ Items are grouped by milestone tier, then by theme within each tier. Each item c
 
 Priority within each tier is roughly top-to-bottom. Items from conversations are attributed to their source where useful for context.
 
+### Model recommendations for sub-agents
+
+As of rev 25, each item carries a **Model:** line recommending which Claude model a sub-agent should use to implement it:
+
+- **Haiku** — single-file, mechanical, precisely specified changes (delete dead code, fix a known line, add a badge column). Safe once the task is spelled out exactly.
+- **Sonnet** — multi-file features and refactors that follow an established pattern with a clear spec. The workhorse tier for this codebase.
+- **Opus** — architecture, security-sensitive design, data modeling, and anything touching auth/payments/time handling. Also used as a *review gate* on Sonnet work where noted.
+
+Rule of thumb: Haiku and Sonnet can only maintain this codebase safely once files are small and patterns are extracted — which is exactly what Milestone 0 below delivers. Sequence Milestone 0 before assigning Milestone 1 items to smaller models.
+
+---
+
+## Milestone 0 — Codebase Health & Maintainability *(audit findings, 2026-07-03)*
+
+*Findings from a full audit of the backend and frontend, ordered by severity. These are prerequisites for reliable Haiku/Sonnet maintenance: today the largest files (NetView.tsx at 5,410 lines, Admin.tsx at 3,215, backend routers/nets.py at 2,207) are too big for a smaller model to edit without collateral damage. `tsc --noEmit` currently passes clean, so the refactors below start from a healthy type baseline.*
+
+### 0.1 Confirmed bugs (fix first)
+
+**🐛 WebSocket guest messages crash the connection** *(audit)*  
+`backend/app/main.py:263` broadcasts `"user_id": user.id`, but `user` is only assigned inside the `if token:` branch (line 239). A guest (no token) or a user whose token fails verification who sends any WebSocket message raises `NameError`, which the bare `except Exception` at line 267 swallows by disconnecting them. Fix: use the already-computed `user_id` variable (line 225) instead of `user.id`. One-line fix; add a regression test when the test suite (0.3) exists.  
+**Model:** Haiku.
+
+**🐛 Statistics page Tabs violate DESIGN.md** *(audit)*  
+`frontend/src/pages/Statistics.tsx:341-346` uses `variant={isMobile ? "scrollable" : "standard"}` and `scrollButtons="auto"`. DESIGN.md requires all Tabs use `variant="scrollable" scrollButtons={false}` unconditionally, plus the responsive minWidth/px sx props and touch swipe handler. Bring this instance in line with CreateNet.tsx / CreateSchedule.tsx / Admin.tsx, which all comply.  
+**Model:** Haiku.
+
+### 0.2 Orphaned code (verified zero references)
+
+**🔧 Delete `frontend/src/components/NCSRotationModal.tsx`** *(audit — 669 lines)*  
+Imported nowhere (verified by grep across all .ts/.tsx). Rotation management now lives in `NCSStaffModal.tsx`, `Scheduler.tsx`, and `CreateSchedule.tsx` (all of which use `ncsRotationApi` directly). This is a superseded predecessor, not a roadmap placeholder.  
+**Model:** Haiku (delete file, confirm build passes).
+
+**🔧 Delete `frontend/src/utils/netReportPdf.ts`** *(audit — 617 lines)*  
+`exportNetReportPdf()` is imported nowhere. Superseded by `exportElementToPdf` in `utils/pdfExport.ts`, which `NetReport.tsx` uses.  
+**Model:** Haiku (delete file, confirm build passes).
+
+**🔧 Relocate or remove `backend/test_merge.py` and `backend/test_stats.py`** *(audit)*  
+Two ad-hoc scripts at the backend root, outside any test runner. Fold them into the real test suite created in 0.3, or delete if their scenarios are covered there.  
+**Model:** Haiku (after 0.3 lands).
+
+### 0.3 Guardrails that make small-model maintenance safe
+
+**✨ Test suite + CI pipeline** *(audit — the single biggest gap found)*  
+There is no automated test suite, no lint script, and no `.github/workflows/` CI. `frontend/package.json` has only dev/build/preview scripts. For Haiku/Sonnet agents to safely maintain this codebase, every change needs a mechanical pass/fail signal:
+- [ ] Backend: pytest + httpx `AsyncClient` smoke tests against a temp SQLite DB — auth flow, net lifecycle (create → lobby → active → close), check-in + recheck dedupe, permission checks (403 paths)
+- [ ] Frontend: add `"lint"` (ESLint) and `"typecheck"` (`tsc --noEmit`) scripts; ESLint with `no-unused-vars` catches future orphans at the door
+- [ ] GitHub Actions workflow: run pytest, tsc, ESLint, and `vite build` on every push to main
+- [ ] Document "run the suite before commit" in DEVELOPMENT.md (per the existing Regression Check Policy)  
+**Model:** Sonnet to scaffold the harness and first tests; Haiku to add cases afterward. This unlocks confident Haiku use everywhere else.
+
+**🔧 React error boundary** *(audit)*  
+No error boundary exists anywhere; one uncaught render error blanks the whole app — bad during a live net. Add an app-level boundary in `App.tsx` with a friendly "reload" fallback, plus a page-level boundary around `NetView` so a rendering fault in one pane can't kill an active logging session.  
+**Model:** Sonnet.
+
+**🔧 WebSocket resilience (both ends)** *(audit)*  
+- Frontend (`NetView.tsx:719-730`): reconnect is a flat 3-second retry with no max attempts, no exponential backoff, and no cleanup if the component unmounts during the retry timeout (leak). Extract into a `useNetWebSocket` hook during the NetView split (0.4) with backoff + cleanup.
+- Backend (`main.py` ConnectionManager): no ping/heartbeat, so dead connections are only discovered when a broadcast fails; failures log via `print()` instead of the app logger.  
+**Model:** Sonnet.
+
+**🔧 SMTP timeouts on all email sends** *(audit)*  
+`email_service.py` aiosmtplib calls have no explicit timeout. A hung SMTP server can stall the reminder/digest background loops. Add a timeout parameter to every SMTP operation.  
+**Model:** Haiku (mechanical once the timeout value is chosen).
+
+**🔧 Validate `User.timezone` as a real IANA zone** *(audit)*  
+The timezone field accepts any string; `ncs_rotation.py` assumes validity and would raise at runtime on a bad value. Validate at the API boundary (Pydantic validator against `zoneinfo.available_timezones()`).  
+**Model:** Haiku.
+
+**🔧 FastAPI deprecation: `@app.on_event` → lifespan handler** *(audit — low urgency)*  
+`main.py:271/284` use the deprecated startup/shutdown event decorators. Migrate to the `lifespan` context manager pattern before a future FastAPI upgrade removes them.  
+**Model:** Haiku.
+
+**🔧 Composite index candidates for hot query paths** *(audit — do before the ham.live signup wave)*  
+Migration 032 covers single-column User indexes, but the hottest read paths lack composites: `CheckIn(net_id, checked_in_at)` (time-series stats), `NetRole(net_id, role)` (NCS/Logger permission checks run on nearly every request). Measure first with `EXPLAIN QUERY PLAN` on a production-sized copy, then add only what shows a scan.  
+**Model:** Sonnet (measurement + migration); becomes part of the PostgreSQL prep in Milestone 2.
+
+### 0.4 Modularity & componentization program
+
+*Goal: no page/router over ~800 lines, so any single file fits comfortably in a small model's working set. Extract shared patterns first (they shrink every file that follows), then split files from easiest to hardest. Each extraction must preserve behavior exactly — run the 0.3 suite after each step, and follow the Regression Check Policy (a 5,410-line file shrinking by thousands of lines requires the feature-survival checklist).*
+
+**Step 1 — Shared frontend hooks** *(do first; every later split gets smaller)*  
+- [ ] `useLocalStorage(key, initial)` — replaces the repeated localStorage-init + persist-effect pattern in NetView, Dashboard, Scheduler
+- [ ] `useSortableTable(items, initialField)` — replaces four duplicate sortField/sortDirection pairs in Admin.tsx plus Scheduler.tsx
+- [ ] `useDialog()` returning open/onOpen/onClose — NetView alone declares ~36 dialog open-state pairs
+- [ ] `useApiData(fetchFn)` — the fetch + loading + error + refetch boilerplate repeated across pages
+- [ ] A `localStorageKeys.ts` constants file documenting every key in use (themeMode, dashboard-*, scheduler-*, floatingWindow_*, checkin_hideDuplicates, token, ...)  
+**Model:** Sonnet to design and land the hooks with one exemplar migration each; Haiku for the remaining mechanical migrations.
+
+**Step 2 — Backend shared permission module**  
+Extract `app/permissions.py`: `check_net_permission`, `check_template_permission`, and the repeated is_owner/is_admin/is_ncs composition currently duplicated across `routers/nets.py`, `routers/templates.py`, `routers/check_ins.py`. Also normalize the two inconsistent admin-check styles (`user.role == UserRole.ADMIN` vs `user.role.value == "admin"`) to one idiom.  
+**Model:** Sonnet.
+
+**Step 3 — Backend router splits** *(FastAPI sub-routers; mechanical once the pattern is set)*  
+| File | Lines | Proposed split |
+|---|---|---|
+| `routers/nets.py` | 2,207 | `nets_core.py` (lifecycle), `nets_roles.py` (NCS/role mgmt), `nets_export.py` (CSV/ICS-309/archive/clone), `nets_polls.py` |
+| `email_service.py` | 1,613 | `email/base.py` (send + unsubscribe footer), `email/auth.py`, `email/net_lifecycle.py`, `email/reminders.py`, `email/net_logs.py` (incl. ICS-309), `email/digest.py` — thin facade keeps the existing import path |
+| `routers/templates.py` | 1,349 | `templates_core.py` (CRUD), `templates_merge.py`, `templates_subscriptions.py`, `templates_topics.py` |
+| `routers/statistics.py` | 1,022 | `statistics_global.py`, `statistics_net.py`, `statistics_user.py`, `statistics_geo.py` |
+| `routers/ncs_rotation.py` | 877 | split schedule *computation* (pure functions — most testable code in the app) from the CRUD/override routes |
+
+`ncs_reminder_service.py` (777) can stay whole — it is one cohesive background service.  
+**Model:** Sonnet for the first split (nets.py) to establish the pattern; Haiku or Sonnet for the rest. Route paths must not change — verify with a route-table diff before/after.
+
+**Step 4 — Frontend page splits** *(easiest first; NetView last)*  
+| File | Lines | Extraction plan |
+|---|---|---|
+| `Admin.tsx` | 3,215 | Six tab components: `AdminUsersTab`, `AdminContactsTab`, `AdminFieldsTab`, `AdminFrequenciesTab`, `AdminSecurityTab`, `AdminMaintenanceTab` — the tabs are already self-contained |
+| `CreateSchedule.tsx` | 2,262 | One component per tab (Basic Info, Staff & Rotation, Communication Plan, Script, Check-in Fields) with a shared form context |
+| `CreateNet.tsx` | 1,820 | Same per-tab pattern as CreateSchedule; extract any tab panels the two pages share into common components (DRY) |
+| `Dashboard.tsx` | 1,490 | Extract `NetCard`, grid/list view components, and a `useFavorites` hook shared with Scheduler |
+| `Scheduler.tsx` | 1,276 | Extract `ScheduleCard`; reuse `useFavorites` and view-toggle from Dashboard |
+| `NetView.tsx` | 5,410 | **Do last, after the hooks exist.** Extract: `NetViewHeader`, `CheckInForm`, `CheckInTable` (desktop), `CheckInMobileList`, the dialog cluster (CSV import, archive, role assignment as separate files), and `useNetWebSocket`. ~69 useState calls today; group related state into reducers as it moves |
+
+`NCSStaffModal.tsx` (1,789) and `Profile.tsx` (1,078) are cohesive enough to leave alone for now; revisit if they grow.  
+**Model:** Sonnet for each page split, with an Opus review gate on the NetView split only (real-time state + WebSocket + inline editing interactions make it the riskiest change in this program). Admin tab extractions are Haiku-capable once Sonnet does the first one.
+
+### 0.5 Migration hygiene policy *(process, not code)*
+
+Findings to correct going forward — noted plainly for review:
+
+- **Instance-specific data migrations are in the repo**: `022_add_aa1gm_to_schedule8_rotation.py`, `029_add_aa1gm_back_to_template8_rotation.py`, `030_add_fifth_week_user.py` bake one deployment's roster data into the shared migration history. Self-hosters will run these against their own databases. Going forward, do data fixes via admin UI or one-off server-side scripts that are *not* committed as numbered migrations. *(Not proposing deletion — they already ran; just stop the pattern.)*
+- **Numbering collision**: three migrations share prefix `013_`. Adopt strictly sequential numbering, or adopt Alembic (see the PostgreSQL item in Milestone 2, whose plan currently references `alembic upgrade head` even though **Alembic is not set up in this project** — that discrepancy must be resolved as part of the Postgres work: either adopt Alembic first, or rewrite that step).
+
+**Model:** n/a (policy). The Alembic-adoption decision, if taken, is Opus for the design and Sonnet for execution.
+
 ---
 
 ## Milestone 1 — Medium-term
@@ -27,6 +152,7 @@ Priority within each tier is roughly top-to-bottom. Items from conversations are
 ### Theming
 
 **✨ User-selectable color themes** *(KC1JMH)*  
+**Model:** Sonnet for the ThemeContext plumbing, migration, and endpoints; palette curation is a human/Opus taste task; the swatch picker component is Haiku-sized once the THEMES constant exists. *(Note: the existing `ThemeContext.tsx` handles only the dark/light toggle — this feature extends it, it does not exist yet.)*  
 Allow users to choose a named color theme for the app from a hand-curated palette library. Each theme is a coordinated light/dark pair — selecting it works with the existing dark/light mode toggle automatically. Themes are per-user with a system-wide default that admins can change from the Admin panel.
 
 **Palette source**  
@@ -58,6 +184,7 @@ New "Themes" section in the Admin panel. Admins see the same swatch picker that 
 ### Net Scheduling
 
 **✨ Auto-open lobby before scheduled start** *(KC1JMH)*  
+**Model:** Sonnet (touches the reminder/scheduler background service, where the June 2026 naive-UTC bug lived — write the schedule-calc test first). The UI toggle alone is Haiku-sized.  
 Add a per-schedule setting (e.g. "Open lobby X minutes before start time") that automatically transitions a scheduled net into Lobby mode without requiring the NCS to click a link. The NCS could still open the lobby manually at any time — this is an optional server-side trigger for groups that always open the net at the same offset before their formal start. Requires:
 - New `auto_lobby_minutes` column on `NetTemplate` (nullable; null = disabled)
 - UI toggle + number input in the schedule editor (Net Settings tab)
@@ -67,6 +194,7 @@ Add a per-schedule setting (e.g. "Open lobby X minutes before start time") that 
 ### Admin Tooling
 
 **🔧 Power-user indicators in the Admin users list** *(KC1JMH)*  
+**Model:** Sonnet for the NCS-indicator query decision (live `exists` subquery vs denormalized flag affects list performance); the changelog-subscriber and MFA badge columns are Haiku-sized. Sequence after the `AdminUsersTab` extraction in Milestone 0.4 so the work lands in a small file.  
 Surface three at-a-glance signals in the Admin → Users table so the operator can identify engaged, high-value users without cross-referencing other screens:
 
 - **NCS indicator** — flag users who hold (or have held) an NCS role on any net, so power users are immediately visible.
@@ -82,11 +210,13 @@ Implementation notes:
 ### Check-in Grid Quality-of-Life
 
 **🔧 Freeze the check-in action button column during horizontal scroll** *(KC1JMH)*  
+**Model:** Sonnet — sticky columns in MUI tables interact badly with row hover/selection backgrounds and need testing on real mobile widths; must be applied identically to both check-in table variants. Strongly prefer sequencing after the NetView split (Milestone 0.4) so the change is made once in an extracted `CheckInTable` component instead of twice inside a 5,410-line file.  
 On narrow screens or wide nets the check-in grid scrolls horizontally and the per-row action buttons — the primary controls for each station — scroll out of view. Pin/freeze the action column so it stays visible at the edge while the other fields scroll under it. Apply the same treatment consistently across the desktop inline table and any other horizontally-scrolling check-in view (see DESIGN.md "symmetry and uniformity"). Keep the frozen column's touch targets at the 44×44 px minimum.
 
 ### Security & Authentication
 
 **✨ MFA / TOTP authenticator support** *(KC1JMH)*  
+**Model:** Opus for the security design (secret at-rest encryption, recovery-code storage/hashing, login-flow changes); Sonnet for implementation against that design. Do not hand any part of this to Haiku — auth mistakes are silent until exploited.  
 Let users enroll a TOTP authenticator as a second factor. During enrollment, show **both** the QR code **and** the plain-text preshared secret (base32) with a copy button, so users can store the secret in a password vault (Bitwarden, 1Password) instead of a dedicated authenticator app if they prefer.
 
 Requirements:
@@ -97,6 +227,7 @@ Requirements:
 - Suggested libraries: `pyotp` for TOTP, `qrcode` for QR generation (or render the `otpauth://` URI to a QR client-side).
 
 **✨ Authenticated nets — station identity verification via TOTP** *(KC1JMH)*  
+**Model:** Sonnet for implementation, with an Opus review gate on the expected-code endpoint (it deliberately reveals a station's current TOTP to NCS — the permission gating and never-send-the-secret rule must be airtight).  
 Builds directly on MFA. Adds a per-net "Authenticated net" toggle in the Edit Net settings, with subtext explaining that it lets check-ins prove their identity to net control. When enabled, a checked-in user can read the current code from their authenticator to NCS; an action button on the check-in row shows NCS the **expected** code for that station so they can confirm it matches and mark the station as identity-verified for the net.
 
 Requirements / design questions:
@@ -112,6 +243,7 @@ Requirements / design questions:
 ### Formal Traffic & Forms (Radiograms)
 
 **✨ Radiogram and form support for handling formal traffic on nets** *(KC1JMH)*  
+**Model:** Opus to resolve the design questions and lock the data model (form-definition schema vs dedicated radiogram structure is a decision that is expensive to reverse); Sonnet for each implementation phase; the auto-fill/word-count helpers are Haiku-sized once specced.  
 Let NCS and users originate, relay, and deliver formal written traffic (ARRL Radiograms and other standard forms) within ECTLogger, with results stored against the net and retrievable later.
 
 Scope:
@@ -135,11 +267,13 @@ This is a substantial multi-part feature: sequence the data model + Forms menu f
 ### Multi-Window Support
 
 **✨ "Open in new tab" for Chat and Activity Log panes** *(AA1GM)*  
+**Model:** Opus to scope the architecture (cross-tab state sync, WebSocket sharing or duplication, auth in the popped-out tab), then Sonnet to build. Blocked on the NetView split (Milestone 0.4) — popping panes out of the current monolith would multiply its complexity.  
 Allow the chat and activity log floating windows to be popped out into a standalone browser tab, useful for dual-monitor setups. Interim workaround (detach within canvas, span browser window across monitors) should be documented. This is a non-trivial frontend architecture change — scope separately.
 
 ### Relaying & Propagation Mapping
 
 **✨ "Can hear" inter-station propagation logging** *(KC1UIX)*  
+**Model:** Opus to settle the data-model direction (pairs vs multi-select, per-net vs aggregated — this shapes the schema permanently); Sonnet for implementation; any map/graph visualization is its own Sonnet task afterward.  
 During a net, NCS and operators need to log not just who NCS can hear, but which stations can hear each other. This data helps ARES teams assign local nets, identify relay chains, and plan for actual incident communications.
 
 The existing "Relay for stations NCS cannot hear" flag captures one direction of this. The new feature would add a "Can hear ___" field on each check-in row, allowing the NCS to record which other stations a given operator has confirmed hearing. Over time this builds a propagation map for the net's coverage area.
@@ -154,6 +288,8 @@ David's use case (YCECT combined repeater/simplex drills) should drive the initi
 ### Supporter / Funding Integration
 
 **✨ Optional Ko-fi supporter integration, admin-configured per deployment** *(sustainability)*
+
+**Model:** Phase 1 (config + support page) Sonnet; Phase 2 webhook handler Sonnet **with Opus review** (inbound payment webhooks are an attack surface — token verification, replay, refund handling); Phase 3 (progress bar/copy) Haiku; Phase 4 (About-modal credits) Sonnet.
 
 > **Prerequisite:** *Help Menu and About modal* shipped in rev 22. The subtle "Support" entry point lives inside the About modal.
 
@@ -223,6 +359,7 @@ Top financial supporters and community contributors are acknowledged directly in
 ### Trivia Integration
 
 **✨ Net trivia support** *(back-burner, pending spec)*  
+**Model:** Sonnet once a spec exists; the spec itself is a human/Opus conversation.  
 Load trivia questions from a CSV file or URL. During a net, NCS can click a trivia icon on a check-in row to pose a question to that station and log correct/incorrect. Include trivia results in the net log, PDF report, and email summaries. Needs detailed spec before development begins.
 
 ---
@@ -234,6 +371,7 @@ Load trivia questions from a CSV file or URL. During a net, NCS can click a triv
 ### Database Migration Path
 
 **✨ Migrate from SQLite to PostgreSQL ahead of expected growth** *(KC1JMH)*  
+**Model:** Opus — data migration with zero-loss requirements, plus two audit-found landmines: (1) the plan below says `alembic upgrade head`, but **Alembic is not set up in this project** — migrations are hand-numbered scripts in `backend/migrations/`; adopt Alembic first or replace that step with a schema bootstrap from `models.py`; (2) several columns store JSON as `Text` (e.g. `User.callsigns`) and enums via SQLAlchemy `Enum` — both need an explicit porting decision for Postgres.  
 ECTLogger runs SQLite today, which is appropriate for a low-concurrency single-server deployment. SQLite serializes all writes; under concurrent net sessions and real-time check-ins from multiple NCS operators at once, this will become a bottleneck. The ORM layer (SQLAlchemy async with `aiosqlite`) already supports PostgreSQL via `asyncpg` — the `DATABASE_URL` env var is the primary code-level change.
 
 Migration plan:
@@ -248,6 +386,8 @@ Migration plan:
 ### UTC-Aware Datetime Hardening *(prerequisite for the PostgreSQL migration above)*
 
 **🔧 Standardize on timezone-aware UTC datetimes end-to-end** *(KC1JMH)*
+
+**Model:** Sonnet for the mechanical sweep, Opus review before merge (naive/aware bugs pass tests that don't cross a DST boundary). *Audit 2026-07-03 verified scope:* 34 `utcnow` references across 8 files — `auth.py`, `main.py`, `whats_new_service.py`, `ncs_reminder_service.py`, `routers/chat.py`, `routers/check_ins.py`, `routers/nets.py`, `routers/ncs_rotation.py`. Frontend `'Z'`-append workarounds live in `Admin.tsx` (6 sites), `CreateNet.tsx`, and `NetView.tsx`.
 
 **Background.** The app already stores concrete net instants (`Net.scheduled_start_time`, `started_at`, `closed_at`, etc.) in UTC and renders them per-user in local time. The fragility is *how* UTC is represented in the code: today it is **naive UTC by convention**. On SQLite, `DateTime(timezone=True)` silently drops the offset, so a value written as "UTC" comes back as a naive `datetime`. The backend leans on this (boundary helpers return naive UTC; comparisons use the deprecated `datetime.utcnow()`), and the frontend papers over it by appending `'Z'` before parsing (`CreateNet.tsx`, `NetView.tsx`). The June 2026 reminder bug was one symptom of this naive/aware ambiguity.
 
@@ -281,6 +421,7 @@ In other words, the SQLite→Postgres migration will **break time handling app-w
 ### Team Management Module
 
 **✨ Teams — ARES/SKYWARN team roster, training tracking, and ARRL Form 2 support** *(KC1JMH — back-burner)*  
+**Model:** Opus for the module design (new domain model, role system, reporting); Sonnet for phased build-out once designed.
 
 Full spec and design notes: [`docs/concepts/TEAM-MANAGEMENT-NOTES.md`](concepts/TEAM-MANAGEMENT-NOTES.md)
 
@@ -291,11 +432,13 @@ Blocked on: core web app stability, self-hosting, and Docker packaging being in 
 ### Native Desktop Client
 
 **✨ Standalone NCS client application (Windows / macOS / Linux)** *(KC1JMH — back-burner)*  
+**Model:** Opus (framework selection and packaging architecture). *Review note for Brad — not removing, but flagging for a decision:* this overlaps with the TUI/packet client below and with the browser app itself; a PWA (installable web app with offline caching) might satisfy the "browser is impractical" case at a fraction of the cost of maintaining three native packages. Worth deciding before any work starts.  
 A packaged desktop GUI application for NCS operators connecting to a hosted or self-hosted ECTLogger instance. Intended for single-operator NCS use; not a server. Targets scenarios where a browser is impractical but a full GUI is available. Proposed repo layout: `clients/windows/`, `clients/macos/`, `clients/linux/` with installable packages per release. Technology decision pending — evaluate Electron, Tauri, or native framework.
 
 ### TUI / Packet Client
 
 **✨ Terminal-first NCS client for low-bandwidth and degraded-link operations** *(KC1JMH — back-burner)*  
+**Model:** Opus (protocol design for the packet command mode is the hard part; the TUI itself is Sonnet work afterward).
 
 Full spec and design notes: [`docs/concepts/TUI-PACKET-CLIENT.md`](concepts/TUI-PACKET-CLIENT.md)
 
@@ -306,15 +449,19 @@ This is separate from the standalone desktop client above. Both are back-burner 
 ### Self-Hosting Enhancements
 
 **✨ Docker image for self-hosters**  
+**Model:** Sonnet. Note: cleaning up the instance-specific data migrations issue (Milestone 0.5) matters here — a fresh Docker install should never execute another deployment's roster fixes.  
 Official `Dockerfile` / `docker-compose.yml` for a one-command self-hosted deployment. Publish to Docker Hub alongside each release.
 
 **✨ Net template portability between hosted and self-hosted**  
+**Model:** Opus design (export format, identity/attribution model), then Sonnet.  
 Allow net templates created on `app.ectlogger.us` to be copied to a self-hosted instance (and vice versa), preserving origin metadata for attribution. Opt-in sharing of logs and net stats between instances.
 
 **✨ Cross-instance user stats sync**  
+**Model:** Opus — federated identity/token exchange is an architecture decision with security consequences.  
 Users who participate in nets on both hosted and self-hosted instances can opt in to aggregating their check-in stats across both. Requires a federated identity or token-exchange design.
 
 **✨ Resilience against hosted server unavailability**  
+**Model:** Sonnet (mostly an audit task: verify no hard-coded dependencies on the hosted instance, then fix what's found).  
 Self-hosted instances should degrade gracefully if `app.ectlogger.us` is unreachable or permanently offline. No hard dependency on the hosted server for core net logging functionality.
 
 ---
