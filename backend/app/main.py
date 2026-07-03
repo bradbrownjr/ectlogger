@@ -12,9 +12,13 @@ from app.security import sanitize_html
 from app.ncs_reminder_service import ncs_reminder_service
 from app.whats_new_service import whats_new_service
 from typing import Dict, List
+import asyncio
 import json
+import logging
 import sys
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 def _is_primary_process() -> bool:
@@ -153,8 +157,7 @@ class ConnectionManager:
             try:
                 await connection.send_json(message)
             except Exception as e:
-                # Log failure and mark for removal
-                print(f"WebSocket send failed for user {user_id} on net {net_id}: {e}")
+                logger.warning("WebSocket send failed for user %s on net %s: %s", user_id, net_id, e)
                 dead_connections.append(connection)
         
         # Clean up dead connections after iteration completes
@@ -168,6 +171,19 @@ class ConnectionManager:
 
 
 manager = ConnectionManager()
+
+
+async def _ws_heartbeat_loop():
+    """Ping all active WebSocket connections every 30 s.
+
+    Serves two purposes: keeps the TCP session alive through proxies/firewalls
+    that drop idle connections, and triggers cleanup of dead sockets via the
+    existing error-handling path in ConnectionManager.broadcast().
+    """
+    while True:
+        await asyncio.sleep(30)
+        for net_id in list(manager.active_connections.keys()):
+            await manager.broadcast({"type": "ping"}, net_id)
 
 
 async def post_system_message(net_id: int, message: str, db_session=None):
@@ -272,6 +288,7 @@ async def websocket_endpoint(websocket: WebSocket, net_id: int, token: str = Non
 async def startup_event():
     """Initialize database and background services on startup"""
     await init_db()
+    asyncio.create_task(_ws_heartbeat_loop())
     if _is_primary_process():
         # Only the primary process (port 8001) runs background services to
         # prevent duplicate emails from the secondary localhost process.

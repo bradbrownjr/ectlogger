@@ -342,6 +342,10 @@ const NetView: React.FC = () => {
   const [filteredFrequencyIds, setFilteredFrequencyIds] = useState<number[]>([]);
   // Auto-start ref to prevent multiple go-live triggers
   const autoStartTriggeredRef = useRef(false);
+  // WebSocket resilience: track the live socket for cleanup, pending retry timeout, and attempt count
+  const wsRef = useRef<WebSocket | null>(null);
+  const wsRetryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wsRetryCountRef = useRef(0);
   const { user, isAuthenticated } = useAuth();
   const { gridSquare } = useLocation();
   const navigate = useNavigate();
@@ -386,8 +390,15 @@ const NetView: React.FC = () => {
       
 
       return () => {
-        if (ws) {
-          ws.close();
+        // Cancel any pending reconnect before closing so onclose doesn't reschedule
+        if (wsRetryTimeoutRef.current) {
+          clearTimeout(wsRetryTimeoutRef.current);
+          wsRetryTimeoutRef.current = null;
+        }
+        // Close with code 1000 (Normal Closure) so onclose skips the reconnect branch
+        if (wsRef.current) {
+          wsRef.current.close(1000);
+          wsRef.current = null;
         }
         clearInterval(statsInterval);
       };
@@ -645,6 +656,7 @@ const NetView: React.FC = () => {
     
     websocket.onopen = () => {
       console.log('WebSocket connected to net', netId);
+      wsRetryCountRef.current = 0;
     };
     
     websocket.onmessage = (event) => {
@@ -720,16 +732,24 @@ const NetView: React.FC = () => {
       if (event.code === 1008) {
         console.error('WebSocket authentication failed');
       } else if (event.code !== 1000) {
-        // Abnormal close - attempt reconnection after 3 seconds
-        console.log('WebSocket disconnected unexpectedly, reconnecting in 3s...');
-        setTimeout(() => {
-          if (netId && token) {
-            connectWebSocket();
-          }
-        }, 3000);
+        // Abnormal close — exponential backoff: 3s, 6s, 12s … capped at 30s, max 10 attempts
+        const MAX_RETRIES = 10;
+        const count = wsRetryCountRef.current;
+        if (count >= MAX_RETRIES) {
+          console.warn(`WebSocket: max reconnect attempts reached for net ${netId}`);
+          return;
+        }
+        const delay = Math.min(3000 * Math.pow(2, count), 30000);
+        console.log(`WebSocket disconnected, reconnecting in ${delay / 1000}s (attempt ${count + 1}/${MAX_RETRIES})...`);
+        wsRetryCountRef.current = count + 1;
+        wsRetryTimeoutRef.current = setTimeout(() => {
+          wsRetryTimeoutRef.current = null;
+          if (netId) connectWebSocket();
+        }, delay);
       }
     };
 
+    wsRef.current = websocket;
     setWs(websocket);
   };
 
