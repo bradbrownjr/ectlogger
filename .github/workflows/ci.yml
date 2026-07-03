@@ -35,7 +35,7 @@ jobs:
           SMTP_USER: ci@example.com
           SMTP_PASSWORD: ci-password
           SMTP_FROM_EMAIL: ci@example.com
-          DATABASE_URL: "sqlite+aiosqlite:///:memory:"
+          DATABASE_URL: "sqlite:///:memory:"
         run: pytest
 
   frontend:

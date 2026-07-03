@@ -12,9 +12,10 @@ os.environ.setdefault("SECRET_KEY", "test-secret-key-do-not-use-in-production")
 os.environ.setdefault("SMTP_USER", "test@example.com")
 os.environ.setdefault("SMTP_PASSWORD", "test-password")
 os.environ.setdefault("SMTP_FROM_EMAIL", "test@example.com")
-# Point the module-level engine at a temp file so startup init_db() doesn't
-# touch the real dev database.  The test engine below is what endpoints use.
-os.environ.setdefault("DATABASE_URL", "sqlite:///./test_ci.db")
+# Point the module-level engine at in-memory SQLite so startup init_db() creates
+# tables there and never touches the real dev database.  The test engine below
+# (also in-memory, StaticPool) is what endpoints use via get_db override.
+os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
 
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
