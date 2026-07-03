@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import useDialog from '../hooks/useDialog';
 import { displayCallsign } from '../utils/userDisplay';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
@@ -270,7 +271,7 @@ const NetView: React.FC = () => {
   const [netStats, setNetStats] = useState<{total_check_ins: number, unique_stations: number, recheck_count: number, checked_out_count: number, online_count: number, guest_count: number} | null>(null);
   const [frequencyDialogOpen, setFrequencyDialogOpen] = useState(false);
   const [fieldDefinitions, setFieldDefinitions] = useState<FieldDefinition[]>([]);
-  const [mapOpen, setMapOpen] = useState(false);
+  const map = useDialog();
   const [bulkCheckInOpen, setBulkCheckInOpen] = useState(false);
   const [hideDuplicates, setHideDuplicates] = useState<boolean>(() => localStorage.getItem('checkin_hideDuplicates') === 'true');
   const [searchOpen, setSearchOpen] = useState(false);
@@ -2284,7 +2285,7 @@ const NetView: React.FC = () => {
                         size="small"
                         variant="outlined"
                         color="primary"
-                        onClick={() => setMapOpen(true)}
+                        onClick={map.onOpen}
                         sx={{ minWidth: 'auto', px: 1 }}
                       >
                         <MapIcon fontSize="small" />
@@ -4963,8 +4964,8 @@ const NetView: React.FC = () => {
 
       {/* Check-in Location Map */}
       <CheckInMap
-        open={mapOpen}
-        onClose={() => setMapOpen(false)}
+        open={map.open}
+        onClose={map.onClose}
         checkIns={filteredCheckIns}
         netName={net?.name || 'Net'}
         ncsUserIds={netRoles.filter((r: any) => r.role === 'NCS').map((r: any) => r.user_id)}
