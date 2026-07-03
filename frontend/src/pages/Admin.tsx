@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import useSortableTable from '../hooks/useSortableTable';
 import { displayCallsign } from '../utils/userDisplay';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -253,8 +254,9 @@ const Admin: React.FC = () => {
   
   // User filtering and sorting
   const [userFilter, setUserFilter] = useState('');
-  const [userSortField, setUserSortField] = useState<UserSortField>('online');
-  const [userSortDirection, setUserSortDirection] = useState<SortDirection>('desc');
+  // 'online' column defaults desc; all other columns default asc
+  const { sortField: userSortField, sortDirection: userSortDirection, handleSort: _handleUserSortBase } =
+    useSortableTable<UserSortField>('online', (f) => f === 'online' ? 'desc' : 'asc');
   const [usersPage, setUsersPage] = useState(0);
   const [usersPerPage, setUsersPerPage] = useState(25);
   
@@ -713,12 +715,7 @@ const Admin: React.FC = () => {
   });
 
   const handleUserSort = (field: UserSortField) => {
-    if (userSortField === field) {
-      setUserSortDirection(userSortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setUserSortField(field);
-      setUserSortDirection(field === 'online' ? 'desc' : 'asc');
-    }
+    _handleUserSortBase(field);
     setUsersPage(0);
   };
 
