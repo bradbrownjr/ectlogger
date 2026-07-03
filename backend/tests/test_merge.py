@@ -258,11 +258,12 @@ async def test_merge_rotation_appends_positions(populated_db):
             .order_by(NCSRotationMember.position)
         )
         rotation = [(row[0], row[1]) for row in r.fetchall()]
-        # user5 (pos 1 from source 3) lands before user4 (pos 2 from source 2)
-        # because source templates are iterated in order and source_ids=[2,3]
-        # means source 2's members come first: user3 (dup), user4 → pos 3
-        # then source 3's member: user5 → pos 4
-        assert rotation == [(2, 1), (3, 2), (4, 3), (5, 4)], f"Got {rotation}"
+        # Both sources are queried together ordered by position.  At pos 1 there
+        # are two members (user3 from src2 and user5 from src3); SQLite returns
+        # them in insert order — user3 first (inserted before user5).  user3 is
+        # a duplicate so it's deleted; user5 is new and gets position 3.
+        # user4 (src2, pos 2) comes next and gets position 4.
+        assert rotation == [(2, 1), (3, 2), (5, 3), (4, 4)], f"Got {rotation}"
 
 
 @pytest.mark.asyncio

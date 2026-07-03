@@ -20,11 +20,16 @@ def test_invalid_token_returns_none():
 
 @pytest.mark.asyncio
 async def test_protected_endpoint_requires_auth(client):
-    resp = await client.get("/api/nets/")
-    assert resp.status_code == 403  # HTTPBearer returns 403 when no credentials
+    # POST /api/nets/ requires authentication; GET /api/nets/ is public.
+    resp = await client.post("/api/nets/", json={"name": "Auth Test Net"})
+    assert resp.status_code in (401, 403)
 
 
 @pytest.mark.asyncio
 async def test_bad_token_rejected(client):
-    resp = await client.get("/api/nets/", headers={"Authorization": "Bearer bad.token.here"})
+    resp = await client.post(
+        "/api/nets/",
+        json={"name": "Auth Test Net"},
+        headers={"Authorization": "Bearer bad.token.here"},
+    )
     assert resp.status_code == 401

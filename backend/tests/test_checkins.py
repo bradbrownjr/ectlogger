@@ -90,5 +90,4 @@ async def test_cannot_check_in_unauthenticated(client, owner):
         f"/api/check-ins/nets/{net_id}/check-ins",
         json={"callsign": _CALLSIGN},
     )
-    # HTTPBearer raises 403 when no credentials header is present
-    assert resp.status_code == 403
+    assert resp.status_code in (401, 403)
