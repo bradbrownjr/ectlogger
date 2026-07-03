@@ -260,7 +260,7 @@ async def websocket_endpoint(websocket: WebSocket, net_id: int, token: str = Non
                 "type": message.get("type", "message"),
                 "data": message.get("data"),
                 "timestamp": message.get("timestamp"),
-                "user_id": user.id
+                "user_id": user_id
             }, net_id)
     except WebSocketDisconnect:
         manager.disconnect(websocket, net_id)
