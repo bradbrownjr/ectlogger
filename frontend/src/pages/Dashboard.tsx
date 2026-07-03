@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import useLocalStorage from '../hooks/useLocalStorage';
+import { STORAGE_KEYS } from '../utils/localStorageKeys';
 import CellTowerIcon from '@mui/icons-material/CellTower';
 import { displayCallsign } from '../utils/userDisplay';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -119,14 +121,8 @@ const Dashboard: React.FC = () => {
   const [archiveShowAttended, setArchiveShowAttended] = useState(false);
   const [archiveShowRan, setArchiveShowRan] = useState(false);
   // View mode, sort order, and filter state - persist view/sort preference
-  const [viewMode, setViewMode] = useState<'card' | 'list'>(() => {
-    const saved = localStorage.getItem('dashboard-view-mode');
-    return (saved === 'list' || saved === 'card') ? saved : 'card';
-  });
-  const [netSortOrder, setNetSortOrder] = useState<'status' | 'alpha'>(() => {
-    const saved = localStorage.getItem('dashboard-sort-order');
-    return saved === 'alpha' ? 'alpha' : 'status';
-  });
+  const [viewMode, setViewMode] = useLocalStorage<'card' | 'list'>(STORAGE_KEYS.DASHBOARD_VIEW_MODE, 'card');
+  const [netSortOrder, setNetSortOrder] = useLocalStorage<'status' | 'alpha'>(STORAGE_KEYS.DASHBOARD_SORT_ORDER, 'status');
   const [showFilter, setShowFilter] = useState(false);
   const [netFilter, setNetFilter] = useState('');
   // Email subscribers dialog state
@@ -937,10 +933,7 @@ const Dashboard: React.FC = () => {
             value={netSortOrder}
             exclusive
             onChange={(_, newSort) => {
-              if (newSort) {
-                setNetSortOrder(newSort);
-                localStorage.setItem('dashboard-sort-order', newSort);
-              }
+              if (newSort) setNetSortOrder(newSort);
             }}
             size="small"
           >
@@ -960,10 +953,7 @@ const Dashboard: React.FC = () => {
             value={viewMode}
             exclusive
             onChange={(_, newMode) => {
-              if (newMode) {
-                setViewMode(newMode);
-                localStorage.setItem('dashboard-view-mode', newMode);
-              }
+              if (newMode) setViewMode(newMode);
             }}
             size="small"
           >
