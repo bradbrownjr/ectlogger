@@ -25,6 +25,7 @@ import Navbar from './components/Navbar';
 import ProfileSetupDialog from './components/ProfileSetupDialog';
 import ChangelogNotification from './components/ChangelogNotification';
 import MaintenanceBanner from './components/MaintenanceBanner';
+import ErrorBoundary from './components/ErrorBoundary';
 
 const getDesignTokens = (mode: PaletteMode) => ({
   palette: {
@@ -121,7 +122,14 @@ const AppRoutes: React.FC = () => {
           />
           <Route path="/nets/:netId/info" element={<CreateNet />} />
           <Route path="/nets/:netId/report" element={<NetReport />} />
-          <Route path="/nets/:netId" element={<NetView />} />
+          <Route
+            path="/nets/:netId"
+            element={
+              <ErrorBoundary message="Net View encountered a display error. Your session data is safe — reload to reconnect.">
+                <NetView />
+              </ErrorBoundary>
+            }
+          />
           <Route
             path="/admin/users"
             element={
@@ -189,7 +197,9 @@ const App: React.FC = () => {
           <Router>
             <AuthProvider>
               <LocationProvider>
-                <AppRoutes />
+                <ErrorBoundary>
+                  <AppRoutes />
+                </ErrorBoundary>
               </LocationProvider>
             </AuthProvider>
           </Router>
