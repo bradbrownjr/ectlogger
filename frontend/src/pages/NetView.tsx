@@ -4,6 +4,7 @@ import useLocalStorage from '../hooks/useLocalStorage';
 import { useNetWebSocket } from '../hooks/useNetWebSocket';
 import CsvImportDialog from '../components/netview/CsvImportDialog';
 import ArchiveDialogs from '../components/netview/ArchiveDialogs';
+import RoleAssignmentDialog from '../components/netview/RoleAssignmentDialog';
 import { STORAGE_KEYS } from '../utils/localStorageKeys';
 import { displayCallsign } from '../utils/userDisplay';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
@@ -32,7 +33,6 @@ import {
   MenuItem,
   List,
   ListItem,
-  ListItemAvatar,
   ListItemText,
   Snackbar,
   Autocomplete,
@@ -4294,99 +4294,19 @@ const NetView: React.FC = () => {
       </Dialog>
 
       {/* Role Management Dialog */}
-      <Dialog open={roleDialog.open} onClose={roleDialog.onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { m: { xs: 1, sm: 4 } } }}>
-        <DialogTitle>Manage Net Control Staff</DialogTitle>
-        <DialogContent>
-          <Box sx={{ pt: 2 }}>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Assign NCS (Net Control Station) or Logger roles. You can assign multiple people as NCS — any of them can start or manage the net, providing backup if the primary NCS is unavailable.
-            </Typography>
-            
-            <FormControl fullWidth sx={{ mb: 2 }}>
-              <InputLabel>Select User</InputLabel>
-              <Select
-                value={selectedUserId}
-                label="Select User"
-                onChange={(e) => setSelectedUserId(e.target.value as number)}
-              >
-                <MenuItem value="">
-                  <em>Choose a user...</em>
-                </MenuItem>
-                {allUsers.map((u: any) => (
-                  <MenuItem key={u.id} value={u.id}>
-                    {displayCallsign(u) || u.email} ({u.email})
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            <FormControl fullWidth sx={{ mb: 2 }}>
-              <InputLabel>Role</InputLabel>
-              <Select
-                value={selectedRole}
-                label="Role"
-                onChange={(e) => setSelectedRole(e.target.value)}
-              >
-                <MenuItem value="NCS">NCS (Net Control Station)</MenuItem>
-                <MenuItem value="LOGGER">Logger</MenuItem>
-                <MenuItem value="RELAY">Relay Station</MenuItem>
-              </Select>
-            </FormControl>
-
-            <Button 
-              variant="contained" 
-              onClick={handleAssignRole}
-              disabled={!selectedUserId}
-              fullWidth
-            >
-              Assign Role
-            </Button>
-
-            {netRoles.length > 0 && (
-              <>
-                <Typography variant="subtitle2" sx={{ mt: 3, mb: 1 }}>
-                  Current Assignments:
-                </Typography>
-                <List>
-                  {netRoles.map((role) => (
-                    <ListItem
-                      key={role.id}
-                      secondaryAction={
-                        <IconButton edge="end" onClick={() => handleRemoveRole(role.id)}>
-                          <DeleteIcon />
-                        </IconButton>
-                      }
-                    >
-                      <ListItemAvatar>
-                        <Box
-                          onClick={() => setProfileUserId(role.user_id)}
-                          sx={{ cursor: 'pointer', display: 'inline-flex' }}
-                        >
-                          <UserAvatar
-                            avatarUrl={role.avatar_url}
-                            callsign={role.callsign}
-                            name={role.name}
-                            size={36}
-                            hasProfile
-                            isOnline={onlineUserIds.includes(role.user_id)}
-                          />
-                        </Box>
-                      </ListItemAvatar>
-                      <ListItemText
-                        primary={displayCallsign(role) || role.email}
-                        secondary={`${role.role} • ${new Date(role.assigned_at).toLocaleDateString()}`}
-                      />
-                    </ListItem>
-                  ))}
-                </List>
-              </>
-            )}
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={roleDialog.onClose}>Close</Button>
-        </DialogActions>
-      </Dialog>
+      <RoleAssignmentDialog
+        dialog={roleDialog}
+        allUsers={allUsers}
+        netRoles={netRoles}
+        onlineUserIds={onlineUserIds}
+        selectedUserId={selectedUserId}
+        setSelectedUserId={setSelectedUserId}
+        selectedRole={selectedRole}
+        setSelectedRole={setSelectedRole}
+        onAssignRole={handleAssignRole}
+        onRemoveRole={handleRemoveRole}
+        onShowProfile={setProfileUserId}
+      />
 
       {/* Available Frequencies Dialog */}
       <Dialog
