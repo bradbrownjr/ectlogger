@@ -10,41 +10,13 @@ from app.schemas import NetTemplateCreate, NetTemplateUpdate, NetTemplateRespons
 from app import schemas
 from app.dependencies import get_current_user, get_current_user_optional
 from app.logger import logger
+from app.permissions import check_template_permission
 import json
 
 router = APIRouter(prefix="/templates", tags=["templates"])
 
 
-async def check_template_permission(db: AsyncSession, template: NetTemplate, user: User) -> bool:
-    """Check if user has permission to manage a template (owner, admin, staff, or NCS rotation member)"""
-    # Owner and admin always have permission
-    if template.owner_id == user.id or user.role == UserRole.ADMIN:
-        return True
-    
-    # Check if user is in the staff list for this template
-    from app.models import TemplateStaff
-    staff_result = await db.execute(
-        select(TemplateStaff).where(
-            TemplateStaff.template_id == template.id,
-            TemplateStaff.user_id == user.id,
-            TemplateStaff.is_active == True
-        )
-    )
-    if staff_result.scalar_one_or_none():
-        return True
-    
-    # Check if user is in the NCS rotation for this template (also grants permission)
-    result = await db.execute(
-        select(NCSRotationMember).where(
-            NCSRotationMember.template_id == template.id,
-            NCSRotationMember.user_id == user.id,
-            NCSRotationMember.is_active == True
-        )
-    )
-    if result.scalar_one_or_none():
-        return True
-    
-    return False
+# check_template_permission is now in app.permissions
 
 
 async def is_active_co_manager(db: AsyncSession, template_id: int, user_id: int) -> bool:

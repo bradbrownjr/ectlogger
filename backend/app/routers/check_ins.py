@@ -6,10 +6,11 @@ from typing import List
 from datetime import datetime, UTC
 import json
 from app.database import get_db
-from app.models import CheckIn, Net, NetStatus, User, StationStatus, NetRole, Contact, Frequency
+from app.models import CheckIn, Net, NetStatus, User, UserRole, StationStatus, NetRole, Contact, Frequency
 from app.schemas import CheckInCreate, CheckInUpdate, CheckInResponse
 from app.dependencies import get_current_user
 from app.utils import display_callsign
+from app.permissions import check_net_permission, is_admin
 
 router = APIRouter(prefix="/check-ins", tags=["check-ins"])
 
@@ -392,22 +393,12 @@ async def delete_check_in(
     if not check_in:
         raise HTTPException(status_code=404, detail="Check-in not found")
     
-    # Check permissions: owner, admin, or any NCS role on this net
+    # Check permissions: owner, admin, or NCS/Logger role on this net
     result = await db.execute(select(Net).where(Net.id == check_in.net_id))
     net = result.scalar_one_or_none()
 
-    is_owner = net.owner_id == current_user.id
-    is_admin = current_user.role.value == "admin"
-    if not is_owner and not is_admin:
-        role_result = await db.execute(
-            select(NetRole).where(
-                NetRole.net_id == net.id,
-                NetRole.user_id == current_user.id,
-                NetRole.role.in_(["NCS", "LOGGER"]),
-            )
-        )
-        if role_result.scalar_one_or_none() is None:
-            raise HTTPException(status_code=403, detail="Not authorized")
+    if not await check_net_permission(db, net, current_user, ["NCS", "LOGGER"]):
+        raise HTTPException(status_code=403, detail="Not authorized")
     
     # Store net_id before deletion for broadcast
     net_id = check_in.net_id
@@ -461,7 +452,7 @@ async def toggle_hand_raised(
     
     # Check if user is authorized to toggle the hand
     is_owner = net.owner_id == current_user.id
-    is_admin = current_user.role.value == "admin"
+    is_admin = current_user.role == UserRole.ADMIN
     is_own_check_in = check_in.user_id == current_user.id
     
     # Check if user is NCS or logger for this net

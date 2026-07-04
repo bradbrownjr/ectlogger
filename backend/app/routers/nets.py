@@ -22,6 +22,7 @@ from app.schemas import NetCreate, NetUpdate, NetResponse, FrequencyResponse, Ne
 from app.dependencies import get_current_user, get_current_user_optional
 from app.email_service import EmailService
 from app.utils import display_callsign
+from app.permissions import check_net_permission, check_net_lifecycle_permission, is_admin
 
 router = APIRouter(prefix="/nets", tags=["nets"])
 
@@ -44,69 +45,7 @@ def format_time_for_net(timestamp: datetime, net_started_at: datetime, net_close
         return timestamp.strftime("%H:%M:%S")
 
 
-async def check_net_permission(db: AsyncSession, net: Net, user: User, required_roles: List[str] = None) -> bool:
-    """Check if user has permission to manage a net (owner, admin, or has required role)"""
-    # Owner and admin always have permission
-    if net.owner_id == user.id or user.role.value == "admin":
-        return True
-
-    # Check if user has required role for this net
-    if required_roles:
-        result = await db.execute(
-            select(NetRole).where(
-                NetRole.net_id == net.id,
-                NetRole.user_id == user.id,
-                NetRole.role.in_(required_roles)
-            )
-        )
-        if result.scalar_one_or_none():
-            return True
-
-    return False
-
-
-async def check_net_lifecycle_permission(db: AsyncSession, net: Net, user: User) -> bool:
-    """Check if user can archive or delete a net.
-
-    Allowed: net owner, site admin, NCS role on this net, or manager/co-manager
-    of the template this net was created from.
-    """
-    if net.owner_id == user.id or user.role.value == "admin":
-        return True
-
-    # NCS role on this specific net
-    ncs_result = await db.execute(
-        select(NetRole).where(
-            NetRole.net_id == net.id,
-            NetRole.user_id == user.id,
-            NetRole.role == "NCS",
-        )
-    )
-    if ncs_result.scalar_one_or_none():
-        return True
-
-    # Template manager or co-manager (net auto-created from a schedule)
-    if net.template_id:
-        tmpl_result = await db.execute(
-            select(NetTemplate).where(
-                NetTemplate.id == net.template_id,
-                NetTemplate.owner_id == user.id,
-            )
-        )
-        if tmpl_result.scalar_one_or_none():
-            return True
-
-        co_mgr_result = await db.execute(
-            select(TemplateStaff).where(
-                TemplateStaff.template_id == net.template_id,
-                TemplateStaff.user_id == user.id,
-                TemplateStaff.is_co_manager == True,
-            )
-        )
-        if co_mgr_result.scalar_one_or_none():
-            return True
-
-    return False
+# check_net_permission and check_net_lifecycle_permission are now in app.permissions
 
 
 @router.post("/", response_model=NetResponse, status_code=status.HTTP_201_CREATED)
@@ -257,7 +196,7 @@ async def list_nets(
         is_owner_or_ncs = False
         if current_user:
             is_owner = net.owner_id == current_user.id
-            is_admin = current_user.role.value == "admin"
+            is_admin = current_user.role == UserRole.ADMIN
             is_ncs = net.id in user_ncs_net_ids
             is_owner_or_ncs = is_owner or is_ncs  # non-admin access; used by frontend simulation mode
             can_manage = is_owner_or_ncs or is_admin
@@ -304,7 +243,7 @@ async def get_net(
     is_owner_or_ncs = False
     if current_user:
         is_owner = net.owner_id == current_user.id
-        is_admin = current_user.role.value == "admin"
+        is_admin = is_admin(current_user)
         # Check if user is NCS for this net
         ncs_result = await db.execute(
             select(NetRole).where(
@@ -834,7 +773,7 @@ async def close_net(
     # Allow net closure by NCS, logger, or admin
     is_authorized = (
         net.owner_id == current_user.id or
-        current_user.role.value == "admin"
+        is_admin(current_user)
     )
     
     if not is_authorized:
@@ -1609,7 +1548,7 @@ async def assign_net_role(
         raise HTTPException(status_code=404, detail="Net not found")
     
     # Only owner or admin can assign roles
-    if net.owner_id != current_user.id and current_user.role.value != "admin":
+    if net.owner_id != current_user.id and not is_admin(current_user):
         raise HTTPException(status_code=403, detail="Not authorized to assign roles")
     
     # Verify user exists
@@ -1675,7 +1614,7 @@ async def remove_net_role(
         raise HTTPException(status_code=404, detail="Net not found")
     
     # Only owner or admin can remove roles
-    if net.owner_id != current_user.id and current_user.role.value != "admin":
+    if net.owner_id != current_user.id and not is_admin(current_user):
         raise HTTPException(status_code=403, detail="Not authorized to remove roles")
     
     result = await db.execute(select(NetRole).where(NetRole.id == role_id))
@@ -1752,7 +1691,7 @@ async def claim_ncs_role(
         raise HTTPException(status_code=404, detail="Net not found")
     
     # Only owner or admin can claim NCS
-    if net.owner_id != current_user.id and current_user.role.value != "admin":
+    if net.owner_id != current_user.id and not is_admin(current_user):
         raise HTTPException(status_code=403, detail="Only net owner or admin can claim NCS")
     
     # Check if there's already an NCS
@@ -1940,7 +1879,7 @@ async def claim_ncs_frequency(
         raise HTTPException(status_code=404, detail="Role not found")
     
     # Only the NCS user, owner, or admin can set/change their frequency
-    if role.user_id != current_user.id and net.owner_id != current_user.id and current_user.role.value != "admin":
+    if role.user_id != current_user.id and net.owner_id != current_user.id and not is_admin(current_user):
         raise HTTPException(status_code=403, detail="Not authorized to claim frequency for this role")
     
     # Verify the frequency belongs to this net
@@ -2008,7 +1947,7 @@ async def clear_ncs_frequency(
         raise HTTPException(status_code=404, detail="Role not found")
     
     # Only the NCS user, owner, or admin can clear their frequency
-    if role.user_id != current_user.id and net.owner_id != current_user.id and current_user.role.value != "admin":
+    if role.user_id != current_user.id and net.owner_id != current_user.id and not is_admin(current_user):
         raise HTTPException(status_code=403, detail="Not authorized to clear frequency for this role")
     
     role.active_frequency_id = None

@@ -23,6 +23,7 @@ from app.dependencies import get_current_user, get_current_user_optional
 from app.email_service import EmailService
 from app.config import settings
 from app.logger import logger
+from app.permissions import check_template_permission
 
 router = APIRouter(prefix="/templates/{template_id}/ncs-rotation", tags=["ncs-rotation"])
 
@@ -52,28 +53,7 @@ async def get_template_or_404(template_id: int, db: AsyncSession) -> NetTemplate
     return template
 
 
-async def check_template_permission(template: NetTemplate, user: User, db: AsyncSession) -> bool:
-    """Check if user can manage this template's rotation and staff.
-
-    Authorized roles (must match the equivalent helper in routers/templates.py):
-    - Global admin
-    - Template owner (a.k.a. Net Manager)
-    - Active member of the template's NCS rotation
-    - Active member of the template's staff list
-    """
-    if user.role == 'admin':
-        return True
-    if template.owner_id == user.id:
-        return True
-    # Active rotation members can manage
-    for member in template.rotation_members:
-        if member.user_id == user.id and member.is_active:
-            return True
-    # Active staff members can manage (parity with routers/templates.py)
-    for staff in template.staff:
-        if staff.user_id == user.id and staff.is_active:
-            return True
-    return False
+# check_template_permission is now in app.permissions (canonical DB-query version)
 
 
 def _template_local_tz(template: NetTemplate):
@@ -376,7 +356,7 @@ async def add_rotation_member(
     """Add a user to the NCS rotation"""
     template = await get_template_or_404(template_id, db)
     
-    if not await check_template_permission(template, current_user, db):
+    if not await check_template_permission(db, template, current_user):
         raise HTTPException(status_code=403, detail="Permission denied")
     
     # Check user exists
@@ -422,7 +402,7 @@ async def remove_rotation_member(
     """Remove a user from the NCS rotation"""
     template = await get_template_or_404(template_id, db)
     
-    if not await check_template_permission(template, current_user, db):
+    if not await check_template_permission(db, template, current_user):
         raise HTTPException(status_code=403, detail="Permission denied")
     
     result = await db.execute(
@@ -457,7 +437,7 @@ async def clear_all_rotation_members(
     """Remove all users from the NCS rotation (clear the entire rotation)"""
     template = await get_template_or_404(template_id, db)
     
-    if not await check_template_permission(template, current_user, db):
+    if not await check_template_permission(db, template, current_user):
         raise HTTPException(status_code=403, detail="Permission denied")
     
     # Delete all overrides for this template
@@ -487,7 +467,7 @@ async def reorder_rotation_members(
     """Reorder the NCS rotation by providing member IDs in desired order"""
     template = await get_template_or_404(template_id, db)
     
-    if not await check_template_permission(template, current_user, db):
+    if not await check_template_permission(db, template, current_user):
         raise HTTPException(status_code=403, detail="Permission denied")
     
     # Update positions
@@ -587,7 +567,7 @@ async def create_schedule_override(
     """Create a swap/override for a specific date"""
     template = await get_template_or_404(template_id, db)
     
-    if not await check_template_permission(template, current_user, db):
+    if not await check_template_permission(db, template, current_user):
         raise HTTPException(status_code=403, detail="Permission denied")
     
     # Calculate who was originally scheduled
@@ -711,7 +691,7 @@ async def delete_schedule_override(
     """Remove a schedule override (revert to normal rotation)"""
     template = await get_template_or_404(template_id, db)
     
-    if not await check_template_permission(template, current_user, db):
+    if not await check_template_permission(db, template, current_user):
         raise HTTPException(status_code=403, detail="Permission denied")
     
     result = await db.execute(
@@ -772,7 +752,7 @@ async def add_template_staff(
     """Add a user to the template staff (people who can run nets)"""
     template = await get_template_or_404(template_id, db)
     
-    if not await check_template_permission(template, current_user, db):
+    if not await check_template_permission(db, template, current_user):
         raise HTTPException(status_code=403, detail="Permission denied")
     
     # Check user exists
@@ -814,7 +794,7 @@ async def remove_template_staff(
     """Remove a user from the template staff"""
     template = await get_template_or_404(template_id, db)
     
-    if not await check_template_permission(template, current_user, db):
+    if not await check_template_permission(db, template, current_user):
         raise HTTPException(status_code=403, detail="Permission denied")
     
     result = await db.execute(
@@ -844,7 +824,7 @@ async def update_template_staff(
     """Update a staff member's active status or co-manager flag"""
     template = await get_template_or_404(template_id, db)
     
-    if not await check_template_permission(template, current_user, db):
+    if not await check_template_permission(db, template, current_user):
         raise HTTPException(status_code=403, detail="Permission denied")
     
     result = await db.execute(
