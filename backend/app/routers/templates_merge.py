@@ -43,7 +43,10 @@ from app.schemas import (
     public_display_name,
 )
 
+from app.routers.templates_core import is_active_co_manager
+
 router = APIRouter()
+
 
 async def _check_merge_permission(template: NetTemplate, user: User, db: AsyncSession) -> bool:
     """Only admin, template owner, or active co-manager can merge."""

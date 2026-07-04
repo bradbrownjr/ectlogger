@@ -43,7 +43,10 @@ from app.schemas import (
     public_display_name,
 )
 
+from app.routers.templates_core import is_active_co_manager
+
 router = APIRouter()
+
 
 @router.post("/{template_id}/subscribe", response_model=NetTemplateSubscriptionResponse)
 async def subscribe_to_template(

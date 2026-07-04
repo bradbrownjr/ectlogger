@@ -45,6 +45,69 @@ from app.schemas import (
 
 router = APIRouter()
 
+
+async def is_active_co_manager(db: AsyncSession, template_id: int, user_id: int) -> bool:
+    """Return True when user is an active staff member flagged as co-manager."""
+    result = await db.execute(
+        select(TemplateStaff).where(
+            TemplateStaff.template_id == template_id,
+            TemplateStaff.user_id == user_id,
+            TemplateStaff.is_active == True,
+            TemplateStaff.is_co_manager == True,
+        )
+    )
+    return result.scalar_one_or_none() is not None
+
+
+async def check_schedule_creation_eligibility(db: AsyncSession, user: User) -> tuple[bool, str]:
+    """Check if user is eligible to create schedules based on app settings.
+
+    Returns (is_eligible, error_message). Admins bypass all checks.
+    """
+    if user.role == UserRole.ADMIN:
+        return True, ""
+
+    result = await db.execute(select(AppSettings).where(AppSettings.id == 1))
+    settings = result.scalar_one_or_none()
+
+    if not settings:
+        min_age_days = 7
+        min_participations = 1
+        max_per_day = 5
+    else:
+        min_age_days = settings.schedule_min_account_age_days if settings.schedule_min_account_age_days is not None else 7
+        min_participations = settings.schedule_min_net_participations if settings.schedule_min_net_participations is not None else 1
+        max_per_day = settings.schedule_max_per_day if settings.schedule_max_per_day is not None else 5
+
+    if min_age_days > 0 and user.created_at and not getattr(user, 'schedule_age_bypass', False):
+        account_age = datetime.now(timezone.utc) - user.created_at.replace(tzinfo=timezone.utc)
+        if account_age.days < min_age_days:
+            days_remaining = min_age_days - account_age.days
+            return False, f"Your account must be at least {min_age_days} days old to create schedules. Please wait {days_remaining} more day(s)."
+
+    if min_participations > 0 and not getattr(user, 'schedule_age_bypass', False):
+        participation_result = await db.execute(
+            select(func.count(func.distinct(CheckIn.net_id)))
+            .where(CheckIn.user_id == user.id)
+        )
+        participation_count = participation_result.scalar() or 0
+        if participation_count < min_participations:
+            return False, f"You must participate in at least {min_participations} net(s) before creating schedules. You have participated in {participation_count}."
+
+    if max_per_day > 0:
+        today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+        templates_today_result = await db.execute(
+            select(func.count(NetTemplate.id))
+            .where(NetTemplate.owner_id == user.id)
+            .where(NetTemplate.created_at >= today_start)
+        )
+        templates_today = templates_today_result.scalar() or 0
+        if templates_today >= max_per_day:
+            return False, f"You have reached the daily limit of {max_per_day} schedules. Please try again tomorrow."
+
+    return True, ""
+
+
 @router.post("/", response_model=NetTemplateResponse, status_code=status.HTTP_201_CREATED)
 async def create_template(
     template_data: NetTemplateCreate,
