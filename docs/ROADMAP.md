@@ -1,6 +1,6 @@
 # ECT Logger — Product Roadmap
 
-*Last updated: 2026-07-03 (rev 26 — added component placement/reuse convention to Milestone 0.4; rev 25 — full codebase audit, Milestone 0, per-item model recommendations)*  
+*Last updated: 2026-07-04 (rev 27 — Steps 1–3 of Milestone 0.4 marked complete; Step 4 frontend splits remain)*  
 *Compiled from user feedback: AA1GM, KC1UIX, W1BKW, W1MTW, KC1JMH*
 
 > **Canonical location:** `docs/ROADMAP.md`. ~~The root-level `ROADMAP.md` is a duplicate and should be deleted.~~ *Resolved: the root-level duplicate no longer exists as of 2026-07-03.*
@@ -68,29 +68,29 @@ Rule of thumb: Haiku and Sonnet can only maintain this codebase safely once file
 
 *Goal: no page/router over ~800 lines, so any single file fits comfortably in a small model's working set. Extract shared patterns first (they shrink every file that follows), then split files from easiest to hardest. Each extraction must preserve behavior exactly — run the 0.3 suite after each step, and follow the Regression Check Policy (a 5,410-line file shrinking by thousands of lines requires the feature-survival checklist).*
 
-**Step 1 — Shared frontend hooks** *(do first; every later split gets smaller)*  
-- [ ] `useLocalStorage(key, initial)` — replaces the repeated localStorage-init + persist-effect pattern in NetView, Dashboard, Scheduler
-- [ ] `useSortableTable(items, initialField)` — replaces four duplicate sortField/sortDirection pairs in Admin.tsx plus Scheduler.tsx
-- [ ] `useDialog()` returning open/onOpen/onClose — NetView alone declares ~36 dialog open-state pairs
-- [ ] `useApiData(fetchFn)` — the fetch + loading + error + refetch boilerplate repeated across pages
-- [ ] A `localStorageKeys.ts` constants file documenting every key in use (themeMode, dashboard-*, scheduler-*, floatingWindow_*, checkin_hideDuplicates, token, ...)  
-**Model:** Sonnet to design and land the hooks with one exemplar migration each; Haiku for the remaining mechanical migrations.
+~~**Step 1 — Shared frontend hooks** *(do first; every later split gets smaller)*~~  
+~~- `useLocalStorage(key, initial)` — replaces the repeated localStorage-init + persist-effect pattern in NetView, Dashboard, Scheduler~~  
+~~- `useSortableTable(items, initialField)` — replaces four duplicate sortField/sortDirection pairs in Admin.tsx plus Scheduler.tsx~~  
+~~- `useDialog()` returning open/onOpen/onClose — NetView alone declares ~36 dialog open-state pairs~~  
+~~- `useApiData(fetchFn)` — the fetch + loading + error + refetch boilerplate repeated across pages~~  
+~~- A `localStorageKeys.ts` constants file documenting every key in use (themeMode, dashboard-*, scheduler-*, floatingWindow_*, checkin_hideDuplicates, token, ...)~~  
+*Completed 2026-07-03. All hooks created in `frontend/src/hooks/`; exemplar + mechanical migrations applied across Dashboard, Scheduler, Admin, NetView, Statistics.*
 
-**Step 2 — Backend shared permission module**  
-Extract `app/permissions.py`: `check_net_permission`, `check_template_permission`, and the repeated is_owner/is_admin/is_ncs composition currently duplicated across `routers/nets.py`, `routers/templates.py`, `routers/check_ins.py`. Also normalize the two inconsistent admin-check styles (`user.role == UserRole.ADMIN` vs `user.role.value == "admin"`) to one idiom.  
-**Model:** Sonnet.
+~~**Step 2 — Backend shared permission module**~~  
+~~Extract `app/permissions.py`: `check_net_permission`, `check_template_permission`, and the repeated is_owner/is_admin/is_ncs composition currently duplicated across `routers/nets.py`, `routers/templates.py`, `routers/check_ins.py`. Also normalize the two inconsistent admin-check styles (`user.role == UserRole.ADMIN` vs `user.role.value == "admin"`) to one idiom.~~  
+*Completed 2026-07-03. `app/permissions.py` created; silent bug fixed in `ncs_rotation.py` (enum vs string admin check); all 8 `.role.value == "admin"` sites normalized.*
 
-**Step 3 — Backend router splits** *(FastAPI sub-routers; mechanical once the pattern is set)*  
-| File | Lines | Proposed split |
+~~**Step 3 — Backend router splits** *(FastAPI sub-routers; mechanical once the pattern is set)*~~  
+| File | Lines | Split result |
 |---|---|---|
-| `routers/nets.py` | 2,207 | `nets_core.py` (lifecycle), `nets_roles.py` (NCS/role mgmt), `nets_export.py` (CSV/ICS-309/archive/clone), `nets_polls.py` |
-| `email_service.py` | 1,613 | `email/base.py` (send + unsubscribe footer), `email/auth.py`, `email/net_lifecycle.py`, `email/reminders.py`, `email/net_logs.py` (incl. ICS-309), `email/digest.py` — thin facade keeps the existing import path |
-| `routers/templates.py` | 1,349 | `templates_core.py` (CRUD), `templates_merge.py`, `templates_subscriptions.py`, `templates_topics.py` |
-| `routers/statistics.py` | 1,022 | `statistics_global.py`, `statistics_net.py`, `statistics_user.py`, `statistics_geo.py` |
-| `routers/ncs_rotation.py` | 877 | split schedule *computation* (pure functions — most testable code in the app) from the CRUD/override routes |
+| ~~`routers/nets.py` (2,207)~~ | done | `nets_core.py`, `nets_polls.py`, `nets_export.py`, `nets_roles.py` + facade |
+| ~~`email_service.py` (1,613)~~ | done | `email/{base,auth,net_lifecycle,reminders,net_logs,digest}.py` + `EmailService` facade class |
+| ~~`routers/templates.py` (1,349)~~ | done | `templates_core.py`, `templates_merge.py`, `templates_subscriptions.py`, `templates_topics.py` + facade |
+| ~~`routers/statistics.py` (1,022)~~ | done | `statistics_{global,net,user,geo}.py` + facade |
+| ~~`routers/ncs_rotation.py` (877)~~ | done | `ncs_schedule.py` (pure functions, unit-testable), router stays in `ncs_rotation.py` |
 
-`ncs_reminder_service.py` (777) can stay whole — it is one cohesive background service.  
-**Model:** Sonnet for the first split (nets.py) to establish the pattern; Haiku or Sonnet for the rest. Route paths must not change — verify with a route-table diff before/after.
+~~`ncs_reminder_service.py` (777) can stay whole — it is one cohesive background service.~~  
+*Completed 2026-07-04. All route paths unchanged (verified with before/after route table diff). 23/23 tests pass on beta.*
 
 **Step 4 — Frontend page splits** *(easiest first; NetView last)*  
 | File | Lines | Extraction plan |
