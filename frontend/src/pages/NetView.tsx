@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import useDialog from '../hooks/useDialog';
+import useLocalStorage from '../hooks/useLocalStorage';
+import { STORAGE_KEYS } from '../utils/localStorageKeys';
 import { displayCallsign } from '../utils/userDisplay';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
@@ -253,7 +255,7 @@ const NetView: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [net, setNet] = useState<Net | null>(null);
   const [checkIns, setCheckIns] = useState<CheckIn[]>([]);
-  const [roleDialogOpen, setRoleDialogOpen] = useState(false);
+  const roleDialog = useDialog();
   const [netRoles, setNetRoles] = useState<NetRole[]>([]);
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [owner, setOwner] = useState<any>(null);
@@ -262,33 +264,33 @@ const NetView: React.FC = () => {
   const [activeSpeakerId, setActiveSpeakerId] = useState<number | null>(null);
   const [toastMessage, setToastMessage] = useState<string>('');
   const [ws, setWs] = useState<WebSocket | null>(null);
-  const [checkInDialogOpen, setCheckInDialogOpen] = useState(false);
+  const checkInDialog = useDialog();
   // Mobile-only: collapsed-by-default New Check-in form. NCS/Loggers attending
   // someone else's net don't need the form expanded by default; they can open
   // it on demand when they want to log a check-in.
   const [mobileCheckInExpanded, setMobileCheckInExpanded] = useState(false);
   const [onlineUserIds, setOnlineUserIds] = useState<number[]>([]);
   const [netStats, setNetStats] = useState<{total_check_ins: number, unique_stations: number, recheck_count: number, checked_out_count: number, online_count: number, guest_count: number} | null>(null);
-  const [frequencyDialogOpen, setFrequencyDialogOpen] = useState(false);
+  const frequencyDialog = useDialog();
   const [fieldDefinitions, setFieldDefinitions] = useState<FieldDefinition[]>([]);
   const map = useDialog();
-  const [bulkCheckInOpen, setBulkCheckInOpen] = useState(false);
-  const [hideDuplicates, setHideDuplicates] = useState<boolean>(() => localStorage.getItem('checkin_hideDuplicates') === 'true');
-  const [searchOpen, setSearchOpen] = useState(false);
+  const bulkCheckIn = useDialog();
+  const [hideDuplicates, setHideDuplicates] = useLocalStorage<boolean>(STORAGE_KEYS.CHECKIN_HIDE_DUPLICATES, false);
+  const search = useDialog();
   const [searchQuery, setSearchQuery] = useState('');
-  const [closeNetDialogOpen, setCloseNetDialogOpen] = useState(false);
-  const [subscribeDialogOpen, setSubscribeDialogOpen] = useState(false);  // Prompt to subscribe after net closes
-  const [archiveReminderOpen, setArchiveReminderOpen] = useState(false);
-  const [archiveHelpOpen, setArchiveHelpOpen] = useState(false);
-  const [archiveDeleteConfirmOpen, setArchiveDeleteConfirmOpen] = useState(false);
+  const closeNetDialog = useDialog();
+  const subscribeDialog = useDialog();
+  const archiveReminder = useDialog();
+  const archiveHelp = useDialog();
+  const archiveDeleteConfirm = useDialog();
   const [profileUserId, setProfileUserId] = useState<number | null>(null);
   const [subscribing, setSubscribing] = useState(false);
   const [startingNet, setStartingNet] = useState(false);
-  const [scriptOpen, setScriptOpen] = useState(false);
-  const [announcementsOpen, setAnnouncementsOpen] = useState(false);
-  const [scheduleAnnouncementsOpen, setScheduleAnnouncementsOpen] = useState(false);
-  const [topicHistoryOpen, setTopicHistoryOpen] = useState(false);
-  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const script = useDialog();
+  const announcements = useDialog();
+  const scheduleAnnouncements = useDialog();
+  const topicHistory = useDialog();
+  const importDialog = useDialog();
   const [csvImportFile, setCsvImportFile] = useState<File | null>(null);
   const [csvImporting, setCsvImporting] = useState(false);
   const [csvImportDragOver, setCsvImportDragOver] = useState(false);
@@ -306,15 +308,15 @@ const NetView: React.FC = () => {
   const [countdownTime, setCountdownTime] = useState<string | null>(null);
   const [durationTime, setDurationTime] = useState<string | null>(null);
   // Topic/Poll configuration dialog state
-  const [topicPollDialogOpen, setTopicPollDialogOpen] = useState(false);
+  const topicPollDialog = useDialog();
   const [tempTopicPrompt, setTempTopicPrompt] = useState('');
   const [tempPollQuestion, setTempPollQuestion] = useState('');
   // Net time editing dialog state
-  const [timeEditDialogOpen, setTimeEditDialogOpen] = useState(false);
+  const timeEditDialog = useDialog();
   const [editStartedAt, setEditStartedAt] = useState('');
   const [editClosedAt, setEditClosedAt] = useState('');
   // Check-in prompt for authenticated users viewing active/lobby nets
-  const [checkInPromptOpen, setCheckInPromptOpen] = useState(false);
+  const checkInPrompt = useDialog();
   const checkInPromptShownRef = useRef(false);
   const archiveReminderShownRef = useRef(false);
   // Inline editing state
@@ -323,22 +325,12 @@ const NetView: React.FC = () => {
   const [inlineEditFocusField, setInlineEditFocusField] = useState<string | null>(null);
   const inlineEditRowRef = useRef<HTMLTableRowElement | null>(null);
   const csvImportInputRef = useRef<HTMLInputElement | null>(null);
-  const [checkInListDetached, setCheckInListDetached] = useState(() => {
-    return localStorage.getItem('floatingWindow_checkInList_detached') === 'true';
-  });
-  const [chatDetached, setChatDetached] = useState(() => {
-    return localStorage.getItem('floatingWindow_chat_detached') === 'true';
-  });
-  const [chatMinimized, setChatMinimized] = useState(() => {
-    return localStorage.getItem('dockedPanel_chat_minimized') === 'true';
-  });
-  const [activityLogMinimized, setActivityLogMinimized] = useState(() => {
-    const stored = localStorage.getItem('dockedPanel_activityLog_minimized');
-    return stored === null ? true : stored === 'true';
-  });
-  const [activityLogDetached, setActivityLogDetached] = useState(() => {
-    return localStorage.getItem('floatingWindow_activityLog_detached') === 'true';
-  });
+  const [checkInListDetached, setCheckInListDetached] = useLocalStorage<boolean>(STORAGE_KEYS.FLOATING_CHECKIN_LIST, false);
+  const [chatDetached, setChatDetached] = useLocalStorage<boolean>(STORAGE_KEYS.FLOATING_CHAT, false);
+  const [chatMinimized, setChatMinimized] = useLocalStorage<boolean>(STORAGE_KEYS.DOCKED_CHAT_MINIMIZED, false);
+  // activityLog defaults to minimized (true) when no stored preference exists
+  const [activityLogMinimized, setActivityLogMinimized] = useLocalStorage<boolean>(STORAGE_KEYS.DOCKED_ACTIVITY_LOG_MINIMIZED, true);
+  const [activityLogDetached, setActivityLogDetached] = useLocalStorage<boolean>(STORAGE_KEYS.FLOATING_ACTIVITY_LOG, false);
   // Frequency filter state - allows filtering check-ins by selected frequencies
   const [filteredFrequencyIds, setFilteredFrequencyIds] = useState<number[]>([]);
   // Auto-start ref to prevent multiple go-live triggers
@@ -423,26 +415,7 @@ const NetView: React.FC = () => {
     }
   }, [net?.owner_id, net?.poll_enabled, net?.topic_of_week_enabled]);
 
-  // Persist detached panel states to localStorage
-  useEffect(() => {
-    localStorage.setItem('floatingWindow_checkInList_detached', String(checkInListDetached));
-  }, [checkInListDetached]);
-
-  useEffect(() => {
-    localStorage.setItem('floatingWindow_chat_detached', String(chatDetached));
-  }, [chatDetached]);
-
-  useEffect(() => {
-    localStorage.setItem('dockedPanel_chat_minimized', String(chatMinimized));
-  }, [chatMinimized]);
-
-  useEffect(() => {
-    localStorage.setItem('dockedPanel_activityLog_minimized', String(activityLogMinimized));
-  }, [activityLogMinimized]);
-
-  useEffect(() => {
-    localStorage.setItem('floatingWindow_activityLog_detached', String(activityLogDetached));
-  }, [activityLogDetached]);
+  // Panel states are persisted automatically by useLocalStorage; no explicit persist effects needed.
 
   // Apply viewport-height-based zoom on the net view so the logging panel fits on
   // short/portrait desktop screens (e.g. 13" MacBooks, small Win11 laptops, iPads).
@@ -623,7 +596,7 @@ const NetView: React.FC = () => {
     if (!alreadyCheckedIn) {
       checkInPromptShownRef.current = true;
       // Delay so it doesn't flash during initial data load
-      const timer = setTimeout(() => setCheckInPromptOpen(true), 2000);
+      const timer = setTimeout(() => checkInPrompt.onOpen(), 2000);
       return () => clearTimeout(timer);
     }
   }, [net?.status, isAuthenticated, checkIns, user?.id]);
@@ -632,7 +605,7 @@ const NetView: React.FC = () => {
   useEffect(() => {
     if (net?.status === 'closed' && net?.can_manage && !archiveReminderShownRef.current) {
       archiveReminderShownRef.current = true;
-      setArchiveReminderOpen(true);
+      archiveReminder.onOpen();
     }
   }, [net?.status, net?.can_manage]);
 
@@ -904,7 +877,7 @@ const NetView: React.FC = () => {
       // Open dialog to configure topic/poll
       setTempTopicPrompt(net?.topic_of_week_prompt || '');
       setTempPollQuestion(net?.poll_question || '');
-      setTopicPollDialogOpen(true);
+      topicPollDialog.onOpen();
     } else {
       handleStartNet();
     }
@@ -921,7 +894,7 @@ const NetView: React.FC = () => {
         updates.poll_question = tempPollQuestion || null;
       }
       await netApi.update(Number(netId), updates);
-      setTopicPollDialogOpen(false);
+      topicPollDialog.onClose();
       // Then start the net
       handleStartNet();
     } catch (error) {
@@ -968,7 +941,7 @@ const NetView: React.FC = () => {
       const currentCheckIns = [...checkIns];
       
       await netApi.close(Number(netId));
-      setCloseNetDialogOpen(false);
+      closeNetDialog.onClose();
       // fetchNet will trigger the useEffect that fetches poll results/topic responses
       // based on whether those features are enabled
       await fetchNet();
@@ -995,7 +968,7 @@ const NetView: React.FC = () => {
             
             if (!isAlreadySubscribed) {
               // Show subscription dialog
-              setSubscribeDialogOpen(true);
+              subscribeDialog.onOpen();
             }
           } catch (err) {
             // Template might not exist anymore, skip the prompt
@@ -1003,7 +976,7 @@ const NetView: React.FC = () => {
           }
         }
       }
-      setArchiveReminderOpen(true);
+      archiveReminder.onOpen();
     } catch (error) {
       console.error('Failed to close net:', error);
     }
@@ -1016,7 +989,7 @@ const NetView: React.FC = () => {
     setSubscribing(true);
     try {
       await templateApi.subscribe(net.template_id);
-      setSubscribeDialogOpen(false);
+      subscribeDialog.onClose();
       setToastMessage('Subscribed! You will receive notifications for future instances of this net.');
     } catch (error: any) {
       console.error('Failed to subscribe:', error);
@@ -1027,7 +1000,7 @@ const NetView: React.FC = () => {
   };
   
   const handleSkipSubscribe = () => {
-    setSubscribeDialogOpen(false);
+    subscribeDialog.onClose();
   };
 
   // Go Live: Transition from LOBBY to ACTIVE mode
@@ -1050,7 +1023,7 @@ const NetView: React.FC = () => {
       if (editClosedAt) updateData.closed_at = new Date(editClosedAt).toISOString();
       await netApi.update(Number(netId), updateData);
       await fetchNet();
-      setTimeEditDialogOpen(false);
+      timeEditDialog.onClose();
       setToastMessage('Net times updated');
     } catch (error: any) {
       console.error('Failed to update net times:', error);
@@ -1107,12 +1080,12 @@ const NetView: React.FC = () => {
     const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
     setCsvImportTimezone(browserTz);
     setCsvImportUseUtc(true);
-    setImportDialogOpen(true);
+    importDialog.onOpen();
   };
 
   const handleCloseImportDialog = () => {
     if (csvImporting) return;
-    setImportDialogOpen(false);
+    importDialog.onClose();
     setCsvImportFile(null);
     setCsvImportDragOver(false);
     setCsvImportErrors([]);
@@ -1178,7 +1151,7 @@ const NetView: React.FC = () => {
       setToastMessage(message);
       await Promise.all([fetchCheckIns(), fetchNetStats(), fetchNet()]);
       if (errorCount === 0) {
-        setImportDialogOpen(false);
+        importDialog.onClose();
         setCsvImportFile(null);
       }
     } catch (error: any) {
@@ -2085,7 +2058,7 @@ const NetView: React.FC = () => {
                           };
                           setEditStartedAt(toLocal(net.started_at));
                           setEditClosedAt(toLocal(net.closed_at));
-                          setTimeEditDialogOpen(true);
+                          timeEditDialog.onOpen();
                         }}
                         sx={{ p: 0.25, display: { xs: 'none', md: 'inline-flex' } }}
                       >
@@ -2260,7 +2233,7 @@ const NetView: React.FC = () => {
                     <Button
                       size="small"
                       variant="outlined"
-                      onClick={() => setBulkCheckInOpen(true)}
+                      onClick={() => bulkCheckIn.onOpen()}
                       sx={{ minWidth: 'auto', px: 1 }}
                     >
                       <FastForwardIcon fontSize="small" />
@@ -2274,7 +2247,7 @@ const NetView: React.FC = () => {
                         size="small"
                         variant={searchQuery ? "contained" : "outlined"}
                         color="primary"
-                        onClick={() => setSearchOpen(true)}
+                        onClick={() => search.onOpen()}
                         sx={{ minWidth: 'auto', px: 1 }}
                       >
                         <SearchIcon fontSize="small" />
@@ -2318,7 +2291,7 @@ const NetView: React.FC = () => {
                         <Button
                           size="small"
                           variant="outlined"
-                          onClick={() => setScriptOpen(true)}
+                          onClick={() => script.onOpen()}
                           sx={{ minWidth: 'auto', px: 1, borderColor: 'grey.400' }}
                         >
                           <ArticleIcon fontSize="small" />
@@ -2330,7 +2303,7 @@ const NetView: React.FC = () => {
                         <Button
                           size="small"
                           variant="outlined"
-                          onClick={() => setScheduleAnnouncementsOpen(true)}
+                          onClick={() => scheduleAnnouncements.onOpen()}
                           sx={{ minWidth: 'auto', px: 1, borderColor: 'grey.400' }}
                         >
                           <CampaignIcon fontSize="small" />
@@ -2342,7 +2315,7 @@ const NetView: React.FC = () => {
                         <Button
                           size="small"
                           variant="outlined"
-                          onClick={() => setAnnouncementsOpen(true)}
+                          onClick={() => announcements.onOpen()}
                           sx={{ minWidth: 'auto', px: 1, borderColor: 'grey.400' }}
                         >
                           <SpeakerNotesIcon fontSize="small" />
@@ -2354,7 +2327,7 @@ const NetView: React.FC = () => {
                         <Button
                           size="small"
                           variant="outlined"
-                          onClick={() => setTopicHistoryOpen(true)}
+                          onClick={() => topicHistory.onOpen()}
                           sx={{ minWidth: 'auto', px: 1, borderColor: 'grey.400' }}
                         >
                           <HistoryIcon fontSize="small" />
@@ -2438,7 +2411,7 @@ const NetView: React.FC = () => {
                           onClick={() => {
                             setTempTopicPrompt(net?.topic_of_week_prompt || '');
                             setTempPollQuestion(net?.poll_question || '');
-                            setTopicPollDialogOpen(true);
+                            topicPollDialog.onOpen();
                           }}
                           sx={{
                             p: 0.5,
@@ -2471,7 +2444,7 @@ const NetView: React.FC = () => {
                         variant="outlined"
                         onClick={() => {
                           fetchAllUsers();
-                          setRoleDialogOpen(true);
+                          roleDialog.onOpen();
                         }}
                         sx={{ minWidth: 'auto', px: 1 }}
                       >
@@ -2499,7 +2472,7 @@ const NetView: React.FC = () => {
                         variant="outlined"
                         onClick={() => {
                           fetchAllUsers();
-                          setRoleDialogOpen(true);
+                          roleDialog.onOpen();
                         }}
                         sx={{ minWidth: 'auto', px: 1, color: '#9c27b0', borderColor: '#9c27b0', '&:hover': { borderColor: '#9c27b0', backgroundColor: 'rgba(156, 39, 176, 0.08)' } }}
                       >
@@ -2608,7 +2581,7 @@ const NetView: React.FC = () => {
                               status: 'checked_in',
                             });
                           }
-                          setCheckInDialogOpen(true);
+                          checkInDialog.onOpen();
                         }}
                         sx={{
                           minWidth: 'auto',
@@ -2644,7 +2617,7 @@ const NetView: React.FC = () => {
                       size="small"
                       variant="contained"
                       color="error"
-                      onClick={() => setCloseNetDialogOpen(true)}
+                      onClick={() => closeNetDialog.onOpen()}
                       sx={{ minWidth: 'auto', px: 1 }}
                     >
                       <CloseIcon fontSize="small" />
@@ -2832,11 +2805,7 @@ const NetView: React.FC = () => {
                       <TableCell sx={{ whiteSpace: 'nowrap', width: 30, p: 0.5 }}>
                         <IconButton
                           size="small"
-                          onClick={() => {
-                            const next = !hideDuplicates;
-                            setHideDuplicates(next);
-                            localStorage.setItem('checkin_hideDuplicates', String(next));
-                          }}
+                          onClick={() => setHideDuplicates(!hideDuplicates)}
                           title={hideDuplicates ? 'Show all rows (including re-checks)' : 'Hide duplicate rows (show latest per station)'}
                           sx={{ p: 0.25, color: hideDuplicates ? 'primary.main' : 'text.secondary' }}
                         >
@@ -3888,7 +3857,7 @@ const NetView: React.FC = () => {
                           <Button
                             size="small"
                             variant="outlined"
-                            onClick={() => setFrequencyDialogOpen(true)}
+                            onClick={() => frequencyDialog.onOpen()}
                             title="Set available frequencies"
                           >
                             📡
@@ -4101,7 +4070,7 @@ const NetView: React.FC = () => {
                     <Button
                       size="small"
                       variant="outlined"
-                      onClick={() => setFrequencyDialogOpen(true)}
+                      onClick={() => frequencyDialog.onOpen()}
                       startIcon={<span>📡</span>}
                       fullWidth
                     >
@@ -4533,8 +4502,8 @@ const NetView: React.FC = () => {
 
       {/* Close Net Confirmation Dialog */}
       <Dialog 
-        open={closeNetDialogOpen} 
-        onClose={() => setCloseNetDialogOpen(false)}
+        open={closeNetDialog.open} 
+        onClose={closeNetDialog.onClose}
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
             e.preventDefault();
@@ -4549,7 +4518,7 @@ const NetView: React.FC = () => {
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setCloseNetDialogOpen(false)}>Cancel</Button>
+          <Button onClick={closeNetDialog.onClose}>Cancel</Button>
           <Button onClick={handleCloseNet} variant="contained" color="error">
             Close Net
           </Button>
@@ -4559,7 +4528,7 @@ const NetView: React.FC = () => {
       {/* ========== SUBSCRIBE TO SCHEDULE DIALOG ========== */}
       {/* Shown after a net closes if user checked in and isn't already subscribed */}
       <Dialog
-        open={subscribeDialogOpen}
+        open={subscribeDialog.open}
         onClose={handleSkipSubscribe}
         maxWidth="sm"
         PaperProps={{ sx: { m: { xs: 1, sm: 4 } } }}
@@ -4595,8 +4564,8 @@ const NetView: React.FC = () => {
 
       {/* Topic/Poll Configuration Dialog */}
       <Dialog
-        open={topicPollDialogOpen}
-        onClose={() => setTopicPollDialogOpen(false)}
+        open={topicPollDialog.open}
+        onClose={topicPollDialog.onClose}
         maxWidth="sm"
         fullWidth
         PaperProps={{ sx: { m: { xs: 1, sm: 4 } } }}
@@ -4637,7 +4606,7 @@ const NetView: React.FC = () => {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setTopicPollDialogOpen(false)}>Cancel</Button>
+          <Button onClick={topicPollDialog.onClose}>Cancel</Button>
           <Button onClick={handleTopicPollSaveAndStart} variant="contained" color="success">
             Save & Start Net
           </Button>
@@ -4645,7 +4614,7 @@ const NetView: React.FC = () => {
       </Dialog>
 
       {/* Role Management Dialog */}
-      <Dialog open={roleDialogOpen} onClose={() => setRoleDialogOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { m: { xs: 1, sm: 4 } } }}>
+      <Dialog open={roleDialog.open} onClose={roleDialog.onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { m: { xs: 1, sm: 4 } } }}>
         <DialogTitle>Manage Net Control Staff</DialogTitle>
         <DialogContent>
           <Box sx={{ pt: 2 }}>
@@ -4735,21 +4704,21 @@ const NetView: React.FC = () => {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setRoleDialogOpen(false)}>Close</Button>
+          <Button onClick={roleDialog.onClose}>Close</Button>
         </DialogActions>
       </Dialog>
 
       {/* Available Frequencies Dialog */}
       <Dialog
-        open={frequencyDialogOpen}
-        onClose={() => setFrequencyDialogOpen(false)}
+        open={frequencyDialog.open}
+        onClose={frequencyDialog.onClose}
         maxWidth="sm"
         fullWidth
         PaperProps={{ sx: { m: { xs: 1, sm: 4 } } }}
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
             e.preventDefault();
-            setFrequencyDialogOpen(false);
+            frequencyDialog.onClose();
           }
         }}
       >
@@ -4790,14 +4759,14 @@ const NetView: React.FC = () => {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setFrequencyDialogOpen(false)}>Done</Button>
+          <Button onClick={frequencyDialog.onClose}>Done</Button>
         </DialogActions>
       </Dialog>
 
       {/* Check-In Dialog for Regular Users */}
       <Dialog
-        open={checkInDialogOpen}
-        onClose={() => setCheckInDialogOpen(false)}
+        open={checkInDialog.open}
+        onClose={checkInDialog.onClose}
         maxWidth="md"
         fullWidth
         PaperProps={{ sx: { m: { xs: 1, sm: 4 } } }}
@@ -4806,7 +4775,7 @@ const NetView: React.FC = () => {
           if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             handleCheckIn();
-            setCheckInDialogOpen(false);
+            checkInDialog.onClose();
           }
         }}
       >
@@ -4947,11 +4916,11 @@ const NetView: React.FC = () => {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setCheckInDialogOpen(false)}>Cancel</Button>
+          <Button onClick={checkInDialog.onClose}>Cancel</Button>
           <Button 
             onClick={() => {
               handleCheckIn();
-              setCheckInDialogOpen(false);
+              checkInDialog.onClose();
             }} 
             variant="contained" 
             color="primary"
@@ -4975,15 +4944,15 @@ const NetView: React.FC = () => {
 
       {/* Bulk Check-In Dialog */}
       <BulkCheckIn
-        open={bulkCheckInOpen}
-        onClose={() => setBulkCheckInOpen(false)}
+        open={bulkCheckIn.open}
+        onClose={bulkCheckIn.onClose}
         netId={Number(netId)}
         onCheckInsAdded={fetchCheckIns}
         fieldConfig={net?.field_config}
       />
 
       {/* CSV Import Dialog */}
-      <Dialog open={importDialogOpen} onClose={handleCloseImportDialog} maxWidth="sm" fullWidth PaperProps={{ sx: { m: { xs: 1, sm: 4 } } }}>
+      <Dialog open={importDialog.open} onClose={handleCloseImportDialog} maxWidth="sm" fullWidth PaperProps={{ sx: { m: { xs: 1, sm: 4 } } }}>
         <DialogTitle>Import Check-ins from CSV</DialogTitle>
         <DialogContent>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
@@ -5118,8 +5087,8 @@ const NetView: React.FC = () => {
 
       {/* Search Dialog */}
       <SearchCheckIns
-        open={searchOpen}
-        onClose={() => setSearchOpen(false)}
+        open={search.open}
+        onClose={search.onClose}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         matchCount={filteredCheckIns.length}
@@ -5127,8 +5096,8 @@ const NetView: React.FC = () => {
 
       {/* Net Script Viewer */}
       <NetScript
-        open={scriptOpen}
-        onClose={() => setScriptOpen(false)}
+        open={script.open}
+        onClose={script.onClose}
         script={net?.script || ''}
         netName={net?.name || 'Net'}
         netId={Number(netId)}
@@ -5139,8 +5108,8 @@ const NetView: React.FC = () => {
 
       {/* Per-net notes viewer */}
       <Announcements
-        open={announcementsOpen}
-        onClose={() => setAnnouncementsOpen(false)}
+        open={announcements.open}
+        onClose={announcements.onClose}
         announcements={net?.announcements || ''}
         netName={net?.name || 'Net'}
         netId={Number(netId)}
@@ -5152,8 +5121,8 @@ const NetView: React.FC = () => {
       {/* Schedule announcements viewer */}
       {net?.template_id && (
         <ScheduleAnnouncements
-          open={scheduleAnnouncementsOpen}
-          onClose={() => setScheduleAnnouncementsOpen(false)}
+          open={scheduleAnnouncements.open}
+          onClose={scheduleAnnouncements.onClose}
           templateId={net.template_id}
           netName={net?.name || 'Net'}
           canEdit={canManage}
@@ -5163,15 +5132,15 @@ const NetView: React.FC = () => {
       {/* Topic History Dialog */}
       {net?.template_id && (
         <TopicHistory
-          open={topicHistoryOpen}
-          onClose={() => setTopicHistoryOpen(false)}
+          open={topicHistory.open}
+          onClose={topicHistory.onClose}
           templateId={net.template_id}
           templateName={net.name}
         />
       )}
 
       {/* ========== NET TIME EDIT DIALOG ========== */}
-      <Dialog open={timeEditDialogOpen} onClose={() => setTimeEditDialogOpen(false)} maxWidth="xs" fullWidth>
+      <Dialog open={timeEditDialog.open} onClose={timeEditDialog.onClose} maxWidth="xs" fullWidth>
         <DialogTitle>Edit Net Times</DialogTitle>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
           <TextField
@@ -5193,7 +5162,7 @@ const NetView: React.FC = () => {
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setTimeEditDialogOpen(false)}>Cancel</Button>
+          <Button onClick={timeEditDialog.onClose}>Cancel</Button>
           <Button variant="contained" onClick={handleSaveNetTimes}>Save</Button>
         </DialogActions>
       </Dialog>
@@ -5208,7 +5177,7 @@ const NetView: React.FC = () => {
       {/* ========== ARCHIVE REMINDER SNACKBAR ========== */}
       {/* Shown to net managers after closing a net, offering archive or delete */}
       <Snackbar
-        open={archiveReminderOpen}
+        open={archiveReminder.open}
         autoHideDuration={null}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
@@ -5220,19 +5189,19 @@ const NetView: React.FC = () => {
                   Net closed - Please archive it when you're done to hide it from the Active Nets dashboard and preserve your log and statistics.
                 </Typography>
                 <Tooltip title="What's the difference between archive and delete?">
-                  <IconButton size="small" color="inherit" onClick={() => setArchiveHelpOpen(true)} sx={{ ml: 1, mt: -0.5, flexShrink: 0 }}>
+                  <IconButton size="small" color="inherit" onClick={() => archiveHelp.onOpen()} sx={{ ml: 1, mt: -0.5, flexShrink: 0 }}>
                     <HelpOutlineIcon fontSize="small" />
                   </IconButton>
                 </Tooltip>
               </Box>
               <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
-                <Button size="small" variant="contained" color="error" onClick={() => setArchiveDeleteConfirmOpen(true)}>
+                <Button size="small" variant="contained" color="error" onClick={() => archiveDeleteConfirm.onOpen()}>
                   Delete
                 </Button>
-                <Button size="small" variant="contained" color="success" onClick={() => { setArchiveReminderOpen(false); handleArchive(); }}>
+                <Button size="small" variant="contained" color="success" onClick={() => { archiveReminder.onClose(); handleArchive(); }}>
                   Archive Now
                 </Button>
-                <Button size="small" variant="contained" color="primary" onClick={() => setArchiveReminderOpen(false)}>
+                <Button size="small" variant="contained" color="primary" onClick={archiveReminder.onClose}>
                   Dismiss
                 </Button>
               </Box>
@@ -5243,8 +5212,8 @@ const NetView: React.FC = () => {
 
       {/* ========== ARCHIVE vs DELETE HELP DIALOG ========== */}
       <Dialog
-        open={archiveHelpOpen}
-        onClose={() => setArchiveHelpOpen(false)}
+        open={archiveHelp.open}
+        onClose={archiveHelp.onClose}
         maxWidth="sm"
         PaperProps={{ sx: { m: { xs: 1, sm: 4 } } }}
       >
@@ -5267,14 +5236,14 @@ const NetView: React.FC = () => {
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setArchiveHelpOpen(false)} variant="contained">Got It</Button>
+          <Button onClick={archiveHelp.onClose} variant="contained">Got It</Button>
         </DialogActions>
       </Dialog>
 
       {/* ========== DELETE CONFIRMATION FROM ARCHIVE REMINDER ========== */}
       <Dialog
-        open={archiveDeleteConfirmOpen}
-        onClose={() => setArchiveDeleteConfirmOpen(false)}
+        open={archiveDeleteConfirm.open}
+        onClose={archiveDeleteConfirm.onClose}
         maxWidth="sm"
         fullWidth
         PaperProps={{ sx: { m: { xs: 1, sm: 4 } } }}
@@ -5283,7 +5252,7 @@ const NetView: React.FC = () => {
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             Delete "{net?.name}"?
             <Tooltip title="Learn about archive vs. delete">
-              <IconButton size="small" onClick={() => setArchiveHelpOpen(true)}>
+              <IconButton size="small" onClick={() => archiveHelp.onOpen()}>
                 <HelpOutlineIcon fontSize="small" />
               </IconButton>
             </Tooltip>
@@ -5309,7 +5278,7 @@ const NetView: React.FC = () => {
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button
-            onClick={() => setArchiveDeleteConfirmOpen(false)}
+            onClick={archiveDeleteConfirm.onClose}
             variant="contained"
             color="primary"
           >
@@ -5317,8 +5286,8 @@ const NetView: React.FC = () => {
           </Button>
           <Button
             onClick={() => {
-              setArchiveDeleteConfirmOpen(false);
-              setArchiveReminderOpen(false);
+              archiveDeleteConfirm.onClose();
+              archiveReminder.onClose();
               handleArchive();
             }}
             variant="contained"
@@ -5329,8 +5298,8 @@ const NetView: React.FC = () => {
           </Button>
           <Button
             onClick={async () => {
-              setArchiveDeleteConfirmOpen(false);
-              setArchiveReminderOpen(false);
+              archiveDeleteConfirm.onClose();
+              archiveReminder.onClose();
               await handleDeleteConfirmed();
             }}
             variant="contained"
@@ -5345,9 +5314,9 @@ const NetView: React.FC = () => {
       {/* ========== CHECK-IN PROMPT FOR VIEWERS ========== */}
       {/* Shows once for authenticated users viewing an active/lobby net they haven't joined */}
       <Snackbar
-        open={checkInPromptOpen}
+        open={checkInPrompt.open}
         autoHideDuration={15000}
-        onClose={() => setCheckInPromptOpen(false)}
+        onClose={checkInPrompt.onClose}
         message={net?.status === 'lobby' ? 'The lobby is open! Would you like to check in?' : 'This net is active. Would you like to check in?'}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
         action={
@@ -5359,12 +5328,12 @@ const NetView: React.FC = () => {
                   size="small"
                   variant="contained"
                   onClick={() => {
-                    setCheckInPromptOpen(false);
+                    checkInPrompt.onClose();
                     if (user) {
                       const locationValue = (user.location_awareness && gridSquare) ? gridSquare : (user.location || '');
                       setCheckInForm({ callsign: getAppropriateCallsign(), name: user.name || '', location: locationValue, skywarn_number: '', weather_observation: '', power_source: '', power: '', feedback: '', notes: '', relayed_by: '', available_frequency_ids: [], custom_fields: {}, topic_response: '', poll_response: '', status: 'checked_in' });
                     }
-                    setCheckInDialogOpen(true);
+                    checkInDialog.onOpen();
                   }}
                 >
                   Check In as NCS
@@ -5375,12 +5344,12 @@ const NetView: React.FC = () => {
                   variant="outlined"
                   sx={{ borderColor: 'rgba(255,255,255,0.5)', color: 'inherit' }}
                   onClick={() => {
-                    setCheckInPromptOpen(false);
+                    checkInPrompt.onClose();
                     if (user) {
                       const locationValue = (user.location_awareness && gridSquare) ? gridSquare : (user.location || '');
                       setCheckInForm({ callsign: getAppropriateCallsign(), name: user.name || '', location: locationValue, skywarn_number: '', weather_observation: '', power_source: '', power: '', feedback: '', notes: '', relayed_by: '', available_frequency_ids: [], custom_fields: {}, topic_response: '', poll_response: '', status: 'checked_in' });
                     }
-                    setCheckInDialogOpen(true);
+                    checkInDialog.onOpen();
                   }}
                 >
                   Check In as Participant
@@ -5392,18 +5361,18 @@ const NetView: React.FC = () => {
                 size="small"
                 variant="contained"
                 onClick={() => {
-                  setCheckInPromptOpen(false);
+                  checkInPrompt.onClose();
                   if (user) {
                     const locationValue = (user.location_awareness && gridSquare) ? gridSquare : (user.location || '');
                     setCheckInForm({ callsign: getAppropriateCallsign(), name: user.name || '', location: locationValue, skywarn_number: '', weather_observation: '', power_source: '', power: '', feedback: '', notes: '', relayed_by: '', available_frequency_ids: [], custom_fields: {}, topic_response: '', poll_response: '', status: 'checked_in' });
                   }
-                  setCheckInDialogOpen(true);
+                  checkInDialog.onOpen();
                 }}
               >
                 Check In
               </Button>
             )}
-            <Button color="inherit" size="small" onClick={() => setCheckInPromptOpen(false)}>
+            <Button color="inherit" size="small" onClick={checkInPrompt.onClose}>
               Dismiss
             </Button>
           </Box>
