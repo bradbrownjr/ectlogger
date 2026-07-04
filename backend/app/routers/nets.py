@@ -243,7 +243,7 @@ async def get_net(
     is_owner_or_ncs = False
     if current_user:
         is_owner = net.owner_id == current_user.id
-        is_admin = is_admin(current_user)
+        is_admin = current_user.role == UserRole.ADMIN
         # Check if user is NCS for this net
         ncs_result = await db.execute(
             select(NetRole).where(
