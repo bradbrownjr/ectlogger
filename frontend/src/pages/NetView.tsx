@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import useDialog from '../hooks/useDialog';
 import useLocalStorage from '../hooks/useLocalStorage';
+import { useNetWebSocket } from '../hooks/useNetWebSocket';
 import { STORAGE_KEYS } from '../utils/localStorageKeys';
 import { displayCallsign } from '../utils/userDisplay';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
@@ -263,7 +264,6 @@ const NetView: React.FC = () => {
   const [selectedRole, setSelectedRole] = useState<string>('NCS');
   const [activeSpeakerId, setActiveSpeakerId] = useState<number | null>(null);
   const [toastMessage, setToastMessage] = useState<string>('');
-  const [ws, setWs] = useState<WebSocket | null>(null);
   const checkInDialog = useDialog();
   // Mobile-only: collapsed-by-default New Check-in form. NCS/Loggers attending
   // someone else's net don't need the form expanded by default; they can open
@@ -335,10 +335,6 @@ const NetView: React.FC = () => {
   const [filteredFrequencyIds, setFilteredFrequencyIds] = useState<number[]>([]);
   // Auto-start ref to prevent multiple go-live triggers
   const autoStartTriggeredRef = useRef(false);
-  // WebSocket resilience: track the live socket for cleanup, pending retry timeout, and attempt count
-  const wsRef = useRef<WebSocket | null>(null);
-  const wsRetryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const wsRetryCountRef = useRef(0);
   const { user, isAuthenticated } = useAuth();
   const { gridSquare } = useLocation();
   const navigate = useNavigate();
@@ -376,23 +372,12 @@ const NetView: React.FC = () => {
       fetchNetRoles();
       fetchNetStats();
       fetchFieldDefinitions();
-      connectWebSocket();
-      
+      // The live message socket is owned by useNetWebSocket (below).
+
       // Poll stats every 10 seconds to update online users
       const statsInterval = setInterval(fetchNetStats, 10000);
-      
 
       return () => {
-        // Cancel any pending reconnect before closing so onclose doesn't reschedule
-        if (wsRetryTimeoutRef.current) {
-          clearTimeout(wsRetryTimeoutRef.current);
-          wsRetryTimeoutRef.current = null;
-        }
-        // Close with code 1000 (Normal Closure) so onclose skips the reconnect branch
-        if (wsRef.current) {
-          wsRef.current.close(1000);
-          wsRef.current = null;
-        }
         clearInterval(statsInterval);
       };
     }
@@ -616,116 +601,6 @@ const NetView: React.FC = () => {
   const handleDetachActivityLog = () => setActivityLogDetached(true);
   const handleAttachActivityLog = () => setActivityLogDetached(false);
 
-  const connectWebSocket = () => {
-    // Get JWT token from localStorage (optional - guests can still connect)
-    const token = localStorage.getItem('token');
-    
-    // Get WebSocket URL from environment (convert http:// to ws://, https:// to wss://)
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-    const wsUrl = apiUrl.replace(/^http/, 'ws');
-    
-    // Connect with or without token
-    const wsUrlWithToken = token ? `${wsUrl}/ws/nets/${netId}?token=${token}` : `${wsUrl}/ws/nets/${netId}`;
-    const websocket = new WebSocket(wsUrlWithToken);
-    
-    websocket.onopen = () => {
-      console.log('WebSocket connected to net', netId);
-      wsRetryCountRef.current = 0;
-    };
-    
-    websocket.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-      if (message.type === 'check_in') {
-        fetchCheckIns(); // Refresh check-ins on new check-in
-      } else if (message.type === 'active_speaker') {
-        if (message.data?.checkInId !== undefined) {
-          setActiveSpeakerId(message.data.checkInId);
-        }
-      } else if (message.type === 'active_frequency') {
-        if (message.data?.frequencyId !== undefined) {
-          fetchNet();
-        }
-      } else if (message.type === 'chat_message') {
-        if (typeof window !== 'undefined' && window.dispatchEvent) {
-          window.dispatchEvent(new CustomEvent('newChatMessage', { detail: message.data }));
-        }
-      } else if (message.type === 'chat_reaction') {
-        if (typeof window !== 'undefined' && window.dispatchEvent) {
-          window.dispatchEvent(new CustomEvent('chatReactionUpdate', { detail: message.data }));
-        }
-      } else if (message.type === 'role_change') {
-        // Always refresh roles and check-ins for all clients
-        fetchNetRoles();
-        fetchCheckIns();
-        // If the event contains a user_id, and it matches the current user, force a refresh
-        if (message.data?.user_id && user?.id === message.data.user_id) {
-          fetchNetRoles();
-          fetchCheckIns();
-        }
-      } else if (message.type === 'status_change') {
-        fetchCheckIns();
-        if (message.data?.user_id && user?.id === message.data.user_id) {
-          fetchCheckIns();
-        }
-      } else if (message.type === 'check_in_deleted') {
-        // Remove deleted check-in from local state
-        setCheckIns(prev => prev.filter(ci => ci.id !== message.data?.id));
-      } else if (message.type === 'hand_raised_changed') {
-        // Update the hand_raised state for the affected check-in
-        setCheckIns(prev => prev.map(ci => 
-          ci.id === message.data?.id 
-            ? { ...ci, hand_raised: message.data.hand_raised }
-            : ci
-        ));
-      } else if (message.type === 'net_started') {
-        // Net has been started - refresh everything first, then highlight check-in
-        // Use a small delay to ensure the net status update renders before highlighting
-        fetchNet();
-        fetchCheckIns();
-        fetchNetRoles();
-        // Delay the toast and highlight so the check-in button is visible first
-        setTimeout(() => {
-          setToastMessage(`Net started by ${message.data?.started_by || 'NCS'} - Check in now!`);
-          setHighlightCheckIn(true);
-          // Remove highlight after 10 seconds
-          setTimeout(() => setHighlightCheckIn(false), 10000);
-        }, 500);
-      } else if (message.type === 'net_status_change') {
-        // Net status changed (e.g., closed) - refresh net data immediately
-        console.log('Net status changed:', message.data);
-        fetchNet();
-        fetchNetStats();
-      }
-    };
-
-    websocket.onerror = (error) => {
-      console.error('WebSocket error:', error);
-    };
-    
-    websocket.onclose = (event) => {
-      if (event.code === 1008) {
-        console.error('WebSocket authentication failed');
-      } else if (event.code !== 1000) {
-        // Abnormal close — exponential backoff: 3s, 6s, 12s … capped at 30s, max 10 attempts
-        const MAX_RETRIES = 10;
-        const count = wsRetryCountRef.current;
-        if (count >= MAX_RETRIES) {
-          console.warn(`WebSocket: max reconnect attempts reached for net ${netId}`);
-          return;
-        }
-        const delay = Math.min(3000 * Math.pow(2, count), 30000);
-        console.log(`WebSocket disconnected, reconnecting in ${delay / 1000}s (attempt ${count + 1}/${MAX_RETRIES})...`);
-        wsRetryCountRef.current = count + 1;
-        wsRetryTimeoutRef.current = setTimeout(() => {
-          wsRetryTimeoutRef.current = null;
-          if (netId) connectWebSocket();
-        }, delay);
-      }
-    };
-
-    wsRef.current = websocket;
-    setWs(websocket);
-  };
 
   const fetchNet = async () => {
     try {
@@ -821,6 +696,23 @@ const NetView: React.FC = () => {
       console.error('Failed to fetch owner:', error);
     }
   };
+
+  // Live message socket (connection, reconnect, message routing, cleanup).
+  // Returns the socket so send-sites below can broadcast active speaker /
+  // frequency / check-in events. Placed after the fetch functions so they can
+  // be passed in as message handlers.
+  const ws = useNetWebSocket({
+    netId,
+    user,
+    fetchCheckIns,
+    fetchNet,
+    fetchNetRoles,
+    fetchNetStats,
+    setActiveSpeakerId,
+    setCheckIns,
+    setToastMessage,
+    setHighlightCheckIn,
+  });
 
   const handleAssignRole = async () => {
     if (!selectedUserId) {
