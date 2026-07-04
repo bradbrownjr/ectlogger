@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 
-interface UseDialogResult {
+export interface UseDialogResult {
   open: boolean;
   onOpen: () => void;
   onClose: () => void;
