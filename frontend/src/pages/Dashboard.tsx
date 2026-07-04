@@ -6,9 +6,6 @@ import { displayCallsign } from '../utils/userDisplay';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Container,
-  Card,
-  CardContent,
-  CardActions,
   Typography,
   Box,
   Chip,
@@ -42,9 +39,6 @@ import {
   FormControlLabel,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import AccessTimeIcon from '@mui/icons-material/AccessTime';
-import RadioIcon from '@mui/icons-material/Radio';
-import PersonIcon from '@mui/icons-material/Person';
 import SearchIcon from '@mui/icons-material/Search';
 import EditIcon from '@mui/icons-material/Edit';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -54,7 +48,6 @@ import DownloadIcon from '@mui/icons-material/Download';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CloseIcon from '@mui/icons-material/Close';
-import LanguageIcon from '@mui/icons-material/Language';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import GroupsIcon from '@mui/icons-material/Groups';
 import ViewModuleIcon from '@mui/icons-material/ViewModule';
@@ -69,38 +62,11 @@ import EmailIcon from '@mui/icons-material/Email';
 import CircularProgress from '@mui/material/CircularProgress';
 import { netApi } from '../services/api';
 import NCSStaffModal from '../components/NCSStaffModal';
-import ExpandableDescription from '../components/ExpandableDescription';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { formatDateTime } from '../utils/dateUtils';
-
-interface Net {
-  id: number;
-  name: string;
-  description: string;
-  info_url?: string;
-  status: string;
-  owner_id: number;
-  owner_callsign?: string | null;
-  owner_name?: string | null;
-  // Currently-assigned NCS for this net (most recent NetRole with role='NCS').
-  // May be null if no NCS has been assigned yet, or the same person as the
-  // owner. The owner is the "Net Manager"; the NCS is whoever is actually
-  // running the net on the air.
-  ncs_callsign?: string | null;
-  ncs_name?: string | null;
-  template_id?: number | null;  // ID of the template this net was created from
-  started_at?: string;
-  closed_at?: string;
-  created_at: string;
-  scheduled_start_time?: string;
-  frequencies: any[];
-  check_in_count?: number;
-  can_manage?: boolean;
-  is_owner_or_ncs?: boolean;
-  user_attended?: boolean | null;
-  user_ran?: boolean | null;
-}
+import NetCard, { Net, getStatusColor } from '../components/dashboard/NetCard';
+import { useFavorites } from '../hooks/useFavorites';
 
 const Dashboard: React.FC = () => {
   const [nets, setNets] = useState<Net[]>([]);
@@ -141,22 +107,7 @@ const Dashboard: React.FC = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   // Share the same favorites store as the Scheduler page — keyed by schedule/template ID
-  const favKey = `scheduler-favorites-${user?.id ?? 'anon'}`;
-  const [favorites, setFavorites] = useState<Set<number>>(() => {
-    try {
-      const raw = localStorage.getItem(favKey);
-      return raw ? new Set<number>(JSON.parse(raw)) : new Set<number>();
-    } catch { return new Set<number>(); }
-  });
-
-  const toggleFavorite = (templateId: number) => {
-    setFavorites(prev => {
-      const next = new Set(prev);
-      if (next.has(templateId)) next.delete(templateId); else next.add(templateId);
-      try { localStorage.setItem(favKey, JSON.stringify([...next])); } catch {}
-      return next;
-    });
-  };
+  const [favorites, toggleFavorite] = useFavorites(user?.id);
 
   useEffect(() => {
     fetchNets();
@@ -220,16 +171,6 @@ const Dashboard: React.FC = () => {
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Failed to export CSV:', error);
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'success';
-      case 'lobby': return 'warning';  // Yellow/orange for pre-net lobby mode
-      case 'closed': return 'default';
-      case 'scheduled': return 'info';
-      default: return 'default';
     }
   };
 
@@ -442,7 +383,19 @@ const Dashboard: React.FC = () => {
     >
       {filteredNets.map((net: Net) => (
         <Box key={net.id} sx={{ display: 'flex' }}>
-          {renderNetCard(net)}
+          <NetCard
+            net={net}
+            favorites={favorites}
+            onToggleFavorite={toggleFavorite}
+            canManage={canManage(net)}
+            preferUtc={user?.prefer_utc ?? false}
+            onStaffClick={() => { setSelectedNet(net); setStaffModalOpen(true); }}
+            onDeleteClick={() => handleDeleteClick(net)}
+            onStartNet={() => handleStartNet(net.id)}
+            onEmailClick={() => handleEmailClick(net)}
+            onExportCSV={() => handleExportCSV(net)}
+            onArchiveNet={() => handleArchiveNet(net.id)}
+          />
         </Box>
       ))}
     </Box>
@@ -613,290 +566,6 @@ const Dashboard: React.FC = () => {
         </TableBody>
       </Table>
     </TableContainer>
-  );
-
-  // ========== NET CARD COMPONENT ==========
-  const renderNetCard = (net: Net) => (
-    <Card sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-      <CardContent sx={{ flex: 1 }}>
-        {/* Title with Status */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
-          <Typography
-            variant="h6"
-            component="h2"
-            onClick={() => navigate(`/nets/${net.id}`)}
-            sx={{
-              cursor: 'pointer',
-              '&:hover': { textDecoration: 'underline' },
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
-              overflow: 'hidden',
-              flex: 1,
-              mr: 0.5,
-            }}
-          >
-            {net.name}
-          </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
-            <Chip label={net.status} color={getStatusColor(net.status)} size="small" />
-            {net.template_id != null && (
-              <Tooltip title={favorites.has(net.template_id) ? 'Remove from favorites' : 'Add to favorites'}>
-                <IconButton
-                  size="small"
-                  onClick={() => toggleFavorite(net.template_id!)}
-                  sx={{ color: favorites.has(net.template_id) ? 'warning.main' : 'action.disabled', p: 0.25 }}
-                >
-                  {favorites.has(net.template_id) ? <StarIcon fontSize="small" /> : <StarBorderIcon fontSize="small" />}
-                </IconButton>
-              </Tooltip>
-            )}
-          </Box>
-        </Box>
-        
-        {/* Description */}
-        <ExpandableDescription text={net.description} />
-        
-        {/* Info List */}
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-          {/* Time info based on status */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <AccessTimeIcon fontSize="small" color="action" />
-            <Typography variant="body2" color="text.secondary">
-              {net.status === 'closed' && net.closed_at && (
-                <>Closed: {formatDateTime(net.closed_at, user?.prefer_utc || false)}</>
-              )}
-              {net.status === 'active' && net.started_at && (
-                <>Started: {formatDateTime(net.started_at, user?.prefer_utc || false)}</>
-              )}
-              {net.status === 'lobby' && net.scheduled_start_time && (
-                <>Starts at: {formatDateTime(net.scheduled_start_time, user?.prefer_utc || false)}</>
-              )}
-              {(net.status === 'draft' || net.status === 'scheduled') && net.scheduled_start_time && (
-                <>Scheduled: {formatDateTime(net.scheduled_start_time, user?.prefer_utc || false)}</>
-              )}
-              {(net.status === 'draft' || net.status === 'scheduled') && !net.scheduled_start_time && (
-                <>Created: {formatDateTime(net.created_at, user?.prefer_utc || false)}</>
-              )}
-            </Typography>
-          </Box>
-          
-          {/* Frequencies */}
-          {net.frequencies.length > 0 && (
-            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-              <RadioIcon fontSize="small" color="action" sx={{ mt: 0.25 }} />
-              <Typography variant="body2" color="text.secondary">
-                {net.frequencies.map((f: any) => {
-                  if (f.frequency) {
-                    return f.frequency;
-                  } else if (f.network && f.talkgroup) {
-                    return `${f.network} TG${f.talkgroup}`;
-                  } else if (f.network) {
-                    return f.network;
-                  }
-                  return '';
-                }).filter((s: string) => s).join(', ')}
-              </Typography>
-            </Box>
-          )}
-          
-          {/* ========== NET MANAGER (owner) ========== */}
-          {/* The owner of the net record. They created/scheduled it and may */}
-          {/* not be the operator running it on the air. Always shown when set. */}
-          {net.owner_callsign && (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <PersonIcon fontSize="small" color="action" />
-              <Typography variant="body2" color="text.secondary">
-                <strong>Net Manager:</strong> {net.owner_callsign}
-                {net.owner_name && ` (${net.owner_name})`}
-              </Typography>
-            </Box>
-          )}
-
-          {/* ========== CURRENT / NEXT NCS ========== */}
-          {/* Whoever is actually running the net (NetRole role='NCS'). For */}
-          {/* draft/scheduled nets this is effectively the "next" NCS; for */}
-          {/* active or closed nets it's the operator who ran it. On active/ */}
-          {/* closed nets suppress when NCS == manager to avoid redundancy; */}
-          {/* on scheduled/draft always show so the duty operator is visible. */}
-          {net.ncs_callsign && (
-            (net.status === 'draft' || net.status === 'scheduled')
-              ? true
-              : net.ncs_callsign !== net.owner_callsign
-          ) && (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <PersonIcon fontSize="small" color="action" />
-              <Typography variant="body2" color="text.secondary">
-                <strong>{net.status === 'draft' || net.status === 'scheduled' ? 'Next NCS' : 'NCS'}:</strong> {net.ncs_callsign}
-                {net.ncs_name && ` (${net.ncs_name})`}
-              </Typography>
-            </Box>
-          )}
-        </Box>
-      </CardContent>
-      <CardActions sx={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 0.5 }}>
-        {/* View - always available, left side */}
-        <Box>
-          <Tooltip title="View net">
-            <IconButton
-              size="small"
-              color="primary"
-              onClick={() => navigate(`/nets/${net.id}`)}
-            >
-              <SearchIcon />
-            </IconButton>
-          </Tooltip>
-        </Box>
-
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-          {/* Net staff - always visible */}
-          <Tooltip title="View net staff">
-            <IconButton
-              size="small"
-              sx={{ color: '#9c27b0' }}
-              onClick={() => {
-                setSelectedNet(net);
-                setStaffModalOpen(true);
-              }}
-            >
-              <GroupsIcon />
-            </IconButton>
-          </Tooltip>
-          {/* Active/Lobby net - show stats on right side */}
-          {(net.status === 'active' || net.status === 'lobby') && (
-            <Tooltip title="Net statistics">
-              <IconButton
-                size="small"
-                sx={{ color: '#ff9800' }}
-                onClick={() => navigate(`/statistics/nets/${net.id}`)}
-              >
-                <BarChartIcon />
-              </IconButton>
-            </Tooltip>
-          )}
-          {/* Active/Lobby net - allow the owner (or admin/NCS) to delete */}
-          {/* their own net. Useful for training/practice runs the owner */}
-          {/* wants to discard. Confirmation dialog warns before deleting. */}
-          {(net.status === 'active' || net.status === 'lobby') && canManage(net) && (
-            <Tooltip title="Delete net">
-              <IconButton
-                size="small"
-                color="error"
-                onClick={() => handleDeleteClick(net)}
-              >
-                <DeleteIcon />
-              </IconButton>
-            </Tooltip>
-          )}
-          {net.info_url && (
-            <Tooltip title="Net/Club info">
-              <IconButton
-                size="small"
-                onClick={() => window.open(net.info_url, '_blank')}
-              >
-                <LanguageIcon />
-              </IconButton>
-            </Tooltip>
-          )}
-          {/* Draft/Scheduled net actions */}
-          {(net.status === 'draft' || net.status === 'scheduled') && canManage(net) && (
-            <>
-              {/* Email subscribers - only if net has a template */}
-              {net.template_id && (
-                <Tooltip title="Email subscribers">
-                  <IconButton
-                    size="small"
-                    onClick={() => handleEmailClick(net)}
-                  >
-                    <EmailIcon />
-                  </IconButton>
-                </Tooltip>
-              )}
-              <Tooltip title="Edit net">
-                <IconButton
-                  size="small"
-                  onClick={() => navigate(`/nets/${net.id}/edit`)}
-                >
-                  <EditIcon />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Start net">
-                <IconButton
-                  size="small"
-                  color="success"
-                  onClick={() => handleStartNet(net.id)}
-                >
-                  <PlayArrowIcon />
-                </IconButton>
-              </Tooltip>
-              {/* Cancel this net instance */}
-              <Tooltip title="Cancel this net">
-                <IconButton
-                  size="small"
-                  color="error"
-                  onClick={() => handleDeleteClick(net)}
-                >
-                  <DeleteIcon />
-                </IconButton>
-              </Tooltip>
-            </>
-          )}
-          
-          {/* Closed net actions */}
-          {net.status === 'closed' && canManage(net) && (
-            <>
-              <Tooltip title="Net statistics">
-                <IconButton
-                  size="small"
-                  sx={{ color: '#ff9800' }}
-                  onClick={() => navigate(`/statistics/nets/${net.id}`)}
-                >
-                  <BarChartIcon />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Export log">
-                <IconButton
-                  size="small"
-                  sx={{ color: '#4caf50' }}
-                  onClick={() => handleExportCSV(net)}
-                >
-                  <DownloadIcon />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Net report (PDF)">
-                <IconButton
-                  size="small"
-                  sx={{ color: '#4caf50' }}
-                  onClick={() => navigate(`/nets/${net.id}/report`)}
-                >
-                  <PictureAsPdfIcon />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Archive net">
-                <IconButton
-                  size="small"
-                  onClick={() => handleArchiveNet(net.id)}
-                >
-                  <ArchiveIcon />
-                </IconButton>
-              </Tooltip>
-              {/* Closed net delete: any user who can manage the net (owner, */}
-              {/* admin, or NCS) may permanently delete it. Confirmation */}
-              {/* dialog steers them toward Archive when appropriate. */}
-              <Tooltip title="Delete net">
-                <IconButton
-                  size="small"
-                  color="error"
-                  onClick={() => handleDeleteClick(net)}
-                >
-                  <DeleteIcon />
-                </IconButton>
-              </Tooltip>
-            </>
-          )}
-        </Box>
-      </CardActions>
-    </Card>
   );
 
   return (

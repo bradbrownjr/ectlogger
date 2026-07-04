@@ -4,9 +4,6 @@ import { STORAGE_KEYS } from '../utils/localStorageKeys';
 import { useNavigate } from 'react-router-dom';
 import {
   Container,
-  Card,
-  CardContent,
-  CardActions,
   Button,
   Typography,
   Box,
@@ -50,11 +47,8 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import NotificationsOffIcon from '@mui/icons-material/NotificationsOff';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import PersonIcon from '@mui/icons-material/Person';
 import GroupsIcon from '@mui/icons-material/Groups';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
-import RadioIcon from '@mui/icons-material/Radio';
-import LanguageIcon from '@mui/icons-material/Language';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import ViewModuleIcon from '@mui/icons-material/ViewModule';
 import ViewListIcon from '@mui/icons-material/ViewList';
@@ -69,119 +63,8 @@ import StarBorderIcon from '@mui/icons-material/StarBorder';
 import { templateApi, netApi as _netApi, ncsRotationApi } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import NCSStaffModal from '../components/NCSStaffModal';
-import ExpandableDescription from '../components/ExpandableDescription';
-
-interface NextNCS {
-  date: string;
-  user_id: number;
-  user_callsign: string;
-  user_name: string | null;
-}
-
-interface Schedule {
-  id: number;
-  name: string;
-  description: string;
-  info_url?: string;
-  owner_id: number;
-  owner_callsign?: string | null;
-  owner_name?: string | null;
-  is_active: boolean;
-  subscriber_count: number;
-  frequencies: any[];
-  is_subscribed: boolean;
-  can_manage?: boolean;  // True if current user can edit (owner, admin, or NCS rotation member)
-  can_create_net?: boolean;
-  schedule_type?: string;
-  schedule_config?: {
-    day_of_week?: number;
-    week_of_month?: number[];
-    time?: string;
-  };
-  nextNCS?: NextNCS | null;
-}
-
-// Compute the next real-world occurrence of a schedule for sorting purposes.
-// config.day_of_week uses 0=Sun..6=Sat, matching JS Date.getDay().
-const computeNextOccurrence = (schedule: Schedule): number => {
-  const { schedule_type: type, schedule_config: config } = schedule;
-  if (!type || type === 'ad_hoc' || type === 'one_time' || !config) return Infinity;
-
-  const now = new Date();
-  const [hour, minute] = (config.time || '19:00').split(':').map(Number);
-
-  if (type === 'daily') {
-    const next = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, minute, 0, 0);
-    if (next <= now) next.setDate(next.getDate() + 1);
-    return next.getTime();
-  }
-
-  if (type === 'weekly') {
-    const targetDay = config.day_of_week ?? 0;
-    const daysUntil = (targetDay - now.getDay() + 7) % 7;
-    const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + daysUntil, hour, minute, 0, 0);
-    if (next <= now) next.setDate(next.getDate() + 7);
-    return next.getTime();
-  }
-
-  if (type === 'monthly') {
-    const targetDay = config.day_of_week ?? 0;
-    const weeksOfMonth = config.week_of_month || [1];
-    const limit = new Date(now);
-    limit.setDate(limit.getDate() + 56);
-    const check = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, minute, 0, 0);
-    if (check <= now) check.setDate(check.getDate() + 1);
-    while (check <= limit) {
-      if (check.getDay() === targetDay) {
-        let occurrence = 0;
-        for (let d = 1; d <= check.getDate(); d++) {
-          if (new Date(check.getFullYear(), check.getMonth(), d).getDay() === targetDay) occurrence++;
-        }
-        if (weeksOfMonth.includes(occurrence)) return check.getTime();
-      }
-      check.setDate(check.getDate() + 1);
-    }
-    return Infinity;
-  }
-
-  return Infinity;
-};
-
-// Format schedule for display
-const formatSchedule = (schedule: Schedule): string => {
-  if (!schedule.schedule_type || schedule.schedule_type === 'ad_hoc') {
-    return 'Ad-hoc (no recurring schedule)';
-  }
-  
-  const config = schedule.schedule_config;
-  if (!config) return schedule.schedule_type;
-  
-  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  const dayName = config.day_of_week !== undefined ? days[config.day_of_week] : '';
-  const time = config.time || '';
-  
-  // Format time to 12-hour
-  let timeStr = '';
-  if (time) {
-    const [hours, minutes] = time.split(':').map(Number);
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    const hour12 = hours % 12 || 12;
-    timeStr = `${hour12}:${minutes.toString().padStart(2, '0')} ${ampm}`;
-  }
-  
-  switch (schedule.schedule_type) {
-    case 'daily':
-      return `Daily at ${timeStr}`;
-    case 'weekly':
-      return `${dayName}s at ${timeStr}`;
-    case 'monthly':
-      const weeks = config.week_of_month || [];
-      const weekNames = weeks.map(w => w === 5 ? 'Last' : `${w}${w === 1 ? 'st' : w === 2 ? 'nd' : w === 3 ? 'rd' : 'th'}`).join(', ');
-      return `${weekNames} ${dayName} at ${timeStr}`;
-    default:
-      return schedule.schedule_type;
-  }
-};
+import ScheduleCard, { Schedule, computeNextOccurrence, formatSchedule } from '../components/scheduler/ScheduleCard';
+import { useFavorites } from '../hooks/useFavorites';
 
 const Scheduler: React.FC = () => {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
@@ -212,22 +95,7 @@ const Scheduler: React.FC = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   // Favorites — stored in localStorage per user so each person's pins survive a page reload
-  const favKey = `scheduler-favorites-${user?.id ?? 'anon'}`;
-  const [favorites, setFavorites] = useState<Set<number>>(() => {
-    try {
-      const raw = localStorage.getItem(favKey);
-      return raw ? new Set<number>(JSON.parse(raw)) : new Set<number>();
-    } catch { return new Set<number>(); }
-  });
-
-  const toggleFavorite = (id: number) => {
-    setFavorites(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      try { localStorage.setItem(favKey, JSON.stringify([...next])); } catch {}
-      return next;
-    });
-  };
+  const [favorites, toggleFavorite] = useFavorites(user?.id);
 
   useEffect(() => {
     fetchSchedules();
@@ -483,7 +351,19 @@ const Scheduler: React.FC = () => {
               }}
             />
           )}
-          {renderScheduleCard(schedule)}
+          <ScheduleCard
+              schedule={schedule}
+              favorites={favorites}
+              onToggleFavorite={toggleFavorite}
+              isAuthenticated={isAuthenticated}
+              canManage={!!(schedule.can_manage || isAdmin)}
+              isOwnerOrAdmin={isOwner(schedule) || isAdmin}
+              onCreateNet={() => handleCreateNetFromSchedule(schedule.id)}
+              onOpenRotationModal={() => handleOpenRotationModal(schedule)}
+              onSubscribe={() => handleSubscribe(schedule.id)}
+              onUnsubscribe={() => handleUnsubscribe(schedule.id)}
+              onDelete={() => handleDelete(schedule.id)}
+            />
         </Box>
       ))}
     </Box>
@@ -631,213 +511,6 @@ const Scheduler: React.FC = () => {
         </TableBody>
       </Table>
     </TableContainer>
-  );
-
-  // ========== SCHEDULE CARD COMPONENT ==========
-  const renderScheduleCard = (schedule: Schedule) => (
-    // height: 100% makes sibling cards in a Grid row stretch to equal height
-    // (the Grid item is display:flex). minHeight gives short/lone cards
-    // enough visual presence so the layout doesn't look uneven.
-    <Card sx={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', minHeight: 260 }}>
-      <CardContent sx={{ flex: 1 }}>
-        {/* Title */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
-          <Typography
-            variant="h6"
-            component="h2"
-            sx={{
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
-              overflow: 'hidden',
-              flex: 1,
-              mr: 0.5,
-            }}
-          >
-            {schedule.name}
-          </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
-            {!schedule.is_active && <Chip label="Inactive" color="default" size="small" />}
-            <Tooltip title={favorites.has(schedule.id) ? 'Remove from favorites' : 'Add to favorites'}>
-              <IconButton
-                size="small"
-                onClick={() => toggleFavorite(schedule.id)}
-                sx={{ color: favorites.has(schedule.id) ? 'warning.main' : 'action.disabled', p: 0.25 }}
-              >
-                {favorites.has(schedule.id) ? <StarIcon fontSize="small" /> : <StarBorderIcon fontSize="small" />}
-              </IconButton>
-            </Tooltip>
-          </Box>
-        </Box>
-        
-        {/* Description */}
-        <ExpandableDescription text={schedule.description} />
-        
-        {/* Info List */}
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-          {/* Schedule */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <CalendarMonthIcon fontSize="small" color="action" />
-            <Typography variant="body2" color="text.secondary">
-              {formatSchedule(schedule)}
-            </Typography>
-          </Box>
-          
-          {/* Frequencies */}
-          {schedule.frequencies.length > 0 && (
-            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-              <RadioIcon fontSize="small" color="action" sx={{ mt: 0.25 }} />
-              <Typography variant="body2" color="text.secondary">
-                {schedule.frequencies.map((f: any) => {
-                  if (f.frequency) {
-                    return f.frequency;
-                  } else if (f.network && f.talkgroup) {
-                    return `${f.network} TG${f.talkgroup}`;
-                  } else if (f.network) {
-                    return f.network;
-                  }
-                  return '';
-                }).filter((s: string) => s).join(', ')}
-              </Typography>
-            </Box>
-          )}
-          
-          {/* ========== NET MANAGER (owner) ========== */}
-          {/* The schedule owner — the person responsible for the recurring */}
-          {/* net itself. Always shown so it's clear who maintains the */}
-          {/* schedule, even when a different operator is up next as NCS. */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <PersonIcon fontSize="small" color="action" />
-            <Typography variant="body2" color="text.secondary">
-              <strong>Net Manager:</strong> {schedule.owner_callsign || 'Unknown'}
-              {schedule.owner_name && ` (${schedule.owner_name})`}
-            </Typography>
-          </Box>
-
-          {/* ========== NEXT NCS ========== */}
-          {/* Whoever is next up in the NCS rotation for this schedule. */}
-          {/* Suppressed when no rotation is configured, or when the next */}
-          {/* NCS happens to be the same person as the manager. */}
-          {schedule.nextNCS && schedule.nextNCS.user_callsign !== schedule.owner_callsign && (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <PersonIcon fontSize="small" color="action" />
-              <Typography variant="body2" color="text.secondary">
-                <strong>Next NCS:</strong> {schedule.nextNCS.user_callsign}
-                {schedule.nextNCS.user_name && ` (${schedule.nextNCS.user_name})`}
-                {' - '}
-                {new Date(schedule.nextNCS.date).toLocaleDateString(undefined, {
-                  weekday: 'short',
-                  month: 'short',
-                  day: 'numeric'
-                })}
-              </Typography>
-            </Box>
-          )}
-          
-          {/* Subscribers */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <NotificationsActiveIcon fontSize="small" color="action" />
-            <Typography variant="body2" color="text.secondary">
-              {schedule.subscriber_count} subscriber{schedule.subscriber_count !== 1 ? 's' : ''}
-            </Typography>
-          </Box>
-        </Box>
-      </CardContent>
-      
-      <CardActions sx={{ justifyContent: 'space-between', flexWrap: 'wrap' }}>
-        <Box>
-          {schedule.can_create_net && (
-            <Button
-              size="small"
-              startIcon={<PlayArrowIcon />}
-              onClick={() => handleCreateNetFromSchedule(schedule.id)}
-            >
-              Create Net
-            </Button>
-          )}
-        </Box>
-        <Box>
-          {schedule.info_url && (
-            <Tooltip title="Net/Club info">
-              <IconButton
-                size="small"
-                color="primary"
-                onClick={() => window.open(schedule.info_url, '_blank')}
-              >
-                <LanguageIcon />
-              </IconButton>
-            </Tooltip>
-          )}
-          <Tooltip title="Schedule statistics">
-            <IconButton
-              size="small"
-              sx={{ color: '#ff9800' }}
-              onClick={() => navigate(`/statistics/schedules/${schedule.id}`)}
-            >
-              <BarChartIcon />
-            </IconButton>
-          </Tooltip>
-          {/* Net Staff - always visible */}
-          <Tooltip title="View net staff">
-            <IconButton
-              size="small"
-              sx={{ color: '#9c27b0' }}
-              onClick={() => handleOpenRotationModal(schedule)}
-            >
-              <GroupsIcon />
-            </IconButton>
-          </Tooltip>
-          {/* Notifications - auth required */}
-          {isAuthenticated && (
-            schedule.is_subscribed ? (
-              <Tooltip title="Unsubscribe from notifications">
-                <IconButton
-                  size="small"
-                  color="primary"
-                  onClick={() => handleUnsubscribe(schedule.id)}
-                >
-                  <NotificationsActiveIcon />
-                </IconButton>
-              </Tooltip>
-            ) : (
-              <Tooltip title="Subscribe to notifications">
-                <IconButton
-                  size="small"
-                  onClick={() => handleSubscribe(schedule.id)}
-                >
-                  <NotificationsOffIcon />
-                </IconButton>
-              </Tooltip>
-            )
-          )}
-          
-          {/* Edit for owners, admins, or NCS rotation members */}
-          {(schedule.can_manage || isAdmin) && (
-            <Tooltip title="Edit schedule">
-              <IconButton
-                size="small"
-                onClick={() => navigate(`/scheduler/${schedule.id}/edit`)}
-              >
-                <EditIcon />
-              </IconButton>
-            </Tooltip>
-          )}
-          {/* Delete is restricted to owner and admin only — staff/NCS */}
-          {/* rotation members can manage a schedule but not destroy it. */}
-          {(isOwner(schedule) || isAdmin) && (
-            <Tooltip title="Delete schedule">
-              <IconButton
-                size="small"
-                color="error"
-                onClick={() => handleDelete(schedule.id)}
-              >
-                <DeleteIcon />
-              </IconButton>
-            </Tooltip>
-          )}
-        </Box>
-      </CardActions>
-    </Card>
   );
 
   return (
