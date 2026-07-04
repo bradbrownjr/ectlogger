@@ -6,6 +6,7 @@ import CsvImportDialog from '../components/netview/CsvImportDialog';
 import ArchiveDialogs from '../components/netview/ArchiveDialogs';
 import RoleAssignmentDialog from '../components/netview/RoleAssignmentDialog';
 import CheckInFormDialog, { CheckInFormState } from '../components/netview/CheckInFormDialog';
+import NetControlDialogs from '../components/netview/NetControlDialogs';
 import { STORAGE_KEYS } from '../utils/localStorageKeys';
 import { displayCallsign } from '../utils/userDisplay';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
@@ -22,10 +23,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   TextField,
   IconButton,
   FormControl,
@@ -4182,117 +4179,34 @@ const NetView: React.FC = () => {
       </Paper>
 
       {/* Close Net Confirmation Dialog */}
-      <Dialog 
-        open={closeNetDialog.open} 
-        onClose={closeNetDialog.onClose}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            handleCloseNet();
-          }
-        }}
-      >
-        <DialogTitle>Close Net?</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Are you sure you want to close this net? This will end the session and send log emails to subscribers.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={closeNetDialog.onClose}>Cancel</Button>
-          <Button onClick={handleCloseNet} variant="contained" color="error">
-            Close Net
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* ========== SUBSCRIBE TO SCHEDULE DIALOG ========== */}
-      {/* Shown after a net closes if user checked in and isn't already subscribed */}
-      <Dialog
-        open={subscribeDialog.open}
-        onClose={handleSkipSubscribe}
-        maxWidth="sm"
-        PaperProps={{ sx: { m: { xs: 1, sm: 4 } } }}
-      >
-        <DialogTitle>
-          📬 Subscribe to Future Nets?
-        </DialogTitle>
-        <DialogContent>
-          <Typography sx={{ mb: 2 }}>
-            Thanks for checking in to <strong>{net?.name}</strong>!
-          </Typography>
-          <Typography>
-            Would you like to receive email notifications when future instances of this net are scheduled or go active?
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-            You can manage your subscriptions and notification preferences in your profile settings.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleSkipSubscribe} color="inherit">
-            No Thanks
-          </Button>
-          <Button 
-            onClick={handleSubscribe} 
-            variant="contained" 
-            disabled={subscribing}
-            startIcon={subscribing ? <CircularProgress size={16} /> : null}
-          >
-            {subscribing ? 'Subscribing...' : 'Subscribe'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Topic/Poll Configuration Dialog */}
-      <Dialog
-        open={topicPollDialog.open}
-        onClose={topicPollDialog.onClose}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{ sx: { m: { xs: 1, sm: 4 } } }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            handleTopicPollSaveAndStart();
-          }
-        }}
-      >
-        <DialogTitle>Configure Community Net Features</DialogTitle>
-        <DialogContent>
-          <Box sx={{ pt: 2 }}>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Set the topic and/or poll question for this net session. These prompts will be shown to participants during check-in.
-            </Typography>
-            {net?.topic_of_week_enabled && (
-              <TextField
-                fullWidth
-                label="Topic of the Week"
-                value={tempTopicPrompt}
-                onChange={(e) => setTempTopicPrompt(e.target.value)}
-                placeholder="e.g., What's your favorite radio memory?"
-                helperText="What would you like participants to share?"
-                sx={{ mb: 3 }}
-              />
-            )}
-            {net?.poll_enabled && (
-              <TextField
-                fullWidth
-                label="Poll Question"
-                value={tempPollQuestion}
-                onChange={(e) => setTempPollQuestion(e.target.value)}
-                placeholder="e.g., What band do you operate most?"
-                helperText="Answers will be tracked and displayed as a chart"
-              />
-            )}
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={topicPollDialog.onClose}>Cancel</Button>
-          <Button onClick={handleTopicPollSaveAndStart} variant="contained" color="success">
-            Save & Start Net
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <NetControlDialogs
+        closeNetDialog={closeNetDialog}
+        onCloseNet={handleCloseNet}
+        subscribeDialog={subscribeDialog}
+        netName={net?.name}
+        subscribing={subscribing}
+        onSkipSubscribe={handleSkipSubscribe}
+        onSubscribe={handleSubscribe}
+        topicPollDialog={topicPollDialog}
+        topicEnabled={!!net?.topic_of_week_enabled}
+        pollEnabled={!!net?.poll_enabled}
+        tempTopicPrompt={tempTopicPrompt}
+        setTempTopicPrompt={setTempTopicPrompt}
+        tempPollQuestion={tempPollQuestion}
+        setTempPollQuestion={setTempPollQuestion}
+        onSaveAndStart={handleTopicPollSaveAndStart}
+        frequencyDialog={frequencyDialog}
+        frequencies={net?.frequencies}
+        availableFrequencyIds={checkInForm.available_frequency_ids}
+        onAvailableFrequencyIdsChange={(ids) => setCheckInForm({ ...checkInForm, available_frequency_ids: ids })}
+        formatFrequency={formatFrequencyDisplay}
+        timeEditDialog={timeEditDialog}
+        editStartedAt={editStartedAt}
+        setEditStartedAt={setEditStartedAt}
+        editClosedAt={editClosedAt}
+        setEditClosedAt={setEditClosedAt}
+        onSaveTimes={handleSaveNetTimes}
+      />
 
       {/* Role Management Dialog */}
       <RoleAssignmentDialog
@@ -4309,60 +4223,6 @@ const NetView: React.FC = () => {
         onShowProfile={setProfileUserId}
       />
 
-      {/* Available Frequencies Dialog */}
-      <Dialog
-        open={frequencyDialog.open}
-        onClose={frequencyDialog.onClose}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{ sx: { m: { xs: 1, sm: 4 } } }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            frequencyDialog.onClose();
-          }
-        }}
-      >
-        <DialogTitle>Available Frequencies</DialogTitle>
-        <DialogContent>
-          <Box sx={{ pt: 2 }}>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              For SKYWARN nets: indicate which frequencies this station can monitor.
-            </Typography>
-            <Autocomplete
-              multiple
-              options={net?.frequencies || []}
-              getOptionLabel={(option: any) => formatFrequencyDisplay(option)}
-              value={net?.frequencies.filter((f: any) => (checkInForm.available_frequency_ids || []).includes(f.id)) || []}
-              onChange={(_, newValue: any[]) => {
-                setCheckInForm({
-                  ...checkInForm,
-                  available_frequency_ids: newValue.map(f => f.id)
-                });
-              }}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Select Frequencies"
-                  placeholder="Choose frequencies..."
-                />
-              )}
-              renderTags={(value: any[], getTagProps) =>
-                value.map((option: any, index: number) => (
-                  <Chip
-                    {...getTagProps({ index })}
-                    label={formatFrequencyDisplay(option)}
-                    size="small"
-                  />
-                ))
-              }
-            />
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={frequencyDialog.onClose}>Done</Button>
-        </DialogActions>
-      </Dialog>
 
       {/* Check-In Dialog for Regular Users */}
       <CheckInFormDialog
@@ -4462,33 +4322,6 @@ const NetView: React.FC = () => {
         />
       )}
 
-      {/* ========== NET TIME EDIT DIALOG ========== */}
-      <Dialog open={timeEditDialog.open} onClose={timeEditDialog.onClose} maxWidth="xs" fullWidth>
-        <DialogTitle>Edit Net Times</DialogTitle>
-        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-          <TextField
-            label="Started At"
-            type="datetime-local"
-            value={editStartedAt}
-            onChange={(e) => setEditStartedAt(e.target.value)}
-            InputLabelProps={{ shrink: true }}
-            fullWidth
-            sx={{ mt: 1 }}
-          />
-          <TextField
-            label="Closed At"
-            type="datetime-local"
-            value={editClosedAt}
-            onChange={(e) => setEditClosedAt(e.target.value)}
-            InputLabelProps={{ shrink: true }}
-            fullWidth
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={timeEditDialog.onClose}>Cancel</Button>
-          <Button variant="contained" onClick={handleSaveNetTimes}>Save</Button>
-        </DialogActions>
-      </Dialog>
 
       {/* ========== WHO IS THIS? PROFILE POPUP ========== */}
       <UserProfileDialog
