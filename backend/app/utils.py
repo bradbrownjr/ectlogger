@@ -2,6 +2,7 @@
 
 import hashlib
 import urllib.request
+from datetime import datetime
 from typing import Optional
 
 
@@ -32,6 +33,22 @@ def get_avatar_url(email: Optional[str], custom_url: Optional[str] = None) -> Op
         pass
 
     return None
+
+
+def format_time_for_net(
+    timestamp: datetime,
+    net_started_at: datetime,
+    net_closed_at: datetime = None,
+) -> str:
+    """Format a timestamp; include the date only when the net spans multiple days."""
+    if not timestamp:
+        return ""
+    is_multi_day = False
+    if net_started_at:
+        end_date = net_closed_at or datetime.utcnow()
+        if net_started_at.date() != end_date.date():
+            is_multi_day = True
+    return timestamp.strftime("%m/%d %H:%M:%S") if is_multi_day else timestamp.strftime("%H:%M:%S")
 
 
 def display_callsign(user) -> str:

@@ -310,7 +310,7 @@ async def test_merge_moves_schedule_overrides_and_topic_history(populated_db):
 
 @pytest.mark.asyncio
 async def test_conflict_detection(merge_engine):
-    from app.routers.templates import _compare_template_fields
+    from app.routers.templates_merge import _compare_template_fields
     factory = sessionmaker(merge_engine, class_=AsyncSession, expire_on_commit=False)
 
     async with factory() as db:
@@ -352,7 +352,7 @@ async def test_conflict_detection(merge_engine):
 
 @pytest.mark.asyncio
 async def test_merge_permission_checks(merge_engine):
-    from app.routers.templates import _check_merge_permission
+    from app.routers.templates_merge import _check_merge_permission
     factory = sessionmaker(merge_engine, class_=AsyncSession, expire_on_commit=False)
 
     async with factory() as db:

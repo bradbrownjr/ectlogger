@@ -23,28 +23,9 @@ from app.services.csv_import import (
     decode_csv_bytes,
     process_csv_rows,
 )
-from app.utils import display_callsign
+from app.utils import display_callsign, format_time_for_net
 
 router = APIRouter()
-
-
-def format_time_for_net(timestamp: datetime, net_started_at: datetime, net_closed_at: datetime = None) -> str:
-    """Format timestamp, including date only if net spans multiple days."""
-    if not timestamp:
-        return ""
-    
-    # Determine if net spans multiple days
-    is_multi_day = False
-    if net_started_at:
-        end_date = net_closed_at or datetime.utcnow()
-        if net_started_at.date() != end_date.date():
-            is_multi_day = True
-    
-    if is_multi_day:
-        return timestamp.strftime("%m/%d %H:%M:%S")
-    else:
-        return timestamp.strftime("%H:%M:%S")
-
 
 @router.get("/{net_id}/export/csv")
 async def export_net_csv(

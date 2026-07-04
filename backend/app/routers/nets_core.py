@@ -31,7 +31,7 @@ from app.schemas import (
     NetUpdate,
     public_display_name,
 )
-from app.utils import display_callsign
+from app.utils import display_callsign, format_time_for_net
 
 router = APIRouter()
 
