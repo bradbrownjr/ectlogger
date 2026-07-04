@@ -5,6 +5,7 @@ import { useNetWebSocket } from '../hooks/useNetWebSocket';
 import CsvImportDialog from '../components/netview/CsvImportDialog';
 import ArchiveDialogs from '../components/netview/ArchiveDialogs';
 import RoleAssignmentDialog from '../components/netview/RoleAssignmentDialog';
+import CheckInFormDialog, { CheckInFormState } from '../components/netview/CheckInFormDialog';
 import { STORAGE_KEYS } from '../utils/localStorageKeys';
 import { displayCallsign } from '../utils/userDisplay';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
@@ -315,7 +316,7 @@ const NetView: React.FC = () => {
   const navigate = useNavigate();
 
   // Check-in form state - includes custom_fields for dynamic fields
-  const [checkInForm, setCheckInForm] = useState({
+  const [checkInForm, setCheckInForm] = useState<CheckInFormState>({
     callsign: '',
     name: '',
     location: '',
@@ -4364,172 +4365,17 @@ const NetView: React.FC = () => {
       </Dialog>
 
       {/* Check-In Dialog for Regular Users */}
-      <Dialog
-        open={checkInDialog.open}
-        onClose={checkInDialog.onClose}
-        maxWidth="md"
-        fullWidth
-        PaperProps={{ sx: { m: { xs: 1, sm: 4 } } }}
-        disableRestoreFocus
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            handleCheckIn();
-            checkInDialog.onClose();
-          }
-        }}
-      >
-        <DialogTitle>Check In to {net?.name}</DialogTitle>
-        <DialogContent>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-            <TextField
-              label="Callsign"
-              value={checkInForm.callsign}
-              onChange={(e) => setCheckInForm({ ...checkInForm, callsign: e.target.value.toUpperCase() })}
-              onBlur={(e) => handleCallsignLookup(e.target.value)}
-              fullWidth
-              required
-              inputProps={{ style: { textTransform: 'uppercase' } }}
-            />
-            
-            {net?.field_config?.name?.enabled && (
-              <TextField
-                label="Name"
-                value={checkInForm.name}
-                onChange={(e) => setCheckInForm({ ...checkInForm, name: e.target.value })}
-                fullWidth
-                required={net.field_config.name.required}
-              />
-            )}
-            
-            {net?.field_config?.location?.enabled && (
-              <TextField
-                label="Location"
-                value={checkInForm.location}
-                onChange={(e) => setCheckInForm({ ...checkInForm, location: e.target.value })}
-                fullWidth
-                required={net.field_config.location.required}
-              />
-            )}
-            
-            {net?.field_config?.skywarn_number?.enabled && (
-              <TextField
-                label="Spotter #"
-                value={checkInForm.skywarn_number}
-                onChange={(e) => setCheckInForm({ ...checkInForm, skywarn_number: e.target.value })}
-                fullWidth
-                required={net.field_config.skywarn_number.required}
-              />
-            )}
-            
-            {net?.field_config?.weather_observation?.enabled && (
-              <TextField
-                label="Weather Observation"
-                value={checkInForm.weather_observation}
-                onChange={(e) => setCheckInForm({ ...checkInForm, weather_observation: e.target.value })}
-                fullWidth
-                multiline
-                rows={2}
-                required={net.field_config.weather_observation.required}
-              />
-            )}
-            
-            {net?.field_config?.power_source?.enabled && (
-              <TextField
-                label="Power Src"
-                value={checkInForm.power_source}
-                onChange={(e) => setCheckInForm({ ...checkInForm, power_source: e.target.value })}
-                fullWidth
-                required={net.field_config.power_source.required}
-              />
-            )}
-            
-            {net?.field_config?.power?.enabled && (
-              <TextField
-                label="Power"
-                value={checkInForm.power}
-                onChange={(e) => setCheckInForm({ ...checkInForm, power: e.target.value })}
-                fullWidth
-                required={net.field_config.power.required}
-              />
-            )}
-            
-            {net?.field_config?.notes?.enabled && (
-              <TextField
-                label="Notes"
-                value={checkInForm.notes}
-                onChange={(e) => setCheckInForm({ ...checkInForm, notes: e.target.value })}
-                fullWidth
-                multiline
-                rows={2}
-                required={net.field_config.notes.required}
-              />
-            )}
-            
-            {net?.frequencies && net.frequencies.length > 1 && (
-              <Autocomplete
-                multiple
-                options={net.frequencies || []}
-                getOptionLabel={(option: any) => formatFrequencyDisplay(option)}
-                value={net.frequencies.filter((f: any) => checkInForm.available_frequency_ids.includes(f.id))}
-                onChange={(_, newValue: any[]) => {
-                  setCheckInForm({
-                    ...checkInForm,
-                    available_frequency_ids: newValue.map(f => f.id)
-                  });
-                }}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Available Frequencies (optional)"
-                    helperText="For SKYWARN nets: indicate which frequencies you can reach"
-                  />
-                )}
-                renderTags={(value: any[], getTagProps) =>
-                  value.map((option: any, index: number) => {
-                    const { key, ...tagProps } = getTagProps({ index });
-                    return (
-                      <Chip
-                        key={key}
-                        {...tagProps}
-                        label={formatFrequencyDisplay(option)}
-                        size="small"
-                      />
-                    );
-                  })
-                }
-              />
-            )}
-            
-            {net?.frequencies && net.frequencies.length === 1 && (
-              <Box sx={{
-                p: 1.5,
-                bgcolor: 'action.hover',
-                borderRadius: 1,
-                textAlign: 'center',
-                fontSize: '0.9rem',
-                color: 'text.secondary'
-              }}>
-                📡 Frequency: {net.frequencies[0].frequency || net.frequencies[0].network || 'Unknown'}
-              </Box>
-            )}
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={checkInDialog.onClose}>Cancel</Button>
-          <Button 
-            onClick={() => {
-              handleCheckIn();
-              checkInDialog.onClose();
-            }} 
-            variant="contained" 
-            color="primary"
-            disabled={!checkInForm.callsign}
-          >
-            Check In
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <CheckInFormDialog
+        dialog={checkInDialog}
+        netName={net?.name}
+        fieldConfig={net?.field_config}
+        frequencies={net?.frequencies}
+        checkInForm={checkInForm}
+        setCheckInForm={setCheckInForm}
+        onCallsignLookup={handleCallsignLookup}
+        onCheckIn={handleCheckIn}
+        formatFrequency={formatFrequencyDisplay}
+      />
 
       {/* Check-in Location Map */}
       <CheckInMap
