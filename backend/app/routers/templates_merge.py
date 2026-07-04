@@ -45,6 +45,48 @@ from app.schemas import (
 
 router = APIRouter()
 
+async def _check_merge_permission(template: NetTemplate, user: User, db: AsyncSession) -> bool:
+    """Only admin, template owner, or active co-manager can merge."""
+    if user.role == UserRole.ADMIN or template.owner_id == user.id:
+        return True
+    return await is_active_co_manager(db, template.id, user.id)
+
+
+def _compare_template_fields(target: NetTemplate, source: NetTemplate) -> list:
+    """Compare configurable fields between two templates, return conflicts"""
+    conflicts = []
+    compare_fields = [
+        ("schedule_type", "Schedule type"),
+        ("schedule_config", "Schedule config"),
+        ("field_config", "Field configuration"),
+        ("ics309_enabled", "ICS-309 enabled"),
+        ("topic_of_week_enabled", "Topic of the Week enabled"),
+        ("topic_of_week_prompt", "Topic prompt"),
+        ("poll_enabled", "Poll enabled"),
+        ("poll_question", "Poll question"),
+        ("script", "Net script"),
+        ("info_url", "Info URL"),
+    ]
+    for field_attr, field_label in compare_fields:
+        target_val = getattr(target, field_attr)
+        source_val = getattr(source, field_attr)
+        # Normalize None vs empty string vs '{}'
+        t_norm = (target_val or "") if isinstance(target_val, str) else target_val
+        s_norm = (source_val or "") if isinstance(source_val, str) else source_val
+        if t_norm != s_norm:
+            # Truncate long values for display
+            t_display = str(target_val)[:100] if target_val else "(empty)"
+            s_display = str(source_val)[:100] if source_val else "(empty)"
+            conflicts.append(TemplateMergeConflict(
+                field=field_label,
+                target_value=t_display,
+                source_value=s_display,
+                source_template_name=source.name,
+            ))
+    return conflicts
+
+
+
 @router.post("/merge/preview", response_model=TemplateMergePreview)
 async def preview_merge(
     merge_data: TemplateMergeRequest,
