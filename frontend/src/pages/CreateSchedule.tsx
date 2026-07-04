@@ -1,126 +1,42 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   Container,
   Paper,
-  TextField,
-  Button,
   Typography,
   Box,
-  FormControl,
-  Select,
-  MenuItem,
-  Checkbox,
-  FormControlLabel,
-  FormGroup,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TableSortLabel,
-  IconButton,
-  Autocomplete,
-  InputLabel,
+  Button,
   Tabs,
   Tab,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  ListItemSecondaryAction,
-  Switch,
-  Chip,
-  Tooltip,
-  Divider,
-  InputAdornment,
   Snackbar,
   Alert,
 } from '@mui/material';
-import DeleteIcon from '@mui/icons-material/Delete';
-import EditIcon from '@mui/icons-material/Edit';
-import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
-import SaveIcon from '@mui/icons-material/Save';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import UploadFileIcon from '@mui/icons-material/UploadFile';
-import PersonAddIcon from '@mui/icons-material/PersonAdd';
-import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
-import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
-import FormatBoldIcon from '@mui/icons-material/FormatBold';
-import FormatItalicIcon from '@mui/icons-material/FormatItalic';
-import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
-import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
-import HorizontalRuleIcon from '@mui/icons-material/HorizontalRule';
-import SearchIcon from '@mui/icons-material/Search';
-import ClearIcon from '@mui/icons-material/Clear';
-import { templateApi, frequencyApi, userApi, ncsRotationApi, templateStaffApi } from '../services/api';
+import SaveIcon from '@mui/icons-material/Save';
+import { templateApi, frequencyApi, userApi, templateStaffApi } from '../services/api';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import BlockingAlert from '../components/BlockingAlert';
-
-interface User {
-  id: number;
-  callsign: string;
-  name: string | null;
-  email: string;
-}
-
-interface RotationMember {
-  id: number;
-  user_id: number;
-  user_callsign: string;
-  user_name: string | null;
-  position: number;
-  is_active: boolean;
-}
-
-interface StaffMember {
-  id: number;
-  user_id: number;
-  user_callsign: string;
-  user_name: string | null;
-  is_active: boolean;
-  is_co_manager: boolean;
-}
-
-interface TemplateSubscriber {
-  id: number;
-  user_id: number;
-  user_callsign: string | null;
-  user_name: string | null;
-  user_email: string | null;
-  subscribed_at: string;
-}
-
-interface Frequency {
-  id: number;
-  frequency?: string;
-  mode: string;
-  network?: string;
-  talkgroup?: string;
-  description?: string;
-}
-
-// Frequency sorting types
-type FrequencySortField = 'mode' | 'frequency' | 'talkgroup' | 'description';
-type SortDirection = 'asc' | 'desc';
-
-interface FieldDefinition {
-  id: number;
-  name: string;
-  label: string;
-  field_type: string;
-  options?: string[];
-  placeholder?: string;
-  default_enabled: boolean;
-  default_required: boolean;
-  is_builtin: boolean;
-  is_archived: boolean;
-  sort_order: number;
-}
+import {
+  CreateScheduleContext,
+  CreateScheduleContextValue,
+  Frequency,
+  FieldDefinition,
+  User,
+  StaffMember,
+  RotationMember,
+  ScheduleConfig,
+  FieldConfigEntry,
+} from '../contexts/CreateScheduleContext';
+import BasicInfoTab from '../components/create-schedule/BasicInfoTab';
+import ScheduleTab from '../components/create-schedule/ScheduleTab';
+import StaffRotationTab from '../components/create-schedule/StaffRotationTab';
+import CommunicationPlanTab from '../components/create-schedule/CommunicationPlanTab';
+import NetScriptTab from '../components/create-schedule/NetScriptTab';
+import AnnouncementsTab from '../components/create-schedule/AnnouncementsTab';
+import CheckInFieldsTab from '../components/create-schedule/CheckInFieldsTab';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -131,17 +47,12 @@ interface TabPanelProps {
 function TabPanel(props: TabPanelProps) {
   const { children, value, index, ...other } = props;
   return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      {...other}
-    >
+    <div role="tabpanel" hidden={value !== index} {...other}>
       {value === index && <Box sx={{ pt: 3 }}>{children}</Box>}
     </div>
   );
 }
 
-// Get timezone abbreviation (e.g., EST, EDT, UTC)
 const getTimezoneAbbr = () => {
   const date = new Date();
   const timeString = date.toLocaleTimeString('en-US', { timeZoneName: 'short' });
@@ -156,103 +67,75 @@ const CreateSchedule: React.FC = () => {
   const isEdit = Boolean(scheduleId);
   const timezoneAbbr = getTimezoneAbbr();
   const { user: currentUser } = useAuth();
-  
-  // Check if coming from Dashboard + button for one-time net
   const initialType = searchParams.get('type') || 'ad_hoc';
 
+  // ---- Form text fields ----
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [infoUrl, setInfoUrl] = useState('');
   const [script, setScript] = useState('');
+  const [announcements, setAnnouncements] = useState('');
+
+  // ---- ARES / EmComm features ----
   const [ics309Enabled, setIcs309Enabled] = useState(false);
   const [mobilePrioritySort, setMobilePrioritySort] = useState(true);
   const [chatGracePeriodEnabled, setChatGracePeriodEnabled] = useState(false);
   const [chatGracePeriodMinutes, setChatGracePeriodMinutes] = useState(15);
+
+  // ---- Community net features ----
   const [topicOfWeekEnabled, setTopicOfWeekEnabled] = useState(false);
   const [topicOfWeekPrompt, setTopicOfWeekPrompt] = useState('');
   const [pollEnabled, setPollEnabled] = useState(false);
   const [pollQuestion, setPollQuestion] = useState('');
-  const [frequencies, setFrequencies] = useState<Frequency[]>([]);
-  const [selectedFrequencyIds, setSelectedFrequencyIds] = useState<number[]>([]);
-  const [newFrequency, setNewFrequency] = useState({ frequency: '', mode: 'FM', network: '', talkgroup: '', description: '' });
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [editForm, setEditForm] = useState<Frequency | null>(null);
-  // Frequency filtering and sorting
-  const [frequencyFilter, setFrequencyFilter] = useState('');
-  const [frequencySortField, setFrequencySortField] = useState<FrequencySortField>('mode');
-  const [frequencySortDirection, setFrequencySortDirection] = useState<SortDirection>('asc');
-  const [fieldDefinitions, setFieldDefinitions] = useState<FieldDefinition[]>([]);
-  const [fieldConfig, setFieldConfig] = useState<Record<string, { enabled: boolean; required: boolean }>>({});
-  // Toast notification for field messages
-  const [toastMessage, setToastMessage] = useState('');
-  const [isActive, setIsActive] = useState(true);
-  
-  // Script file upload
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const scriptTextAreaRef = useRef<HTMLTextAreaElement>(null);
-  
-  // NCS Rotation
-  const [rotationMembers, setRotationMembers] = useState<RotationMember[]>([]);
-  const [selectedUserForRotation, setSelectedUserForRotation] = useState<User | null>(null);
-  // Pending NCS users for new schedules (assigned after creation)
-  const [pendingNCSUsers, setPendingNCSUsers] = useState<User[]>([]);
 
-  // Authorized Net Staff (edit mode) — operators allowed to start/run nets
-  // for this schedule. Independent of the rotation order.
-  const [staff, setStaff] = useState<StaffMember[]>([]);
-  const [selectedUserForStaff, setSelectedUserForStaff] = useState<User | null>(null);
-  const [subscribers, setSubscribers] = useState<TemplateSubscriber[]>([]);
-  
-  // Owner management (for editing)
+  // ---- Schedule status ----
+  const [isActive, setIsActive] = useState(true);
   const [ownerId, setOwnerId] = useState<number | null>(null);
-  const [users, setUsers] = useState<User[]>([]);
   const [originalOwnerId, setOriginalOwnerId] = useState<number | null>(null);
-  
-  // Schedule configuration
+
+  // ---- Recurrence config ----
   const [scheduleType, setScheduleType] = useState(initialType);
-  const [scheduleConfig, setScheduleConfig] = useState<{
-    day_of_week: number;
-    week_of_month: number[];
-    time: string;
-  }>({
-    day_of_week: 1, // Monday
-    week_of_month: [], // e.g., [1, 3] for 1st and 3rd week
-    time: '18:00'
+  const [scheduleConfig, setScheduleConfig] = useState<ScheduleConfig>({
+    day_of_week: 1,
+    week_of_month: [],
+    time: '18:00',
   });
   const [fifthWeekUserId, setFifthWeekUserId] = useState<number | null>(null);
 
-  // Recurring announcements (template-level markdown document)
-  const [announcements, setAnnouncements] = useState('');
-  const announcementsTextAreaRef = useRef<HTMLTextAreaElement>(null);
+  // ---- Frequency selection ----
+  const [selectedFrequencyIds, setSelectedFrequencyIds] = useState<number[]>([]);
 
-  // Tab state
+  // ---- Check-in field config ----
+  const [fieldConfig, setFieldConfig] = useState<Record<string, FieldConfigEntry>>({});
+
+  // ---- Pending NCS staff (new-schedule flow) ----
+  const [pendingNCSUsers, setPendingNCSUsers] = useState<User[]>([]);
+
+  // ---- Reference data (fetched once) ----
+  const [frequencies, setFrequencies] = useState<Frequency[]>([]);
+  const [fieldDefinitions, setFieldDefinitions] = useState<FieldDefinition[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+
+  // ---- Staff / rotation (populated by StaffRotationTab, read by ScheduleTab for 5th-week calc) ----
+  const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [rotationMembers, setRotationMembers] = useState<RotationMember[]>([]);
+
+  // ---- Shell UI state ----
   const [activeTab, setActiveTab] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  
-  // Blocking alert for errors
+  const [toastMessage, setToastMessage] = useState('');
   const [blockingAlert, setBlockingAlert] = useState<{
     open: boolean;
     message: string;
     title?: string;
     severity?: 'error' | 'warning' | 'info' | 'success';
   }>({ open: false, message: '' });
-  
-  // Prevent double-click from accidentally submitting when advancing to final tab
-  const handleNextTab = () => {
-    if (activeTab === 5) {
-      // Going to final tab - briefly disable submit to prevent accidental double-click
-      setIsTransitioning(true);
-      setActiveTab(6);
-      setTimeout(() => setIsTransitioning(false), 500);
-    } else {
-      setActiveTab(activeTab + 1);
-    }
-  };
 
+  // ---- Reference data fetches ----
   useEffect(() => {
     fetchFrequencies();
     fetchFieldDefinitions();
-    fetchUsers(); // Always fetch users for NCS rotation
+    fetchUsers();
   }, []);
 
   useEffect(() => {
@@ -261,43 +144,12 @@ const CreateSchedule: React.FC = () => {
     }
   }, [scheduleId, fieldDefinitions]);
 
-  useEffect(() => {
-    // Fetch rotation members when editing
-    if (isEdit && scheduleId) {
-      fetchRotationMembers();
-      fetchStaff();
-    }
-  }, [scheduleId, isEdit]);
-
-  const canViewSubscribers = !!currentUser && (
-    currentUser.role === 'admin' ||
-    currentUser.id === originalOwnerId ||
-    staff.some(s => s.user_id === currentUser.id && s.is_active && s.is_co_manager)
-  );
-
-  const canConfigureFifthWeekOperator = !!currentUser && (
-    currentUser.role === 'admin' ||
-    currentUser.id === ownerId ||
-    staff.some(s => s.user_id === currentUser.id && s.is_active && s.is_co_manager)
-  );
-
-  useEffect(() => {
-    if (!isEdit || !scheduleId) return;
-
-    if (canViewSubscribers) {
-      fetchSubscribers();
-    } else {
-      setSubscribers([]);
-    }
-  }, [isEdit, scheduleId, canViewSubscribers]);
-
-  const fetchRotationMembers = async () => {
-    if (!scheduleId) return;
+  const fetchFrequencies = async () => {
     try {
-      const response = await ncsRotationApi.listMembers(Number(scheduleId));
-      setRotationMembers(response.data);
+      const response = await frequencyApi.list();
+      setFrequencies(response.data);
     } catch (error) {
-      console.error('Failed to fetch rotation members:', error);
+      console.error('Failed to fetch frequencies:', error);
     }
   };
 
@@ -305,8 +157,7 @@ const CreateSchedule: React.FC = () => {
     try {
       const response = await api.get('/settings/fields');
       setFieldDefinitions(response.data);
-      // Initialize fieldConfig with defaults from field definitions
-      const defaultConfig: Record<string, { enabled: boolean; required: boolean }> = {};
+      const defaultConfig: Record<string, FieldConfigEntry> = {};
       response.data.forEach((field: FieldDefinition) => {
         defaultConfig[field.name] = {
           enabled: field.default_enabled,
@@ -328,650 +179,63 @@ const CreateSchedule: React.FC = () => {
     }
   };
 
-  const fetchFrequencies = async () => {
-    try {
-      const response = await frequencyApi.list();
-      setFrequencies(response.data);
-    } catch (error) {
-      console.error('Failed to fetch frequencies:', error);
-    }
-  };
-
-  const handleAddFrequency = async (e?: React.KeyboardEvent) => {
-    if (e && e.key !== 'Enter') return;
-    if (!newFrequency.frequency && !newFrequency.network) return;
-    
-    try {
-      const cleanData = {
-        frequency: newFrequency.frequency || null,
-        mode: newFrequency.mode,
-        network: newFrequency.network || null,
-        talkgroup: newFrequency.talkgroup || null,
-        description: newFrequency.description || null,
-      };
-      
-      const response = await frequencyApi.create(cleanData);
-      setFrequencies([...frequencies, response.data]);
-      setSelectedFrequencyIds([...selectedFrequencyIds, response.data.id]);
-      setNewFrequency({ frequency: '', mode: 'FM', network: '', talkgroup: '', description: '' });
-    } catch (error) {
-      console.error('Failed to create frequency:', error);
-      alert('Failed to create frequency. Check that you filled in required fields.');
-    }
-  };
-
-  const handleDeleteFrequency = async (id: number) => {
-    if (!confirm('Delete this frequency?')) return;
-    
-    try {
-      await frequencyApi.delete(id);
-      setFrequencies(frequencies.filter((f: Frequency) => f.id !== id));
-      setSelectedFrequencyIds(selectedFrequencyIds.filter((fid: number) => fid !== id));
-    } catch (error) {
-      console.error('Failed to delete frequency:', error);
-    }
-  };
-
-  const startEdit = (freq: Frequency) => {
-    setEditingId(freq.id!);
-    setEditForm({ ...freq });
-  };
-
-  const cancelEdit = () => {
-    setEditingId(null);
-    setEditForm(null);
-  };
-
-  const saveEdit = async (e?: React.KeyboardEvent) => {
-    if (e && e.key !== 'Enter') return;
-    await doSaveEdit();
-  };
-
-  const doSaveEdit = async (overrideForm?: typeof editForm) => {
-    const formToSave = overrideForm || editForm;
-    if (!formToSave || !editingId) return;
-    
-    try {
-      const cleanData = {
-        frequency: formToSave.frequency || null,
-        mode: formToSave.mode,
-        network: formToSave.network || null,
-        talkgroup: formToSave.talkgroup || null,
-        description: formToSave.description || null,
-      };
-      
-      const response = await frequencyApi.update(editingId, cleanData);
-      setFrequencies(frequencies.map((f: Frequency) => f.id === editingId ? response.data : f));
-      setEditingId(null);
-      setEditForm(null);
-    } catch (error) {
-      console.error('Failed to update frequency:', error);
-      alert('Failed to update frequency.');
-    }
-  };
-
-  const toggleSelection = (id: number) => {
-    setSelectedFrequencyIds((prev: number[]) =>
-      prev.includes(id) ? prev.filter((fid: number) => fid !== id) : [...prev, id]
-    );
-  };
-
-  const getDisplayText = (freq: Frequency) => {
-    if (freq.frequency) return freq.frequency;
-    if (freq.network) return freq.network;
-    return 'N/A';
-  };
-
-  const renderEditableRow = (freq: Frequency) => {
-    const isEditing = editingId === freq.id;
-    const form = isEditing ? editForm! : freq;
-    const isAnalog = ['FM', 'SSB', 'GMRS'].includes(form.mode);
-    const isYSF = form.mode === 'YSF';
-
-    return (
-      <TableRow key={freq.id}>
-        <TableCell padding="checkbox">
-          <Checkbox
-            checked={selectedFrequencyIds.includes(freq.id!)}
-            onChange={() => toggleSelection(freq.id!)}
-          />
-        </TableCell>
-        <TableCell>
-          {isEditing ? (
-            <FormControl size="small" fullWidth>
-              <Select
-                value={form.mode}
-                onChange={(e: any) => {
-                  const newMode = e.target.value;
-                  const updatedForm = { ...form, mode: newMode };
-                  setEditForm(updatedForm);
-                  // Auto-save when mode changes
-                  doSaveEdit(updatedForm);
-                }}
-              >
-                <MenuItem value="FM">FM</MenuItem>
-                <MenuItem value="GMRS">GMRS</MenuItem>
-                <MenuItem value="SSB">SSB</MenuItem>
-                <MenuItem value="DMR">DMR</MenuItem>
-                <MenuItem value="D-STAR">D-STAR</MenuItem>
-                <MenuItem value="YSF">YSF</MenuItem>
-                <MenuItem value="P25">P25</MenuItem>
-              </Select>
-            </FormControl>
-          ) : (
-            freq.mode
-          )}
-        </TableCell>
-        <TableCell>
-          {isEditing ? (
-            isAnalog ? (
-              <TextField
-                size="small"
-                fullWidth
-                value={form.frequency || ''}
-                onChange={(e: any) => setEditForm({ ...form, frequency: e.target.value, network: '', talkgroup: '' })}
-                onKeyPress={saveEdit}
-                placeholder="146.520 MHz"
-              />
-            ) : (
-              <TextField
-                size="small"
-                fullWidth
-                value={form.network || ''}
-                onChange={(e: any) => setEditForm({ ...form, network: e.target.value, frequency: '' })}
-                onKeyPress={saveEdit}
-                placeholder={isYSF ? "Room (e.g., UFB)" : "Network"}
-              />
-            )
-          ) : (
-            getDisplayText(freq)
-          )}
-        </TableCell>
-        <TableCell>
-          {isEditing && !isAnalog && !isYSF ? (
-            <TextField
-              size="small"
-              fullWidth
-              value={form.talkgroup || ''}
-              onChange={(e: any) => setEditForm({ ...form, talkgroup: e.target.value })}
-              onKeyPress={saveEdit}
-              placeholder="TG"
-            />
-          ) : !isAnalog && freq.talkgroup ? (
-            freq.talkgroup
-          ) : (
-            '-'
-          )}
-        </TableCell>
-        <TableCell>
-          {isEditing ? (
-            <TextField
-              size="small"
-              fullWidth
-              value={form.description || ''}
-              onChange={(e: any) => setEditForm({ ...form, description: e.target.value })}
-              onKeyPress={saveEdit}
-            />
-          ) : (
-            freq.description || '-'
-          )}
-        </TableCell>
-        <TableCell>
-          {isEditing ? (
-            <>
-              <IconButton type="button" size="small" onClick={() => saveEdit()} color="primary">
-                <CheckIcon />
-              </IconButton>
-              <IconButton type="button" size="small" onClick={cancelEdit}>
-                <CloseIcon />
-              </IconButton>
-            </>
-          ) : (
-            <>
-              <IconButton type="button" size="small" onClick={() => startEdit(freq)}>
-                <EditIcon />
-              </IconButton>
-              <IconButton type="button" size="small" onClick={() => handleDeleteFrequency(freq.id!)} color="error">
-                <DeleteIcon />
-              </IconButton>
-            </>
-          )}
-        </TableCell>
-      </TableRow>
-    );
-  };
-
-  const renderNewRow = () => {
-    const isAnalog = ['FM', 'SSB', 'GMRS'].includes(newFrequency.mode);
-    const isYSF = newFrequency.mode === 'YSF';
-
-    return (
-      <TableRow>
-        <TableCell padding="checkbox"></TableCell>
-        <TableCell>
-          <FormControl size="small" fullWidth>
-            <Select
-              value={newFrequency.mode}
-              onChange={(e: any) => setNewFrequency({ ...newFrequency, mode: e.target.value })}
-            >
-              <MenuItem value="FM">FM</MenuItem>
-              <MenuItem value="GMRS">GMRS</MenuItem>
-              <MenuItem value="SSB">SSB</MenuItem>
-              <MenuItem value="DMR">DMR</MenuItem>
-              <MenuItem value="D-STAR">D-STAR</MenuItem>
-              <MenuItem value="YSF">YSF</MenuItem>
-              <MenuItem value="P25">P25</MenuItem>
-            </Select>
-          </FormControl>
-        </TableCell>
-        <TableCell>
-          {isAnalog ? (
-            <TextField
-              size="small"
-              fullWidth
-              value={newFrequency.frequency}
-              onChange={(e: any) => setNewFrequency({ ...newFrequency, frequency: e.target.value, network: '', talkgroup: '' })}
-              onKeyPress={handleAddFrequency}
-              placeholder="146.520 MHz"
-            />
-          ) : (
-            <TextField
-              size="small"
-              fullWidth
-              value={newFrequency.network}
-              onChange={(e: any) => setNewFrequency({ ...newFrequency, network: e.target.value, frequency: '' })}
-              onKeyPress={handleAddFrequency}
-              placeholder={isYSF ? "UFB, America-Link..." : "Network name"}
-            />
-          )}
-        </TableCell>
-        <TableCell>
-          {!isAnalog && !isYSF ? (
-            <TextField
-              size="small"
-              fullWidth
-              value={newFrequency.talkgroup}
-              onChange={(e: any) => setNewFrequency({ ...newFrequency, talkgroup: e.target.value })}
-              onKeyPress={handleAddFrequency}
-              placeholder="TG"
-            />
-          ) : (
-            '-'
-          )}
-        </TableCell>
-        <TableCell>
-          <TextField
-            size="small"
-            fullWidth
-            value={newFrequency.description}
-            onChange={(e: any) => setNewFrequency({ ...newFrequency, description: e.target.value })}
-            onKeyPress={handleAddFrequency}
-            placeholder="Optional"
-          />
-        </TableCell>
-        <TableCell>
-          <Button
-            type="button"
-            size="small"
-            variant="contained"
-            onClick={() => handleAddFrequency()}
-            disabled={!newFrequency.frequency && !newFrequency.network}
-          >
-            Add
-          </Button>
-        </TableCell>
-      </TableRow>
-    );
-  };
-
   const fetchScheduleData = async () => {
     if (!scheduleId) return;
     try {
       const response = await templateApi.get(Number(scheduleId));
-      const Schedule = response.data;
-      setName(Schedule.name);
-      setDescription(Schedule.description || '');
-      setInfoUrl(Schedule.info_url || '');
-      setScript(Schedule.script || '');
-      setIcs309Enabled(Schedule.ics309_enabled || false);
-      setMobilePrioritySort(Schedule.mobile_priority_sort !== false);
-      const grace = Schedule.chat_grace_period_minutes;
+      const schedule = response.data;
+      setName(schedule.name);
+      setDescription(schedule.description || '');
+      setInfoUrl(schedule.info_url || '');
+      setScript(schedule.script || '');
+      setIcs309Enabled(schedule.ics309_enabled || false);
+      setMobilePrioritySort(schedule.mobile_priority_sort !== false);
+      const grace = schedule.chat_grace_period_minutes;
       setChatGracePeriodEnabled(!!grace);
       if (grace) setChatGracePeriodMinutes(grace);
-      setTopicOfWeekEnabled(Schedule.topic_of_week_enabled || false);
-      setTopicOfWeekPrompt(Schedule.topic_of_week_prompt || '');
-      setPollEnabled(Schedule.poll_enabled || false);
-      setPollQuestion(Schedule.poll_question || '');
-      setSelectedFrequencyIds(Schedule.frequencies.map((f: any) => f.id));
-      // Set owner info
-      setOwnerId(Schedule.owner_id);
-      setOriginalOwnerId(Schedule.owner_id);
-      // Merge saved config with field definitions (in case new fields were added)
-      if (Schedule.field_config) {
-        const mergedConfig: Record<string, { enabled: boolean; required: boolean }> = {};
+      setTopicOfWeekEnabled(schedule.topic_of_week_enabled || false);
+      setTopicOfWeekPrompt(schedule.topic_of_week_prompt || '');
+      setPollEnabled(schedule.poll_enabled || false);
+      setPollQuestion(schedule.poll_question || '');
+      setSelectedFrequencyIds(schedule.frequencies.map((f: any) => f.id));
+      setOwnerId(schedule.owner_id);
+      setOriginalOwnerId(schedule.owner_id);
+      if (schedule.field_config) {
+        const mergedConfig: Record<string, FieldConfigEntry> = {};
         fieldDefinitions.forEach((field: FieldDefinition) => {
-          mergedConfig[field.name] = Schedule.field_config[field.name] || {
+          mergedConfig[field.name] = schedule.field_config[field.name] || {
             enabled: field.default_enabled,
             required: field.default_required,
           };
         });
         setFieldConfig(mergedConfig);
       }
-      setIsActive(Schedule.is_active);
-      setScheduleType(Schedule.schedule_type || 'ad_hoc');
-      setScheduleConfig(Schedule.schedule_config || { day_of_week: 1, week_of_month: [], time: '18:00' });
-      setFifthWeekUserId(Schedule.fifth_week_user_id ?? null);
-      setAnnouncements(Schedule.announcements || '');
+      setIsActive(schedule.is_active);
+      setScheduleType(schedule.schedule_type || 'ad_hoc');
+      setScheduleConfig(schedule.schedule_config || { day_of_week: 1, week_of_month: [], time: '18:00' });
+      setFifthWeekUserId(schedule.fifth_week_user_id ?? null);
+      setAnnouncements(schedule.announcements || '');
     } catch (error) {
-      console.error('Failed to fetch Schedule:', error);
+      console.error('Failed to fetch schedule:', error);
     }
   };
 
-  // Script file upload handlers
-  const handleScriptFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const text = e.target?.result as string;
-        setScript(text);
-      };
-      reader.readAsText(file);
-    }
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
-  const handleScriptDrop = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    const file = event.dataTransfer.files?.[0];
-    if (file && file.type === 'text/plain') {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const text = e.target?.result as string;
-        setScript(text);
-      };
-      reader.readAsText(file);
-    }
-  };
-
-  const handleScriptDragOver = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-  };
-
-  // Markdown formatting helper
-  const insertMarkdown = (prefix: string, suffix: string = '', placeholder: string = '', isLinePrefix: boolean = false) => {
-    const textarea = scriptTextAreaRef.current;
-    if (!textarea) return;
-    
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const scrollTop = textarea.scrollTop; // Save scroll position
-    
-    let newText: string;
-    let newCursorStart: number;
-    let newCursorEnd: number;
-    
-    if (isLinePrefix) {
-      // For headings/lists: add prefix to beginning of line(s)
-      const lineStart = script.lastIndexOf('\n', start - 1) + 1;
-      const lineEnd = script.indexOf('\n', end);
-      const actualLineEnd = lineEnd === -1 ? script.length : lineEnd;
-      const lineContent = script.substring(lineStart, actualLineEnd);
-      
-      // Just add the prefix to the beginning of the line
-      newText = script.substring(0, lineStart) + prefix + lineContent + script.substring(actualLineEnd);
-      newCursorStart = lineStart + prefix.length;
-      newCursorEnd = newCursorStart + lineContent.length;
+  // ---- Tab navigation ----
+  const handleNextTab = () => {
+    if (activeTab === 5) {
+      // Brief disable to prevent accidental double-submit when advancing to the final tab
+      setIsTransitioning(true);
+      setActiveTab(6);
+      setTimeout(() => setIsTransitioning(false), 500);
     } else {
-      // For wrap formatting (bold, italic): wrap selected text or insert placeholder
-      const selectedText = script.substring(start, end);
-      const textToInsert = selectedText || placeholder;
-      
-      newText = script.substring(0, start) + prefix + textToInsert + suffix + script.substring(end);
-      
-      if (selectedText) {
-        // Keep selection around the formatted text
-        newCursorStart = start + prefix.length;
-        newCursorEnd = newCursorStart + selectedText.length;
-      } else {
-        // Position cursor after inserted text
-        newCursorStart = start + prefix.length + textToInsert.length + suffix.length;
-        newCursorEnd = newCursorStart;
-      }
-    }
-    
-    setScript(newText);
-    
-    // Restore cursor position and scroll position after React re-render
-    setTimeout(() => {
-      textarea.focus({ preventScroll: true }); // Prevent scroll on focus
-      textarea.setSelectionRange(newCursorStart, newCursorEnd);
-      textarea.scrollTop = scrollTop; // Restore scroll position
-    }, 0);
-  };
-
-  // Net Staff handlers (operators authorized to start/run nets) ──────────────
-  const fetchStaff = async () => {
-    if (!scheduleId) return;
-    try {
-      const response = await templateStaffApi.list(Number(scheduleId));
-      setStaff(response.data);
-    } catch (error) {
-      console.error('Failed to fetch staff:', error);
+      setActiveTab(activeTab + 1);
     }
   };
 
-  const fetchSubscribers = async () => {
-    if (!scheduleId) return;
-    try {
-      const response = await templateApi.listSubscriptions(Number(scheduleId));
-      setSubscribers(response.data);
-    } catch (error: any) {
-      if (error?.response?.status === 403) {
-        setSubscribers([]);
-        return;
-      }
-      console.error('Failed to fetch subscribers:', error);
-    }
-  };
-
-  const handleAddStaff = async () => {
-    if (!selectedUserForStaff || !scheduleId) return;
-    try {
-      const response = await templateStaffApi.add(Number(scheduleId), {
-        user_id: selectedUserForStaff.id,
-      });
-      setStaff([...staff, response.data]);
-      setSelectedUserForStaff(null);
-    } catch (error: any) {
-      console.error('Failed to add staff:', error);
-      alert(error?.response?.data?.detail || 'Failed to add staff');
-    }
-  };
-
-  const handleRemoveStaff = async (staffId: number) => {
-    if (!scheduleId) return;
-    if (!confirm('Remove this operator from the staff list?')) return;
-    try {
-      await templateStaffApi.remove(Number(scheduleId), staffId);
-      setStaff(staff.filter(s => s.id !== staffId));
-    } catch (error) {
-      console.error('Failed to remove staff:', error);
-    }
-  };
-
-  const handleToggleStaffActive = async (staffId: number, currentActive: boolean) => {
-    if (!scheduleId) return;
-    try {
-      await templateStaffApi.updateActive(Number(scheduleId), staffId, !currentActive);
-      setStaff(staff.map(s => (s.id === staffId ? { ...s, is_active: !currentActive } : s)));
-    } catch (error) {
-      console.error('Failed to update staff:', error);
-    }
-  };
-
-  // Build the rotation from the active staff list. Adds any active staff
-  // members not already in the rotation, preserving existing rotation order.
-  const handleBuildRotationFromStaff = async () => {
-    if (!scheduleId) return;
-    const userIdsToAdd = new Set<number>(
-      staff
-        .filter(s => s.is_active)
-        .map(s => s.user_id)
-    );
-
-    // Per 2026.05.20 behavior: manager is always eligible and included.
-    if (ownerId) {
-      userIdsToAdd.add(ownerId);
-    }
-
-    const toAddIds = Array.from(userIdsToAdd).filter(
-      userId => !rotationMembers.some(m => m.user_id === userId)
-    );
-
-    if (toAddIds.length === 0) {
-      alert('All active staff and the manager are already in the rotation.');
-      return;
-    }
-    try {
-      for (const userId of toAddIds) {
-        await ncsRotationApi.addMember(Number(scheduleId), { user_id: userId });
-      }
-      await fetchRotationMembers();
-    } catch (error: any) {
-      console.error('Failed to build rotation from staff:', error);
-      alert(error?.response?.data?.detail || 'Failed to build rotation from staff');
-    }
-  };
-
-  // NCS Rotation handlers
-  const handleAddRotationMember = async () => {
-    if (!selectedUserForRotation || !scheduleId) return;
-    try {
-      const response = await ncsRotationApi.addMember(Number(scheduleId), {
-        user_id: selectedUserForRotation.id,
-        position: rotationMembers.length + 1
-      });
-      setRotationMembers([...rotationMembers, response.data]);
-      setSelectedUserForRotation(null);
-    } catch (error) {
-      console.error('Failed to add rotation member:', error);
-      alert('Failed to add rotation member');
-    }
-  };
-
-  const handleRemoveRotationMember = async (memberId: number) => {
-    if (!scheduleId) return;
-    try {
-      await ncsRotationApi.removeMember(Number(scheduleId), memberId);
-      setRotationMembers(rotationMembers.filter(m => m.id !== memberId));
-    } catch (error) {
-      console.error('Failed to remove rotation member:', error);
-    }
-  };
-
-  const handleToggleRotationMemberActive = async (memberId: number, currentActive: boolean) => {
-    if (!scheduleId) return;
-    try {
-      await ncsRotationApi.updateMember(Number(scheduleId), memberId, { is_active: !currentActive });
-      setRotationMembers(rotationMembers.map(m => 
-        m.id === memberId ? { ...m, is_active: !currentActive } : m
-      ));
-    } catch (error) {
-      console.error('Failed to update rotation member:', error);
-    }
-  };
-
-  const handleMoveRotationMember = async (memberId: number, direction: 'up' | 'down') => {
-    if (!scheduleId) return;
-    const currentIndex = rotationMembers.findIndex(m => m.id === memberId);
-    if (currentIndex === -1) return;
-    
-    const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-    if (newIndex < 0 || newIndex >= rotationMembers.length) return;
-    
-    const newOrder = [...rotationMembers];
-    [newOrder[currentIndex], newOrder[newIndex]] = [newOrder[newIndex], newOrder[currentIndex]];
-    
-    try {
-      await ncsRotationApi.reorderMembers(Number(scheduleId), newOrder.map(m => m.id));
-      setRotationMembers(newOrder.map((m, i) => ({ ...m, position: i + 1 })));
-    } catch (error) {
-      console.error('Failed to reorder rotation members:', error);
-    }
-  };
-
-  // Get users not already in the staff list and not the schedule manager
-  const availableUsersForStaff = users.filter(
-    u => u.id !== ownerId && !staff.some(s => s.user_id === u.id)
-  );
-
-  // Only the manager and active staff are eligible for the NCS rotation —
-  // exclude anyone already in the rotation.
-  const eligibleForRotationIds = new Set<number>([
-    ...(ownerId ? [ownerId] : []),
-    ...staff.filter(s => s.is_active).map(s => s.user_id),
-  ]);
-  const availableUsersForRotation = users.filter(
-    u => eligibleForRotationIds.has(u.id) && !rotationMembers.some(m => m.user_id === u.id)
-  );
-  const eligibleForFifthWeekIds = new Set<number>([
-    ...eligibleForRotationIds,
-    ...(fifthWeekUserId ? [fifthWeekUserId] : []),
-  ]);
-  const availableUsersForFifthWeek = users.filter(
-    u => eligibleForFifthWeekIds.has(u.id)
-  );
-  const hasActiveStaffMissingFromRotation = staff.some(
-    s => s.is_active && !rotationMembers.some(m => m.user_id === s.user_id)
-  );
-  const managerMissingFromRotation = !!ownerId && !rotationMembers.some(
-    m => m.user_id === ownerId
-  );
-
-  const insertAnnouncementMarkdown = (prefix: string, suffix: string = '', placeholder: string = '', isLinePrefix: boolean = false) => {
-    const textarea = announcementsTextAreaRef.current;
-    if (!textarea) return;
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const scrollTop = textarea.scrollTop;
-    let newText: string;
-    let newCursorStart: number;
-    let newCursorEnd: number;
-    if (isLinePrefix) {
-      const lineStart = announcements.lastIndexOf('\n', start - 1) + 1;
-      const lineEnd = announcements.indexOf('\n', end);
-      const actualLineEnd = lineEnd === -1 ? announcements.length : lineEnd;
-      const lineContent = announcements.substring(lineStart, actualLineEnd);
-      newText = announcements.substring(0, lineStart) + prefix + lineContent + announcements.substring(actualLineEnd);
-      newCursorStart = lineStart + prefix.length;
-      newCursorEnd = newCursorStart + lineContent.length;
-    } else {
-      const selectedText = announcements.substring(start, end);
-      const textToInsert = selectedText || placeholder;
-      newText = announcements.substring(0, start) + prefix + textToInsert + suffix + announcements.substring(end);
-      if (selectedText) {
-        newCursorStart = start + prefix.length;
-        newCursorEnd = newCursorStart + selectedText.length;
-      } else {
-        newCursorStart = start + prefix.length + textToInsert.length + suffix.length;
-        newCursorEnd = newCursorStart;
-      }
-    }
-    setAnnouncements(newText);
-    setTimeout(() => {
-      textarea.focus({ preventScroll: true });
-      textarea.setSelectionRange(newCursorStart, newCursorEnd);
-      textarea.scrollTop = scrollTop;
-    }, 0);
-  };
-
+  // ---- Form submit ----
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const ScheduleData: any = {
+    const scheduleData: any = {
       name,
       description,
       info_url: infoUrl || null,
@@ -991,24 +255,21 @@ const CreateSchedule: React.FC = () => {
       poll_question: pollQuestion || null,
       announcements: announcements || null,
     };
-    
-    // Include owner_id if changed (for both create and edit)
+
     if (isEdit && ownerId && ownerId !== originalOwnerId) {
-      ScheduleData.owner_id = ownerId;
+      scheduleData.owner_id = ownerId;
     } else if (!isEdit && ownerId && ownerId !== currentUser?.id) {
-      // Admin creating for another user
-      ScheduleData.owner_id = ownerId;
+      scheduleData.owner_id = ownerId;
     }
 
     try {
       if (isEdit) {
-        await templateApi.update(Number(scheduleId), ScheduleData);
+        await templateApi.update(Number(scheduleId), scheduleData);
         navigate('/scheduler');
       } else {
-        const response = await templateApi.create(ScheduleData);
+        const response = await templateApi.create(scheduleData);
         const newScheduleId = response.data.id;
-        
-        // Add pending NCS users to the new schedule's staff list
+
         for (const user of pendingNCSUsers) {
           try {
             await templateStaffApi.add(newScheduleId, { user_id: user.id });
@@ -1016,8 +277,7 @@ const CreateSchedule: React.FC = () => {
             console.error(`Failed to add staff ${user.callsign}:`, err);
           }
         }
-        
-        // For one-time nets, automatically create the net and navigate to it
+
         if (scheduleType === 'one_time') {
           try {
             const netResponse = await templateApi.createNetFromTemplate(newScheduleId);
@@ -1025,14 +285,12 @@ const CreateSchedule: React.FC = () => {
             return;
           } catch (err) {
             console.error('Failed to auto-create net:', err);
-            // Fall through to navigate to scheduler
           }
         }
-        
         navigate('/scheduler');
       }
     } catch (error: any) {
-      console.error('Failed to save Schedule:', error);
+      console.error('Failed to save schedule:', error);
       setBlockingAlert({
         open: true,
         message: error.response?.data?.detail || 'Failed to save Schedule',
@@ -1042,1221 +300,151 @@ const CreateSchedule: React.FC = () => {
     }
   };
 
-  const handleFieldToggle = (fieldName: string, property: 'enabled' | 'required') => {
-    setFieldConfig(prev => {
-      const currentConfig = prev[fieldName] || { enabled: false, required: false };
-      return {
-        ...prev,
-        [fieldName]: {
-          ...currentConfig,
-          [property]: !currentConfig[property],
-          // If disabling, also disable required
-          ...(property === 'enabled' && currentConfig.enabled ? { required: false } : {})
-        }
-      };
-    });
-  };
-
-  // ========== FREQUENCY FILTERING & SORTING ==========
-  // Filter frequencies by search term (matches any field)
-  const filteredFrequencies = frequencies.filter((freq) => {
-    if (!frequencyFilter) return true;
-    const searchTerm = frequencyFilter.toLowerCase();
-    return (
-      (freq.frequency?.toLowerCase().includes(searchTerm)) ||
-      (freq.mode?.toLowerCase().includes(searchTerm)) ||
-      (freq.network?.toLowerCase().includes(searchTerm)) ||
-      (freq.talkgroup?.toLowerCase().includes(searchTerm)) ||
-      (freq.description?.toLowerCase().includes(searchTerm))
-    );
-  });
-
-  // Sort filtered frequencies
-  const sortedFrequencies = [...filteredFrequencies].sort((a, b) => {
-    let aVal: string = '';
-    let bVal: string = '';
-    
-    switch (frequencySortField) {
-      case 'mode':
-        aVal = a.mode || '';
-        bVal = b.mode || '';
-        break;
-      case 'frequency':
-        aVal = a.frequency || a.network || '';
-        bVal = b.frequency || b.network || '';
-        break;
-      case 'talkgroup':
-        aVal = a.talkgroup || '';
-        bVal = b.talkgroup || '';
-        break;
-      case 'description':
-        aVal = a.description || '';
-        bVal = b.description || '';
-        break;
-    }
-    
-    const comparison = aVal.localeCompare(bVal, undefined, { numeric: true, sensitivity: 'base' });
-    return frequencySortDirection === 'asc' ? comparison : -comparison;
-  });
-
-  // Handle sort click
-  const handleFrequencySort = (field: FrequencySortField) => {
-    if (frequencySortField === field) {
-      setFrequencySortDirection(frequencySortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setFrequencySortField(field);
-      setFrequencySortDirection('asc');
-    }
+  // ---- Context value ----
+  const contextValue: CreateScheduleContextValue = {
+    isEdit, scheduleId, currentUser, timezoneAbbr,
+    name, setName, description, setDescription, infoUrl, setInfoUrl,
+    script, setScript, announcements, setAnnouncements,
+    ics309Enabled, setIcs309Enabled, mobilePrioritySort, setMobilePrioritySort,
+    chatGracePeriodEnabled, setChatGracePeriodEnabled,
+    chatGracePeriodMinutes, setChatGracePeriodMinutes,
+    topicOfWeekEnabled, setTopicOfWeekEnabled, topicOfWeekPrompt, setTopicOfWeekPrompt,
+    pollEnabled, setPollEnabled, pollQuestion, setPollQuestion,
+    isActive, setIsActive,
+    ownerId, setOwnerId, originalOwnerId, setOriginalOwnerId,
+    scheduleType, setScheduleType, scheduleConfig, setScheduleConfig,
+    fifthWeekUserId, setFifthWeekUserId,
+    selectedFrequencyIds, setSelectedFrequencyIds,
+    fieldConfig, setFieldConfig,
+    pendingNCSUsers, setPendingNCSUsers,
+    frequencies, setFrequencies,
+    fieldDefinitions,
+    users,
+    staff, setStaff,
+    rotationMembers, setRotationMembers,
+    showToast: (message: string) => setToastMessage(message),
   };
 
   return (
-    <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
-      <Paper sx={{ p: 3 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: 1 }}>
-          <Typography variant="h4" component="h1">
-            {isEdit
-              ? (scheduleType === 'ad_hoc' || scheduleType === 'one_time' ? 'Edit Net' : 'Edit Schedule')
-              : (scheduleType === 'ad_hoc' || scheduleType === 'one_time' ? 'Create Net' : 'Create Schedule')}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            Times in {Intl.DateTimeFormat().resolvedOptions().timeZone}
-          </Typography>
-        </Box>
-
-        <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 2 }}>
-          <Tabs value={activeTab} onChange={(_, newValue) => setActiveTab(newValue)} variant="scrollable" scrollButtons="auto">
-            <Tab label="Basic Info" />
-            <Tab label="Schedule" />
-            <Tab label="Net Staff" />
-            <Tab label="Communication Plan" />
-            <Tab label="Net Script" />
-            <Tab label="Announcements" />
-            <Tab label="Check-In Fields" />
-          </Tabs>
-        </Box>
-
-        <Box component="form" onSubmit={handleSubmit}>
-          {/* Tab 0: Basic Info */}
-          <TabPanel value={activeTab} index={0}>
-            <TextField
-              fullWidth
-              label="Schedule Name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              margin="normal"
-              required
-              helperText="e.g., 'Weekly SKYWARN Net', 'Monthly Emergency Preparedness Net'"
-            />
-
-            <TextField
-              fullWidth
-              label="Description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              margin="normal"
-              multiline
-              rows={4}
-              helperText="Optional description of the net schedule"
-            />
-
-            <TextField
-              fullWidth
-              label="Info URL"
-              value={infoUrl}
-              onChange={(e) => setInfoUrl(e.target.value)}
-              margin="normal"
-              type="url"
-              placeholder="https://example.com/net-info"
-              helperText="Optional URL for net, club or organization info"
-            />
-
-            {/* ARES & EmComm Features */}
-            <Typography variant="subtitle1" sx={{ mt: 3, mb: 1, fontWeight: 'bold' }}>
-              ARES &amp; EmComm Features
-            </Typography>
-            <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
-              Features for emergency communications and formal net operations.
-            </Typography>
-
-            <Box sx={{ ml: 1 }}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={ics309Enabled}
-                    onChange={(e) => setIcs309Enabled(e.target.checked)}
-                  />
-                }
-                label="Enable ICS-309 Communications Log format"
-              />
-              <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
-                When enabled, net close emails will use the official ICS-309 format used by ARES, RACES, and EmComm organizations.
-              </Typography>
-            </Box>
-
-            <Box sx={{ ml: 1, mt: 2 }}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={mobilePrioritySort}
-                    onChange={(e) => setMobilePrioritySort(e.target.checked)}
-                  />
-                }
-                label="Prioritize mobile stations in check-in list"
-              />
-              <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
-                Mobile stations appear at the top of the check-in list (after NCS) so they can be called before they move out of range. Disable for strict chronological order.
-              </Typography>
-            </Box>
-
-            <Box sx={{ ml: 1, mt: 2 }}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={chatGracePeriodEnabled}
-                    onChange={(e) => setChatGracePeriodEnabled(e.target.checked)}
-                  />
-                }
-                label="Keep chat open after closing"
-              />
-              <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5, mb: chatGracePeriodEnabled ? 1 : 0 }}>
-                Chat stays open for a set time after the net closes, so participants can finish off-air conversations before it goes read-only.
-              </Typography>
-              {chatGracePeriodEnabled && (
-                <Box sx={{ ml: 4.5 }}>
-                  <Select
-                    size="small"
-                    value={chatGracePeriodMinutes}
-                    onChange={(e) => setChatGracePeriodMinutes(Number(e.target.value))}
-                  >
-                    <MenuItem value={15}>15 minutes</MenuItem>
-                    <MenuItem value={30}>30 minutes</MenuItem>
-                    <MenuItem value={60}>60 minutes</MenuItem>
-                  </Select>
-                </Box>
-              )}
-            </Box>
-
-            {/* Community Net Features */}
-            <Typography variant="subtitle1" sx={{ mt: 3, mb: 1, fontWeight: 'bold' }}>
-              Community Net Features
-            </Typography>
-            <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
-              Optional features to encourage participation in informal community nets.
-            </Typography>
-
-            <Box sx={{ ml: 1 }}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={topicOfWeekEnabled}
-                    onChange={(e) => setTopicOfWeekEnabled(e.target.checked)}
-                  />
-                }
-                label="Topic of the Week"
-              />
-              <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5, mb: 1 }}>
-                Adds a topic response field to check-ins. Great for icebreaker questions.
-              </Typography>
-              {topicOfWeekEnabled && (
-                <TextField
-                  fullWidth
-                  label="Default Topic Prompt"
-                  value={topicOfWeekPrompt}
-                  onChange={(e) => setTopicOfWeekPrompt(e.target.value)}
-                  placeholder="e.g., What's your favorite radio memory?"
-                  helperText="This can be changed when starting each net"
-                  sx={{ mt: 1, mb: 2, ml: 4.5, width: 'calc(100% - 36px)' }}
-                />
-              )}
-
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={pollEnabled}
-                    onChange={(e) => setPollEnabled(e.target.checked)}
-                  />
-                }
-                label="Participant Poll"
-              />
-              <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5, mb: 1 }}>
-                Adds a poll question to check-ins with auto-complete for consistent answers.
-              </Typography>
-              {pollEnabled && (
-                <TextField
-                  fullWidth
-                  label="Default Poll Question"
-                  value={pollQuestion}
-                  onChange={(e) => setPollQuestion(e.target.value)}
-                  placeholder="e.g., What band do you operate most?"
-                  helperText="This can be changed when starting each net"
-                  sx={{ mt: 1, mb: 2, ml: 4.5, width: 'calc(100% - 36px)' }}
-                />
-              )}
-            </Box>
-
-            {/* Owner selector moved to the Net Staff tab so the Manager
-                appears alongside the rotation in one place. See the
-                "Schedule Manager" section under the Net Staff tab below. */}
-
-            {isEdit && (
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={isActive}
-                    onChange={(e) => setIsActive(e.target.checked)}
-                  />
-                }
-                label="Schedule is active (can be used to create nets)"
-                sx={{ mt: 2, display: 'block' }}
-              />
-            )}
-          </TabPanel>
-
-          {/* Tab 1: Schedule Configuration */}
-          <TabPanel value={activeTab} index={1}>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Choose how often this net runs:
-            </Typography>
-            <Box component="ul" sx={{ mt: 0, mb: 2, pl: 2, color: 'text.secondary', fontSize: '0.875rem' }}>
-              <li><strong>One-Time</strong> — Create a single net right now (for special events or testing)</li>
-              <li><strong>Ad-Hoc</strong> — Save as a template to start nets manually whenever needed</li>
-              <li><strong>Daily/Weekly/Monthly</strong> — Set up a recurring schedule</li>
-            </Box>
-
-            <FormControl fullWidth margin="normal">
-              <InputLabel>Schedule Type</InputLabel>
-              <Select
-                value={scheduleType}
-                label="Schedule Type"
-                onChange={(e) => {
-                  setScheduleType(e.target.value);
-                  // Reset config when changing type
-                  if (e.target.value === 'ad_hoc' || e.target.value === 'one_time') {
-                    setScheduleConfig({ day_of_week: 1, week_of_month: [], time: '18:00' });
-                  }
-                }}
-              >
-                <MenuItem value="one_time">One-Time Net</MenuItem>
-                <MenuItem value="ad_hoc">Ad-Hoc (Start Manually)</MenuItem>
-                <MenuItem value="daily">Daily</MenuItem>
-                <MenuItem value="weekly">Weekly</MenuItem>
-                <MenuItem value="monthly">Monthly</MenuItem>
-              </Select>
-            </FormControl>
-
-            {scheduleType === 'daily' && (
-              <TextField
-                fullWidth
-                type="time"
-                label={`Time (${timezoneAbbr})`}
-                value={scheduleConfig.time}
-                onChange={(e) => setScheduleConfig({ ...scheduleConfig, time: e.target.value })}
-                margin="normal"
-                InputLabelProps={{ shrink: true }}
-              />
-            )}
-
-            {scheduleType === 'weekly' && (
-              <Box sx={{ mt: 2 }}>
-                <Box sx={{ display: 'flex', gap: 2 }}>
-                  <FormControl fullWidth>
-                    <InputLabel>Day of Week</InputLabel>
-                    <Select
-                      value={scheduleConfig.day_of_week}
-                      label="Day of Week"
-                      onChange={(e) => setScheduleConfig({ ...scheduleConfig, day_of_week: Number(e.target.value) })}
-                    >
-                      <MenuItem value={0}>Sunday</MenuItem>
-                      <MenuItem value={1}>Monday</MenuItem>
-                      <MenuItem value={2}>Tuesday</MenuItem>
-                      <MenuItem value={3}>Wednesday</MenuItem>
-                      <MenuItem value={4}>Thursday</MenuItem>
-                      <MenuItem value={5}>Friday</MenuItem>
-                      <MenuItem value={6}>Saturday</MenuItem>
-                    </Select>
-                  </FormControl>
-                  <TextField
-                    type="time"
-                    label={`Time (${timezoneAbbr})`}
-                    value={scheduleConfig.time}
-                    onChange={(e) => setScheduleConfig({ ...scheduleConfig, time: e.target.value })}
-                    InputLabelProps={{ shrink: true }}
-                    sx={{ minWidth: 150 }}
-                  />
-                </Box>
-                {canConfigureFifthWeekOperator && (
-                  <Autocomplete
-                    options={availableUsersForFifthWeek}
-                    getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
-                    value={availableUsersForFifthWeek.find((u: User) => u.id === fifthWeekUserId) || null}
-                    onChange={(_: any, value: User | null) => setFifthWeekUserId(value?.id ?? null)}
-                    renderInput={(params: any) => (
-                      <TextField
-                        {...params}
-                        margin="normal"
-                        label="Optional Fifth Week Operator"
-                        helperText="Optional. Runs the net on months with a fifth week. The main rotation pauses and resumes the following week."
-                      />
-                    )}
-                  />
-                )}
-              </Box>
-            )}
-
-            {scheduleType === 'monthly' && (
-              <Box sx={{ mt: 2 }}>
-                <Typography variant="body2" sx={{ mb: 1 }}>Which weeks of the month?</Typography>
-                <FormGroup sx={{ flexDirection: 'row', gap: 2, mb: 2 }}>
-                  {[1, 2, 3, 4, 5].map((week) => (
-                    <FormControlLabel
-                      key={week}
-                      control={
-                        <Checkbox
-                          checked={scheduleConfig.week_of_month?.includes(week) || false}
-                          onChange={(e) => {
-                            const weeks = scheduleConfig.week_of_month || [];
-                            if (e.target.checked) {
-                              setScheduleConfig({ ...scheduleConfig, week_of_month: [...weeks, week] });
-                            } else {
-                              setScheduleConfig({ ...scheduleConfig, week_of_month: weeks.filter(w => w !== week) });
-                            }
-                          }}
-                        />
-                      }
-                      label={week === 5 ? 'Last' : `${week}${week === 1 ? 'st' : week === 2 ? 'nd' : week === 3 ? 'rd' : 'th'}`}
-                    />
-                  ))}
-                </FormGroup>
-                <Box sx={{ display: 'flex', gap: 2 }}>
-                  <FormControl fullWidth>
-                    <InputLabel>Day of Week</InputLabel>
-                    <Select
-                      value={scheduleConfig.day_of_week}
-                      label="Day of Week"
-                      onChange={(e) => setScheduleConfig({ ...scheduleConfig, day_of_week: Number(e.target.value) })}
-                    >
-                      <MenuItem value={0}>Sunday</MenuItem>
-                      <MenuItem value={1}>Monday</MenuItem>
-                      <MenuItem value={2}>Tuesday</MenuItem>
-                      <MenuItem value={3}>Wednesday</MenuItem>
-                      <MenuItem value={4}>Thursday</MenuItem>
-                      <MenuItem value={5}>Friday</MenuItem>
-                      <MenuItem value={6}>Saturday</MenuItem>
-                    </Select>
-                  </FormControl>
-                  <TextField
-                    type="time"
-                    label={`Time (${timezoneAbbr})`}
-                    value={scheduleConfig.time}
-                    onChange={(e) => setScheduleConfig({ ...scheduleConfig, time: e.target.value })}
-                    InputLabelProps={{ shrink: true }}
-                    sx={{ minWidth: 150 }}
-                  />
-                </Box>
-              </Box>
-            )}
-          </TabPanel>
-
-          {/* Tab 2: Net Staff */}
-          <TabPanel value={activeTab} index={2}>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+    <CreateScheduleContext.Provider value={contextValue}>
+      <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
+        <Paper sx={{ p: 3 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: 1 }}>
+            <Typography variant="h4" component="h1">
               {isEdit
-                ? 'Manage the Schedule Manager, the authorized Net Staff (who can start and run nets), and an optional NCS rotation order.'
-                : 'Add Net Staff operators who will be authorized to start and run nets from this schedule. After saving, you can also configure an optional NCS rotation order.'}
+                ? (scheduleType === 'ad_hoc' || scheduleType === 'one_time' ? 'Edit Net' : 'Edit Schedule')
+                : (scheduleType === 'ad_hoc' || scheduleType === 'one_time' ? 'Create Net' : 'Create Schedule')}
             </Typography>
-
-            {/* For NEW schedules - show owner first, then add input, then pending users */}
-            {!isEdit && (
-              <>
-                {/* Owner display and selector */}
-                <Box sx={{ mb: 3 }}>
-                  <Typography variant="subtitle2" sx={{ mb: 1 }}>Schedule Owner</Typography>
-                  <Autocomplete
-                    options={users}
-                    getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
-                    value={users.find((u: User) => u.id === (ownerId || currentUser?.id)) || null}
-                    onChange={(_: any, value: User | null) => setOwnerId(value?.id || null)}
-                    renderInput={(params: any) => (
-                      <TextField 
-                        {...params} 
-                        size="small"
-                        helperText="You can assign this schedule to another user"
-                      />
-                    )}
-                  />
-                </Box>
-
-                <Divider sx={{ my: 2 }} />
-
-                {/* Add NCS operator input */}
-                <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-                  <Autocomplete
-                    options={users.filter(u => {
-                      // Filter out pending users and the owner
-                      const effectiveOwnerId = ownerId || currentUser?.id;
-                      return u.id !== effectiveOwnerId && !pendingNCSUsers.some(p => p.id === u.id);
-                    })}
-                    getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
-                    value={selectedUserForRotation}
-                    onChange={(_: any, value: User | null) => setSelectedUserForRotation(value)}
-                    renderInput={(params: any) => (
-                      <TextField {...params} label="Add NCS Operator" size="small" />
-                    )}
-                    sx={{ flexGrow: 1 }}
-                  />
-                  <Button
-                    type="button"
-                    variant="contained"
-                    startIcon={<PersonAddIcon />}
-                    onClick={() => {
-                      if (selectedUserForRotation) {
-                        setPendingNCSUsers([...pendingNCSUsers, selectedUserForRotation]);
-                        setSelectedUserForRotation(null);
-                      }
-                    }}
-                    disabled={!selectedUserForRotation}
-                  >
-                    Add
-                  </Button>
-                </Box>
-                
-                <Typography variant="subtitle2" sx={{ mb: 1 }}>Additional NCS Operators</Typography>
-                {pendingNCSUsers.length === 0 ? (
-                  <Typography color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
-                    No additional NCS operators added yet.
-                  </Typography>
-                ) : (
-                  <List>
-                    {pendingNCSUsers.map((user) => (
-                      <ListItem
-                        key={user.id}
-                        sx={{
-                          border: 1,
-                          borderColor: 'divider',
-                          borderRadius: 1,
-                          mb: 1,
-                        }}
-                      >
-                        <ListItemText
-                          primary={
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <Typography fontWeight="bold">{user.callsign}</Typography>
-                              {user.name && (
-                                <Typography color="text.secondary">({user.name})</Typography>
-                              )}
-                            </Box>
-                          }
-                        />
-                        <ListItemSecondaryAction>
-                          <IconButton
-                            type="button"
-                            edge="end"
-                            onClick={() => setPendingNCSUsers(pendingNCSUsers.filter(u => u.id !== user.id))}
-                            color="error"
-                          >
-                            <DeleteIcon />
-                          </IconButton>
-                        </ListItemSecondaryAction>
-                      </ListItem>
-                    ))}
-                  </List>
-                )}
-              </>
-            )}
-
-            {/* For EDIT mode - show owner, add input, and existing rotation members */}
-            {isEdit && (
-              <>
-                {/* ========== SCHEDULE MANAGER (OWNER) ========== */}
-                {/* Manager is the schedule owner (ham-radio Net Manager term).
-                    They are always implicitly authorized to start/run nets and
-                    serve as the default NCS when no rotation is configured.
-                    Only the current owner or an admin can transfer ownership. */}
-                <Box sx={{ mb: 3 }}>
-                  <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                    Schedule Manager
-                  </Typography>
-                  {users.length > 0 && (currentUser?.role === 'admin' || currentUser?.id === originalOwnerId) ? (
-                    <Autocomplete
-                      options={users}
-                      getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
-                      value={users.find((u: User) => u.id === ownerId) || null}
-                      onChange={(_: any, value: User | null) => setOwnerId(value?.id || null)}
-                      renderInput={(params: any) => (
-                        <TextField
-                          {...params}
-                          size="small"
-                          helperText="The Manager is implicitly authorized as NCS and serves as the default NCS when no rotation is configured."
-                        />
-                      )}
-                    />
-                  ) : (
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1, bgcolor: 'action.hover', borderRadius: 1 }}>
-                      <Typography variant="body2">
-                        {users.find((u: User) => u.id === ownerId)?.callsign || 'Unknown'}
-                        {users.find((u: User) => u.id === ownerId)?.name && ` (${users.find((u: User) => u.id === ownerId)?.name})`}
-                      </Typography>
-                      <Chip label="Manager" size="small" color="primary" variant="outlined" />
-                    </Box>
-                  )}
-                </Box>
-
-                <Divider sx={{ mb: 2 }} />
-
-                {/* ========== AUTHORIZED NET STAFF ========== */}
-                {/* Operators in this list can start and run nets from this schedule.
-                    This is the primary, recommended workflow. The rotation below
-                    is optional and only matters when you want NCS duty to cycle
-                    automatically across upcoming scheduled nets. */}
-                <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                  Authorized Net Staff
-                </Typography>
-                <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
-                  Operators listed here can start and run nets from this schedule. The Manager always has access — add others to share the workload.
-                </Typography>
-
-                <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-                  <Autocomplete
-                    options={availableUsersForStaff}
-                    getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
-                    value={selectedUserForStaff}
-                    onChange={(_: any, value: User | null) => setSelectedUserForStaff(value)}
-                    noOptionsText={users.length === 0 ? 'Loading users…' : 'No other users available'}
-                    renderInput={(params: any) => (
-                      <TextField {...params} label="Add Net Staff Operator" size="small" />
-                    )}
-                    sx={{ flexGrow: 1 }}
-                  />
-                  <Button
-                    type="button"
-                    variant="contained"
-                    startIcon={<PersonAddIcon />}
-                    onClick={handleAddStaff}
-                    disabled={!selectedUserForStaff}
-                  >
-                    Add
-                  </Button>
-                </Box>
-
-                {staff.length === 0 ? (
-                  <Typography color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
-                    No additional staff assigned. Only the Manager can start nets.
-                  </Typography>
-                ) : (
-                  <List dense>
-                    {staff.map((s) => (
-                      <ListItem
-                        key={s.id}
-                        sx={{
-                          border: 1,
-                          borderColor: 'divider',
-                          borderRadius: 1,
-                          mb: 1,
-                          bgcolor: s.is_active ? 'background.paper' : 'action.disabledBackground',
-                        }}
-                      >
-                        <ListItemText
-                          primary={
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <Typography fontWeight="bold">{s.user_callsign}</Typography>
-                              {s.user_name && (
-                                <Typography color="text.secondary">({s.user_name})</Typography>
-                              )}
-                              {!s.is_active && (
-                                <Chip label="Inactive" size="small" variant="outlined" />
-                              )}
-                            </Box>
-                          }
-                        />
-                        <ListItemSecondaryAction>
-                          <Switch
-                            checked={s.is_active}
-                            onChange={() => handleToggleStaffActive(s.id, s.is_active)}
-                            title={s.is_active ? 'Active (can run nets)' : 'Inactive (temporarily disabled)'}
-                          />
-                          <IconButton
-                            type="button"
-                            edge="end"
-                            onClick={() => handleRemoveStaff(s.id)}
-                            color="error"
-                          >
-                            <DeleteIcon />
-                          </IconButton>
-                        </ListItemSecondaryAction>
-                      </ListItem>
-                    ))}
-                  </List>
-                )}
-
-                <Divider sx={{ my: 3 }} />
-
-                {/* ========== NCS ROTATION (OPTIONAL) ========== */}
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography variant="subtitle2">
-                    NCS Rotation <Typography component="span" variant="caption" color="text.secondary">(optional)</Typography>
-                  </Typography>
-                  {(hasActiveStaffMissingFromRotation || managerMissingFromRotation) && (
-                    <Button
-                      type="button"
-                      size="small"
-                      variant="outlined"
-                      onClick={handleBuildRotationFromStaff}
-                    >
-                      Build rotation from staff
-                    </Button>
-                  )}
-                </Box>
-                <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
-                  Optional: define an order to cycle NCS duty across upcoming scheduled nets. If empty, nets default to the Manager. Use the up/down arrows to set the order.
-                </Typography>
-
-                {/* Add user input for edit mode */}
-                <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-                  <Autocomplete
-                    options={availableUsersForRotation}
-                    getOptionLabel={(option: User) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
-                    value={selectedUserForRotation}
-                    onChange={(_: any, value: User | null) => setSelectedUserForRotation(value)}
-                    noOptionsText={users.length === 0 ? 'Loading users…' : 'No other users available'}
-                    renderInput={(params: any) => (
-                      <TextField {...params} label="Add NCS Operator to rotation" size="small" />
-                    )}
-                    sx={{ flexGrow: 1 }}
-                  />
-                  <Button
-                    type="button"
-                    variant="contained"
-                    startIcon={<PersonAddIcon />}
-                    onClick={handleAddRotationMember}
-                    disabled={!selectedUserForRotation}
-                  >
-                    Add
-                  </Button>
-                </Box>
-
-                {rotationMembers.length === 0 ? (
-                <Typography color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
-                  No rotation configured — nets default to the Manager. Add operators above (or click "Build rotation from staff") to cycle NCS duty automatically.
-                </Typography>
-              ) : (
-                <List>
-                  {rotationMembers.map((member, index) => (
-                    <ListItem
-                      key={member.id}
-                      sx={{
-                        border: 1,
-                        borderColor: 'divider',
-                        borderRadius: 1,
-                        mb: 1,
-                        bgcolor: member.is_active ? 'background.paper' : 'action.disabledBackground',
-                      }}
-                    >
-                      <ListItemIcon>
-                        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                          <IconButton
-                            type="button"
-                            size="small"
-                            onClick={() => handleMoveRotationMember(member.id, 'up')}
-                            disabled={index === 0}
-                          >
-                            <ArrowUpwardIcon fontSize="small" />
-                          </IconButton>
-                          <IconButton
-                            type="button"
-                            size="small"
-                            onClick={() => handleMoveRotationMember(member.id, 'down')}
-                            disabled={index === rotationMembers.length - 1}
-                          >
-                            <ArrowDownwardIcon fontSize="small" />
-                          </IconButton>
-                        </Box>
-                      </ListItemIcon>
-                      <ListItemText
-                        primary={
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Chip label={`#${index + 1}`} size="small" color="primary" variant="outlined" />
-                            <Typography fontWeight="bold">{member.user_callsign}</Typography>
-                            {member.user_name && (
-                              <Typography color="text.secondary">({member.user_name})</Typography>
-                            )}
-                          </Box>
-                        }
-                      />
-                      <ListItemSecondaryAction>
-                        <Switch
-                          checked={member.is_active}
-                          onChange={() => handleToggleRotationMemberActive(member.id, member.is_active)}
-                          title={member.is_active ? 'Active in rotation' : 'Inactive (skipped)'}
-                        />
-                        <IconButton
-                          type="button"
-                          edge="end"
-                          onClick={() => handleRemoveRotationMember(member.id)}
-                          color="error"
-                        >
-                          <DeleteIcon />
-                        </IconButton>
-                      </ListItemSecondaryAction>
-                    </ListItem>
-                  ))}
-                </List>
-              )}
-
-              {canViewSubscribers && (
-                <>
-                  <Divider sx={{ my: 3 }} />
-
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                    <Typography variant="subtitle2">Subscribers</Typography>
-                    <Chip label={`${subscribers.length} subscribed`} size="small" variant="outlined" />
-                  </Box>
-                  <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
-                    Users who clicked the bell or accepted the reminder prompt for this schedule.
-                  </Typography>
-
-                  {subscribers.length === 0 ? (
-                    <Typography color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
-                      No subscribers yet.
-                    </Typography>
-                  ) : (
-                    <List dense>
-                      {subscribers.map((subscriber) => (
-                        <ListItem
-                          key={subscriber.id}
-                          sx={{
-                            border: 1,
-                            borderColor: 'divider',
-                            borderRadius: 1,
-                            mb: 1,
-                          }}
-                        >
-                          <ListItemText
-                            primary={
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                                <Typography fontWeight="bold">{subscriber.user_callsign || 'Unknown callsign'}</Typography>
-                                {subscriber.user_name && (
-                                  <Typography color="text.secondary">({subscriber.user_name})</Typography>
-                                )}
-                                <Chip label="Subscribed" size="small" color="primary" variant="outlined" />
-                              </Box>
-                            }
-                          />
-                        </ListItem>
-                      ))}
-                    </List>
-                  )}
-                </>
-              )}
-              </>
-            )}
-          </TabPanel>
-
-          {/* Tab 3: Communication Plan */}
-          <TabPanel value={activeTab} index={3}>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Check the boxes to select frequencies for this schedule. Press Enter in any field to add a new frequency.
+            <Typography variant="caption" color="text.secondary">
+              Times in {Intl.DateTimeFormat().resolvedOptions().timeZone}
             </Typography>
-
-            {/* ========== FREQUENCY FILTER INPUT ========== */}
-            <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
-              <TextField
-                size="small"
-                placeholder="Filter frequencies..."
-                value={frequencyFilter}
-                onChange={(e) => setFrequencyFilter(e.target.value)}
-                sx={{ flexGrow: 1, maxWidth: 400 }}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon color="action" fontSize="small" />
-                    </InputAdornment>
-                  ),
-                  endAdornment: frequencyFilter && (
-                    <InputAdornment position="end">
-                      <IconButton size="small" onClick={() => setFrequencyFilter('')}>
-                        <ClearIcon fontSize="small" />
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-              />
-              <Typography variant="body2" color="text.secondary">
-                {filteredFrequencies.length} of {frequencies.length}
-              </Typography>
-            </Box>
-
-            <TableContainer>
-              <Table size="small">
-                {/* ========== SORTABLE TABLE HEADERS ========== */}
-                <TableHead>
-                  <TableRow>
-                    <TableCell padding="checkbox">Use</TableCell>
-                    <TableCell sortDirection={frequencySortField === 'mode' ? frequencySortDirection : false}>
-                      <TableSortLabel
-                        active={frequencySortField === 'mode'}
-                        direction={frequencySortField === 'mode' ? frequencySortDirection : 'asc'}
-                        onClick={() => handleFrequencySort('mode')}
-                      >
-                        Mode
-                      </TableSortLabel>
-                    </TableCell>
-                    <TableCell sortDirection={frequencySortField === 'frequency' ? frequencySortDirection : false}>
-                      <TableSortLabel
-                        active={frequencySortField === 'frequency'}
-                        direction={frequencySortField === 'frequency' ? frequencySortDirection : 'asc'}
-                        onClick={() => handleFrequencySort('frequency')}
-                      >
-                        Frequency/Network
-                      </TableSortLabel>
-                    </TableCell>
-                    <TableCell sortDirection={frequencySortField === 'talkgroup' ? frequencySortDirection : false}>
-                      <TableSortLabel
-                        active={frequencySortField === 'talkgroup'}
-                        direction={frequencySortField === 'talkgroup' ? frequencySortDirection : 'asc'}
-                        onClick={() => handleFrequencySort('talkgroup')}
-                      >
-                        TG/Room
-                      </TableSortLabel>
-                    </TableCell>
-                    <TableCell sortDirection={frequencySortField === 'description' ? frequencySortDirection : false}>
-                      <TableSortLabel
-                        active={frequencySortField === 'description'}
-                        direction={frequencySortField === 'description' ? frequencySortDirection : 'asc'}
-                        onClick={() => handleFrequencySort('description')}
-                      >
-                        Description
-                      </TableSortLabel>
-                    </TableCell>
-                    <TableCell>Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {sortedFrequencies.map((freq: Frequency) => renderEditableRow(freq))}
-                  {renderNewRow()}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </TabPanel>
-
-          {/* Tab 4: Net Script */}
-          <TabPanel value={activeTab} index={4}>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Enter the net script that NCS operators will follow. Use the formatting toolbar for markdown styling.
-            </Typography>
-
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleScriptFileUpload}
-              accept=".txt,.md,text/plain,text/markdown"
-              style={{ display: 'none' }}
-            />
-
-            {/* Formatting Toolbar */}
-            <Box sx={{ display: 'flex', gap: 0.5, mb: 1, p: 1, bgcolor: 'action.hover', borderRadius: 1 }}>
-              <Tooltip title="Heading 1">
-                <IconButton type="button" size="small" onClick={() => insertMarkdown('# ', '', '', true)} sx={{ fontWeight: 'bold', fontSize: '0.85rem' }}>
-                  H1
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Heading 2">
-                <IconButton type="button" size="small" onClick={() => insertMarkdown('## ', '', '', true)} sx={{ fontWeight: 'bold', fontSize: '0.8rem' }}>
-                  H2
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Heading 3">
-                <IconButton type="button" size="small" onClick={() => insertMarkdown('### ', '', '', true)} sx={{ fontWeight: 'bold', fontSize: '0.75rem' }}>
-                  H3
-                </IconButton>
-              </Tooltip>
-              <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
-              <Tooltip title="Bold (**text**)">
-                <IconButton type="button" size="small" onClick={() => insertMarkdown('**', '**', 'bold text')}>
-                  <FormatBoldIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Italic (*text*)">
-                <IconButton type="button" size="small" onClick={() => insertMarkdown('*', '*', 'italic text')}>
-                  <FormatItalicIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
-              <Tooltip title="Bulleted List">
-                <IconButton type="button" size="small" onClick={() => insertMarkdown('- ', '', '', true)}>
-                  <FormatListBulletedIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Numbered List">
-                <IconButton type="button" size="small" onClick={() => insertMarkdown('1. ', '', '', true)}>
-                  <FormatListNumberedIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Horizontal Rule">
-                <IconButton type="button" size="small" onClick={() => insertMarkdown('\n---\n', '', '')}>
-                  <HorizontalRuleIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            </Box>
-
-            <TextField
-              fullWidth
-              value={script}
-              onChange={(e) => setScript(e.target.value)}
-              multiline
-              rows={18}
-              inputRef={scriptTextAreaRef}
-              placeholder="Enter your net script here...
-
-## Opening
-Good evening, this is **[CALLSIGN]** calling the [NET NAME].
-
-This net meets every [DAY] at [TIME] on [FREQUENCY].
-
-*Is there any emergency or priority traffic?*
-
----
-
-## Check-Ins
-We will now take check-ins...
-
-- Acknowledge each station
-- Note any traffic requests
-
----
-
-## Closing
-This concludes tonight's net. 73 to all."
-              onDrop={handleScriptDrop}
-              onDragOver={handleScriptDragOver}
-              sx={{
-                '& .MuiInputBase-root': {
-                  fontFamily: 'monospace',
-                },
-              }}
-            />
-
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
-              <Typography variant="caption" color="text.secondary">
-                {script.length} characters • Supports Markdown formatting
-              </Typography>
-              <Button
-                type="button"
-                size="small"
-                startIcon={<UploadFileIcon />}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                Upload .txt or .md file
-              </Button>
-            </Box>
-          </TabPanel>
-
-          {/* Tab 5: Announcements */}
-          <TabPanel value={activeTab} index={5}>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Enter recurring announcements NCS reads each net — upcoming events, club reminders, network news, exam sessions, etc. Use Markdown for sections and formatting. This document is available in the Announcements window during every live net from this schedule.
-            </Typography>
-
-            {/* Formatting Toolbar */}
-            <Box sx={{ display: 'flex', gap: 0.5, mb: 1, p: 1, bgcolor: 'action.hover', borderRadius: 1 }}>
-              <Tooltip title="Heading 1">
-                <IconButton type="button" size="small" onClick={() => insertAnnouncementMarkdown('# ', '', '', true)} sx={{ fontWeight: 'bold', fontSize: '0.85rem' }}>
-                  H1
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Heading 2">
-                <IconButton type="button" size="small" onClick={() => insertAnnouncementMarkdown('## ', '', '', true)} sx={{ fontWeight: 'bold', fontSize: '0.8rem' }}>
-                  H2
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Heading 3">
-                <IconButton type="button" size="small" onClick={() => insertAnnouncementMarkdown('### ', '', '', true)} sx={{ fontWeight: 'bold', fontSize: '0.75rem' }}>
-                  H3
-                </IconButton>
-              </Tooltip>
-              <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
-              <Tooltip title="Bold (**text**)">
-                <IconButton type="button" size="small" onClick={() => insertAnnouncementMarkdown('**', '**', 'bold text')}>
-                  <FormatBoldIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Italic (*text*)">
-                <IconButton type="button" size="small" onClick={() => insertAnnouncementMarkdown('*', '*', 'italic text')}>
-                  <FormatItalicIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
-              <Tooltip title="Bulleted List">
-                <IconButton type="button" size="small" onClick={() => insertAnnouncementMarkdown('- ', '', '', true)}>
-                  <FormatListBulletedIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Numbered List">
-                <IconButton type="button" size="small" onClick={() => insertAnnouncementMarkdown('1. ', '', '', true)}>
-                  <FormatListNumberedIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Horizontal Rule">
-                <IconButton type="button" size="small" onClick={() => insertAnnouncementMarkdown('\n---\n', '', '')}>
-                  <HorizontalRuleIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            </Box>
-
-            <TextField
-              fullWidth
-              value={announcements}
-              onChange={(e) => setAnnouncements(e.target.value)}
-              multiline
-              rows={20}
-              inputRef={announcementsTextAreaRef}
-              placeholder="## DMR Network News&#10;&#10;## Reminders&#10;&#10;## Upcoming Events&#10;&#10;## Exam Sessions"
-              sx={{
-                '& .MuiInputBase-root': {
-                  fontFamily: 'monospace',
-                },
-              }}
-            />
-
-            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-              {announcements.length} characters • Supports Markdown formatting • Saved with the schedule on Save Changes
-            </Typography>
-          </TabPanel>
-
-          {/* Tab 6: Check-In Fields */}
-          <TabPanel value={activeTab} index={6}>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Configure which fields are available when stations check in to nets created from this schedule.
-            </Typography>
-
-            <TableContainer>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Field</TableCell>
-                    <TableCell align="center">Enabled</TableCell>
-                    <TableCell align="center">Required</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {fieldDefinitions.map((field) => {
-                    const config = fieldConfig[field.name] || { enabled: false, required: false };
-                    return (
-                      <TableRow key={field.name}>
-                        <TableCell>{field.label}</TableCell>
-                        <TableCell align="center">
-                          <Checkbox
-                            checked={config.enabled}
-                            onChange={() => handleFieldToggle(field.name, 'enabled')}
-                          />
-                        </TableCell>
-                        <TableCell align="center">
-                          <Checkbox
-                            checked={config.required}
-                            onChange={() => handleFieldToggle(field.name, 'required')}
-                            disabled={!config.enabled}
-                          />
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                  {/* Poll Response row - shown when poll is enabled */}
-                  {pollEnabled && (
-                    <TableRow>
-                      <TableCell>
-                        <Typography>Poll Response</Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          Responses to the poll question configured on the first tab
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="center">
-                        <Checkbox
-                          checked={true}
-                          disabled={true}
-                          onClick={() => setToastMessage('Poll Response is automatically enabled when Poll feature is turned on')}
-                        />
-                      </TableCell>
-                      <TableCell align="center">
-                        <Checkbox checked={false} disabled={true} />
-                      </TableCell>
-                    </TableRow>
-                  )}
-                  {/* Topic of the Week Response row - shown when topic is enabled */}
-                  {topicOfWeekEnabled && (
-                    <TableRow>
-                      <TableCell>
-                        <Typography>Topic of the Week Response</Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          Responses to the topic of the week configured on the first tab
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="center">
-                        <Checkbox
-                          checked={true}
-                          disabled={true}
-                          onClick={() => setToastMessage('Topic of the Week Response is automatically enabled when the feature is turned on')}
-                        />
-                      </TableCell>
-                      <TableCell align="center">
-                        <Checkbox checked={false} disabled={true} />
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </TabPanel>
-
-          {/* Navigation buttons */}
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3, pt: 2, borderTop: 1, borderColor: 'divider' }}>
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <Button type="button" variant="outlined" onClick={() => navigate('/scheduler')} startIcon={<CloseIcon />}>
-                Cancel
-              </Button>
-              {activeTab > 0 && (
-                <Button type="button" variant="outlined" onClick={() => setActiveTab(activeTab - 1)} startIcon={<ArrowBackIcon />}>
-                  Previous
-                </Button>
-              )}
-              {activeTab < 6 && (
-                <Button type="button" variant="outlined" onClick={handleNextTab} endIcon={<ArrowForwardIcon />}>
-                  Next
-                </Button>
-              )}
-            </Box>
-            <Button 
-              type="submit" 
-              variant="contained" 
-              color="primary" 
-              disabled={isTransitioning || !name || selectedFrequencyIds.length === 0}
-              startIcon={<SaveIcon />}
-            >
-              {isEdit ? 'Save Changes' : (scheduleType === 'ad_hoc' || scheduleType === 'one_time' ? 'Create Net' : 'Create Schedule')}
-            </Button>
           </Box>
-        </Box>
-      </Paper>
 
-      {/* Blocking Alert for errors */}
-      <BlockingAlert
-        open={blockingAlert.open}
-        onClose={() => setBlockingAlert({ ...blockingAlert, open: false })}
-        message={blockingAlert.message}
-        title={blockingAlert.title}
-        severity={blockingAlert.severity}
-      />
+          <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 2 }}>
+            <Tabs
+              value={activeTab}
+              onChange={(_, newValue) => setActiveTab(newValue)}
+              variant="scrollable"
+              scrollButtons="auto"
+            >
+              <Tab label="Basic Info" />
+              <Tab label="Schedule" />
+              <Tab label="Net Staff" />
+              <Tab label="Communication Plan" />
+              <Tab label="Net Script" />
+              <Tab label="Announcements" />
+              <Tab label="Check-In Fields" />
+            </Tabs>
+          </Box>
 
-      {/* Toast message for locked fields */}
-      <Snackbar
-        open={!!toastMessage}
-        autoHideDuration={4000}
-        onClose={() => setToastMessage('')}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert onClose={() => setToastMessage('')} severity="info" sx={{ width: '100%' }}>
-          {toastMessage}
-        </Alert>
-      </Snackbar>
-    </Container>
+          <Box component="form" onSubmit={handleSubmit}>
+            {/* ========== TAB 0: BASIC INFO ========== */}
+            <TabPanel value={activeTab} index={0}>
+              <BasicInfoTab />
+            </TabPanel>
+
+            {/* ========== TAB 1: SCHEDULE CONFIGURATION ========== */}
+            <TabPanel value={activeTab} index={1}>
+              <ScheduleTab />
+            </TabPanel>
+
+            {/* ========== TAB 2: NET STAFF ========== */}
+            <TabPanel value={activeTab} index={2}>
+              <StaffRotationTab />
+            </TabPanel>
+
+            {/* ========== TAB 3: COMMUNICATION PLAN (FREQUENCIES) ========== */}
+            <TabPanel value={activeTab} index={3}>
+              <CommunicationPlanTab />
+            </TabPanel>
+
+            {/* ========== TAB 4: NET SCRIPT ========== */}
+            <TabPanel value={activeTab} index={4}>
+              <NetScriptTab />
+            </TabPanel>
+
+            {/* ========== TAB 5: ANNOUNCEMENTS ========== */}
+            <TabPanel value={activeTab} index={5}>
+              <AnnouncementsTab />
+            </TabPanel>
+
+            {/* ========== TAB 6: CHECK-IN FIELDS ========== */}
+            <TabPanel value={activeTab} index={6}>
+              <CheckInFieldsTab />
+            </TabPanel>
+
+            {/* ========== NAVIGATION BUTTONS ========== */}
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3, pt: 2, borderTop: 1, borderColor: 'divider' }}>
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <Button type="button" variant="outlined" onClick={() => navigate('/scheduler')} startIcon={<CloseIcon />}>
+                  Cancel
+                </Button>
+                {activeTab > 0 && (
+                  <Button type="button" variant="outlined" onClick={() => setActiveTab(activeTab - 1)} startIcon={<ArrowBackIcon />}>
+                    Previous
+                  </Button>
+                )}
+                {activeTab < 6 && (
+                  <Button type="button" variant="outlined" onClick={handleNextTab} endIcon={<ArrowForwardIcon />}>
+                    Next
+                  </Button>
+                )}
+              </Box>
+              <Button
+                type="submit"
+                variant="contained"
+                color="primary"
+                disabled={isTransitioning || !name || selectedFrequencyIds.length === 0}
+                startIcon={<SaveIcon />}
+              >
+                {isEdit ? 'Save Changes' : (scheduleType === 'ad_hoc' || scheduleType === 'one_time' ? 'Create Net' : 'Create Schedule')}
+              </Button>
+            </Box>
+          </Box>
+        </Paper>
+
+        {/* ========== BLOCKING ALERT FOR ERRORS ========== */}
+        <BlockingAlert
+          open={blockingAlert.open}
+          onClose={() => setBlockingAlert({ ...blockingAlert, open: false })}
+          message={blockingAlert.message}
+          title={blockingAlert.title}
+          severity={blockingAlert.severity}
+        />
+
+        {/* Toast for locked check-in field clicks */}
+        <Snackbar
+          open={!!toastMessage}
+          autoHideDuration={4000}
+          onClose={() => setToastMessage('')}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        >
+          <Alert onClose={() => setToastMessage('')} severity="info" sx={{ width: '100%' }}>
+            {toastMessage}
+          </Alert>
+        </Snackbar>
+      </Container>
+    </CreateScheduleContext.Provider>
   );
 };
 
