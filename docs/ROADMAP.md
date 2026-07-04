@@ -1,6 +1,6 @@
 # ECT Logger — Product Roadmap
 
-*Last updated: 2026-07-04 (rev 27 — Steps 1–3 of Milestone 0.4 marked complete; Step 4 frontend splits remain)*  
+*Last updated: 2026-07-04 (rev 28 — Step 4 frontend page splits complete for Admin, CreateSchedule, CreateNet, Dashboard, Scheduler; NetView pending Opus review gate)*  
 *Compiled from user feedback: AA1GM, KC1UIX, W1BKW, W1MTW, KC1JMH*
 
 > **Canonical location:** `docs/ROADMAP.md`. ~~The root-level `ROADMAP.md` is a duplicate and should be deleted.~~ *Resolved: the root-level duplicate no longer exists as of 2026-07-03.*
@@ -92,15 +92,17 @@ Rule of thumb: Haiku and Sonnet can only maintain this codebase safely once file
 ~~`ncs_reminder_service.py` (777) can stay whole — it is one cohesive background service.~~  
 *Completed 2026-07-04. All route paths unchanged (verified with before/after route table diff). 23/23 tests pass on beta.*
 
-**Step 4 — Frontend page splits** *(easiest first; NetView last)*  
+~~**Step 4 — Frontend page splits** *(easiest first; NetView last)*~~  
 | File | Lines | Extraction plan |
 |---|---|---|
-| `Admin.tsx` | 3,215 | Six tab components: `AdminUsersTab`, `AdminContactsTab`, `AdminFieldsTab`, `AdminFrequenciesTab`, `AdminSecurityTab`, `AdminMaintenanceTab` — the tabs are already self-contained |
-| `CreateSchedule.tsx` | 2,262 | One component per tab (Basic Info, Staff & Rotation, Communication Plan, Script, Check-in Fields) with a shared form context |
-| `CreateNet.tsx` | 1,820 | Same per-tab pattern as CreateSchedule; extract any tab panels the two pages share into common components (DRY) |
-| `Dashboard.tsx` | 1,490 | Extract `NetCard`, grid/list view components, and a `useFavorites` hook shared with Scheduler |
-| `Scheduler.tsx` | 1,276 | Extract `ScheduleCard`; reuse `useFavorites` and view-toggle from Dashboard |
-| `NetView.tsx` | 5,410 | **Do last, after the hooks exist.** Extract: `NetViewHeader`, `CheckInForm`, `CheckInTable` (desktop), `CheckInMobileList`, the dialog cluster (CSV import, archive, role assignment as separate files), and `useNetWebSocket`. ~69 useState calls today; group related state into reducers as it moves |
+| ~~`Admin.tsx` (3,215)~~ | done | Six self-contained tab components in `components/admin/` |
+| ~~`CreateSchedule.tsx` (2,262)~~ | done | 7 tab components + `CreateScheduleContext`; 4 shared form panels in `components/forms/` |
+| ~~`CreateNet.tsx` (1,820)~~ | done | `BasicInfoTab`, `NCSStaffTab` in `components/create-net/`; shares 4 form panels with CreateSchedule |
+| ~~`Dashboard.tsx` (1,490)~~ | done | `NetCard` extracted to `components/dashboard/`; `useFavorites` hook in `hooks/` |
+| ~~`Scheduler.tsx` (1,276)~~ | done | `ScheduleCard` extracted to `components/scheduler/`; reuses `useFavorites` |
+| `NetView.tsx` | 5,410 | **Pending — Opus review gate required.** Extract: `NetViewHeader`, `CheckInForm`, `CheckInTable` (desktop), `CheckInMobileList`, the dialog cluster (CSV import, archive, role assignment as separate files), and `useNetWebSocket`. ~69 useState calls today; group related state into reducers as it moves |
+
+*Admin through Scheduler splits completed 2026-07-04. All splits verified `tsc --noEmit` 0 errors. NetView pending Opus review gate (real-time state + WebSocket + inline editing — riskiest change in the program).*
 
 `NCSStaffModal.tsx` (1,789) and `Profile.tsx` (1,078) are cohesive enough to leave alone for now; revisit if they grow.
 
