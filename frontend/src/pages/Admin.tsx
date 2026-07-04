@@ -136,7 +136,6 @@ interface Frequency {
 
 // Frequency sorting types
 type FrequencySortField = 'frequency' | 'mode' | 'network' | 'talkgroup' | 'description' | 'net_count';
-type SortDirection = 'asc' | 'desc';
 
 // User sorting types - 'online' sorts by presence status then by name
 type UserSortField = 'online' | 'email' | 'name' | 'callsign' | 'role' | 'status' | 'last_active' | 'created_at';
@@ -249,8 +248,8 @@ const Admin: React.FC = () => {
   const [frequencyToDelete, setFrequencyToDelete] = useState<Frequency | null>(null);
   // Frequency filtering and sorting
   const [frequencyFilter, setFrequencyFilter] = useState('');
-  const [frequencySortField, setFrequencySortField] = useState<FrequencySortField>('frequency');
-  const [frequencySortDirection, setFrequencySortDirection] = useState<SortDirection>('asc');
+  const { sortField: frequencySortField, sortDirection: frequencySortDirection, handleSort: handleFrequencySort } =
+    useSortableTable<FrequencySortField>('frequency');
   
   // User filtering and sorting
   const [userFilter, setUserFilter] = useState('');
@@ -262,8 +261,8 @@ const Admin: React.FC = () => {
   
   // Field filtering and sorting
   const [fieldFilter, setFieldFilter] = useState('');
-  const [fieldSortField, setFieldSortField] = useState<FieldSortField>('name');
-  const [fieldSortDirection, setFieldSortDirection] = useState<SortDirection>('asc');
+  const { sortField: fieldSortField, sortDirection: fieldSortDirection, handleSort: handleFieldSort } =
+    useSortableTable<FieldSortField>('name');
   
   // Schedule creation limits state
   const [scheduleSettings, setScheduleSettings] = useState({
@@ -297,8 +296,8 @@ const Admin: React.FC = () => {
   const [deleteContactDialogOpen, setDeleteContactDialogOpen] = useState(false);
   const [contactToDelete, setContactToDelete] = useState<Contact | null>(null);
   const [contactFilter, setContactFilter] = useState('');
-  const [contactSortField, setContactSortField] = useState<ContactSortField>('callsign');
-  const [contactSortDirection, setContactSortDirection] = useState<SortDirection>('asc');
+  const { sortField: contactSortField, sortDirection: contactSortDirection, handleSort: _handleContactSortBase } =
+    useSortableTable<ContactSortField>('callsign');
   const [contactsPage, setContactsPage] = useState(0);
   const [contactsPerPage, setContactsPerPage] = useState(25);
   // Inline editing state for contacts (matches check-in inline editing pattern)
@@ -617,17 +616,7 @@ const Admin: React.FC = () => {
     return frequencySortDirection === 'asc' ? comparison : -comparison;
   });
 
-  // Handle sort click
-  const handleFrequencySort = (field: FrequencySortField) => {
-    if (frequencySortField === field) {
-      // Toggle direction if same field
-      setFrequencySortDirection(frequencySortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      // New field, start with ascending
-      setFrequencySortField(field);
-      setFrequencySortDirection('asc');
-    }
-  };
+  // handleFrequencySort provided by useSortableTable above
 
   // ========== USER FILTERING & SORTING ==========
   const filteredUsers = users.filter((user) => {
@@ -772,14 +761,7 @@ const Admin: React.FC = () => {
     return fieldSortDirection === 'asc' ? comparison : -comparison;
   });
 
-  const handleFieldSort = (field: FieldSortField) => {
-    if (fieldSortField === field) {
-      setFieldSortDirection(fieldSortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setFieldSortField(field);
-      setFieldSortDirection('asc');
-    }
-  };
+  // handleFieldSort provided by useSortableTable above
 
   // ========== CONTACT FILTERING & SORTING ==========
   const filteredContacts = contacts.filter((contact) => {
@@ -842,13 +824,8 @@ const Admin: React.FC = () => {
     : sortedContacts.slice(contactsPage * contactsPerPage, contactsPage * contactsPerPage + contactsPerPage);
 
   const handleContactSort = (field: ContactSortField) => {
-    setContactsPage(0); // Reset to first page on sort change
-    if (contactSortField === field) {
-      setContactSortDirection(contactSortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setContactSortField(field);
-      setContactSortDirection('asc');
-    }
+    _handleContactSortBase(field);
+    setContactsPage(0);
   };
 
   // Convert ISO datetime string from API to datetime-local input format (YYYY-MM-DDTHH:mm)
