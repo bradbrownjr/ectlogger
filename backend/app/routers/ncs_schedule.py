@@ -5,13 +5,15 @@ These are free of FastAPI and database dependencies — they take model
 objects as arguments and return computed schedules.  Extracted here so
 they can be unit-tested without a running database.
 """
+import json
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
 from dateutil.relativedelta import relativedelta
 from dateutil.rrule import DAILY, MONTHLY, WEEKLY, rrule
 
-from app.models import NetTemplate
+from app.models import NCSRotationMember, NCSScheduleOverride, NetTemplate
+from app.schemas import NCSScheduleEntry
 
 def _template_local_tz(template: NetTemplate):
     """Resolve the template's scheduling timezone, defaulting to America/New_York."""
