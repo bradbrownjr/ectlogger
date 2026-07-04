@@ -1,4 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import useLocalStorage from '../hooks/useLocalStorage';
+import { STORAGE_KEYS } from '../utils/localStorageKeys';
 import { useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -186,15 +188,9 @@ const Scheduler: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [rotationModalOpen, setRotationModalOpen] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null);
-  // View mode, sort order, and filter state - persist view/sort preference
-  const [viewMode, setViewMode] = useState<'card' | 'list'>(() => {
-    const saved = localStorage.getItem('scheduler-view-mode');
-    return (saved === 'list' || saved === 'card') ? saved : 'card';
-  });
-  const [sortOrder, setSortOrder] = useState<'alpha' | 'date'>(() => {
-    const saved = localStorage.getItem('scheduler-sort-order');
-    return saved === 'date' ? 'date' : 'alpha';
-  });
+  // View mode and sort order persist across sessions
+  const [viewMode, setViewMode] = useLocalStorage<'card' | 'list'>(STORAGE_KEYS.SCHEDULER_VIEW_MODE, 'card');
+  const [sortOrder, setSortOrder] = useLocalStorage<'alpha' | 'date'>(STORAGE_KEYS.SCHEDULER_SORT_ORDER, 'alpha');
   const [showFilter, setShowFilter] = useState(false);
   const [scheduleFilter, setScheduleFilter] = useState('');
   const [schedulePage, setSchedulePage] = useState(1);
@@ -873,10 +869,7 @@ const Scheduler: React.FC = () => {
             value={sortOrder}
             exclusive
             onChange={(_, newSort) => {
-              if (newSort) {
-                setSortOrder(newSort);
-                localStorage.setItem('scheduler-sort-order', newSort);
-              }
+              if (newSort) setSortOrder(newSort);
             }}
             size="small"
           >
@@ -896,10 +889,7 @@ const Scheduler: React.FC = () => {
             value={viewMode}
             exclusive
             onChange={(_, newMode) => {
-              if (newMode) {
-                setViewMode(newMode);
-                localStorage.setItem('scheduler-view-mode', newMode);
-              }
+              if (newMode) setViewMode(newMode);
             }}
             size="small"
           >
