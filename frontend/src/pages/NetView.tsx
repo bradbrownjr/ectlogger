@@ -8,6 +8,7 @@ import RoleAssignmentDialog from '../components/netview/RoleAssignmentDialog';
 import CheckInFormDialog, { CheckInFormState } from '../components/netview/CheckInFormDialog';
 import NetControlDialogs from '../components/netview/NetControlDialogs';
 import NetViewHeader from '../components/netview/NetViewHeader';
+import { getCheckInStatusHelpers } from '../components/netview/checkInStatusHelpers';
 import { STORAGE_KEYS } from '../utils/localStorageKeys';
 import { displayCallsign } from '../utils/userDisplay';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
@@ -1042,136 +1043,6 @@ const NetView: React.FC = () => {
     }
   };
 
-  const getStatusIcon = (status: string, checkIn?: CheckIn) => {
-    // Show role icons for users with active roles
-    if (checkIn) {
-      // Owner always gets the primary crown
-      if (net?.owner_id === checkIn.user_id) return '👑';
-      
-      const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
-      if (userRole?.role?.toUpperCase() === 'NCS') {
-        // Check if owner is checked in - if so, this NCS is secondary
-        const ownerCheckedIn = net?.owner_id && checkIns.some(c => c.user_id === net.owner_id && c.status !== 'checked_out');
-        if (ownerCheckedIn) {
-          // Owner is present - all other NCS are secondary
-          return '🤴';
-        }
-        
-        // Owner not present - check if this is first NCS in the list (acting primary)
-        const ncsIndex = ncsRoles.findIndex((r: any) => r.user_id === checkIn.user_id);
-        if (ncsIndex > 0) {
-          // This is a secondary NCS - check if primary NCS is checked in
-          const primaryNCS = ncsRoles[0];
-          const primaryCheckedIn = checkIns.some(c => c.user_id === primaryNCS.user_id && c.status !== 'checked_out');
-          if (primaryCheckedIn) {
-            // Primary NCS is present - show 2nd crown for secondary
-            return '🤴';
-          }
-        }
-        // Primary NCS or acting primary (primary not present)
-        return '👑';
-      }
-      if (userRole?.role?.toUpperCase() === 'LOGGER') return '📋';
-      if (userRole?.role?.toUpperCase() === 'RELAY') return '📡';
-      
-      // Show recheck icon for rechecked stations (replaces standard check-in)
-      if (checkIn.is_recheck && status === 'checked_in') return '🔄';
-    }
-    
-    // Show standard status icons
-    switch (status) {
-      case 'checked_in': return '✅'; // Standard
-      case 'listening': return '👂'; // Just listening
-      case 'relay': return '📡'; // Relay station
-      case 'away': return '⏸️'; // Short term
-      case 'has_traffic': return '🚨'; // Has traffic
-      case 'announcements': return '📢'; // Has announcements
-      case 'mobile': return '🚗'; // Mobile station
-      case 'checked_out': return '👋'; // Checked out
-      default: return '✅';
-    }
-  };
-
-  const getStatusTooltip = (status: string, checkIn?: CheckIn) => {
-    // Check for role-based tooltips first
-    if (checkIn) {
-      if (net?.owner_id === checkIn.user_id) return 'Net Control Station - manages the net';
-      const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
-      if (userRole?.role?.toUpperCase() === 'NCS') {
-        // Check if owner is checked in - if so, this NCS is secondary
-        const ownerCheckedIn = net?.owner_id && checkIns.some(c => c.user_id === net.owner_id && c.status !== 'checked_out');
-        if (ownerCheckedIn) {
-          return '2nd NCS - assists primary Net Control Station';
-        }
-        
-        // Check if this is a secondary NCS (not first in the list)
-        const ncsIndex = ncsRoles.findIndex((r: any) => r.user_id === checkIn.user_id);
-        if (ncsIndex > 0) {
-          const primaryNCS = ncsRoles[0];
-          const primaryCheckedIn = checkIns.some(c => c.user_id === primaryNCS.user_id && c.status !== 'checked_out');
-          if (primaryCheckedIn) {
-            return '2nd NCS - assists primary Net Control Station';
-          }
-        }
-        return 'Net Control Station - manages the net';
-      }
-      if (userRole?.role?.toUpperCase() === 'LOGGER') return 'Logger - assists NCS with logging';
-      if (userRole?.role?.toUpperCase() === 'RELAY') return 'Relay - checks in stations on behalf of NCS';
-      if (checkIn.is_recheck && status === 'checked_in') return 'Re-checked into the net';
-    }
-    
-    switch (status) {
-      case 'checked_in': return 'Checked in and available';
-      case 'listening': return 'Monitoring only, not transmitting';
-      case 'relay': return 'Relay station - can relay stations NCS cannot hear';
-      case 'away': return 'Temporarily away, will return';
-      case 'has_traffic': return 'Has traffic or emergency to report';
-      case 'announcements': return 'Has announcements to share';
-      case 'mobile': return 'Mobile - may only be available briefly';
-      case 'checked_out': return 'Checked out of net';
-      default: return 'Checked in and available';
-    }
-  };
-
-  // Short text label for the status select dropdown options. Pairs with the
-  // emoji icon so new NCS users don't have to memorize the icon legend
-  // (e.g., bullhorn 📢 vs ear 👂 — both look "loud" at a glance).
-  const getStatusLabel = (status: string): string => {
-    switch (status) {
-      case 'ncs': return 'NCS';
-      case 'logger': return 'Logger';
-      case 'checked_in': return 'Checked in';
-      case 'listening': return 'Listening only';
-      case 'relay': return 'Relay';
-      case 'away': return 'Away';
-      case 'has_traffic': return 'Has traffic';
-      case 'announcements': return 'Announcements';
-      case 'mobile': return 'Mobile';
-      case 'checked_out': return 'Checked out';
-      default: return status;
-    }
-  };
-
-  // Helper to get the NCS icon for a specific check-in (primary crown or secondary prince)
-  const getNcsIcon = (checkIn: CheckIn) => {
-    // Owner is always primary
-    if (net?.owner_id === checkIn.user_id) return '👑';
-    
-    // Check if owner is checked in - if so, all other NCS are secondary
-    const ownerCheckedIn = net?.owner_id && checkIns.some(c => c.user_id === net.owner_id && c.status !== 'checked_out');
-    if (ownerCheckedIn) return '🤴';
-    
-    // Owner not present - check if this is first NCS in the list
-    const ncsIndex = ncsRoles.findIndex((r: any) => r.user_id === checkIn.user_id);
-    if (ncsIndex > 0) {
-      const primaryNCS = ncsRoles[0];
-      const primaryCheckedIn = checkIns.some(c => c.user_id === primaryNCS.user_id && c.status !== 'checked_out');
-      if (primaryCheckedIn) return '🤴';
-    }
-    
-    return '👑';
-  };
-
   const formatFrequencyDisplay = (freq: any) => {
     if (!freq) return '';
     if (freq.frequency) {
@@ -1455,6 +1326,11 @@ const NetView: React.FC = () => {
   const ncsRoles = netRoles
     .filter((role: any) => role.role === 'NCS')
     .sort((a, b) => new Date(a.assigned_at).getTime() - new Date(b.assigned_at).getTime());
+
+  // Status display helpers (icon/tooltip/label/NCS crown) shared by all three
+  // check-in tables. Depends on ncsRoles, so it's constructed here.
+  const { getStatusIcon, getStatusTooltip, getStatusLabel, getNcsIcon } =
+    getCheckInStatusHelpers({ net, netRoles, checkIns, ncsRoles });
 
   // Helper to get NCS color by user_id
   const getNcsColor = (userId: number) => {
