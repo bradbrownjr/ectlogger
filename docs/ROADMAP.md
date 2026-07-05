@@ -1,6 +1,6 @@
 # ECT Logger — Product Roadmap
 
-*Last updated: 2026-07-04 (rev 28 — Step 4 frontend page splits complete for Admin, CreateSchedule, CreateNet, Dashboard, Scheduler; NetView pending Opus review gate)*  
+*Last updated: 2026-07-05 (rev 29 — Step 4 frontend page splits complete for Admin, CreateSchedule, CreateNet, Dashboard, Scheduler; NetView in progress — dialog cluster, CheckInForm, and useNetWebSocket extracted and beta-validated; header + check-in tables remain)*  
 *Compiled from user feedback: AA1GM, KC1UIX, W1BKW, W1MTW, KC1JMH*
 
 > **Canonical location:** `docs/ROADMAP.md`. ~~The root-level `ROADMAP.md` is a duplicate and should be deleted.~~ *Resolved: the root-level duplicate no longer exists as of 2026-07-03.*
@@ -100,9 +100,9 @@ Rule of thumb: Haiku and Sonnet can only maintain this codebase safely once file
 | ~~`CreateNet.tsx` (1,820)~~ | done | `BasicInfoTab`, `NCSStaffTab` in `components/create-net/`; shares 4 form panels with CreateSchedule |
 | ~~`Dashboard.tsx` (1,490)~~ | done | `NetCard` extracted to `components/dashboard/`; `useFavorites` hook in `hooks/` |
 | ~~`Scheduler.tsx` (1,276)~~ | done | `ScheduleCard` extracted to `components/scheduler/`; reuses `useFavorites` |
-| `NetView.tsx` | 5,410 | **Pending — Opus review gate required.** Extract: `NetViewHeader`, `CheckInForm`, `CheckInTable` (desktop), `CheckInMobileList`, the dialog cluster (CSV import, archive, role assignment as separate files), and `useNetWebSocket`. ~69 useState calls today; group related state into reducers as it moves |
+| `NetView.tsx` | 5,410 → 4,428 | **In progress, Opus-gated.** Done: `useNetWebSocket` hook, `CsvImportDialog`, `ArchiveDialogs`, `RoleAssignmentDialog`, `CheckInFormDialog`, `NetControlDialogs` — all in `components/netview/`, wired in, `tsc --noEmit` clean, beta-validated via browserless (net load, dialog open, WS presence, zero console errors). Remaining: `NetViewHeader` (net info + action rows, ~medium risk), then the three check-in tables — desktop inline, mobile, detached floating (~1,700 lines, highest risk: shared inline-edit state, status handlers, NCS coloring, active-speaker highlighting) |
 
-*Admin through Scheduler splits completed 2026-07-04. All splits verified `tsc --noEmit` 0 errors. NetView pending Opus review gate (real-time state + WebSocket + inline editing — riskiest change in the program).*
+*Admin through Scheduler splits completed 2026-07-04. All splits verified `tsc --noEmit` 0 errors. NetView: dialog cluster + form + WS hook completed and beta-validated 2026-07-05 (commits `0929758`, `485ee48`, `f3418ad`, `0fdfe31`, `556a4df`, `4e6ad87`); header and check-in tables remain, sequenced next.*
 
 `NCSStaffModal.tsx` (1,789) and `Profile.tsx` (1,078) are cohesive enough to leave alone for now; revisit if they grow.
 
