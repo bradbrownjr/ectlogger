@@ -9,6 +9,7 @@ import CheckInFormDialog, { CheckInFormState } from '../components/netview/Check
 import NetControlDialogs from '../components/netview/NetControlDialogs';
 import NetViewHeader from '../components/netview/NetViewHeader';
 import { getCheckInStatusHelpers } from '../components/netview/checkInStatusHelpers';
+import CheckInMobileList from '../components/netview/CheckInMobileList';
 import { STORAGE_KEYS } from '../utils/localStorageKeys';
 import { displayCallsign } from '../utils/userDisplay';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
@@ -2201,170 +2202,32 @@ const NetView: React.FC = () => {
               </Table>
             </TableContainer>
             
-            {/* Mobile: Scrollable table */}
-            <TableContainer sx={{ 
-              display: { xs: 'block', md: 'none' }, 
-              overflow: 'auto', 
-              border: 1, 
-              borderColor: 'divider', 
-              borderRadius: '4px', 
-              maxHeight: 400,
-              '&::-webkit-scrollbar': {
-                width: 8,
-                height: 8,
-              },
-              '&::-webkit-scrollbar-track': {
-                backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-              },
-              '&::-webkit-scrollbar-thumb': {
-                backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)',
-                borderRadius: 4,
-                '&:hover': {
-                  backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)',
-                },
-              },
-            }}>
-              {/* ========== CHECK-IN LIST TABLE 2: Mobile View ========== */}
-              {/* This table displays on small screens (xs) only */}
-              <Table size="small">
-                <TableHead sx={{ position: 'sticky', top: 0, backgroundColor: 'background.default', zIndex: 1 }}>
-                  <TableRow>
-                    <TableCell sx={{ whiteSpace: 'nowrap' }}>#</TableCell>
-                    <TableCell sx={{ whiteSpace: 'nowrap' }}>Status</TableCell>
-                    <TableCell sx={{ whiteSpace: 'nowrap' }}>Callsign *</TableCell>
-                    {net?.field_config?.name?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Name {net.field_config.name.required && '*'}</TableCell>}
-                    {net?.field_config?.location?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Location {net.field_config.location.required && '*'}</TableCell>}
-                    {net?.field_config?.skywarn_number?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Spotter {net.field_config.skywarn_number.required && '*'}</TableCell>}
-                    {net?.field_config?.weather_observation?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Weather {net.field_config.weather_observation.required && '*'}</TableCell>}
-                    {net?.field_config?.power_source?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Power Src {net.field_config.power_source.required && '*'}</TableCell>}
-                    {net?.field_config?.power?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Power {net.field_config.power.required && '*'}</TableCell>}
-                    {net?.field_config?.notes?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Notes {net.field_config.notes.required && '*'}</TableCell>}
-                    {getEnabledCustomFields().map((field) => (
-                      <TableCell key={field.name} sx={{ whiteSpace: 'nowrap' }}>
-                        {field.label} {isFieldRequired(field.name) && '*'}
-                      </TableCell>
-                    ))}
-                    {net?.topic_of_week_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Topic</TableCell>}
-                    {net?.poll_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Poll</TableCell>}
-                    {hasAnyRelayedBy && <TableCell sx={{ whiteSpace: 'nowrap' }}>Relayed By</TableCell>}
-                    <TableCell sx={{ whiteSpace: 'nowrap' }}>Time</TableCell>
-                    {canManage && <TableCell sx={{ whiteSpace: 'nowrap' }}>Actions</TableCell>}
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {filteredCheckIns.map((checkIn, index) => {
-                    const isOnActiveFrequency = net.active_frequency_id && checkIn.available_frequencies?.includes(net.active_frequency_id);
-                    // Get NCS color if this user is an NCS
-                    const ncsColor = checkIn.user_id ? getNcsColor(checkIn.user_id) : null;
-                    const isNcsUser = ncsRoles.some((r: any) => r.user_id === checkIn.user_id);
-                    const isPriorRowMobile = (() => {
-                      const latest = latestCheckedInAtByCallsign.get(checkIn.callsign);
-                      return latest !== undefined && checkIn.checked_in_at < latest;
-                    })();
-                    
-                    return (
-                      <TableRow key={checkIn.id} sx={{ 
-                        backgroundColor: checkIn.id === activeSpeakerId 
-                          ? (theme) => theme.palette.mode === 'dark' ? theme.palette.success.dark : theme.palette.success.light
-                          : checkIn.status === 'checked_out' ? 'action.disabledBackground' 
-                          : isNcsUser && ncsColor ? ncsColor.bg
-                          : isOnActiveFrequency ? (theme) => theme.palette.mode === 'dark' ? 'rgba(25, 118, 210, 0.15)' : 'rgba(25, 118, 210, 0.08)' : 'inherit',
-                        opacity: isPriorRowMobile ? 0.4 : checkIn.status === 'checked_out' ? 0.6 : 1,
-                        // Add left border for NCS users
-                        ...(isNcsUser && ncsColor && checkIn.status !== 'checked_out' && {
-                          borderLeft: `3px solid ${ncsColor.border}`,
-                        }),
-                      }}>
-                        <TableCell sx={{ whiteSpace: 'nowrap' }}>{index + 1}</TableCell>
-                        <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                          {(net.status === 'active' || net.status === 'lobby') && checkIn.status !== 'checked_out' && (canManageCheckIns || checkIn.user_id === user?.id) ? (() => {
-                            const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
-                            let selectValue = checkIn.status.toLowerCase();
-                            if (userRole && ['ncs', 'logger'].includes(userRole.role.toLowerCase())) {
-                              selectValue = userRole.role.toLowerCase();
-                            }
-                            const validValues = ['ncs', 'logger', 'checked_in', 'listening', 'relay', 'away', 'has_traffic', 'announcements', 'mobile', 'checked_out'];
-                            if (!validValues.includes(selectValue)) {
-                              selectValue = 'checked_in';
-                            }
-                            return (
-                              <Select
-                                size="small"
-                                value={selectValue}
-                                onChange={async (e) => {
-                                  await handleStatusChange(checkIn.id, e.target.value);
-                                  await fetchNetRoles();
-                                  await fetchCheckIns();
-                                }}
-                                sx={{ minWidth: 45 }}
-                                disabled={owner?.id === checkIn.user_id}
-                                MenuProps={{ disableScrollLock: true }}
-                                renderValue={(v) => v === 'ncs' ? getNcsIcon(checkIn) : v === 'logger' ? '📋' : getStatusIcon(v as string, checkIn)}
-                              >
-                                {((canManageCheckIns || selectValue === 'ncs') && <MenuItem value="ncs">{getNcsIcon(checkIn)}  {getStatusLabel('ncs')}</MenuItem>)}
-                                {((canManageCheckIns || selectValue === 'logger') && <MenuItem value="logger">📋  {getStatusLabel('logger')}</MenuItem>)}
-                                <MenuItem value="checked_in">{checkIn.is_recheck ? '🔄' : '✅'}  {checkIn.is_recheck ? 'Re-check' : getStatusLabel('checked_in')}</MenuItem>
-                                <MenuItem value="listening">👂  {getStatusLabel('listening')}</MenuItem>
-                                <MenuItem value="relay">📡  {getStatusLabel('relay')}</MenuItem>
-                                <MenuItem value="away">⏸️  {getStatusLabel('away')}</MenuItem>
-                                <MenuItem value="has_traffic">🚨  {getStatusLabel('has_traffic')}</MenuItem>
-                                <MenuItem value="announcements">📢  {getStatusLabel('announcements')}</MenuItem>
-                                <MenuItem value="mobile">🚗  {getStatusLabel('mobile')}</MenuItem>
-                                {(canManageCheckIns || checkIn.user_id === user?.id) && <MenuItem value="checked_out">👋  {getStatusLabel('checked_out')}</MenuItem>}
-                              </Select>
-                            );
-                          })() : (
-                            <span>{getStatusIcon(checkIn.status, checkIn)}</span>
-                          )}
-                        </TableCell>
-                        <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <Box
-                              onClick={() => checkIn.user_id && setProfileUserId(checkIn.user_id)}
-                              sx={{ cursor: checkIn.user_id ? 'pointer' : 'default', display: 'inline-flex' }}
-                            >
-                              <UserAvatar
-                                avatarUrl={checkIn.avatar_url}
-                                callsign={checkIn.callsign}
-                                name={checkIn.name}
-                                size={24}
-                                hasProfile={!!checkIn.user_id}
-                              isOnline={!!(checkIn.user_id && onlineUserIds.includes(checkIn.user_id))}
-                              />
-                            </Box>
-                            {checkIn.callsign}
-                            {checkIn.relayed_by && (
-                              <Tooltip title={`Relayed by ${checkIn.relayed_by}`} arrow>
-                                <span>📡</span>
-                              </Tooltip>
-                            )}
-                          </Box>
-                        </TableCell>
-                        {net?.field_config?.name?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.name}</TableCell>}
-                        {net?.field_config?.location?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.location}</TableCell>}
-                        {net?.field_config?.skywarn_number?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.skywarn_number}</TableCell>}
-                        {net?.field_config?.weather_observation?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.weather_observation}</TableCell>}
-                        {net?.field_config?.power_source?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.power_source}</TableCell>}
-                        {net?.field_config?.power?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.power}</TableCell>}
-                        {net?.field_config?.notes?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.notes}</TableCell>}
-                        {getEnabledCustomFields().map((field) => (
-                          <TableCell key={field.name} sx={{ whiteSpace: 'nowrap' }}>{checkIn.custom_fields?.[field.name] || ''}</TableCell>
-                        ))}
-                        {net?.topic_of_week_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.topic_response || ''}</TableCell>}
-                        {net?.poll_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.poll_response || ''}</TableCell>}
-                        {hasAnyRelayedBy && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.relayed_by || ''}</TableCell>}
-                        <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatTimeWithDate(checkIn.checked_in_at, user?.prefer_utc || false, net?.started_at)}</TableCell>
-                        {canManage && (
-                          <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                            <IconButton size="small" onClick={() => handleDeleteCheckIn(checkIn.id)}><DeleteIcon fontSize="small" /></IconButton>
-                          </TableCell>
-                        )}
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </TableContainer>
+            {/* ========== CHECK-IN LIST TABLE 2: Mobile View (xs only) ========== */}
+            <CheckInMobileList
+              net={net}
+              filteredCheckIns={filteredCheckIns}
+              netRoles={netRoles}
+              ncsRoles={ncsRoles}
+              owner={owner}
+              user={user}
+              onlineUserIds={onlineUserIds}
+              activeSpeakerId={activeSpeakerId}
+              latestCheckedInAtByCallsign={latestCheckedInAtByCallsign}
+              hasAnyRelayedBy={hasAnyRelayedBy}
+              canManage={canManage}
+              canManageCheckIns={canManageCheckIns}
+              getNcsColor={getNcsColor}
+              getEnabledCustomFields={getEnabledCustomFields}
+              isFieldRequired={isFieldRequired}
+              getStatusIcon={getStatusIcon}
+              getStatusLabel={getStatusLabel}
+              getNcsIcon={getNcsIcon}
+              onStatusChange={handleStatusChange}
+              onRefreshRoles={fetchNetRoles}
+              onRefreshCheckIns={fetchCheckIns}
+              onDeleteCheckIn={handleDeleteCheckIn}
+              onShowProfile={setProfileUserId}
+            />
             
             {/* Legend - desktop only */}
             <Box sx={{ p: 0.5, backgroundColor: 'action.hover', border: 1, borderColor: 'divider', borderTop: 0, borderBottom: 0, flexShrink: 0, display: { xs: 'none', md: 'block' } }}>
