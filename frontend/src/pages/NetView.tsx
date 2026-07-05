@@ -23,8 +23,6 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableContainer,
-  TableHead,
   TableRow,
   TextField,
   IconButton,
@@ -41,14 +39,10 @@ import {
   Tooltip,
   Collapse,
 } from '@mui/material';
-import DeleteIcon from '@mui/icons-material/Delete';
-import PanToolIcon from '@mui/icons-material/PanTool';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutline';
 import { netApi, checkInApi, userApi, netRoleApi, templateApi } from '../services/api';
 import api from '../services/api';
-import { formatTimeWithDate } from '../utils/dateUtils';
 import { useAuth } from '../contexts/AuthContext';
 import { useLocation } from '../contexts/LocationContext';
 import Chat from '../components/Chat';
@@ -61,7 +55,6 @@ import Announcements from '../components/Announcements';
 import ScheduleAnnouncements from '../components/ScheduleAnnouncements';
 import TopicHistory from '../components/TopicHistory';
 import FloatingWindow from '../components/FloatingWindow';
-import UserAvatar from '../components/UserAvatar';
 import UserProfileDialog from '../components/UserProfileDialog';
 
 interface Net {
@@ -2438,164 +2431,48 @@ const NetView: React.FC = () => {
             <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               {/* ========== CHECK-IN LIST TABLE 3: Detached Floating Window ========== */}
               {/* This table displays when check-in list is popped out into a floating window */}
-              <TableContainer sx={{ 
-                flex: 1, 
-                overflow: 'auto', 
-                minHeight: 0,
-                border: 1,
-                borderColor: 'divider',
-                borderRadius: '4px 4px 0 0',
-                '&::-webkit-scrollbar': { width: 8, height: 8 },
-                '&::-webkit-scrollbar-track': { backgroundColor: (thm) => thm.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' },
-                '&::-webkit-scrollbar-thumb': { backgroundColor: (thm) => thm.palette.mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)', borderRadius: 4 },
-              }}>
-                <Table size="small" sx={{ borderCollapse: 'collapse' }}>
-                  <TableHead sx={{ position: 'sticky', top: 0, backgroundColor: 'background.default', zIndex: 1 }}>
-                    <TableRow>
-                      <TableCell sx={{ whiteSpace: 'nowrap' }}>#</TableCell>
-                      <TableCell sx={{ whiteSpace: 'nowrap' }}>Status</TableCell>
-                      <TableCell sx={{ whiteSpace: 'nowrap' }}>Callsign *</TableCell>
-                      {net?.field_config?.name?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Name</TableCell>}
-                      {net?.field_config?.location?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Location</TableCell>}
-                      {net?.field_config?.skywarn_number?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Spotter</TableCell>}
-                      {net?.field_config?.weather_observation?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Weather</TableCell>}
-                      {net?.field_config?.power_source?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Power Src</TableCell>}
-                      {net?.field_config?.power?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Power</TableCell>}
-                      {net?.field_config?.notes?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Notes</TableCell>}
-                      {getEnabledCustomFields().map((field) => (
-                        <TableCell key={field.name} sx={{ whiteSpace: 'nowrap' }}>{field.label}</TableCell>
-                      ))}
-                      {net?.topic_of_week_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Topic</TableCell>}
-                      {net?.poll_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Poll</TableCell>}
-                      {hasAnyRelayedBy && <TableCell sx={{ whiteSpace: 'nowrap' }}>Relayed By</TableCell>}
-                      <TableCell sx={{ whiteSpace: 'nowrap' }}>Time</TableCell>
-                      {canManage && <TableCell sx={{ whiteSpace: 'nowrap' }}>Actions</TableCell>}
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {filteredCheckIns.map((checkIn, index) => {
-                      const isOnActiveFrequency = net.active_frequency_id && checkIn.available_frequencies?.includes(net.active_frequency_id);
-                      // Get NCS color if this user is an NCS
-                      const ncsColor = checkIn.user_id ? getNcsColor(checkIn.user_id) : null;
-                      const isNcsUser = ncsRoles.some((r: any) => r.user_id === checkIn.user_id);
-                      const isPriorRowDetached = (() => {
-                        const latest = latestCheckedInAtByCallsign.get(checkIn.callsign);
-                        return latest !== undefined && checkIn.checked_in_at < latest;
-                      })();
-                      return (
-                        <TableRow 
-                          key={checkIn.id}
-                          sx={{ 
-                            backgroundColor: checkIn.id === activeSpeakerId 
-                              ? (thm) => thm.palette.mode === 'dark' ? thm.palette.success.dark : thm.palette.success.light
-                              : checkIn.status === 'checked_out' ? 'action.disabledBackground' 
-                              : isNcsUser && ncsColor ? ncsColor.bg
-                              : isOnActiveFrequency ? (thm) => thm.palette.mode === 'dark' ? 'rgba(25, 118, 210, 0.15)' : 'rgba(25, 118, 210, 0.08)' : 'inherit',
-                            opacity: isPriorRowDetached ? 0.4 : checkIn.status === 'checked_out' ? 0.6 : 1,
-                            // Add left border for NCS users
-                            ...(isNcsUser && ncsColor && checkIn.status !== 'checked_out' && {
-                              borderLeft: `3px solid ${ncsColor.border}`,
-                            }),
-                          }}
-                        >
-                          <TableCell>{index + 1}</TableCell>
-                          <TableCell>
-                            {(net.status === 'active' || net.status === 'lobby') && checkIn.status !== 'checked_out' && (canManageCheckIns || checkIn.user_id === user?.id) ? (() => {
-                              const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
-                              let selectValue = checkIn.status.toLowerCase();
-                              if (userRole && ['ncs', 'logger'].includes(userRole.role.toLowerCase())) {
-                                selectValue = userRole.role.toLowerCase();
-                              }
-                              const validValues = ['ncs', 'logger', 'checked_in', 'listening', 'relay', 'away', 'has_traffic', 'announcements', 'mobile', 'checked_out'];
-                              if (!validValues.includes(selectValue)) selectValue = 'checked_in';
-                              return (
-                                <Tooltip title={getStatusTooltip(checkIn.status, checkIn)} placement="right" arrow>
-                                  <Select
-                                    size="small"
-                                    value={selectValue}
-                                    onChange={async (e) => { await handleStatusChange(checkIn.id, e.target.value); await fetchNetRoles(); await fetchCheckIns(); }}
-                                    sx={{ minWidth: 50 }}
-                                    disabled={owner?.id === checkIn.user_id}
-                                    MenuProps={{ disableScrollLock: true }}
-                                    renderValue={(v) => v === 'ncs' ? getNcsIcon(checkIn) : v === 'logger' ? '📋' : getStatusIcon(v as string, checkIn)}
-                                  >
-                                    {((canManageCheckIns || selectValue === 'ncs') && <MenuItem value="ncs">{getNcsIcon(checkIn)}  {getStatusLabel('ncs')}</MenuItem>)}
-                                    {((canManageCheckIns || selectValue === 'logger') && <MenuItem value="logger">📋  {getStatusLabel('logger')}</MenuItem>)}
-                                    <MenuItem value="checked_in">{checkIn.is_recheck ? '🔄' : '✅'}  {checkIn.is_recheck ? 'Re-check' : getStatusLabel('checked_in')}</MenuItem>
-                                    <MenuItem value="listening">👂  {getStatusLabel('listening')}</MenuItem>
-                                    <MenuItem value="relay">📡  {getStatusLabel('relay')}</MenuItem>
-                                    <MenuItem value="away">⏸️  {getStatusLabel('away')}</MenuItem>
-                                    <MenuItem value="has_traffic">🚨  {getStatusLabel('has_traffic')}</MenuItem>
-                                    <MenuItem value="announcements">📢  {getStatusLabel('announcements')}</MenuItem>
-                                    <MenuItem value="mobile">🚗  {getStatusLabel('mobile')}</MenuItem>
-                                    {(canManageCheckIns || checkIn.user_id === user?.id) && <MenuItem value="checked_out">👋  {getStatusLabel('checked_out')}</MenuItem>}
-                                  </Select>
-                                </Tooltip>
-                              );
-                            })() : (
-                              <Tooltip title={getStatusTooltip(checkIn.status, checkIn)} placement="right" arrow>
-                                <span style={{ cursor: 'help' }}>{getStatusIcon(checkIn.status, checkIn)}</span>
-                              </Tooltip>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                              <UserAvatar
-                                avatarUrl={checkIn.avatar_url}
-                                callsign={checkIn.callsign}
-                                name={checkIn.name}
-                                size={24}
-                                hasProfile={!!checkIn.user_id}
-                              isOnline={!!(checkIn.user_id && onlineUserIds.includes(checkIn.user_id))}
-                              />
-                              {checkIn.callsign}
-                              {checkIn.relayed_by && (
-                                <Tooltip title={`Relayed by ${checkIn.relayed_by}`} arrow><span>📡</span></Tooltip>
-                              )}
-                            </Box>
-                          </TableCell>
-                          {net?.field_config?.name?.enabled && <TableCell>{checkIn.name}</TableCell>}
-                          {net?.field_config?.location?.enabled && <TableCell>{checkIn.location}</TableCell>}
-                          {net?.field_config?.skywarn_number?.enabled && <TableCell>{checkIn.skywarn_number}</TableCell>}
-                          {net?.field_config?.weather_observation?.enabled && <TableCell>{checkIn.weather_observation}</TableCell>}
-                          {net?.field_config?.power_source?.enabled && <TableCell>{checkIn.power_source}</TableCell>}
-                          {net?.field_config?.power?.enabled && <TableCell>{checkIn.power}</TableCell>}
-                          {net?.field_config?.notes?.enabled && <TableCell>{checkIn.notes}</TableCell>}
-                          {getEnabledCustomFields().map((field) => (
-                            <TableCell key={field.name}>{checkIn.custom_fields?.[field.name] || ''}</TableCell>
-                          ))}
-                          {net?.topic_of_week_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.topic_response || ''}</TableCell>}
-                          {net?.poll_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.poll_response || ''}</TableCell>}
-                          {hasAnyRelayedBy && <TableCell>{checkIn.relayed_by || ''}</TableCell>}
-                          <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatTimeWithDate(checkIn.checked_in_at, user?.prefer_utc || false, net?.started_at)}</TableCell>
-                          {(canManage || checkIn.user_id === user?.id) && (
-                            <TableCell>
-                              {(net.status === 'active' || net.status === 'lobby') && checkIn.status !== 'checked_out' && (
-                                <>
-                                  <IconButton size="small" onClick={() => handleStatusChange(checkIn.id, checkIn.status === 'away' ? 'checked_in' : 'away')} color={checkIn.status === 'away' ? 'warning' : 'default'} title={checkIn.status === 'away' ? 'Return from break' : 'Step away'} sx={{ opacity: checkIn.status === 'away' ? 1 : 0.4 }}>
-                                    <PauseCircleOutlineIcon fontSize="small" />
-                                  </IconButton>
-                                  <IconButton size="small" onClick={() => handleToggleHand(checkIn.id)} color={checkIn.hand_raised ? 'warning' : 'default'} title={checkIn.hand_raised ? 'Lower hand' : 'Raise hand'} sx={{ opacity: checkIn.hand_raised ? 1 : 0.4 }}>
-                                    <PanToolIcon fontSize="small" />
-                                  </IconButton>
-                                </>
-                              )}
-                              {canManage && (
-                              <>
-                              {(net.status === 'active' || net.status === 'lobby') && checkIn.status !== 'checked_out' && (
-                                <IconButton size="small" onClick={() => handleSetActiveSpeaker(checkIn.id)} color={checkIn.id === activeSpeakerId ? 'primary' : 'default'} title="Mark as active speaker">🗣️</IconButton>
-                              )}
-                              <IconButton size="small" onClick={() => handleDeleteCheckIn(checkIn.id)} title="Delete"><DeleteIcon fontSize="small" /></IconButton>
-                              </>
-                              )}
-                            </TableCell>
-                          )}
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+              <CheckInTable
+                detached
+                net={net}
+                filteredCheckIns={filteredCheckIns}
+                netRoles={netRoles}
+                ncsRoles={ncsRoles}
+                owner={owner}
+                user={user}
+                onlineUserIds={onlineUserIds}
+                activeSpeakerId={activeSpeakerId}
+                latestCheckedInAtByCallsign={latestCheckedInAtByCallsign}
+                hasAnyRelayedBy={hasAnyRelayedBy}
+                hideDuplicates={hideDuplicates}
+                canManage={canManage}
+                canManageCheckIns={canManageCheckIns}
+                inlineEditingId={inlineEditingId}
+                inlineEditValues={inlineEditValues}
+                inlineEditFocusField={inlineEditFocusField}
+                inlineEditRowRef={inlineEditRowRef}
+                getNcsColor={getNcsColor}
+                getNcsColorForFrequency={getNcsColorForFrequency}
+                getEnabledCustomFields={getEnabledCustomFields}
+                isFieldRequired={isFieldRequired}
+                formatFrequencyDisplay={formatFrequencyDisplay}
+                getStatusIcon={getStatusIcon}
+                getStatusTooltip={getStatusTooltip}
+                getStatusLabel={getStatusLabel}
+                getNcsIcon={getNcsIcon}
+                setHideDuplicates={setHideDuplicates}
+                handleDetachCheckInList={handleDetachCheckInList}
+                handleStartInlineEdit={handleStartInlineEdit}
+                handleInlineFieldChange={handleInlineFieldChange}
+                handleInlineKeyDown={handleInlineKeyDown}
+                handleInlineBlur={handleInlineBlur}
+                handleStatusChange={handleStatusChange}
+                fetchNetRoles={fetchNetRoles}
+                fetchCheckIns={fetchCheckIns}
+                handleToggleHand={handleToggleHand}
+                handleSetActiveSpeaker={handleSetActiveSpeaker}
+                handleDeleteCheckIn={handleDeleteCheckIn}
+                setProfileUserId={setProfileUserId}
+              />
               
               {/* Legend */}
               <Box sx={{ p: 0.5, backgroundColor: 'action.hover', border: 1, borderColor: 'divider', borderTop: 0, flexShrink: 0 }}>

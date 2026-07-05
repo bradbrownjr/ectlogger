@@ -49,6 +49,11 @@ interface CheckInTableProps {
   hideDuplicates: boolean;
   canManage: boolean;
   canManageCheckIns: boolean | undefined;
+  // When true, render for the popped-out floating window: no mobile-hide media
+  // query, floating-window border radius, and no in-header "detach" icon (the
+  // FloatingWindow chrome already provides re-attach). Everything else — inline
+  // editing, status, actions, coloring — is identical to the attached placement.
+  detached?: boolean;
   inlineEditingId: number | null;
   inlineEditValues: any;
   inlineEditFocusField: string | null;
@@ -91,6 +96,7 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
   hideDuplicates,
   canManage,
   canManageCheckIns,
+  detached = false,
   inlineEditingId,
   inlineEditValues,
   inlineEditFocusField,
@@ -118,30 +124,36 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
   handleDeleteCheckIn,
   setProfileUserId,
 }) => {
+  // Outer container styling differs by placement. Attached: hidden on mobile
+  // (CheckInMobileList shows instead) with a fully-rounded border. Detached:
+  // always visible, fills the floating window, top-rounded border only. Both
+  // preserve the exact styling each placement had before unification.
+  const containerSx = detached
+    ? {
+        flex: 1,
+        overflow: 'auto',
+        minHeight: 0,
+        border: 1,
+        borderColor: 'divider',
+        borderRadius: '4px 4px 0 0',
+        '&::-webkit-scrollbar': { width: 8, height: 8 },
+        '&::-webkit-scrollbar-track': { backgroundColor: (thm: any) => thm.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' },
+        '&::-webkit-scrollbar-thumb': { backgroundColor: (thm: any) => thm.palette.mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)', borderRadius: 4 },
+      }
+    : {
+        flex: { xs: 'none', md: 1 },
+        overflow: 'auto',
+        border: 1,
+        borderColor: 'divider',
+        borderRadius: '4px',
+        minHeight: 0,
+        display: { xs: 'none', md: 'block' },
+        '&::-webkit-scrollbar': { width: 8, height: 8 },
+        '&::-webkit-scrollbar-track': { backgroundColor: (theme: any) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' },
+        '&::-webkit-scrollbar-thumb': { backgroundColor: (theme: any) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)', borderRadius: 4, '&:hover': { backgroundColor: (theme: any) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)' } },
+      };
   return (
-              <TableContainer sx={{ 
-                flex: { xs: 'none', md: 1 }, 
-                overflow: 'auto', 
-                border: 1, 
-                borderColor: 'divider', 
-                borderRadius: '4px', 
-                minHeight: 0, 
-                display: { xs: 'none', md: 'block' },
-                '&::-webkit-scrollbar': {
-                  width: 8,
-                  height: 8,
-                },
-                '&::-webkit-scrollbar-track': {
-                  backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-                },
-                '&::-webkit-scrollbar-thumb': {
-                  backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)',
-                  borderRadius: 4,
-                  '&:hover': {
-                    backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)',
-                  },
-                },
-              }}>
+              <TableContainer sx={containerSx}>
                 {/* ========== CHECK-IN LIST TABLE 1: Desktop Inline (attached) ========== */}
                 {/* This table displays when check-in list is NOT detached, on medium+ screens */}
                 <Table size="small" sx={{ borderCollapse: 'collapse' }}>
@@ -177,14 +189,16 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                         >
                           <GroupIcon sx={{ fontSize: 14 }} />
                         </IconButton>
-                        <IconButton
-                          size="small"
-                          onClick={handleDetachCheckInList}
-                          title="Detach to floating window"
-                          sx={{ p: 0.25 }}
-                        >
-                          <OpenInNewIcon sx={{ fontSize: 14 }} />
-                        </IconButton>
+                        {!detached && (
+                          <IconButton
+                            size="small"
+                            onClick={handleDetachCheckInList}
+                            title="Detach to floating window"
+                            sx={{ p: 0.25 }}
+                          >
+                            <OpenInNewIcon sx={{ fontSize: 14 }} />
+                          </IconButton>
+                        )}
                       </TableCell>
                     </TableRow>
                   </TableHead>
