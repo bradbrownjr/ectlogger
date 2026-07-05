@@ -185,13 +185,15 @@ cd ..
 sleep 3
 
 # Determine how to serve the frontend.
-# In service mode, read two optional settings from backend/.env:
-#   SKIP_VITE=true         -> serve nothing here (an external reverse proxy/Caddy
-#                             serves frontend/dist directly, e.g. production)
-#   VITE_SERVE_MODE=preview -> serve the built frontend/dist via `vite preview`
-#                             (fast, production-like) while still proxying /api and
-#                             /ws to the backend. Requires a prior `npm run build`.
+# In service mode:
+#   SKIP_VITE=true (backend/.env) -> serve nothing here (an external reverse
+#                             proxy/Caddy serves frontend/dist directly, e.g. prod)
+#   VITE_SERVE_MODE=preview (frontend/.env) -> serve the built frontend/dist via
+#                             `vite preview` (fast, production-like) while still
+#                             proxying /api and /ws. Requires a prior `npm run build`.
 # Neither set -> Vite HMR dev server (default for beta/dev environments).
+# NOTE: VITE_SERVE_MODE lives in frontend/.env (Vite's env), NOT backend/.env —
+# the backend's Pydantic Settings forbids unknown keys and would fail to start.
 SKIP_VITE=false
 VITE_SERVE_MODE=dev
 if [ "$SERVICE_MODE" = true ]; then
@@ -200,7 +202,9 @@ if [ "$SERVICE_MODE" = true ]; then
         if [ "$ENV_SKIP_VITE" = "true" ]; then
             SKIP_VITE=true
         fi
-        ENV_VITE_SERVE_MODE=$(grep "^VITE_SERVE_MODE=" backend/.env | cut -d'=' -f2)
+    fi
+    if [ -f "frontend/.env" ]; then
+        ENV_VITE_SERVE_MODE=$(grep "^VITE_SERVE_MODE=" frontend/.env | cut -d'=' -f2)
         if [ -n "$ENV_VITE_SERVE_MODE" ]; then
             VITE_SERVE_MODE=$ENV_VITE_SERVE_MODE
         fi
