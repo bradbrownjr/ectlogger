@@ -3,16 +3,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, nullslast
 from sqlalchemy.exc import IntegrityError
 from typing import List, Optional
-from pathlib import Path
 from io import BytesIO
 from PIL import Image, ImageOps
 from app.database import get_db
 from app.models import User, UserRole, Contact
 from app.schemas import UserResponse, UserUpdate, AdminUserCreate, CallsignLookupResponse, UserDirectoryEntry, UserPopupResponse
 from app.dependencies import get_current_user, get_current_user_optional, get_admin_user
+from app.utils import AVATAR_DIR
 
-AVATAR_DIR = Path(__file__).resolve().parents[2] / "data" / "avatars"
-AVATAR_DIR.mkdir(parents=True, exist_ok=True)
 AVATAR_MAX_BYTES = 2 * 1024 * 1024  # 2 MB
 AVATAR_MAX_DIM = 256
 AVATAR_ALLOWED_MIME = {"image/png", "image/jpeg", "image/webp"}
