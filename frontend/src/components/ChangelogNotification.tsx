@@ -575,7 +575,6 @@ const ChangelogNotification: React.FC = () => {
     <>
       {/* ========== FLOATING ACTION BUTTON ========== */}
       <Fab
-        size="small"
         color="primary"
         onClick={handleOpen}
         sx={{
@@ -608,6 +607,7 @@ const ChangelogNotification: React.FC = () => {
         onClose={handleClose}
         maxWidth="sm"
         fullWidth
+        disableRestoreFocus
         PaperProps={{
           sx: { maxHeight: '80vh' },
         }}
