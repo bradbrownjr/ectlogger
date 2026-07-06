@@ -12,6 +12,7 @@ import NetViewHeader from '../components/netview/NetViewHeader';
 import { getCheckInStatusHelpers } from '../components/netview/checkInStatusHelpers';
 import CheckInMobileList from '../components/netview/CheckInMobileList';
 import CheckInTable from '../components/netview/CheckInTable';
+import NetViewSidePanels from '../components/netview/NetViewSidePanels';
 import { STORAGE_KEYS } from '../utils/localStorageKeys';
 import { displayCallsign } from '../utils/userDisplay';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
@@ -46,8 +47,6 @@ import { netApi, checkInApi, userApi, netRoleApi, templateApi } from '../service
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useLocation } from '../contexts/LocationContext';
-import Chat from '../components/Chat';
-import ActivityLog from '../components/ActivityLog';
 import CheckInMap from '../components/CheckInMap';
 import BulkCheckIn from '../components/BulkCheckIn';
 import SearchCheckIns from '../components/SearchCheckIns';
@@ -2184,64 +2183,26 @@ const NetView: React.FC = () => {
             </Grid>
             )}
             
-            {/* Right column: Chat + Activity Log stacked vertically */}
-            {!chatDetached && (
-            <Grid item xs={12} md={checkInListDetached ? 12 : 4} sx={{ pl: { md: 0.5 }, display: 'flex', flexDirection: 'column', gap: 0.5, minHeight: { xs: 300, md: 0 }, height: { xs: 'auto', md: '100%' } }}>
-              {/* Chat panel */}
-              <Box sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                flex: activityLogMinimized ? 1 : (chatMinimized ? '0 0 auto' : 1),
-                minHeight: chatMinimized ? 'auto' : 0,
-                overflow: 'hidden',
-              }}>
-                <FloatingWindow
-                  title="Chat"
-                  isDetached={false}
-                  onAttach={handleAttachChat}
-                  defaultWidth={450}
-                  defaultHeight={500}
-                  minWidth={300}
-                  minHeight={250}
-                  storageKey="chat"
-                >
-                  <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                    <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-                      <Chat netId={Number(netId)} netStartedAt={net?.started_at} netStatus={net?.status} searchQuery={searchQuery} canManage={canManage} onDetach={handleDetachChat}
-                        chatGracePeriodMinutes={net?.chat_grace_period_minutes ?? undefined} closedAt={net?.closed_at}
-                        onlineUserIds={onlineUserIds} onProfileClick={(id) => setProfileUserId(id)}
-                        minimized={chatMinimized} onMinimize={() => setChatMinimized(true)} onRestore={() => setChatMinimized(false)} />
-                    </Box>
-                  </Box>
-                </FloatingWindow>
-              </Box>
-
-              {/* Activity Log panel */}
-              <Box sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                flex: chatMinimized ? 1 : (activityLogMinimized ? '0 0 auto' : 1),
-                minHeight: activityLogMinimized ? 'auto' : 0,
-                overflow: 'hidden',
-              }}>
-                <FloatingWindow
-                  title="Activity Log"
-                  isDetached={false}
-                  onAttach={() => {}}
-                  defaultWidth={450}
-                  defaultHeight={500}
-                  minWidth={300}
-                  minHeight={250}
-                  storageKey="activityLog"
-                >
-                  <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                    {!activityLogDetached && <ActivityLog netId={Number(netId)}
-                        minimized={activityLogMinimized} onMinimize={() => setActivityLogMinimized(true)} onRestore={() => setActivityLogMinimized(false)} onDetach={() => setActivityLogDetached(true)} />}
-                  </Box>
-                </FloatingWindow>
-              </Box>
-            </Grid>
-            )}
+            <NetViewSidePanels
+              netId={netId}
+              net={net}
+              canManage={canManage}
+              searchQuery={searchQuery}
+              onlineUserIds={onlineUserIds}
+              checkInListDetached={checkInListDetached}
+              chatDetached={chatDetached}
+              activityLogDetached={activityLogDetached}
+              chatMinimized={chatMinimized}
+              activityLogMinimized={activityLogMinimized}
+              setProfileUserId={setProfileUserId}
+              setChatMinimized={setChatMinimized}
+              setActivityLogMinimized={setActivityLogMinimized}
+              setActivityLogDetached={setActivityLogDetached}
+              handleAttachChat={handleAttachChat}
+              handleDetachChat={handleDetachChat}
+              handleAttachActivityLog={handleAttachActivityLog}
+              handleDetachActivityLog={handleDetachActivityLog}
+            />
           </Grid>
         )}
 
@@ -2403,41 +2364,6 @@ const NetView: React.FC = () => {
           </FloatingWindow>
         )}
 
-        {/* Floating Chat when detached */}
-        {chatDetached && (net.status === 'active' || net.status === 'lobby' || net.status === 'closed' || net.status === 'archived') && (
-          <FloatingWindow
-            title="Chat"
-            isDetached={true}
-            onDetach={handleDetachChat}
-            onAttach={handleAttachChat}
-            defaultWidth={450}
-            defaultHeight={500}
-            minWidth={300}
-            minHeight={250}
-            storageKey="chat"
-          >
-            <Chat netId={Number(netId)} netStartedAt={net?.started_at} netStatus={net?.status} searchQuery={searchQuery} canManage={canManage}
-              chatGracePeriodMinutes={net?.chat_grace_period_minutes ?? undefined} closedAt={net?.closed_at}
-              onlineUserIds={onlineUserIds} onProfileClick={(id) => setProfileUserId(id)} />
-          </FloatingWindow>
-        )}
-
-        {/* Floating Activity Log when detached */}
-        {activityLogDetached && (net.status === 'active' || net.status === 'lobby' || net.status === 'closed' || net.status === 'archived') && (
-          <FloatingWindow
-            title="Activity Log"
-            isDetached={true}
-            onDetach={handleDetachActivityLog}
-            onAttach={handleAttachActivityLog}
-            defaultWidth={450}
-            defaultHeight={500}
-            minWidth={300}
-            minHeight={250}
-            storageKey="activityLog"
-          >
-            <ActivityLog netId={Number(netId)} />
-          </FloatingWindow>
-        )}
       </Paper>
 
       {/* Close Net Confirmation Dialog */}
