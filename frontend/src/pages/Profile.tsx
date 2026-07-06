@@ -1,8 +1,6 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { displayCallsign } from '../utils/userDisplay';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import Cropper from 'react-easy-crop';
-import type { Area } from 'react-easy-crop';
 import {
   Container,
   Paper,
@@ -28,11 +26,6 @@ import {
   TableRow,
   Tabs,
   Tab,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Slider,
   IconButton,
   Tooltip,
 } from '@mui/material';
@@ -43,13 +36,13 @@ import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import PersonIcon from '@mui/icons-material/Person';
 import SettingsIcon from '@mui/icons-material/Settings';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
-import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
 import CloseIcon from '@mui/icons-material/Close';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { useAuth } from '../contexts/AuthContext';
-import api, { statisticsApi } from '../services/api';
+import api from '../services/api';
 import { exportElementToPdf } from '../utils/pdfExport';
-import UserAvatar from '../components/UserAvatar';
+import { useUserStats } from '../hooks/useUserStats';
+import ProfileAvatarSection from '../components/profile/ProfileAvatarSection';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -72,20 +65,6 @@ function TabPanel(props: TabPanelProps) {
   );
 }
 
-async function getCroppedImg(imageSrc: string, pixelCrop: Area): Promise<Blob> {
-  const image = new Image();
-  image.src = imageSrc;
-  await new Promise<void>((resolve) => { image.onload = () => resolve(); });
-  const canvas = document.createElement('canvas');
-  canvas.width = pixelCrop.width;
-  canvas.height = pixelCrop.height;
-  const ctx = canvas.getContext('2d')!;
-  ctx.drawImage(image, pixelCrop.x, pixelCrop.y, pixelCrop.width, pixelCrop.height, 0, 0, pixelCrop.width, pixelCrop.height);
-  return new Promise((resolve, reject) => {
-    canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('Canvas is empty')), 'image/jpeg', 0.95);
-  });
-}
-
 const Profile: React.FC = () => {
   const { user, login } = useAuth();
   const navigate = useNavigate();
@@ -94,8 +73,7 @@ const Profile: React.FC = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [newCallsign, setNewCallsign] = useState('');
-  const [userStats, setUserStats] = useState<any>(null);
-  const [statsLoading, setStatsLoading] = useState(true);
+  const { userStats, statsLoading } = useUserStats();
   const [tabValue, setTabValue] = useState(0);
   const [netDrillDown, setNetDrillDown] = useState<{ title: string; nets: any[] } | null>(null);
   const [activeStatCard, setActiveStatCard] = useState<'total_check_ins' | 'nets_joined' | 'as_ncs' | 'last_30_days' | null>(null);
@@ -108,9 +86,6 @@ const Profile: React.FC = () => {
     setTabValue(isNaN(tab) ? 0 : tab);
   }, [searchParams]);
   const [exportingPdf, setExportingPdf] = useState(false);
-  const [avatarUploading, setAvatarUploading] = useState(false);
-  const [avatarError, setAvatarError] = useState<string | null>(null);
-  const avatarInputRef = React.useRef<HTMLInputElement>(null);
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
 
@@ -131,13 +106,6 @@ const Profile: React.FC = () => {
     setTabValue(next);
     setSearchParams(next > 0 ? { tab: String(next) } : {});
   };
-
-  // Crop dialog state
-  const [cropDialogOpen, setCropDialogOpen] = useState(false);
-  const [imageSrc, setImageSrc] = useState<string | null>(null);
-  const [crop, setCrop] = useState({ x: 0, y: 0 });
-  const [zoom, setZoom] = useState(1);
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
 
   const handleStatCardClick = (card: typeof activeStatCard) => {
     setActiveStatCard(prev => (prev === card ? null : card));
@@ -222,63 +190,6 @@ const Profile: React.FC = () => {
     }
   };
 
-  // File selected → read as data URL and open crop dialog
-  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (avatarInputRef.current) avatarInputRef.current.value = '';
-    const reader = new FileReader();
-    reader.onload = () => {
-      setImageSrc(reader.result as string);
-      setCrop({ x: 0, y: 0 });
-      setZoom(1);
-      setCroppedAreaPixels(null);
-      setCropDialogOpen(true);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const onCropComplete = useCallback((_: Area, pixels: Area) => {
-    setCroppedAreaPixels(pixels);
-  }, []);
-
-  // Crop confirmed → extract pixels via canvas → upload
-  const handleCropConfirm = async () => {
-    if (!imageSrc || !croppedAreaPixels) return;
-    setAvatarError(null);
-    setAvatarUploading(true);
-    setCropDialogOpen(false);
-    try {
-      const blob = await getCroppedImg(imageSrc, croppedAreaPixels);
-      const form = new FormData();
-      form.append('file', blob, 'avatar.jpg');
-      await api.post('/users/me/avatar', form, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      const token = localStorage.getItem('token');
-      if (token) await login(token);
-    } catch (err: any) {
-      setAvatarError(err.response?.data?.detail || 'Upload failed.');
-    } finally {
-      setAvatarUploading(false);
-      setImageSrc(null);
-    }
-  };
-
-  const handleAvatarDelete = async () => {
-    setAvatarError(null);
-    setAvatarUploading(true);
-    try {
-      await api.delete('/users/me/avatar');
-      const token = localStorage.getItem('token');
-      if (token) await login(token);
-    } catch (_err: any) {
-      setAvatarError('Failed to remove photo.');
-    } finally {
-      setAvatarUploading(false);
-    }
-  };
-  
   const [formData, setFormData] = useState({
     name: user?.name || '',
     callsign: user?.callsign || '',
@@ -296,20 +207,6 @@ const Profile: React.FC = () => {
     notify_ics309: user?.notify_ics309 ?? false,
     notify_whats_new: user?.notify_whats_new ?? false,
   });
-
-  useEffect(() => {
-    const fetchUserStats = async () => {
-      try {
-        const response = await statisticsApi.getUserStats();
-        setUserStats(response.data);
-      } catch (err) {
-        console.error('Failed to fetch user stats:', err);
-      } finally {
-        setStatsLoading(false);
-      }
-    };
-    fetchUserStats();
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -381,85 +278,7 @@ const Profile: React.FC = () => {
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           {success && <Alert severity="success" sx={{ mb: 2 }}>Profile updated successfully!</Alert>}
 
-          {/* Profile photo section */}
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 3, p: 3, border: 1, borderColor: 'divider', borderRadius: 1 }}>
-            <UserAvatar avatarUrl={(user as any)?.avatar_url} callsign={user?.callsign} name={user?.name} size={120} />
-            <Typography variant="subtitle2" sx={{ mt: 2 }}>Profile Photo</Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2, textAlign: 'center' }}>
-              {(user as any)?.avatar_url?.startsWith('/api/avatars/')
-                ? 'Using uploaded photo'
-                : 'Using Gravatar if available, otherwise your initials'}
-            </Typography>
-            {avatarError && <Alert severity="error" sx={{ mb: 1, py: 0, width: '100%' }}>{avatarError}</Alert>}
-            <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', justifyContent: 'center', gap: 1 }}>
-              <input
-                ref={avatarInputRef}
-                type="file"
-                accept="image/png,image/jpeg,image/webp"
-                style={{ display: 'none' }}
-                onChange={handleAvatarUpload}
-              />
-              <Button
-                variant="outlined"
-                startIcon={avatarUploading ? <CircularProgress size={16} /> : <PhotoCameraIcon />}
-                onClick={() => avatarInputRef.current?.click()}
-                disabled={avatarUploading}
-              >
-                {(user as any)?.avatar_url?.startsWith('/api/avatars/') ? 'Replace Photo' : 'Upload Photo'}
-              </Button>
-              {(user as any)?.avatar_url?.startsWith('/api/avatars/') && (
-                <Button
-                  variant="outlined"
-                  color="error"
-                  startIcon={<DeleteIcon />}
-                  onClick={handleAvatarDelete}
-                  disabled={avatarUploading}
-                >
-                  Remove
-                </Button>
-              )}
-            </Stack>
-          </Box>
-
-          {/* ========== CROP DIALOG ========== */}
-          <Dialog open={cropDialogOpen} onClose={() => setCropDialogOpen(false)} maxWidth="sm" fullWidth>
-            <DialogTitle>Crop Profile Photo</DialogTitle>
-            <DialogContent sx={{ p: 0 }}>
-              {imageSrc && (
-                <>
-                  <Box sx={{ position: 'relative', width: '100%', height: 360, bgcolor: 'black' }}>
-                    <Cropper
-                      image={imageSrc}
-                      crop={crop}
-                      zoom={zoom}
-                      aspect={1}
-                      cropShape="round"
-                      showGrid={false}
-                      onCropChange={setCrop}
-                      onZoomChange={setZoom}
-                      onCropComplete={onCropComplete}
-                    />
-                  </Box>
-                  <Box sx={{ px: 3, pt: 2, pb: 1 }}>
-                    <Typography variant="body2" color="text.secondary" gutterBottom>Zoom</Typography>
-                    <Slider
-                      value={zoom}
-                      min={1}
-                      max={3}
-                      step={0.05}
-                      onChange={(_, val) => setZoom(val as number)}
-                    />
-                  </Box>
-                </>
-              )}
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={() => { setCropDialogOpen(false); setImageSrc(null); }}>Cancel</Button>
-              <Button variant="contained" onClick={handleCropConfirm} disabled={!croppedAreaPixels}>
-                Crop &amp; Upload
-              </Button>
-            </DialogActions>
-          </Dialog>
+          <ProfileAvatarSection />
 
           <Box component="form" onSubmit={handleSubmit}>
             <TextField
