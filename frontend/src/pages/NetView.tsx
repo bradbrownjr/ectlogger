@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import useDialog from '../hooks/useDialog';
 import useLocalStorage from '../hooks/useLocalStorage';
 import { useNetWebSocket } from '../hooks/useNetWebSocket';
+import { useNetData } from '../hooks/useNetData';
 import CsvImportDialog from '../components/netview/CsvImportDialog';
 import ArchiveDialogs from '../components/netview/ArchiveDialogs';
 import RoleAssignmentDialog from '../components/netview/RoleAssignmentDialog';
@@ -57,40 +58,6 @@ import TopicHistory from '../components/TopicHistory';
 import FloatingWindow from '../components/FloatingWindow';
 import UserProfileDialog from '../components/UserProfileDialog';
 
-interface Net {
-  id: number;
-  name: string;
-  description: string;
-  info_url?: string;
-  stream_url?: string;
-  script?: string;
-  announcements?: string;
-  status: string;
-  owner_id: number;
-  template_id?: number;  // ID of the template this net was created from (for scheduled nets)
-  active_frequency_id?: number;
-  ics309_enabled?: boolean;
-  mobile_priority_sort?: boolean;
-  chat_grace_period_minutes?: number | null;
-  // Topic of the Week / Poll features
-  topic_of_week_enabled?: boolean;
-  topic_of_week_prompt?: string;
-  poll_enabled?: boolean;
-  poll_question?: string;
-  field_config?: {
-    [key: string]: {
-      enabled: boolean;
-      required: boolean;
-    };
-  };
-  frequencies: Frequency[];
-  scheduled_start_time?: string;  // Scheduled start time for countdown timer
-  started_at?: string;
-  closed_at?: string;
-  created_at: string;
-  can_manage?: boolean;  // Server-computed; true for owner, admin, NCS, and active template staff
-}
-
 interface Frequency {
   id: number;
   frequency?: string;
@@ -139,19 +106,6 @@ interface FieldDefinition {
   sort_order: number;
 }
 
-interface NetRole {
-  id: number;
-  user_id: number;
-  email: string;
-  name?: string;
-  callsign?: string;
-  avatar_url?: string | null;
-  role: string;
-  active_frequency_id?: number;
-  assigned_at: string;
-  is_active?: boolean;
-}
-
 // NCS color palette - works in both light and dark modes
 const NCS_COLORS = [
   { bg: 'rgba(244, 67, 54, 0.15)', border: '#f44336', text: '#f44336' },   // Red
@@ -166,12 +120,28 @@ const NCS_COLORS = [
 const NetView: React.FC = () => {
   const { netId } = useParams<{ netId: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [net, setNet] = useState<Net | null>(null);
-  const [checkIns, setCheckIns] = useState<CheckIn[]>([]);
+  const {
+    net, setNet,
+    checkIns, setCheckIns,
+    netRoles,
+    netStats,
+    onlineUserIds,
+    fieldDefinitions,
+    allUsers,
+    owner,
+    pollResponses,
+    pollResults,
+    topicResponses,
+    fetchNet,
+    fetchCheckIns,
+    fetchNetRoles,
+    fetchNetStats,
+    fetchAllUsers,
+    fetchPollResponses,
+    fetchPollResults,
+    fetchTopicResponses,
+  } = useNetData(netId);
   const roleDialog = useDialog();
-  const [netRoles, setNetRoles] = useState<NetRole[]>([]);
-  const [allUsers, setAllUsers] = useState<any[]>([]);
-  const [owner, setOwner] = useState<any>(null);
   const [selectedUserId, setSelectedUserId] = useState<number | ''>('');
   const [selectedRole, setSelectedRole] = useState<string>('NCS');
   const [activeSpeakerId, setActiveSpeakerId] = useState<number | null>(null);
@@ -181,10 +151,7 @@ const NetView: React.FC = () => {
   // someone else's net don't need the form expanded by default; they can open
   // it on demand when they want to log a check-in.
   const [mobileCheckInExpanded, setMobileCheckInExpanded] = useState(false);
-  const [onlineUserIds, setOnlineUserIds] = useState<number[]>([]);
-  const [netStats, setNetStats] = useState<{total_check_ins: number, unique_stations: number, recheck_count: number, checked_out_count: number, online_count: number, guest_count: number} | null>(null);
   const frequencyDialog = useDialog();
-  const [fieldDefinitions, setFieldDefinitions] = useState<FieldDefinition[]>([]);
   const map = useDialog();
   const bulkCheckIn = useDialog();
   const [hideDuplicates, setHideDuplicates] = useLocalStorage<boolean>(STORAGE_KEYS.CHECKIN_HIDE_DUPLICATES, false);
@@ -257,48 +224,6 @@ const NetView: React.FC = () => {
     poll_response: '',
     status: 'checked_in',
   });
-  
-  // Poll autocomplete responses
-  const [pollResponses, setPollResponses] = useState<string[]>([]);
-  
-  // Poll results and topic responses for display
-  const [pollResults, setPollResults] = useState<{ question: string | null, results: { response: string, count: number }[] }>({ question: null, results: [] });
-  const [topicResponses, setTopicResponses] = useState<{ prompt: string | null, responses: { callsign: string, name: string, response: string }[] }>({ prompt: null, responses: [] });
-
-  useEffect(() => {
-    if (netId) {
-      fetchNet();
-      fetchCheckIns();
-      fetchNetRoles();
-      fetchNetStats();
-      fetchFieldDefinitions();
-      // The live message socket is owned by useNetWebSocket (below).
-
-      // Poll stats every 10 seconds to update online users
-      const statsInterval = setInterval(fetchNetStats, 10000);
-
-      return () => {
-        clearInterval(statsInterval);
-      };
-    }
-  }, [netId]);
-
-  useEffect(() => {
-    if (net?.owner_id) {
-      fetchOwner();
-    }
-    // Fetch poll responses if poll is enabled
-    if (net?.poll_enabled) {
-      fetchPollResponses();
-    }
-    // Fetch poll results and topic responses for summary display (any status, shown for closed/archived)
-    if (net?.poll_enabled) {
-      fetchPollResults();
-    }
-    if (net?.topic_of_week_enabled) {
-      fetchTopicResponses();
-    }
-  }, [net?.owner_id, net?.poll_enabled, net?.topic_of_week_enabled]);
 
   // Panel states are persisted automatically by useLocalStorage; no explicit persist effects needed.
 
@@ -501,101 +426,6 @@ const NetView: React.FC = () => {
   const handleDetachActivityLog = () => setActivityLogDetached(true);
   const handleAttachActivityLog = () => setActivityLogDetached(false);
 
-
-  const fetchNet = async () => {
-    try {
-      const response = await netApi.get(Number(netId));
-      setNet(response.data);
-    } catch (error) {
-      console.error('Failed to fetch net:', error);
-    }
-  };
-
-  const fetchFieldDefinitions = async () => {
-    try {
-      const response = await api.get('/settings/fields');
-      setFieldDefinitions(response.data);
-    } catch (error) {
-      console.error('Failed to fetch field definitions:', error);
-    }
-  };
-  
-  const fetchPollResponses = async () => {
-    if (!netId) return;
-    try {
-      const response = await api.get(`/nets/${netId}/poll-responses`);
-      setPollResponses(response.data);
-    } catch (error) {
-      console.error('Failed to fetch poll responses:', error);
-    }
-  };
-  
-  const fetchPollResults = async () => {
-    if (!netId) return;
-    try {
-      const response = await api.get(`/nets/${netId}/poll-results`);
-      setPollResults(response.data);
-    } catch (error) {
-      console.error('Failed to fetch poll results:', error);
-    }
-  };
-  
-  const fetchTopicResponses = async () => {
-    if (!netId) return;
-    try {
-      const response = await api.get(`/nets/${netId}/topic-responses`);
-      setTopicResponses(response.data);
-    } catch (error) {
-      console.error('Failed to fetch topic responses:', error);
-    }
-  };
-
-  const fetchCheckIns = async () => {
-    try {
-      const response = await checkInApi.list(Number(netId));
-      setCheckIns(response.data);
-    } catch (error) {
-      console.error('Failed to fetch check-ins:', error);
-    }
-  };
-
-  const fetchNetStats = async () => {
-    try {
-      const response = await api.get(`/nets/${netId}/stats`);
-      setNetStats(response.data);
-      setOnlineUserIds(response.data.online_user_ids || []);
-    } catch (error) {
-      console.error('Failed to fetch net stats:', error);
-    }
-  };
-
-  const fetchNetRoles = async () => {
-    try {
-      const response = await api.get(`/nets/${netId}/roles`);
-      setNetRoles(response.data);
-    } catch (error) {
-      console.error('Failed to fetch net roles:', error);
-    }
-  };
-
-  const fetchAllUsers = async () => {
-    try {
-      const response = await api.get('/users');
-      setAllUsers(response.data);
-    } catch (error) {
-      console.error('Failed to fetch users:', error);
-    }
-  };
-
-  const fetchOwner = async () => {
-    if (!net) return;
-    try {
-      const response = await api.get(`/users/${net.owner_id}`);
-      setOwner(response.data);
-    } catch (error) {
-      console.error('Failed to fetch owner:', error);
-    }
-  };
 
   // Live message socket (connection, reconnect, message routing, cleanup).
   // Returns the socket so send-sites below can broadcast active speaker /
@@ -919,9 +749,9 @@ const NetView: React.FC = () => {
   };
 
   // Get custom fields (non-builtin) that are enabled for this net
-  const getEnabledCustomFields = () => {
-    return fieldDefinitions.filter((field: FieldDefinition) => 
-      !field.is_builtin && 
+  const getEnabledCustomFields = (): FieldDefinition[] => {
+    return (fieldDefinitions as FieldDefinition[]).filter((field: FieldDefinition) =>
+      !field.is_builtin &&
       net?.field_config?.[field.name]?.enabled
     );
   };
@@ -2718,7 +2548,7 @@ const NetView: React.FC = () => {
         netId={Number(netId)}
         templateId={net?.template_id}
         canEdit={canManage && !!net?.template_id}
-        onSaved={(newScript) => setNet(prev => prev ? { ...prev, script: newScript } : prev)}
+        onSaved={(newScript) => setNet((prev: any) => prev ? { ...prev, script: newScript } : prev)}
       />
 
       {/* Per-net notes viewer */}
@@ -2730,7 +2560,7 @@ const NetView: React.FC = () => {
         netId={Number(netId)}
         templateId={net?.template_id}
         canEdit={canManage && !!net?.template_id}
-        onSaved={(newAnnouncements) => setNet(prev => prev ? { ...prev, announcements: newAnnouncements } : prev)}
+        onSaved={(newAnnouncements) => setNet((prev: any) => prev ? { ...prev, announcements: newAnnouncements } : prev)}
       />
 
       {/* Schedule announcements viewer */}
