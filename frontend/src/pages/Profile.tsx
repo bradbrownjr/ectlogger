@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { displayCallsign } from '../utils/userDisplay';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Container,
@@ -14,35 +13,18 @@ import {
   FormControlLabel,
   Switch,
   Divider,
-  Card,
-  CardContent,
-  Grid,
-  CircularProgress,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Tabs,
   Tab,
-  IconButton,
-  Tooltip,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import BarChartIcon from '@mui/icons-material/BarChart';
-import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import PersonIcon from '@mui/icons-material/Person';
 import SettingsIcon from '@mui/icons-material/Settings';
-import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
-import CloseIcon from '@mui/icons-material/Close';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
-import { exportElementToPdf } from '../utils/pdfExport';
-import { useUserStats } from '../hooks/useUserStats';
 import ProfileAvatarSection from '../components/profile/ProfileAvatarSection';
+import ActivityTab from '../components/profile/ActivityTab';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -73,19 +55,12 @@ const Profile: React.FC = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [newCallsign, setNewCallsign] = useState('');
-  const { userStats, statsLoading } = useUserStats();
   const [tabValue, setTabValue] = useState(0);
-  const [netDrillDown, setNetDrillDown] = useState<{ title: string; nets: any[] } | null>(null);
-  const [activeStatCard, setActiveStatCard] = useState<'total_check_ins' | 'nets_joined' | 'as_ncs' | 'last_30_days' | null>(null);
-  const [drillDownPage, setDrillDownPage] = useState(0);
-  const [netDrillDownPage, setNetDrillDownPage] = useState(0);
-  const DRILL_PAGE_SIZE = 25;
 
   useEffect(() => {
     const tab = parseInt(searchParams.get('tab') || '0', 10);
     setTabValue(isNaN(tab) ? 0 : tab);
   }, [searchParams]);
-  const [exportingPdf, setExportingPdf] = useState(false);
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
 
@@ -105,89 +80,6 @@ const Profile: React.FC = () => {
     const next = deltaX < 0 ? Math.min(tabValue + 1, 2) : Math.max(tabValue - 1, 0);
     setTabValue(next);
     setSearchParams(next > 0 ? { tab: String(next) } : {});
-  };
-
-  const handleStatCardClick = (card: typeof activeStatCard) => {
-    setActiveStatCard(prev => (prev === card ? null : card));
-    setDrillDownPage(0);
-  };
-
-  const getStatCardDrillDown = (): { label: string; rows: any[]; columns: string[] } | null => {
-    if (!activeStatCard || !userStats) return null;
-    const participated: any[] = userStats.nets_participated_list ?? [];
-    if (activeStatCard === 'total_check_ins') {
-      return {
-        label: 'All nets by check-in count',
-        rows: [...participated].sort((a, b) => b.check_in_count - a.check_in_count),
-        columns: ['net', 'date', 'check_ins'],
-      };
-    }
-    if (activeStatCard === 'nets_joined') {
-      return {
-        label: 'All nets attended, most recent first',
-        rows: [...participated].sort(
-          (a, b) => new Date(b.last_check_in).getTime() - new Date(a.last_check_in).getTime()
-        ),
-        columns: ['net', 'date', 'check_ins'],
-      };
-    }
-    if (activeStatCard === 'as_ncs') {
-      const ncsList: any[] = userStats.nets_as_ncs_list ?? [];
-      return {
-        label: 'Nets you ran as NCS',
-        rows: [...ncsList].sort(
-          (a, b) => new Date(b.started_at ?? b.closed_at ?? 0).getTime() - new Date(a.started_at ?? a.closed_at ?? 0).getTime()
-        ),
-        columns: ['net', 'date'],
-      };
-    }
-    if (activeStatCard === 'last_30_days') {
-      const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
-      return {
-        label: 'Nets attended in the last 30 days',
-        rows: [...participated]
-          .filter(p => new Date(p.last_check_in).getTime() >= cutoff)
-          .sort(
-            (a, b) => new Date(b.last_check_in).getTime() - new Date(a.last_check_in).getTime()
-          ),
-        columns: ['net', 'date', 'check_ins'],
-      };
-    }
-    return null;
-  };
-
-  const handleFavoriteNetClick = (net: any) => {
-    if (netDrillDown?.title === net.net_name) {
-      setNetDrillDown(null);
-      return;
-    }
-    const sessions = ((userStats?.nets_participated_list as any[]) || [])
-      .filter((p: any) =>
-        net.template_id != null
-          ? p.template_id === net.template_id
-          : p.net_name === net.net_name && p.template_id == null
-      )
-      .sort((a: any, b: any) =>
-        new Date(b.last_check_in).getTime() - new Date(a.last_check_in).getTime()
-      );
-    setNetDrillDown({ title: net.net_name, nets: sessions });
-    setNetDrillDownPage(0);
-  };
-
-  // Handle PDF export for activity stats
-  const handleExportActivityPdf = async () => {
-    setExportingPdf(true);
-    try {
-      const callsign = displayCallsign(user) || 'User';
-      await exportElementToPdf('activity-stats-content', {
-        filename: `${callsign.replace(/[^a-zA-Z0-9]/g, '_')}_Activity_Stats`,
-        orientation: 'landscape',
-      });
-    } catch (err) {
-      console.error('Failed to export PDF:', err);
-    } finally {
-      setExportingPdf(false);
-    }
   };
 
   const [formData, setFormData] = useState({
@@ -638,256 +530,7 @@ const Profile: React.FC = () => {
 
         {/* ========== Activity Tab ========== */}
         <TabPanel value={tabValue} index={2}>
-          {statsLoading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-              <CircularProgress />
-            </Box>
-          ) : userStats ? (
-            <>
-              {/* PDF Export Button */}
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-                <Button
-                  variant="outlined"
-                  onClick={handleExportActivityPdf}
-                  disabled={exportingPdf}
-                  startIcon={exportingPdf ? <CircularProgress size={16} /> : <PictureAsPdfIcon />}
-                >
-                  {exportingPdf ? 'Exporting...' : 'PDF'}
-                </Button>
-              </Box>
-              
-              {/* Content wrapper for PDF export */}
-              <Box id="activity-stats-content">
-                <Grid container spacing={2} sx={{ mb: 1 }}>
-                  {([
-                    { key: 'total_check_ins', value: userStats.total_check_ins, label: 'Total Check-ins' },
-                    { key: 'nets_joined', value: userStats.nets_participated, label: 'Nets Joined' },
-                    { key: 'as_ncs', value: userStats.nets_as_ncs, label: 'As NCS' },
-                    { key: 'last_30_days', value: userStats.last_30_days_check_ins, label: 'Last 30 Days' },
-                  ] as const).map(({ key, value, label }) => (
-                    <Grid item xs={6} sm={3} key={key}>
-                      <Card
-                        variant="outlined"
-                        onClick={() => handleStatCardClick(key)}
-                        sx={{
-                          cursor: 'pointer',
-                          borderColor: activeStatCard === key ? 'primary.main' : undefined,
-                          borderWidth: activeStatCard === key ? 2 : 1,
-                          transition: 'border-color 0.15s',
-                          '&:hover': { borderColor: 'primary.light' },
-                        }}
-                      >
-                        <CardContent sx={{ textAlign: 'center' }}>
-                          <Typography variant="h4" color="primary">{value}</Typography>
-                          <Typography variant="body2" color="text.secondary">{label}</Typography>
-                        </CardContent>
-                      </Card>
-                    </Grid>
-                  ))}
-                </Grid>
-
-                {(() => {
-                  const dd = getStatCardDrillDown();
-                  if (!dd) return null;
-                  return (
-                    <Box sx={{ mb: 3, pl: 1, borderLeft: 3, borderColor: 'primary.main' }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, mt: 1 }}>
-                        <Tooltip title="Close">
-                          <IconButton size="small" onClick={() => setActiveStatCard(null)}>
-                            <CloseIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                        <Typography variant="subtitle2">{dd.label}</Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          ({dd.rows.length} net{dd.rows.length !== 1 ? 's' : ''})
-                        </Typography>
-                      </Box>
-                      {dd.rows.length === 0 ? (
-                        <Typography variant="body2" color="text.secondary" sx={{ pl: 1 }}>
-                          No records found.
-                        </Typography>
-                      ) : (
-                        <TableContainer sx={{ overflowX: 'auto' }}>
-                          <Table size="small">
-                            <TableHead>
-                              <TableRow>
-                                <TableCell>Net Name</TableCell>
-                                <TableCell>Date</TableCell>
-                                {dd.columns.includes('check_ins') && (
-                                  <TableCell align="right">Check-ins</TableCell>
-                                )}
-                                <TableCell align="right">View</TableCell>
-                              </TableRow>
-                            </TableHead>
-                            <TableBody>
-                              {dd.rows.slice(drillDownPage * DRILL_PAGE_SIZE, (drillDownPage + 1) * DRILL_PAGE_SIZE).map((row: any) => {
-                                const dateVal = row.started_at ?? row.last_check_in;
-                                return (
-                                  <TableRow key={row.net_id} hover>
-                                    <TableCell>{row.net_name}</TableCell>
-                                    <TableCell>
-                                      {dateVal
-                                        ? new Date(dateVal).toLocaleDateString('en-US', {
-                                            year: 'numeric', month: 'short', day: 'numeric',
-                                          })
-                                        : '—'}
-                                    </TableCell>
-                                    {dd.columns.includes('check_ins') && (
-                                      <TableCell align="right">{row.check_in_count}</TableCell>
-                                    )}
-                                    <TableCell align="right">
-                                      <Tooltip title="View net">
-                                        <IconButton
-                                          size="small"
-                                          onClick={() => navigate(`/nets/${row.net_id}`)}
-                                        >
-                                          <OpenInNewIcon fontSize="small" />
-                                        </IconButton>
-                                      </Tooltip>
-                                    </TableCell>
-                                  </TableRow>
-                                );
-                              })}
-                            </TableBody>
-                          </Table>
-                        </TableContainer>
-                      )}
-                      {dd.rows.length > DRILL_PAGE_SIZE && (
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1, px: 0.5 }}>
-                          <Button size="small" disabled={drillDownPage === 0} onClick={() => setDrillDownPage(p => p - 1)}>Previous</Button>
-                          <Typography variant="caption" color="text.secondary">
-                            {drillDownPage * DRILL_PAGE_SIZE + 1}–{Math.min((drillDownPage + 1) * DRILL_PAGE_SIZE, dd.rows.length)} of {dd.rows.length}
-                          </Typography>
-                          <Button size="small" disabled={(drillDownPage + 1) * DRILL_PAGE_SIZE >= dd.rows.length} onClick={() => setDrillDownPage(p => p + 1)}>Next</Button>
-                        </Box>
-                      )}
-                    </Box>
-                  );
-                })()}
-
-              {userStats.frequent_nets && userStats.frequent_nets.length > 0 && (
-                <>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                    <EmojiEventsIcon color="warning" />
-                    <Typography variant="h6">Your Favorite Nets</Typography>
-                  </Box>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                    Nets you check into the most.
-                  </Typography>
-                  <TableContainer>
-                    <Table size="small">
-                      <TableHead>
-                        <TableRow>
-                          <TableCell>Net Name</TableCell>
-                          <TableCell align="right">Check-ins</TableCell>
-                          <TableCell align="right">Participation Rate</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {userStats.frequent_nets.slice(0, 5).map((net: any, index: number) => (
-                          <React.Fragment key={net.net_name}>
-                            <TableRow
-                              hover
-                              sx={{
-                                backgroundColor: index === 0 ? 'rgba(255, 215, 0, 0.1)' : 'inherit',
-                                cursor: 'pointer',
-                              }}
-                              onClick={() => handleFavoriteNetClick(net)}
-                            >
-                              <TableCell>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                  {index === 0 && <EmojiEventsIcon sx={{ color: 'gold', fontSize: 20 }} />}
-                                  {index === 1 && <EmojiEventsIcon sx={{ color: 'silver', fontSize: 20 }} />}
-                                  {index === 2 && <EmojiEventsIcon sx={{ color: '#CD7F32', fontSize: 20 }} />}
-                                  <Typography
-                                    component="span"
-                                    sx={{
-                                      color: 'primary.main',
-                                      '&:hover': { textDecoration: 'underline' },
-                                      fontWeight: netDrillDown?.title === net.net_name ? 'bold' : 'normal',
-                                    }}
-                                  >
-                                    {net.net_name}
-                                  </Typography>
-                                </Box>
-                              </TableCell>
-                              <TableCell align="right">{net.check_ins}</TableCell>
-                              <TableCell align="right">
-                                {net.participation_rate ? `${(net.participation_rate * 100).toFixed(0)}%` : '-'}
-                              </TableCell>
-                            </TableRow>
-                            {netDrillDown && netDrillDown.title === net.net_name && (
-                              <TableRow>
-                                <TableCell colSpan={3} sx={{ p: 0, bgcolor: 'action.hover' }}>
-                                  <Box sx={{ px: 2, py: 1.5 }}>
-                                    {netDrillDown.nets.length === 0 ? (
-                                      <Typography variant="body2" color="text.secondary">
-                                        No session records found.
-                                      </Typography>
-                                    ) : (
-                                      <>
-                                        <Table size="small">
-                                          <TableHead>
-                                            <TableRow>
-                                              <TableCell>Date</TableCell>
-                                              <TableCell align="right">Check-ins</TableCell>
-                                              <TableCell align="right">View</TableCell>
-                                            </TableRow>
-                                          </TableHead>
-                                          <TableBody>
-                                            {netDrillDown.nets
-                                              .slice(netDrillDownPage * DRILL_PAGE_SIZE, (netDrillDownPage + 1) * DRILL_PAGE_SIZE)
-                                              .map((session: any) => (
-                                                <TableRow key={session.net_id} hover>
-                                                  <TableCell>
-                                                    {new Date(session.last_check_in).toLocaleDateString('en-US', {
-                                                      year: 'numeric', month: 'short', day: 'numeric',
-                                                    })}
-                                                  </TableCell>
-                                                  <TableCell align="right">{session.check_in_count}</TableCell>
-                                                  <TableCell align="right">
-                                                    <Tooltip title="View net">
-                                                      <IconButton
-                                                        size="small"
-                                                        onClick={(e) => { e.stopPropagation(); navigate(`/nets/${session.net_id}`); }}
-                                                      >
-                                                        <OpenInNewIcon fontSize="small" />
-                                                      </IconButton>
-                                                    </Tooltip>
-                                                  </TableCell>
-                                                </TableRow>
-                                              ))}
-                                          </TableBody>
-                                        </Table>
-                                        {netDrillDown.nets.length > DRILL_PAGE_SIZE && (
-                                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
-                                            <Button size="small" disabled={netDrillDownPage === 0} onClick={(e) => { e.stopPropagation(); setNetDrillDownPage(p => p - 1); }}>Previous</Button>
-                                            <Typography variant="caption" color="text.secondary">
-                                              {netDrillDownPage * DRILL_PAGE_SIZE + 1}–{Math.min((netDrillDownPage + 1) * DRILL_PAGE_SIZE, netDrillDown.nets.length)} of {netDrillDown.nets.length}
-                                            </Typography>
-                                            <Button size="small" disabled={(netDrillDownPage + 1) * DRILL_PAGE_SIZE >= netDrillDown.nets.length} onClick={(e) => { e.stopPropagation(); setNetDrillDownPage(p => p + 1); }}>Next</Button>
-                                          </Box>
-                                        )}
-                                      </>
-                                    )}
-                                  </Box>
-                                </TableCell>
-                              </TableRow>
-                            )}
-                          </React.Fragment>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                </>
-              )}
-              </Box>
-            </>
-          ) : (
-            <Typography color="text.secondary">
-              No activity statistics available yet. Check into some nets to build your history!
-            </Typography>
-          )}
+          <ActivityTab />
         </TabPanel>
       </Paper>
     </Container>
