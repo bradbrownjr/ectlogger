@@ -13,41 +13,49 @@ ectlogger/
 │   │   ├── schemas.py           # All Pydantic request/response schemas
 │   │   ├── auth.py              # JWT creation and verification
 │   │   ├── dependencies.py      # FastAPI dependency functions (get_current_user, etc.)
+│   │   ├── permissions.py       # check_net_permission, check_template_permission
 │   │   ├── security.py          # Input sanitization, rate-limit helpers
 │   │   ├── session_config.py    # Session rolling-renewal logic
-│   │   ├── email_service.py     # Magic link, net notification, digest emails
+│   │   ├── email_service.py     # EmailService facade — assembles email/*.py
+│   │   ├── email/               # base, auth, net_lifecycle, reminders, net_logs, digest
 │   │   ├── ncs_reminder_service.py  # Background NCS reminder scheduler
 │   │   ├── whats_new_service.py     # Background "What's New" digest scheduler
 │   │   ├── logger.py            # Structured application logger
 │   │   ├── utils.py             # Shared utility functions
-│   │   ├── routers/
-│   │   │   ├── auth.py          # /auth — magic link, OAuth, JWT
-│   │   │   ├── users.py         # /users — profile, admin user management
-│   │   │   ├── nets.py          # /nets — net lifecycle, roles, invitations
-│   │   │   ├── check_ins.py     # /check-ins — check-in CRUD
-│   │   │   ├── frequencies.py   # /frequencies — global frequency library
-│   │   │   ├── templates.py     # /templates — net schedule templates
-│   │   │   ├── chat.py          # /chat — chat messages and images
-│   │   │   ├── settings.py      # /settings — AppSettings singleton, field definitions
-│   │   │   ├── ncs_rotation.py  # /ncs-rotation — rotation scheduling
-│   │   │   ├── security.py      # /security — Fail2Ban integration
-│   │   │   ├── statistics.py    # /statistics — platform, user, schedule stats
-│   │   │   ├── geocode.py       # /geocode — grid square lookup
-│   │   │   └── contacts.py      # /contacts — address book
-│   │   └── services/            # Non-router service classes
-│   ├── migrations/              # 034 numbered Python migration scripts (sqlite3 direct)
+│   │   └── routers/             # See "Backend router-split (facade) pattern" below
+│   │       ├── auth.py, users.py, check_ins.py, frequencies.py, chat.py,
+│   │       │   settings.py, ncs_rotation.py, ncs_schedule.py, security.py,
+│   │       │   geocode.py, contacts.py, feedback.py   # single-file routers
+│   │       ├── nets.py            # facade — includes nets_{core,polls,export,roles}
+│   │       ├── templates.py       # facade — includes templates_{core,merge,subscriptions,topics}
+│   │       └── statistics.py      # facade — includes statistics_{global,net,user,geo}
+│   ├── migrations/              # Sequentially numbered Python migration scripts (sqlite3 direct)
+│   │                             # — see "Migration content guidelines" in migrations/README.md
 │   └── requirements.txt
 ├── frontend/
 │   ├── src/
-│   │   ├── components/          # Reusable components (Navbar, UserAvatar, etc.)
-│   │   ├── contexts/            # React contexts (AuthContext, ThemeContext, LocationContext)
-│   │   ├── pages/               # Full-page components (one file per route)
+│   │   ├── components/           # See "Frontend component-split pattern" below
+│   │   │   ├── UserAvatar.tsx, Navbar.tsx, ...      # standalone shared components
+│   │   │   ├── admin/            # Admin.tsx's extracted tab components
+│   │   │   ├── create-net/       # CreateNet.tsx's extracted tab components
+│   │   │   ├── create-schedule/  # CreateSchedule.tsx's extracted tab components
+│   │   │   ├── dashboard/        # Dashboard.tsx's extracted pieces (NetCard, ...)
+│   │   │   ├── forms/            # Shared form panels (used by CreateNet + CreateSchedule)
+│   │   │   ├── ncs-staff/        # NCSStaffModal.tsx's extracted tab components
+│   │   │   ├── netview/          # NetView.tsx's extracted dialogs/panels/tables
+│   │   │   ├── profile/          # Profile.tsx's extracted tab components
+│   │   │   └── scheduler/        # Scheduler.tsx's extracted pieces (ScheduleCard, ...)
+│   │   ├── hooks/                # useLocalStorage, useDialog, useApiData, useSortableTable,
+│   │   │                         # useFavorites, useNetData, useNetWebSocket, useUserStats
+│   │   ├── contexts/             # React contexts (AuthContext, ThemeContext, LocationContext)
+│   │   ├── pages/                # Full-page components (one file per route) — the "smart"
+│   │   │                         # controller that owns page-level state and data fetching
 │   │   ├── services/
-│   │   │   └── api.ts           # Axios client, all API call functions
-│   │   ├── utils/               # dateUtils, pdfExport, userDisplay, etc.
-│   │   ├── App.tsx              # Router, theme, global layout
-│   │   ├── changelog.json       # Single source of truth for What's New content
-│   │   └── main.tsx             # React entry point
+│   │   │   └── api.ts            # Axios client, all API call functions
+│   │   ├── utils/                # dateUtils, pdfExport, userDisplay, apiErrors, etc.
+│   │   ├── App.tsx               # Router, theme, global layout
+│   │   ├── changelog.json        # Single source of truth for What's New content
+│   │   └── main.tsx              # React entry point
 │   └── public/
 │       └── maintenance.html     # Static maintenance page (no JS framework)
 ├── docs/                        # All documentation
@@ -65,6 +73,115 @@ ectlogger/
 ├── configure.sh                 # One-time Caddy/env configuration
 └── install-service.sh           # One-time systemd service installation
 ```
+
+---
+
+## Backend router-split (facade) pattern
+
+Three routers outgrew a single file (`nets.py` at 2,207 lines, `templates.py` at
+1,349, `statistics.py` at 1,022) and were split during Milestone 0.4. The split
+files use a **facade**: the original filename becomes a thin file that only
+imports and assembles sub-routers, so every route keeps its original URL and
+import path (`from app.routers.nets import router` still works) — nothing
+outside `routers/` needs to know the file was split.
+
+```python
+# routers/nets.py (facade — the whole file, give or take)
+from fastapi import APIRouter
+from app.routers.nets_core import router as nets_core_router
+from app.routers.nets_polls import router as nets_polls_router
+from app.routers.nets_export import router as nets_export_router
+from app.routers.nets_roles import router as nets_roles_router
+
+router = APIRouter(prefix="/nets", tags=["nets"])
+router.include_router(nets_core_router)
+router.include_router(nets_polls_router)
+router.include_router(nets_export_router)
+router.include_router(nets_roles_router)
+```
+
+**Adding a new endpoint to a split router:** add it to the sub-file whose
+theme matches (e.g. a new net-export format goes in `nets_export.py`, not
+`nets.py`). The facade needs no change unless you're adding a whole new
+sub-router file.
+
+**The trap that bit us once already:** anything that used to live in the
+monolithic file (module-level tables, helper functions) and got imported
+cross-file via `from app.routers.nets import X` breaks silently the moment
+`nets.py` becomes a facade — `X` isn't defined there anymore, and Python
+raises `ImportError` only when that code path actually *runs*, not at import
+time or in a route-table diff. This is exactly what happened to
+`net_frequencies` (defined in `app.models`, not `app.routers.nets`) after the
+2026-07-04 split — see the "Post-split verification checklist" below, which
+exists specifically to catch this.
+
+## Frontend component-split pattern
+
+Large pages (`NetView.tsx` was 5,410 lines, `Admin.tsx` 3,215) were split
+during Milestone 0.4 into a `pages/<Page>.tsx` (kept as the "smart" page
+controller — owns page-level state, data fetching, and permission logic) plus
+`components/<page-kebab-case>/<Piece>.tsx` (the extracted, mostly-presentational
+pieces) and `hooks/use<Thing>.ts` (extracted data-fetching effects).
+
+**Deciding what to extract, and how self-contained to make it:**
+
+- **Duplicated JSX blocks** (e.g. NetView's mobile/desktop/detached check-in
+  tables) are the highest-value, lowest-risk extraction — unify them into one
+  parameterized component so future edits can't silently drift between copies.
+- **A tab/section whose state and handlers nothing else touches** (e.g.
+  Profile.tsx's Activity tab, NCSStaffModal's swap dialog) should become a
+  **fully self-contained component**: it calls its own hooks (`useAuth()`,
+  `useNavigate()`, a data-fetching hook) and takes few or even zero props.
+  Verify this by grepping the parent for every piece of that tab's state —
+  if nothing outside the tab's own render function reads it, it's safe to
+  localize.
+- **A tab/section whose handlers ripple into other tabs' state** (e.g.
+  NCSStaffModal's roster tab — removing a staffer also updates the rotation
+  list and schedule entries) should **stay a thin presentational component**:
+  keep the state and handlers in the parent page, pass them down as props.
+  Forcing self-containment here would mean duplicating the cross-cutting
+  logic or inventing a shared store — not worth it for a one-off page.
+- **Purely visual, per-render UI state with no cross-component reader** (e.g.
+  a drag-and-drop hover highlight) can be localized into a child component
+  even when the *mutation* it triggers stays a parent-owned prop — the child
+  just computes what to pass to that prop.
+- Don't force a shared sub-component onto pieces that only *look* similar.
+  NCSStaffModal's roster tab has three list variants (schedule staff, net
+  rotation duty, plain net-role list) that share a presentational shape but
+  differ enough in business logic that one forced shared component would
+  obscure more than it saves — it stayed as one file with three branches.
+
+**Verifying an extraction preserves behavior exactly:** read the target block
+fully first, then extract with content copied verbatim (only type-annotation
+changes allowed). After wiring up the new import, diff old vs. new with
+whitespace/indentation normalized and confirm zero unexplained differences
+before committing. `tsc --noEmit` must stay clean throughout.
+
+## Post-split verification checklist
+
+Whichever kind of split you're doing, after moving code out of a file:
+
+1. **Route-table / component-render diff** confirms the *shape* survived
+   (same endpoints registered, same JSX renders) — necessary but not
+   sufficient.
+2. **Grep the whole repo for cross-file imports of the old file**, not just
+   the thing you moved:
+   ```bash
+   grep -rn "from app.routers.nets import\|from app\.routers\.templates import" backend/
+   grep -rn "from '../pages/NetView'\|from '../pages/Profile'" frontend/src/
+   ```
+   Anything that imports a name from the split file that isn't actually
+   *defined* in the new facade/thinned page will raise `ImportError` (backend)
+   or a `tsc` error (frontend) — but only backend `ImportError`s are lazy
+   (deferred until the function actually runs), which is why they slip past
+   route-table diffing and can ship silently. `tsc --noEmit` catches the
+   frontend equivalent immediately, so this step matters most on the backend.
+3. **Add or confirm test coverage for the code path you touched.** A route
+   that's registered but never exercised by a test can carry an `ImportError`
+   in its body indefinitely — route-table diffing and manual click-throughs
+   of the pages you're actively changing won't catch a regression in a
+   feature you didn't think to re-test. If no test calls the endpoint/service
+   method, add one before considering the split done.
 
 ---
 
