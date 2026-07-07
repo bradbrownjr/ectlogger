@@ -121,3 +121,35 @@ async def test_admin_can_close_any_net(client, owner, admin):
     await client.post(f"/api/nets/{net_id}/start", headers=auth_headers(owner))
     resp = await client.post(f"/api/nets/{net_id}/close", headers=auth_headers(admin))
     assert resp.status_code == 200
+
+
+# ---------------------------------------------------------------------------
+# Logger-role active-frequency permission (regression: these two endpoints
+# checked required_roles=["NCS", "Logger"], but the only place a Logger role
+# is ever actually assigned (RoleAssignmentDialog.tsx) stores it as "LOGGER"
+# — the title-case check never matched a real Logger user. Found during a
+# full functional-test pass across NCS/Logger/standard-user/guest roles.)
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_logger_role_can_set_active_frequency(client, db, owner, other):
+    from app.models import Frequency, NetRole, net_frequencies
+
+    create = await client.post("/api/nets/", json={"name": "Logger Freq Net"}, headers=auth_headers(owner))
+    net_id = create.json()["id"]
+    await client.post(f"/api/nets/{net_id}/start", headers=auth_headers(owner))
+
+    freq = Frequency(frequency="146.520", mode="FM", description="Test")
+    db.add(freq)
+    await db.flush()
+    await db.execute(net_frequencies.insert().values(net_id=net_id, frequency_id=freq.id))
+    db.add(NetRole(net_id=net_id, user_id=other.id, role="LOGGER"))
+    await db.commit()
+
+    resp = await client.put(f"/api/nets/{net_id}/active-frequency/{freq.id}", headers=auth_headers(other))
+    assert resp.status_code == 200
+    assert resp.json()["active_frequency_id"] == freq.id
+
+    resp2 = await client.delete(f"/api/nets/{net_id}/active-frequency", headers=auth_headers(other))
+    assert resp2.status_code == 200
+    assert resp2.json()["active_frequency_id"] is None

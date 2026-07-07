@@ -692,7 +692,7 @@ async def set_active_frequency(
         raise HTTPException(status_code=404, detail="Net not found")
     
     # Check permissions - NCS, Logger, or admin
-    if not await check_net_permission(db, net, current_user, ["NCS", "Logger"]):
+    if not await check_net_permission(db, net, current_user, ["NCS", "LOGGER"]):
         raise HTTPException(status_code=403, detail="Not authorized to change frequency")
     
     # Verify the frequency belongs to this net
@@ -729,7 +729,7 @@ async def clear_active_frequency(
         raise HTTPException(status_code=404, detail="Net not found")
     
     # Check permissions - NCS, Logger, or admin
-    if not await check_net_permission(db, net, current_user, ["NCS", "Logger"]):
+    if not await check_net_permission(db, net, current_user, ["NCS", "LOGGER"]):
         raise HTTPException(status_code=403, detail="Not authorized to change frequency")
     
     net.active_frequency_id = None

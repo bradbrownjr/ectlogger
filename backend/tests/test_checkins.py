@@ -91,3 +91,76 @@ async def test_cannot_check_in_unauthenticated(client, owner):
         json={"callsign": _CALLSIGN},
     )
     assert resp.status_code in (401, 403)
+
+
+# ---------------------------------------------------------------------------
+# Check-in update permission (regression: PUT /check-ins/{id} had no
+# permission check at all — any authenticated user could edit any other
+# station's check-in, found during a full functional-test pass across roles)
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_net_owner_can_edit_others_check_in(client, owner, other):
+    net_id = await _active_net(client, owner)
+    # `other` checks in under their own callsign so the row links to their user_id
+    check_in = await client.post(
+        f"/api/check-ins/nets/{net_id}/check-ins",
+        json={"callsign": other.callsign},
+        headers=auth_headers(other),
+    )
+    check_in_id = check_in.json()["id"]
+
+    # The net owner is always authorized to edit any check-in on their net,
+    # even though it isn't their own row.
+    resp = await client.put(
+        f"/api/check-ins/check-ins/{check_in_id}",
+        json={"notes": "logged by NCS"},
+        headers=auth_headers(owner),
+    )
+    assert resp.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_bystander_with_no_role_cannot_edit_others_check_in(client, db, owner, other):
+    """A third user who is neither the net owner, NCS/Logger, nor the
+    check-in's own user must be rejected."""
+    from app.models import User, UserRole
+
+    bystander = User(email="bystander@test.com", callsign="KC1BYS", role=UserRole.USER, is_active=True)
+    db.add(bystander)
+    await db.commit()
+    await db.refresh(bystander)
+
+    net_id = await _active_net(client, owner)
+    check_in = await client.post(
+        f"/api/check-ins/nets/{net_id}/check-ins",
+        json={"callsign": other.callsign},
+        headers=auth_headers(other),
+    )
+    check_in_id = check_in.json()["id"]
+
+    resp = await client.put(
+        f"/api/check-ins/check-ins/{check_in_id}",
+        json={"notes": "should not be allowed"},
+        headers=auth_headers(bystander),
+    )
+    assert resp.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_own_check_in_editable_by_self(client, owner, other):
+    net_id = await _active_net(client, owner)
+    check_in = await client.post(
+        f"/api/check-ins/nets/{net_id}/check-ins",
+        json={"callsign": other.callsign},
+        headers=auth_headers(other),
+    )
+    check_in_id = check_in.json()["id"]
+
+    resp = await client.put(
+        f"/api/check-ins/check-ins/{check_in_id}",
+        json={"notes": "editing my own check-in"},
+        headers=auth_headers(other),
+    )
+    assert resp.status_code == 200
+    assert resp.json()["notes"] == "editing my own check-in"

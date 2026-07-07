@@ -306,7 +306,15 @@ async def update_check_in(
     # Get the net to check if poll/topic is enabled
     result = await db.execute(select(Net).where(Net.id == check_in.net_id))
     net = result.scalar_one_or_none()
-    
+
+    # Permission check: the check-in's own user may edit it (self check-out,
+    # own topic/poll response), otherwise NCS/Logger/owner/admin only. This
+    # endpoint had no permission check at all until this fix — any
+    # authenticated user could edit any other station's check-in.
+    is_own_check_in = check_in.user_id == current_user.id
+    if not is_own_check_in and net and not await check_net_permission(db, net, current_user, ["NCS", "LOGGER"]):
+        raise HTTPException(status_code=403, detail="Not authorized to edit this check-in")
+
     # Update fields
     update_data = check_in_update.dict(exclude_unset=True)
     
