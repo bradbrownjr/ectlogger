@@ -8,8 +8,6 @@ All notable changes to ECTLogger are documented here.
 
 ## Bug Fixes
 
-* **Schedule: Create Net button working again** — Creating a net from a schedule was failing every time with an error. It works correctly again, including copying the schedule's frequencies onto the new net.
-
 * **Net View: Check-in map no longer crashes** — Maximizing or restoring the check-in location map could throw an error and leave the map broken. Fixed.
 
 * **Chat: Avatars now show on new messages** — Profile pictures previously only appeared on messages that were already on the page when you loaded it. New messages sent during the net now show the sender's avatar too.

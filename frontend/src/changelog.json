@@ -10,10 +10,6 @@
           "type": "bugfix",
           "items": [
             {
-              "text": "Schedule: Create Net button working again — Creating a net from a schedule was failing every time with an error. It works correctly again, including copying the schedule's frequencies onto the new net.",
-              "userImpact": true
-            },
-            {
               "text": "Net View: Check-in map no longer crashes — Maximizing or restoring the check-in location map could throw an error and leave the map broken. Fixed.",
               "userImpact": true
             },
