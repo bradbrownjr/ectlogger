@@ -252,7 +252,7 @@ async def create_net_from_template(
             scheduled_start_time = None
     
     # Create net from template
-    from app.routers.nets import net_frequencies as net_freq_table
+    from app.models import net_frequencies as net_freq_table
     
     net = Net(
         name=template.name,
