@@ -128,12 +128,9 @@ Rule for sub-agents doing the splits: a component takes typed props and owns no 
 
 ### 0.5 Migration hygiene policy *(process, not code)*
 
-Findings to correct going forward — noted plainly for review:
-
-- **Instance-specific data migrations are in the repo**: `022_add_aa1gm_to_schedule8_rotation.py`, `029_add_aa1gm_back_to_template8_rotation.py`, `030_add_fifth_week_user.py` bake one deployment's roster data into the shared migration history. Self-hosters will run these against their own databases. Going forward, do data fixes via admin UI or one-off server-side scripts that are *not* committed as numbered migrations. *(Not proposing deletion — they already ran; just stop the pattern.)*
-- **Numbering collision**: three migrations share prefix `013_`. Adopt strictly sequential numbering, or adopt Alembic (see the PostgreSQL item in Milestone 2, whose plan currently references `alembic upgrade head` even though **Alembic is not set up in this project** — that discrepancy must be resolved as part of the Postgres work: either adopt Alembic first, or rewrite that step).
-
-**Model:** n/a (policy). The Alembic-adoption decision, if taken, is Opus for the design and Sonnet for execution.
+- ~~**Numbering collision**: three migrations shared prefix `013_`~~ — resolved 2026-07-07. Confirmed via `migrations/README.md` that there's no version-tracking table (each script is idempotent, run manually by exact filename), so renumbering already-applied files is functionally risk-free. Kept `013_add_user_last_active.py` (earliest, 2025-12-18 17:36) as-is; renamed the other two into the next free slots after 040, preserving their original relative order: `041_rename_available_to_has_traffic.py` (was 2025-12-18 22:34) and `042_add_unsubscribe_token.py` (was 2025-12-19). No other file references the old names. Docstrings inside both files describe the change in prose, not by number, so no internal edits needed.
+- ~~**Instance-specific data migrations are in the repo**~~ — norm codified 2026-07-07 in `migrations/README.md`'s new "Migration content guidelines" section: migrations should only contain schema changes; data fixes belong in the admin UI or an uncommitted one-off script. `022_add_aa1gm_to_schedule8_rotation.py`, `029_add_aa1gm_back_to_template8_rotation.py`, `030_add_fifth_week_user.py` are left in place (already ran) — this only stops the pattern going forward.
+- **Alembic adoption** — still open, deferred to the PostgreSQL item in Milestone 2, whose plan currently references `alembic upgrade head` even though **Alembic is not set up in this project**. Must be resolved as part of that work: either adopt Alembic first, or rewrite that step. **Model:** Opus for the design decision, Sonnet for execution.
 
 ---
 
