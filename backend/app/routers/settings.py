@@ -184,8 +184,7 @@ async def get_field_labels(
 @router.get("/fields", response_model=List[FieldDefinitionResponse])
 async def list_field_definitions(
     include_archived: bool = False,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: AsyncSession = Depends(get_db)
 ):
     """List all field definitions"""
     await ensure_builtin_fields(db)

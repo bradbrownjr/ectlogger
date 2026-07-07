@@ -3,15 +3,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
 from app.database import get_db
-from app.dependencies import get_current_user
-from app.models import CheckIn, Net, User
+from app.models import CheckIn, Net
 
 router = APIRouter()
 
 @router.get("/{net_id}/poll-responses")
 async def get_poll_responses(
     net_id: int,
-    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Get unique poll responses for autocomplete during check-in"""
@@ -40,7 +38,6 @@ async def get_poll_responses(
 @router.get("/{net_id}/poll-results")
 async def get_poll_results(
     net_id: int,
-    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Get poll results with response counts for display/charting"""
@@ -73,7 +70,6 @@ async def get_poll_results(
 @router.get("/{net_id}/topic-responses")
 async def get_topic_responses(
     net_id: int,
-    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Get topic of the week responses with callsigns for display/export"""
