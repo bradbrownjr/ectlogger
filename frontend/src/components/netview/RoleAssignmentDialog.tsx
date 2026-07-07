@@ -75,7 +75,7 @@ const RoleAssignmentDialog: React.FC<RoleAssignmentDialogProps> = ({
               </MenuItem>
               {allUsers.map((u: any) => (
                 <MenuItem key={u.id} value={u.id}>
-                  {displayCallsign(u) || u.email} ({u.email})
+                  {u.callsign}{u.name ? ` (${u.name})` : ''}
                 </MenuItem>
               ))}
             </Select>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
-import { netApi, checkInApi } from '../services/api';
+import { netApi, checkInApi, userApi } from '../services/api';
 import api from '../services/api';
 
 // ========== useNetData ==========
@@ -146,7 +146,10 @@ export function useNetData(netId: string | undefined): UseNetDataResult {
 
   const fetchAllUsers = async () => {
     try {
-      const response = await api.get('/users');
+      // /users is admin-only; the role-assignment picker (opened by any net
+      // owner/NCS, not just admins) needs the unrestricted minimal directory
+      // instead — same endpoint NCSStaffModal already uses for its pickers.
+      const response = await userApi.listDirectory();
       setAllUsers(response.data);
     } catch (error) {
       console.error('Failed to fetch users:', error);
