@@ -512,6 +512,7 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
                   zoom={6}
                   style={{ height: '100%', width: '100%' }}
                   ref={mapRef}
+                  zoomAnimation={false}
                 >
                   <TileLayer
                     attribution={tileAttribution}
@@ -756,6 +757,7 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
                 zoom={6}
                 style={{ height: '100%', width: '100%' }}
                 ref={mapRef}
+                zoomAnimation={false}
               >
                 <TileLayer
                   attribution={tileAttribution}
