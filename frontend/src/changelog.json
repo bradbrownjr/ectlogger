@@ -1,10 +1,20 @@
 {
-  "version": "2026.07.26b",
+  "version": "2026.07.26c",
   "entries": [
     {
       "version": "2026.07.26",
       "date": "2026-07-26",
       "sections": [
+        {
+          "title": "New Features",
+          "type": "feature",
+          "items": [
+            {
+              "text": "Check-in: Disable self check-in per net — Net Managers can now turn off self check-in for a schedule or net, from the schedule editor or the net's own settings. When off, only Net Control and logging staff can add check-ins, so stations aren't logged twice when they check in both by voice and by app.",
+              "userImpact": true
+            }
+          ]
+        },
         {
           "title": "Bug Fixes",
           "type": "bugfix",

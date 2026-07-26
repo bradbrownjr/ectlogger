@@ -81,6 +81,7 @@ const CreateSchedule: React.FC = () => {
   const [mobilePrioritySort, setMobilePrioritySort] = useState(true);
   const [chatGracePeriodEnabled, setChatGracePeriodEnabled] = useState(false);
   const [chatGracePeriodMinutes, setChatGracePeriodMinutes] = useState(15);
+  const [selfCheckinEnabled, setSelfCheckinEnabled] = useState(true);
 
   // ---- Community net features ----
   const [topicOfWeekEnabled, setTopicOfWeekEnabled] = useState(false);
@@ -193,6 +194,7 @@ const CreateSchedule: React.FC = () => {
       const grace = schedule.chat_grace_period_minutes;
       setChatGracePeriodEnabled(!!grace);
       if (grace) setChatGracePeriodMinutes(grace);
+      setSelfCheckinEnabled(schedule.self_checkin_enabled !== false);
       setTopicOfWeekEnabled(schedule.topic_of_week_enabled || false);
       setTopicOfWeekPrompt(schedule.topic_of_week_prompt || '');
       setPollEnabled(schedule.poll_enabled || false);
@@ -249,6 +251,7 @@ const CreateSchedule: React.FC = () => {
       ics309_enabled: ics309Enabled,
       mobile_priority_sort: mobilePrioritySort,
       chat_grace_period_minutes: chatGracePeriodEnabled ? chatGracePeriodMinutes : null,
+      self_checkin_enabled: selfCheckinEnabled,
       topic_of_week_enabled: topicOfWeekEnabled,
       topic_of_week_prompt: topicOfWeekPrompt || null,
       poll_enabled: pollEnabled,
@@ -308,6 +311,7 @@ const CreateSchedule: React.FC = () => {
     ics309Enabled, setIcs309Enabled, mobilePrioritySort, setMobilePrioritySort,
     chatGracePeriodEnabled, setChatGracePeriodEnabled,
     chatGracePeriodMinutes, setChatGracePeriodMinutes,
+    selfCheckinEnabled, setSelfCheckinEnabled,
     topicOfWeekEnabled, setTopicOfWeekEnabled, topicOfWeekPrompt, setTopicOfWeekPrompt,
     pollEnabled, setPollEnabled, pollQuestion, setPollQuestion,
     isActive, setIsActive,

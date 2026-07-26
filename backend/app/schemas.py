@@ -318,6 +318,7 @@ class NetBase(BaseModel):
     ics309_enabled: Optional[bool] = False
     mobile_priority_sort: Optional[bool] = True
     chat_grace_period_minutes: Optional[int] = None
+    self_checkin_enabled: Optional[bool] = True
     # Topic of the Week / Poll features
     topic_of_week_enabled: Optional[bool] = False
     topic_of_week_prompt: Optional[str] = Field(None, max_length=500)
@@ -345,6 +346,7 @@ class NetUpdate(BaseModel):
     ics309_enabled: Optional[bool] = None
     mobile_priority_sort: Optional[bool] = None
     chat_grace_period_minutes: Optional[int] = None
+    self_checkin_enabled: Optional[bool] = None
     # Topic of the Week / Poll features
     topic_of_week_enabled: Optional[bool] = None
     topic_of_week_prompt: Optional[str] = Field(None, max_length=500)
@@ -412,6 +414,7 @@ class NetResponse(NetBase):
             'ics309_enabled': net.ics309_enabled or False,
             'mobile_priority_sort': net.mobile_priority_sort if net.mobile_priority_sort is not None else True,
             'chat_grace_period_minutes': net.chat_grace_period_minutes,
+            'self_checkin_enabled': net.self_checkin_enabled if net.self_checkin_enabled is not None else True,
             'topic_of_week_enabled': net.topic_of_week_enabled or False,
             'topic_of_week_prompt': net.topic_of_week_prompt,
             'poll_enabled': net.poll_enabled or False,
@@ -448,6 +451,7 @@ class NetTemplateBase(BaseModel):
     ics309_enabled: bool = False  # Enable ICS-309 format for net close emails
     mobile_priority_sort: Optional[bool] = True
     chat_grace_period_minutes: Optional[int] = None
+    self_checkin_enabled: Optional[bool] = True
     # Topic of the Week / Poll features
     topic_of_week_enabled: Optional[bool] = False
     topic_of_week_prompt: Optional[str] = Field(None, max_length=500)
@@ -477,6 +481,7 @@ class NetTemplateUpdate(BaseModel):
     ics309_enabled: Optional[bool] = None
     mobile_priority_sort: Optional[bool] = None
     chat_grace_period_minutes: Optional[int] = None
+    self_checkin_enabled: Optional[bool] = None
     # Topic of the Week / Poll features
     topic_of_week_enabled: Optional[bool] = None
     topic_of_week_prompt: Optional[str] = Field(None, max_length=500)
@@ -522,6 +527,7 @@ class NetTemplateResponse(NetTemplateBase):
             'ics309_enabled': template.ics309_enabled or False,
             'mobile_priority_sort': template.mobile_priority_sort if template.mobile_priority_sort is not None else True,
             'chat_grace_period_minutes': template.chat_grace_period_minutes,
+            'self_checkin_enabled': template.self_checkin_enabled if template.self_checkin_enabled is not None else True,
             'topic_of_week_enabled': template.topic_of_week_enabled or False,
             'topic_of_week_prompt': template.topic_of_week_prompt,
             'poll_enabled': template.poll_enabled or False,

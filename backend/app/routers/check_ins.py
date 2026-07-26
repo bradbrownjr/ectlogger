@@ -37,7 +37,12 @@ async def create_check_in(
     # Allow check-ins in both LOBBY (pre-net staging) and ACTIVE (official net) states
     if net.status not in (NetStatus.ACTIVE, NetStatus.LOBBY):
         raise HTTPException(status_code=400, detail="Net is not active")
-    
+
+    # When self check-in is disabled for this net, only NCS/logger/owner/admin
+    # may add check-ins — regular participants must be logged by voice/staff.
+    if net.self_checkin_enabled is False and not await check_net_permission(db, net, current_user, ["NCS", "LOGGER"]):
+        raise HTTPException(status_code=403, detail="Self check-in is disabled for this net. Please check in with Net Control.")
+
     # Validate and process frequency_id
     # First check if current user is NCS with a claimed frequency
     if check_in_data.frequency_id is None:

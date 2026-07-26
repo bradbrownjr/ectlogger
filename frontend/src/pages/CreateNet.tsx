@@ -83,6 +83,7 @@ const CreateNet: React.FC = () => {
   const [mobilePrioritySort, setMobilePrioritySort] = useState(true);
   const [chatGracePeriodEnabled, setChatGracePeriodEnabled] = useState(false);
   const [chatGracePeriodMinutes, setChatGracePeriodMinutes] = useState(15);
+  const [selfCheckinEnabled, setSelfCheckinEnabled] = useState(true);
 
   // ---- Community net features ----
   const [topicOfWeekEnabled, setTopicOfWeekEnabled] = useState(false);
@@ -170,6 +171,7 @@ const CreateNet: React.FC = () => {
       const grace = net.chat_grace_period_minutes;
       setChatGracePeriodEnabled(!!grace);
       if (grace) setChatGracePeriodMinutes(grace);
+      setSelfCheckinEnabled(net.self_checkin_enabled !== false);
       setTopicOfWeekEnabled(net.topic_of_week_enabled || false);
       setTopicOfWeekPrompt(net.topic_of_week_prompt || '');
       if (net.template_id) {
@@ -244,6 +246,7 @@ const CreateNet: React.FC = () => {
         ics309_enabled: ics309Enabled,
         mobile_priority_sort: mobilePrioritySort,
         chat_grace_period_minutes: chatGracePeriodEnabled ? chatGracePeriodMinutes : null,
+        self_checkin_enabled: selfCheckinEnabled,
         topic_of_week_enabled: topicOfWeekEnabled,
         topic_of_week_prompt: topicOfWeekPrompt || null,
         poll_enabled: pollEnabled,
@@ -323,6 +326,7 @@ const CreateNet: React.FC = () => {
     mobilePrioritySort, setMobilePrioritySort,
     chatGracePeriodEnabled, setChatGracePeriodEnabled,
     chatGracePeriodMinutes, setChatGracePeriodMinutes,
+    selfCheckinEnabled, setSelfCheckinEnabled,
     topicOfWeekEnabled, setTopicOfWeekEnabled,
     topicOfWeekPrompt, setTopicOfWeekPrompt,
     pollEnabled, setPollEnabled,

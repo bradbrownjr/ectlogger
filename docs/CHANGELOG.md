@@ -6,6 +6,10 @@ All notable changes to ECTLogger are documented here.
 
 # July 26, 2026
 
+## New Features
+
+* **Check-in: Disable self check-in per net** — Net Managers can now turn off self check-in for a schedule or net, from the schedule editor or the net's own settings. When off, only Net Control and logging staff can add check-ins, so stations aren't logged twice when they check in both by voice and by app.
+
 ## Bug Fixes
 
 * **Schedule: Recurring nets with a rotation appear again** — Nets that use an NCS rotation now automatically show up on the dashboard about a day ahead, so the on-duty NCS always has a waiting net to open. These had been silently failing to appear.

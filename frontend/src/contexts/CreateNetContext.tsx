@@ -33,6 +33,7 @@ export interface CreateNetContextValue {
   mobilePrioritySort: boolean; setMobilePrioritySort: Dispatch<SetStateAction<boolean>>;
   chatGracePeriodEnabled: boolean; setChatGracePeriodEnabled: Dispatch<SetStateAction<boolean>>;
   chatGracePeriodMinutes: number; setChatGracePeriodMinutes: Dispatch<SetStateAction<number>>;
+  selfCheckinEnabled: boolean; setSelfCheckinEnabled: Dispatch<SetStateAction<boolean>>;
 
   // Community features
   topicOfWeekEnabled: boolean; setTopicOfWeekEnabled: Dispatch<SetStateAction<boolean>>;

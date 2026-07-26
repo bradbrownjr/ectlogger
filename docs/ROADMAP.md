@@ -1,7 +1,7 @@
 # ECT Logger — Product Roadmap
 
-*Last updated: 2026-07-26 (rev 38 — PR #2 (Milestone 0.4 → main) reviewed and merged clean: all P1/P2/P3 manual tests passed, CI green, no blocking issues found. Two low-severity, non-blocking cleanup items from that review logged below at 0.6.)*  
-*Compiled from user feedback: AA1GM, KC1UIX, W1BKW, W1MTW, KC1JMH*
+*Last updated: 2026-07-26 (rev 39 — logged field bug reports and feature requests from Maine Dirigo Net (nets #41, #44). Two of the underlying root causes were already fixed same-day in `f866587` (scheduled net auto-create silently failing for rotation-based templates; duplicate/triplicate 1h reminder emails) — remaining items logged below at 0.7 and in Milestone 1.)*  
+*Compiled from user feedback: AA1GM, KC1UIX, W1BKW, W1MTW, N1GSK, KC1JMH*
 
 > **Canonical location:** `docs/ROADMAP.md`. ~~The root-level `ROADMAP.md` is a duplicate and should be deleted.~~ *Resolved: the root-level duplicate no longer exists as of 2026-07-03.*
 
@@ -139,6 +139,38 @@ Rule for sub-agents doing the splits: a component takes typed props and owns no 
 - **🔧 Dead/unused imports left over from the mechanical router split** — `backend/app/routers/nets_roles.py` (module-level imports shadowed by identical local imports in nearly every handler), `templates_topics.py` / `templates_merge.py` (long lists of unused model/schema imports), `nets_core.py` (unused `timedelta`, `check_net_lifecycle_permission`, `FrequencyResponse`). Purely cosmetic — `pyflakes` was clean of anything behavior-affecting. **Model:** Haiku (mechanical, single-file, precisely specified — run `pyflakes` per file and delete what it flags).
 - **🔧 `docs/DEVELOPMENT.md` WebSocket message-type doc drift** — lists `check_in_update` and `online_users` as message types, but the backend never emits those literal names (pre-existing drift, not introduced by Milestone 0.4). Reconcile the doc against the actual set the backend emits, cross-referenced in `useNetWebSocket.ts`: `check_in`, `active_speaker`, `active_frequency`, `chat_message`, `chat_reaction`, `role_change`, `status_change`, `check_in_deleted`, `hand_raised_changed`, `net_started`, `net_status_change`. **Model:** Haiku.
 
+### 0.7 Field bug reports — Maine Dirigo Net (2026-07-26)
+
+*Raised live via chat during nets [#41](https://app.ectlogger.us/nets/41) and [#44](https://app.ectlogger.us/nets/44). Two root causes described in these reports were already fixed same-day in `f866587` before this triage: (1) scheduled net auto-create silently failing whenever the template has an NCS rotation (a `NetRole` import was missing, so `_get_or_create_scheduled_net` raised and swallowed the error) — this explains the "had to hit Create Net instead of it just being there" and "scheduler didn't fire" reports; (2) duplicate/triplicate 1-hour reminder emails and NCS staff receiving both the staff and subscriber reminder — fixed via a cross-type dedup helper. See that commit for detail. Everything below is still open.*
+
+**🐛 Mobile check-in entry point not discoverable** *(N1GSK)*  
+**Model:** Sonnet — reproduce on a real mobile viewport first; likely a missing/unclear check-in CTA rather than a one-line fix.  
+Mobile user reported not being prompted to check in and being unable to identify which button performs check-in ("I just kept hitting icons"). Needs reproduction against an active net on a narrow viewport to determine whether the check-in control is present but unclear, or missing for some net/user state.
+
+**🐛 Admin user not shown the check-in prompt other NCS/staff receive** *(KC1JMH)*  
+**Model:** Sonnet.  
+An admin-role user acting as NCS was not prompted to check in the way other (non-admin) NCS/staff are. Suggests the check-in-prompt trigger branches on global user role in a way that excludes admins — audit the prompt condition (likely in `NetView.tsx` or a check-in hook) for an `is_admin` short-circuit that should be checking net-role (NCS/staff) instead.
+
+**🐛 Chat avatars fall back to letter-avatar after a check-in event** *(KC1JMH)*  
+**Model:** Sonnet.  
+After checking in, avatar images in chat stopped rendering (fell back to initial-letter avatars); reporter suspects this may also affect the check-in table. Investigate whether the `check_in` WebSocket payload or the user-serializer used post-check-in omits `avatar_url` where the initial page load includes it.
+
+**🐛 Archive/delete dialog doesn't update when another client archives the net** *(KC1JMH)*  
+**Model:** Sonnet.  
+NCS closed and archived a net while a second user was still looking at the "archive or delete?" prompt for the same net. The second client should receive the net-archived WebSocket event and either dismiss the dialog or swap it to a "return to dashboard" state, instead of leaving a stale prompt for an action that already happened.
+
+**🐛 NCS/staff reminder omits "who is on duty" schedule data** *(W1BKW, KC1JMH)*  
+**Model:** Haiku — same file as the `f866587` fix (`ncs_reminder_service.py`); reuse the duty-NCS lookup that fix's tests already exercise and add it to the staff reminder's render context.  
+Of the several reminder emails received during net #44, only one included the on-duty NCS name; the NCS/staff variant is missing it. Confirm which template(s) omit the duty-NCS field and add it.
+
+**🐛 Manually-added check-in duplicates into a second "Recheck" row when that station later logs in and checks in themselves** *(W1BKW, KC1UIX — reported independently on two different nets)*  
+**Model:** Sonnet.  
+When NCS manually adds a station's check-in, then that station later logs in and self-checks-in, the app creates a second row with status "Recheck" instead of matching the existing manual entry. Likely cause: recheck-matching keys off `user_id` (null on a manually-entered row) rather than callsign, so a self-check-in with a real `user_id` never matches the manual row. Needs a callsign-based fallback match when the existing row has no `user_id`.
+
+**🐛 Subscriber "net starting" notification fires on the second lifecycle action (Start) instead of the first (Open Lobby)** *(W1BKW)*  
+**Model:** Sonnet — touches net lifecycle + `ncs_reminder_service.py`/notification dispatch, the same area as the `f866587` fix.  
+NCS opens the lobby expecting subscribers to be notified then, giving lead time before the net goes active; instead the notify-subscribers email fires only when the net is actually started, giving little to no lead time. Move (or add an option for) the subscriber notification to fire on the lobby-open transition.
+
 ---
 
 ## Milestone 1 — Medium-term
@@ -186,6 +218,29 @@ Add a per-schedule setting (e.g. "Open lobby X minutes before start time") that 
 - UI toggle + number input in the schedule editor (Net Settings tab)
 - Background task in the reminder/scheduler service to fire the transition at the right time
 - Guard to skip if the net is already in Lobby/Active state
+
+### Net Reminders & Lifecycle UX *(field reports, Maine Dirigo Net, 2026-07-26)*
+
+**🔧 Clearer reminder email call-to-action wording** *(field feedback)*  
+**Model:** Sonnet — the NCS button is conditional on lobby/active state, not pure copy.  
+- Rename "Join Net" on the standard reminder to two distinct actions: "View Net" and "Check-in to Net".
+- On the NCS/staff reminder, replace the single "Access Net" button with "View Net" and "Check Into Net" (the latter shown only once the lobby is open or the net is active), keeping "Open Lobby" as its own button.
+
+**🔧 Move "Keep chat open after closing" and "Schedule is active" toggles to the Schedule tab** *(field feedback)*  
+**Model:** Haiku — relocating two existing form controls within Edit Net; no new logic.  
+Both toggles currently live outside the Schedule tab in the net editor, which reads as inconsistent with their scheduling-related purpose.
+
+**🔧 Clarify Create-vs-Start workflow copy** *(W1BKW)*  
+**Model:** Haiku — copy/tooltip only.  
+Now that scheduled nets reliably auto-create (`f866587`), manual "Create Net" should rarely be needed for scheduled nets. Add copy/tooltip distinguishing manual ad hoc creation from the auto-created scheduled path so operators aren't confused about why both a Create and a Start step exist on the rare occasion they land on this screen.
+
+~~**✨ Per-schedule toggle to disable self check-in** *(AA1GM — Joel Huntress, direct request)* — completed 2026-07-26~~  
+~~**Model:** Sonnet.~~  
+~~Add a toggle in the net schedule editor to disable self-check-in for a given schedule/template. Joel reports NCS confusion when a station checks in both via ECTLogger and by voice on nets where self check-in isn't wanted. When disabled, only NCS/logger-entered check-ins are accepted; self-check-in UI is hidden for stations on that net.~~
+
+**✨ Auto-check-in for subscribed stations on certain nets** *(field request)*  
+**Model:** Sonnet — needs a design decision on scope (per-user opt-in vs NCS-controlled per-schedule) before implementation; recommend a per-user preference on the existing subscription, defaulting off.  
+Let a station be automatically checked in on nets they're subscribed to (surfaced via the existing subscription icon), for operators who reliably check into the same recurring net every week.
 
 ### Admin Tooling
 
@@ -489,4 +544,5 @@ Items that were raised but need clarification, reproduction steps, or a design d
 | KC1UIX — David Lounsbury | YCECT multi-repeater SKYWARN |
 | W1BKW — Brian Wall | Regular participant, ham.live nets |
 | W1MTW — Mark Carlson | Net participant (mobile user) |
+| N1GSK | Net participant (mobile user), Maine Dirigo Net |
 | KC1JMH — Brad Brown | Developer / net manager / WSSM Club Secretary / Cumberland County ARES EC |

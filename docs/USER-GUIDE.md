@@ -99,6 +99,7 @@ The Create Net form has five tabs to configure your net:
 - **Info URL** — Optional link to your club or organization's website
 - **Scheduled Start Time** — Optional. If set, a countdown timer displays before the net starts
 - **Enable ICS-309 format** — Use official FEMA communications log format for net closure emails
+- **Allow self check-in** — On by default. Turn off if you want only Net Control and logging staff to add check-ins, e.g. when stations checking in both by voice and by app is causing confusion during roll call. When off, the check-in button is hidden for regular participants; staff still check stations in from the check-in list.
 
 **Community Net Features** (optional):
 - **Topic of the Week** — Ask participants a discussion question during check-in (responses collected in log)
@@ -159,7 +160,7 @@ For nets that run regularly (weekly club nets, SKYWARN practice nets, etc.), cre
 
 ### Schedules act as templates
 
-A **schedule** is also the *template* that nets are opened from. When the system (or you) opens a net from a schedule, the net is seeded with the schedule's name, description, info URL, stream URL, script, announcements, frequencies, check-in field configuration, ICS-309/Topic/Poll settings, and staff list.
+A **schedule** is also the *template* that nets are opened from. When the system (or you) opens a net from a schedule, the net is seeded with the schedule's name, description, info URL, stream URL, script, announcements, frequencies, check-in field configuration, ICS-309/Topic/Poll settings, self check-in setting, and staff list.
 
 After a net is opened, edits you make to the net stay on **that net only** by default. The schedule isn't touched unless you explicitly push your changes back to it. This keeps in-the-moment edits (a one-off frequency change, a session-specific announcement) from rewriting the schedule's defaults.
 

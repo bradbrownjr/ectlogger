@@ -151,6 +151,7 @@ async def create_template(
         schedule_type=template_data.schedule_type,
         schedule_config=schedule_config_json,
         ics309_enabled=template_data.ics309_enabled or False,
+        self_checkin_enabled=template_data.self_checkin_enabled if template_data.self_checkin_enabled is not None else True,
         topic_of_week_enabled=template_data.topic_of_week_enabled or False,
         topic_of_week_prompt=template_data.topic_of_week_prompt,
         poll_enabled=template_data.poll_enabled or False,
@@ -363,6 +364,8 @@ async def update_template(
         template.mobile_priority_sort = template_data.mobile_priority_sort
     if 'chat_grace_period_minutes' in template_data.model_fields_set:
         template.chat_grace_period_minutes = template_data.chat_grace_period_minutes
+    if template_data.self_checkin_enabled is not None:
+        template.self_checkin_enabled = template_data.self_checkin_enabled
     if template_data.topic_of_week_enabled is not None:
         template.topic_of_week_enabled = template_data.topic_of_week_enabled
     if template_data.topic_of_week_prompt is not None:

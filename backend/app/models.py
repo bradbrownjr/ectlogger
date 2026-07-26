@@ -120,6 +120,7 @@ class Net(Base):
     ics309_enabled = Column(Boolean, default=False)  # Generate ICS-309 format on close
     mobile_priority_sort = Column(Boolean, default=True)  # Promote mobile stations above chronological order
     chat_grace_period_minutes = Column(Integer, nullable=True)  # Minutes to keep chat open after close; null = disabled
+    self_checkin_enabled = Column(Boolean, default=True)  # If False, only NCS/logger-entered check-ins are accepted
 
     # Topic of the Week / Poll features for community nets
     topic_of_week_enabled = Column(Boolean, default=False)
@@ -161,6 +162,7 @@ class NetTemplate(Base):
     ics309_enabled = Column(Boolean, default=False)  # Enable ICS-309 format for net close emails
     mobile_priority_sort = Column(Boolean, default=True)  # Promote mobile stations above chronological order
     chat_grace_period_minutes = Column(Integer, nullable=True)  # Minutes to keep chat open after close; null = disabled
+    self_checkin_enabled = Column(Boolean, default=True)  # If False, nets from this schedule accept only NCS/logger-entered check-ins
 
     # Topic of the Week / Poll features for community nets
     topic_of_week_enabled = Column(Boolean, default=False)

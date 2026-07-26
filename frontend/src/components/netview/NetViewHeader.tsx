@@ -712,23 +712,26 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
                 </Tooltip>
                 </>
               ) : (
-                <Tooltip title="Check into net">
-                  <Button
-                    size="small"
-                    variant="contained"
-                    color="primary"
-                    onClick={onOpenCheckIn}
-                    sx={{
-                      minWidth: 'auto',
-                      px: 1,
-                      ...(highlightCheckIn && {
-                        animation: `${pulseAnimation} 1s infinite`,
-                      })
-                    }}
-                  >
-                    <LoginIcon fontSize="small" />
-                  </Button>
-                </Tooltip>
+                /* Self check-in may be disabled for this net — staff still add stations via the manage forms */
+                (net.self_checkin_enabled !== false || canManageCheckIns) && (
+                  <Tooltip title="Check into net">
+                    <Button
+                      size="small"
+                      variant="contained"
+                      color="primary"
+                      onClick={onOpenCheckIn}
+                      sx={{
+                        minWidth: 'auto',
+                        px: 1,
+                        ...(highlightCheckIn && {
+                          animation: `${pulseAnimation} 1s infinite`,
+                        })
+                      }}
+                    >
+                      <LoginIcon fontSize="small" />
+                    </Button>
+                  </Tooltip>
+                )
               )
             )}
             {/* Go Live - lobby */}

@@ -24,6 +24,7 @@ const BasicInfoTab: React.FC = () => {
     mobilePrioritySort, setMobilePrioritySort,
     chatGracePeriodEnabled, setChatGracePeriodEnabled,
     chatGracePeriodMinutes, setChatGracePeriodMinutes,
+    selfCheckinEnabled, setSelfCheckinEnabled,
     topicOfWeekEnabled, setTopicOfWeekEnabled,
     topicOfWeekPrompt, setTopicOfWeekPrompt,
     pollEnabled, setPollEnabled,
@@ -131,6 +132,21 @@ const BasicInfoTab: React.FC = () => {
               </Select>
             </Box>
           )}
+        </Box>
+
+        <Box sx={{ ml: 1, mt: 2 }}>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={selfCheckinEnabled}
+                onChange={(e) => setSelfCheckinEnabled(e.target.checked)}
+              />
+            }
+            label="Allow self check-in"
+          />
+          <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
+            When disabled, stations can't check themselves in from the app; only Net Control and logging staff can add check-ins. Use this if self check-in causes confusion alongside voice roll call.
+          </Typography>
         </Box>
       </FormGroup>
 

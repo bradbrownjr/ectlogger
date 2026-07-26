@@ -53,6 +53,7 @@ async def create_net(
         ics309_enabled=net_data.ics309_enabled or False,
         mobile_priority_sort=net_data.mobile_priority_sort if net_data.mobile_priority_sort is not None else True,
         chat_grace_period_minutes=net_data.chat_grace_period_minutes,
+        self_checkin_enabled=net_data.self_checkin_enabled if net_data.self_checkin_enabled is not None else True,
         topic_of_week_enabled=net_data.topic_of_week_enabled or False,
         topic_of_week_prompt=net_data.topic_of_week_prompt,
         poll_enabled=net_data.poll_enabled or False,

@@ -400,6 +400,12 @@ const NetView: React.FC = () => {
   useEffect(() => {
     if (!net || !isAuthenticated || checkInPromptShownRef.current) return;
     if (net.status !== 'active' && net.status !== 'lobby') return;
+    // Self check-in may be disabled for this net — staff still check in via manage forms.
+    // Duplicates the canManageCheckIns test (declared later, post-null-check) since this
+    // effect runs before that guard and must stay null-safe.
+    const isStaffForNet = user?.id === net.owner_id || user?.role === 'admin' || net.can_manage
+      || netRoles.some((r: any) => r.user_id === user?.id && (r.role === 'NCS' || r.role === 'LOGGER') && r.is_active !== false);
+    if (net.self_checkin_enabled === false && !isStaffForNet) return;
     const alreadyCheckedIn = checkIns.some(
       (ci: any) => ci.user_id === user?.id && ci.status !== 'checked_out'
     );
@@ -409,7 +415,7 @@ const NetView: React.FC = () => {
       const timer = setTimeout(() => checkInPrompt.onOpen(), 2000);
       return () => clearTimeout(timer);
     }
-  }, [net?.status, isAuthenticated, checkIns, user?.id]);
+  }, [net?.status, isAuthenticated, checkIns, user?.id, netRoles]);
 
   // Show archive reminder once per page load for closed nets when viewed by a manager or staff member
   useEffect(() => {
