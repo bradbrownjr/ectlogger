@@ -1,6 +1,6 @@
 # ECT Logger — Product Roadmap
 
-*Last updated: 2026-07-06 (rev 37 — Milestone 0.4 (Modularity & componentization) is now fully complete: all 4 steps done, including Step 4 frontend page splits for Admin, CreateSchedule, CreateNet, Dashboard, Scheduler, NetView, Profile.tsx, and NCSStaffModal.tsx, all browser-validated. NetView and NCSStaffModal stopped short of the ~800-line target by deliberate decision (see their table rows) — every risky/duplicated UI surface is extracted either way. Next up: Milestone 1.)*  
+*Last updated: 2026-07-26 (rev 38 — PR #2 (Milestone 0.4 → main) reviewed and merged clean: all P1/P2/P3 manual tests passed, CI green, no blocking issues found. Two low-severity, non-blocking cleanup items from that review logged below at 0.6.)*  
 *Compiled from user feedback: AA1GM, KC1UIX, W1BKW, W1MTW, KC1JMH*
 
 > **Canonical location:** `docs/ROADMAP.md`. ~~The root-level `ROADMAP.md` is a duplicate and should be deleted.~~ *Resolved: the root-level duplicate no longer exists as of 2026-07-03.*
@@ -131,6 +131,13 @@ Rule for sub-agents doing the splits: a component takes typed props and owns no 
 - ~~**Numbering collision**: three migrations shared prefix `013_`~~ — resolved 2026-07-07. Confirmed via `migrations/README.md` that there's no version-tracking table (each script is idempotent, run manually by exact filename), so renumbering already-applied files is functionally risk-free. Kept `013_add_user_last_active.py` (earliest, 2025-12-18 17:36) as-is; renamed the other two into the next free slots after 040, preserving their original relative order: `041_rename_available_to_has_traffic.py` (was 2025-12-18 22:34) and `042_add_unsubscribe_token.py` (was 2025-12-19). No other file references the old names. Docstrings inside both files describe the change in prose, not by number, so no internal edits needed.
 - ~~**Instance-specific data migrations are in the repo**~~ — norm codified 2026-07-07 in `migrations/README.md`'s new "Migration content guidelines" section: migrations should only contain schema changes; data fixes belong in the admin UI or an uncommitted one-off script. `022_add_aa1gm_to_schedule8_rotation.py`, `029_add_aa1gm_back_to_template8_rotation.py`, `030_add_fifth_week_user.py` are left in place (already ran) — this only stops the pattern going forward.
 - **Alembic adoption** — still open, deferred to the PostgreSQL item in Milestone 2, whose plan currently references `alembic upgrade head` even though **Alembic is not set up in this project**. Must be resolved as part of that work: either adopt Alembic first, or rewrite that step. **Model:** Opus for the design decision, Sonnet for execution.
+
+### 0.6 Post-Milestone-0.4 cleanup *(non-blocking, found during PR #2 review, 2026-07-26)*
+
+*PR #2 (Milestone 0.4 → main) merged clean: all P1/P2/P3 manual tests passed, both CI checks green, no merge conflicts. Code review surfaced two low-severity items that don't affect behavior — logged here so they don't get lost.*
+
+- **🔧 Dead/unused imports left over from the mechanical router split** — `backend/app/routers/nets_roles.py` (module-level imports shadowed by identical local imports in nearly every handler), `templates_topics.py` / `templates_merge.py` (long lists of unused model/schema imports), `nets_core.py` (unused `timedelta`, `check_net_lifecycle_permission`, `FrequencyResponse`). Purely cosmetic — `pyflakes` was clean of anything behavior-affecting. **Model:** Haiku (mechanical, single-file, precisely specified — run `pyflakes` per file and delete what it flags).
+- **🔧 `docs/DEVELOPMENT.md` WebSocket message-type doc drift** — lists `check_in_update` and `online_users` as message types, but the backend never emits those literal names (pre-existing drift, not introduced by Milestone 0.4). Reconcile the doc against the actual set the backend emits, cross-referenced in `useNetWebSocket.ts`: `check_in`, `active_speaker`, `active_frequency`, `chat_message`, `chat_reaction`, `role_change`, `status_change`, `check_in_deleted`, `hand_raised_changed`, `net_started`, `net_status_change`. **Model:** Haiku.
 
 ---
 
