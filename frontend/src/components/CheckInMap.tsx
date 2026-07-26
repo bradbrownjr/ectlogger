@@ -315,6 +315,16 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
 
   // Toggle maximize/restore
   const toggleMaximize = () => {
+    // Cancel any in-flight Leaflet pan/zoom animation before the DOM swap
+    // below unmounts the map container — otherwise Leaflet's requestAnimationFrame
+    // callback (_onZoomTransitionEnd) fires after the container is gone and
+    // throws trying to read _leaflet_pos off a pane that no longer exists.
+    mapRef.current?.stop();
+    // Release focus from whatever element (almost always this toggle button)
+    // currently has it, since the maximize/restore branch swap below replaces
+    // the whole subtree — a focused element inside a subtree React is about to
+    // mark aria-hidden triggers a browser accessibility warning.
+    (document.activeElement as HTMLElement | null)?.blur();
     if (maximized) {
       // Restore previous size
       if (preMaximizeState) {
@@ -502,6 +512,7 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
                   zoom={6}
                   style={{ height: '100%', width: '100%' }}
                   ref={mapRef}
+                  zoomAnimation={false}
                 >
                   <TileLayer
                     attribution={tileAttribution}
@@ -746,6 +757,7 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
                 zoom={6}
                 style={{ height: '100%', width: '100%' }}
                 ref={mapRef}
+                zoomAnimation={false}
               >
                 <TileLayer
                   attribution={tileAttribution}

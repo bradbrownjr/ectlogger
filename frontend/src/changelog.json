@@ -1,6 +1,48 @@
 {
-  "version": "2026.07.03",
+  "version": "2026.07.07",
   "entries": [
+    {
+      "version": "2026.07.07",
+      "date": "2026-07-07",
+      "sections": [
+        {
+          "title": "Bug Fixes",
+          "type": "bugfix",
+          "items": [
+            {
+              "text": "Net View: Check-in map no longer crashes — Maximizing or restoring the check-in location map could throw an error and leave the map broken. Fixed.",
+              "userImpact": true
+            },
+            {
+              "text": "Chat: Avatars now show on new messages — Profile pictures previously only appeared on messages that were already on the page when you loaded it. New messages sent during the net now show the sender's avatar too.",
+              "userImpact": true
+            },
+            {
+              "text": "Net View: Check-in edits now properly restricted — Editing a check-in is now limited to the station itself, the Net Manager, NCS, and Logger. This closes a gap that let any signed-in participant edit someone else's check-in details.",
+              "userImpact": true
+            },
+            {
+              "text": "Net View: Logger role can manage the active frequency — Operators assigned the Logger role could not set or clear the net's active frequency. This now works as intended.",
+              "userImpact": true
+            },
+            {
+              "text": "Net View: Assigning NCS/Logger roles works for all Net Managers — The role-assignment picker showed no names to choose from unless you were a site admin. Any Net Manager can now assign roles as intended.",
+              "userImpact": true
+            }
+          ]
+        },
+        {
+          "title": "Improvements",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Net View: Guests can now see poll results and topic answers — Visitors who aren't signed in can now see poll results, topic-of-the-week responses, and properly labeled check-in fields, matching the same public view already available for check-ins and chat.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.07.03",
       "date": "2026-07-03",

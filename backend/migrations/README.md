@@ -8,6 +8,14 @@ Migration scripts are one-time Python scripts that modify the database schema (a
 
 Fresh installations don't need migrations - they get the current schema from `models.py`.
 
+## Migration content guidelines
+
+Migrations should only contain schema changes (add/modify columns,
+tables, indexes). Do not commit instance-specific data fixes
+(e.g. seeding one deployment's roster data) as numbered migrations —
+self-hosters will run these against their own databases. Do data
+fixes via the admin UI or an uncommitted one-off script instead.
+
 ## Running a Migration
 
 ```bash

@@ -418,12 +418,30 @@ on multi-part work. The guardrail is a deliberate checkpoint.
 - No em-dashes in source code or generated text — use commas, periods,
   or parentheses.
 
-### Feature Registry (template)
+### Feature Registry
 
 Maintain a compact checklist of shipped user-facing features keyed to
 their primary implementation files. Before any large refactor, verify
-every row touching the affected file column is preserved.
+every row touching the affected file column is preserved. File paths
+reflect the post-Milestone-0.4 split (backend router facades, frontend
+`components/<page>/` + `hooks/`) — see `docs/DEVELOPMENT.md` for the
+split patterns themselves.
 
 | Feature | Key file(s) | Key identifiers |
 |---|---|---|
-| _(populate as features ship)_ | | |
+| Net lifecycle (draft→scheduled→lobby→active→closed→archived) | `backend/app/routers/nets_core.py`; `frontend/src/pages/NetView.tsx`, `hooks/useNetData.ts` | `NetStatus` enum, `POST /nets/{id}/start`, `/close`, `/archive` |
+| Manual "Create Net" from a schedule | `backend/app/routers/templates_subscriptions.py::create_net_from_template` | `POST /templates/{id}/create-net`; copies `net_frequencies` — regressed once (2026-07) when this import broke silently, see `test_templates.py` |
+| Automatic scheduled net creation | `backend/app/ncs_reminder_service.py::_get_or_create_scheduled_net` | Background job; catches its own exceptions and returns `None` on failure — check logs, not just HTTP responses, when debugging |
+| Check-in CRUD + recheck dedup | `backend/app/routers/check_ins.py`; `frontend/src/components/netview/CheckInTable.tsx`, `CheckInMobileList.tsx`, `checkInActions.ts` | Unified desktop/detached table (was 3 near-duplicate tables pre-0.4) |
+| NCS staff / rotation management | `backend/app/routers/ncs_rotation.py`, `ncs_schedule.py`; `frontend/src/components/NCSStaffModal.tsx` (parent) + `components/ncs-staff/*Tab.tsx` | `NCSRotationMember`, `TemplateStaff`, drag-reorder via `/ncs-rotation/members/reorder` |
+| Schedule/template creation | `backend/app/routers/templates_core.py`, `templates_merge.py`, `templates_topics.py`; `frontend/src/pages/CreateSchedule.tsx` + `components/create-schedule/`, shared `components/forms/` | `NetTemplate`, `schedule_type`/`schedule_config` (local-time recurrence rule, see Date & Time Handling) |
+| Net creation (ad hoc) | `frontend/src/pages/CreateNet.tsx` + `components/create-net/` | Shares 4 form panels with CreateSchedule via `components/forms/` |
+| Template subscriptions / email digest | `backend/app/routers/templates_subscriptions.py`; `backend/app/email/digest.py` | `NetTemplateSubscription`, "What's New" opt-in |
+| Chat (messages, reactions, images) | `backend/app/routers/chat.py`; `frontend/src/components/netview/` (chat side panel) | WebSocket `chat_message` type |
+| Activity statistics / drill-downs | `backend/app/routers/statistics_user.py`, `statistics_net.py`, `statistics_global.py`, `statistics_geo.py`; `frontend/src/pages/Profile.tsx` + `components/profile/ActivityTab.tsx`, `DrillDownTable.tsx` | `DrillDownTable` unifies what were 2 near-duplicate paginated tables |
+| Profile identity + settings | `frontend/src/pages/Profile.tsx` + `components/profile/ProfileTab.tsx`, `SettingsTab.tsx`, `ProfileAvatarSection.tsx` | Shared `formData`/`handleSubmit` stay in the parent page — the two tabs submit the same `PUT /users/me` |
+| Admin panel (6 tabs) | `frontend/src/pages/Admin.tsx` + `components/admin/*Tab.tsx` | Users, settings, feature flags, maintenance banner, Ko-fi config, changelog |
+| Auth (magic link + OAuth → JWT) | `backend/app/routers/auth.py`, `app/auth.py`; `backend/app/email/auth.py` | `create_magic_link_token`, `create_access_token` |
+| Email notifications (net lifecycle, reminders, logs) | `backend/app/email_service.py` (facade) + `app/email/{base,auth,net_lifecycle,reminders,net_logs,digest}.py` | `EmailService` facade class |
+| WebSocket real-time updates | `backend/app/main.py::ConnectionManager`; `frontend/src/hooks/useNetWebSocket.ts` | Message types: `check_in_update`, `frequency_change`, `chat_message`, `online_users`, `net_started`, `active_speaker`, `check_in_deleted`, `role_change`, `active_frequency` |
+| Permission checks (owner/admin/co-manager/staff) | `backend/app/permissions.py` | `check_net_permission`, `check_template_permission` — used across nets/templates/check-ins routers |

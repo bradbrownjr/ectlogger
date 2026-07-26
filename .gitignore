@@ -63,3 +63,6 @@ Thumbs.db
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Local email digest (not for commit)
+docs/ectlogger-email-digest.md

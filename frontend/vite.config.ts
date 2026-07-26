@@ -31,6 +31,24 @@ export default defineConfig(({ mode }) => {
           ws: true,
         }
       }
+    },
+    // `vite preview` serves the built dist/ (fast, production-like) while still
+    // proxying /api and /ws to the backend exactly like the dev server. Used on
+    // beta when serving a production build instead of the HMR dev server so
+    // headless tooling loads the app in ~1-2s instead of a slow dev cold-start.
+    preview: {
+      port: 3000,
+      allowedHosts,
+      proxy: {
+        '/api': {
+          target: `http://localhost:${backendPort}`,
+          changeOrigin: true,
+        },
+        '/ws': {
+          target: `ws://localhost:${backendPort}`,
+          ws: true,
+        }
+      }
     }
   }
 })

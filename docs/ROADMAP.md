@@ -1,6 +1,6 @@
 # ECT Logger — Product Roadmap
 
-*Last updated: 2026-07-03 (rev 26 — added component placement/reuse convention to Milestone 0.4; rev 25 — full codebase audit, Milestone 0, per-item model recommendations)*  
+*Last updated: 2026-07-06 (rev 37 — Milestone 0.4 (Modularity & componentization) is now fully complete: all 4 steps done, including Step 4 frontend page splits for Admin, CreateSchedule, CreateNet, Dashboard, Scheduler, NetView, Profile.tsx, and NCSStaffModal.tsx, all browser-validated. NetView and NCSStaffModal stopped short of the ~800-line target by deliberate decision (see their table rows) — every risky/duplicated UI surface is extracted either way. Next up: Milestone 1.)*  
 *Compiled from user feedback: AA1GM, KC1UIX, W1BKW, W1MTW, KC1JMH*
 
 > **Canonical location:** `docs/ROADMAP.md`. ~~The root-level `ROADMAP.md` is a duplicate and should be deleted.~~ *Resolved: the root-level duplicate no longer exists as of 2026-07-03.*
@@ -64,45 +64,55 @@ Rule of thumb: Haiku and Sonnet can only maintain this codebase safely once file
 
 ~~**🔧 Composite index candidates for hot query paths** — migration 040 written 2026-07-03; run on prod after verifying with `EXPLAIN QUERY PLAN` — completed 2026-07-03~~
 
-### 0.4 Modularity & componentization program
+### 0.4 Modularity & componentization program *(complete as of 2026-07-06 — all 4 steps done)*
 
 *Goal: no page/router over ~800 lines, so any single file fits comfortably in a small model's working set. Extract shared patterns first (they shrink every file that follows), then split files from easiest to hardest. Each extraction must preserve behavior exactly — run the 0.3 suite after each step, and follow the Regression Check Policy (a 5,410-line file shrinking by thousands of lines requires the feature-survival checklist).*
 
-**Step 1 — Shared frontend hooks** *(do first; every later split gets smaller)*  
-- [ ] `useLocalStorage(key, initial)` — replaces the repeated localStorage-init + persist-effect pattern in NetView, Dashboard, Scheduler
-- [ ] `useSortableTable(items, initialField)` — replaces four duplicate sortField/sortDirection pairs in Admin.tsx plus Scheduler.tsx
-- [ ] `useDialog()` returning open/onOpen/onClose — NetView alone declares ~36 dialog open-state pairs
-- [ ] `useApiData(fetchFn)` — the fetch + loading + error + refetch boilerplate repeated across pages
-- [ ] A `localStorageKeys.ts` constants file documenting every key in use (themeMode, dashboard-*, scheduler-*, floatingWindow_*, checkin_hideDuplicates, token, ...)  
-**Model:** Sonnet to design and land the hooks with one exemplar migration each; Haiku for the remaining mechanical migrations.
+*Amendment (2026-07-06, after NetView): the ~800-line number is a proxy for "safe for a small model to edit without collateral damage," not an end in itself. NetView stopped at ~2,289 lines once every duplicated/real-time-risky surface was extracted, because the remaining content (net-lifecycle handler glue, each tied to a different already-extracted dialog) doesn't share a clean dependency boundary — forcing it under 800 would trade a legible line count for an illegible seam. Judge each file on that basis, not the raw number.*
 
-**Step 2 — Backend shared permission module**  
-Extract `app/permissions.py`: `check_net_permission`, `check_template_permission`, and the repeated is_owner/is_admin/is_ncs composition currently duplicated across `routers/nets.py`, `routers/templates.py`, `routers/check_ins.py`. Also normalize the two inconsistent admin-check styles (`user.role == UserRole.ADMIN` vs `user.role.value == "admin"`) to one idiom.  
-**Model:** Sonnet.
+~~**Step 1 — Shared frontend hooks** *(do first; every later split gets smaller)*~~  
+~~- `useLocalStorage(key, initial)` — replaces the repeated localStorage-init + persist-effect pattern in NetView, Dashboard, Scheduler~~  
+~~- `useSortableTable(items, initialField)` — replaces four duplicate sortField/sortDirection pairs in Admin.tsx plus Scheduler.tsx~~  
+~~- `useDialog()` returning open/onOpen/onClose — NetView alone declares ~36 dialog open-state pairs~~  
+~~- `useApiData(fetchFn)` — the fetch + loading + error + refetch boilerplate repeated across pages~~  
+~~- A `localStorageKeys.ts` constants file documenting every key in use (themeMode, dashboard-*, scheduler-*, floatingWindow_*, checkin_hideDuplicates, token, ...)~~  
+*Completed 2026-07-03. All hooks created in `frontend/src/hooks/`; exemplar + mechanical migrations applied across Dashboard, Scheduler, Admin, NetView, Statistics.*
 
-**Step 3 — Backend router splits** *(FastAPI sub-routers; mechanical once the pattern is set)*  
-| File | Lines | Proposed split |
+~~**Step 2 — Backend shared permission module**~~  
+~~Extract `app/permissions.py`: `check_net_permission`, `check_template_permission`, and the repeated is_owner/is_admin/is_ncs composition currently duplicated across `routers/nets.py`, `routers/templates.py`, `routers/check_ins.py`. Also normalize the two inconsistent admin-check styles (`user.role == UserRole.ADMIN` vs `user.role.value == "admin"`) to one idiom.~~  
+*Completed 2026-07-03. `app/permissions.py` created; silent bug fixed in `ncs_rotation.py` (enum vs string admin check); all 8 `.role.value == "admin"` sites normalized.*
+
+~~**Step 3 — Backend router splits** *(FastAPI sub-routers; mechanical once the pattern is set)*~~  
+| File | Lines | Split result |
 |---|---|---|
-| `routers/nets.py` | 2,207 | `nets_core.py` (lifecycle), `nets_roles.py` (NCS/role mgmt), `nets_export.py` (CSV/ICS-309/archive/clone), `nets_polls.py` |
-| `email_service.py` | 1,613 | `email/base.py` (send + unsubscribe footer), `email/auth.py`, `email/net_lifecycle.py`, `email/reminders.py`, `email/net_logs.py` (incl. ICS-309), `email/digest.py` — thin facade keeps the existing import path |
-| `routers/templates.py` | 1,349 | `templates_core.py` (CRUD), `templates_merge.py`, `templates_subscriptions.py`, `templates_topics.py` |
-| `routers/statistics.py` | 1,022 | `statistics_global.py`, `statistics_net.py`, `statistics_user.py`, `statistics_geo.py` |
-| `routers/ncs_rotation.py` | 877 | split schedule *computation* (pure functions — most testable code in the app) from the CRUD/override routes |
+| ~~`routers/nets.py` (2,207)~~ | done | `nets_core.py`, `nets_polls.py`, `nets_export.py`, `nets_roles.py` + facade |
+| ~~`email_service.py` (1,613)~~ | done | `email/{base,auth,net_lifecycle,reminders,net_logs,digest}.py` + `EmailService` facade class |
+| ~~`routers/templates.py` (1,349)~~ | done | `templates_core.py`, `templates_merge.py`, `templates_subscriptions.py`, `templates_topics.py` + facade |
+| ~~`routers/statistics.py` (1,022)~~ | done | `statistics_{global,net,user,geo}.py` + facade |
+| ~~`routers/ncs_rotation.py` (877)~~ | done | `ncs_schedule.py` (pure functions, unit-testable), router stays in `ncs_rotation.py` |
 
-`ncs_reminder_service.py` (777) can stay whole — it is one cohesive background service.  
-**Model:** Sonnet for the first split (nets.py) to establish the pattern; Haiku or Sonnet for the rest. Route paths must not change — verify with a route-table diff before/after.
+~~`ncs_reminder_service.py` (777) can stay whole — it is one cohesive background service.~~  
+*Completed 2026-07-04. All route paths unchanged (verified with before/after route table diff). 23/23 tests pass on beta.*
 
-**Step 4 — Frontend page splits** *(easiest first; NetView last)*  
+~~**Step 4 — Frontend page splits**~~ *(all files done — see decisions inline for NetView and NCSStaffModal, both stopped short of ~800 lines by deliberate judgment call, not oversight)*  
 | File | Lines | Extraction plan |
 |---|---|---|
-| `Admin.tsx` | 3,215 | Six tab components: `AdminUsersTab`, `AdminContactsTab`, `AdminFieldsTab`, `AdminFrequenciesTab`, `AdminSecurityTab`, `AdminMaintenanceTab` — the tabs are already self-contained |
-| `CreateSchedule.tsx` | 2,262 | One component per tab (Basic Info, Staff & Rotation, Communication Plan, Script, Check-in Fields) with a shared form context |
-| `CreateNet.tsx` | 1,820 | Same per-tab pattern as CreateSchedule; extract any tab panels the two pages share into common components (DRY) |
-| `Dashboard.tsx` | 1,490 | Extract `NetCard`, grid/list view components, and a `useFavorites` hook shared with Scheduler |
-| `Scheduler.tsx` | 1,276 | Extract `ScheduleCard`; reuse `useFavorites` and view-toggle from Dashboard |
-| `NetView.tsx` | 5,410 | **Do last, after the hooks exist.** Extract: `NetViewHeader`, `CheckInForm`, `CheckInTable` (desktop), `CheckInMobileList`, the dialog cluster (CSV import, archive, role assignment as separate files), and `useNetWebSocket`. ~69 useState calls today; group related state into reducers as it moves |
+| ~~`Admin.tsx` (3,215)~~ | done | Six self-contained tab components in `components/admin/` |
+| ~~`CreateSchedule.tsx` (2,262)~~ | done | 7 tab components + `CreateScheduleContext`; 4 shared form panels in `components/forms/` |
+| ~~`CreateNet.tsx` (1,820)~~ | done | `BasicInfoTab`, `NCSStaffTab` in `components/create-net/`; shares 4 form panels with CreateSchedule |
+| ~~`Dashboard.tsx` (1,490)~~ | done | `NetCard` extracted to `components/dashboard/`; `useFavorites` hook in `hooks/` |
+| ~~`Scheduler.tsx` (1,276)~~ | done | `ScheduleCard` extracted to `components/scheduler/`; reuses `useFavorites` |
+| ~~`NetView.tsx` (5,410 → 2,289)~~ | done | Extracted to `components/netview/` (+ `hooks/`): `useNetWebSocket`, `CsvImportDialog`, `ArchiveDialogs`, `RoleAssignmentDialog`, `CheckInFormDialog`, `NetControlDialogs`, `NetViewHeader`, `checkInStatusHelpers`, `CheckInMobileList`, `CheckInTable` (unified desktop+detached), `useNetData`, `NetViewSidePanels`, `checkInActions` factory. **Decision (2026-07-06, Brad + Opus review): stop here, don't chase the ~800-line number further.** The ~800-line goal was a proxy for "safe for a small model to edit" — the actual risk (three near-duplicate check-in tables that could silently drift, entangled real-time inline-edit state) is fully extracted and browser-validated. What remains is ~30 net-lifecycle handlers (start/close/archive/subscribe/etc.), each tied to a different already-extracted dialog — a wide, heterogeneous dependency set (10+ dialog controllers, fetchers, toast, navigate) that doesn't share one clean deps object the way `useNetData`/`checkInActions` did. Forcing that extraction would trade a legible line count for an illegible seam, and these handlers are genuine page-controller glue (nothing else calls them) rather than reusable logic. NetView stays at ~2,289 lines as a coherent page controller with every risky/duplicated surface already gone. |
+| ~~`NCSStaffModal.tsx` (1,789 → 1,008)~~ | done | Extracted the 4 tab render functions to `components/ncs-staff/`: `NCSStaffRosterTab` (the "Net Control Stations" tab, ~415 lines — kept as one component rather than split into a shared `StaffRosterListItem`, since its 3 context-dependent display modes share presentational shape but differ enough in business logic — manager transfer vs. duty highlighting vs. plain role list — that a forced shared sub-component would obscure more than it saves), `NCSStaffRotationTab` (drag-reorderable list + fifth-week picker; drag-visual state `dragOverIdx`/`dragItemIdx` is now local to the component since nothing else reads it, while the actual reorder mutation stays a parent-owned prop), `NCSStaffScheduleTab` (fully self-contained including the swap/cancel dialog and its handlers, since nothing else in the modal touched that state), `NCSStaffSubscribersTab`. Also extracted `utils/apiErrors.ts` (`getErrorMessage`), deduping a helper that was locally defined in both the parent and the new Schedule tab. All 4 extractions verified byte-identical via normalized diff. Roster/Rotation/Subscribers tabs keep their handlers and cross-cutting state (staff/members/scheduleEntries, fetchData, permission derivations) in the parent, passed down as props — unlike Profile.tsx's tabs, several handlers here ripple across tabs (e.g. removing a staffer also updates rotation and schedule entries), so a zero-prop self-contained split wasn't safe. Browser-validated on beta 2026-07-06: opened the modal on both a bare schedule and one with 6 configured rotation members, clicked through all 4 tabs, and used the Up/Down reorder buttons to confirm the extracted `handleMoveMember` prop still persists correctly through `/ncs-rotation/members/reorder` (test data restored to original order afterward). Stopped at 1,008 lines rather than forcing under 800 — same judgment call as NetView: every duplicated/complex UI surface is extracted, and the remainder (fetchData, ~15 handlers, permission derivations, Dialog/email/toast shell) is cohesive page-controller glue without a clean narrow dependency boundary. |
+| ~~`Profile.tsx` (1,078 → 193)~~ | done | Extracted to `components/profile/` (+ `hooks/`): `useUserStats` (activity-stats fetch effect), `ProfileAvatarSection` (avatar display + crop dialog + upload/delete, fully self-contained — calls `useAuth()` directly), `ProfileTab` (identity form), `SettingsTab` (notification/display toggles), `ActivityTab` (stat cards + favorite-nets table + PDF export, zero props — calls `useUserStats`/`useAuth`/`useNavigate` itself), and **`DrillDownTable`** (unifies the two near-identical paginated drill-down tables the audit flagged into one parameterized component via `showNetName`/`showCheckIns`/`onView` props). `formData`/`handleSubmit`/`saving`/`error`/`success` stay in the parent (the only state genuinely shared between ProfileTab and SettingsTab, since both submit the same `PUT /users/me`), typed via a new shared `ProfileFormData` interface. All bodies verified byte-identical via normalized diff. Browser-validated on beta 2026-07-06: all 3 tabs render, tab-switching works, stat-card drill-down activates correctly, zero non-benign console errors. `tsc --noEmit` clean. |
 
-`NCSStaffModal.tsx` (1,789) and `Profile.tsx` (1,078) are cohesive enough to leave alone for now; revisit if they grow.
+*Admin through Scheduler splits completed 2026-07-04. NetView dialog cluster + form + WS hook completed and beta-validated 2026-07-05 (`0929758`, `485ee48`, `f3418ad`, `0fdfe31`, `556a4df`, `4e6ad87`). Header + status-helper factory + mobile-list 2026-07-05 (`ec10adb`, `8b945e0`, `8c40cb3`). Desktop `CheckInTable` extraction (byte-identical body, verified) + detached unification 2026-07-05 (`91a6b1b`, `10874b9`). All Opus-gated table work complete and browser-validated 2026-07-06. Sub-800 slim-down: `useNetData` hook (`1e42839`), `NetViewSidePanels` (`d7a2d98`), `checkInActions` factory (`82a7bdb`), all 2026-07-06 and all browser-validated.*
+
+**✅ `checkInActions` browser-validated 2026-07-06.** Live smoke test on beta hit two false-negative signals before landing on ground truth — worth recording since they're general Browserless-testing gotchas, not app bugs: (1) this net auto-creates an NCS check-in for the viewing owner, so a page-wide `button[title="Raise hand"]` selector silently toggled the *wrong* row's hand-raise; scoping the query to the target row's own `<tr>` fixed it. (2) Browserless's default 800×600 viewport is narrower than the check-in table, so Puppeteer's real `.click()` (which requires an on-screen, unclipped target) failed for off-screen columns, and a DOM-level `.click()` bypass left focus in a state where the subsequent blur-driven save never fired; setting `page.setViewport({width:1600, height:1000})` resolved both. With those fixed, direct before/after database reads confirmed `handleToggleHand` (hand_raised flipped correctly for the intended check-in) and `handleSaveInlineEdit` via Enter-key save (edited field value persisted) both work exactly as before extraction.
+
+**✅ Browser-validated 2026-07-06** (Browserless container recovered after the 2026-07-05 Unraid power-loss reboot). Live smoke test on beta against a throwaway net confirmed: the check-in row renders identically in the attached and detached placements (same `CheckInTable`, confirmed by matching row text); clicking detach correctly moves *only* the check-in panel into floating mode (`checkInTableIsDocked: true`, verified distinct from Chat/Activity Log which have their own similarly-titled detach buttons); the in-table detach icon correctly disappears once detached (`detachIconGoneInDetachedView: true`); and — the key Step 4 behavior change — **clicking a cell in the now-detached table activates inline editing** (`inlineEditActivated: true`), confirming the disparity fix. All API calls 200, zero non-benign console errors. NetView Milestone 0.4 split is fully validated end-to-end; the Opus gate is closed for good.
+
+**✅ Sub-800 slim-down validated 2026-07-06.** `NetViewSidePanels` consolidates the Chat/Activity Log docked-column and both detached-`FloatingWindow` blocks into one component/call site. A live smoke test confirmed: Chat's own detach icon (rendered inside Chat's own `<table>` header, not the check-in list's) correctly toggles exactly one panel to floating mode; and — critically — the pre-existing quirk where Activity Log's docked slot disappears whenever Chat is detached (both gated on the same `!chatDetached` condition) was preserved exactly, not accidentally fixed or broken by consolidating the three render blocks into one call site. Confirms MUI Grid's default `position: static` doesn't change the FloatingWindow's (react-rnd, `position: absolute`) resolved containing block at the new nesting depth.
 
 **Placement and reuse convention** *(added rev 26 — the point of splitting is reuse, not just smaller files)*  
 Extractions are organized by *functionality*, and each extracted piece gets an explicit home based on its reuse scope:
@@ -118,12 +128,9 @@ Rule for sub-agents doing the splits: a component takes typed props and owns no 
 
 ### 0.5 Migration hygiene policy *(process, not code)*
 
-Findings to correct going forward — noted plainly for review:
-
-- **Instance-specific data migrations are in the repo**: `022_add_aa1gm_to_schedule8_rotation.py`, `029_add_aa1gm_back_to_template8_rotation.py`, `030_add_fifth_week_user.py` bake one deployment's roster data into the shared migration history. Self-hosters will run these against their own databases. Going forward, do data fixes via admin UI or one-off server-side scripts that are *not* committed as numbered migrations. *(Not proposing deletion — they already ran; just stop the pattern.)*
-- **Numbering collision**: three migrations share prefix `013_`. Adopt strictly sequential numbering, or adopt Alembic (see the PostgreSQL item in Milestone 2, whose plan currently references `alembic upgrade head` even though **Alembic is not set up in this project** — that discrepancy must be resolved as part of the Postgres work: either adopt Alembic first, or rewrite that step).
-
-**Model:** n/a (policy). The Alembic-adoption decision, if taken, is Opus for the design and Sonnet for execution.
+- ~~**Numbering collision**: three migrations shared prefix `013_`~~ — resolved 2026-07-07. Confirmed via `migrations/README.md` that there's no version-tracking table (each script is idempotent, run manually by exact filename), so renumbering already-applied files is functionally risk-free. Kept `013_add_user_last_active.py` (earliest, 2025-12-18 17:36) as-is; renamed the other two into the next free slots after 040, preserving their original relative order: `041_rename_available_to_has_traffic.py` (was 2025-12-18 22:34) and `042_add_unsubscribe_token.py` (was 2025-12-19). No other file references the old names. Docstrings inside both files describe the change in prose, not by number, so no internal edits needed.
+- ~~**Instance-specific data migrations are in the repo**~~ — norm codified 2026-07-07 in `migrations/README.md`'s new "Migration content guidelines" section: migrations should only contain schema changes; data fixes belong in the admin UI or an uncommitted one-off script. `022_add_aa1gm_to_schedule8_rotation.py`, `029_add_aa1gm_back_to_template8_rotation.py`, `030_add_fifth_week_user.py` are left in place (already ran) — this only stops the pattern going forward.
+- **Alembic adoption** — still open, deferred to the PostgreSQL item in Milestone 2, whose plan currently references `alembic upgrade head` even though **Alembic is not set up in this project**. Must be resolved as part of that work: either adopt Alembic first, or rewrite that step. **Model:** Opus for the design decision, Sonnet for execution.
 
 ---
 

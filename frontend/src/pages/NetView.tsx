@@ -1,4 +1,20 @@
 import React, { useEffect, useState, useRef } from 'react';
+import useDialog from '../hooks/useDialog';
+import useLocalStorage from '../hooks/useLocalStorage';
+import { useNetWebSocket } from '../hooks/useNetWebSocket';
+import { useNetData } from '../hooks/useNetData';
+import CsvImportDialog from '../components/netview/CsvImportDialog';
+import ArchiveDialogs from '../components/netview/ArchiveDialogs';
+import RoleAssignmentDialog from '../components/netview/RoleAssignmentDialog';
+import CheckInFormDialog, { CheckInFormState } from '../components/netview/CheckInFormDialog';
+import NetControlDialogs from '../components/netview/NetControlDialogs';
+import NetViewHeader from '../components/netview/NetViewHeader';
+import { getCheckInStatusHelpers } from '../components/netview/checkInStatusHelpers';
+import { getCheckInActions } from '../components/netview/checkInActions';
+import CheckInMobileList from '../components/netview/CheckInMobileList';
+import CheckInTable from '../components/netview/CheckInTable';
+import NetViewSidePanels from '../components/netview/NetViewSidePanels';
+import { STORAGE_KEYS } from '../utils/localStorageKeys';
 import { displayCallsign } from '../utils/userDisplay';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
@@ -7,17 +23,10 @@ import {
   Typography,
   Box,
   Button,
-  Chip,
   Table,
   TableBody,
   TableCell,
-  TableContainer,
-  TableHead,
   TableRow,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   TextField,
   IconButton,
   FormControl,
@@ -26,59 +35,19 @@ import {
   MenuItem,
   List,
   ListItem,
-  ListItemAvatar,
   ListItemText,
   Snackbar,
-  SnackbarContent,
   Autocomplete,
   Grid,
   Tooltip,
-  CircularProgress,
   Collapse,
-  Checkbox,
-  FormControlLabel,
 } from '@mui/material';
-import { keyframes } from '@mui/system';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import DownloadIcon from '@mui/icons-material/Download';
-import UploadFileIcon from '@mui/icons-material/UploadFile';
-import ArchiveIcon from '@mui/icons-material/Archive';
-import UnarchiveIcon from '@mui/icons-material/Unarchive';
-import MapIcon from '@mui/icons-material/Map';
-import VolumeUpIcon from '@mui/icons-material/VolumeUp';
-import BarChartIcon from '@mui/icons-material/BarChart';
-import FastForwardIcon from '@mui/icons-material/FastForward';
-import SearchIcon from '@mui/icons-material/Search';
-import PanToolIcon from '@mui/icons-material/PanTool';
-import DescriptionIcon from '@mui/icons-material/Description';
-import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
-import ArticleIcon from '@mui/icons-material/Article';
-import CampaignIcon from '@mui/icons-material/Campaign';
-import SpeakerNotesIcon from '@mui/icons-material/SpeakerNotes';
-import HistoryIcon from '@mui/icons-material/History';
-import GroupIcon from '@mui/icons-material/Group';
-import LoginIcon from '@mui/icons-material/Login';
-import LogoutIcon from '@mui/icons-material/Logout';
-import CloseIcon from '@mui/icons-material/Close';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import LanguageIcon from '@mui/icons-material/Language';
-import InfoIcon from '@mui/icons-material/Info';
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
-import TimerIcon from '@mui/icons-material/Timer';
-import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutline';
-import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium';
-import { netApi, checkInApi, userApi, netRoleApi, templateApi } from '../services/api';
+import { netApi, checkInApi, netRoleApi, templateApi } from '../services/api';
 import api from '../services/api';
-import { formatTimeWithDate } from '../utils/dateUtils';
 import { useAuth } from '../contexts/AuthContext';
 import { useLocation } from '../contexts/LocationContext';
-import Chat from '../components/Chat';
-import ActivityLog from '../components/ActivityLog';
 import CheckInMap from '../components/CheckInMap';
 import BulkCheckIn from '../components/BulkCheckIn';
 import SearchCheckIns from '../components/SearchCheckIns';
@@ -87,42 +56,7 @@ import Announcements from '../components/Announcements';
 import ScheduleAnnouncements from '../components/ScheduleAnnouncements';
 import TopicHistory from '../components/TopicHistory';
 import FloatingWindow from '../components/FloatingWindow';
-import UserAvatar from '../components/UserAvatar';
 import UserProfileDialog from '../components/UserProfileDialog';
-
-interface Net {
-  id: number;
-  name: string;
-  description: string;
-  info_url?: string;
-  stream_url?: string;
-  script?: string;
-  announcements?: string;
-  status: string;
-  owner_id: number;
-  template_id?: number;  // ID of the template this net was created from (for scheduled nets)
-  active_frequency_id?: number;
-  ics309_enabled?: boolean;
-  mobile_priority_sort?: boolean;
-  chat_grace_period_minutes?: number | null;
-  // Topic of the Week / Poll features
-  topic_of_week_enabled?: boolean;
-  topic_of_week_prompt?: string;
-  poll_enabled?: boolean;
-  poll_question?: string;
-  field_config?: {
-    [key: string]: {
-      enabled: boolean;
-      required: boolean;
-    };
-  };
-  frequencies: Frequency[];
-  scheduled_start_time?: string;  // Scheduled start time for countdown timer
-  started_at?: string;
-  closed_at?: string;
-  created_at: string;
-  can_manage?: boolean;  // Server-computed; true for owner, admin, NCS, and active template staff
-}
 
 interface Frequency {
   id: number;
@@ -172,19 +106,6 @@ interface FieldDefinition {
   sort_order: number;
 }
 
-interface NetRole {
-  id: number;
-  user_id: number;
-  email: string;
-  name?: string;
-  callsign?: string;
-  avatar_url?: string | null;
-  role: string;
-  active_frequency_id?: number;
-  assigned_at: string;
-  is_active?: boolean;
-}
-
 // NCS color palette - works in both light and dark modes
 const NCS_COLORS = [
   { bg: 'rgba(244, 67, 54, 0.15)', border: '#f44336', text: '#f44336' },   // Red
@@ -195,125 +116,75 @@ const NCS_COLORS = [
   { bg: 'rgba(0, 188, 212, 0.15)', border: '#00bcd4', text: '#00bcd4' },   // Cyan
 ];
 
-// Pulse animation for highlighting the check-in button (blue)
-const pulseAnimation = keyframes`
-  0% {
-    box-shadow: 0 0 0 0 rgba(25, 118, 210, 0.7);
-  }
-  70% {
-    box-shadow: 0 0 0 10px rgba(25, 118, 210, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(25, 118, 210, 0);
-  }
-`;
-
-// Pulse animation for highlighting the start net button (green)
-const pulseAnimationGreen = keyframes`
-  0% {
-    box-shadow: 0 0 0 0 rgba(46, 125, 50, 0.7);
-  }
-  70% {
-    box-shadow: 0 0 0 10px rgba(46, 125, 50, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(46, 125, 50, 0);
-  }
-`;
-
-// Yellow shimmer animation for topic/poll config needed indicator
-const shimmerYellow = keyframes`
-  0% {
-    background-color: rgba(255, 193, 7, 0.3);
-  }
-  50% {
-    background-color: rgba(255, 193, 7, 0.7);
-  }
-  100% {
-    background-color: rgba(255, 193, 7, 0.3);
-  }
-`;
-
-const COMMON_IMPORT_TIMEZONES = [
-  'UTC',
-  'America/New_York',
-  'America/Chicago',
-  'America/Denver',
-  'America/Phoenix',
-  'America/Los_Angeles',
-  'America/Anchorage',
-  'Pacific/Honolulu',
-  'America/Toronto',
-  'Europe/London',
-];
 
 const NetView: React.FC = () => {
   const { netId } = useParams<{ netId: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [net, setNet] = useState<Net | null>(null);
-  const [checkIns, setCheckIns] = useState<CheckIn[]>([]);
-  const [roleDialogOpen, setRoleDialogOpen] = useState(false);
-  const [netRoles, setNetRoles] = useState<NetRole[]>([]);
-  const [allUsers, setAllUsers] = useState<any[]>([]);
-  const [owner, setOwner] = useState<any>(null);
+  const {
+    net, setNet,
+    checkIns, setCheckIns,
+    netRoles,
+    netStats,
+    onlineUserIds,
+    fieldDefinitions,
+    allUsers,
+    owner,
+    pollResponses,
+    pollResults,
+    topicResponses,
+    fetchNet,
+    fetchCheckIns,
+    fetchNetRoles,
+    fetchNetStats,
+    fetchAllUsers,
+    fetchPollResponses,
+    fetchPollResults,
+    fetchTopicResponses,
+  } = useNetData(netId);
+  const roleDialog = useDialog();
   const [selectedUserId, setSelectedUserId] = useState<number | ''>('');
   const [selectedRole, setSelectedRole] = useState<string>('NCS');
   const [activeSpeakerId, setActiveSpeakerId] = useState<number | null>(null);
   const [toastMessage, setToastMessage] = useState<string>('');
-  const [ws, setWs] = useState<WebSocket | null>(null);
-  const [checkInDialogOpen, setCheckInDialogOpen] = useState(false);
+  const checkInDialog = useDialog();
   // Mobile-only: collapsed-by-default New Check-in form. NCS/Loggers attending
   // someone else's net don't need the form expanded by default; they can open
   // it on demand when they want to log a check-in.
   const [mobileCheckInExpanded, setMobileCheckInExpanded] = useState(false);
-  const [onlineUserIds, setOnlineUserIds] = useState<number[]>([]);
-  const [netStats, setNetStats] = useState<{total_check_ins: number, unique_stations: number, recheck_count: number, checked_out_count: number, online_count: number, guest_count: number} | null>(null);
-  const [frequencyDialogOpen, setFrequencyDialogOpen] = useState(false);
-  const [fieldDefinitions, setFieldDefinitions] = useState<FieldDefinition[]>([]);
-  const [mapOpen, setMapOpen] = useState(false);
-  const [bulkCheckInOpen, setBulkCheckInOpen] = useState(false);
-  const [hideDuplicates, setHideDuplicates] = useState<boolean>(() => localStorage.getItem('checkin_hideDuplicates') === 'true');
-  const [searchOpen, setSearchOpen] = useState(false);
+  const frequencyDialog = useDialog();
+  const map = useDialog();
+  const bulkCheckIn = useDialog();
+  const [hideDuplicates, setHideDuplicates] = useLocalStorage<boolean>(STORAGE_KEYS.CHECKIN_HIDE_DUPLICATES, false);
+  const search = useDialog();
   const [searchQuery, setSearchQuery] = useState('');
-  const [closeNetDialogOpen, setCloseNetDialogOpen] = useState(false);
-  const [subscribeDialogOpen, setSubscribeDialogOpen] = useState(false);  // Prompt to subscribe after net closes
-  const [archiveReminderOpen, setArchiveReminderOpen] = useState(false);
-  const [archiveHelpOpen, setArchiveHelpOpen] = useState(false);
-  const [archiveDeleteConfirmOpen, setArchiveDeleteConfirmOpen] = useState(false);
+  const closeNetDialog = useDialog();
+  const subscribeDialog = useDialog();
+  const archiveReminder = useDialog();
+  const archiveHelp = useDialog();
+  const archiveDeleteConfirm = useDialog();
   const [profileUserId, setProfileUserId] = useState<number | null>(null);
   const [subscribing, setSubscribing] = useState(false);
   const [startingNet, setStartingNet] = useState(false);
-  const [scriptOpen, setScriptOpen] = useState(false);
-  const [announcementsOpen, setAnnouncementsOpen] = useState(false);
-  const [scheduleAnnouncementsOpen, setScheduleAnnouncementsOpen] = useState(false);
-  const [topicHistoryOpen, setTopicHistoryOpen] = useState(false);
-  const [importDialogOpen, setImportDialogOpen] = useState(false);
-  const [csvImportFile, setCsvImportFile] = useState<File | null>(null);
-  const [csvImporting, setCsvImporting] = useState(false);
-  const [csvImportDragOver, setCsvImportDragOver] = useState(false);
-  const [csvImportErrors, setCsvImportErrors] = useState<string[]>([]);
-  const [csvImportSummary, setCsvImportSummary] = useState<string>('');
-  const [csvImportErrorsTruncated, setCsvImportErrorsTruncated] = useState(false);
-  const [csvImportUseUtc, setCsvImportUseUtc] = useState(true);
-  const [csvImportTimezone, setCsvImportTimezone] = useState<string>(() => {
-    const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-    return browserTz;
-  });
+  const script = useDialog();
+  const announcements = useDialog();
+  const scheduleAnnouncements = useDialog();
+  const topicHistory = useDialog();
+  const importDialog = useDialog();
   const [highlightCheckIn, setHighlightCheckIn] = useState(false);
   const [highlightStartNet, setHighlightStartNet] = useState(false);
   // Countdown and duration timer state
   const [countdownTime, setCountdownTime] = useState<string | null>(null);
   const [durationTime, setDurationTime] = useState<string | null>(null);
   // Topic/Poll configuration dialog state
-  const [topicPollDialogOpen, setTopicPollDialogOpen] = useState(false);
+  const topicPollDialog = useDialog();
   const [tempTopicPrompt, setTempTopicPrompt] = useState('');
   const [tempPollQuestion, setTempPollQuestion] = useState('');
   // Net time editing dialog state
-  const [timeEditDialogOpen, setTimeEditDialogOpen] = useState(false);
+  const timeEditDialog = useDialog();
   const [editStartedAt, setEditStartedAt] = useState('');
   const [editClosedAt, setEditClosedAt] = useState('');
   // Check-in prompt for authenticated users viewing active/lobby nets
-  const [checkInPromptOpen, setCheckInPromptOpen] = useState(false);
+  const checkInPrompt = useDialog();
   const checkInPromptShownRef = useRef(false);
   const archiveReminderShownRef = useRef(false);
   // Inline editing state
@@ -321,37 +192,22 @@ const NetView: React.FC = () => {
   const [inlineEditValues, setInlineEditValues] = useState<Partial<CheckIn>>({});
   const [inlineEditFocusField, setInlineEditFocusField] = useState<string | null>(null);
   const inlineEditRowRef = useRef<HTMLTableRowElement | null>(null);
-  const csvImportInputRef = useRef<HTMLInputElement | null>(null);
-  const [checkInListDetached, setCheckInListDetached] = useState(() => {
-    return localStorage.getItem('floatingWindow_checkInList_detached') === 'true';
-  });
-  const [chatDetached, setChatDetached] = useState(() => {
-    return localStorage.getItem('floatingWindow_chat_detached') === 'true';
-  });
-  const [chatMinimized, setChatMinimized] = useState(() => {
-    return localStorage.getItem('dockedPanel_chat_minimized') === 'true';
-  });
-  const [activityLogMinimized, setActivityLogMinimized] = useState(() => {
-    const stored = localStorage.getItem('dockedPanel_activityLog_minimized');
-    return stored === null ? true : stored === 'true';
-  });
-  const [activityLogDetached, setActivityLogDetached] = useState(() => {
-    return localStorage.getItem('floatingWindow_activityLog_detached') === 'true';
-  });
+  const [checkInListDetached, setCheckInListDetached] = useLocalStorage<boolean>(STORAGE_KEYS.FLOATING_CHECKIN_LIST, false);
+  const [chatDetached, setChatDetached] = useLocalStorage<boolean>(STORAGE_KEYS.FLOATING_CHAT, false);
+  const [chatMinimized, setChatMinimized] = useLocalStorage<boolean>(STORAGE_KEYS.DOCKED_CHAT_MINIMIZED, false);
+  // activityLog defaults to minimized (true) when no stored preference exists
+  const [activityLogMinimized, setActivityLogMinimized] = useLocalStorage<boolean>(STORAGE_KEYS.DOCKED_ACTIVITY_LOG_MINIMIZED, true);
+  const [activityLogDetached, setActivityLogDetached] = useLocalStorage<boolean>(STORAGE_KEYS.FLOATING_ACTIVITY_LOG, false);
   // Frequency filter state - allows filtering check-ins by selected frequencies
   const [filteredFrequencyIds, setFilteredFrequencyIds] = useState<number[]>([]);
   // Auto-start ref to prevent multiple go-live triggers
   const autoStartTriggeredRef = useRef(false);
-  // WebSocket resilience: track the live socket for cleanup, pending retry timeout, and attempt count
-  const wsRef = useRef<WebSocket | null>(null);
-  const wsRetryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const wsRetryCountRef = useRef(0);
   const { user, isAuthenticated } = useAuth();
   const { gridSquare } = useLocation();
   const navigate = useNavigate();
 
   // Check-in form state - includes custom_fields for dynamic fields
-  const [checkInForm, setCheckInForm] = useState({
+  const [checkInForm, setCheckInForm] = useState<CheckInFormState>({
     callsign: '',
     name: '',
     location: '',
@@ -368,80 +224,8 @@ const NetView: React.FC = () => {
     poll_response: '',
     status: 'checked_in',
   });
-  
-  // Poll autocomplete responses
-  const [pollResponses, setPollResponses] = useState<string[]>([]);
-  
-  // Poll results and topic responses for display
-  const [pollResults, setPollResults] = useState<{ question: string | null, results: { response: string, count: number }[] }>({ question: null, results: [] });
-  const [topicResponses, setTopicResponses] = useState<{ prompt: string | null, responses: { callsign: string, name: string, response: string }[] }>({ prompt: null, responses: [] });
 
-  useEffect(() => {
-    if (netId) {
-      fetchNet();
-      fetchCheckIns();
-      fetchNetRoles();
-      fetchNetStats();
-      fetchFieldDefinitions();
-      connectWebSocket();
-      
-      // Poll stats every 10 seconds to update online users
-      const statsInterval = setInterval(fetchNetStats, 10000);
-      
-
-      return () => {
-        // Cancel any pending reconnect before closing so onclose doesn't reschedule
-        if (wsRetryTimeoutRef.current) {
-          clearTimeout(wsRetryTimeoutRef.current);
-          wsRetryTimeoutRef.current = null;
-        }
-        // Close with code 1000 (Normal Closure) so onclose skips the reconnect branch
-        if (wsRef.current) {
-          wsRef.current.close(1000);
-          wsRef.current = null;
-        }
-        clearInterval(statsInterval);
-      };
-    }
-  }, [netId]);
-
-  useEffect(() => {
-    if (net?.owner_id) {
-      fetchOwner();
-    }
-    // Fetch poll responses if poll is enabled
-    if (net?.poll_enabled) {
-      fetchPollResponses();
-    }
-    // Fetch poll results and topic responses for summary display (any status, shown for closed/archived)
-    if (net?.poll_enabled) {
-      fetchPollResults();
-    }
-    if (net?.topic_of_week_enabled) {
-      fetchTopicResponses();
-    }
-  }, [net?.owner_id, net?.poll_enabled, net?.topic_of_week_enabled]);
-
-  // Persist detached panel states to localStorage
-  useEffect(() => {
-    localStorage.setItem('floatingWindow_checkInList_detached', String(checkInListDetached));
-  }, [checkInListDetached]);
-
-  useEffect(() => {
-    localStorage.setItem('floatingWindow_chat_detached', String(chatDetached));
-  }, [chatDetached]);
-
-  useEffect(() => {
-    localStorage.setItem('dockedPanel_chat_minimized', String(chatMinimized));
-  }, [chatMinimized]);
-
-  useEffect(() => {
-    localStorage.setItem('dockedPanel_activityLog_minimized', String(activityLogMinimized));
-  }, [activityLogMinimized]);
-
-  useEffect(() => {
-    localStorage.setItem('floatingWindow_activityLog_detached', String(activityLogDetached));
-  }, [activityLogDetached]);
+  // Panel states are persisted automatically by useLocalStorage; no explicit persist effects needed.
 
   // Apply viewport-height-based zoom on the net view so the logging panel fits on
   // short/portrait desktop screens (e.g. 13" MacBooks, small Win11 laptops, iPads).
@@ -622,7 +406,7 @@ const NetView: React.FC = () => {
     if (!alreadyCheckedIn) {
       checkInPromptShownRef.current = true;
       // Delay so it doesn't flash during initial data load
-      const timer = setTimeout(() => setCheckInPromptOpen(true), 2000);
+      const timer = setTimeout(() => checkInPrompt.onOpen(), 2000);
       return () => clearTimeout(timer);
     }
   }, [net?.status, isAuthenticated, checkIns, user?.id]);
@@ -631,7 +415,7 @@ const NetView: React.FC = () => {
   useEffect(() => {
     if (net?.status === 'closed' && net?.can_manage && !archiveReminderShownRef.current) {
       archiveReminderShownRef.current = true;
-      setArchiveReminderOpen(true);
+      archiveReminder.onOpen();
     }
   }, [net?.status, net?.can_manage]);
 
@@ -642,211 +426,23 @@ const NetView: React.FC = () => {
   const handleDetachActivityLog = () => setActivityLogDetached(true);
   const handleAttachActivityLog = () => setActivityLogDetached(false);
 
-  const connectWebSocket = () => {
-    // Get JWT token from localStorage (optional - guests can still connect)
-    const token = localStorage.getItem('token');
-    
-    // Get WebSocket URL from environment (convert http:// to ws://, https:// to wss://)
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-    const wsUrl = apiUrl.replace(/^http/, 'ws');
-    
-    // Connect with or without token
-    const wsUrlWithToken = token ? `${wsUrl}/ws/nets/${netId}?token=${token}` : `${wsUrl}/ws/nets/${netId}`;
-    const websocket = new WebSocket(wsUrlWithToken);
-    
-    websocket.onopen = () => {
-      console.log('WebSocket connected to net', netId);
-      wsRetryCountRef.current = 0;
-    };
-    
-    websocket.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-      if (message.type === 'check_in') {
-        fetchCheckIns(); // Refresh check-ins on new check-in
-      } else if (message.type === 'active_speaker') {
-        if (message.data?.checkInId !== undefined) {
-          setActiveSpeakerId(message.data.checkInId);
-        }
-      } else if (message.type === 'active_frequency') {
-        if (message.data?.frequencyId !== undefined) {
-          fetchNet();
-        }
-      } else if (message.type === 'chat_message') {
-        if (typeof window !== 'undefined' && window.dispatchEvent) {
-          window.dispatchEvent(new CustomEvent('newChatMessage', { detail: message.data }));
-        }
-      } else if (message.type === 'chat_reaction') {
-        if (typeof window !== 'undefined' && window.dispatchEvent) {
-          window.dispatchEvent(new CustomEvent('chatReactionUpdate', { detail: message.data }));
-        }
-      } else if (message.type === 'role_change') {
-        // Always refresh roles and check-ins for all clients
-        fetchNetRoles();
-        fetchCheckIns();
-        // If the event contains a user_id, and it matches the current user, force a refresh
-        if (message.data?.user_id && user?.id === message.data.user_id) {
-          fetchNetRoles();
-          fetchCheckIns();
-        }
-      } else if (message.type === 'status_change') {
-        fetchCheckIns();
-        if (message.data?.user_id && user?.id === message.data.user_id) {
-          fetchCheckIns();
-        }
-      } else if (message.type === 'check_in_deleted') {
-        // Remove deleted check-in from local state
-        setCheckIns(prev => prev.filter(ci => ci.id !== message.data?.id));
-      } else if (message.type === 'hand_raised_changed') {
-        // Update the hand_raised state for the affected check-in
-        setCheckIns(prev => prev.map(ci => 
-          ci.id === message.data?.id 
-            ? { ...ci, hand_raised: message.data.hand_raised }
-            : ci
-        ));
-      } else if (message.type === 'net_started') {
-        // Net has been started - refresh everything first, then highlight check-in
-        // Use a small delay to ensure the net status update renders before highlighting
-        fetchNet();
-        fetchCheckIns();
-        fetchNetRoles();
-        // Delay the toast and highlight so the check-in button is visible first
-        setTimeout(() => {
-          setToastMessage(`Net started by ${message.data?.started_by || 'NCS'} - Check in now!`);
-          setHighlightCheckIn(true);
-          // Remove highlight after 10 seconds
-          setTimeout(() => setHighlightCheckIn(false), 10000);
-        }, 500);
-      } else if (message.type === 'net_status_change') {
-        // Net status changed (e.g., closed) - refresh net data immediately
-        console.log('Net status changed:', message.data);
-        fetchNet();
-        fetchNetStats();
-      }
-    };
 
-    websocket.onerror = (error) => {
-      console.error('WebSocket error:', error);
-    };
-    
-    websocket.onclose = (event) => {
-      if (event.code === 1008) {
-        console.error('WebSocket authentication failed');
-      } else if (event.code !== 1000) {
-        // Abnormal close — exponential backoff: 3s, 6s, 12s … capped at 30s, max 10 attempts
-        const MAX_RETRIES = 10;
-        const count = wsRetryCountRef.current;
-        if (count >= MAX_RETRIES) {
-          console.warn(`WebSocket: max reconnect attempts reached for net ${netId}`);
-          return;
-        }
-        const delay = Math.min(3000 * Math.pow(2, count), 30000);
-        console.log(`WebSocket disconnected, reconnecting in ${delay / 1000}s (attempt ${count + 1}/${MAX_RETRIES})...`);
-        wsRetryCountRef.current = count + 1;
-        wsRetryTimeoutRef.current = setTimeout(() => {
-          wsRetryTimeoutRef.current = null;
-          if (netId) connectWebSocket();
-        }, delay);
-      }
-    };
-
-    wsRef.current = websocket;
-    setWs(websocket);
-  };
-
-  const fetchNet = async () => {
-    try {
-      const response = await netApi.get(Number(netId));
-      setNet(response.data);
-    } catch (error) {
-      console.error('Failed to fetch net:', error);
-    }
-  };
-
-  const fetchFieldDefinitions = async () => {
-    try {
-      const response = await api.get('/settings/fields');
-      setFieldDefinitions(response.data);
-    } catch (error) {
-      console.error('Failed to fetch field definitions:', error);
-    }
-  };
-  
-  const fetchPollResponses = async () => {
-    if (!netId) return;
-    try {
-      const response = await api.get(`/nets/${netId}/poll-responses`);
-      setPollResponses(response.data);
-    } catch (error) {
-      console.error('Failed to fetch poll responses:', error);
-    }
-  };
-  
-  const fetchPollResults = async () => {
-    if (!netId) return;
-    try {
-      const response = await api.get(`/nets/${netId}/poll-results`);
-      setPollResults(response.data);
-    } catch (error) {
-      console.error('Failed to fetch poll results:', error);
-    }
-  };
-  
-  const fetchTopicResponses = async () => {
-    if (!netId) return;
-    try {
-      const response = await api.get(`/nets/${netId}/topic-responses`);
-      setTopicResponses(response.data);
-    } catch (error) {
-      console.error('Failed to fetch topic responses:', error);
-    }
-  };
-
-  const fetchCheckIns = async () => {
-    try {
-      const response = await checkInApi.list(Number(netId));
-      setCheckIns(response.data);
-    } catch (error) {
-      console.error('Failed to fetch check-ins:', error);
-    }
-  };
-
-  const fetchNetStats = async () => {
-    try {
-      const response = await api.get(`/nets/${netId}/stats`);
-      setNetStats(response.data);
-      setOnlineUserIds(response.data.online_user_ids || []);
-    } catch (error) {
-      console.error('Failed to fetch net stats:', error);
-    }
-  };
-
-  const fetchNetRoles = async () => {
-    try {
-      const response = await api.get(`/nets/${netId}/roles`);
-      setNetRoles(response.data);
-    } catch (error) {
-      console.error('Failed to fetch net roles:', error);
-    }
-  };
-
-  const fetchAllUsers = async () => {
-    try {
-      const response = await api.get('/users');
-      setAllUsers(response.data);
-    } catch (error) {
-      console.error('Failed to fetch users:', error);
-    }
-  };
-
-  const fetchOwner = async () => {
-    if (!net) return;
-    try {
-      const response = await api.get(`/users/${net.owner_id}`);
-      setOwner(response.data);
-    } catch (error) {
-      console.error('Failed to fetch owner:', error);
-    }
-  };
+  // Live message socket (connection, reconnect, message routing, cleanup).
+  // Returns the socket so send-sites below can broadcast active speaker /
+  // frequency / check-in events. Placed after the fetch functions so they can
+  // be passed in as message handlers.
+  const ws = useNetWebSocket({
+    netId,
+    user,
+    fetchCheckIns,
+    fetchNet,
+    fetchNetRoles,
+    fetchNetStats,
+    setActiveSpeakerId,
+    setCheckIns,
+    setToastMessage,
+    setHighlightCheckIn,
+  });
 
   const handleAssignRole = async () => {
     if (!selectedUserId) {
@@ -900,10 +496,7 @@ const NetView: React.FC = () => {
 
   const handleStartNetClick = () => {
     if (needsTopicPollConfig()) {
-      // Open dialog to configure topic/poll
-      setTempTopicPrompt(net?.topic_of_week_prompt || '');
-      setTempPollQuestion(net?.poll_question || '');
-      setTopicPollDialogOpen(true);
+      handleOpenTopicPollConfig();
     } else {
       handleStartNet();
     }
@@ -920,7 +513,7 @@ const NetView: React.FC = () => {
         updates.poll_question = tempPollQuestion || null;
       }
       await netApi.update(Number(netId), updates);
-      setTopicPollDialogOpen(false);
+      topicPollDialog.onClose();
       // Then start the net
       handleStartNet();
     } catch (error) {
@@ -967,7 +560,7 @@ const NetView: React.FC = () => {
       const currentCheckIns = [...checkIns];
       
       await netApi.close(Number(netId));
-      setCloseNetDialogOpen(false);
+      closeNetDialog.onClose();
       // fetchNet will trigger the useEffect that fetches poll results/topic responses
       // based on whether those features are enabled
       await fetchNet();
@@ -994,7 +587,7 @@ const NetView: React.FC = () => {
             
             if (!isAlreadySubscribed) {
               // Show subscription dialog
-              setSubscribeDialogOpen(true);
+              subscribeDialog.onOpen();
             }
           } catch (err) {
             // Template might not exist anymore, skip the prompt
@@ -1002,7 +595,7 @@ const NetView: React.FC = () => {
           }
         }
       }
-      setArchiveReminderOpen(true);
+      archiveReminder.onOpen();
     } catch (error) {
       console.error('Failed to close net:', error);
     }
@@ -1015,7 +608,7 @@ const NetView: React.FC = () => {
     setSubscribing(true);
     try {
       await templateApi.subscribe(net.template_id);
-      setSubscribeDialogOpen(false);
+      subscribeDialog.onClose();
       setToastMessage('Subscribed! You will receive notifications for future instances of this net.');
     } catch (error: any) {
       console.error('Failed to subscribe:', error);
@@ -1026,7 +619,7 @@ const NetView: React.FC = () => {
   };
   
   const handleSkipSubscribe = () => {
-    setSubscribeDialogOpen(false);
+    subscribeDialog.onClose();
   };
 
   // Go Live: Transition from LOBBY to ACTIVE mode
@@ -1049,7 +642,7 @@ const NetView: React.FC = () => {
       if (editClosedAt) updateData.closed_at = new Date(editClosedAt).toISOString();
       await netApi.update(Number(netId), updateData);
       await fetchNet();
-      setTimeEditDialogOpen(false);
+      timeEditDialog.onClose();
       setToastMessage('Net times updated');
     } catch (error: any) {
       console.error('Failed to update net times:', error);
@@ -1095,193 +688,6 @@ const NetView: React.FC = () => {
     } catch (error) {
       console.error('Failed to export ICS-309:', error);
     }
-  };
-
-  const handleOpenImportDialog = () => {
-    setCsvImportFile(null);
-    setCsvImportDragOver(false);
-    setCsvImportErrors([]);
-    setCsvImportSummary('');
-    setCsvImportErrorsTruncated(false);
-    const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-    setCsvImportTimezone(browserTz);
-    setCsvImportUseUtc(true);
-    setImportDialogOpen(true);
-  };
-
-  const handleCloseImportDialog = () => {
-    if (csvImporting) return;
-    setImportDialogOpen(false);
-    setCsvImportFile(null);
-    setCsvImportDragOver(false);
-    setCsvImportErrors([]);
-    setCsvImportSummary('');
-    setCsvImportErrorsTruncated(false);
-  };
-
-  const handleImportFileSelected = (file: File | null) => {
-    if (!file) return;
-    if (!file.name.toLowerCase().endsWith('.csv')) {
-      setToastMessage('Please select a CSV file.');
-      return;
-    }
-    setCsvImportFile(file);
-    setCsvImportErrors([]);
-    setCsvImportSummary('');
-    setCsvImportErrorsTruncated(false);
-  };
-
-  const handleCsvImportSubmit = async () => {
-    if (!csvImportFile) {
-      setToastMessage('Choose a CSV file first.');
-      return;
-    }
-    if (!netId) {
-      setToastMessage('Missing net ID for import.');
-      return;
-    }
-
-    try {
-      setCsvImporting(true);
-      const formData = new FormData();
-      formData.append('file', csvImportFile);
-      formData.append('timezone_name', csvImportTimezone || 'UTC');
-      formData.append('assume_utc', csvImportUseUtc ? 'true' : 'false');
-      const response = await api.post(`/nets/${netId}/import/csv`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-
-      const data = response.data || {};
-      const imported = Number(data.imported || 0);
-      const skipped = Number(data.skipped || 0);
-      const errorCount = Number(data.error_count || 0);
-      const returnedErrors = Array.isArray(data.errors) ? data.errors : [];
-      const errorsTruncated = Boolean(data.errors_truncated);
-
-      let message = `Imported ${imported} check-in${imported === 1 ? '' : 's'}`;
-      if (skipped > 0) {
-        message += `, skipped ${skipped}`;
-      }
-      if (errorCount > 0) {
-        message += `. ${errorCount} row issue${errorCount === 1 ? '' : 's'} reported in the dialog.`;
-      }
-      if (data.timezone_used) {
-        message += ` Time zone: ${data.timezone_used}${data.assume_utc ? ' (UTC mode)' : ''}.`;
-      }
-
-      setCsvImportSummary(message);
-      setCsvImportErrors(returnedErrors);
-      setCsvImportErrorsTruncated(errorsTruncated);
-      setToastMessage(message);
-      await Promise.all([fetchCheckIns(), fetchNetStats(), fetchNet()]);
-      if (errorCount === 0) {
-        setImportDialogOpen(false);
-        setCsvImportFile(null);
-      }
-    } catch (error: any) {
-      console.error('Failed to import CSV:', error);
-      setToastMessage(error.response?.data?.detail || 'Failed to import CSV');
-    } finally {
-      setCsvImporting(false);
-    }
-  };
-
-  const handleExportImportTemplate = () => {
-    const headers = [
-      'Check-in Time',
-      'Callsign',
-      'Name',
-      'Location',
-      'Available Frequencies',
-      'Spotter #',
-      'Weather Observation',
-      'Power Src',
-      'Power',
-      'Feedback',
-      'Notes',
-      'Relayed By',
-      'Status',
-      'Topic Response',
-      'Poll Response',
-    ];
-
-    const sampleMarker = 'ECTLOGGER_SAMPLE_ROW';
-    const sampleRows = [
-      // Required-fields hint row — auto-ignored on import via sampleMarker
-      [
-        'REQUIRED',
-        'REQUIRED',
-        'optional',
-        'optional',
-        'optional',
-        'optional',
-        'optional',
-        'optional',
-        'optional',
-        'optional',
-        'optional',
-        'optional',
-        'optional',
-        'optional',
-        `${sampleMarker} - REQUIRED FIELDS: Check-in Time, Callsign — all others optional`,
-      ],
-      [
-        '7:32 PM',
-        'N0CLL',
-        'Jane Smith',
-        'Portland, ME',
-        net?.frequencies?.[0] ? formatFrequencyDisplay(net.frequencies[0]) : '',
-        'YO248',
-        'Clear skies, calm winds',
-        'Commercial',
-        '50W',
-        '',
-        `${sampleMarker} - DELETE SAMPLE ROWS BEFORE IMPORT`,
-        '',
-        'checked_in',
-        'Sample topic answer',
-        'Sample poll answer',
-      ],
-      [
-        '7:34 PM',
-        'N1CLL',
-        'John Doe',
-        'FN43ab',
-        '',
-        '',
-        '',
-        '',
-        '',
-        '',
-        `${sampleMarker} - handwritten`,
-        'N0CLL',
-        'relay',
-        '',
-        '',
-      ],
-    ];
-
-    const escapeCsvCell = (value: string) => {
-      const text = (value ?? '').toString();
-      if (text.includes(',') || text.includes('"') || text.includes('\n')) {
-        return `"${text.replace(/"/g, '""')}"`;
-      }
-      return text;
-    };
-
-    const lines = [headers, ...sampleRows].map((row) => row.map(escapeCsvCell).join(','));
-    const csvText = lines.join('\n');
-    const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `${(net?.name || 'net').replace(/ /g, '_')}_import_template.csv`);
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.URL.revokeObjectURL(url);
   };
 
   // State for archive undo functionality
@@ -1343,9 +749,9 @@ const NetView: React.FC = () => {
   };
 
   // Get custom fields (non-builtin) that are enabled for this net
-  const getEnabledCustomFields = () => {
-    return fieldDefinitions.filter((field: FieldDefinition) => 
-      !field.is_builtin && 
+  const getEnabledCustomFields = (): FieldDefinition[] => {
+    return (fieldDefinitions as FieldDefinition[]).filter((field: FieldDefinition) =>
+      !field.is_builtin &&
       net?.field_config?.[field.name]?.enabled
     );
   };
@@ -1375,220 +781,6 @@ const NetView: React.FC = () => {
     return user.callsign || '';
   };
 
-  // Look up user info by callsign and auto-fill form fields (for NCS)
-  const handleCallsignLookup = async (callsign: string) => {
-    if (!callsign || callsign.length < 3) return;
-    
-    try {
-      const response = await userApi.lookupByCallsign(callsign);
-      const userData = response.data;
-      
-      // Only auto-fill fields that are currently empty
-      if (userData.name || userData.location || userData.skywarn_number) {
-        setCheckInForm(prev => ({
-          ...prev,
-          name: prev.name || userData.name || '',
-          location: prev.location || userData.location || '',
-          skywarn_number: prev.skywarn_number || userData.skywarn_number || '',
-        }));
-      }
-    } catch (error) {
-      // Silently fail - user may not be registered
-      console.debug('Callsign lookup failed:', error);
-    }
-  };
-
-  const handleCheckIn = async () => {
-    // Validate required fields
-    if (!checkInForm.callsign) {
-      setToastMessage('Callsign is required');
-      return;
-    }
-
-    try {
-      // Prepare check-in data with custom fields
-      const checkInData = {
-        ...checkInForm,
-        custom_fields: checkInForm.custom_fields,
-      };
-      await checkInApi.create(Number(netId), checkInData);
-      
-      // Clear form for next check-in
-      setCheckInForm({
-        callsign: '',
-        name: '',
-        location: '',
-        skywarn_number: '',
-        weather_observation: '',
-        power_source: '',
-        power: '',
-        feedback: '',
-        notes: '',
-        relayed_by: '',
-        available_frequency_ids: [],
-        custom_fields: {},
-        topic_response: '',
-        poll_response: '',
-        status: 'checked_in',
-      });
-      
-      fetchCheckIns();
-      
-      // Refresh poll responses after new check-in (in case new response was added)
-      if (net?.poll_enabled) {
-        fetchPollResponses();
-      }
-      
-      // Focus back on callsign field
-      setTimeout(() => {
-        const callsignInput = document.querySelector('input[placeholder="Callsign"]') as HTMLInputElement;
-        if (callsignInput) callsignInput.focus();
-      }, 100);
-      
-      // Broadcast via WebSocket
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({
-          type: 'check_in',
-          data: checkInForm,
-          timestamp: new Date().toISOString()
-        }));
-      }
-    } catch (error: any) {
-      console.error('Failed to create check-in:', error);
-      setToastMessage(error.response?.data?.detail || 'Failed to check in station');
-    }
-  };
-
-  const getStatusIcon = (status: string, checkIn?: CheckIn) => {
-    // Show role icons for users with active roles
-    if (checkIn) {
-      // Owner always gets the primary crown
-      if (net?.owner_id === checkIn.user_id) return '👑';
-      
-      const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
-      if (userRole?.role?.toUpperCase() === 'NCS') {
-        // Check if owner is checked in - if so, this NCS is secondary
-        const ownerCheckedIn = net?.owner_id && checkIns.some(c => c.user_id === net.owner_id && c.status !== 'checked_out');
-        if (ownerCheckedIn) {
-          // Owner is present - all other NCS are secondary
-          return '🤴';
-        }
-        
-        // Owner not present - check if this is first NCS in the list (acting primary)
-        const ncsIndex = ncsRoles.findIndex((r: any) => r.user_id === checkIn.user_id);
-        if (ncsIndex > 0) {
-          // This is a secondary NCS - check if primary NCS is checked in
-          const primaryNCS = ncsRoles[0];
-          const primaryCheckedIn = checkIns.some(c => c.user_id === primaryNCS.user_id && c.status !== 'checked_out');
-          if (primaryCheckedIn) {
-            // Primary NCS is present - show 2nd crown for secondary
-            return '🤴';
-          }
-        }
-        // Primary NCS or acting primary (primary not present)
-        return '👑';
-      }
-      if (userRole?.role?.toUpperCase() === 'LOGGER') return '📋';
-      if (userRole?.role?.toUpperCase() === 'RELAY') return '📡';
-      
-      // Show recheck icon for rechecked stations (replaces standard check-in)
-      if (checkIn.is_recheck && status === 'checked_in') return '🔄';
-    }
-    
-    // Show standard status icons
-    switch (status) {
-      case 'checked_in': return '✅'; // Standard
-      case 'listening': return '👂'; // Just listening
-      case 'relay': return '📡'; // Relay station
-      case 'away': return '⏸️'; // Short term
-      case 'has_traffic': return '🚨'; // Has traffic
-      case 'announcements': return '📢'; // Has announcements
-      case 'mobile': return '🚗'; // Mobile station
-      case 'checked_out': return '👋'; // Checked out
-      default: return '✅';
-    }
-  };
-
-  const getStatusTooltip = (status: string, checkIn?: CheckIn) => {
-    // Check for role-based tooltips first
-    if (checkIn) {
-      if (net?.owner_id === checkIn.user_id) return 'Net Control Station - manages the net';
-      const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
-      if (userRole?.role?.toUpperCase() === 'NCS') {
-        // Check if owner is checked in - if so, this NCS is secondary
-        const ownerCheckedIn = net?.owner_id && checkIns.some(c => c.user_id === net.owner_id && c.status !== 'checked_out');
-        if (ownerCheckedIn) {
-          return '2nd NCS - assists primary Net Control Station';
-        }
-        
-        // Check if this is a secondary NCS (not first in the list)
-        const ncsIndex = ncsRoles.findIndex((r: any) => r.user_id === checkIn.user_id);
-        if (ncsIndex > 0) {
-          const primaryNCS = ncsRoles[0];
-          const primaryCheckedIn = checkIns.some(c => c.user_id === primaryNCS.user_id && c.status !== 'checked_out');
-          if (primaryCheckedIn) {
-            return '2nd NCS - assists primary Net Control Station';
-          }
-        }
-        return 'Net Control Station - manages the net';
-      }
-      if (userRole?.role?.toUpperCase() === 'LOGGER') return 'Logger - assists NCS with logging';
-      if (userRole?.role?.toUpperCase() === 'RELAY') return 'Relay - checks in stations on behalf of NCS';
-      if (checkIn.is_recheck && status === 'checked_in') return 'Re-checked into the net';
-    }
-    
-    switch (status) {
-      case 'checked_in': return 'Checked in and available';
-      case 'listening': return 'Monitoring only, not transmitting';
-      case 'relay': return 'Relay station - can relay stations NCS cannot hear';
-      case 'away': return 'Temporarily away, will return';
-      case 'has_traffic': return 'Has traffic or emergency to report';
-      case 'announcements': return 'Has announcements to share';
-      case 'mobile': return 'Mobile - may only be available briefly';
-      case 'checked_out': return 'Checked out of net';
-      default: return 'Checked in and available';
-    }
-  };
-
-  // Short text label for the status select dropdown options. Pairs with the
-  // emoji icon so new NCS users don't have to memorize the icon legend
-  // (e.g., bullhorn 📢 vs ear 👂 — both look "loud" at a glance).
-  const getStatusLabel = (status: string): string => {
-    switch (status) {
-      case 'ncs': return 'NCS';
-      case 'logger': return 'Logger';
-      case 'checked_in': return 'Checked in';
-      case 'listening': return 'Listening only';
-      case 'relay': return 'Relay';
-      case 'away': return 'Away';
-      case 'has_traffic': return 'Has traffic';
-      case 'announcements': return 'Announcements';
-      case 'mobile': return 'Mobile';
-      case 'checked_out': return 'Checked out';
-      default: return status;
-    }
-  };
-
-  // Helper to get the NCS icon for a specific check-in (primary crown or secondary prince)
-  const getNcsIcon = (checkIn: CheckIn) => {
-    // Owner is always primary
-    if (net?.owner_id === checkIn.user_id) return '👑';
-    
-    // Check if owner is checked in - if so, all other NCS are secondary
-    const ownerCheckedIn = net?.owner_id && checkIns.some(c => c.user_id === net.owner_id && c.status !== 'checked_out');
-    if (ownerCheckedIn) return '🤴';
-    
-    // Owner not present - check if this is first NCS in the list
-    const ncsIndex = ncsRoles.findIndex((r: any) => r.user_id === checkIn.user_id);
-    if (ncsIndex > 0) {
-      const primaryNCS = ncsRoles[0];
-      const primaryCheckedIn = checkIns.some(c => c.user_id === primaryNCS.user_id && c.status !== 'checked_out');
-      if (primaryCheckedIn) return '🤴';
-    }
-    
-    return '👑';
-  };
-
   const formatFrequencyDisplay = (freq: any) => {
     if (!freq) return '';
     if (freq.frequency) {
@@ -1599,234 +791,6 @@ const NetView: React.FC = () => {
     // For DMR: show talkgroup (e.g., "NEDECON TG7123 DMR")
     const label = freq.channel || freq.talkgroup || 'Digital';
     return freq.mode ? `${label} ${freq.mode}` : label;
-  };
-
-  const handleStatusChange = async (checkInId: number, newStatus: string) => {
-    const checkIn = checkIns.find((ci: any) => ci.id === checkInId);
-    if (!checkIn) {
-      return;
-    }
-
-    try {
-          if ((newStatus === 'ncs' || newStatus === 'logger') && checkIn.user_id) {
-            // Remove any existing role
-            const existingRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
-            if (existingRole) {
-              await api.delete(`/nets/${netId}/roles/${existingRole.id}`);
-            }
-            // Assign new role
-            await api.post(`/nets/${netId}/roles`, null, {
-              params: {
-                user_id: checkIn.user_id,
-                role: newStatus.toUpperCase()
-              }
-            });
-            // Always set status to checked_in for roles
-            await checkInApi.update(checkInId, { status: 'checked_in' });
-            await fetchNetRoles();
-            await fetchCheckIns();
-          } else if (newStatus === 'ncs' || newStatus === 'logger') {
-            setToastMessage('Cannot assign roles to stations without user accounts');
-            return;
-          } else {
-            // Only owner/admin may revoke a role when changing to a non-role status.
-            // Regular NCS users changing their own status must not trigger a DELETE they
-            // can't authorize (the backend rejects it with 403).
-            if (checkIn.user_id && (isOwner || isAdmin)) {
-              const existingRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
-              if (existingRole && owner?.id !== checkIn.user_id) {
-                await api.delete(`/nets/${netId}/roles/${existingRole.id}`);
-                await fetchNetRoles();
-              }
-            }
-            await checkInApi.update(checkInId, { status: newStatus });
-            await fetchCheckIns();
-      }
-      } catch (error: any) {
-        console.error('Failed to update status:', error);
-        const message = error.response?.data?.detail || 'Failed to update status';
-        setToastMessage(message);
-    }
-  };
-
-  const handleDeleteCheckIn = async (checkInId: number) => {
-    if (!confirm('Delete this check-in entry?')) return;
-    try {
-      await checkInApi.delete(checkInId);
-      fetchCheckIns();
-    } catch (error) {
-      console.error('Failed to delete check-in:', error);
-      setToastMessage('Failed to delete check-in');
-    }
-  };
-
-  // ========== INLINE EDITING HANDLERS ==========
-  // Start inline editing when a row is clicked (except on certain elements)
-  // focusField: the field name to focus (e.g., 'callsign', 'name', 'location', etc.)
-  const handleStartInlineEdit = (checkIn: CheckIn, focusField: string = 'callsign') => {
-    if (!canManageCheckIns) return;
-    setInlineEditingId(checkIn.id);
-    setInlineEditFocusField(focusField);
-    setInlineEditValues({
-      callsign: checkIn.callsign,
-      name: checkIn.name || '',
-      location: checkIn.location || '',
-      skywarn_number: checkIn.skywarn_number || '',
-      weather_observation: checkIn.weather_observation || '',
-      power_source: checkIn.power_source || '',
-      power: checkIn.power || '',
-      notes: checkIn.notes || '',
-      relayed_by: checkIn.relayed_by || '',
-      topic_response: checkIn.topic_response || '',
-      poll_response: checkIn.poll_response || '',
-      custom_fields: checkIn.custom_fields || {},
-    });
-  };
-
-  // Save inline edit
-  const handleSaveInlineEdit = async () => {
-    if (!inlineEditingId) return;
-    
-    const checkIn = checkIns.find((c: CheckIn) => c.id === inlineEditingId);
-    if (!checkIn) return;
-    
-    try {
-      await checkInApi.update(inlineEditingId, {
-        callsign: inlineEditValues.callsign || checkIn.callsign,
-        name: inlineEditValues.name,
-        location: inlineEditValues.location,
-        skywarn_number: inlineEditValues.skywarn_number,
-        weather_observation: inlineEditValues.weather_observation,
-        power_source: inlineEditValues.power_source,
-        power: inlineEditValues.power,
-        notes: inlineEditValues.notes,
-        relayed_by: inlineEditValues.relayed_by,
-        topic_response: inlineEditValues.topic_response,
-        poll_response: inlineEditValues.poll_response,
-        custom_fields: inlineEditValues.custom_fields,
-        // Keep existing frequency settings
-        available_frequency_ids: checkIn.available_frequencies || [],
-      });
-      setInlineEditingId(null);
-      setInlineEditValues({});
-      setInlineEditFocusField(null);
-      fetchCheckIns();
-      // Refresh poll responses in case a new answer was added
-      if (net?.poll_enabled) {
-        fetchPollResponses();
-      }
-    } catch (error) {
-      console.error('Failed to update check-in:', error);
-      setToastMessage('Failed to update check-in');
-    }
-  };
-
-  // Cancel inline edit
-  const handleCancelInlineEdit = () => {
-    setInlineEditingId(null);
-    setInlineEditValues({});
-    setInlineEditFocusField(null);
-  };
-
-  // Handle inline field change
-  const handleInlineFieldChange = (field: string, value: string) => {
-    if (field.startsWith('custom_')) {
-      const customFieldName = field.replace('custom_', '');
-      setInlineEditValues(prev => ({
-        ...prev,
-        custom_fields: {
-          ...prev.custom_fields,
-          [customFieldName]: value,
-        },
-      }));
-    } else {
-      setInlineEditValues(prev => ({
-        ...prev,
-        [field]: value,
-      }));
-    }
-  };
-
-  // Handle key press in inline edit (Enter to save, Escape to cancel, Tab to navigate)
-  const handleInlineKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleSaveInlineEdit();
-    } else if (e.key === 'Escape') {
-      e.preventDefault();
-      handleCancelInlineEdit();
-    }
-    // Tab is handled naturally by the browser - don't prevent it
-  };
-
-  // Handle blur on inline edit fields - only save if focus leaves the editing row entirely
-  const handleInlineBlur = (_e: React.FocusEvent) => {
-    // Use setTimeout to allow the new focus target to be set before checking
-    setTimeout(() => {
-      // Check if focus moved to another element within the same editing row
-      const activeElement = document.activeElement;
-      if (inlineEditRowRef.current && inlineEditRowRef.current.contains(activeElement)) {
-        // Focus is still within the editing row, don't save
-        return;
-      }
-      // Focus left the row, save the edit
-      handleSaveInlineEdit();
-    }, 0);
-  };
-
-  const handleSetActiveSpeaker = (checkInId: number | null) => {
-    const newActiveSpeakerId = activeSpeakerId === checkInId ? null : checkInId;
-    
-    // Show toast if setting someone with "listening" status as active speaker
-    const checkIn = checkIns.find((ci: CheckIn) => ci.id === checkInId);
-    if (checkIn && checkIn.status === 'listening' && newActiveSpeakerId !== null) {
-      setToastMessage(`${checkIn.callsign} is set to "Just Listening"`);
-    }
-    
-    setActiveSpeakerId(newActiveSpeakerId);
-    
-    // Broadcast active speaker change via WebSocket
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({
-        type: 'active_speaker',
-        data: { checkInId: newActiveSpeakerId },
-        timestamp: new Date().toISOString()
-      }));
-    }
-  };
-
-  const handleToggleHand = async (checkInId: number) => {
-    try {
-      const response = await checkInApi.toggleHand(checkInId);
-      // Update local state with the response
-      setCheckIns(prev => prev.map(ci => 
-        ci.id === checkInId 
-          ? { ...ci, hand_raised: response.data.hand_raised }
-          : ci
-      ));
-    } catch (error) {
-      console.error('Failed to toggle hand:', error);
-      setToastMessage('Failed to toggle hand');
-    }
-  };
-
-  const handleSetActiveFrequency = async (frequencyId: number) => {
-    try {
-      const response = await netApi.setActiveFrequency(Number(netId!), frequencyId);
-      setNet(response.data);
-      
-      // Broadcast frequency change via WebSocket
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({
-          type: 'active_frequency',
-          data: { frequencyId },
-          timestamp: new Date().toISOString()
-        }));
-      }
-    } catch (error) {
-      console.error('Failed to set active frequency:', error);
-      setToastMessage('Failed to change frequency');
-    }
   };
 
   // Compute the latest checked_in_at per callsign (for graying prior rows)
@@ -1873,6 +837,11 @@ const NetView: React.FC = () => {
     .filter((role: any) => role.role === 'NCS')
     .sort((a, b) => new Date(a.assigned_at).getTime() - new Date(b.assigned_at).getTime());
 
+  // Status display helpers (icon/tooltip/label/NCS crown) shared by all three
+  // check-in tables. Depends on ncsRoles, so it's constructed here.
+  const { getStatusIcon, getStatusTooltip, getStatusLabel, getNcsIcon } =
+    getCheckInStatusHelpers({ net, netRoles, checkIns, ncsRoles });
+
   // Helper to get NCS color by user_id
   const getNcsColor = (userId: number) => {
     const index = ncsRoles.findIndex((r: any) => r.user_id === userId);
@@ -1895,47 +864,31 @@ const NetView: React.FC = () => {
     return role ? (displayCallsign(role) || role.email) : null;
   };
 
-  // Handle frequency chip click - NCS claims frequency, or Ctrl+click filters
-  // For closed/archived nets, only allow Ctrl+click filtering (no claiming/setting active)
-  const handleFrequencyChipClick = async (frequencyId: number, event: React.MouseEvent) => {
-    if (event.ctrlKey || event.metaKey) {
-      // Ctrl+click: toggle frequency filter (always allowed)
-      setFilteredFrequencyIds(prev => 
-        prev.includes(frequencyId) 
-          ? prev.filter(id => id !== frequencyId)
-          : [...prev, frequencyId]
-      );
-    } else if (net?.status === 'closed' || net?.status === 'archived') {
-      // For closed/archived nets, regular clicks do nothing (chips are view-only)
-      return;
-    } else if (canManageCheckIns && userNetRole?.role === 'NCS') {
-      // NCS clicking: claim this frequency and add to their available frequencies
-      try {
-        await netRoleApi.claimFrequency(Number(netId), userNetRole.id, frequencyId);
-        // Also add this frequency to the NCS's check-in available_frequencies
-        const ncsCheckIn = checkIns.find((ci: CheckIn) => ci.user_id === user?.id && ci.status !== 'checked_out');
-        if (ncsCheckIn) {
-          const currentFreqs = ncsCheckIn.available_frequencies || [];
-          if (!currentFreqs.includes(frequencyId)) {
-            await checkInApi.update(ncsCheckIn.id, {
-              available_frequency_ids: [...currentFreqs, frequencyId]
-            });
-          }
-        }
-        await fetchNetRoles();
-        await fetchCheckIns();
-        // Show reminder toast if multiple frequencies
-        if (net.frequencies.length > 1) {
-          setToastMessage('You are now monitoring this frequency. Other NCS operators can claim different frequencies.');
-        }
-      } catch (error: any) {
-        setToastMessage(error.response?.data?.detail || 'Failed to claim frequency');
-      }
-    } else if (canManageCheckIns) {
-      // Non-NCS managers: set active frequency (existing behavior)
-      handleSetActiveFrequency(frequencyId);
-    }
-  };
+  // Check-in row action handlers: create/edit/delete, status + role changes,
+  // inline-edit save/cancel/field-change/keydown/blur, active-speaker/hand
+  // toggles, and frequency claim/filter/set-active. Plain factory (not a
+  // hook) since some handlers need canManage/ncsRoles/userNetRole, which are
+  // computed after the `if (!net) return` above.
+  const {
+    handleCallsignLookup,
+    handleCheckIn,
+    handleStatusChange,
+    handleDeleteCheckIn,
+    handleStartInlineEdit,
+    handleInlineFieldChange,
+    handleInlineKeyDown,
+    handleInlineBlur,
+    handleSetActiveSpeaker,
+    handleToggleHand,
+    handleFrequencyChipClick,
+  } = getCheckInActions({
+    netId, net, checkIns, netRoles, user, isOwner, isAdmin, owner,
+    canManageCheckIns, userNetRole, ws,
+    checkInForm, inlineEditingId, inlineEditValues, activeSpeakerId, inlineEditRowRef,
+    setCheckInForm, setToastMessage, setInlineEditingId, setInlineEditFocusField,
+    setInlineEditValues, setCheckIns, setActiveSpeakerId, setNet, setFilteredFrequencyIds,
+    fetchCheckIns, fetchNetRoles, fetchPollResponses,
+  });
 
   // Only promote NCS users who checked in before the first non-NCS station.
   // Template staff are bulk-assigned NCS roles at the same timestamp when a net
@@ -2041,726 +994,130 @@ const NetView: React.FC = () => {
     }
   };
 
+  // Step up/down as NCS for this net (self-service role toggle)
+  const handleToggleNCSRole = async () => {
+    try {
+      await netRoleApi.toggleSelf(Number(netId));
+      await fetchNetRoles();
+    } catch (err: any) {
+      setToastMessage(err.response?.data?.detail || 'Could not toggle NCS role');
+    }
+  };
+
+  // Open the "Edit Net Times" dialog, converting stored UTC timestamps to
+  // local datetime-local input format
+  const handleOpenTimeEdit = () => {
+    const toLocal = (isoStr?: string) => {
+      if (!isoStr) return '';
+      const d = new Date(isoStr.endsWith('Z') ? isoStr : isoStr + 'Z');
+      const offset = d.getTimezoneOffset();
+      const local = new Date(d.getTime() - offset * 60000);
+      return local.toISOString().slice(0, 16);
+    };
+    setEditStartedAt(toLocal(net?.started_at));
+    setEditClosedAt(toLocal(net?.closed_at));
+    timeEditDialog.onOpen();
+  };
+
+  // Open the Topic/Poll configuration dialog, seeded with current values
+  const handleOpenTopicPollConfig = () => {
+    setTempTopicPrompt(net?.topic_of_week_prompt || '');
+    setTempPollQuestion(net?.poll_question || '');
+    topicPollDialog.onOpen();
+  };
+
+  // Open the NCS/Logger role management dialog (needs the current user list)
+  const handleOpenRoleDialog = () => {
+    fetchAllUsers();
+    roleDialog.onOpen();
+  };
+
+  // Open the check-in dialog, pre-filled with the user's profile data
+  const handleOpenCheckIn = () => {
+    if (user) {
+      // Use grid square if location_awareness is enabled and available, otherwise use profile location
+      const locationValue = (user.location_awareness && gridSquare)
+        ? gridSquare
+        : (user.location || '');
+      setCheckInForm({
+        callsign: getAppropriateCallsign(),
+        name: user.name || '',
+        location: locationValue,
+        skywarn_number: '',
+        weather_observation: '',
+        power_source: '',
+        power: '',
+        feedback: '',
+        notes: '',
+        relayed_by: '',
+        available_frequency_ids: [],
+        custom_fields: {},
+        topic_response: '',
+        poll_response: '',
+        status: 'checked_in',
+      });
+    }
+    checkInDialog.onOpen();
+  };
+
   return (
     <Container maxWidth={false} sx={{ height: { xs: 'auto', md: '100%' }, py: 0, px: { xs: 0.5, sm: 0 }, display: 'flex', flexDirection: 'column' }}>
       <Paper sx={{ p: 0.5, flex: { xs: 'none', md: 1 }, display: 'flex', flexDirection: 'column', overflow: { xs: 'visible', md: 'hidden' }, minHeight: 0 }}>
-        <Box sx={{ flexShrink: 0 }}>
-          <Grid container spacing={0} sx={{ mt: 0.5, flex: 1, minHeight: 0 }}>
-            <Grid item xs={12} md={8} sx={{ pr: { md: 0.5 }, display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%' }}>
-              <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.5, mb: 0.5, flexWrap: 'wrap' }}>
-                <Typography variant="h5" component="h1" sx={{ mb: 0 }}>
-                  {net.name}
-                </Typography>
-                {net.description && (
-                  <Typography 
-                    variant="body2" 
-                    color="text.secondary" 
-                    sx={{ fontStyle: 'italic' }}
-                  >
-                    — {net.description}
-                  </Typography>
-                )}
-              </Box>
-              {/* Stats and Frequency chips row */}
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', mb: 0.5, gap: 0.5 }}>
-                {/* Left side: Status, timers, and stats */}
-                <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <Chip label={net.status === 'lobby' ? 'LOBBY' : net.status} size="small" color={net.status === 'active' ? 'success' : net.status === 'lobby' ? 'warning' : 'default'} />
-                  {/* Edit net times button — NCS/admin only, hidden on mobile to keep
-                      the header chip row compact. Net times can also be edited from
-                      the net info page. */}
-                  {canManage && (net.status === 'active' || net.status === 'closed' || net.status === 'archived') && (
-                    <Tooltip title="Edit net start/end times">
-                      <IconButton
-                        size="small"
-                        onClick={() => {
-                          // Convert UTC timestamps to local datetime-local format for the inputs
-                          const toLocal = (isoStr?: string) => {
-                            if (!isoStr) return '';
-                            const d = new Date(isoStr.endsWith('Z') ? isoStr : isoStr + 'Z');
-                            const offset = d.getTimezoneOffset();
-                            const local = new Date(d.getTime() - offset * 60000);
-                            return local.toISOString().slice(0, 16);
-                          };
-                          setEditStartedAt(toLocal(net.started_at));
-                          setEditClosedAt(toLocal(net.closed_at));
-                          setTimeEditDialogOpen(true);
-                        }}
-                        sx={{ p: 0.25, display: { xs: 'none', md: 'inline-flex' } }}
-                      >
-                        <EditIcon sx={{ fontSize: 16 }} />
-                      </IconButton>
-                    </Tooltip>
-                  )}
-                  {/* Countdown timer - shows time until scheduled start */}
-                  {countdownTime && (
-                    <Chip 
-                      icon={<TimerIcon />}
-                      label={countdownTime === 'Starting soon' ? countdownTime : `Starts in ${countdownTime}`}
-                      size="small" 
-                      color="warning" 
-                      variant="outlined"
-                      sx={{ fontFamily: 'monospace' }}
-                    />
-                  )}
-                  {/* Duration timer - shows elapsed time since net started.
-                      Label drops the "Duration: " prefix on mobile to keep all
-                      header chips on a single row. The clock icon already conveys
-                      meaning. */}
-                  {durationTime && (
-                    <Chip 
-                      icon={<AccessTimeIcon />}
-                      label={durationTime}
-                      size="small" 
-                      color="info" 
-                      variant="outlined"
-                      sx={{ fontFamily: 'monospace' }}
-                    />
-                  )}
-                  {netStats && (
-                    <>
-                      <Chip label={`${netStats.unique_stations ?? netStats.total_check_ins} Stations`} size="small" color="primary" variant="outlined" />
-                      {(netStats.recheck_count ?? 0) > 0 && (
-                        <Chip label={`${netStats.recheck_count} Rechecks`} size="small" color="warning" variant="outlined" />
-                      )}
-                      {netStats.checked_out_count > 0 && (
-                        <Chip label={`${netStats.checked_out_count} Checked Out`} size="small" color="default" variant="outlined" />
-                      )}
-                      <Chip label={`${netStats.online_count} Online`} size="small" color="success" variant="outlined" />
-                      {netStats.guest_count > 0 && (
-                        <Chip label={`${netStats.guest_count} ${netStats.guest_count === 1 ? 'Guest' : 'Guests'}`} size="small" color="default" variant="outlined" />
-                      )}
-                    </>
-                  )}
-                </Box>
-                {/* Right side: Frequency chips - always show so attendees know where to tune */}
-                {net.frequencies && net.frequencies.length > 0 && (
-                  <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexWrap: 'wrap' }}>
-                    {/* Show All chip when filtering is active */}
-                    {filteredFrequencyIds.length > 0 && (
-                      <Chip
-                        label="Show All"
-                        size="small"
-                        color="secondary"
-                        onClick={() => setFilteredFrequencyIds([])}
-                        onDelete={() => setFilteredFrequencyIds([])}
-                        sx={{ height: 24 }}
-                      />
-                    )}
-                    {net.frequencies.map((freq) => {
-                      const ncsColor = getNcsColorForFrequency(freq.id);
-                      const ncsCallsign = getNcsForFrequency(freq.id);
-                      const isFiltered = filteredFrequencyIds.includes(freq.id);
-                      const isActive = freq.id === net.active_frequency_id;
-                      // Check if current user is the NCS who claimed this frequency
-                      const isMyFrequency = userNetRole?.role === 'NCS' && userNetRole?.active_frequency_id === freq.id;
-                      const myNcsColor = isMyFrequency && user?.id ? getNcsColor(user.id) : null;
-                      // For closed/archived nets, chips are view-only except Ctrl+click filter
-                      const isInactiveNet = net.status === 'closed' || net.status === 'archived';
-                      
-                      // Build tooltip text
-                      let tooltipText = '';
-                      if (isMyFrequency) {
-                        tooltipText = '⭐ YOUR claimed frequency\n';
-                      } else if (ncsCallsign) {
-                        tooltipText = `${ncsCallsign} is monitoring this frequency\n`;
-                      }
-                      if (!isInactiveNet && canManageCheckIns) {
-                        if (userNetRole?.role === 'NCS') {
-                          tooltipText += 'Click to claim • ';
-                        } else {
-                          tooltipText += 'Click to set active • ';
-                        }
-                      }
-                      tooltipText += 'Ctrl+click to filter';
-                      
-                      return (
-                        <Tooltip key={freq.id} title={tooltipText} arrow>
-                          <Chip
-                            label={freq.frequency 
-                              ? `${freq.frequency} MHz ${freq.mode || ''}`.trim()
-                              : `${freq.network || ''}${freq.talkgroup ? ` TG${freq.talkgroup}` : ''} ${freq.mode || ''}`.trim()
-                            }
-                            size="small"
-                            color={isActive ? 'primary' : isFiltered ? 'info' : 'default'}
-                            variant={isFiltered ? 'filled' : 'outlined'}
-                            onClick={(e) => handleFrequencyChipClick(freq.id, e)}
-                            clickable
-                            sx={{ 
-                              height: 24,
-                              cursor: 'pointer',
-                              fontWeight: isActive ? 'bold' : 'normal',
-                              // Highlight current user's claimed frequency with thick ring
-                              ...(isMyFrequency && myNcsColor && {
-                                backgroundColor: myNcsColor.bg,
-                                borderColor: myNcsColor.border,
-                                borderWidth: 3,
-                                boxShadow: `0 0 8px ${myNcsColor.border}`,
-                                '& .MuiChip-label': {
-                                  color: myNcsColor.text,
-                                  fontWeight: 'bold',
-                                },
-                                '&:hover': {
-                                  backgroundColor: myNcsColor.bg,
-                                  opacity: 0.9,
-                                },
-                              }),
-                              // Apply NCS color if assigned (but not current user)
-                              ...(!isMyFrequency && ncsColor && {
-                                backgroundColor: ncsColor.bg,
-                                borderColor: ncsColor.border,
-                                '& .MuiChip-label': {
-                                  color: ncsColor.text,
-                                },
-                                '&:hover': {
-                                  backgroundColor: ncsColor.bg,
-                                  opacity: 0.8,
-                                },
-                              }),
-                              // Override with filter styling if filtered
-                              ...(isFiltered && {
-                                backgroundColor: 'info.main',
-                                '& .MuiChip-label': {
-                                  color: 'white',
-                                },
-                              }),
-                            }}
-                          />
-                        </Tooltip>
-                      );
-                    })}
-                  </Box>
-                )}
-              </Box>
-            </Grid>
-            <Grid item xs={12} md={4} sx={{ pl: { md: 0.5 } }}>
-              {/* Two-row toolbar:
-                  Row 1 = net info  (read/view: search, map, stats, script, etc.)
-                  Row 2 = net actions (write/change: start, check-in, close, export, import, etc.)
-                  Hover over any icon button to reveal its function. */}
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, alignItems: { xs: 'flex-start', md: 'flex-end' } }}>
-              {/* ===== ROW 1: NET INFO ===== */}
-              <Box
-                sx={{
-                  display: 'flex',
-                  gap: { xs: 0.25, md: 0.5 },
-                  flexWrap: 'wrap',
-                  alignItems: 'center',
-                  justifyContent: { xs: 'flex-start', md: 'flex-end' },
-                  '& .MuiButton-root': {
-                    px: { xs: 0.5, md: 1 },
-                    minWidth: { xs: 32, md: 'auto' },
-                  },
-                }}
-              >
-                {/* Bulk check-in shortcut */}
-                {(net.status === 'active' || net.status === 'lobby') && checkIns.length > 0 && (
-                  <Tooltip title="Bulk add multiple check-ins">
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      onClick={() => setBulkCheckInOpen(true)}
-                      sx={{ minWidth: 'auto', px: 1 }}
-                    >
-                      <FastForwardIcon fontSize="small" />
-                    </Button>
-                  </Tooltip>
-                )}
-                {checkIns.length > 0 && (
-                  <>
-                    <Tooltip title="Search check-ins">
-                      <Button
-                        size="small"
-                        variant={searchQuery ? "contained" : "outlined"}
-                        color="primary"
-                        onClick={() => setSearchOpen(true)}
-                        sx={{ minWidth: 'auto', px: 1 }}
-                      >
-                        <SearchIcon fontSize="small" />
-                      </Button>
-                    </Tooltip>
-                    <Tooltip title="View check-in locations on map">
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        color="primary"
-                        onClick={() => setMapOpen(true)}
-                        sx={{ minWidth: 'auto', px: 1 }}
-                      >
-                        <MapIcon fontSize="small" />
-                      </Button>
-                    </Tooltip>
-                    {net.stream_url && (
-                      <Tooltip title="Listen to net audio">
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          onClick={() => window.open(net.stream_url, '_blank')}
-                          sx={{ minWidth: 'auto', px: 1, color: '#9c27b0', borderColor: '#9c27b0', '&:hover': { borderColor: '#9c27b0', backgroundColor: 'rgba(156, 39, 176, 0.08)' } }}
-                        >
-                          <VolumeUpIcon fontSize="small" />
-                        </Button>
-                      </Tooltip>
-                    )}
-                    <Tooltip title="Net statistics">
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        onClick={() => navigate(`/statistics/nets/${netId}`)}
-                        sx={{ minWidth: 'auto', px: 1, color: '#ff9800', borderColor: '#ff9800', '&:hover': { borderColor: '#ff9800', backgroundColor: 'rgba(255, 152, 0, 0.08)' } }}
-                      >
-                        <BarChartIcon fontSize="small" />
-                      </Button>
-                    </Tooltip>
-                    {net.script && (
-                      <Tooltip title="View net script">
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          onClick={() => setScriptOpen(true)}
-                          sx={{ minWidth: 'auto', px: 1, borderColor: 'grey.400' }}
-                        >
-                          <ArticleIcon fontSize="small" />
-                        </Button>
-                      </Tooltip>
-                    )}
-                    {net.template_id && (
-                      <Tooltip title="View schedule announcements">
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          onClick={() => setScheduleAnnouncementsOpen(true)}
-                          sx={{ minWidth: 'auto', px: 1, borderColor: 'grey.400' }}
-                        >
-                          <CampaignIcon fontSize="small" />
-                        </Button>
-                      </Tooltip>
-                    )}
-                    {net.announcements && (
-                      <Tooltip title="View net notes">
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          onClick={() => setAnnouncementsOpen(true)}
-                          sx={{ minWidth: 'auto', px: 1, borderColor: 'grey.400' }}
-                        >
-                          <SpeakerNotesIcon fontSize="small" />
-                        </Button>
-                      </Tooltip>
-                    )}
-                    {net.template_id && (
-                      <Tooltip title="View prior topics">
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          onClick={() => setTopicHistoryOpen(true)}
-                          sx={{ minWidth: 'auto', px: 1, borderColor: 'grey.400' }}
-                        >
-                          <HistoryIcon fontSize="small" />
-                        </Button>
-                      </Tooltip>
-                    )}
-                  </>
-                )}
-                {net.info_url && (
-                  <Tooltip title="Net/Club info">
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      color="primary"
-                      onClick={() => window.open(net.info_url, '_blank')}
-                      sx={{ minWidth: 'auto', px: 1 }}
-                    >
-                      <LanguageIcon fontSize="small" />
-                    </Button>
-                  </Tooltip>
-                )}
-                {/* Info page link — shown for non-managers and on all inactive net states */}
-                {!(canManage && (net.status === 'active' || net.status === 'lobby')) && (
-                  <Tooltip title="View net info">
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      color="primary"
-                      onClick={() => navigate(`/nets/${netId}/info`)}
-                      sx={{ minWidth: 'auto', px: 1 }}
-                    >
-                      <InfoIcon fontSize="small" />
-                    </Button>
-                  </Tooltip>
-                )}
-              </Box>
-              {/* ===== ROW 2: NET ACTIONS (start, roles, check-in, close, export, import, archive, delete) ===== */}
-              <Box
-                sx={{
-                  display: 'flex',
-                  gap: { xs: 0.25, md: 0.5 },
-                  flexWrap: 'wrap',
-                  alignItems: 'center',
-                  justifyContent: { xs: 'flex-start', md: 'flex-end' },
-                  '& .MuiButton-root': {
-                    px: { xs: 0.5, md: 1 },
-                    minWidth: { xs: 32, md: 'auto' },
-                  },
-                }}
-              >
-                {/* Start Net - draft/scheduled */}
-                {canStartNet && (net.status === 'draft' || net.status === 'scheduled') && (
-                  <>
-                    <Tooltip title="Start the net">
-                      <Button
-                        size="small"
-                        variant="contained"
-                        color="success"
-                        onClick={handleStartNetClick}
-                        disabled={startingNet}
-                        sx={{
-                          minWidth: 'auto',
-                          px: 1,
-                          ...(highlightStartNet && {
-                            animation: `${pulseAnimationGreen} 1s infinite`,
-                          })
-                        }}
-                      >
-                        {startingNet ? (
-                          <CircularProgress size={16} color="inherit" />
-                        ) : (
-                          <PlayArrowIcon fontSize="small" />
-                        )}
-                      </Button>
-                    </Tooltip>
-                    {/* Show yellow shimmer ? icon if topic/poll needs configuration */}
-                    {needsTopicPollConfig() && (
-                      <Tooltip title="Topic or poll question needs to be set before starting">
-                        <IconButton
-                          size="small"
-                          onClick={() => {
-                            setTempTopicPrompt(net?.topic_of_week_prompt || '');
-                            setTempPollQuestion(net?.poll_question || '');
-                            setTopicPollDialogOpen(true);
-                          }}
-                          sx={{
-                            p: 0.5,
-                            borderRadius: '50%',
-                            animation: `${shimmerYellow} 2s ease-in-out infinite`,
-                          }}
-                        >
-                          <HelpOutlineIcon fontSize="small" sx={{ color: 'warning.dark' }} />
-                        </IconButton>
-                      </Tooltip>
-                    )}
-                  </>
-                )}
-                {/* Edit and Roles - draft/scheduled */}
-                {canManage && (net.status === 'draft' || net.status === 'scheduled') && (
-                  <>
-                    <Tooltip title="Edit net settings">
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        onClick={() => navigate(`/nets/${netId}/edit`)}
-                        sx={{ minWidth: 'auto', px: 1 }}
-                      >
-                        <EditIcon fontSize="small" />
-                      </Button>
-                    </Tooltip>
-                    <Tooltip title="Assign NCS and logger roles (any assigned NCS can start the net)">
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        onClick={() => {
-                          fetchAllUsers();
-                          setRoleDialogOpen(true);
-                        }}
-                        sx={{ minWidth: 'auto', px: 1 }}
-                      >
-                        <GroupIcon fontSize="small" />
-                      </Button>
-                    </Tooltip>
-                  </>
-                )}
-                {/* Edit, Roles, Claim NCS - active/lobby */}
-                {canManage && (net.status === 'active' || net.status === 'lobby') && (
-                  <>
-                    <Tooltip title="Edit net settings">
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        onClick={() => navigate(`/nets/${netId}/edit`)}
-                        sx={{ minWidth: 'auto', px: 1, borderColor: 'grey.400' }}
-                      >
-                        <EditIcon fontSize="small" />
-                      </Button>
-                    </Tooltip>
-                    <Tooltip title="Manage NCS and logger roles">
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        onClick={() => {
-                          fetchAllUsers();
-                          setRoleDialogOpen(true);
-                        }}
-                        sx={{ minWidth: 'auto', px: 1, color: '#9c27b0', borderColor: '#9c27b0', '&:hover': { borderColor: '#9c27b0', backgroundColor: 'rgba(156, 39, 176, 0.08)' } }}
-                      >
-                        <GroupIcon fontSize="small" />
-                      </Button>
-                    </Tooltip>
-                    {!hasNCS && (
-                      <Button
-                        size="small"
-                        variant="contained"
-                        color="warning"
-                        onClick={handleClaimNCS}
-                      >
-                        Claim NCS
-                      </Button>
-                    )}
-                  </>
-                )}
-                {/* Check-in / user status buttons - active/lobby */}
-                {isAuthenticated && (net.status === 'active' || net.status === 'lobby') && (
-                  userActiveCheckIn ? (
-                    <>
-                    <Tooltip title={userActiveCheckIn?.hand_raised ? 'Lower hand' : 'Raise hand'}>
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        color={userActiveCheckIn?.hand_raised ? 'warning' : 'inherit'}
-                        onClick={() => handleToggleHand(userActiveCheckIn.id)}
-                        sx={{ minWidth: 'auto', px: 1 }}
-                      >
-                        <PanToolIcon fontSize="small" />
-                      </Button>
-                    </Tooltip>
-                    <Tooltip title={userActiveCheckIn?.status === 'away' ? 'Return from break' : 'Step away'}>
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        color={userActiveCheckIn?.status === 'away' ? 'warning' : 'inherit'}
-                        onClick={() => handleStatusChange(userActiveCheckIn.id, userActiveCheckIn?.status === 'away' ? 'checked_in' : 'away')}
-                        sx={{ minWidth: 'auto', px: 1 }}
-                      >
-                        <PauseCircleOutlineIcon fontSize="small" />
-                      </Button>
-                    </Tooltip>
-                    {/* Role toggle — only visible to operators with an NCS assignment */}
-                    {isAssignedNCS && (
-                      <Tooltip title={isNCS ? 'Step down — stop acting as NCS' : 'Step up — take NCS role'}>
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          color={isNCS ? 'primary' : 'inherit'}
-                          onClick={async () => {
-                            try {
-                              await netRoleApi.toggleSelf(Number(netId));
-                              await fetchNetRoles();
-                            } catch (err: any) {
-                              setToastMessage(err.response?.data?.detail || 'Could not toggle NCS role');
-                            }
-                          }}
-                          sx={{ minWidth: 'auto', px: 1 }}
-                        >
-                          <WorkspacePremiumIcon fontSize="small" />
-                        </Button>
-                      </Tooltip>
-                    )}
-                    <Tooltip title="Check out of net">
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        color="error"
-                        onClick={handleCheckOut}
-                        sx={{ minWidth: 'auto', px: 1 }}
-                      >
-                        <LogoutIcon fontSize="small" />
-                      </Button>
-                    </Tooltip>
-                    </>
-                  ) : (
-                    <Tooltip title="Check into net">
-                      <Button
-                        size="small"
-                        variant="contained"
-                        color="primary"
-                        onClick={() => {
-                          // Pre-fill form with user's profile data
-                          if (user) {
-                            // Use grid square if location_awareness is enabled and available, otherwise use profile location
-                            const locationValue = (user.location_awareness && gridSquare)
-                              ? gridSquare
-                              : (user.location || '');
-                            setCheckInForm({
-                              callsign: getAppropriateCallsign(),
-                              name: user.name || '',
-                              location: locationValue,
-                              skywarn_number: '',
-                              weather_observation: '',
-                              power_source: '',
-                              power: '',
-                              feedback: '',
-                              notes: '',
-                              relayed_by: '',
-                              available_frequency_ids: [],
-                              custom_fields: {},
-                              topic_response: '',
-                              poll_response: '',
-                              status: 'checked_in',
-                            });
-                          }
-                          setCheckInDialogOpen(true);
-                        }}
-                        sx={{
-                          minWidth: 'auto',
-                          px: 1,
-                          ...(highlightCheckIn && {
-                            animation: `${pulseAnimation} 1s infinite`,
-                          })
-                        }}
-                      >
-                        <LoginIcon fontSize="small" />
-                      </Button>
-                    </Tooltip>
-                  )
-                )}
-                {/* Go Live - lobby */}
-                {canManage && net.status === 'lobby' && (
-                  <Tooltip title="Go live - Start the net officially and notify subscribers">
-                    <Button
-                      size="small"
-                      variant="contained"
-                      color="success"
-                      onClick={handleGoLive}
-                      sx={{ minWidth: 'auto', px: 1 }}
-                    >
-                      <PlayArrowIcon fontSize="small" />
-                    </Button>
-                  </Tooltip>
-                )}
-                {/* Close Net - active/lobby */}
-                {canManage && (net.status === 'active' || net.status === 'lobby') && (
-                  <Tooltip title="Close net">
-                    <Button
-                      size="small"
-                      variant="contained"
-                      color="error"
-                      onClick={() => setCloseNetDialogOpen(true)}
-                      sx={{ minWidth: 'auto', px: 1 }}
-                    >
-                      <CloseIcon fontSize="small" />
-                    </Button>
-                  </Tooltip>
-                )}
-                {/* Export CSV — closed and archived */}
-                {(net.status === 'closed' || net.status === 'archived') && (
-                  <Tooltip title="Export check-ins to CSV">
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      onClick={handleExportCSV}
-                      sx={{ minWidth: 'auto', px: 1, color: '#4caf50', borderColor: '#4caf50', '&:hover': { borderColor: '#4caf50', backgroundColor: 'rgba(76, 175, 80, 0.08)' } }}
-                    >
-                      <DownloadIcon fontSize="small" />
-                    </Button>
-                  </Tooltip>
-                )}
-                {/* Import CSV — open, closed, and archived nets (canManage) */}
-                {canManage && (net.status === 'active' || net.status === 'lobby' || net.status === 'closed' || net.status === 'archived') && (
-                  <Tooltip title="Import check-ins from CSV">
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      onClick={handleOpenImportDialog}
-                      sx={{ minWidth: 'auto', px: 1, color: '#2e7d32', borderColor: '#2e7d32', '&:hover': { borderColor: '#2e7d32', backgroundColor: 'rgba(46, 125, 50, 0.08)' } }}
-                    >
-                      <UploadFileIcon fontSize="small" />
-                    </Button>
-                  </Tooltip>
-                )}
-                {/* ICS-309 Communications Log — closed and archived */}
-                {(net.status === 'closed' || net.status === 'archived') && (
-                  <Tooltip title="Download ICS-309 Communications Log">
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      onClick={handleExportICS309}
-                      sx={{ minWidth: 'auto', px: 1, color: '#009688', borderColor: '#009688', '&:hover': { borderColor: '#009688', backgroundColor: 'rgba(0, 150, 136, 0.08)' } }}
-                    >
-                      <DescriptionIcon fontSize="small" />
-                    </Button>
-                  </Tooltip>
-                )}
-                {/* PDF Report — closed and archived */}
-                {(net.status === 'closed' || net.status === 'archived') && (
-                  <Tooltip title="Generate comprehensive net report (PDF)">
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      onClick={() => navigate(`/nets/${netId}/report`)}
-                      sx={{ minWidth: 'auto', px: 1, color: '#4caf50', borderColor: '#4caf50', '&:hover': { borderColor: '#4caf50', backgroundColor: 'rgba(76, 175, 80, 0.08)' } }}
-                    >
-                      <PictureAsPdfIcon fontSize="small" />
-                    </Button>
-                  </Tooltip>
-                )}
-                {/* Archive — closed (canManage) */}
-                {canManage && net.status === 'closed' && (
-                  <Tooltip title="Archive net">
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      onClick={handleArchive}
-                      sx={{ minWidth: 'auto', px: 1, borderColor: 'grey.400' }}
-                    >
-                      <ArchiveIcon fontSize="small" />
-                    </Button>
-                  </Tooltip>
-                )}
-                {/* Delete — closed (isAdmin) */}
-                {isAdmin && net.status === 'closed' && (
-                  <Tooltip title="Delete net">
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      color="error"
-                      onClick={handleDelete}
-                      sx={{ minWidth: 'auto', px: 1 }}
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </Button>
-                  </Tooltip>
-                )}
-                {/* Unarchive — archived (canManage) */}
-                {canManage && net.status === 'archived' && (
-                  <Tooltip title="Unarchive net - restore to closed status">
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      onClick={handleUnarchive}
-                      sx={{ minWidth: 'auto', px: 1, borderColor: 'grey.400' }}
-                    >
-                      <UnarchiveIcon fontSize="small" />
-                    </Button>
-                  </Tooltip>
-                )}
-                {/* Delete — draft or archived (canManage) */}
-                {canManage && (net.status === 'draft' || net.status === 'archived') && (
-                  <Tooltip title="Delete net">
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      color="error"
-                      onClick={handleDelete}
-                      sx={{ minWidth: 'auto', px: 1 }}
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </Button>
-                  </Tooltip>
-                )}
-              </Box>
-              </Box>
-            </Grid>
-          </Grid>
-        </Box>
+      <NetViewHeader
+        net={net}
+        netId={netId}
+        canManage={canManage}
+        canManageCheckIns={canManageCheckIns}
+        canStartNet={canStartNet}
+        isAdmin={isAdmin}
+        isAuthenticated={isAuthenticated}
+        isAssignedNCS={isAssignedNCS}
+        isNCS={isNCS}
+        hasNCS={hasNCS}
+        user={user}
+        userNetRole={userNetRole}
+        userActiveCheckIn={userActiveCheckIn}
+        netStats={netStats}
+        countdownTime={countdownTime}
+        durationTime={durationTime}
+        checkInsCount={checkIns.length}
+        searchQuery={searchQuery}
+        filteredFrequencyIds={filteredFrequencyIds}
+        setFilteredFrequencyIds={setFilteredFrequencyIds}
+        startingNet={startingNet}
+        highlightStartNet={highlightStartNet}
+        highlightCheckIn={highlightCheckIn}
+        needsTopicPollConfig={needsTopicPollConfig}
+        getNcsColor={getNcsColor}
+        getNcsColorForFrequency={getNcsColorForFrequency}
+        getNcsForFrequency={getNcsForFrequency}
+        onFrequencyChipClick={handleFrequencyChipClick}
+        bulkCheckIn={bulkCheckIn}
+        search={search}
+        map={map}
+        script={script}
+        scheduleAnnouncements={scheduleAnnouncements}
+        announcements={announcements}
+        topicHistory={topicHistory}
+        importDialog={importDialog}
+        closeNetDialog={closeNetDialog}
+        onOpenTimeEdit={handleOpenTimeEdit}
+        onOpenTopicPollConfig={handleOpenTopicPollConfig}
+        onOpenRoleDialog={handleOpenRoleDialog}
+        onOpenCheckIn={handleOpenCheckIn}
+        onStartNetClick={handleStartNetClick}
+        onClaimNCS={handleClaimNCS}
+        onToggleHand={handleToggleHand}
+        onStatusChange={handleStatusChange}
+        onToggleNCSRole={handleToggleNCSRole}
+        onCheckOut={handleCheckOut}
+        onGoLive={handleGoLive}
+        onExportCSV={handleExportCSV}
+        onExportICS309={handleExportICS309}
+        onArchive={handleArchive}
+        onUnarchive={handleUnarchive}
+        onDelete={handleDelete}
+      />
 
         {(net.status === 'active' || net.status === 'lobby' || net.status === 'closed' || net.status === 'archived') && (
           <Grid container spacing={0} sx={{ mt: 0.5, flex: { xs: 'none', md: 1 }, minHeight: 0 }}>
@@ -2778,734 +1135,75 @@ const NetView: React.FC = () => {
                 minHeight={300}
                 storageKey="checkInList"
               >
-              {/* Desktop: Combined table with sticky header */}
-              <TableContainer sx={{ 
-                flex: { xs: 'none', md: 1 }, 
-                overflow: 'auto', 
-                border: 1, 
-                borderColor: 'divider', 
-                borderRadius: '4px', 
-                minHeight: 0, 
-                display: { xs: 'none', md: 'block' },
-                '&::-webkit-scrollbar': {
-                  width: 8,
-                  height: 8,
-                },
-                '&::-webkit-scrollbar-track': {
-                  backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-                },
-                '&::-webkit-scrollbar-thumb': {
-                  backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)',
-                  borderRadius: 4,
-                  '&:hover': {
-                    backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)',
-                  },
-                },
-              }}>
-                {/* ========== CHECK-IN LIST TABLE 1: Desktop Inline (attached) ========== */}
-                {/* This table displays when check-in list is NOT detached, on medium+ screens */}
-                <Table size="small" sx={{ borderCollapse: 'collapse' }}>
-                  <TableHead sx={{ position: 'sticky', top: 0, backgroundColor: 'background.default', zIndex: 1 }}>
-                    <TableRow>
-                      <TableCell sx={{ whiteSpace: 'nowrap' }}>#</TableCell>
-                      <TableCell sx={{ whiteSpace: 'nowrap' }}>Status</TableCell>
-                      <TableCell sx={{ whiteSpace: 'nowrap' }}>Callsign *</TableCell>
-                      {net?.field_config?.name?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Name {net.field_config.name.required && '*'}</TableCell>}
-                      {net?.field_config?.location?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Location {net.field_config.location.required && '*'}</TableCell>}
-                      {net?.field_config?.skywarn_number?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Spotter {net.field_config.skywarn_number.required && '*'}</TableCell>}
-                      {net?.field_config?.weather_observation?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Weather {net.field_config.weather_observation.required && '*'}</TableCell>}
-                      {net?.field_config?.power_source?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Power Src {net.field_config.power_source.required && '*'}</TableCell>}
-                      {net?.field_config?.power?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Power {net.field_config.power.required && '*'}</TableCell>}
-                      {net?.field_config?.notes?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Notes {net.field_config.notes.required && '*'}</TableCell>}
-                      {/* Custom fields */}
-                      {getEnabledCustomFields().map((field) => (
-                        <TableCell key={field.name} sx={{ whiteSpace: 'nowrap' }}>
-                          {field.label} {isFieldRequired(field.name) && '*'}
-                        </TableCell>
-                      ))}
-                      {net?.topic_of_week_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Topic</TableCell>}
-                      {net?.poll_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Poll</TableCell>}
-                      {hasAnyRelayedBy && <TableCell sx={{ whiteSpace: 'nowrap' }}>Relayed By</TableCell>}
-                      <TableCell sx={{ whiteSpace: 'nowrap' }}>Time</TableCell>
-                      {canManage && <TableCell sx={{ whiteSpace: 'nowrap' }}>Actions</TableCell>}
-                      <TableCell sx={{ whiteSpace: 'nowrap', width: 30, p: 0.5 }}>
-                        <IconButton
-                          size="small"
-                          onClick={() => {
-                            const next = !hideDuplicates;
-                            setHideDuplicates(next);
-                            localStorage.setItem('checkin_hideDuplicates', String(next));
-                          }}
-                          title={hideDuplicates ? 'Show all rows (including re-checks)' : 'Hide duplicate rows (show latest per station)'}
-                          sx={{ p: 0.25, color: hideDuplicates ? 'primary.main' : 'text.secondary' }}
-                        >
-                          <GroupIcon sx={{ fontSize: 14 }} />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          onClick={handleDetachCheckInList}
-                          title="Detach to floating window"
-                          sx={{ p: 0.25 }}
-                        >
-                          <OpenInNewIcon sx={{ fontSize: 14 }} />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                  {/* Existing check-ins */}
-                  {filteredCheckIns.map((checkIn, index) => {
-                    // Check if this station is available on the active frequency
-                    const isOnActiveFrequency = net.active_frequency_id && 
-                      checkIn.available_frequencies && 
-                      checkIn.available_frequencies.includes(net.active_frequency_id);
-                    // Get NCS color if this user is an NCS
-                    const ncsColor = checkIn.user_id ? getNcsColor(checkIn.user_id) : null;
-                    const isNcsUser = ncsRoles.some((r: any) => r.user_id === checkIn.user_id);
-                    
-                    // Calculate column count for frequency chip row colspan
-                    const hasFrequencyChips = net.frequencies && net.frequencies.length > 1 && checkIn.available_frequencies && checkIn.available_frequencies.length > 0;
-                    let columnCount = 5; // #, Status, Callsign, Time, pop-out icon
-                    if (net?.field_config?.name?.enabled) columnCount++;
-                    if (net?.field_config?.location?.enabled) columnCount++;
-                    if (net?.field_config?.skywarn_number?.enabled) columnCount++;
-                    if (net?.field_config?.weather_observation?.enabled) columnCount++;
-                    if (net?.field_config?.power_source?.enabled) columnCount++;
-                    if (net?.field_config?.power?.enabled) columnCount++;
-                    if (net?.field_config?.notes?.enabled) columnCount++;
-                    columnCount += getEnabledCustomFields().length;
-                    if (hasAnyRelayedBy) columnCount++;
-                    if (canManage) columnCount++;
-                    
-                    // Check if this row is being inline edited
-                    const isInlineEditing = inlineEditingId === checkIn.id;
-                    
-                    // Gray out rows that are not the latest for this callsign
-                    const isPriorRow = (() => {
-                      const latest = latestCheckedInAtByCallsign.get(checkIn.callsign);
-                      return latest !== undefined && checkIn.checked_in_at < latest;
-                    })();
-
-                    return (
-                    <React.Fragment key={checkIn.id}>
-                    <TableRow
-                      ref={isInlineEditing ? inlineEditRowRef : undefined}
-                      onClick={(e) => {
-                        // Don't start editing if clicking on interactive elements
-                        const target = e.target as HTMLElement;
-                        if (target.closest('button, select, input, .MuiSelect-root, .MuiIconButton-root')) return;
-                        // Don't start editing if already editing this row
-                        if (isInlineEditing) return;
-                        // Determine which field was clicked based on the cell's data-field attribute
-                        const cell = target.closest('td[data-field]') as HTMLElement | null;
-                        const focusField = cell?.dataset.field || 'callsign';
-                        // Start inline editing
-                        if (canManageCheckIns && checkIn.status !== 'checked_out') {
-                          handleStartInlineEdit(checkIn, focusField);
-                        }
-                      }}
-                      sx={{ 
-                        backgroundColor: checkIn.id === activeSpeakerId 
-                          ? (theme) => theme.palette.mode === 'dark' ? theme.palette.success.dark : theme.palette.success.light
-                          : checkIn.status === 'checked_out' 
-                          ? 'action.disabledBackground' 
-                          : checkIn.status === 'away'
-                          ? (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 193, 7, 0.18)' : 'rgba(255, 193, 7, 0.22)'
-                          : isNcsUser && ncsColor ? ncsColor.bg
-                          : isOnActiveFrequency
-                          ? (theme) => theme.palette.mode === 'dark' ? 'rgba(25, 118, 210, 0.15)' : 'rgba(25, 118, 210, 0.08)'
-                          : 'transparent',
-                        opacity: isPriorRow ? 0.4 : checkIn.status === 'checked_out' ? 0.6 : 1,
-                        border: checkIn.id === activeSpeakerId ? 2 : 0,
-                        borderColor: checkIn.id === activeSpeakerId ? 'success.main' : 'transparent',
-                        // Add left border for NCS users
-                        ...(isNcsUser && ncsColor && checkIn.status !== 'checked_out' && {
-                          borderLeft: `3px solid ${ncsColor.border}`,
-                        }),
-                        // Cursor pointer when row is editable
-                        cursor: canManageCheckIns && checkIn.status !== 'checked_out' && !isInlineEditing ? 'pointer' : 'default',
-                        // Highlight row being edited
-                        ...(isInlineEditing && {
-                          outline: '2px solid',
-                          outlineColor: 'primary.main',
-                        }),
-                        '& td, & th': {
-                          ...(checkIn.id === activeSpeakerId ? { fontWeight: 'bold' } : {}),
-                          verticalAlign: 'middle',
-                          whiteSpace: 'nowrap',
-                          // Remove bottom border and padding if frequency chips row follows
-                          ...(hasFrequencyChips ? { border: 0, paddingBottom: 0 } : {}),
-                        }
-                      }}
-                    >
-                      <TableCell sx={{ width: 35 }}>{index + 1}</TableCell>
-                      <TableCell sx={{ width: 75 }} onClick={(e) => e.stopPropagation()}>
-                        {(net.status === 'active' || net.status === 'lobby') && checkIn.status !== 'checked_out' && (canManageCheckIns || checkIn.user_id === user?.id) ? (() => {
-                          // Calculate value once
-
-                          // Ensure selectValue matches MenuItem values exactly
-                          // Determine selectValue: show role if present, else status
-                          const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
-                          let selectValue = checkIn.status.toLowerCase();
-                          if (userRole && ['ncs', 'logger'].includes(userRole.role.toLowerCase())) {
-                            selectValue = userRole.role.toLowerCase();
-                          } else if (userRole && ['NCS', 'LOGGER'].includes(userRole.role)) {
-                            selectValue = userRole.role.toLowerCase();
-                          }
-                          // Only allow lowercase values for Select and MenuItem
-                          const validValues = ['ncs', 'logger', 'checked_in', 'listening', 'relay', 'away', 'has_traffic', 'announcements', 'mobile', 'checked_out'];
-                          if (!validValues.includes(selectValue)) {
-                            selectValue = 'checked_in';
-                          }
-
-                          return (
-                            <Tooltip title={getStatusTooltip(checkIn.status, checkIn)} placement="right" arrow>
-                              <Select
-                                size="small"
-                                value={selectValue}
-                                onChange={async (e) => {
-                                  await handleStatusChange(checkIn.id, e.target.value);
-                                  // Force refresh after role assignment
-                                  await fetchNetRoles();
-                                  await fetchCheckIns();
-                                }}
-                                sx={{ minWidth: 50 }}
-                                disabled={owner?.id === checkIn.user_id}
-                                MenuProps={{
-                                  disableScrollLock: true,
-                                  disableAutoFocusItem: false,
-                                  autoFocus: true,
-                                }}
-                                renderValue={(v) => v === 'ncs' ? getNcsIcon(checkIn) : v === 'logger' ? '📋' : getStatusIcon(v as string, checkIn)}
-                              >
-                                {/* Always render the current value as an option to prevent MUI errors.
-                                    Each option shows icon + text label so new NCS users can pick the
-                                    correct status without memorizing the icon legend. */}
-                                {((canManageCheckIns || selectValue === 'ncs') && <MenuItem value="ncs">{getNcsIcon(checkIn)}  {getStatusLabel('ncs')}</MenuItem>)}
-                                {((canManageCheckIns || selectValue === 'logger') && <MenuItem value="logger">📋  {getStatusLabel('logger')}</MenuItem>)}
-                                <MenuItem value="checked_in">{checkIn.is_recheck ? '🔄' : '✅'}  {checkIn.is_recheck ? 'Re-check' : getStatusLabel('checked_in')}</MenuItem>
-                                <MenuItem value="listening">👂  {getStatusLabel('listening')}</MenuItem>
-                                <MenuItem value="relay">📡  {getStatusLabel('relay')}</MenuItem>
-                                <MenuItem value="away">⏸️  {getStatusLabel('away')}</MenuItem>
-                                <MenuItem value="has_traffic">🚨  {getStatusLabel('has_traffic')}</MenuItem>
-                                <MenuItem value="announcements">📢  {getStatusLabel('announcements')}</MenuItem>
-                                <MenuItem value="mobile">🚗  {getStatusLabel('mobile')}</MenuItem>
-                                {(canManageCheckIns || checkIn.user_id === user?.id) && <MenuItem value="checked_out">👋  {getStatusLabel('checked_out')}</MenuItem>}
-                              </Select>
-                            </Tooltip>
-                          );
-                        })() : (
-                          <Tooltip title={getStatusTooltip(checkIn.status, checkIn)} placement="right" arrow>
-                            <span style={{ cursor: 'help' }}>{getStatusIcon(checkIn.status, checkIn)}</span>
-                          </Tooltip>
-                        )}
-                      </TableCell>
-                      {/* Callsign cell - inline editable */}
-                      <TableCell data-field="callsign" sx={{ width: 140 }}>
-                        {isInlineEditing ? (
-                          <TextField
-                            size="small"
-                            value={inlineEditValues.callsign || ''}
-                            onChange={(e) => handleInlineFieldChange('callsign', e.target.value.toUpperCase())}
-                            onKeyDown={handleInlineKeyDown}
-                            onBlur={handleInlineBlur}
-                            autoFocus={inlineEditFocusField === 'callsign'}
-                            inputProps={{ style: { textTransform: 'uppercase', padding: '4px 8px' } }}
-                            sx={{ width: '100%' }}
-                          />
-                        ) : (
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <Box
-                              onClick={() => checkIn.user_id && setProfileUserId(checkIn.user_id)}
-                              sx={{ cursor: checkIn.user_id ? 'pointer' : 'default', display: 'inline-flex' }}
-                            >
-                              <UserAvatar
-                                avatarUrl={checkIn.avatar_url}
-                                callsign={checkIn.callsign}
-                                name={checkIn.name}
-                                size={24}
-                                hasProfile={!!checkIn.user_id}
-                              isOnline={!!(checkIn.user_id && onlineUserIds.includes(checkIn.user_id))}
-                              />
-                            </Box>
-                            <Box sx={{ fontWeight: 500 }}>
-                              {checkIn.callsign}
-                            </Box>
-                            {checkIn.relayed_by && (
-                              <Tooltip title={`Relayed by ${checkIn.relayed_by}`} arrow>
-                                <span style={{ cursor: 'help' }}>📡</span>
-                              </Tooltip>
-                            )}
-                          </Box>
-                        )}
-                      </TableCell>
-                      {/* Name cell - inline editable */}
-                      {net?.field_config?.name?.enabled && (
-                        <TableCell data-field="name">
-                          {isInlineEditing ? (
-                            <TextField
-                              size="small"
-                              value={inlineEditValues.name || ''}
-                              onChange={(e) => handleInlineFieldChange('name', e.target.value)}
-                              onKeyDown={handleInlineKeyDown} 
-                              onBlur={handleInlineBlur}
-                              autoFocus={inlineEditFocusField === 'name'}
-                              inputProps={{ style: { padding: '4px 8px' } }}
-                              sx={{ width: '100%' }}
-                            />
-                          ) : checkIn.name}
-                        </TableCell>
-                      )}
-                      {/* Location cell - inline editable */}
-                      {net?.field_config?.location?.enabled && (
-                        <TableCell data-field="location">
-                          {isInlineEditing ? (
-                            <TextField
-                              size="small"
-                              value={inlineEditValues.location || ''}
-                              onChange={(e) => handleInlineFieldChange('location', e.target.value)}
-                              onKeyDown={handleInlineKeyDown}
-                              onBlur={handleInlineBlur}
-                              autoFocus={inlineEditFocusField === 'location'}
-                              inputProps={{ style: { padding: '4px 8px' } }}
-                              sx={{ width: '100%' }}
-                            />
-                          ) : checkIn.location}
-                        </TableCell>
-                      )}
-                      {/* Skywarn Number - inline editable */}
-                      {net?.field_config?.skywarn_number?.enabled && (
-                        <TableCell data-field="skywarn_number" sx={{ width: 70 }}>
-                          {isInlineEditing ? (
-                            <TextField
-                              size="small"
-                              value={inlineEditValues.skywarn_number || ''}
-                              onChange={(e) => handleInlineFieldChange('skywarn_number', e.target.value)}
-                              onKeyDown={handleInlineKeyDown}
-                              onBlur={handleInlineBlur}
-                              autoFocus={inlineEditFocusField === 'skywarn_number'}
-                              inputProps={{ style: { padding: '4px 8px' } }}
-                              sx={{ width: '100%' }}
-                            />
-                          ) : checkIn.skywarn_number}
-                        </TableCell>
-                      )}
-                      {/* Weather Observation - inline editable */}
-                      {net?.field_config?.weather_observation?.enabled && (
-                        <TableCell data-field="weather_observation">
-                          {isInlineEditing ? (
-                            <TextField
-                              size="small"
-                              value={inlineEditValues.weather_observation || ''}
-                              onChange={(e) => handleInlineFieldChange('weather_observation', e.target.value)}
-                              onKeyDown={handleInlineKeyDown}
-                              onBlur={handleInlineBlur}
-                              autoFocus={inlineEditFocusField === 'weather_observation'}
-                              inputProps={{ style: { padding: '4px 8px' } }}
-                              sx={{ width: '100%' }}
-                            />
-                          ) : checkIn.weather_observation}
-                        </TableCell>
-                      )}
-                      {/* Power Source - inline editable */}
-                      {net?.field_config?.power_source?.enabled && (
-                        <TableCell data-field="power_source" sx={{ width: 70 }}>
-                          {isInlineEditing ? (
-                            <TextField
-                              size="small"
-                              value={inlineEditValues.power_source || ''}
-                              onChange={(e) => handleInlineFieldChange('power_source', e.target.value)}
-                              onKeyDown={handleInlineKeyDown}
-                              onBlur={handleInlineBlur}
-                              autoFocus={inlineEditFocusField === 'power_source'}
-                              inputProps={{ style: { padding: '4px 8px' } }}
-                              sx={{ width: '100%' }}
-                            />
-                          ) : checkIn.power_source}
-                        </TableCell>
-                      )}
-                      {/* Power - inline editable */}
-                      {net?.field_config?.power?.enabled && (
-                        <TableCell data-field="power" sx={{ width: 70 }}>
-                          {isInlineEditing ? (
-                            <TextField
-                              size="small"
-                              value={inlineEditValues.power || ''}
-                              onChange={(e) => handleInlineFieldChange('power', e.target.value)}
-                              onKeyDown={handleInlineKeyDown}
-                              onBlur={handleInlineBlur}
-                              autoFocus={inlineEditFocusField === 'power'}
-                              inputProps={{ style: { padding: '4px 8px' } }}
-                              sx={{ width: '100%' }}
-                            />
-                          ) : checkIn.power}
-                        </TableCell>
-                      )}
-                      {/* Notes - inline editable */}
-                      {net?.field_config?.notes?.enabled && (
-                        <TableCell data-field="notes">
-                          {isInlineEditing ? (
-                            <TextField
-                              size="small"
-                              value={inlineEditValues.notes || ''}
-                              onChange={(e) => handleInlineFieldChange('notes', e.target.value)}
-                              onKeyDown={handleInlineKeyDown}
-                              onBlur={handleInlineBlur}
-                              autoFocus={inlineEditFocusField === 'notes'}
-                              inputProps={{ style: { padding: '4px 8px' } }}
-                              sx={{ width: '100%' }}
-                            />
-                          ) : checkIn.notes}
-                        </TableCell>
-                      )}
-                      {/* Custom field values - inline editable */}
-                      {getEnabledCustomFields().map((field) => (
-                        <TableCell key={field.name} data-field={`custom_${field.name}`}>
-                          {isInlineEditing ? (
-                            <TextField
-                              size="small"
-                              value={inlineEditValues.custom_fields?.[field.name] || ''}
-                              onChange={(e) => handleInlineFieldChange(`custom_${field.name}`, e.target.value)}
-                              onKeyDown={handleInlineKeyDown}
-                              onBlur={handleInlineBlur}
-                              autoFocus={inlineEditFocusField === `custom_${field.name}`}
-                              inputProps={{ style: { padding: '4px 8px' } }}
-                              sx={{ width: '100%' }}
-                            />
-                          ) : checkIn.custom_fields?.[field.name] || ''}
-                        </TableCell>
-                      ))}
-                      {/* Topic response - inline editable */}
-                      {net?.topic_of_week_enabled && (
-                        <TableCell data-field="topic_response" sx={{ whiteSpace: 'nowrap' }}>
-                          {isInlineEditing ? (
-                            <TextField
-                              size="small"
-                              value={inlineEditValues.topic_response || ''}
-                              onChange={(e) => handleInlineFieldChange('topic_response', e.target.value)}
-                              onKeyDown={handleInlineKeyDown}
-                              onBlur={handleInlineBlur}
-                              autoFocus={inlineEditFocusField === 'topic_response'}
-                              inputProps={{ style: { padding: '4px 8px' } }}
-                              sx={{ width: '100%' }}
-                            />
-                          ) : checkIn.topic_response || ''}
-                        </TableCell>
-                      )}
-                      {/* Poll response - inline editable */}
-                      {net?.poll_enabled && (
-                        <TableCell data-field="poll_response" sx={{ whiteSpace: 'nowrap' }}>
-                          {isInlineEditing ? (
-                            <TextField
-                              size="small"
-                              value={inlineEditValues.poll_response || ''}
-                              onChange={(e) => handleInlineFieldChange('poll_response', e.target.value)}
-                              onKeyDown={handleInlineKeyDown}
-                              onBlur={handleInlineBlur}
-                              autoFocus={inlineEditFocusField === 'poll_response'}
-                              inputProps={{ style: { padding: '4px 8px' } }}
-                              sx={{ width: '100%' }}
-                            />
-                          ) : checkIn.poll_response || ''}
-                        </TableCell>
-                      )}
-                      {/* Relayed By - inline editable */}
-                      {hasAnyRelayedBy && (
-                        <TableCell data-field="relayed_by" sx={{ width: 80 }}>
-                          {isInlineEditing ? (
-                            <TextField
-                              size="small"
-                              value={inlineEditValues.relayed_by || ''}
-                              onChange={(e) => handleInlineFieldChange('relayed_by', e.target.value.toUpperCase())}
-                              onKeyDown={handleInlineKeyDown}
-                              onBlur={handleInlineBlur}
-                              autoFocus={inlineEditFocusField === 'relayed_by'}
-                              inputProps={{ style: { textTransform: 'uppercase', padding: '4px 8px' } }}
-                              sx={{ width: '100%' }}
-                            />
-                          ) : checkIn.relayed_by || ''}
-                        </TableCell>
-                      )}
-                      <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                        {formatTimeWithDate(checkIn.checked_in_at, user?.prefer_utc || false, net?.started_at)}
-                      </TableCell>
-                      {/* Actions column - hand raise, active speaker and delete */}
-                      {(canManage || checkIn.user_id === user?.id) && (
-                      <TableCell sx={{ width: 70 }} onClick={(e) => e.stopPropagation()}>
-                        {/* Step away button - only show when net is active or lobby */}
-                        {(net.status === 'active' || net.status === 'lobby') && checkIn.status !== 'checked_out' && (
-                          <IconButton
-                            size="small"
-                            onClick={() => handleStatusChange(checkIn.id, checkIn.status === 'away' ? 'checked_in' : 'away')}
-                            color={checkIn.status === 'away' ? 'warning' : 'default'}
-                            title={checkIn.status === 'away' ? 'Return from break' : 'Step away'}
-                            sx={{ opacity: checkIn.status === 'away' ? 1 : 0.4 }}
-                          >
-                            <PauseCircleOutlineIcon fontSize="small" />
-                          </IconButton>
-                        )}
-                        {/* Hand Raise button - only show when net is active or lobby */}
-                        {(net.status === 'active' || net.status === 'lobby') && checkIn.status !== 'checked_out' && (
-                          <IconButton
-                            size="small"
-                            onClick={() => handleToggleHand(checkIn.id)}
-                            color={checkIn.hand_raised ? 'warning' : 'default'}
-                            title={checkIn.hand_raised ? 'Lower hand' : 'Raise hand'}
-                            sx={{ opacity: checkIn.hand_raised ? 1 : 0.4 }}
-                          >
-                            <PanToolIcon fontSize="small" />
-                          </IconButton>
-                        )}
-                        {canManage && (
-                        <>
-                        {(net.status === 'active' || net.status === 'lobby') && checkIn.status !== 'checked_out' && (
-                          <IconButton
-                            size="small"
-                            onClick={() => handleSetActiveSpeaker(checkIn.id)}
-                            color={checkIn.id === activeSpeakerId ? 'primary' : 'default'}
-                            title="Mark as active speaker"
-                          >
-                            🗣️
-                          </IconButton>
-                        )}
-                        <IconButton
-                          size="small"
-                          onClick={() => handleDeleteCheckIn(checkIn.id)}
-                          title="Delete check-in"
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                        </>
-                        )}
-                      </TableCell>
-                      )}
-                      <TableCell />
-                    </TableRow>
-                    {/* Frequency chips row - only show if net has multiple frequencies */}
-                    {hasFrequencyChips && (
-                      <TableRow sx={{ 
-                        backgroundColor: checkIn.id === activeSpeakerId 
-                          ? (theme) => theme.palette.mode === 'dark' ? theme.palette.success.dark : theme.palette.success.light
-                          : checkIn.status === 'checked_out' 
-                          ? 'action.disabledBackground' 
-                          : isNcsUser && ncsColor ? ncsColor.bg
-                          : isOnActiveFrequency
-                          ? (theme) => theme.palette.mode === 'dark' ? 'rgba(25, 118, 210, 0.15)' : 'rgba(25, 118, 210, 0.08)'
-                          : 'transparent',
-                        opacity: checkIn.status === 'checked_out' ? 0.6 : 1,
-                        // Add left border for NCS users
-                        ...(isNcsUser && ncsColor && checkIn.status !== 'checked_out' && {
-                          borderLeft: `3px solid ${ncsColor.border}`,
-                        }),
-                      }}>
-                        <TableCell colSpan={columnCount} sx={{ pt: 0, pb: 0.5, borderBottom: 1, borderColor: 'divider' }}>
-                          <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', pl: 4 }}>
-                            {checkIn.available_frequencies!.map((freqId: number) => {
-                              const freq = net.frequencies.find((f: any) => f.id === freqId);
-                              const isActive = freqId === checkIn.frequency_id;
-                              // Get NCS color for this frequency
-                              const freqNcsColor = getNcsColorForFrequency(freqId);
-                              return freq ? (
-                                <Chip 
-                                  key={freqId}
-                                  label={isActive ? `📡 ${formatFrequencyDisplay(freq)}` : formatFrequencyDisplay(freq)}
-                                  size="small"
-                                  variant="filled"
-                                  sx={{ 
-                                    height: 18, 
-                                    fontSize: '0.7rem',
-                                    // Use NCS color if available, otherwise default styling
-                                    ...(freqNcsColor ? {
-                                      backgroundColor: freqNcsColor.bg,
-                                      borderColor: freqNcsColor.border,
-                                      border: `1px solid ${freqNcsColor.border}`,
-                                      '& .MuiChip-label': {
-                                        color: freqNcsColor.text,
-                                      },
-                                    } : isActive ? {
-                                      backgroundColor: 'primary.main',
-                                      '& .MuiChip-label': { color: 'white' },
-                                    } : {
-                                      backgroundColor: 'action.selected',
-                                    }),
-                                  }}
-                                />
-                              ) : null;
-                            })}
-                          </Box>
-                        </TableCell>
-                      </TableRow>
-                    )}
-                    </React.Fragment>
-                  )})}
-                </TableBody>
-              </Table>
-            </TableContainer>
+              {/* ========== CHECK-IN LIST TABLE 1: Desktop Inline (attached) ========== */}
+              <CheckInTable
+                net={net}
+                filteredCheckIns={filteredCheckIns}
+                netRoles={netRoles}
+                ncsRoles={ncsRoles}
+                owner={owner}
+                user={user}
+                onlineUserIds={onlineUserIds}
+                activeSpeakerId={activeSpeakerId}
+                latestCheckedInAtByCallsign={latestCheckedInAtByCallsign}
+                hasAnyRelayedBy={hasAnyRelayedBy}
+                hideDuplicates={hideDuplicates}
+                canManage={canManage}
+                canManageCheckIns={canManageCheckIns}
+                inlineEditingId={inlineEditingId}
+                inlineEditValues={inlineEditValues}
+                inlineEditFocusField={inlineEditFocusField}
+                inlineEditRowRef={inlineEditRowRef}
+                getNcsColor={getNcsColor}
+                getNcsColorForFrequency={getNcsColorForFrequency}
+                getEnabledCustomFields={getEnabledCustomFields}
+                isFieldRequired={isFieldRequired}
+                formatFrequencyDisplay={formatFrequencyDisplay}
+                getStatusIcon={getStatusIcon}
+                getStatusTooltip={getStatusTooltip}
+                getStatusLabel={getStatusLabel}
+                getNcsIcon={getNcsIcon}
+                setHideDuplicates={setHideDuplicates}
+                handleDetachCheckInList={handleDetachCheckInList}
+                handleStartInlineEdit={handleStartInlineEdit}
+                handleInlineFieldChange={handleInlineFieldChange}
+                handleInlineKeyDown={handleInlineKeyDown}
+                handleInlineBlur={handleInlineBlur}
+                handleStatusChange={handleStatusChange}
+                fetchNetRoles={fetchNetRoles}
+                fetchCheckIns={fetchCheckIns}
+                handleToggleHand={handleToggleHand}
+                handleSetActiveSpeaker={handleSetActiveSpeaker}
+                handleDeleteCheckIn={handleDeleteCheckIn}
+                setProfileUserId={setProfileUserId}
+              />
             
-            {/* Mobile: Scrollable table */}
-            <TableContainer sx={{ 
-              display: { xs: 'block', md: 'none' }, 
-              overflow: 'auto', 
-              border: 1, 
-              borderColor: 'divider', 
-              borderRadius: '4px', 
-              maxHeight: 400,
-              '&::-webkit-scrollbar': {
-                width: 8,
-                height: 8,
-              },
-              '&::-webkit-scrollbar-track': {
-                backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-              },
-              '&::-webkit-scrollbar-thumb': {
-                backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)',
-                borderRadius: 4,
-                '&:hover': {
-                  backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)',
-                },
-              },
-            }}>
-              {/* ========== CHECK-IN LIST TABLE 2: Mobile View ========== */}
-              {/* This table displays on small screens (xs) only */}
-              <Table size="small">
-                <TableHead sx={{ position: 'sticky', top: 0, backgroundColor: 'background.default', zIndex: 1 }}>
-                  <TableRow>
-                    <TableCell sx={{ whiteSpace: 'nowrap' }}>#</TableCell>
-                    <TableCell sx={{ whiteSpace: 'nowrap' }}>Status</TableCell>
-                    <TableCell sx={{ whiteSpace: 'nowrap' }}>Callsign *</TableCell>
-                    {net?.field_config?.name?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Name {net.field_config.name.required && '*'}</TableCell>}
-                    {net?.field_config?.location?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Location {net.field_config.location.required && '*'}</TableCell>}
-                    {net?.field_config?.skywarn_number?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Spotter {net.field_config.skywarn_number.required && '*'}</TableCell>}
-                    {net?.field_config?.weather_observation?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Weather {net.field_config.weather_observation.required && '*'}</TableCell>}
-                    {net?.field_config?.power_source?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Power Src {net.field_config.power_source.required && '*'}</TableCell>}
-                    {net?.field_config?.power?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Power {net.field_config.power.required && '*'}</TableCell>}
-                    {net?.field_config?.notes?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Notes {net.field_config.notes.required && '*'}</TableCell>}
-                    {getEnabledCustomFields().map((field) => (
-                      <TableCell key={field.name} sx={{ whiteSpace: 'nowrap' }}>
-                        {field.label} {isFieldRequired(field.name) && '*'}
-                      </TableCell>
-                    ))}
-                    {net?.topic_of_week_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Topic</TableCell>}
-                    {net?.poll_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Poll</TableCell>}
-                    {hasAnyRelayedBy && <TableCell sx={{ whiteSpace: 'nowrap' }}>Relayed By</TableCell>}
-                    <TableCell sx={{ whiteSpace: 'nowrap' }}>Time</TableCell>
-                    {canManage && <TableCell sx={{ whiteSpace: 'nowrap' }}>Actions</TableCell>}
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {filteredCheckIns.map((checkIn, index) => {
-                    const isOnActiveFrequency = net.active_frequency_id && checkIn.available_frequencies?.includes(net.active_frequency_id);
-                    // Get NCS color if this user is an NCS
-                    const ncsColor = checkIn.user_id ? getNcsColor(checkIn.user_id) : null;
-                    const isNcsUser = ncsRoles.some((r: any) => r.user_id === checkIn.user_id);
-                    const isPriorRowMobile = (() => {
-                      const latest = latestCheckedInAtByCallsign.get(checkIn.callsign);
-                      return latest !== undefined && checkIn.checked_in_at < latest;
-                    })();
-                    
-                    return (
-                      <TableRow key={checkIn.id} sx={{ 
-                        backgroundColor: checkIn.id === activeSpeakerId 
-                          ? (theme) => theme.palette.mode === 'dark' ? theme.palette.success.dark : theme.palette.success.light
-                          : checkIn.status === 'checked_out' ? 'action.disabledBackground' 
-                          : isNcsUser && ncsColor ? ncsColor.bg
-                          : isOnActiveFrequency ? (theme) => theme.palette.mode === 'dark' ? 'rgba(25, 118, 210, 0.15)' : 'rgba(25, 118, 210, 0.08)' : 'inherit',
-                        opacity: isPriorRowMobile ? 0.4 : checkIn.status === 'checked_out' ? 0.6 : 1,
-                        // Add left border for NCS users
-                        ...(isNcsUser && ncsColor && checkIn.status !== 'checked_out' && {
-                          borderLeft: `3px solid ${ncsColor.border}`,
-                        }),
-                      }}>
-                        <TableCell sx={{ whiteSpace: 'nowrap' }}>{index + 1}</TableCell>
-                        <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                          {(net.status === 'active' || net.status === 'lobby') && checkIn.status !== 'checked_out' && (canManageCheckIns || checkIn.user_id === user?.id) ? (() => {
-                            const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
-                            let selectValue = checkIn.status.toLowerCase();
-                            if (userRole && ['ncs', 'logger'].includes(userRole.role.toLowerCase())) {
-                              selectValue = userRole.role.toLowerCase();
-                            }
-                            const validValues = ['ncs', 'logger', 'checked_in', 'listening', 'relay', 'away', 'has_traffic', 'announcements', 'mobile', 'checked_out'];
-                            if (!validValues.includes(selectValue)) {
-                              selectValue = 'checked_in';
-                            }
-                            return (
-                              <Select
-                                size="small"
-                                value={selectValue}
-                                onChange={async (e) => {
-                                  await handleStatusChange(checkIn.id, e.target.value);
-                                  await fetchNetRoles();
-                                  await fetchCheckIns();
-                                }}
-                                sx={{ minWidth: 45 }}
-                                disabled={owner?.id === checkIn.user_id}
-                                MenuProps={{ disableScrollLock: true }}
-                                renderValue={(v) => v === 'ncs' ? getNcsIcon(checkIn) : v === 'logger' ? '📋' : getStatusIcon(v as string, checkIn)}
-                              >
-                                {((canManageCheckIns || selectValue === 'ncs') && <MenuItem value="ncs">{getNcsIcon(checkIn)}  {getStatusLabel('ncs')}</MenuItem>)}
-                                {((canManageCheckIns || selectValue === 'logger') && <MenuItem value="logger">📋  {getStatusLabel('logger')}</MenuItem>)}
-                                <MenuItem value="checked_in">{checkIn.is_recheck ? '🔄' : '✅'}  {checkIn.is_recheck ? 'Re-check' : getStatusLabel('checked_in')}</MenuItem>
-                                <MenuItem value="listening">👂  {getStatusLabel('listening')}</MenuItem>
-                                <MenuItem value="relay">📡  {getStatusLabel('relay')}</MenuItem>
-                                <MenuItem value="away">⏸️  {getStatusLabel('away')}</MenuItem>
-                                <MenuItem value="has_traffic">🚨  {getStatusLabel('has_traffic')}</MenuItem>
-                                <MenuItem value="announcements">📢  {getStatusLabel('announcements')}</MenuItem>
-                                <MenuItem value="mobile">🚗  {getStatusLabel('mobile')}</MenuItem>
-                                {(canManageCheckIns || checkIn.user_id === user?.id) && <MenuItem value="checked_out">👋  {getStatusLabel('checked_out')}</MenuItem>}
-                              </Select>
-                            );
-                          })() : (
-                            <span>{getStatusIcon(checkIn.status, checkIn)}</span>
-                          )}
-                        </TableCell>
-                        <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <Box
-                              onClick={() => checkIn.user_id && setProfileUserId(checkIn.user_id)}
-                              sx={{ cursor: checkIn.user_id ? 'pointer' : 'default', display: 'inline-flex' }}
-                            >
-                              <UserAvatar
-                                avatarUrl={checkIn.avatar_url}
-                                callsign={checkIn.callsign}
-                                name={checkIn.name}
-                                size={24}
-                                hasProfile={!!checkIn.user_id}
-                              isOnline={!!(checkIn.user_id && onlineUserIds.includes(checkIn.user_id))}
-                              />
-                            </Box>
-                            {checkIn.callsign}
-                            {checkIn.relayed_by && (
-                              <Tooltip title={`Relayed by ${checkIn.relayed_by}`} arrow>
-                                <span>📡</span>
-                              </Tooltip>
-                            )}
-                          </Box>
-                        </TableCell>
-                        {net?.field_config?.name?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.name}</TableCell>}
-                        {net?.field_config?.location?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.location}</TableCell>}
-                        {net?.field_config?.skywarn_number?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.skywarn_number}</TableCell>}
-                        {net?.field_config?.weather_observation?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.weather_observation}</TableCell>}
-                        {net?.field_config?.power_source?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.power_source}</TableCell>}
-                        {net?.field_config?.power?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.power}</TableCell>}
-                        {net?.field_config?.notes?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.notes}</TableCell>}
-                        {getEnabledCustomFields().map((field) => (
-                          <TableCell key={field.name} sx={{ whiteSpace: 'nowrap' }}>{checkIn.custom_fields?.[field.name] || ''}</TableCell>
-                        ))}
-                        {net?.topic_of_week_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.topic_response || ''}</TableCell>}
-                        {net?.poll_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.poll_response || ''}</TableCell>}
-                        {hasAnyRelayedBy && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.relayed_by || ''}</TableCell>}
-                        <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatTimeWithDate(checkIn.checked_in_at, user?.prefer_utc || false, net?.started_at)}</TableCell>
-                        {canManage && (
-                          <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                            <IconButton size="small" onClick={() => handleDeleteCheckIn(checkIn.id)}><DeleteIcon fontSize="small" /></IconButton>
-                          </TableCell>
-                        )}
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </TableContainer>
+            {/* ========== CHECK-IN LIST TABLE 2: Mobile View (xs only) ========== */}
+            <CheckInMobileList
+              net={net}
+              filteredCheckIns={filteredCheckIns}
+              netRoles={netRoles}
+              ncsRoles={ncsRoles}
+              owner={owner}
+              user={user}
+              onlineUserIds={onlineUserIds}
+              activeSpeakerId={activeSpeakerId}
+              latestCheckedInAtByCallsign={latestCheckedInAtByCallsign}
+              hasAnyRelayedBy={hasAnyRelayedBy}
+              canManage={canManage}
+              canManageCheckIns={canManageCheckIns}
+              getNcsColor={getNcsColor}
+              getEnabledCustomFields={getEnabledCustomFields}
+              isFieldRequired={isFieldRequired}
+              getStatusIcon={getStatusIcon}
+              getStatusLabel={getStatusLabel}
+              getNcsIcon={getNcsIcon}
+              onStatusChange={handleStatusChange}
+              onRefreshRoles={fetchNetRoles}
+              onRefreshCheckIns={fetchCheckIns}
+              onDeleteCheckIn={handleDeleteCheckIn}
+              onShowProfile={setProfileUserId}
+            />
             
             {/* Legend - desktop only */}
             <Box sx={{ p: 0.5, backgroundColor: 'action.hover', border: 1, borderColor: 'divider', borderTop: 0, borderBottom: 0, flexShrink: 0, display: { xs: 'none', md: 'block' } }}>
@@ -3887,7 +1585,7 @@ const NetView: React.FC = () => {
                           <Button
                             size="small"
                             variant="outlined"
-                            onClick={() => setFrequencyDialogOpen(true)}
+                            onClick={() => frequencyDialog.onOpen()}
                             title="Set available frequencies"
                           >
                             📡
@@ -4100,7 +1798,7 @@ const NetView: React.FC = () => {
                     <Button
                       size="small"
                       variant="outlined"
-                      onClick={() => setFrequencyDialogOpen(true)}
+                      onClick={() => frequencyDialog.onOpen()}
                       startIcon={<span>📡</span>}
                       fullWidth
                     >
@@ -4158,64 +1856,26 @@ const NetView: React.FC = () => {
             </Grid>
             )}
             
-            {/* Right column: Chat + Activity Log stacked vertically */}
-            {!chatDetached && (
-            <Grid item xs={12} md={checkInListDetached ? 12 : 4} sx={{ pl: { md: 0.5 }, display: 'flex', flexDirection: 'column', gap: 0.5, minHeight: { xs: 300, md: 0 }, height: { xs: 'auto', md: '100%' } }}>
-              {/* Chat panel */}
-              <Box sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                flex: activityLogMinimized ? 1 : (chatMinimized ? '0 0 auto' : 1),
-                minHeight: chatMinimized ? 'auto' : 0,
-                overflow: 'hidden',
-              }}>
-                <FloatingWindow
-                  title="Chat"
-                  isDetached={false}
-                  onAttach={handleAttachChat}
-                  defaultWidth={450}
-                  defaultHeight={500}
-                  minWidth={300}
-                  minHeight={250}
-                  storageKey="chat"
-                >
-                  <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                    <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-                      <Chat netId={Number(netId)} netStartedAt={net?.started_at} netStatus={net?.status} searchQuery={searchQuery} canManage={canManage} onDetach={handleDetachChat}
-                        chatGracePeriodMinutes={net?.chat_grace_period_minutes ?? undefined} closedAt={net?.closed_at}
-                        onlineUserIds={onlineUserIds} onProfileClick={(id) => setProfileUserId(id)}
-                        minimized={chatMinimized} onMinimize={() => setChatMinimized(true)} onRestore={() => setChatMinimized(false)} />
-                    </Box>
-                  </Box>
-                </FloatingWindow>
-              </Box>
-
-              {/* Activity Log panel */}
-              <Box sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                flex: chatMinimized ? 1 : (activityLogMinimized ? '0 0 auto' : 1),
-                minHeight: activityLogMinimized ? 'auto' : 0,
-                overflow: 'hidden',
-              }}>
-                <FloatingWindow
-                  title="Activity Log"
-                  isDetached={false}
-                  onAttach={() => {}}
-                  defaultWidth={450}
-                  defaultHeight={500}
-                  minWidth={300}
-                  minHeight={250}
-                  storageKey="activityLog"
-                >
-                  <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                    {!activityLogDetached && <ActivityLog netId={Number(netId)}
-                        minimized={activityLogMinimized} onMinimize={() => setActivityLogMinimized(true)} onRestore={() => setActivityLogMinimized(false)} onDetach={() => setActivityLogDetached(true)} />}
-                  </Box>
-                </FloatingWindow>
-              </Box>
-            </Grid>
-            )}
+            <NetViewSidePanels
+              netId={netId}
+              net={net}
+              canManage={canManage}
+              searchQuery={searchQuery}
+              onlineUserIds={onlineUserIds}
+              checkInListDetached={checkInListDetached}
+              chatDetached={chatDetached}
+              activityLogDetached={activityLogDetached}
+              chatMinimized={chatMinimized}
+              activityLogMinimized={activityLogMinimized}
+              setProfileUserId={setProfileUserId}
+              setChatMinimized={setChatMinimized}
+              setActivityLogMinimized={setActivityLogMinimized}
+              setActivityLogDetached={setActivityLogDetached}
+              handleAttachChat={handleAttachChat}
+              handleDetachChat={handleDetachChat}
+              handleAttachActivityLog={handleAttachActivityLog}
+              handleDetachActivityLog={handleDetachActivityLog}
+            />
           </Grid>
         )}
 
@@ -4235,164 +1895,48 @@ const NetView: React.FC = () => {
             <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               {/* ========== CHECK-IN LIST TABLE 3: Detached Floating Window ========== */}
               {/* This table displays when check-in list is popped out into a floating window */}
-              <TableContainer sx={{ 
-                flex: 1, 
-                overflow: 'auto', 
-                minHeight: 0,
-                border: 1,
-                borderColor: 'divider',
-                borderRadius: '4px 4px 0 0',
-                '&::-webkit-scrollbar': { width: 8, height: 8 },
-                '&::-webkit-scrollbar-track': { backgroundColor: (thm) => thm.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' },
-                '&::-webkit-scrollbar-thumb': { backgroundColor: (thm) => thm.palette.mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)', borderRadius: 4 },
-              }}>
-                <Table size="small" sx={{ borderCollapse: 'collapse' }}>
-                  <TableHead sx={{ position: 'sticky', top: 0, backgroundColor: 'background.default', zIndex: 1 }}>
-                    <TableRow>
-                      <TableCell sx={{ whiteSpace: 'nowrap' }}>#</TableCell>
-                      <TableCell sx={{ whiteSpace: 'nowrap' }}>Status</TableCell>
-                      <TableCell sx={{ whiteSpace: 'nowrap' }}>Callsign *</TableCell>
-                      {net?.field_config?.name?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Name</TableCell>}
-                      {net?.field_config?.location?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Location</TableCell>}
-                      {net?.field_config?.skywarn_number?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Spotter</TableCell>}
-                      {net?.field_config?.weather_observation?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Weather</TableCell>}
-                      {net?.field_config?.power_source?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Power Src</TableCell>}
-                      {net?.field_config?.power?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Power</TableCell>}
-                      {net?.field_config?.notes?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Notes</TableCell>}
-                      {getEnabledCustomFields().map((field) => (
-                        <TableCell key={field.name} sx={{ whiteSpace: 'nowrap' }}>{field.label}</TableCell>
-                      ))}
-                      {net?.topic_of_week_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Topic</TableCell>}
-                      {net?.poll_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Poll</TableCell>}
-                      {hasAnyRelayedBy && <TableCell sx={{ whiteSpace: 'nowrap' }}>Relayed By</TableCell>}
-                      <TableCell sx={{ whiteSpace: 'nowrap' }}>Time</TableCell>
-                      {canManage && <TableCell sx={{ whiteSpace: 'nowrap' }}>Actions</TableCell>}
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {filteredCheckIns.map((checkIn, index) => {
-                      const isOnActiveFrequency = net.active_frequency_id && checkIn.available_frequencies?.includes(net.active_frequency_id);
-                      // Get NCS color if this user is an NCS
-                      const ncsColor = checkIn.user_id ? getNcsColor(checkIn.user_id) : null;
-                      const isNcsUser = ncsRoles.some((r: any) => r.user_id === checkIn.user_id);
-                      const isPriorRowDetached = (() => {
-                        const latest = latestCheckedInAtByCallsign.get(checkIn.callsign);
-                        return latest !== undefined && checkIn.checked_in_at < latest;
-                      })();
-                      return (
-                        <TableRow 
-                          key={checkIn.id}
-                          sx={{ 
-                            backgroundColor: checkIn.id === activeSpeakerId 
-                              ? (thm) => thm.palette.mode === 'dark' ? thm.palette.success.dark : thm.palette.success.light
-                              : checkIn.status === 'checked_out' ? 'action.disabledBackground' 
-                              : isNcsUser && ncsColor ? ncsColor.bg
-                              : isOnActiveFrequency ? (thm) => thm.palette.mode === 'dark' ? 'rgba(25, 118, 210, 0.15)' : 'rgba(25, 118, 210, 0.08)' : 'inherit',
-                            opacity: isPriorRowDetached ? 0.4 : checkIn.status === 'checked_out' ? 0.6 : 1,
-                            // Add left border for NCS users
-                            ...(isNcsUser && ncsColor && checkIn.status !== 'checked_out' && {
-                              borderLeft: `3px solid ${ncsColor.border}`,
-                            }),
-                          }}
-                        >
-                          <TableCell>{index + 1}</TableCell>
-                          <TableCell>
-                            {(net.status === 'active' || net.status === 'lobby') && checkIn.status !== 'checked_out' && (canManageCheckIns || checkIn.user_id === user?.id) ? (() => {
-                              const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
-                              let selectValue = checkIn.status.toLowerCase();
-                              if (userRole && ['ncs', 'logger'].includes(userRole.role.toLowerCase())) {
-                                selectValue = userRole.role.toLowerCase();
-                              }
-                              const validValues = ['ncs', 'logger', 'checked_in', 'listening', 'relay', 'away', 'has_traffic', 'announcements', 'mobile', 'checked_out'];
-                              if (!validValues.includes(selectValue)) selectValue = 'checked_in';
-                              return (
-                                <Tooltip title={getStatusTooltip(checkIn.status, checkIn)} placement="right" arrow>
-                                  <Select
-                                    size="small"
-                                    value={selectValue}
-                                    onChange={async (e) => { await handleStatusChange(checkIn.id, e.target.value); await fetchNetRoles(); await fetchCheckIns(); }}
-                                    sx={{ minWidth: 50 }}
-                                    disabled={owner?.id === checkIn.user_id}
-                                    MenuProps={{ disableScrollLock: true }}
-                                    renderValue={(v) => v === 'ncs' ? getNcsIcon(checkIn) : v === 'logger' ? '📋' : getStatusIcon(v as string, checkIn)}
-                                  >
-                                    {((canManageCheckIns || selectValue === 'ncs') && <MenuItem value="ncs">{getNcsIcon(checkIn)}  {getStatusLabel('ncs')}</MenuItem>)}
-                                    {((canManageCheckIns || selectValue === 'logger') && <MenuItem value="logger">📋  {getStatusLabel('logger')}</MenuItem>)}
-                                    <MenuItem value="checked_in">{checkIn.is_recheck ? '🔄' : '✅'}  {checkIn.is_recheck ? 'Re-check' : getStatusLabel('checked_in')}</MenuItem>
-                                    <MenuItem value="listening">👂  {getStatusLabel('listening')}</MenuItem>
-                                    <MenuItem value="relay">📡  {getStatusLabel('relay')}</MenuItem>
-                                    <MenuItem value="away">⏸️  {getStatusLabel('away')}</MenuItem>
-                                    <MenuItem value="has_traffic">🚨  {getStatusLabel('has_traffic')}</MenuItem>
-                                    <MenuItem value="announcements">📢  {getStatusLabel('announcements')}</MenuItem>
-                                    <MenuItem value="mobile">🚗  {getStatusLabel('mobile')}</MenuItem>
-                                    {(canManageCheckIns || checkIn.user_id === user?.id) && <MenuItem value="checked_out">👋  {getStatusLabel('checked_out')}</MenuItem>}
-                                  </Select>
-                                </Tooltip>
-                              );
-                            })() : (
-                              <Tooltip title={getStatusTooltip(checkIn.status, checkIn)} placement="right" arrow>
-                                <span style={{ cursor: 'help' }}>{getStatusIcon(checkIn.status, checkIn)}</span>
-                              </Tooltip>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                              <UserAvatar
-                                avatarUrl={checkIn.avatar_url}
-                                callsign={checkIn.callsign}
-                                name={checkIn.name}
-                                size={24}
-                                hasProfile={!!checkIn.user_id}
-                              isOnline={!!(checkIn.user_id && onlineUserIds.includes(checkIn.user_id))}
-                              />
-                              {checkIn.callsign}
-                              {checkIn.relayed_by && (
-                                <Tooltip title={`Relayed by ${checkIn.relayed_by}`} arrow><span>📡</span></Tooltip>
-                              )}
-                            </Box>
-                          </TableCell>
-                          {net?.field_config?.name?.enabled && <TableCell>{checkIn.name}</TableCell>}
-                          {net?.field_config?.location?.enabled && <TableCell>{checkIn.location}</TableCell>}
-                          {net?.field_config?.skywarn_number?.enabled && <TableCell>{checkIn.skywarn_number}</TableCell>}
-                          {net?.field_config?.weather_observation?.enabled && <TableCell>{checkIn.weather_observation}</TableCell>}
-                          {net?.field_config?.power_source?.enabled && <TableCell>{checkIn.power_source}</TableCell>}
-                          {net?.field_config?.power?.enabled && <TableCell>{checkIn.power}</TableCell>}
-                          {net?.field_config?.notes?.enabled && <TableCell>{checkIn.notes}</TableCell>}
-                          {getEnabledCustomFields().map((field) => (
-                            <TableCell key={field.name}>{checkIn.custom_fields?.[field.name] || ''}</TableCell>
-                          ))}
-                          {net?.topic_of_week_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.topic_response || ''}</TableCell>}
-                          {net?.poll_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.poll_response || ''}</TableCell>}
-                          {hasAnyRelayedBy && <TableCell>{checkIn.relayed_by || ''}</TableCell>}
-                          <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatTimeWithDate(checkIn.checked_in_at, user?.prefer_utc || false, net?.started_at)}</TableCell>
-                          {(canManage || checkIn.user_id === user?.id) && (
-                            <TableCell>
-                              {(net.status === 'active' || net.status === 'lobby') && checkIn.status !== 'checked_out' && (
-                                <>
-                                  <IconButton size="small" onClick={() => handleStatusChange(checkIn.id, checkIn.status === 'away' ? 'checked_in' : 'away')} color={checkIn.status === 'away' ? 'warning' : 'default'} title={checkIn.status === 'away' ? 'Return from break' : 'Step away'} sx={{ opacity: checkIn.status === 'away' ? 1 : 0.4 }}>
-                                    <PauseCircleOutlineIcon fontSize="small" />
-                                  </IconButton>
-                                  <IconButton size="small" onClick={() => handleToggleHand(checkIn.id)} color={checkIn.hand_raised ? 'warning' : 'default'} title={checkIn.hand_raised ? 'Lower hand' : 'Raise hand'} sx={{ opacity: checkIn.hand_raised ? 1 : 0.4 }}>
-                                    <PanToolIcon fontSize="small" />
-                                  </IconButton>
-                                </>
-                              )}
-                              {canManage && (
-                              <>
-                              {(net.status === 'active' || net.status === 'lobby') && checkIn.status !== 'checked_out' && (
-                                <IconButton size="small" onClick={() => handleSetActiveSpeaker(checkIn.id)} color={checkIn.id === activeSpeakerId ? 'primary' : 'default'} title="Mark as active speaker">🗣️</IconButton>
-                              )}
-                              <IconButton size="small" onClick={() => handleDeleteCheckIn(checkIn.id)} title="Delete"><DeleteIcon fontSize="small" /></IconButton>
-                              </>
-                              )}
-                            </TableCell>
-                          )}
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+              <CheckInTable
+                detached
+                net={net}
+                filteredCheckIns={filteredCheckIns}
+                netRoles={netRoles}
+                ncsRoles={ncsRoles}
+                owner={owner}
+                user={user}
+                onlineUserIds={onlineUserIds}
+                activeSpeakerId={activeSpeakerId}
+                latestCheckedInAtByCallsign={latestCheckedInAtByCallsign}
+                hasAnyRelayedBy={hasAnyRelayedBy}
+                hideDuplicates={hideDuplicates}
+                canManage={canManage}
+                canManageCheckIns={canManageCheckIns}
+                inlineEditingId={inlineEditingId}
+                inlineEditValues={inlineEditValues}
+                inlineEditFocusField={inlineEditFocusField}
+                inlineEditRowRef={inlineEditRowRef}
+                getNcsColor={getNcsColor}
+                getNcsColorForFrequency={getNcsColorForFrequency}
+                getEnabledCustomFields={getEnabledCustomFields}
+                isFieldRequired={isFieldRequired}
+                formatFrequencyDisplay={formatFrequencyDisplay}
+                getStatusIcon={getStatusIcon}
+                getStatusTooltip={getStatusTooltip}
+                getStatusLabel={getStatusLabel}
+                getNcsIcon={getNcsIcon}
+                setHideDuplicates={setHideDuplicates}
+                handleDetachCheckInList={handleDetachCheckInList}
+                handleStartInlineEdit={handleStartInlineEdit}
+                handleInlineFieldChange={handleInlineFieldChange}
+                handleInlineKeyDown={handleInlineKeyDown}
+                handleInlineBlur={handleInlineBlur}
+                handleStatusChange={handleStatusChange}
+                fetchNetRoles={fetchNetRoles}
+                fetchCheckIns={fetchCheckIns}
+                handleToggleHand={handleToggleHand}
+                handleSetActiveSpeaker={handleSetActiveSpeaker}
+                handleDeleteCheckIn={handleDeleteCheckIn}
+                setProfileUserId={setProfileUserId}
+              />
               
               {/* Legend */}
               <Box sx={{ p: 0.5, backgroundColor: 'action.hover', border: 1, borderColor: 'divider', borderTop: 0, flexShrink: 0 }}>
@@ -4493,478 +2037,71 @@ const NetView: React.FC = () => {
           </FloatingWindow>
         )}
 
-        {/* Floating Chat when detached */}
-        {chatDetached && (net.status === 'active' || net.status === 'lobby' || net.status === 'closed' || net.status === 'archived') && (
-          <FloatingWindow
-            title="Chat"
-            isDetached={true}
-            onDetach={handleDetachChat}
-            onAttach={handleAttachChat}
-            defaultWidth={450}
-            defaultHeight={500}
-            minWidth={300}
-            minHeight={250}
-            storageKey="chat"
-          >
-            <Chat netId={Number(netId)} netStartedAt={net?.started_at} netStatus={net?.status} searchQuery={searchQuery} canManage={canManage}
-              chatGracePeriodMinutes={net?.chat_grace_period_minutes ?? undefined} closedAt={net?.closed_at}
-              onlineUserIds={onlineUserIds} onProfileClick={(id) => setProfileUserId(id)} />
-          </FloatingWindow>
-        )}
-
-        {/* Floating Activity Log when detached */}
-        {activityLogDetached && (net.status === 'active' || net.status === 'lobby' || net.status === 'closed' || net.status === 'archived') && (
-          <FloatingWindow
-            title="Activity Log"
-            isDetached={true}
-            onDetach={handleDetachActivityLog}
-            onAttach={handleAttachActivityLog}
-            defaultWidth={450}
-            defaultHeight={500}
-            minWidth={300}
-            minHeight={250}
-            storageKey="activityLog"
-          >
-            <ActivityLog netId={Number(netId)} />
-          </FloatingWindow>
-        )}
       </Paper>
 
       {/* Close Net Confirmation Dialog */}
-      <Dialog 
-        open={closeNetDialogOpen} 
-        onClose={() => setCloseNetDialogOpen(false)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            handleCloseNet();
-          }
-        }}
-      >
-        <DialogTitle>Close Net?</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Are you sure you want to close this net? This will end the session and send log emails to subscribers.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setCloseNetDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleCloseNet} variant="contained" color="error">
-            Close Net
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* ========== SUBSCRIBE TO SCHEDULE DIALOG ========== */}
-      {/* Shown after a net closes if user checked in and isn't already subscribed */}
-      <Dialog
-        open={subscribeDialogOpen}
-        onClose={handleSkipSubscribe}
-        maxWidth="sm"
-        PaperProps={{ sx: { m: { xs: 1, sm: 4 } } }}
-      >
-        <DialogTitle>
-          📬 Subscribe to Future Nets?
-        </DialogTitle>
-        <DialogContent>
-          <Typography sx={{ mb: 2 }}>
-            Thanks for checking in to <strong>{net?.name}</strong>!
-          </Typography>
-          <Typography>
-            Would you like to receive email notifications when future instances of this net are scheduled or go active?
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-            You can manage your subscriptions and notification preferences in your profile settings.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleSkipSubscribe} color="inherit">
-            No Thanks
-          </Button>
-          <Button 
-            onClick={handleSubscribe} 
-            variant="contained" 
-            disabled={subscribing}
-            startIcon={subscribing ? <CircularProgress size={16} /> : null}
-          >
-            {subscribing ? 'Subscribing...' : 'Subscribe'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Topic/Poll Configuration Dialog */}
-      <Dialog
-        open={topicPollDialogOpen}
-        onClose={() => setTopicPollDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{ sx: { m: { xs: 1, sm: 4 } } }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            handleTopicPollSaveAndStart();
-          }
-        }}
-      >
-        <DialogTitle>Configure Community Net Features</DialogTitle>
-        <DialogContent>
-          <Box sx={{ pt: 2 }}>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Set the topic and/or poll question for this net session. These prompts will be shown to participants during check-in.
-            </Typography>
-            {net?.topic_of_week_enabled && (
-              <TextField
-                fullWidth
-                label="Topic of the Week"
-                value={tempTopicPrompt}
-                onChange={(e) => setTempTopicPrompt(e.target.value)}
-                placeholder="e.g., What's your favorite radio memory?"
-                helperText="What would you like participants to share?"
-                sx={{ mb: 3 }}
-              />
-            )}
-            {net?.poll_enabled && (
-              <TextField
-                fullWidth
-                label="Poll Question"
-                value={tempPollQuestion}
-                onChange={(e) => setTempPollQuestion(e.target.value)}
-                placeholder="e.g., What band do you operate most?"
-                helperText="Answers will be tracked and displayed as a chart"
-              />
-            )}
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setTopicPollDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleTopicPollSaveAndStart} variant="contained" color="success">
-            Save & Start Net
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <NetControlDialogs
+        closeNetDialog={closeNetDialog}
+        onCloseNet={handleCloseNet}
+        subscribeDialog={subscribeDialog}
+        netName={net?.name}
+        subscribing={subscribing}
+        onSkipSubscribe={handleSkipSubscribe}
+        onSubscribe={handleSubscribe}
+        topicPollDialog={topicPollDialog}
+        topicEnabled={!!net?.topic_of_week_enabled}
+        pollEnabled={!!net?.poll_enabled}
+        tempTopicPrompt={tempTopicPrompt}
+        setTempTopicPrompt={setTempTopicPrompt}
+        tempPollQuestion={tempPollQuestion}
+        setTempPollQuestion={setTempPollQuestion}
+        onSaveAndStart={handleTopicPollSaveAndStart}
+        frequencyDialog={frequencyDialog}
+        frequencies={net?.frequencies}
+        availableFrequencyIds={checkInForm.available_frequency_ids}
+        onAvailableFrequencyIdsChange={(ids) => setCheckInForm({ ...checkInForm, available_frequency_ids: ids })}
+        formatFrequency={formatFrequencyDisplay}
+        timeEditDialog={timeEditDialog}
+        editStartedAt={editStartedAt}
+        setEditStartedAt={setEditStartedAt}
+        editClosedAt={editClosedAt}
+        setEditClosedAt={setEditClosedAt}
+        onSaveTimes={handleSaveNetTimes}
+      />
 
       {/* Role Management Dialog */}
-      <Dialog open={roleDialogOpen} onClose={() => setRoleDialogOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { m: { xs: 1, sm: 4 } } }}>
-        <DialogTitle>Manage Net Control Staff</DialogTitle>
-        <DialogContent>
-          <Box sx={{ pt: 2 }}>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Assign NCS (Net Control Station) or Logger roles. You can assign multiple people as NCS — any of them can start or manage the net, providing backup if the primary NCS is unavailable.
-            </Typography>
-            
-            <FormControl fullWidth sx={{ mb: 2 }}>
-              <InputLabel>Select User</InputLabel>
-              <Select
-                value={selectedUserId}
-                label="Select User"
-                onChange={(e) => setSelectedUserId(e.target.value as number)}
-              >
-                <MenuItem value="">
-                  <em>Choose a user...</em>
-                </MenuItem>
-                {allUsers.map((u: any) => (
-                  <MenuItem key={u.id} value={u.id}>
-                    {displayCallsign(u) || u.email} ({u.email})
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+      <RoleAssignmentDialog
+        dialog={roleDialog}
+        allUsers={allUsers}
+        netRoles={netRoles}
+        onlineUserIds={onlineUserIds}
+        selectedUserId={selectedUserId}
+        setSelectedUserId={setSelectedUserId}
+        selectedRole={selectedRole}
+        setSelectedRole={setSelectedRole}
+        onAssignRole={handleAssignRole}
+        onRemoveRole={handleRemoveRole}
+        onShowProfile={setProfileUserId}
+      />
 
-            <FormControl fullWidth sx={{ mb: 2 }}>
-              <InputLabel>Role</InputLabel>
-              <Select
-                value={selectedRole}
-                label="Role"
-                onChange={(e) => setSelectedRole(e.target.value)}
-              >
-                <MenuItem value="NCS">NCS (Net Control Station)</MenuItem>
-                <MenuItem value="LOGGER">Logger</MenuItem>
-                <MenuItem value="RELAY">Relay Station</MenuItem>
-              </Select>
-            </FormControl>
-
-            <Button 
-              variant="contained" 
-              onClick={handleAssignRole}
-              disabled={!selectedUserId}
-              fullWidth
-            >
-              Assign Role
-            </Button>
-
-            {netRoles.length > 0 && (
-              <>
-                <Typography variant="subtitle2" sx={{ mt: 3, mb: 1 }}>
-                  Current Assignments:
-                </Typography>
-                <List>
-                  {netRoles.map((role) => (
-                    <ListItem
-                      key={role.id}
-                      secondaryAction={
-                        <IconButton edge="end" onClick={() => handleRemoveRole(role.id)}>
-                          <DeleteIcon />
-                        </IconButton>
-                      }
-                    >
-                      <ListItemAvatar>
-                        <Box
-                          onClick={() => setProfileUserId(role.user_id)}
-                          sx={{ cursor: 'pointer', display: 'inline-flex' }}
-                        >
-                          <UserAvatar
-                            avatarUrl={role.avatar_url}
-                            callsign={role.callsign}
-                            name={role.name}
-                            size={36}
-                            hasProfile
-                            isOnline={onlineUserIds.includes(role.user_id)}
-                          />
-                        </Box>
-                      </ListItemAvatar>
-                      <ListItemText
-                        primary={displayCallsign(role) || role.email}
-                        secondary={`${role.role} • ${new Date(role.assigned_at).toLocaleDateString()}`}
-                      />
-                    </ListItem>
-                  ))}
-                </List>
-              </>
-            )}
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setRoleDialogOpen(false)}>Close</Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Available Frequencies Dialog */}
-      <Dialog
-        open={frequencyDialogOpen}
-        onClose={() => setFrequencyDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{ sx: { m: { xs: 1, sm: 4 } } }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            setFrequencyDialogOpen(false);
-          }
-        }}
-      >
-        <DialogTitle>Available Frequencies</DialogTitle>
-        <DialogContent>
-          <Box sx={{ pt: 2 }}>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              For SKYWARN nets: indicate which frequencies this station can monitor.
-            </Typography>
-            <Autocomplete
-              multiple
-              options={net?.frequencies || []}
-              getOptionLabel={(option: any) => formatFrequencyDisplay(option)}
-              value={net?.frequencies.filter((f: any) => (checkInForm.available_frequency_ids || []).includes(f.id)) || []}
-              onChange={(_, newValue: any[]) => {
-                setCheckInForm({
-                  ...checkInForm,
-                  available_frequency_ids: newValue.map(f => f.id)
-                });
-              }}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Select Frequencies"
-                  placeholder="Choose frequencies..."
-                />
-              )}
-              renderTags={(value: any[], getTagProps) =>
-                value.map((option: any, index: number) => (
-                  <Chip
-                    {...getTagProps({ index })}
-                    label={formatFrequencyDisplay(option)}
-                    size="small"
-                  />
-                ))
-              }
-            />
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setFrequencyDialogOpen(false)}>Done</Button>
-        </DialogActions>
-      </Dialog>
 
       {/* Check-In Dialog for Regular Users */}
-      <Dialog
-        open={checkInDialogOpen}
-        onClose={() => setCheckInDialogOpen(false)}
-        maxWidth="md"
-        fullWidth
-        PaperProps={{ sx: { m: { xs: 1, sm: 4 } } }}
-        disableRestoreFocus
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            handleCheckIn();
-            setCheckInDialogOpen(false);
-          }
-        }}
-      >
-        <DialogTitle>Check In to {net?.name}</DialogTitle>
-        <DialogContent>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-            <TextField
-              label="Callsign"
-              value={checkInForm.callsign}
-              onChange={(e) => setCheckInForm({ ...checkInForm, callsign: e.target.value.toUpperCase() })}
-              onBlur={(e) => handleCallsignLookup(e.target.value)}
-              fullWidth
-              required
-              inputProps={{ style: { textTransform: 'uppercase' } }}
-            />
-            
-            {net?.field_config?.name?.enabled && (
-              <TextField
-                label="Name"
-                value={checkInForm.name}
-                onChange={(e) => setCheckInForm({ ...checkInForm, name: e.target.value })}
-                fullWidth
-                required={net.field_config.name.required}
-              />
-            )}
-            
-            {net?.field_config?.location?.enabled && (
-              <TextField
-                label="Location"
-                value={checkInForm.location}
-                onChange={(e) => setCheckInForm({ ...checkInForm, location: e.target.value })}
-                fullWidth
-                required={net.field_config.location.required}
-              />
-            )}
-            
-            {net?.field_config?.skywarn_number?.enabled && (
-              <TextField
-                label="Spotter #"
-                value={checkInForm.skywarn_number}
-                onChange={(e) => setCheckInForm({ ...checkInForm, skywarn_number: e.target.value })}
-                fullWidth
-                required={net.field_config.skywarn_number.required}
-              />
-            )}
-            
-            {net?.field_config?.weather_observation?.enabled && (
-              <TextField
-                label="Weather Observation"
-                value={checkInForm.weather_observation}
-                onChange={(e) => setCheckInForm({ ...checkInForm, weather_observation: e.target.value })}
-                fullWidth
-                multiline
-                rows={2}
-                required={net.field_config.weather_observation.required}
-              />
-            )}
-            
-            {net?.field_config?.power_source?.enabled && (
-              <TextField
-                label="Power Src"
-                value={checkInForm.power_source}
-                onChange={(e) => setCheckInForm({ ...checkInForm, power_source: e.target.value })}
-                fullWidth
-                required={net.field_config.power_source.required}
-              />
-            )}
-            
-            {net?.field_config?.power?.enabled && (
-              <TextField
-                label="Power"
-                value={checkInForm.power}
-                onChange={(e) => setCheckInForm({ ...checkInForm, power: e.target.value })}
-                fullWidth
-                required={net.field_config.power.required}
-              />
-            )}
-            
-            {net?.field_config?.notes?.enabled && (
-              <TextField
-                label="Notes"
-                value={checkInForm.notes}
-                onChange={(e) => setCheckInForm({ ...checkInForm, notes: e.target.value })}
-                fullWidth
-                multiline
-                rows={2}
-                required={net.field_config.notes.required}
-              />
-            )}
-            
-            {net?.frequencies && net.frequencies.length > 1 && (
-              <Autocomplete
-                multiple
-                options={net.frequencies || []}
-                getOptionLabel={(option: any) => formatFrequencyDisplay(option)}
-                value={net.frequencies.filter((f: any) => checkInForm.available_frequency_ids.includes(f.id))}
-                onChange={(_, newValue: any[]) => {
-                  setCheckInForm({
-                    ...checkInForm,
-                    available_frequency_ids: newValue.map(f => f.id)
-                  });
-                }}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Available Frequencies (optional)"
-                    helperText="For SKYWARN nets: indicate which frequencies you can reach"
-                  />
-                )}
-                renderTags={(value: any[], getTagProps) =>
-                  value.map((option: any, index: number) => {
-                    const { key, ...tagProps } = getTagProps({ index });
-                    return (
-                      <Chip
-                        key={key}
-                        {...tagProps}
-                        label={formatFrequencyDisplay(option)}
-                        size="small"
-                      />
-                    );
-                  })
-                }
-              />
-            )}
-            
-            {net?.frequencies && net.frequencies.length === 1 && (
-              <Box sx={{
-                p: 1.5,
-                bgcolor: 'action.hover',
-                borderRadius: 1,
-                textAlign: 'center',
-                fontSize: '0.9rem',
-                color: 'text.secondary'
-              }}>
-                📡 Frequency: {net.frequencies[0].frequency || net.frequencies[0].network || 'Unknown'}
-              </Box>
-            )}
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setCheckInDialogOpen(false)}>Cancel</Button>
-          <Button 
-            onClick={() => {
-              handleCheckIn();
-              setCheckInDialogOpen(false);
-            }} 
-            variant="contained" 
-            color="primary"
-            disabled={!checkInForm.callsign}
-          >
-            Check In
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <CheckInFormDialog
+        dialog={checkInDialog}
+        netName={net?.name}
+        fieldConfig={net?.field_config}
+        frequencies={net?.frequencies}
+        checkInForm={checkInForm}
+        setCheckInForm={setCheckInForm}
+        onCallsignLookup={handleCallsignLookup}
+        onCheckIn={handleCheckIn}
+        formatFrequency={formatFrequencyDisplay}
+      />
 
       {/* Check-in Location Map */}
       <CheckInMap
-        open={mapOpen}
-        onClose={() => setMapOpen(false)}
+        open={map.open}
+        onClose={map.onClose}
         checkIns={filteredCheckIns}
         netName={net?.name || 'Net'}
         ncsUserIds={netRoles.filter((r: any) => r.role === 'NCS').map((r: any) => r.user_id)}
@@ -4974,151 +2111,28 @@ const NetView: React.FC = () => {
 
       {/* Bulk Check-In Dialog */}
       <BulkCheckIn
-        open={bulkCheckInOpen}
-        onClose={() => setBulkCheckInOpen(false)}
+        open={bulkCheckIn.open}
+        onClose={bulkCheckIn.onClose}
         netId={Number(netId)}
         onCheckInsAdded={fetchCheckIns}
         fieldConfig={net?.field_config}
       />
 
       {/* CSV Import Dialog */}
-      <Dialog open={importDialogOpen} onClose={handleCloseImportDialog} maxWidth="sm" fullWidth PaperProps={{ sx: { m: { xs: 1, sm: 4 } } }}>
-        <DialogTitle>Import Check-ins from CSV</DialogTitle>
-        <DialogContent>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-            <Typography variant="body2" color="text.secondary">
-              Use the template to match expected columns. Sample template rows are auto-detected and ignored if left in the file.
-              Accepted date/time examples: 6/3/2026 2:24 PM, 3/6/2026 14:24, 2:24 PM, 2:24, 14:24.
-            </Typography>
-
-            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-              <FormControl size="small" sx={{ minWidth: 230 }} disabled={csvImportUseUtc}>
-                <InputLabel id="csv-import-timezone-label">Import Time Zone</InputLabel>
-                <Select
-                  labelId="csv-import-timezone-label"
-                  label="Import Time Zone"
-                  value={csvImportTimezone}
-                  onChange={(event) => setCsvImportTimezone(event.target.value)}
-                >
-                  {Array.from(new Set([...COMMON_IMPORT_TIMEZONES, csvImportTimezone])).map((tz) => (
-                    <MenuItem key={tz} value={tz}>{tz}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={csvImportUseUtc}
-                    onChange={(event) => setCsvImportUseUtc(event.target.checked)}
-                  />
-                }
-                label="UTC"
-              />
-            </Box>
-
-            <Typography variant="caption" color="text.secondary">
-              If UTC is checked, untagged timestamps are interpreted as UTC. If unchecked, untagged timestamps use the selected time zone.
-              Timestamps with explicit zone markers (Z, UTC, GMT, +HH:MM) always use that explicit zone.
-            </Typography>
-
-            {csvImportSummary && (
-              <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: 'action.hover' }}>
-                <Typography variant="body2">{csvImportSummary}</Typography>
-              </Box>
-            )}
-
-            <Button
-              variant="outlined"
-              startIcon={<DownloadIcon />}
-              onClick={handleExportImportTemplate}
-              disabled={csvImporting}
-              sx={{ alignSelf: 'flex-start' }}
-            >
-              Import Template
-            </Button>
-
-            <Box
-              onClick={() => csvImportInputRef.current?.click()}
-              onDragOver={(event) => {
-                event.preventDefault();
-                setCsvImportDragOver(true);
-              }}
-              onDragLeave={(event) => {
-                event.preventDefault();
-                setCsvImportDragOver(false);
-              }}
-              onDrop={(event) => {
-                event.preventDefault();
-                setCsvImportDragOver(false);
-                const dropped = event.dataTransfer?.files?.[0] || null;
-                handleImportFileSelected(dropped);
-              }}
-              sx={{
-                border: '2px dashed',
-                borderColor: csvImportDragOver ? 'primary.main' : 'divider',
-                borderRadius: 2,
-                p: 3,
-                textAlign: 'center',
-                cursor: 'pointer',
-                bgcolor: csvImportDragOver ? 'action.hover' : 'background.paper',
-              }}
-            >
-              <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                Click to open or drag and drop a CSV file
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                {csvImportFile ? `Selected: ${csvImportFile.name}` : 'No file selected'}
-              </Typography>
-            </Box>
-
-            {csvImportErrors.length > 0 && (
-              <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, maxHeight: 220, overflow: 'auto' }}>
-                <List dense disablePadding>
-                  {csvImportErrors.map((errorText, index) => (
-                    <ListItem key={`${index}-${errorText}`} divider={index < csvImportErrors.length - 1}>
-                      <ListItemText primary={errorText} />
-                    </ListItem>
-                  ))}
-                </List>
-              </Box>
-            )}
-
-            {csvImportErrorsTruncated && (
-              <Typography variant="caption" color="text.secondary">
-                Showing the first 50 row errors.
-              </Typography>
-            )}
-
-            <input
-              ref={csvImportInputRef}
-              type="file"
-              accept=".csv,text/csv"
-              style={{ display: 'none' }}
-              onChange={(event) => {
-                const selected = event.target.files?.[0] || null;
-                handleImportFileSelected(selected);
-                event.currentTarget.value = '';
-              }}
-            />
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseImportDialog} disabled={csvImporting}>Cancel</Button>
-          <Button
-            variant="contained"
-            onClick={handleCsvImportSubmit}
-            disabled={!csvImportFile || csvImporting}
-          >
-            {csvImporting ? 'Importing...' : 'Import CSV'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <CsvImportDialog
+        open={importDialog.open}
+        onClose={importDialog.onClose}
+        netId={netId}
+        netName={net?.name || 'net'}
+        sampleFrequencyDisplay={net?.frequencies?.[0] ? formatFrequencyDisplay(net.frequencies[0]) : ''}
+        onToast={setToastMessage}
+        onImported={() => Promise.all([fetchCheckIns(), fetchNetStats(), fetchNet()]).then(() => {})}
+      />
 
       {/* Search Dialog */}
       <SearchCheckIns
-        open={searchOpen}
-        onClose={() => setSearchOpen(false)}
+        open={search.open}
+        onClose={search.onClose}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         matchCount={filteredCheckIns.length}
@@ -5126,33 +2140,33 @@ const NetView: React.FC = () => {
 
       {/* Net Script Viewer */}
       <NetScript
-        open={scriptOpen}
-        onClose={() => setScriptOpen(false)}
+        open={script.open}
+        onClose={script.onClose}
         script={net?.script || ''}
         netName={net?.name || 'Net'}
         netId={Number(netId)}
         templateId={net?.template_id}
         canEdit={canManage && !!net?.template_id}
-        onSaved={(newScript) => setNet(prev => prev ? { ...prev, script: newScript } : prev)}
+        onSaved={(newScript) => setNet((prev: any) => prev ? { ...prev, script: newScript } : prev)}
       />
 
       {/* Per-net notes viewer */}
       <Announcements
-        open={announcementsOpen}
-        onClose={() => setAnnouncementsOpen(false)}
+        open={announcements.open}
+        onClose={announcements.onClose}
         announcements={net?.announcements || ''}
         netName={net?.name || 'Net'}
         netId={Number(netId)}
         templateId={net?.template_id}
         canEdit={canManage && !!net?.template_id}
-        onSaved={(newAnnouncements) => setNet(prev => prev ? { ...prev, announcements: newAnnouncements } : prev)}
+        onSaved={(newAnnouncements) => setNet((prev: any) => prev ? { ...prev, announcements: newAnnouncements } : prev)}
       />
 
       {/* Schedule announcements viewer */}
       {net?.template_id && (
         <ScheduleAnnouncements
-          open={scheduleAnnouncementsOpen}
-          onClose={() => setScheduleAnnouncementsOpen(false)}
+          open={scheduleAnnouncements.open}
+          onClose={scheduleAnnouncements.onClose}
           templateId={net.template_id}
           netName={net?.name || 'Net'}
           canEdit={canManage}
@@ -5162,40 +2176,13 @@ const NetView: React.FC = () => {
       {/* Topic History Dialog */}
       {net?.template_id && (
         <TopicHistory
-          open={topicHistoryOpen}
-          onClose={() => setTopicHistoryOpen(false)}
+          open={topicHistory.open}
+          onClose={topicHistory.onClose}
           templateId={net.template_id}
           templateName={net.name}
         />
       )}
 
-      {/* ========== NET TIME EDIT DIALOG ========== */}
-      <Dialog open={timeEditDialogOpen} onClose={() => setTimeEditDialogOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle>Edit Net Times</DialogTitle>
-        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-          <TextField
-            label="Started At"
-            type="datetime-local"
-            value={editStartedAt}
-            onChange={(e) => setEditStartedAt(e.target.value)}
-            InputLabelProps={{ shrink: true }}
-            fullWidth
-            sx={{ mt: 1 }}
-          />
-          <TextField
-            label="Closed At"
-            type="datetime-local"
-            value={editClosedAt}
-            onChange={(e) => setEditClosedAt(e.target.value)}
-            InputLabelProps={{ shrink: true }}
-            fullWidth
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setTimeEditDialogOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleSaveNetTimes}>Save</Button>
-        </DialogActions>
-      </Dialog>
 
       {/* ========== WHO IS THIS? PROFILE POPUP ========== */}
       <UserProfileDialog
@@ -5204,149 +2191,21 @@ const NetView: React.FC = () => {
         onClose={() => setProfileUserId(null)}
       />
 
-      {/* ========== ARCHIVE REMINDER SNACKBAR ========== */}
-      {/* Shown to net managers after closing a net, offering archive or delete */}
-      <Snackbar
-        open={archiveReminderOpen}
-        autoHideDuration={null}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <SnackbarContent
-          message={
-            <Box>
-              <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1 }}>
-                <Typography variant="body2" component="span">
-                  Net closed - Please archive it when you're done to hide it from the Active Nets dashboard and preserve your log and statistics.
-                </Typography>
-                <Tooltip title="What's the difference between archive and delete?">
-                  <IconButton size="small" color="inherit" onClick={() => setArchiveHelpOpen(true)} sx={{ ml: 1, mt: -0.5, flexShrink: 0 }}>
-                    <HelpOutlineIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-              </Box>
-              <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
-                <Button size="small" variant="contained" color="error" onClick={() => setArchiveDeleteConfirmOpen(true)}>
-                  Delete
-                </Button>
-                <Button size="small" variant="contained" color="success" onClick={() => { setArchiveReminderOpen(false); handleArchive(); }}>
-                  Archive Now
-                </Button>
-                <Button size="small" variant="contained" color="primary" onClick={() => setArchiveReminderOpen(false)}>
-                  Dismiss
-                </Button>
-              </Box>
-            </Box>
-          }
-        />
-      </Snackbar>
-
-      {/* ========== ARCHIVE vs DELETE HELP DIALOG ========== */}
-      <Dialog
-        open={archiveHelpOpen}
-        onClose={() => setArchiveHelpOpen(false)}
-        maxWidth="sm"
-        PaperProps={{ sx: { m: { xs: 1, sm: 4 } } }}
-      >
-        <DialogTitle>Archive vs. Delete</DialogTitle>
-        <DialogContent>
-          <Typography variant="subtitle2" gutterBottom sx={{ color: 'success.main', fontWeight: 'bold' }}>
-            Archive (recommended)
-          </Typography>
-          <Typography variant="body2" sx={{ mb: 2 }}>
-            Archiving hides the net from the active list but preserves everything: all check-ins, chat
-            messages, statistics, and PDF reports. Archived nets are fully searchable in the Archived
-            Nets list and remain available in net history. You can unarchive at any time.
-          </Typography>
-          <Typography variant="subtitle2" gutterBottom sx={{ color: 'error.main', fontWeight: 'bold' }}>
-            Delete (permanent)
-          </Typography>
-          <Typography variant="body2">
-            Deleting permanently removes the net and all its data — check-ins, chat, and statistics —
-            with no way to recover it. Use this only for test runs or entries you never want stored.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setArchiveHelpOpen(false)} variant="contained">Got It</Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* ========== DELETE CONFIRMATION FROM ARCHIVE REMINDER ========== */}
-      <Dialog
-        open={archiveDeleteConfirmOpen}
-        onClose={() => setArchiveDeleteConfirmOpen(false)}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{ sx: { m: { xs: 1, sm: 4 } } }}
-      >
-        <DialogTitle>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            Delete "{net?.name}"?
-            <Tooltip title="Learn about archive vs. delete">
-              <IconButton size="small" onClick={() => setArchiveHelpOpen(true)}>
-                <HelpOutlineIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          </Box>
-        </DialogTitle>
-        <DialogContent>
-          <Typography sx={{ mb: 2 }}>
-            Deleting this net will <strong>permanently remove</strong> every record tied to it, including:
-          </Typography>
-          <Box component="ul" sx={{ mt: 0, mb: 2, pl: 3 }}>
-            <li><Typography variant="body2">All check-ins logged during this net</Typography></li>
-            <li><Typography variant="body2">All chat messages sent in this net</Typography></li>
-            <li><Typography variant="body2">Net statistics and history for this session</Typography></li>
-          </Box>
-          <Typography color="error" sx={{ mb: 2, fontWeight: 'bold' }}>
-            This cannot be undone.
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            If you only want to hide this net from the active list while keeping the log, choose
-            <strong> Archive Instead</strong>. Archived nets stay searchable in the Archived Nets
-            list and can be restored at any time.
-          </Typography>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button
-            onClick={() => setArchiveDeleteConfirmOpen(false)}
-            variant="contained"
-            color="primary"
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={() => {
-              setArchiveDeleteConfirmOpen(false);
-              setArchiveReminderOpen(false);
-              handleArchive();
-            }}
-            variant="contained"
-            color="warning"
-            startIcon={<ArchiveIcon />}
-          >
-            Archive Instead
-          </Button>
-          <Button
-            onClick={async () => {
-              setArchiveDeleteConfirmOpen(false);
-              setArchiveReminderOpen(false);
-              await handleDeleteConfirmed();
-            }}
-            variant="contained"
-            color="error"
-            startIcon={<DeleteIcon />}
-          >
-            Delete Permanently
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <ArchiveDialogs
+        netName={net?.name}
+        archiveReminder={archiveReminder}
+        archiveHelp={archiveHelp}
+        archiveDeleteConfirm={archiveDeleteConfirm}
+        onArchive={handleArchive}
+        onDeleteConfirmed={handleDeleteConfirmed}
+      />
 
       {/* ========== CHECK-IN PROMPT FOR VIEWERS ========== */}
       {/* Shows once for authenticated users viewing an active/lobby net they haven't joined */}
       <Snackbar
-        open={checkInPromptOpen}
+        open={checkInPrompt.open}
         autoHideDuration={15000}
-        onClose={() => setCheckInPromptOpen(false)}
+        onClose={checkInPrompt.onClose}
         message={net?.status === 'lobby' ? 'The lobby is open! Would you like to check in?' : 'This net is active. Would you like to check in?'}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
         action={
@@ -5358,12 +2217,12 @@ const NetView: React.FC = () => {
                   size="small"
                   variant="contained"
                   onClick={() => {
-                    setCheckInPromptOpen(false);
+                    checkInPrompt.onClose();
                     if (user) {
                       const locationValue = (user.location_awareness && gridSquare) ? gridSquare : (user.location || '');
                       setCheckInForm({ callsign: getAppropriateCallsign(), name: user.name || '', location: locationValue, skywarn_number: '', weather_observation: '', power_source: '', power: '', feedback: '', notes: '', relayed_by: '', available_frequency_ids: [], custom_fields: {}, topic_response: '', poll_response: '', status: 'checked_in' });
                     }
-                    setCheckInDialogOpen(true);
+                    checkInDialog.onOpen();
                   }}
                 >
                   Check In as NCS
@@ -5374,12 +2233,12 @@ const NetView: React.FC = () => {
                   variant="outlined"
                   sx={{ borderColor: 'rgba(255,255,255,0.5)', color: 'inherit' }}
                   onClick={() => {
-                    setCheckInPromptOpen(false);
+                    checkInPrompt.onClose();
                     if (user) {
                       const locationValue = (user.location_awareness && gridSquare) ? gridSquare : (user.location || '');
                       setCheckInForm({ callsign: getAppropriateCallsign(), name: user.name || '', location: locationValue, skywarn_number: '', weather_observation: '', power_source: '', power: '', feedback: '', notes: '', relayed_by: '', available_frequency_ids: [], custom_fields: {}, topic_response: '', poll_response: '', status: 'checked_in' });
                     }
-                    setCheckInDialogOpen(true);
+                    checkInDialog.onOpen();
                   }}
                 >
                   Check In as Participant
@@ -5391,18 +2250,18 @@ const NetView: React.FC = () => {
                 size="small"
                 variant="contained"
                 onClick={() => {
-                  setCheckInPromptOpen(false);
+                  checkInPrompt.onClose();
                   if (user) {
                     const locationValue = (user.location_awareness && gridSquare) ? gridSquare : (user.location || '');
                     setCheckInForm({ callsign: getAppropriateCallsign(), name: user.name || '', location: locationValue, skywarn_number: '', weather_observation: '', power_source: '', power: '', feedback: '', notes: '', relayed_by: '', available_frequency_ids: [], custom_fields: {}, topic_response: '', poll_response: '', status: 'checked_in' });
                   }
-                  setCheckInDialogOpen(true);
+                  checkInDialog.onOpen();
                 }}
               >
                 Check In
               </Button>
             )}
-            <Button color="inherit" size="small" onClick={() => setCheckInPromptOpen(false)}>
+            <Button color="inherit" size="small" onClick={checkInPrompt.onClose}>
               Dismiss
             </Button>
           </Box>

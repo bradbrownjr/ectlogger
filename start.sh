@@ -184,16 +184,29 @@ cd ..
 # Wait a moment for backend to start
 sleep 3
 
-# Determine if we should run Vite dev server
-# In service mode, check for SKIP_VITE env var or presence of working static build with reverse proxy
-# If neither, fall back to Vite dev server for beta/dev environments
+# Determine how to serve the frontend.
+# In service mode:
+#   SKIP_VITE=true (backend/.env) -> serve nothing here (an external reverse
+#                             proxy/Caddy serves frontend/dist directly, e.g. prod)
+#   VITE_SERVE_MODE=preview (frontend/.env) -> serve the built frontend/dist via
+#                             `vite preview` (fast, production-like) while still
+#                             proxying /api and /ws. Requires a prior `npm run build`.
+# Neither set -> Vite HMR dev server (default for beta/dev environments).
+# NOTE: VITE_SERVE_MODE lives in frontend/.env (Vite's env), NOT backend/.env —
+# the backend's Pydantic Settings forbids unknown keys and would fail to start.
 SKIP_VITE=false
+VITE_SERVE_MODE=dev
 if [ "$SERVICE_MODE" = true ]; then
-    # Check for explicit SKIP_VITE setting in .env (for production with Caddy)
     if [ -f "backend/.env" ]; then
         ENV_SKIP_VITE=$(grep "^SKIP_VITE=" backend/.env | cut -d'=' -f2)
         if [ "$ENV_SKIP_VITE" = "true" ]; then
             SKIP_VITE=true
+        fi
+    fi
+    if [ -f "frontend/.env" ]; then
+        ENV_VITE_SERVE_MODE=$(grep "^VITE_SERVE_MODE=" frontend/.env | cut -d'=' -f2)
+        if [ -n "$ENV_VITE_SERVE_MODE" ]; then
+            VITE_SERVE_MODE=$ENV_VITE_SERVE_MODE
         fi
     fi
 fi
@@ -201,8 +214,15 @@ fi
 if [ "$SKIP_VITE" = true ]; then
     echo "📁 Frontend served from static build (frontend/dist)"
     FRONTEND_PID=""
+elif [ "$VITE_SERVE_MODE" = "preview" ]; then
+    # Serve the production build from frontend/dist via Vite preview on :3000.
+    echo "🏗️  Serving production build (frontend/dist) via vite preview on http://localhost:3000"
+    cd frontend
+    npm run preview -- --host 0.0.0.0 --port 3000 &
+    FRONTEND_PID=$!
+    cd ..
 else
-    # Start frontend in background
+    # Start frontend dev server (HMR) in background
     echo "🌐 Starting frontend dev server on http://localhost:3000"
     cd frontend
     npm run dev -- --host 0.0.0.0 &

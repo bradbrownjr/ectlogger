@@ -75,7 +75,7 @@ class NCSReminderService:
         or auto-create a SCHEDULED net so the NCS has a direct link.
         Returns the net ID, or None on failure.
         """
-        from app.routers.nets import net_frequencies as net_freq_table
+        from app.models import net_frequencies as net_freq_table
         import json
 
         # Look for any non-closed net for this template at exactly this scheduled time

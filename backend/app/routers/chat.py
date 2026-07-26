@@ -100,7 +100,14 @@ async def create_message(
     
     # Broadcast chat message via WebSocket
     from app.main import manager
+    from app.utils import get_avatar_url
     import datetime
+    avatar_url = None
+    if chat_message.user:
+        avatar_url = get_avatar_url(
+            getattr(chat_message.user, 'email', None),
+            getattr(chat_message.user, 'avatar_url', None),
+        )
     await manager.broadcast({
         "type": "chat_message",
         "data": {
@@ -109,6 +116,7 @@ async def create_message(
             "user_id": chat_message.user_id,
             "callsign": chat_message.user.callsign if chat_message.user else "",
             "message": chat_message.message,
+            "avatar_url": avatar_url,
             "created_at": chat_message.created_at.isoformat() if hasattr(chat_message.created_at, 'isoformat') else str(chat_message.created_at)
         },
         "timestamp": datetime.datetime.utcnow().isoformat()

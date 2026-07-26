@@ -1,38 +1,14 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import {
   Container,
   Paper,
   Typography,
   Box,
-  TextField,
   Button,
-  FormControl,
-  Select,
-  MenuItem,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TableSortLabel,
-  IconButton,
-  Checkbox,
   Tabs,
   Tab,
-  Tooltip,
-  Divider,
-  Autocomplete,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
-  Chip,
   Alert,
-  FormControlLabel,
-  Switch,
-  InputAdornment,
   Snackbar,
   Dialog,
   DialogTitle,
@@ -40,70 +16,22 @@ import {
   DialogContentText,
   DialogActions,
 } from '@mui/material';
-import DeleteIcon from '@mui/icons-material/Delete';
-import EditIcon from '@mui/icons-material/Edit';
-import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
 import SaveIcon from '@mui/icons-material/Save';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import UploadFileIcon from '@mui/icons-material/UploadFile';
-import FormatBoldIcon from '@mui/icons-material/FormatBold';
-import FormatItalicIcon from '@mui/icons-material/FormatItalic';
-import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
-import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
-import HorizontalRuleIcon from '@mui/icons-material/HorizontalRule';
-import AddIcon from '@mui/icons-material/Add';
-import PersonIcon from '@mui/icons-material/Person';
-import SearchIcon from '@mui/icons-material/Search';
-import ClearIcon from '@mui/icons-material/Clear';
 import { netApi, frequencyApi, userApi, templateApi } from '../services/api';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
-
-interface Frequency {
-  id?: number;
-  frequency?: string;
-  mode: string;
-  network?: string;
-  talkgroup?: string;
-  description?: string;
-}
-
-// Frequency sorting types
-type FrequencySortField = 'mode' | 'frequency' | 'talkgroup' | 'description';
-type SortDirection = 'asc' | 'desc';
-
-interface FieldDefinition {
-  id: number;
-  name: string;
-  label: string;
-  field_type: string;
-  options?: string[];
-  placeholder?: string;
-  default_enabled: boolean;
-  default_required: boolean;
-  is_builtin: boolean;
-  is_archived: boolean;
-  sort_order: number;
-}
-
-interface User {
-  id: number;
-  callsign: string;
-  name: string | null;
-  email: string;
-}
-
-interface NetRole {
-  id: number;
-  user_id: number;
-  email: string;
-  name: string | null;
-  callsign: string;
-  role: string;
-  assigned_at: string;
-}
+import { CreateNetContext, CreateNetContextValue, NetUser } from '../contexts/CreateNetContext';
+import { FrequencyItem } from '../components/forms/CommunicationPlanPanel';
+import { FieldDefinitionItem, FieldConfigEntry } from '../components/forms/CheckInFieldsPanel';
+import BasicInfoTab from '../components/create-net/BasicInfoTab';
+import NCSStaffTab from '../components/create-net/NCSStaffTab';
+import CommunicationPlanPanel from '../components/forms/CommunicationPlanPanel';
+import NetScriptPanel from '../components/forms/NetScriptPanel';
+import AnnouncementsPanel from '../components/forms/AnnouncementsPanel';
+import CheckInFieldsPanel from '../components/forms/CheckInFieldsPanel';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -111,8 +39,7 @@ interface TabPanelProps {
   value: number;
 }
 
-function TabPanel(props: TabPanelProps) {
-  const { children, value, index, ...other } = props;
+function TabPanel({ children, value, index, ...other }: TabPanelProps) {
   return (
     <div
       role="tabpanel"
@@ -129,62 +56,60 @@ function TabPanel(props: TabPanelProps) {
 const CreateNet: React.FC = () => {
   const { netId } = useParams<{ netId: string }>();
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const isEditMode = !!netId;
   const isInfoMode = location.pathname.endsWith('/info');
+
+  // ---- UI state ----
   const [activeTab, setActiveTab] = useState(0);
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastSeverity, setToastSeverity] = useState<'info' | 'success' | 'error' | 'warning'>('info');
+  const [saveToScheduleConfirmOpen, setSaveToScheduleConfirmOpen] = useState(false);
+  const [savingToSchedule, setSavingToSchedule] = useState(false);
+
+  // ---- Core form fields ----
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [infoUrl, setInfoUrl] = useState('');
   const [streamUrl, setStreamUrl] = useState('');
   const [script, setScript] = useState('');
   const [announcements, setAnnouncements] = useState('');
+
+  // ---- Feature toggles ----
   const [ics309Enabled, setIcs309Enabled] = useState(false);
   const [mobilePrioritySort, setMobilePrioritySort] = useState(true);
   const [chatGracePeriodEnabled, setChatGracePeriodEnabled] = useState(false);
   const [chatGracePeriodMinutes, setChatGracePeriodMinutes] = useState(15);
-  // Topic of the Week / Poll features
+
+  // ---- Community net features ----
   const [topicOfWeekEnabled, setTopicOfWeekEnabled] = useState(false);
   const [topicOfWeekPrompt, setTopicOfWeekPrompt] = useState('');
   const [topicHistory, setTopicHistory] = useState<string[]>([]);
-  const [templateId, setTemplateId] = useState<number | null>(null);
   const [pollEnabled, setPollEnabled] = useState(false);
   const [pollQuestion, setPollQuestion] = useState('');
-  // Scheduled start time for countdown timer
-  const [scheduledStartTime, setScheduledStartTime] = useState<string>('');
-  const [frequencies, setFrequencies] = useState<Frequency[]>([]);
-  const [selectedFrequencies, setSelectedFrequencies] = useState<number[]>([]);
-  const [newFrequency, setNewFrequency] = useState({ frequency: '', mode: 'FM', network: '', talkgroup: '', description: '' });
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [editForm, setEditForm] = useState<Frequency | null>(null);
-  // Frequency filtering and sorting
-  const [frequencyFilter, setFrequencyFilter] = useState('');
-  const [frequencySortField, setFrequencySortField] = useState<FrequencySortField>('mode');
-  const [frequencySortDirection, setFrequencySortDirection] = useState<SortDirection>('asc');
-  const [fieldDefinitions, setFieldDefinitions] = useState<FieldDefinition[]>([]);
-  const [fieldConfig, setFieldConfig] = useState<Record<string, { enabled: boolean; required: boolean }>>({});
-  // Toast notification for field messages and Save-to-Schedule feedback
-  const [toastOpen, setToastOpen] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
-  const [toastSeverity, setToastSeverity] = useState<'info' | 'success' | 'error' | 'warning'>('info');
-  // Save-to-Schedule confirmation dialog. Pushing the current net's editable
-  // fields back to the parent schedule overwrites the schedule's defaults
-  // wholesale (frequencies, script, field config, etc.) so we always confirm.
-  const [saveToScheduleConfirmOpen, setSaveToScheduleConfirmOpen] = useState(false);
-  const [savingToSchedule, setSavingToSchedule] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const scriptTextAreaRef = useRef<HTMLTextAreaElement>(null);
-  const announcementsTextAreaRef = useRef<HTMLTextAreaElement>(null);
-  const navigate = useNavigate();
-  const isEditMode = !!netId;
-  
-  // NCS Staff state
-  const [users, setUsers] = useState<User[]>([]);
-  const [pendingNCSUsers, setPendingNCSUsers] = useState<User[]>([]); // For new nets - users to assign after creation
-  const [existingNCSRoles, setExistingNCSRoles] = useState<NetRole[]>([]); // For edit mode - current roles
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [ncsError, setNcsError] = useState<string | null>(null);
-  
-  const { user } = useAuth();
 
+  // ---- Scheduled start time (countdown timer) ----
+  const [scheduledStartTime, setScheduledStartTime] = useState('');
+
+  // ---- Template reference ----
+  const [templateId, setTemplateId] = useState<number | null>(null);
+
+  // ---- Frequencies ----
+  const [frequencies, setFrequencies] = useState<FrequencyItem[]>([]);
+  const [selectedFrequencyIds, setSelectedFrequencyIds] = useState<number[]>([]);
+
+  // ---- Check-in fields ----
+  const [fieldDefinitions, setFieldDefinitions] = useState<FieldDefinitionItem[]>([]);
+  const [fieldConfig, setFieldConfig] = useState<Record<string, FieldConfigEntry>>({});
+
+  // ---- NCS staff ----
+  const [users, setUsers] = useState<NetUser[]>([]);
+  const [pendingNCSUsers, setPendingNCSUsers] = useState<NetUser[]>([]);
+
+  // ---- Data loading ----
   useEffect(() => {
     fetchFrequencies();
     fetchFieldDefinitions();
@@ -194,10 +119,32 @@ const CreateNet: React.FC = () => {
   useEffect(() => {
     if (netId && fieldDefinitions.length > 0) {
       fetchNetData();
-      fetchNetRoles();
     }
   }, [netId, fieldDefinitions]);
-  
+
+  const fetchFrequencies = async () => {
+    try {
+      const response = await frequencyApi.list();
+      setFrequencies(response.data);
+    } catch (error) {
+      console.error('Failed to fetch frequencies:', error);
+    }
+  };
+
+  const fetchFieldDefinitions = async () => {
+    try {
+      const response = await api.get('/settings/fields');
+      setFieldDefinitions(response.data);
+      const defaultConfig: Record<string, FieldConfigEntry> = {};
+      response.data.forEach((field: FieldDefinitionItem) => {
+        defaultConfig[field.name] = { enabled: field.default_enabled, required: field.default_required };
+      });
+      setFieldConfig(defaultConfig);
+    } catch (error) {
+      console.error('Failed to fetch field definitions:', error);
+    }
+  };
+
   const fetchUsers = async () => {
     try {
       const response = await userApi.listDirectory();
@@ -206,77 +153,47 @@ const CreateNet: React.FC = () => {
       console.error('Failed to fetch users:', error);
     }
   };
-  
-  const fetchNetRoles = async () => {
-    if (!netId) return;
-    try {
-      const response = await api.get(`/nets/${netId}/roles`);
-      setExistingNCSRoles(response.data.filter((r: NetRole) => r.role === 'NCS'));
-    } catch (error) {
-      console.error('Failed to fetch net roles:', error);
-    }
-  };
-
-  const fetchFieldDefinitions = async () => {
-    try {
-      const response = await api.get('/settings/fields');
-      setFieldDefinitions(response.data);
-      const defaultConfig: Record<string, { enabled: boolean; required: boolean }> = {};
-      response.data.forEach((field: FieldDefinition) => {
-        defaultConfig[field.name] = {
-          enabled: field.default_enabled,
-          required: field.default_required,
-        };
-      });
-      setFieldConfig(defaultConfig);
-    } catch (error) {
-      console.error('Failed to fetch field definitions:', error);
-    }
-  };
 
   const fetchNetData = async () => {
     if (!netId) return;
     try {
       const response = await netApi.get(parseInt(netId));
-      setName(response.data.name);
-      setDescription(response.data.description || '');
-      setInfoUrl(response.data.info_url || '');
-      setStreamUrl(response.data.stream_url || '');
-      setScript(response.data.script || '');
-      setAnnouncements(response.data.announcements || '');
-      setIcs309Enabled(response.data.ics309_enabled || false);
-      setMobilePrioritySort(response.data.mobile_priority_sort !== false);
-      const grace = response.data.chat_grace_period_minutes;
+      const net = response.data;
+      setName(net.name);
+      setDescription(net.description || '');
+      setInfoUrl(net.info_url || '');
+      setStreamUrl(net.stream_url || '');
+      setScript(net.script || '');
+      setAnnouncements(net.announcements || '');
+      setIcs309Enabled(net.ics309_enabled || false);
+      setMobilePrioritySort(net.mobile_priority_sort !== false);
+      const grace = net.chat_grace_period_minutes;
       setChatGracePeriodEnabled(!!grace);
       if (grace) setChatGracePeriodMinutes(grace);
-      setTopicOfWeekEnabled(response.data.topic_of_week_enabled || false);
-      setTopicOfWeekPrompt(response.data.topic_of_week_prompt || '');
-      
-      // Load template ID and topic history if available
-      if (response.data.template_id) {
-        setTemplateId(response.data.template_id);
-        loadTopicHistory(response.data.template_id);
+      setTopicOfWeekEnabled(net.topic_of_week_enabled || false);
+      setTopicOfWeekPrompt(net.topic_of_week_prompt || '');
+      if (net.template_id) {
+        setTemplateId(net.template_id);
+        loadTopicHistory(net.template_id);
       }
-      
-      setPollEnabled(response.data.poll_enabled || false);
-      setPollQuestion(response.data.poll_question || '');
-      // Convert ISO string to local datetime-local format for input.
-      // The server returns UTC without a 'Z' suffix; add it so the browser
-      // parses as UTC, then convert to local time for the datetime-local input.
-      if (response.data.scheduled_start_time) {
-        const isoStr = response.data.scheduled_start_time.endsWith('Z')
-          ? response.data.scheduled_start_time
-          : response.data.scheduled_start_time + 'Z';
+      setPollEnabled(net.poll_enabled || false);
+      setPollQuestion(net.poll_question || '');
+      // Convert UTC from server to local datetime-local format.
+      // The server omits the 'Z' suffix; append it so the browser parses as UTC.
+      if (net.scheduled_start_time) {
+        const isoStr = net.scheduled_start_time.endsWith('Z')
+          ? net.scheduled_start_time
+          : net.scheduled_start_time + 'Z';
         const dt = new Date(isoStr);
         const tzOffset = dt.getTimezoneOffset() * 60000;
         const localDt = new Date(dt.getTime() - tzOffset);
         setScheduledStartTime(localDt.toISOString().slice(0, 16));
       }
-      setSelectedFrequencies(response.data.frequencies.map((f: Frequency) => f.id!));
-      if (response.data.field_config) {
-        const mergedConfig: Record<string, { enabled: boolean; required: boolean }> = {};
-        fieldDefinitions.forEach((field: FieldDefinition) => {
-          mergedConfig[field.name] = response.data.field_config[field.name] || {
+      setSelectedFrequencyIds(net.frequencies.map((f: FrequencyItem) => f.id!));
+      if (net.field_config) {
+        const mergedConfig: Record<string, FieldConfigEntry> = {};
+        fieldDefinitions.forEach((field) => {
+          mergedConfig[field.name] = net.field_config[field.name] || {
             enabled: field.default_enabled,
             required: field.default_required,
           };
@@ -292,308 +209,67 @@ const CreateNet: React.FC = () => {
   const loadTopicHistory = async (templateIdToLoad: number) => {
     try {
       const response = await api.get(`/templates/${templateIdToLoad}/topic-history`);
-      const topics = response.data.map((entry: any) => entry.topic);
-      setTopicHistory(topics);
+      setTopicHistory(response.data.map((entry: any) => entry.topic));
     } catch (error) {
       console.error('Error loading topic history:', error);
     }
   };
 
-  const fetchFrequencies = async () => {
-    try {
-      const response = await frequencyApi.list();
-      setFrequencies(response.data);
-    } catch (error) {
-      console.error('Failed to fetch frequencies:', error);
-    }
+  // ---- Helpers ----
+  const showToast = (message: string, severity: 'info' | 'success' | 'error' | 'warning' = 'info') => {
+    setToastMessage(message);
+    setToastSeverity(severity);
+    setToastOpen(true);
   };
-
-  const handleAddFrequency = async (e?: React.KeyboardEvent) => {
-    if (e && e.key !== 'Enter') return;
-    if (!newFrequency.frequency && !newFrequency.network) return;
-    
-    try {
-      const cleanData = {
-        frequency: newFrequency.frequency || null,
-        mode: newFrequency.mode,
-        network: newFrequency.network || null,
-        talkgroup: newFrequency.talkgroup || null,
-        description: newFrequency.description || null,
-      };
-      
-      const response = await frequencyApi.create(cleanData);
-      setFrequencies([...frequencies, response.data]);
-      setSelectedFrequencies([...selectedFrequencies, response.data.id]);
-      setNewFrequency({ frequency: '', mode: 'FM', network: '', talkgroup: '', description: '' });
-    } catch (error) {
-      console.error('Failed to create frequency:', error);
-      alert('Failed to create frequency. Check that you filled in required fields.');
-    }
-  };
-
-  const handleDeleteFrequency = async (id: number) => {
-    if (!confirm('Delete this frequency?')) return;
-    
-    try {
-      await frequencyApi.delete(id);
-      setFrequencies(frequencies.filter((f: Frequency) => f.id !== id));
-      setSelectedFrequencies(selectedFrequencies.filter((fid: number) => fid !== id));
-    } catch (error) {
-      console.error('Failed to delete frequency:', error);
-    }
-  };
-
-  const startEdit = (freq: Frequency) => {
-    setEditingId(freq.id!);
-    setEditForm({ ...freq });
-  };
-
-  const cancelEdit = () => {
-    setEditingId(null);
-    setEditForm(null);
-  };
-
-  const saveEdit = async (e?: React.KeyboardEvent) => {
-    if (e && e.key !== 'Enter') return;
-    await doSaveEdit();
-  };
-
-  const doSaveEdit = async (overrideForm?: typeof editForm) => {
-    const formToSave = overrideForm || editForm;
-    if (!formToSave || !editingId) return;
-    
-    try {
-      const cleanData = {
-        frequency: formToSave.frequency || null,
-        mode: formToSave.mode,
-        network: formToSave.network || null,
-        talkgroup: formToSave.talkgroup || null,
-        description: formToSave.description || null,
-      };
-      
-      const response = await frequencyApi.update(editingId, cleanData);
-      setFrequencies(frequencies.map((f: Frequency) => f.id === editingId ? response.data : f));
-      setEditingId(null);
-      setEditForm(null);
-    } catch (error) {
-      console.error('Failed to update frequency:', error);
-      alert('Failed to update frequency.');
-    }
-  };
-
-  const toggleSelection = (id: number) => {
-    setSelectedFrequencies((prev: number[]) =>
-      prev.includes(id) ? prev.filter((fid: number) => fid !== id) : [...prev, id]
-    );
-  };
-
-  const getDisplayText = (freq: Frequency) => {
-    if (freq.frequency) return freq.frequency;
-    if (freq.network) return freq.network;
-    return 'N/A';
-  };
-
-  const handleScriptFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const text = e.target?.result as string;
-        setScript(text);
-      };
-      reader.readAsText(file);
-    }
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
-  const handleScriptDrop = (event: React.DragEvent) => {
-    event.preventDefault();
-    const file = event.dataTransfer.files[0];
-    if (file && (file.type === 'text/plain' || file.name.endsWith('.txt'))) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const text = e.target?.result as string;
-        setScript(text);
-      };
-      reader.readAsText(file);
-    }
-  };
-
-  // Markdown formatting helper for announcements textarea
-  const insertAnnouncementMarkdown = (prefix: string, suffix: string = '', placeholder: string = '') => {
-    const textarea = announcementsTextAreaRef.current;
-    if (!textarea) return;
-
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selectedText = announcements.substring(start, end);
-    const textToInsert = selectedText || placeholder;
-
-    const newText = announcements.substring(0, start) + prefix + textToInsert + suffix + announcements.substring(end);
-    setAnnouncements(newText);
-
-    setTimeout(() => {
-      textarea.focus();
-      const newCursorPos = start + prefix.length + textToInsert.length + suffix.length;
-      textarea.setSelectionRange(newCursorPos, newCursorPos);
-    }, 0);
-  };
-
-  // Markdown formatting helper
-  const insertMarkdown = (prefix: string, suffix: string = '', placeholder: string = '') => {
-    const textarea = scriptTextAreaRef.current;
-    if (!textarea) return;
-    
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selectedText = script.substring(start, end);
-    const textToInsert = selectedText || placeholder;
-    
-    const newText = script.substring(0, start) + prefix + textToInsert + suffix + script.substring(end);
-    setScript(newText);
-    
-    // Set cursor position after the operation
-    setTimeout(() => {
-      textarea.focus();
-      const newCursorPos = start + prefix.length + textToInsert.length + suffix.length;
-      textarea.setSelectionRange(newCursorPos, newCursorPos);
-    }, 0);
-  };
-
-  // NCS Staff handlers
-  const handleAddPendingNCS = () => {
-    if (!selectedUser) return;
-    if (pendingNCSUsers.some(u => u.id === selectedUser.id)) return;
-    setPendingNCSUsers([...pendingNCSUsers, selectedUser]);
-    setSelectedUser(null);
-  };
-
-  const handleRemovePendingNCS = (userId: number) => {
-    setPendingNCSUsers(pendingNCSUsers.filter(u => u.id !== userId));
-  };
-
-  const handleAddExistingNCS = async () => {
-    if (!selectedUser || !netId) return;
-    setNcsError(null);
-    try {
-      await api.post(`/nets/${netId}/roles?user_id=${selectedUser.id}&role=NCS`);
-      await fetchNetRoles();
-      setSelectedUser(null);
-    } catch (error: any) {
-      setNcsError(error.response?.data?.detail || 'Failed to add NCS');
-    }
-  };
-
-  const handleRemoveExistingNCS = async (roleId: number) => {
-    if (!netId) return;
-    setNcsError(null);
-    try {
-      await api.delete(`/nets/${netId}/roles/${roleId}`);
-      await fetchNetRoles();
-    } catch (error: any) {
-      setNcsError(error.response?.data?.detail || 'Failed to remove NCS');
-    }
-  };
-
-  // Get users not already assigned
-  const availableUsers = users.filter(u => {
-    // Exclude users already in pending list (for new nets)
-    if (pendingNCSUsers.some(p => p.id === u.id)) return false;
-    // Exclude users already assigned (for edit mode)
-    if (existingNCSRoles.some(r => r.user_id === u.id)) return false;
-    return true;
-  });
 
   const canProceedFromTab = (tab: number): boolean => {
     if (tab === 0) return name.trim().length > 0;
-    if (tab === 2) return selectedFrequencies.length > 0;
+    if (tab === 2) return selectedFrequencyIds.length > 0;
     return true;
   };
 
+  // ---- Submit handlers ----
   const handleCreateNet = async () => {
     try {
-      // Convert local datetime to ISO string for API
       const scheduledStartTimeISO = scheduledStartTime ? new Date(scheduledStartTime).toISOString() : null;
-      
+      const payload = {
+        name,
+        description,
+        info_url: infoUrl || null,
+        stream_url: streamUrl || null,
+        script,
+        announcements,
+        frequency_ids: selectedFrequencyIds,
+        field_config: fieldConfig,
+        ics309_enabled: ics309Enabled,
+        mobile_priority_sort: mobilePrioritySort,
+        chat_grace_period_minutes: chatGracePeriodEnabled ? chatGracePeriodMinutes : null,
+        topic_of_week_enabled: topicOfWeekEnabled,
+        topic_of_week_prompt: topicOfWeekPrompt || null,
+        poll_enabled: pollEnabled,
+        poll_question: pollQuestion || null,
+        scheduled_start_time: scheduledStartTimeISO,
+      };
+
       if (isEditMode) {
-        const response = await netApi.update(parseInt(netId!), {
-          name,
-          description,
-          info_url: infoUrl || null,
-          stream_url: streamUrl || null,
-          script,
-          announcements,
-          frequency_ids: selectedFrequencies,
-          field_config: fieldConfig,
-          ics309_enabled: ics309Enabled,
-          mobile_priority_sort: mobilePrioritySort,
-          chat_grace_period_minutes: chatGracePeriodEnabled ? chatGracePeriodMinutes : null,
-          topic_of_week_enabled: topicOfWeekEnabled,
-          topic_of_week_prompt: topicOfWeekPrompt || null,
-          poll_enabled: pollEnabled,
-          poll_question: pollQuestion || null,
-          scheduled_start_time: scheduledStartTimeISO,
-        });
+        const response = await netApi.update(parseInt(netId!), payload);
         navigate(`/nets/${response.data.id}`);
       } else {
-        const response = await netApi.create({
-          name,
-          description,
-          info_url: infoUrl || null,
-          stream_url: streamUrl || null,
-          script,
-          announcements,
-          frequency_ids: selectedFrequencies,
-          field_config: fieldConfig,
-          ics309_enabled: ics309Enabled,
-          mobile_priority_sort: mobilePrioritySort,
-          chat_grace_period_minutes: chatGracePeriodEnabled ? chatGracePeriodMinutes : null,
-          topic_of_week_enabled: topicOfWeekEnabled,
-          topic_of_week_prompt: topicOfWeekPrompt || null,
-          poll_enabled: pollEnabled,
-          poll_question: pollQuestion || null,
-          scheduled_start_time: scheduledStartTimeISO,
-        });
-
-        // Assign pending NCS users to the newly created net
+        const response = await netApi.create(payload);
         const newNetId = response.data.id;
         for (const ncsUser of pendingNCSUsers) {
           try {
             await api.post(`/nets/${newNetId}/roles?user_id=${ncsUser.id}&role=NCS`);
           } catch (error) {
-            console.error(`Failed to assign NCS ${ncsUser.callsign}:`, error);
+            console.error(`Failed to assign NCS role to ${ncsUser.callsign}:`, error);
           }
         }
-        
         navigate(`/nets/${newNetId}`);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to save net:', error);
-      alert('Failed to save net');
+      alert(error.response?.data?.detail || 'Failed to save net');
     }
-  };
-
-  // ========== SAVE-TO-SCHEDULE ==========
-  // Pushes the current edited net's values back to its parent schedule
-  // (NetTemplate). The schedule acts as a template that future nets are
-  // opened from, so this lets a net manager promote in-the-moment edits
-  // (frequencies, script, announcements, stream URL, etc.) into the
-  // schedule's defaults.
-  //
-  // Notes:
-  //  - Net staff (NCS NetRoles) are NOT pushed here — the staff modal has its
-  //    own dedicated "Push staff to schedule" action since the data models
-  //    for net roles vs. template staff are different.
-  //  - The owner/manager of the schedule is unchanged.
-  //  - The backend (`PUT /templates/{id}`) enforces who is allowed to edit
-  //    the schedule (owner, admin, active staff, rotation member). On 403 we
-  //    surface a friendly toast.
-  const showToast = (message: string, severity: 'info' | 'success' | 'error' | 'warning' = 'info') => {
-    setToastMessage(message);
-    setToastSeverity(severity);
-    setToastOpen(true);
   };
 
   const handleSaveToSchedule = async () => {
@@ -607,7 +283,7 @@ const CreateNet: React.FC = () => {
         stream_url: streamUrl || null,
         script,
         announcements,
-        frequency_ids: selectedFrequencies,
+        frequency_ids: selectedFrequencyIds,
         field_config: fieldConfig,
         ics309_enabled: ics309Enabled,
         topic_of_week_enabled: topicOfWeekEnabled,
@@ -631,1189 +307,254 @@ const CreateNet: React.FC = () => {
     }
   };
 
-  // ========== FREQUENCY FILTERING & SORTING ==========
-  // Filter frequencies by search term (matches any field)
-  const filteredFrequencies = frequencies.filter((freq) => {
-    if (!frequencyFilter) return true;
-    const searchTerm = frequencyFilter.toLowerCase();
-    return (
-      (freq.frequency?.toLowerCase().includes(searchTerm)) ||
-      (freq.mode?.toLowerCase().includes(searchTerm)) ||
-      (freq.network?.toLowerCase().includes(searchTerm)) ||
-      (freq.talkgroup?.toLowerCase().includes(searchTerm)) ||
-      (freq.description?.toLowerCase().includes(searchTerm))
-    );
-  });
-
-  // Sort filtered frequencies
-  const sortedFrequencies = [...filteredFrequencies].sort((a, b) => {
-    let aVal: string = '';
-    let bVal: string = '';
-    
-    switch (frequencySortField) {
-      case 'mode':
-        aVal = a.mode || '';
-        bVal = b.mode || '';
-        break;
-      case 'frequency':
-        aVal = a.frequency || a.network || '';
-        bVal = b.frequency || b.network || '';
-        break;
-      case 'talkgroup':
-        aVal = a.talkgroup || '';
-        bVal = b.talkgroup || '';
-        break;
-      case 'description':
-        aVal = a.description || '';
-        bVal = b.description || '';
-        break;
-    }
-    
-    const comparison = aVal.localeCompare(bVal, undefined, { numeric: true, sensitivity: 'base' });
-    return frequencySortDirection === 'asc' ? comparison : -comparison;
-  });
-
-  // Handle sort click
-  const handleFrequencySort = (field: FrequencySortField) => {
-    if (frequencySortField === field) {
-      setFrequencySortDirection(frequencySortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setFrequencySortField(field);
-      setFrequencySortDirection('asc');
-    }
+  // ---- Context value ----
+  const contextValue: CreateNetContextValue = {
+    netId,
+    isEditMode,
+    isInfoMode,
+    currentUser: user,
+    name, setName,
+    description, setDescription,
+    infoUrl, setInfoUrl,
+    streamUrl, setStreamUrl,
+    script, setScript,
+    announcements, setAnnouncements,
+    ics309Enabled, setIcs309Enabled,
+    mobilePrioritySort, setMobilePrioritySort,
+    chatGracePeriodEnabled, setChatGracePeriodEnabled,
+    chatGracePeriodMinutes, setChatGracePeriodMinutes,
+    topicOfWeekEnabled, setTopicOfWeekEnabled,
+    topicOfWeekPrompt, setTopicOfWeekPrompt,
+    pollEnabled, setPollEnabled,
+    pollQuestion, setPollQuestion,
+    scheduledStartTime, setScheduledStartTime,
+    frequencies, setFrequencies: setFrequencies as React.Dispatch<React.SetStateAction<FrequencyItem[]>>,
+    selectedFrequencyIds, setSelectedFrequencyIds,
+    fieldDefinitions,
+    fieldConfig, setFieldConfig,
+    users,
+    pendingNCSUsers, setPendingNCSUsers,
+    topicHistory,
+    templateId,
+    showToast,
   };
 
-  const renderEditableRow = (freq: Frequency) => {
-    const isEditing = editingId === freq.id;
-    const form = isEditing ? editForm! : freq;
-    const isAnalog = ['FM', 'SSB', 'GMRS'].includes(form.mode);
-    const isYSF = form.mode === 'YSF';
-
-    return (
-      <TableRow key={freq.id}>
-        <TableCell padding="checkbox">
-          <Checkbox
-            checked={selectedFrequencies.includes(freq.id!)}
-            onChange={() => toggleSelection(freq.id!)}
-          />
-        </TableCell>
-        <TableCell>
-          {isEditing ? (
-            <FormControl size="small" fullWidth>
-              <Select
-                value={form.mode}
-                onChange={(e: any) => {
-                  const newMode = e.target.value;
-                  const updatedForm = { ...form, mode: newMode };
-                  setEditForm(updatedForm);
-                  doSaveEdit(updatedForm);
-                }}
-              >
-                <MenuItem value="FM">FM</MenuItem>
-                <MenuItem value="GMRS">GMRS</MenuItem>
-                <MenuItem value="SSB">SSB</MenuItem>
-                <MenuItem value="DMR">DMR</MenuItem>
-                <MenuItem value="D-STAR">D-STAR</MenuItem>
-                <MenuItem value="YSF">YSF</MenuItem>
-                <MenuItem value="P25">P25</MenuItem>
-              </Select>
-            </FormControl>
-          ) : (
-            freq.mode
-          )}
-        </TableCell>
-        <TableCell>
-          {isEditing ? (
-            isAnalog ? (
-              <TextField
-                size="small"
-                fullWidth
-                value={form.frequency || ''}
-                onChange={(e: any) => setEditForm({ ...form, frequency: e.target.value, network: '', talkgroup: '' })}
-                onKeyPress={saveEdit}
-                placeholder="146.520 MHz"
-              />
-            ) : (
-              <TextField
-                size="small"
-                fullWidth
-                value={form.network || ''}
-                onChange={(e: any) => setEditForm({ ...form, network: e.target.value, frequency: '' })}
-                onKeyPress={saveEdit}
-                placeholder={isYSF ? "Room (e.g., UFB)" : "Network"}
-              />
-            )
-          ) : (
-            getDisplayText(freq)
-          )}
-        </TableCell>
-        <TableCell>
-          {isEditing && !isAnalog && !isYSF ? (
-            <TextField
-              size="small"
-              fullWidth
-              value={form.talkgroup || ''}
-              onChange={(e: any) => setEditForm({ ...form, talkgroup: e.target.value })}
-              onKeyPress={saveEdit}
-              placeholder="TG"
-            />
-          ) : !isAnalog && freq.talkgroup ? (
-            freq.talkgroup
-          ) : (
-            '-'
-          )}
-        </TableCell>
-        <TableCell>
-          {isEditing ? (
-            <TextField
-              size="small"
-              fullWidth
-              value={form.description || ''}
-              onChange={(e: any) => setEditForm({ ...form, description: e.target.value })}
-              onKeyPress={saveEdit}
-            />
-          ) : (
-            freq.description || '-'
-          )}
-        </TableCell>
-        <TableCell>
-          {isEditing ? (
-            <>
-              <IconButton size="small" onClick={() => saveEdit()} color="primary">
-                <CheckIcon />
-              </IconButton>
-              <IconButton size="small" onClick={cancelEdit}>
-                <CloseIcon />
-              </IconButton>
-            </>
-          ) : (
-            <>
-              <IconButton size="small" onClick={() => startEdit(freq)}>
-                <EditIcon />
-              </IconButton>
-              <IconButton size="small" onClick={() => handleDeleteFrequency(freq.id!)} color="error">
-                <DeleteIcon />
-              </IconButton>
-            </>
-          )}
-        </TableCell>
-      </TableRow>
-    );
-  };
-
-  const renderNewRow = () => {
-    const isAnalog = ['FM', 'SSB', 'GMRS'].includes(newFrequency.mode);
-    const isYSF = newFrequency.mode === 'YSF';
-
-    return (
-      <TableRow>
-        <TableCell padding="checkbox"></TableCell>
-        <TableCell>
-          <FormControl size="small" fullWidth>
-            <Select
-              value={newFrequency.mode}
-              onChange={(e: any) => setNewFrequency({ ...newFrequency, mode: e.target.value })}
-            >
-              <MenuItem value="FM">FM</MenuItem>
-              <MenuItem value="GMRS">GMRS</MenuItem>
-              <MenuItem value="SSB">SSB</MenuItem>
-              <MenuItem value="DMR">DMR</MenuItem>
-              <MenuItem value="D-STAR">D-STAR</MenuItem>
-              <MenuItem value="YSF">YSF</MenuItem>
-              <MenuItem value="P25">P25</MenuItem>
-            </Select>
-          </FormControl>
-        </TableCell>
-        <TableCell>
-          {isAnalog ? (
-            <TextField
-              size="small"
-              fullWidth
-              value={newFrequency.frequency}
-              onChange={(e: any) => setNewFrequency({ ...newFrequency, frequency: e.target.value, network: '', talkgroup: '' })}
-              onKeyPress={handleAddFrequency}
-              placeholder="146.520 MHz"
-            />
-          ) : (
-            <TextField
-              size="small"
-              fullWidth
-              value={newFrequency.network}
-              onChange={(e: any) => setNewFrequency({ ...newFrequency, network: e.target.value, frequency: '' })}
-              onKeyPress={handleAddFrequency}
-              placeholder={isYSF ? "UFB, America-Link..." : "Network name"}
-            />
-          )}
-        </TableCell>
-        <TableCell>
-          {!isAnalog && !isYSF ? (
-            <TextField
-              size="small"
-              fullWidth
-              value={newFrequency.talkgroup}
-              onChange={(e: any) => setNewFrequency({ ...newFrequency, talkgroup: e.target.value })}
-              onKeyPress={handleAddFrequency}
-              placeholder="TG"
-            />
-          ) : (
-            '-'
-          )}
-        </TableCell>
-        <TableCell>
-          <TextField
-            size="small"
-            fullWidth
-            value={newFrequency.description}
-            onChange={(e: any) => setNewFrequency({ ...newFrequency, description: e.target.value })}
-            onKeyPress={handleAddFrequency}
-            placeholder="Optional"
-          />
-        </TableCell>
-        <TableCell>
-          <Button
-            size="small"
-            variant="contained"
-            onClick={() => handleAddFrequency()}
-            disabled={!newFrequency.frequency && !newFrequency.network}
-          >
-            Add
-          </Button>
-        </TableCell>
-      </TableRow>
-    );
-  };
-
+  // ---- Render ----
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Paper sx={{ p: 3 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          {isInfoMode ? 'Net Information' : isEditMode ? 'Edit Net' : 'Create New Net'}
-        </Typography>
-
-        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs 
-            value={activeTab} 
-            onChange={(_, newValue) => setActiveTab(newValue)}
-            aria-label="net configuration tabs"
-            variant="scrollable"
-            scrollButtons="auto"
-          >
-            <Tab label="Basic Info" />
-            <Tab label="Net Staff" />
-            <Tab label="Communication Plan" />
-            <Tab label="Net Script" />
-            <Tab label="Announcements" />
-            <Tab label="Check-In Fields" />
-          </Tabs>
-        </Box>
-
-        {/* Tab 1: Basic Info */}
-        <TabPanel value={activeTab} index={0}>
-          <Typography variant="h6" gutterBottom>
-            Net Information
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Enter the basic information about this net.
+    <CreateNetContext.Provider value={contextValue}>
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        <Paper sx={{ p: 3 }}>
+          <Typography variant="h4" component="h1" gutterBottom>
+            {isInfoMode ? 'Net Information' : isEditMode ? 'Edit Net' : 'Create New Net'}
           </Typography>
 
-          <TextField
-            fullWidth
-            label="Net Name"
-            value={name}
-            onChange={(e: any) => setName(e.target.value)}
-            margin="normal"
-            required={!isInfoMode}
-            placeholder="e.g., SKYWARN Net, Emergency Comm Net"
-            InputProps={{ readOnly: isInfoMode }}
-          />
+          <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+            <Tabs
+              value={activeTab}
+              onChange={(_, newValue) => setActiveTab(newValue)}
+              aria-label="net configuration tabs"
+              variant="scrollable"
+              scrollButtons="auto"
+            >
+              <Tab label="Basic Info" />
+              <Tab label="Net Staff" />
+              <Tab label="Communication Plan" />
+              <Tab label="Net Script" />
+              <Tab label="Announcements" />
+              <Tab label="Check-In Fields" />
+            </Tabs>
+          </Box>
 
-          <TextField
-            fullWidth
-            label="Description"
-            value={description}
-            onChange={(e: any) => setDescription(e.target.value)}
-            margin="normal"
-            multiline
-            rows={4}
-            placeholder="Describe the purpose and scope of this net..."
-            InputProps={{ readOnly: isInfoMode }}
-          />
+          {/* ========== TAB 0: BASIC INFO ========== */}
+          <TabPanel value={activeTab} index={0}>
+            <BasicInfoTab />
+          </TabPanel>
 
-          <TextField
-            fullWidth
-            label="Info URL"
-            value={infoUrl}
-            onChange={(e: any) => setInfoUrl(e.target.value)}
-            margin="normal"
-            placeholder="https://example.com/club-info"
-            helperText={isInfoMode && infoUrl ? <a href={infoUrl} target="_blank" rel="noopener noreferrer">Open link</a> : "Optional link to club, organization, or net information page"}
-            InputProps={{ readOnly: isInfoMode }}
-          />
+          {/* ========== TAB 1: NET STAFF ========== */}
+          <TabPanel value={activeTab} index={1}>
+            <NCSStaffTab />
+          </TabPanel>
 
-          <TextField
-            fullWidth
-            label="Audio Stream URL"
-            value={streamUrl}
-            onChange={(e: any) => setStreamUrl(e.target.value)}
-            margin="normal"
-            placeholder="https://broadcastify.com/listen/... or Shoutcast URL"
-            helperText="Optional. Direct audio stream URL (Shoutcast, Broadcastify, etc.) for net listeners"
-            InputProps={{ readOnly: isInfoMode }}
-          />
-
-          {/* Scheduled Start Time - for countdown timer display */}
-          {!isInfoMode && (
-            <TextField
-              fullWidth
-              label="Scheduled Start Time"
-              type="datetime-local"
-              value={scheduledStartTime}
-              onChange={(e: any) => setScheduledStartTime(e.target.value)}
-              margin="normal"
-              InputLabelProps={{ shrink: true }}
-              helperText="Optional. If set, a countdown timer will be displayed before the net starts."
+          {/* ========== TAB 2: COMMUNICATION PLAN ========== */}
+          <TabPanel value={activeTab} index={2}>
+            <CommunicationPlanPanel
+              frequencies={frequencies}
+              setFrequencies={setFrequencies as React.Dispatch<React.SetStateAction<FrequencyItem[]>>}
+              selectedFrequencyIds={selectedFrequencyIds}
+              setSelectedFrequencyIds={setSelectedFrequencyIds}
             />
-          )}
+          </TabPanel>
 
-          {!isInfoMode && (
-            <Box sx={{ mt: 2 }}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={ics309Enabled}
-                    onChange={(e) => setIcs309Enabled(e.target.checked)}
-                  />
-                }
-                label="Enable ICS-309 Communications Log format"
-              />
-              <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
-                When enabled, net close emails will use the official ICS-309 format used by ARES, RACES, and EmComm organizations.
-              </Typography>
-            </Box>
-          )}
+          {/* ========== TAB 3: NET SCRIPT ========== */}
+          <TabPanel value={activeTab} index={3}>
+            <NetScriptPanel script={script} setScript={setScript} />
+          </TabPanel>
 
-          {!isInfoMode && (
-            <Box sx={{ mt: 2 }}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={mobilePrioritySort}
-                    onChange={(e) => setMobilePrioritySort(e.target.checked)}
-                  />
-                }
-                label="Prioritize mobile stations in check-in list"
-              />
-              <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
-                When enabled, mobile stations appear at the top of the check-in list (after NCS) so they can be called before they move out of range. Disable for strict chronological order.
-              </Typography>
-            </Box>
-          )}
+          {/* ========== TAB 4: ANNOUNCEMENTS ========== */}
+          <TabPanel value={activeTab} index={4}>
+            <Typography variant="h6" gutterBottom>Announcements / General Traffic</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              List announcements and general traffic items for NCS to reference during the net.
+              This is visible to all users viewing the net. Use the formatting toolbar for markdown styling.
+            </Typography>
+            <AnnouncementsPanel
+              announcements={announcements}
+              setAnnouncements={setAnnouncements}
+              rows={15}
+              footerCaption={`${announcements.length} characters • Supports Markdown formatting`}
+              headerContent={templateId ? (
+                <Alert severity="info" sx={{ mb: 2 }}>
+                  Recurring weekly announcements (club news, events, reminders) are managed in the
+                  Schedule editor under the Announcements tab. Those appear via the toolbar button during
+                  a live net and are separate from these per-net notes.
+                </Alert>
+              ) : undefined}
+            />
+          </TabPanel>
 
-          {!isInfoMode && (
-            <Box sx={{ mt: 2 }}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={chatGracePeriodEnabled}
-                    onChange={(e) => setChatGracePeriodEnabled(e.target.checked)}
-                  />
-                }
-                label="Keep chat open after closing"
-              />
-              <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5, mb: chatGracePeriodEnabled ? 1 : 0 }}>
-                Chat stays open for a set time after the net closes, so participants can wrap up off-air conversations before it goes read-only.
-              </Typography>
-              {chatGracePeriodEnabled && (
-                <Box sx={{ ml: 4.5 }}>
-                  <Select
-                    size="small"
-                    value={chatGracePeriodMinutes}
-                    onChange={(e) => setChatGracePeriodMinutes(Number(e.target.value))}
+          {/* ========== TAB 5: CHECK-IN FIELDS ========== */}
+          <TabPanel value={activeTab} index={5}>
+            <Typography variant="h6" gutterBottom>Check-In Fields</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Configure which fields are available during check-in. Callsign is always required.
+              Check "Enabled" to show the field, and "Required" to make it mandatory.
+            </Typography>
+            <CheckInFieldsPanel
+              fieldDefinitions={fieldDefinitions}
+              fieldConfig={fieldConfig}
+              setFieldConfig={setFieldConfig}
+              pollEnabled={pollEnabled}
+              topicOfWeekEnabled={topicOfWeekEnabled}
+              showToast={showToast}
+            />
+          </TabPanel>
+
+          {/* ========== ACTION BUTTONS ========== */}
+          <Box sx={{ mt: 4, pt: 2, borderTop: 1, borderColor: 'divider', display: 'flex', gap: 2, justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Button
+                variant="outlined"
+                onClick={() => navigate(isEditMode || isInfoMode ? `/nets/${netId}` : '/dashboard')}
+                startIcon={<CloseIcon />}
+              >
+                {isInfoMode ? 'Back' : 'Cancel'}
+              </Button>
+              {activeTab > 0 && (
+                <Button variant="outlined" onClick={() => setActiveTab(activeTab - 1)} startIcon={<ArrowBackIcon />}>
+                  Previous
+                </Button>
+              )}
+              {!isInfoMode && activeTab < 4 && (
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                  <Button
+                    variant="outlined"
+                    onClick={() => setActiveTab(activeTab + 1)}
+                    endIcon={<ArrowForwardIcon />}
+                    disabled={!canProceedFromTab(activeTab)}
                   >
-                    <MenuItem value={15}>15 minutes</MenuItem>
-                    <MenuItem value={30}>30 minutes</MenuItem>
-                    <MenuItem value={60}>60 minutes</MenuItem>
-                  </Select>
+                    Next
+                  </Button>
+                  {activeTab === 2 && selectedFrequencyIds.length === 0 && (
+                    <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>
+                      Select at least one frequency to continue
+                    </Typography>
+                  )}
+                  {activeTab === 0 && !name.trim() && (
+                    <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>
+                      Enter a net name to continue
+                    </Typography>
+                  )}
                 </Box>
               )}
             </Box>
-          )}
-
-          {/* Community Net Features */}
-          {!isInfoMode && (
-            <>
-              <Divider sx={{ my: 3 }} />
-              <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold' }}>
-                Community Net Features
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Optional features for informal community nets to increase engagement and collect fun responses from participants.
-              </Typography>
-
-              {/* Topic of the Week */}
-              <Box sx={{ mt: 2 }}>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={topicOfWeekEnabled}
-                      onChange={(e) => setTopicOfWeekEnabled(e.target.checked)}
-                    />
-                  }
-                  label="Topic of the Week"
-                />
-                <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
-                  Ask participants a question during check-in. Responses are collected and can be exported for club newsletters or blogs.
-                </Typography>
-                {topicOfWeekEnabled && (
-                  <Autocomplete
-                    freeSolo
-                    options={topicHistory}
-                    value={topicOfWeekPrompt}
-                    onChange={(_, newValue) => setTopicOfWeekPrompt(newValue || '')}
-                    onInputChange={(_, newInputValue) => setTopicOfWeekPrompt(newInputValue)}
-                    renderInput={(params) => (
-                      <TextField
-                        {...params}
-                        label="Topic Question"
-                        margin="normal"
-                        placeholder="e.g., What's your favorite radio or antenna?"
-                        helperText={topicHistory.length > 0 ? "Select from prior topics or enter a new one" : "The question to ask participants during check-in"}
-                      />
-                    )}
-                    sx={{ ml: 4.5, width: 'calc(100% - 36px)' }}
-                  />
-                )}
-              </Box>
-
-              {/* Poll */}
-              <Box sx={{ mt: 2 }}>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={pollEnabled}
-                      onChange={(e) => setPollEnabled(e.target.checked)}
-                    />
-                  }
-                  label="Participant Poll"
-                />
-                <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
-                  Run a quick poll during the net. Answers are auto-completed to ensure consistent tracking and results are shown as a chart.
-                </Typography>
-                {pollEnabled && (
-                  <TextField
-                    fullWidth
-                    label="Poll Question"
-                    value={pollQuestion}
-                    onChange={(e) => setPollQuestion(e.target.value)}
-                    margin="normal"
-                    placeholder="e.g., What mode do you use most: SSB, FM, or Digital?"
-                    helperText="The poll question - NCS will enter responses with autocomplete to ensure consistency"
-                    sx={{ ml: 4.5, width: 'calc(100% - 36px)' }}
-                  />
-                )}
-              </Box>
-            </>
-          )}
-        </TabPanel>
-
-        {/* Tab 2: Net Staff */}
-        <TabPanel value={activeTab} index={1}>
-          <Typography variant="h6" gutterBottom>
-            Net Staff
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            {isEditMode 
-              ? "Assign additional Net Control Stations who can manage check-ins and control this net."
-              : "Pre-assign Net Control Stations who will be able to manage check-ins and control this net. You (as the manager) always have full access."
-            }
-          </Typography>
-
-          {ncsError && (
-            <Alert severity="error" sx={{ mb: 2 }} onClose={() => setNcsError(null)}>
-              {ncsError}
-            </Alert>
-          )}
-
-          {/* Current manager (owner) info */}
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-              Net Manager (always has full access)
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1.5, bgcolor: 'action.hover', borderRadius: 1 }}>
-              <PersonIcon color="primary" />
-              <Typography>
-                {user?.callsign || 'You'}
-                {user?.name && ` (${user.name})`}
-              </Typography>
-              <Chip label="Manager" size="small" color="primary" />
-            </Box>
-          </Box>
-
-          {/* Add NCS */}
-          {!isInfoMode && (
-            <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-              <Autocomplete
-                options={availableUsers}
-                getOptionLabel={(option) => `${option.callsign}${option.name ? ` (${option.name})` : ''}`}
-                value={selectedUser}
-                onChange={(_, value) => setSelectedUser(value)}
-                renderInput={(params) => (
-                  <TextField {...params} label="Add Net Control Station" size="small" />
-                )}
-                sx={{ flex: 1 }}
-              />
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={isEditMode ? handleAddExistingNCS : handleAddPendingNCS}
-                disabled={!selectedUser}
-              >
-                Add
-              </Button>
-            </Box>
-          )}
-
-          {/* NCS List */}
-          {isEditMode ? (
-            // Edit mode: show existing roles from API
-            existingNCSRoles.length === 0 ? (
-              <Typography color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
-                No additional NCS assigned yet.
-              </Typography>
-            ) : (
-              <List>
-                {existingNCSRoles.map((role) => (
-                  <ListItem
-                    key={role.id}
-                    sx={{ 
-                      bgcolor: 'background.paper',
-                      border: 1,
-                      borderColor: 'divider',
-                      borderRadius: 1,
-                      mb: 0.5,
-                    }}
-                  >
-                    <PersonIcon sx={{ mr: 1, color: 'primary.main' }} />
-                    <ListItemText
-                      primary={
-                        <Typography>
-                          {role.callsign}
-                          {role.name && ` (${role.name})`}
-                        </Typography>
-                      }
-                    />
-                    {!isInfoMode && (
-                      <ListItemSecondaryAction>
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => handleRemoveExistingNCS(role.id)}
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </ListItemSecondaryAction>
-                    )}
-                  </ListItem>
-                ))}
-              </List>
-            )
-          ) : (
-            // Create mode: show pending users to be assigned
-            pendingNCSUsers.length === 0 ? (
-              <Typography color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
-                No additional NCS assigned yet. The manager will serve as NCS by default.
-              </Typography>
-            ) : (
-              <List>
-                {pendingNCSUsers.map((ncsUser) => (
-                  <ListItem
-                    key={ncsUser.id}
-                    sx={{ 
-                      bgcolor: 'background.paper',
-                      border: 1,
-                      borderColor: 'divider',
-                      borderRadius: 1,
-                      mb: 0.5,
-                    }}
-                  >
-                    <PersonIcon sx={{ mr: 1, color: 'primary.main' }} />
-                    <ListItemText
-                      primary={
-                        <Typography>
-                          {ncsUser.callsign}
-                          {ncsUser.name && ` (${ncsUser.name})`}
-                        </Typography>
-                      }
-                    />
-                    <ListItemSecondaryAction>
-                      <IconButton
-                        size="small"
-                        color="error"
-                        onClick={() => handleRemovePendingNCS(ncsUser.id)}
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </ListItemSecondaryAction>
-                  </ListItem>
-                ))}
-              </List>
-            )
-          )}
-        </TabPanel>
-
-        {/* Tab 3: Communication Plan */}
-        <TabPanel value={activeTab} index={2}>
-          <Typography variant="h6" gutterBottom>
-            Communication Plan
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Select the frequencies and modes for this net. Check the boxes to include them. 
-            Press Enter in any field to add a new frequency.
-          </Typography>
-
-          {/* ========== FREQUENCY FILTER INPUT ========== */}
-          <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
-            <TextField
-              size="small"
-              placeholder="Filter frequencies..."
-              value={frequencyFilter}
-              onChange={(e) => setFrequencyFilter(e.target.value)}
-              sx={{ flexGrow: 1, maxWidth: 400 }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon color="action" fontSize="small" />
-                  </InputAdornment>
-                ),
-                endAdornment: frequencyFilter && (
-                  <InputAdornment position="end">
-                    <IconButton size="small" onClick={() => setFrequencyFilter('')}>
-                      <ClearIcon fontSize="small" />
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-            />
-            <Typography variant="body2" color="text.secondary">
-              {filteredFrequencies.length} of {frequencies.length}
-            </Typography>
-          </Box>
-
-          <TableContainer>
-            <Table size="small">
-              {/* ========== SORTABLE TABLE HEADERS ========== */}
-              <TableHead>
-                <TableRow>
-                  <TableCell padding="checkbox">Use</TableCell>
-                  <TableCell sortDirection={frequencySortField === 'mode' ? frequencySortDirection : false}>
-                    <TableSortLabel
-                      active={frequencySortField === 'mode'}
-                      direction={frequencySortField === 'mode' ? frequencySortDirection : 'asc'}
-                      onClick={() => handleFrequencySort('mode')}
-                    >
-                      Mode
-                    </TableSortLabel>
-                  </TableCell>
-                  <TableCell sortDirection={frequencySortField === 'frequency' ? frequencySortDirection : false}>
-                    <TableSortLabel
-                      active={frequencySortField === 'frequency'}
-                      direction={frequencySortField === 'frequency' ? frequencySortDirection : 'asc'}
-                      onClick={() => handleFrequencySort('frequency')}
-                    >
-                      Frequency/Network
-                    </TableSortLabel>
-                  </TableCell>
-                  <TableCell sortDirection={frequencySortField === 'talkgroup' ? frequencySortDirection : false}>
-                    <TableSortLabel
-                      active={frequencySortField === 'talkgroup'}
-                      direction={frequencySortField === 'talkgroup' ? frequencySortDirection : 'asc'}
-                      onClick={() => handleFrequencySort('talkgroup')}
-                    >
-                      TG/Room
-                    </TableSortLabel>
-                  </TableCell>
-                  <TableCell sortDirection={frequencySortField === 'description' ? frequencySortDirection : false}>
-                    <TableSortLabel
-                      active={frequencySortField === 'description'}
-                      direction={frequencySortField === 'description' ? frequencySortDirection : 'asc'}
-                      onClick={() => handleFrequencySort('description')}
-                    >
-                      Description
-                    </TableSortLabel>
-                  </TableCell>
-                  <TableCell>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {sortedFrequencies.map((freq: Frequency) => renderEditableRow(freq))}
-                {renderNewRow()}
-              </TableBody>
-            </Table>
-          </TableContainer>
-
-          {selectedFrequencies.length === 0 && (
-            <Typography color="error" sx={{ mt: 2 }}>
-              Please select at least one frequency for this net.
-            </Typography>
-          )}
-        </TabPanel>
-
-        {/* Tab 4: Net Script */}
-        <TabPanel value={activeTab} index={3}>
-          <Typography variant="h6" gutterBottom>
-            Net Script
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Enter a script or checklist for NCS to follow during the net. 
-            Use the formatting toolbar for markdown styling.
-          </Typography>
-
-          <input
-            type="file"
-            accept=".txt,.md,text/plain,text/markdown"
-            ref={fileInputRef}
-            onChange={handleScriptFileUpload}
-            style={{ display: 'none' }}
-          />
-
-          {/* Formatting Toolbar */}
-          <Box sx={{ display: 'flex', gap: 0.5, mb: 1, p: 1, bgcolor: 'action.hover', borderRadius: 1 }}>
-            <Tooltip title="Heading 1">
-              <IconButton size="small" onClick={() => insertMarkdown('# ', '', 'Heading')} sx={{ fontWeight: 'bold', fontSize: '0.85rem' }}>
-                H1
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Heading 2">
-              <IconButton size="small" onClick={() => insertMarkdown('## ', '', 'Heading')} sx={{ fontWeight: 'bold', fontSize: '0.8rem' }}>
-                H2
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Heading 3">
-              <IconButton size="small" onClick={() => insertMarkdown('### ', '', 'Heading')} sx={{ fontWeight: 'bold', fontSize: '0.75rem' }}>
-                H3
-              </IconButton>
-            </Tooltip>
-            <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
-            <Tooltip title="Bold (**text**)">
-              <IconButton size="small" onClick={() => insertMarkdown('**', '**', 'bold text')}>
-                <FormatBoldIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Italic (*text*)">
-              <IconButton size="small" onClick={() => insertMarkdown('*', '*', 'italic text')}>
-                <FormatItalicIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
-            <Tooltip title="Bulleted List">
-              <IconButton size="small" onClick={() => insertMarkdown('- ', '', 'List item')}>
-                <FormatListBulletedIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Numbered List">
-              <IconButton size="small" onClick={() => insertMarkdown('1. ', '', 'List item')}>
-                <FormatListNumberedIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Horizontal Rule">
-              <IconButton size="small" onClick={() => insertMarkdown('\n---\n', '', '')}>
-                <HorizontalRuleIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          </Box>
-
-          <TextField
-            fullWidth
-            multiline
-            rows={20}
-            value={script}
-            onChange={(e: any) => setScript(e.target.value)}
-            inputRef={scriptTextAreaRef}
-            placeholder={`## Opening
-Good evening, this is **[CALLSIGN]**, Net Control Station for tonight's [NET NAME].
-
-This net meets every [DAY] at [TIME] on [FREQUENCY].
-
-*Is there any emergency or priority traffic?*
-
----
-
-## Check-Ins
-We will now take check-ins. Please give your callsign phonetically, your name, and location.
-
-- Acknowledge each station
-- Note any traffic requests
-- Keep a log of all check-ins
-
----
-
-## Closing
-This concludes tonight's net. Thank you all for checking in.
-This is **[CALLSIGN]**, closing the net at [TIME]. 73 to all.`}
-            onDrop={handleScriptDrop}
-            onDragOver={(e) => e.preventDefault()}
-            sx={{
-              '& .MuiInputBase-input': {
-                fontFamily: 'monospace',
-                fontSize: '0.95rem',
-                lineHeight: 1.6,
-              },
-            }}
-          />
-
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
-            <Typography variant="caption" color="text.secondary">
-              {script.length} characters • Supports Markdown formatting
-            </Typography>
-            <Button
-              size="small"
-              startIcon={<UploadFileIcon />}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              Upload .txt or .md file
-            </Button>
-          </Box>
-        </TabPanel>
-
-        {/* Tab 5: Announcements / General Traffic */}
-        <TabPanel value={activeTab} index={4}>
-          <Typography variant="h6" gutterBottom>
-            Announcements / General Traffic
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            List announcements and general traffic items for NCS to reference during the net.
-            This is visible to all users viewing the net. Use the formatting toolbar for markdown styling.
-          </Typography>
-          {templateId && (
-            <Alert severity="info" sx={{ mb: 2 }}>
-              Recurring weekly announcements (club news, events, reminders) are managed in the
-              Schedule editor under the Announcements tab. Those appear via the toolbar button during
-              a live net and are separate from these per-net notes.
-            </Alert>
-          )}
-
-          {/* Formatting Toolbar */}
-          <Box sx={{ display: 'flex', gap: 0.5, mb: 1, p: 1, bgcolor: 'action.hover', borderRadius: 1 }}>
-            <Tooltip title="Heading 1">
-              <IconButton size="small" onClick={() => insertAnnouncementMarkdown('# ', '', 'Heading')} sx={{ fontWeight: 'bold', fontSize: '0.85rem' }}>
-                H1
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Heading 2">
-              <IconButton size="small" onClick={() => insertAnnouncementMarkdown('## ', '', 'Heading')} sx={{ fontWeight: 'bold', fontSize: '0.8rem' }}>
-                H2
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Heading 3">
-              <IconButton size="small" onClick={() => insertAnnouncementMarkdown('### ', '', 'Heading')} sx={{ fontWeight: 'bold', fontSize: '0.75rem' }}>
-                H3
-              </IconButton>
-            </Tooltip>
-            <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
-            <Tooltip title="Bold (**text**)">
-              <IconButton size="small" onClick={() => insertAnnouncementMarkdown('**', '**', 'bold text')}>
-                <FormatBoldIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Italic (*text*)">
-              <IconButton size="small" onClick={() => insertAnnouncementMarkdown('*', '*', 'italic text')}>
-                <FormatItalicIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
-            <Tooltip title="Bulleted List">
-              <IconButton size="small" onClick={() => insertAnnouncementMarkdown('- ', '', 'List item')}>
-                <FormatListBulletedIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Numbered List">
-              <IconButton size="small" onClick={() => insertAnnouncementMarkdown('1. ', '', 'List item')}>
-                <FormatListNumberedIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Horizontal Rule">
-              <IconButton size="small" onClick={() => insertAnnouncementMarkdown('\n---\n', '', '')}>
-                <HorizontalRuleIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          </Box>
-
-          <TextField
-            fullWidth
-            multiline
-            rows={15}
-            value={announcements}
-            onChange={(e: any) => setAnnouncements(e.target.value)}
-            inputRef={announcementsTextAreaRef}
-            placeholder={`## Upcoming Events
-- **January 30, 2026** - Weekly training session at 7:00 PM
-- **February 15, 2026** - Emergency preparedness drill
-
-## General Traffic
-- Reminder: Monthly dues are due by end of month
-- New repeater installed on Mt. Washington - 146.520 MHz
-
-## Announcements
-- Weather alert: Winter storm watch in effect
-- Club meeting next Tuesday at the community center`}
-            sx={{
-              '& .MuiInputBase-input': {
-                fontFamily: 'monospace',
-                fontSize: '0.95rem',
-                lineHeight: 1.6,
-              },
-            }}
-          />
-
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
-            <Typography variant="caption" color="text.secondary">
-              {announcements.length} characters • Supports Markdown formatting
-            </Typography>
-          </Box>
-        </TabPanel>
-
-        {/* Tab 6: Check-In Fields */}
-        <TabPanel value={activeTab} index={5}>
-          <Typography variant="h6" gutterBottom>
-            Check-In Fields
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Configure which fields are available during check-in. Callsign is always required.
-            Check "Enabled" to show the field, and "Required" to make it mandatory.
-          </Typography>
-
-          <TableContainer>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Field</TableCell>
-                  <TableCell align="center">Enabled</TableCell>
-                  <TableCell align="center">Required</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {/* Poll Question field - shown if poll is enabled on Net Details tab */}
-                {pollEnabled && (
-                  <TableRow sx={{ backgroundColor: 'action.hover' }}>
-                    <TableCell>
-                      <Typography>Poll Response</Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Answer to the poll question (enabled on Net Details tab)
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="center">
-                      <Checkbox
-                        checked={true}
-                        disabled
-                        onClick={() => {
-                          setToastMessage('Poll Response is required when Poll is enabled. Disable the poll on the Net Details tab to remove this field.');
-                          setToastOpen(true);
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell align="center">
-                      <Checkbox checked={true} disabled />
-                    </TableCell>
-                  </TableRow>
-                )}
-                {/* Topic of the Week field - shown if topic is enabled on Net Details tab */}
-                {topicOfWeekEnabled && (
-                  <TableRow sx={{ backgroundColor: 'action.hover' }}>
-                    <TableCell>
-                      <Typography>Topic Response</Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Answer to the topic of the week (enabled on Net Details tab)
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="center">
-                      <Checkbox
-                        checked={true}
-                        disabled
-                        onClick={() => {
-                          setToastMessage('Topic Response is required when Topic of the Week is enabled. Disable the topic on the Net Details tab to remove this field.');
-                          setToastOpen(true);
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell align="center">
-                      <Checkbox checked={true} disabled />
-                    </TableCell>
-                  </TableRow>
-                )}
-                {fieldDefinitions.map((field) => {
-                  const config = fieldConfig[field.name] || { enabled: false, required: false };
-                  return (
-                    <TableRow key={field.name}>
-                      <TableCell>
-                        <Typography>{field.label}</Typography>
-                        {field.placeholder && (
-                          <Typography variant="caption" color="text.secondary">
-                            {field.placeholder}
-                          </Typography>
-                        )}
-                      </TableCell>
-                      <TableCell align="center">
-                        <Checkbox
-                          checked={config.enabled}
-                          onChange={(e: any) => 
-                            setFieldConfig({
-                              ...fieldConfig,
-                              [field.name]: { 
-                                ...config, 
-                                enabled: e.target.checked, 
-                                required: e.target.checked ? config.required : false 
-                              }
-                            })
-                          }
-                        />
-                      </TableCell>
-                      <TableCell align="center">
-                        <Checkbox
-                          checked={config.required}
-                          disabled={!config.enabled}
-                          onChange={(e: any) =>
-                            setFieldConfig({
-                              ...fieldConfig,
-                              [field.name]: { ...config, required: e.target.checked }
-                            })
-                          }
-                        />
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </TabPanel>
-
-        {/* Action Buttons - Always visible */}
-        <Box sx={{ mt: 4, pt: 2, borderTop: 1, borderColor: 'divider', display: 'flex', gap: 2, justifyContent: 'space-between' }}>
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <Button 
-              variant="outlined" 
-              onClick={() => navigate(isEditMode || isInfoMode ? `/nets/${netId}` : '/dashboard')}
-              startIcon={<CloseIcon />}
-            >
-              {isInfoMode ? 'Back' : 'Cancel'}
-            </Button>
-            {activeTab > 0 && (
-              <Button variant="outlined" onClick={() => setActiveTab(activeTab - 1)} startIcon={<ArrowBackIcon />}>
-                Previous
-              </Button>
-            )}
-            {!isInfoMode && activeTab < 4 && (
-              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                <Button
-                  variant="outlined"
-                  onClick={() => setActiveTab(activeTab + 1)}
-                  endIcon={<ArrowForwardIcon />}
-                  disabled={!canProceedFromTab(activeTab)}
-                >
-                  Next
-                </Button>
-                {activeTab === 2 && selectedFrequencies.length === 0 && (
-                  <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>
-                    Select at least one frequency to continue
-                  </Typography>
-                )}
-                {activeTab === 0 && !name.trim() && (
-                  <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>
-                    Enter a net name to continue
-                  </Typography>
-                )}
-              </Box>
-            )}
-          </Box>
-          {!isInfoMode && (
-            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-              {/* Save for this Net: persists changes to the current net only.
-                  This is the everyday save — the schedule (template) is left
-                  alone so per-session edits don't accidentally rewrite the
-                  schedule's defaults. */}
-              <Button
-                variant="contained"
-                onClick={handleCreateNet}
-                disabled={!name || selectedFrequencies.length === 0}
-                startIcon={<SaveIcon />}
-              >
-                {isEditMode ? 'Save for this Net' : 'Create Net'}
-              </Button>
-              {/* Save to Schedule: only meaningful when editing a net that
-                  was created from a schedule. Pushes the editable fields
-                  back to the parent schedule so future nets inherit them.
-                  Backend enforces permission (owner/admin/staff/rotation). */}
-              {isEditMode && templateId && (
+            {!isInfoMode && (
+              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                {/* Save for this Net: persists changes to the current net only.
+                    The schedule (template) is left alone so per-session edits
+                    don't accidentally rewrite the schedule's defaults. */}
                 <Button
                   variant="contained"
-                  color="secondary"
-                  onClick={() => setSaveToScheduleConfirmOpen(true)}
-                  disabled={!name || selectedFrequencies.length === 0 || savingToSchedule}
+                  onClick={handleCreateNet}
+                  disabled={!name || selectedFrequencyIds.length === 0}
                   startIcon={<SaveIcon />}
                 >
-                  Save to Schedule
+                  {isEditMode ? 'Save for this Net' : 'Create Net'}
                 </Button>
-              )}
-            </Box>
-          )}
-        </Box>
-      </Paper>
+                {/* Save to Schedule: only available when editing a net created from a schedule.
+                    Pushes editable fields back to the parent schedule so future nets inherit them.
+                    Backend enforces permission (owner/admin/staff/rotation). */}
+                {isEditMode && templateId && (
+                  <Button
+                    variant="contained"
+                    color="secondary"
+                    onClick={() => setSaveToScheduleConfirmOpen(true)}
+                    disabled={!name || selectedFrequencyIds.length === 0 || savingToSchedule}
+                    startIcon={<SaveIcon />}
+                  >
+                    Save to Schedule
+                  </Button>
+                )}
+              </Box>
+            )}
+          </Box>
+        </Paper>
 
-      {/* Toast notification for field messages */}
-      <Snackbar
-        open={toastOpen}
-        autoHideDuration={5000}
-        onClose={() => setToastOpen(false)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert onClose={() => setToastOpen(false)} severity={toastSeverity} sx={{ width: '100%' }}>
-          {toastMessage}
-        </Alert>
-      </Snackbar>
+        {/* ---- Toast notification ---- */}
+        <Snackbar
+          open={toastOpen}
+          autoHideDuration={5000}
+          onClose={() => setToastOpen(false)}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        >
+          <Alert onClose={() => setToastOpen(false)} severity={toastSeverity} sx={{ width: '100%' }}>
+            {toastMessage}
+          </Alert>
+        </Snackbar>
 
-      {/* Save to Schedule confirmation dialog.
-          Pushing back to the schedule overwrites that schedule's defaults
-          (name, description, frequencies, script, announcements, stream URL,
-          field config, ICS-309/topic/poll toggles), so we always confirm. */}
-      <Dialog
-        open={saveToScheduleConfirmOpen}
-        onClose={() => !savingToSchedule && setSaveToScheduleConfirmOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Save changes to the schedule?</DialogTitle>
-        <DialogContent>
-          <DialogContentText component="div">
-            This will replace the schedule's saved defaults with the values
-            currently on this net, including:
-            <ul style={{ marginTop: 8, marginBottom: 8 }}>
-              <li>Name, description, info URL, stream URL</li>
-              <li>Net script and announcements</li>
-              <li>Selected frequencies</li>
-              <li>Check-in field configuration</li>
-              <li>ICS-309, Topic of the Week, and Poll settings</li>
-            </ul>
-            Future nets opened from this schedule will inherit these values.
-            Net staff/rotation are managed separately from the Net Staff dialog
-            and aren't changed here.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setSaveToScheduleConfirmOpen(false)} disabled={savingToSchedule}>
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            color="secondary"
-            onClick={handleSaveToSchedule}
-            disabled={savingToSchedule}
-            startIcon={<SaveIcon />}
-          >
-            {savingToSchedule ? 'Saving…' : 'Save to Schedule'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Container>
+        {/* ---- Save to Schedule confirmation dialog ----
+            Pushing back to the schedule overwrites that schedule's defaults
+            (name, description, frequencies, script, announcements, stream URL,
+            field config, ICS-309/topic/poll toggles), so we always confirm. */}
+        <Dialog
+          open={saveToScheduleConfirmOpen}
+          onClose={() => !savingToSchedule && setSaveToScheduleConfirmOpen(false)}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle>Save changes to the schedule?</DialogTitle>
+          <DialogContent>
+            <DialogContentText component="div">
+              This will replace the schedule's saved defaults with the values
+              currently on this net, including:
+              <ul style={{ marginTop: 8, marginBottom: 8 }}>
+                <li>Name, description, info URL, stream URL</li>
+                <li>Net script and announcements</li>
+                <li>Selected frequencies</li>
+                <li>Check-in field configuration</li>
+                <li>ICS-309, Topic of the Week, and Poll settings</li>
+              </ul>
+              Future nets opened from this schedule will inherit these values.
+              Net staff/rotation are managed separately from the Net Staff dialog
+              and aren't changed here.
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setSaveToScheduleConfirmOpen(false)} disabled={savingToSchedule}>
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              color="secondary"
+              onClick={handleSaveToSchedule}
+              disabled={savingToSchedule}
+              startIcon={<SaveIcon />}
+            >
+              {savingToSchedule ? 'Saving...' : 'Save to Schedule'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </Container>
+    </CreateNetContext.Provider>
   );
 };
 
