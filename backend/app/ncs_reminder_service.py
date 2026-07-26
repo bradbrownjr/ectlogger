@@ -11,7 +11,7 @@ from sqlalchemy import select, and_
 from sqlalchemy.orm import selectinload
 from app.database import AsyncSessionLocal
 from app.utils import display_callsign
-from app.models import NetTemplate, NCSRotationMember, NCSReminderLog, NCSScheduleOverride, User, NetTemplateSubscription, Net, NetStatus, TemplateStaff
+from app.models import NetTemplate, NCSRotationMember, NCSReminderLog, NCSScheduleOverride, User, NetTemplateSubscription, Net, NetStatus, TemplateStaff, NetRole
 from app.email_service import EmailService
 from app.config import settings
 from app.logger import logger
@@ -28,6 +28,14 @@ class NCSReminderService:
     
     REMINDER_HOURS = [24, 1]  # Send reminders 24 hours and 1 hour before
     CHECK_INTERVAL_MINUTES = 15  # How often to check for reminders to send
+
+    # All reminder_type values that represent the same "~1 hour before the net"
+    # email. A user should receive AT MOST ONE of these per net occurrence, so
+    # every 1h-class sender deduplicates against the whole set — not just its own
+    # type. Priority (NCS > staff > subscriber) is enforced by loop order: the NCS
+    # reminder runs first and logs "1h", so an on-duty NCS who is also staff or a
+    # subscriber gets only the NCS-styled email, never a second "starting soon".
+    ONE_HOUR_REMINDER_TYPES = ("1h", "staff_1h", "subscriber_1h")
     
     def __init__(self):
         self.running = False
@@ -325,17 +333,10 @@ class NCSReminderService:
                     if not user.email or not user.email_notifications:
                         continue
 
-                    # Skip if they already received a subscriber reminder for this net
-                    already_got_subscriber = await self._check_reminder_sent(
-                        db, template.id, user.id, next_utc, "subscriber_1h"
-                    )
-                    if already_got_subscriber:
-                        continue
-
-                    already_sent = await self._check_reminder_sent(
-                        db, template.id, user.id, next_utc, "staff_1h"
-                    )
-                    if already_sent:
+                    # One pre-net reminder per user per occurrence: skip if they
+                    # already got an NCS, staff, or subscriber 1h reminder for this
+                    # net (the NCS reminder runs first, so on-duty NCS are covered).
+                    if await self._already_reminded_1h(db, template.id, user.id, next_utc):
                         continue
 
                     try:
@@ -438,7 +439,10 @@ class NCSReminderService:
 
                             if not already_sent:
                                 user = await self._get_user(db, entry.user_id)
-                                if user and user.email:
+                                # Respect the master email switch even for duty
+                                # reminders — a user who turned off all email
+                                # should never be forced a reminder.
+                                if user and user.email and user.email_notifications:
                                     await self._send_reminder(
                                         db, template, user, scheduled_local, scheduled_utc, reminder_hours
                                     )
@@ -468,7 +472,29 @@ class NCSReminderService:
             )
         )
         return result.scalar_one_or_none() is not None
-    
+
+    async def _already_reminded_1h(
+        self, db, template_id: int, user_id: int, scheduled_utc
+    ) -> bool:
+        """True if this user already received any ~1h-before reminder for this occurrence.
+
+        Unifies dedup across the NCS, staff, and subscriber reminder paths so a
+        user who holds more than one role (e.g. on-duty NCS who also subscribed)
+        gets a single pre-net reminder instead of two or three near-identical
+        emails. See ONE_HOUR_REMINDER_TYPES for the priority rationale.
+        """
+        result = await db.execute(
+            select(NCSReminderLog).where(
+                and_(
+                    NCSReminderLog.template_id == template_id,
+                    NCSReminderLog.user_id == user_id,
+                    NCSReminderLog.scheduled_date == scheduled_utc,
+                    NCSReminderLog.reminder_type.in_(self.ONE_HOUR_REMINDER_TYPES),
+                )
+            )
+        )
+        return result.scalar_one_or_none() is not None
+
     async def _get_user(self, db, user_id: int):
         """Get user by ID"""
         result = await db.execute(
@@ -635,17 +661,9 @@ class NCSReminderService:
                     if not user.email_notifications or not user.notify_net_reminder:
                         continue
                     
-                    # Check if we already sent this reminder
-                    reminder_type = "subscriber_1h"
-                    already_sent = await self._check_reminder_sent(
-                        db,
-                        template.id,
-                        user.id,
-                        next_date, 
-                        reminder_type
-                    )
-                    
-                    if already_sent:
+                    # One pre-net reminder per user per occurrence: skip if they
+                    # already got an NCS, staff, or subscriber 1h reminder for this net.
+                    if await self._already_reminded_1h(db, template.id, user.id, next_date):
                         continue
                     
                     # Send the reminder

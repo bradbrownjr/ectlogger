@@ -1,10 +1,24 @@
 {
-  "version": "2026.07.26",
+  "version": "2026.07.26b",
   "entries": [
     {
       "version": "2026.07.26",
       "date": "2026-07-26",
       "sections": [
+        {
+          "title": "Bug Fixes",
+          "type": "bugfix",
+          "items": [
+            {
+              "text": "Schedule: Recurring nets with a rotation appear again — Nets that use an NCS rotation now automatically show up on the dashboard about a day ahead, so the on-duty NCS always has a waiting net to open. These had been silently failing to appear.",
+              "userImpact": true
+            },
+            {
+              "text": "Email: No more duplicate net reminders — You now get at most one 'starting soon' reminder per net, even if you are the NCS and also on staff or subscribed. The same reminder could previously arrive two or three times.",
+              "userImpact": true
+            }
+          ]
+        },
         {
           "title": "Improvements",
           "type": "improvement",

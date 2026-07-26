@@ -6,6 +6,12 @@ All notable changes to ECTLogger are documented here.
 
 # July 26, 2026
 
+## Bug Fixes
+
+* **Schedule: Recurring nets with a rotation appear again** — Nets that use an NCS rotation now automatically show up on the dashboard about a day ahead, so the on-duty NCS always has a waiting net to open. These had been silently failing to appear.
+
+* **Email: No more duplicate net reminders** — You now get at most one "starting soon" reminder per net, even if you are the NCS and also on staff or subscribed. The same reminder could previously arrive two or three times.
+
 ## Improvements
 
 * **Platform: Behind-the-scenes cleanup** — We spent the last few weeks reorganizing the app's internal code so future bug fixes and feature requests can ship faster and more safely. That work is done, and regular fixes and new features resume now.
