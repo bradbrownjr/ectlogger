@@ -4,6 +4,14 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# July 26, 2026
+
+## Improvements
+
+* **Platform: Behind-the-scenes cleanup** — We spent the last few weeks reorganizing the app's internal code so future bug fixes and feature requests can ship faster and more safely. That work is done, and regular fixes and new features resume now.
+
+---
+
 # July 7, 2026
 
 ## Bug Fixes

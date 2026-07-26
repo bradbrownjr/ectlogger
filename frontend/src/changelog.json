@@ -1,6 +1,22 @@
 {
-  "version": "2026.07.07",
+  "version": "2026.07.26",
   "entries": [
+    {
+      "version": "2026.07.26",
+      "date": "2026-07-26",
+      "sections": [
+        {
+          "title": "Improvements",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Platform: Behind-the-scenes cleanup — We spent the last few weeks reorganizing the app's internal code so future bug fixes and feature requests can ship faster and more safely. That work is done, and regular fixes and new features resume now.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.07.07",
       "date": "2026-07-07",
