@@ -24,6 +24,8 @@ All notable changes to ECTLogger are documented here.
 
 * **Platform: Behind-the-scenes cleanup** — We spent the last few weeks reorganizing the app's internal code so future bug fixes and feature requests can ship faster and more safely. That work is done, and regular fixes and new features resume now.
 
+* **Net View: Redesigned toolbar** — The net toolbar now spans the full width of the page with labeled buttons instead of unlabeled icons packed into a narrow column, so you can find Search, Stats, Roles, and the rest without hovering to guess. It automatically switches to icon-only on narrower screens so nothing gets cut off.
+
 ---
 
 # July 7, 2026

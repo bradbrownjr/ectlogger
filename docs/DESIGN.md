@@ -237,67 +237,86 @@ const handleTouchEnd = (e: React.TouchEvent) => {
 
 ---
 
-## Net View Toolbar (NetView.tsx)
+## Net View Toolbar (NetViewHeader.tsx) — "Command Bar" (3a)
 
-The per-net toolbar lives in the `Grid item md={4}` column on the right-hand
-side of the net header. It is organized into **two stacked rows**.
+The per-net toolbar is a **full-width command bar** rendered as a sibling
+above the check-in table / chat two-column body — not nested inside a `Grid
+item`. This spans the entire page width so the check-in table header and the
+Chat panel header land on the same top edge again.
 
-### Row 1 — Net Operations
+### Title row
 
-Contains buttons that change the **state** of the net or the **user's
-participation** in it. These are time-sensitive, action-oriented controls.
+`display:flex; align-items:baseline; gap:10px`, above the command bar:
 
-| Button | Condition |
-|---|---|
-| Start Net | `canStartNet` && status is draft/scheduled |
-| Topic/Poll warning | `needsTopicPollConfig()` && same condition |
-| Edit net settings | `canManage` && status is draft/scheduled or active/lobby |
-| Assign/manage roles | `canManage` && status is draft/scheduled or active/lobby |
-| Bulk check-in | `canManage` && active/lobby && check-ins exist |
-| Search check-ins | Check-ins exist |
-| View map | Check-ins exist |
-| Listen to audio | Check-ins exist && `net.stream_url` set |
-| Net statistics | Check-ins exist |
-| View net script | Check-ins exist && `net.script` set |
-| Announcements | Check-ins exist && `net.announcements` set |
-| Prior topics | Check-ins exist && `net.template_id` set |
-| Net/Club website | `net.info_url` set |
-| View net info | Non-manager view (no canManage active/lobby) |
-| Claim NCS | `canManage` && active/lobby && no NCS assigned |
-| Check in / Check out | Authenticated user && active/lobby |
-| Go Live | `canManage` && status is lobby |
-| Close net | `canManage` && active/lobby |
+- **Net name** — `Typography variant="h5" component="h1"`, `flex:0 0 auto`,
+  `white-space:nowrap`. Use the variant's default weight/size (do not
+  hardcode a px value — see Typography rules above).
+- **Description** — `flex:1 1 auto; min-width:40px`, ellipsis-truncated to
+  one line, italic, `color:text.secondary`, prefixed `— `, dotted
+  bottom border, `cursor:pointer`. Native `title` attribute carries the full
+  text as a hover tooltip. Rendered only when `net.description` exists.
+- **More / Hide toggle** — text button (info icon 16px + label), `12px/500`,
+  `primary.main`, hover tint `rgba(25,118,210,.08)`. Clicking it (or the
+  description itself) toggles an expanded description block below the title
+  row. Collapsed by default on every page load.
+- **Status/stat/frequency chip cluster** — `flex:0 0 auto; ml:auto`, right end
+  of the row. Same chip set as before the redesign (status, edit-times pencil,
+  countdown, duration, stations, rechecks, checked out, online, guests) **plus
+  the frequency chips**, which moved here from their own row below the
+  toolbar. This consolidation — not a separate chip row — is what lets the
+  table/chat panel headers line up.
 
-### Row 2 — Net Functions
+### Command bar
 
-Contains buttons that act on **data** — exporting, importing, generating
-reports, and lifecycle transitions (archive, delete). These are lower-urgency
-and appear below the operational row.
+Full-bleed strip directly below the title row:
+`display:flex; align-items:center; gap:1px; flex-wrap:nowrap; padding:3px 8px;
+background:#f7f8f9; border-top/bottom:1px solid #e4e6e9`. Buttons are
+borderless "application toolbar" buttons flush against each other (1px gap)
+so 15 controls read as one calm strip instead of separate cards — no card
+outline until hover (`background:#e6e9ec; border-color:#d3d7dc`). The icon
+carries the action's color; the label stays near-black (`#25282c`). **Close
+net** is the only emphasised item (red `#c62828` label text, weight 500 — not
+a filled block). Every button keeps its Tooltip regardless of whether its
+label is currently shown.
 
-| Button | Condition |
-|---|---|
-| Export CSV | Status is closed or archived |
-| Import CSV | `canManage` && status is active, lobby, closed, or archived |
-| Download ICS-309 | Status is closed or archived |
-| Generate PDF Report | Status is closed or archived |
-| Archive net | `canManage` && status is closed |
-| Delete net (admin) | `isAdmin` && status is closed |
-| Unarchive net | `canManage` && status is archived |
-| Delete net (manager) | `canManage` && status is draft or archived |
+Two groups, separated by a `1px × 20px` vertical divider:
+
+**Information group** (left) — Bulk add, Search, Map, Audio, Stats, Script,
+Announcements, Notes, Topics, then the `More` button (Website, Net info,
+Import always live inside `More` — never inline, "the two rarest").
+
+**Management group** (right) — Start net, Edit net, Roles, Claim NCS, Raise
+hand, Step away, NCS role, Check out, Check in, Go live, Close net, Export,
+ICS-309, Report, Archive, Unarchive, Delete. Same visibility conditions as
+before the redesign (see `NetViewHeader.tsx` — each button's condition is
+unchanged, only the visual treatment and grouping moved).
+
+### Collapse ladder
+
+The bar never wraps (`flex-wrap:nowrap`, `flex:0 0 auto` on every child).
+Three width tiers, driven by `useMediaQuery` at fixed page-width breakpoints
+(not the app's default MUI breakpoints):
+
+| Width | Information group | Management group |
+|---|---|---|
+| ≥ 1400px | All buttons labelled | All buttons labelled |
+| 1024–1399px | Icon-only (all items stay inline) | Labelled |
+| < 1024px | Only Bulk add / Search / Map / Stats stay inline (icon-only); Audio/Script/Announcements/Notes/Topics join `More` | Icon-only, **except** the primary status CTA (Start net / Check in / Go live / Close net), which always keeps its label |
+
+On touch/mobile (`< 600px`) buttons use the "comfortable" 30px height instead
+of the 26px desktop-dense height (still narrower than the general 44px
+touch-target rule — an explicit, documented exception for this dense toolbar
+context, matching the approved design handoff).
 
 ### Decision rule for new buttons
 
-> **Ask: does this button change what the net is doing right now, or does it
-> act on the net's data?**
+> **Ask: is this a read/view action, or does it change net state or user
+> participation?**
 >
-> - **Operational action** (start, stop, check in, manage who's on the net,
->   navigate to a live view) → **Row 1**
-> - **Data action** (export, import, generate a report, archive, delete) →
->   **Row 2**
-
-Row 2 is visually absent for draft/scheduled nets (no data actions apply) and
-collapses to just the Import button for active/lobby nets where the manager has
-no export yet available.
+> - **View action** (search, map, stats, script, notes, topics, website) →
+>   **Information group**
+> - **State/participation action** (start, check in/out, roles, close,
+>   export, archive, delete) → **Management group**
 
 ---
 
