@@ -18,6 +18,8 @@ All notable changes to ECTLogger are documented here.
 
 ## Improvements
 
+* **Net Settings: Clearer feature sections** — The settings in a schedule or net are now grouped as **General Net Features** (mobile priority sort, chat grace period, self check-in) above a smaller **ARES & EmComm Features** section that holds just the ICS-309 log format. Everyday options are no longer buried under an emergency-communications heading, and both the schedule editor and Create/Edit Net lay them out identically.
+
 * **Platform: Behind-the-scenes cleanup** — We spent the last few weeks reorganizing the app's internal code so future bug fixes and feature requests can ship faster and more safely. That work is done, and regular fixes and new features resume now.
 
 ---

@@ -157,6 +157,33 @@ changes allowed). After wiring up the new import, diff old vs. new with
 whitespace/indentation normalized and confirm zero unexplained differences
 before committing. `tsc --noEmit` must stay clean throughout.
 
+**Where an extracted piece lives** — the point of splitting is reuse, not just
+smaller files, so give each piece a home based on its reuse scope:
+
+- **App-wide** → `hooks/` and the `components/` root: `useLocalStorage`,
+  `useDialog`, `useApiData`, `useSortableTable`, `UserAvatar`.
+- **Shared between specific pages** → also the `components/` root, named for
+  the function rather than the page: `useFavorites` (Dashboard + Scheduler),
+  `components/forms/` (the panels CreateNet and CreateSchedule would otherwise
+  near-duplicate, which is exactly how those two pages used to drift apart).
+- **Page-local** → a page subfolder (`components/netview/`,
+  `components/admin/`). Local until a second consumer appears; promoting to
+  the `components/` root later is a rename, not a rewrite.
+
+Confirm a reuse fit at extraction time rather than assuming one — don't force
+a premature abstraction (KISS).
+
+**On file size:** the working target is roughly 800 lines per page or router,
+but that number is a *proxy* for "a smaller model can edit this without
+collateral damage," not a goal in itself. `NetView.tsx` stopped at ~2,289 lines
+and `NCSStaffModal.tsx` at ~1,008 by deliberate decision: every duplicated or
+real-time-risky surface had been extracted, and what remained was
+page-controller glue (lifecycle handlers, each tied to a different already
+extracted dialog) with a wide, heterogeneous dependency set and no clean seam.
+Forcing those under 800 would have traded a legible line count for an
+illegible boundary. Judge each file on whether its risky and duplicated
+surfaces are extracted, not on the raw number.
+
 ## Post-split verification checklist
 
 Whichever kind of split you're doing, after moving code out of a file:
