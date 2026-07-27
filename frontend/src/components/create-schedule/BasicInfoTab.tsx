@@ -13,7 +13,7 @@ import {
 import { useCreateScheduleContext } from '../../contexts/CreateScheduleContext';
 
 // ========== TAB 0: BASIC INFO ==========
-// Name, description, ARES/EmComm features, community features, active flag
+// Name, description, general net features, community features, ARES/EmComm features, active flag
 
 const BasicInfoTab: React.FC = () => {
   const {
@@ -67,31 +67,16 @@ const BasicInfoTab: React.FC = () => {
         helperText="Optional URL for net, club or organization info"
       />
 
-      {/* ========== ARES & EmComm Features ========== */}
+      {/* ========== General Net Features ========== */}
       <Typography variant="subtitle1" sx={{ mt: 3, mb: 1, fontWeight: 'bold' }}>
-        ARES &amp; EmComm Features
+        General Net Features
       </Typography>
       <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
-        Features for emergency communications and formal net operations.
+        Common check-in and chat behavior for any net.
       </Typography>
 
       <FormGroup>
         <Box sx={{ ml: 1 }}>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={ics309Enabled}
-                onChange={(e) => setIcs309Enabled(e.target.checked)}
-              />
-            }
-            label="Enable ICS-309 Communications Log format"
-          />
-          <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
-            When enabled, net close emails will use the official ICS-309 format used by ARES, RACES, and EmComm organizations.
-          </Typography>
-        </Box>
-
-        <Box sx={{ ml: 1, mt: 2 }}>
           <FormControlLabel
             control={
               <Switch
@@ -207,6 +192,31 @@ const BasicInfoTab: React.FC = () => {
               sx={{ mt: 1, mb: 2, ml: 4.5, width: 'calc(100% - 36px)' }}
             />
           )}
+        </Box>
+      </FormGroup>
+
+      {/* ========== ARES & EmComm Features ========== */}
+      <Typography variant="subtitle1" sx={{ mt: 3, mb: 1, fontWeight: 'bold' }}>
+        ARES &amp; EmComm Features
+      </Typography>
+      <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
+        Features for emergency communications and formal net operations.
+      </Typography>
+
+      <FormGroup>
+        <Box sx={{ ml: 1 }}>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={ics309Enabled}
+                onChange={(e) => setIcs309Enabled(e.target.checked)}
+              />
+            }
+            label="Enable ICS-309 Communications Log format"
+          />
+          <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
+            When enabled, net close emails will use the official ICS-309 format used by ARES, RACES, and EmComm organizations.
+          </Typography>
         </Box>
       </FormGroup>
 
