@@ -73,10 +73,6 @@ NCS closed and archived a net while a second user was still looking at the "arch
 **Model:** Haiku — same file as the `f866587` fix (`ncs_reminder_service.py`); reuse the duty-NCS lookup that fix's tests already exercise and add it to the staff reminder's render context.  
 Of the several reminder emails received during net #44, only one included the on-duty NCS name; the NCS/staff variant is missing it. Confirm which template(s) omit the duty-NCS field and add it.
 
-**🐛 Manually-added check-in duplicates into a second "Recheck" row when that station later logs in and checks in themselves** *(W1BKW, KC1UIX — reported independently on two different nets)*  
-**Model:** Sonnet.  
-When NCS manually adds a station's check-in, then that station later logs in and self-checks-in, the app creates a second row with status "Recheck" instead of matching the existing manual entry. Likely cause: recheck-matching keys off `user_id` (null on a manually-entered row) rather than callsign, so a self-check-in with a real `user_id` never matches the manual row. Needs a callsign-based fallback match when the existing row has no `user_id`.
-
 **🐛 Subscriber "net starting" notification fires on the second lifecycle action (Start) instead of the first (Open Lobby)** *(W1BKW)*  
 **Model:** Sonnet — touches net lifecycle + `ncs_reminder_service.py`/notification dispatch, the same area as the `f866587` fix.  
 NCS opens the lobby expecting subscribers to be notified then, giving lead time before the net goes active; instead the notify-subscribers email fires only when the net is actually started, giving little to no lead time. Move (or add an option for) the subscriber notification to fire on the lobby-open transition.

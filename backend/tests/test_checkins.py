@@ -34,9 +34,40 @@ async def test_check_in_to_active_net(client, owner):
 
 
 @pytest.mark.asyncio
+async def test_duplicate_check_in_while_still_active_is_rejected(client, owner):
+    """Checking in a callsign that is already checked in (self or NCS/logger
+    re-adding them) must be rejected instead of creating a second live row —
+    a recheck only makes sense once the station has checked out."""
+    net_id = await _active_net(client, owner)
+
+    first = await client.post(
+        f"/api/check-ins/nets/{net_id}/check-ins",
+        json={"callsign": _CALLSIGN},
+        headers=auth_headers(owner),
+    )
+    assert first.status_code == 201
+
+    second = await client.post(
+        f"/api/check-ins/nets/{net_id}/check-ins",
+        json={"callsign": _CALLSIGN, "location": "Updated Location"},
+        headers=auth_headers(owner),
+    )
+    assert second.status_code == 400
+    assert _CALLSIGN in second.json()["detail"]
+
+    # No second row was created
+    listing = await client.get(
+        f"/api/check-ins/nets/{net_id}/check-ins",
+        headers=auth_headers(owner),
+    )
+    all_callsigns = [c["callsign"] for c in listing.json()]
+    assert all_callsigns.count(_CALLSIGN) == 1
+
+
+@pytest.mark.asyncio
 async def test_recheck_creates_child_row_not_duplicate(client, owner):
-    """A second check-in for the same callsign must be marked is_recheck=True
-    and point back to the original root via parent_check_in_id."""
+    """A check-in for a callsign that has since checked out must be marked
+    is_recheck=True and point back to the original root via parent_check_in_id."""
     net_id = await _active_net(client, owner)
 
     first = await client.post(
@@ -45,6 +76,13 @@ async def test_recheck_creates_child_row_not_duplicate(client, owner):
         headers=auth_headers(owner),
     )
     root_id = first.json()["id"]
+
+    checkout = await client.put(
+        f"/api/check-ins/check-ins/{root_id}",
+        json={"status": "checked_out"},
+        headers=auth_headers(owner),
+    )
+    assert checkout.status_code == 200
 
     second = await client.post(
         f"/api/check-ins/nets/{net_id}/check-ins",

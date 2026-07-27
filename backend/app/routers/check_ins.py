@@ -81,16 +81,28 @@ async def create_check_in(
             )
     
     # Check if this is a recheck (user previously checked in to this net)
-    # Find the root (original) check-in for this callsign to use as parent_check_in_id
+    # Find the root (original) check-in for this callsign to use as parent_check_in_id,
+    # and the latest row to know whether the station is currently still checked in.
     result = await db.execute(
         select(CheckIn).where(
             CheckIn.net_id == net_id,
             CheckIn.callsign == check_in_data.callsign,
-            CheckIn.parent_check_in_id == None  # noqa: E711 — SQLAlchemy requires == None
-        ).order_by(CheckIn.checked_in_at.asc()).limit(1)
+        ).order_by(CheckIn.checked_in_at.asc())
     )
-    root_check_in = result.scalar_one_or_none()
+    existing_check_ins = result.scalars().all()
+    root_check_in = next((ci for ci in existing_check_ins if ci.parent_check_in_id is None), None)
     is_recheck = root_check_in is not None
+
+    # A recheck is only meaningful once the station has checked out — that's
+    # the only way to leave a "current" row that isn't CHECKED_OUT. If the
+    # station's latest row is still active, this is a duplicate check-in
+    # attempt (self or NCS/logger re-adding someone already logged in), not
+    # a recheck, so reject it instead of creating a second live row.
+    if existing_check_ins and existing_check_ins[-1].status != StationStatus.CHECKED_OUT:
+        raise HTTPException(
+            status_code=400,
+            detail=f"{check_in_data.callsign} is already checked in"
+        )
     
     # Try to automatically link to existing user by callsign (amateur or GMRS)
     linked_user_id = None

@@ -16,6 +16,8 @@ All notable changes to ECTLogger are documented here.
 
 * **Email: No more duplicate net reminders** — You now get at most one "starting soon" reminder per net, even if you are the NCS and also on staff or subscribed. The same reminder could previously arrive two or three times.
 
+* **Check-in: No more duplicate rows for stations still checked in** — Checking in a station that already has an active check-in (whether they try it themselves, or Net Control/Logger re-adds them) no longer creates a second row. You'll see a message that the station is already checked in instead. Re-checking in still works normally once a station has checked out.
+
 ## Improvements
 
 * **Net Settings: Clearer feature sections** — The settings in a schedule or net are now grouped as **General Net Features** (mobile priority sort, chat grace period, self check-in) above a smaller **ARES & EmComm Features** section that holds just the ICS-309 log format. Everyday options are no longer buried under an emergency-communications heading, and both the schedule editor and Create/Edit Net lay them out identically.
