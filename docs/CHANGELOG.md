@@ -20,6 +20,10 @@ All notable changes to ECTLogger are documented here.
 
 * **Mobile: Status chips wrap instead of pushing the page sideways** — On a phone, a busy net's status chips (Stations, Online, frequency, etc.) could force the whole page into horizontal scrolling. They now wrap onto additional lines and stay within the screen.
 
+* **Net View: Long descriptions no longer shove the page around** — Opening a net's full description now floats it above the page instead of pushing the toolbar and check-in list down, then snapping them back up when you close it.
+
+* **Statistics: Platform statistics and the check-in map load again** — The Statistics page and its map of where stations are checking in from were both failing with an error instead of loading. Both work again.
+
 ## Improvements
 
 * **Net View: Check In stands out** — The Check In button now has a green background so first-time visitors notice it right away instead of hunting for it in the toolbar.
@@ -31,6 +35,12 @@ All notable changes to ECTLogger are documented here.
 * **Net View: Prior topics link back to their net** — Each entry in the prior-topics list now has a link that opens the net it came from in a new tab, so you can browse history without losing your place in the net you have open.
 
 * **Mobile: Activity Log starts collapsed** — On a phone, the Activity Log now starts closed by default so the check-in list and chat are easier to reach without scrolling past it first. It remembers your choice separately from the desktop view, and you can still open it anytime.
+
+* **Nets and Schedule: Card buttons are labeled and easier to tap** — Every button on a net or schedule card now shows a short label beside its icon, and gives you a bigger target on a phone. You can tell what each one does at a glance instead of hovering to find out, and you're far less likely to hit the wrong one with a thumb.
+
+* **Nets and Schedule: Staff controls sit on their own row** — Buttons that change something (Create, Edit, Cancel, Start, Delete) now group into a row above the view-only buttons everyone sees, so cards with a lot of controls no longer wrap into a jumble. They're ordered so Start is easy to reach and no longer sits right beside Cancel. If you're not staff on a net, you just see the single row of everyday buttons.
+
+* **Net View: Correcting a net's times moved somewhere sensible** — The unlabeled pencil tucked among the status chips is gone. You now correct a net's actual start and end times under Basic Info, on Edit Net while the net is running or on Net Info once it has closed, so a late start or a net you forgot to close can still be fixed for the official log.
 
 ---
 

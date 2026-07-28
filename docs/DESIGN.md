@@ -69,20 +69,24 @@ MUI's default Roboto font stack is used throughout. Do not override `fontFamily`
 
 Every top-level page heading uses this pattern:
 
-```
+{% raw %}
+```tsx
 <Typography variant="h4" component="h1" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
   <SomeIcon sx={{ fontSize: 32, color: 'text.primary' }} />
   Page Title
 </Typography>
 ```
+{% endraw %}
 
 On mobile (`xs`) the variant drops to `h5`; the icon scales proportionally (24 px on mobile, 32 px on desktop).
 
+Each page icon carries `fontSize: 32` and `color: 'text.primary'` via its `sx` prop, as shown above.
+
 | Page | Icon | Mobile label |
 |---|---|---|
-| Active Nets | `<CellTowerIcon sx={{ fontSize: 32, color: 'text.primary' }} />` | "Active" |
+| Active Nets | `CellTowerIcon` | "Active" |
 | Net Schedule | 📅 inline emoji | "Schedule" |
-| Statistics | `<BarChartIcon sx={{ fontSize: 32, color: 'text.primary' }} />` | "Statistics" |
+| Statistics | `BarChartIcon` | "Statistics" |
 
 **Rules:**
 - Never add `fontWeight="bold"` to a page `h4` heading — it makes that page visually heavier than its siblings.
@@ -242,6 +246,10 @@ Color conventions (all from MUI palette or literal hex):
 | `#ff9800` orange | Statistics |
 | `#9c27b0` purple | Audio stream, role management |
 
+These conventions apply to the net view toolbar. Actions in a **card footer** use
+`<CardActionButton>` instead — same colors, but always paired with a text label.
+See Card Action Buttons below.
+
 ---
 
 ## Tabs
@@ -322,14 +330,22 @@ Chat panel header land on the same top edge again.
   text as a hover tooltip. Rendered only when `net.description` exists.
 - **More / Hide toggle** — text button (info icon 16px + label), `12px/500`,
   `primary.main`, hover tint `rgba(25,118,210,.08)`. Clicking it (or the
-  description itself) toggles an expanded description block below the title
-  row. Collapsed by default on every page load.
+  description itself) opens the full description in a **`Popover` anchored to
+  the description element**, floating over the page. It must not render inline
+  in normal flow — doing so pushed the command bar and the whole table/chat
+  body down on expand and yanked them back up on collapse. Collapsed by
+  default on every page load.
 - **Status/stat/frequency chip cluster** — `flex:0 0 auto; ml:auto`, right end
-  of the row. Same chip set as before the redesign (status, edit-times pencil,
-  countdown, duration, stations, rechecks, checked out, online, guests) **plus
-  the frequency chips**, which moved here from their own row below the
-  toolbar. This consolidation — not a separate chip row — is what lets the
-  table/chat panel headers line up.
+  of the row. Status, countdown, duration, stations, rechecks, checked out,
+  online, and guests, **plus the frequency chips**, which moved here from their
+  own row below the toolbar. This consolidation — not a separate chip row — is
+  what lets the table/chat panel headers line up. There is deliberately **no
+  edit-times pencil here**: actual start/end time correction lives in the
+  Basic Info tab of Edit net (active nets) and Net info (closed/archived), where
+  it sits with the rest of the net's fields instead of hiding behind an
+  unlabelled icon among read-only chips.
+- On mobile the chip cluster **wraps** onto additional lines rather than forcing
+  the page into horizontal scroll.
 
 ### Command bar
 
@@ -475,6 +491,91 @@ Column behaviour:
 
 Do **not** use `auto-fill` for card grids — it preserves empty tracks, creating the
 same gap problem that `auto-fit` solves.
+
+---
+
+## Card Action Buttons (`CardActionButton.tsx`)
+
+Every action in a net or schedule card's footer uses the shared
+`<CardActionButton>` — never a bare `<IconButton>`. Icon-only card actions were
+replaced because they forced users to hover for a tooltip to learn what each
+button did, and their hit areas were too small to tap reliably on a phone.
+
+### The component
+
+`CardActionButton` wraps an MUI `Button` in a `Tooltip` and enforces three things:
+
+- **A one-word label** next to the icon (`View`, `Staff`, `Stats`, `Edit`,
+  `Start`, `Cancel`, `Delete`, `Archive`, `Export`, `Report`, `Email`, `Info`,
+  `Create`, `Subscribe`, `Unsubscribe`). Spell labels out — `Unsubscribe`, not
+  `Unsub`. There is room.
+- **A 44 px minimum touch target on mobile** via `minHeight: { xs: 44, sm: 32 }`,
+  satisfying the touch-target rule below. Desktop stays compact at 32 px.
+- **A tooltip on every button**, defaulting to the label when no longer
+  `tooltip` string is supplied.
+
+Color rules:
+
+- Pass `color` (an MUI palette key) only for **semantic** actions, where the icon
+  *and* label should both be tinted — `error` for Cancel/Delete, `success` for
+  Start, `primary` for View/Create.
+- For a **category tint** (statistics orange, export green, staff purple), leave
+  `color` unset so the label stays neutral, and tint the icon alone via `sx` on
+  the icon element. This keeps the color conventions in the Toolbar Icon Buttons
+  table intact without shouting a whole button in orange.
+
+### Two-row layout: management row above standard row
+
+Both `NetCard.tsx` and `ScheduleCard.tsx` split `<CardActions>` into two stacked
+rows. This exists because cards with six or seven actions crammed into one
+wrapping row broke unpredictably at card widths.
+
+| Row | Contains | Who sees it |
+|---|---|---|
+| **Management row** (top) | Mutating actions — Create, Edit, Cancel, Delete, Start, Email, Archive, Export, Report | Only users passing the card's `canManage` / `isOwnerOrAdmin` / `can_create_net` gate |
+| **Standard row** (bottom) | View-only actions — View, Staff, Stats, Info, Subscribe/Unsubscribe | Everyone, including guests |
+
+Managers get their controls first, at the top, instead of hunting past the
+view-only buttons everyone else sees. A standard user sees a single row, which is
+why the standard row must stay view-only — never move a mutating action into it.
+
+### Ordering within a row: by severity
+
+Order actions **neutral → destructive → primary call-to-action last**, so the
+button a user reaches for most is not adjacent to the one that destroys the net:
+
+- Net cards (draft/scheduled): `Email`, `Edit`, `Cancel`, `Start`
+- Schedule cards: `Create`, `Edit`, `Delete`
+
+Schedule cards lead with `Create` because it is the primary action and holds the
+left-most position it occupied before the row split — muscle memory beats a
+strict severity sort here.
+
+### Required: `disableSpacing` on `CardActions`
+
+MUI's `CardActions` ships a CSS rule that applies `margin-left: 8px` to every
+sibling after the first, assuming a horizontal row of buttons. With
+`flexDirection: 'column'` that margin lands on the **second row's wrapper**,
+pushing it 8 px right of the first and making the two rows look askew.
+
+Always pass `disableSpacing` and supply your own `gap`:
+
+{% raw %}
+```tsx
+<CardActions disableSpacing sx={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 0.5 }}>
+  <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-start', gap: 0.5 }}>
+    {/* management row */}
+  </Box>
+  <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-start', gap: 0.5 }}>
+    {/* standard row */}
+  </Box>
+</CardActions>
+```
+{% endraw %}
+
+Both inner rows use `justifyContent: 'flex-start'` so they align flush at the
+card's lower-left corner. Verify alignment by computed style, not by eye — both
+rows must report the same `left` offset.
 
 ---
 

@@ -218,6 +218,8 @@ Before adding any new UI element, read **[docs/DESIGN.md](DESIGN.md)**. It cover
 - Floating Action Button sizing and positioning rules
 - Tab scrollability and swipe-to-switch pattern
 - Icon color conventions for toolbar buttons
+- Card action buttons (`CardActionButton`, management/standard row split,
+  severity ordering, and the required `disableSpacing` on `CardActions`)
 - Mobile touch targets and responsive breakpoints
 - Net View toolbar row structure
 

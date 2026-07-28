@@ -58,6 +58,73 @@ View your participation statistics:
 - Last 30 days activity
 - Your favorite (most frequented) nets
 
+## Net and Schedule Cards
+
+Nets on the **Dashboard** and schedules on the **Scheduler** page are shown as
+cards. Every button at the bottom of a card has a **text label** next to its
+icon, so you can tell what each one does without hovering over it, and the
+buttons are sized for comfortable tapping on a phone.
+
+### Two rows of buttons
+
+If you help run a net, a card shows **two rows** of buttons:
+
+- **Top row — management.** The actions that change something: Create, Edit,
+  Cancel, Delete, Start, Email, Archive, Export, Report. You only see this row on
+  nets and schedules you're allowed to manage.
+- **Bottom row — everyone.** The view-only actions: View, Staff, Stats, Info, and
+  Subscribe/Unsubscribe.
+
+If you're not staff on a net, you simply see the single bottom row.
+
+Within the management row, buttons run from least to most consequential, with the
+action you want most sitting at the safe end. On a net card that means **Edit,
+Cancel, Start** — so Start is easy to hit and is not sitting next to Cancel. On a
+schedule card, **Create** leads the row, followed by Edit and Delete.
+
+### What each button does
+
+**On a net card (Dashboard):**
+
+| Button | What it does | Who sees it |
+|---|---|---|
+| **View** | Open the net | Everyone |
+| **Staff** | Show the net's NCS, loggers, and relays | Everyone |
+| **Stats** | Open net statistics | Everyone (active/lobby and closed nets) |
+| **Info** | Open the club or organization's website | Everyone, when an Info URL is set |
+| **Email** | Message subscribers before the net | Net staff, on draft/scheduled nets from a schedule |
+| **Edit** | Change the net's settings | Net staff, on draft/scheduled nets |
+| **Cancel** | Cancel this net instance | Net staff, on draft/scheduled nets |
+| **Start** | Open the net for check-ins | Net staff, on draft/scheduled nets |
+| **Delete** | Remove the net and its data | Net staff, on active, lobby, and closed nets |
+| **Export** | Download the check-in log as CSV | Net staff, on closed nets |
+| **Report** | Open the printable PDF net report | Net staff, on closed nets |
+| **Archive** | Hide the net from the dashboard, keeping its record | Net staff, on closed nets |
+
+**On a schedule card (Scheduler):**
+
+| Button | What it does | Who sees it |
+|---|---|---|
+| **Create** | Open a net now from this schedule | Whoever is on duty or manages the schedule |
+| **Edit** | Change the schedule's settings | Schedule staff |
+| **Delete** | Remove the schedule | Owner or admin only |
+| **Info** | Open the club or organization's website | Everyone, when an Info URL is set |
+| **Stats** | Open statistics across every net this schedule has run | Everyone |
+| **Staff** | Show the schedule's staff and NCS rotation | Everyone |
+| **Subscribe** / **Unsubscribe** | Turn email notifications for this net on or off | Signed-in users |
+
+### Long descriptions
+
+When a net or schedule has a long description, the card shows the first three
+lines followed by a **Show more** link. Click it to reveal the rest, and **Show
+less** to collapse it again. Cards without a long description don't show the link
+at all.
+
+On the net page itself, the description sits next to the net name and works a
+little differently: clicking it (or the **More** button beside it) opens the full
+text in a small panel that floats over the page, so the toolbar and check-in list
+stay put instead of being pushed down. Click away to close it.
+
 ## Joining a Net
 
 ### Finding Active Nets
@@ -66,10 +133,41 @@ View your participation statistics:
 2. Click on a net to view details
 3. If the net is open for check-ins, you'll see the check-in form
 
+### The Net Toolbar
+
+Every net page has a toolbar spanning the full width of the page, just below the
+net name. Buttons show a text label whenever there's room for one, so you rarely
+have to hover to work out what something does. As the window gets narrower,
+labels drop off one at a time and the least-used buttons move into a **More**
+menu at the end of the strip — but the main action for whatever the net is doing
+right now (**Start net**, **Check in**, **Go live**, or **Close net**) always
+keeps its label and never disappears into the menu.
+
+The toolbar is split into two groups by a thin divider:
+
+- **Left — information.** Search, Map, Stats, Script, Announcements, Notes,
+  Topics, Website, and similar. These don't change anything.
+- **Right — management.** Check in, Check out, Raise hand, Step away, and the
+  staff controls for running and closing the net.
+
+Some buttons stay tinted to show your current state at a glance — **Check in** is
+green while you're not yet checked in, **Role: NCS** stays highlighted while
+you're acting as Net Control, and **Return** glows orange while you're marked
+away. Hovering a tinted button deepens its own color rather than turning it gray,
+so it never looks like it switched off.
+
+Buttons you're not permitted to use aren't shown. **Net info**, **Bulk add**, and
+the option to add a historical topic are limited to NCS, loggers, and net
+managers. Everyone can still browse the list of prior topics.
+
+To the right of the net name you'll find status chips — the net's status,
+countdown or duration, station counts, who's online, and the net's frequencies.
+On a phone these wrap onto extra lines instead of pushing the page sideways.
+
 ### Checking In
 
 1. Open an active net
-2. Click **Check In** (the login icon button in the toolbar)
+2. Click **Check in** in the net toolbar — it's tinted green so it stands out
 3. Fill in the check-in form that opens:
    - Your callsign (auto-filled if logged in)
    - Your name (auto-filled from profile or contacts directory)
@@ -175,7 +273,7 @@ To promote net edits back to the schedule:
 
 If you have multiple schedules that should be combined into one (e.g., separate schedules that were created for the same net series):
 
-1. On the **Scheduler** page, click the **Merge** button (⑂) in the bottom-right corner
+1. On the **Scheduler** page, click the **Merge** floating button (merging-arrows icon) in the bottom-right corner
 2. Checkboxes appear on each schedule card — select 2 or more schedules to merge
 3. Click **Merge Selected** in the bottom bar
 4. In the dialog, choose which schedule becomes the **master** (the one that survives)
@@ -198,7 +296,7 @@ If you have multiple schedules that should be combined into one (e.g., separate 
 
 If an ad-hoc net was created outside a schedule (or was attached to the wrong schedule), you can re-attach it from the **Schedule Statistics** page so its check-ins count toward the schedule's history and leaderboards:
 
-1. Open the schedule from the **Scheduler** page and click **View Statistics**.
+1. On the **Scheduler** page, click **Stats** on the schedule's card.
 2. Click **Link Existing Net** in the page header.
 3. Pick a net from the list and confirm. To detach a net from a schedule entirely, choose **(none)**.
 
@@ -233,15 +331,38 @@ The net header displays helpful timing information:
 - **Countdown Timer** — For scheduled nets, shows time until start (e.g., "Starts in 2h 15m")
 - **Duration Timer** — For active nets, shows elapsed time (e.g., "Duration: 1:23:45")
 
+### Correcting Net Start and End Times
+
+If a net was opened late, closed late, or you forgot to close it until the next
+morning, net staff can correct the recorded times so the official log and
+statistics are accurate. These are the **actual** times the net ran — separate
+from the Scheduled Start Time that drives the countdown timer.
+
+Find them under **Actual Net Times**, in the **Basic Info** tab, directly below
+Scheduled Start Time:
+
+- **On an active net** — open **Edit Net**.
+- **On a closed or archived net** — open **Net Info** from the net's toolbar.
+  Even though that page is otherwise read-only, the time fields stay editable,
+  because times usually need fixing *after* the net has closed.
+
+Adjust **Actual Start Time** and/or **Actual End Time**, then click **Save
+Times**. This saves immediately and on its own — you don't need to save the rest
+of the form. The corrected duration flows through to the net log, statistics, and
+PDF report.
+
+The fields only appear once a net has actually been started, and only to staff
+who can manage the net.
+
 ### Starting a Net
 
-Click the green **▶ Play** button on the Dashboard or NetView page to start a net.
+Click the green **Start** button on the net's card on the Dashboard, or **Start net** in the toolbar on the net page.
 
 **Lobby Mode** — If you start a net before its scheduled start time, the net enters "Lobby" mode:
 - Check-ins and chat are fully functional
 - A countdown shows until the scheduled start time
 - Status shows as "LOBBY" with a warning (orange) color
-- Click **Go Live** when ready to officially begin the net
+- Click **Go live** in the net toolbar when ready to officially begin the net
 
 This is useful for opening check-ins early while operators are gathering, before the net officially starts on the air.
 
@@ -249,7 +370,7 @@ This is useful for opening check-ins early while operators are gathering, before
 
 To cancel or remove a specific net instance:
 1. Find the net on the Dashboard
-2. Click the red **🗑️ Delete** icon (visible to net owners, NCS, and admins on every net you can manage — draft, scheduled, active, or closed)
+2. Click the red **Cancel** button (on draft and scheduled nets) or **Delete** button (on active, lobby, and closed nets) in the card's management row. Both appear only to net owners, NCS, and admins.
 3. The confirmation dialog spells out exactly what will be lost (check-ins, chat, reports). Choose:
    - **Cancel** (blue) — back out
    - **Close & Archive** (yellow, only on active/lobby nets) — close the net normally (the full log is emailed to you) and immediately archive it, so the record is preserved but the net leaves the active list. Best choice for finished test/training runs you want to keep.
@@ -258,7 +379,7 @@ To cancel or remove a specific net instance:
 
 This deletes only the chosen net instance — the recurring schedule continues for future dates. For training and practice runs, deletion is the right choice; for real net activations, **archive** is almost always safer because it preserves the log.
 
-**Email Subscribers** — Before canceling a draft/scheduled net, you can notify subscribers by clicking the **✉️ Email** icon and sending a custom message.
+**Email Subscribers** — Before canceling a draft/scheduled net, you can notify subscribers by clicking the **Email** button on the net's card and sending a custom message.
 
 ### Managing Check-ins
 
@@ -400,7 +521,7 @@ Both Topic and Poll columns are only visible when configured for the net. System
 
 ### Closing the Net
 
-1. Click **Close Net**
+1. Click **Close net** in the net toolbar
 2. A complete log is generated and emailed to you
 3. The net can be archived or remain in closed status
 
@@ -408,9 +529,9 @@ Both Topic and Poll columns are only visible when configured for the net. System
 
 - **Auto-archive (recurring nets)** — When a new net is created from a recurring schedule (manually or automatically), any previously closed nets from that same schedule are archived automatically. This keeps the dashboard clean without requiring manual cleanup after each net. Archived nets remain fully accessible and can be unarchived at any time.
 - **Auto-archive (stale scheduled nets)** — A net in Scheduled status that was never opened is automatically archived 24 hours after its scheduled start time. If a net didn't happen, it disappears from the dashboard on its own.
-- **Archive** — From a closed net, click the archive icon to hide it from the main dashboard. A 5-second UNDO toast lets you cancel if clicked accidentally.
-- **Unarchive** — From an archived net view, click the unarchive icon to restore it to closed status.
-- **Download Logs** — Both closed and archived nets have download buttons (CSV and ICS-309) available in the toolbar.
+- **Archive** — From a closed net, click **Archive** (on the net's card, or in the net toolbar) to hide it from the main dashboard. A 5-second UNDO toast lets you cancel if clicked accidentally.
+- **Unarchive** — From an archived net view, click **Unarchive** in the toolbar to restore it to closed status.
+- **Download Logs** — Both closed and archived nets have download buttons (CSV and ICS-309) available in the toolbar. Closed nets also have an **Export** button on their dashboard card for the CSV log.
 
 ### Exporting Logs
 
@@ -463,7 +584,7 @@ Rows outside this window are skipped and reported with clear row numbers and rea
 
 Generate a comprehensive multi-page PDF report for closed or archived nets:
 
-1. **Access** — Click the **📄 PDF** icon in the net toolbar (for closed/archived nets), or on the Dashboard next to the download button
+1. **Access** — Click **Report** in the net toolbar (for closed/archived nets), or the **Report** button on the net's card on the Dashboard
 2. **View Report** — Review the report page with all sections displayed
 3. **Export** — Click **Export PDF** to download the report
 
@@ -490,7 +611,7 @@ Three statistics views are available, each with PDF export:
 
 ### Schedule Statistics
 
-For recurring nets, the **Schedule Statistics** page (Scheduler → *View Statistics* on a schedule card) aggregates participation across every net instance the schedule has produced.
+For recurring nets, the **Schedule Statistics** page (Scheduler → **Stats** on a schedule card) aggregates participation across every net instance the schedule has produced.
 
 **Time-window filter** — Toggle between **30 days**, **90 days**, **1 year**, and **All time**. The default is **1 year** so monthly nets and occasional SKYWARN activations always show meaningful counts. The selected window applies to every panel on the page (summary cards, leaderboards, history log, and PDF export).
 
@@ -537,6 +658,18 @@ ECTLogger automatically follows your system's light/dark mode preference. If you
 
 ECTLogger is fully responsive and works great on mobile devices. Use your phone or tablet in the field! The interface adapts to smaller screens while keeping all functionality accessible.
 
+A few things behave differently on a phone:
+
+- **Bigger buttons on cards** — the action buttons on net and schedule cards use
+  a taller tap target on mobile, so they're easier to hit accurately with a thumb.
+- **Status chips wrap** — a busy net's chips flow onto extra lines instead of
+  forcing the page to scroll sideways.
+- **Activity Log starts collapsed** — on a phone the Activity Log begins closed
+  so the check-in list and chat are reachable without scrolling past it. Open it
+  whenever you like; your choice is remembered separately from the desktop view.
+- **Swipe between tabs** — on pages with tabs (Profile, Admin), swipe left or
+  right to move between them.
+
 ### Location Awareness
 
 Enable location awareness in your profile to automatically fill in your Maidenhead grid square when checking in. This is especially useful for:
@@ -560,7 +693,7 @@ This is handy for NCS operating split frequencies — focus on stations monitori
 
 ### Subscribing to Nets
 
-Subscribe to nets you regularly participate in to receive email notifications when they start, close, or are about to begin. Click the bell icon on any net to toggle subscription.
+Subscribe to nets you regularly participate in to receive email notifications when they start, close, or are about to begin. On the **Scheduler** page, click **Subscribe** on a schedule's card; the button becomes **Unsubscribe** once you're subscribed, so you can always tell your current state at a glance.
 
 ---
 

@@ -25,6 +25,7 @@ Key rules enforced there:
 - Icon color conventions for toolbar buttons are fixed — check the table before picking a color.
 - Identical controls must look identical across pages (symmetry and uniformity principle).
 - Minimum touch target 44 × 44 px for primary actions.
+- Card footer actions always use the shared `<CardActionButton>` (icon + one-word label), never a bare `<IconButton>`. Net and schedule cards split `<CardActions>` into a staff-gated management row above a view-only standard row; the standard row must never contain a mutating action. Order each row neutral → destructive → primary CTA last. `<CardActions>` must carry `disableSpacing` — without it MUI's sibling `margin-left: 8px` pushes the second row out of alignment. See DESIGN.md "Card Action Buttons".
 - In `ChangelogNotification.tsx`, every changelog item always gets the tinted background box. Do NOT make it conditional on `userImpact`. Only bold text and the "User Impact" chip are conditional.
 - In `MaintenanceBanner.tsx`: always use `variant="filled"` on `<Alert>` (standard warning is invisible in dark mode), never wrap in `<Collapse>` (clips text), and poll at 10 s not 60 s. See DESIGN.md "Sitewide Alert Banners" for full rules.
 

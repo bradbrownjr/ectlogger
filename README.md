@@ -30,7 +30,7 @@ The responsive interface works beautifully on any device — from a phone in the
 - **⚡ Real-Time Updates** — WebSocket-powered live check-ins, status updates, and chat messages
 - **👥 Role-Based Access** — Admin, NCS, Logger, User, and Guest roles
 - **📧 Email Notifications** — Automatic net reminders, start notifications, and invitations
-- **📱 Mobile Responsive** — Works seamlessly on phones, tablets, and desktops
+- **📱 Mobile Responsive** — Works seamlessly on phones, tablets, and desktops, with labeled controls and generous touch targets sized for gloved or one-handed field use
 - **📻 Multi-Frequency Support** — Track stations across multiple frequencies and modes
 - **👥 Multi-NCS Support** - Multiple NCS operators can check in and track stations across multiple frequencies and modes simultaneously
 - **⏸️ Paused-Net Indicator** — If the NCS steps away with no co-NCS covering, the net shows a blue border and banner so everyone knows no one is actively running it, and the recorded duration excludes that time
