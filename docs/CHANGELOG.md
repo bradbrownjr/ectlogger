@@ -4,6 +4,20 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# July 28, 2026
+
+## Bug Fixes
+
+* **Net View: Bulk Add hidden from guests** — The Bulk Add button no longer shows to guests or other non-staff visitors; only NCS, loggers, and net managers see it now, matching who's actually allowed to use it.
+
+## Improvements
+
+* **Net View: Check In stands out** — The Check In button now has a green background so first-time visitors notice it right away instead of hunting for it in the toolbar.
+
+* **Net View: Clearer status wording** — The paused-net banner now says the net is paused until Net Control returns, and the toolbar's NCS toggle is labeled "Role: NCS" or "Role: Standard" so it's obvious at a glance which role you're in and what clicking it does.
+
+---
+
 # July 27, 2026
 
 ## New Features
