@@ -338,7 +338,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
   const infoItems: ToolbarItemDef[] = [
     {
       key: 'bulk', group: 'info', priority: 3,
-      visible: isActiveOrLobby && checkInsCount > 0,
+      visible: isActiveOrLobby && checkInsCount > 0 && !!canManageCheckIns,
       Icon: FastForwardIcon, color: '#1976d2', label: 'Bulk add',
       tooltip: 'Bulk add multiple check-ins', onClick: () => bulkCheckIn.onOpen(),
     },
