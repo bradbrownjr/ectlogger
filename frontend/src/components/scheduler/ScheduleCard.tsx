@@ -276,7 +276,10 @@ const ScheduleCard: React.FC<ScheduleCardProps> = ({
         </Box>
       </CardContent>
 
-      <CardActions sx={{ flexDirection: 'column', alignItems: 'stretch', gap: 0.5 }}>
+      {/* disableSpacing: MUI's default CardActions applies margin-left to
+          sibling children assuming a horizontal row — with flexDirection
+          column that pushes the second row 8px right of the first. */}
+      <CardActions disableSpacing sx={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 0.5 }}>
         {/* ---- Management row (staff/admin only) ----
             Above the standard row so managers reach Create/Edit/Delete
             without hunting past the info controls everyone else sees.
