@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -13,6 +13,11 @@ import {
   ListItemText,
   CircularProgress,
   useMediaQuery,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from '@mui/material';
 import { keyframes } from '@mui/system';
 import EditIcon from '@mui/icons-material/Edit';
@@ -53,51 +58,37 @@ import type { UseDialogResult } from '../../hooks/useDialog';
 // command bar toolbar below it. Purely presentational — the parent owns all
 // state, derived flags, and handlers. See docs/DESIGN.md "Net View Toolbar"
 // for the full layout spec (approved direction 3a).
+//
+// The command bar's collapse behavior is driven by the bar's actual measured
+// width (ResizeObserver), not fixed viewport breakpoints — nothing is ever
+// pinned to the More menu just because a breakpoint says so. Every item
+// carries a `priority`; when the bar doesn't fit, the lowest-priority items
+// lose their label first, then (if still short on room) move into the More
+// menu, lowest-priority first, until what remains fits.
 
 type NcsColor = { bg: string; border: string; text: string } | null;
 
-// Pulse animation for highlighting the check-in button (blue)
 const pulseAnimation = keyframes`
-  0% {
-    box-shadow: 0 0 0 0 rgba(25, 118, 210, 0.7);
-  }
-  70% {
-    box-shadow: 0 0 0 10px rgba(25, 118, 210, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(25, 118, 210, 0);
-  }
+  0% { box-shadow: 0 0 0 0 rgba(25, 118, 210, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(25, 118, 210, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(25, 118, 210, 0); }
 `;
 
-// Pulse animation for highlighting the start net button (green)
 const pulseAnimationGreen = keyframes`
-  0% {
-    box-shadow: 0 0 0 0 rgba(46, 125, 50, 0.7);
-  }
-  70% {
-    box-shadow: 0 0 0 10px rgba(46, 125, 50, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(46, 125, 50, 0);
-  }
+  0% { box-shadow: 0 0 0 0 rgba(46, 125, 50, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(46, 125, 50, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(46, 125, 50, 0); }
 `;
 
-// Yellow shimmer animation for topic/poll config needed indicator
 const shimmerYellow = keyframes`
-  0% {
-    background-color: rgba(255, 193, 7, 0.3);
-  }
-  50% {
-    background-color: rgba(255, 193, 7, 0.7);
-  }
-  100% {
-    background-color: rgba(255, 193, 7, 0.3);
-  }
+  0% { background-color: rgba(255, 193, 7, 0.3); }
+  50% { background-color: rgba(255, 193, 7, 0.7); }
+  100% { background-color: rgba(255, 193, 7, 0.3); }
 `;
 
 // Command bar button geometry/colors — matches the approved design handoff
 // (design_handoff_netview_toolbar, option 3a): borderless "application
-// toolbar" buttons flush against each other so 15 labelled controls read as
+// toolbar" buttons flush against each other so labelled controls read as
 // one calm strip instead of a wall of separate cards.
 const flushBtnSx = (
   comfortable: boolean,
@@ -132,23 +123,29 @@ const flushBtnSx = (
   },
 });
 
+// Collapse priority: 4 = never loses its label and never overflows (the
+// single primary status CTA for whatever state the net is in right now).
+// 1 = first to lose its label, first to move into the More menu.
+type Priority = 1 | 2 | 3 | 4;
+type ItemMode = 'label' | 'icon' | 'overflow';
+
 interface ToolbarItemDef {
   key: string;
   visible: boolean;
+  group: 'info' | 'management';
+  priority: Priority;
   Icon: React.ComponentType<any>;
   color: string;
   label: string;
   tooltip: string;
   onClick: () => void;
   disabled?: boolean;
-  // Stays inline (never collapses into the More menu) even at the narrowest
-  // tier. For the info group this is the "Bulk add / Search / Map / Stats"
-  // set; for the management group it marks the primary status CTA.
-  core?: boolean;
   active?: boolean;
   activeTone?: 'primary' | 'warning';
   emphasis?: boolean;
   extraSx?: object;
+  // Start net needs a loading spinner in place of its icon.
+  iconOverride?: React.ReactNode;
 }
 
 interface NetViewHeaderProps {
@@ -162,6 +159,7 @@ interface NetViewHeaderProps {
   isAssignedNCS: boolean;
   isNCS: boolean;
   hasNCS: boolean;
+  otherActiveNCSExists: boolean;
   user: any;
   userNetRole: any;
   userActiveCheckIn: any;
@@ -212,6 +210,58 @@ interface NetViewHeaderProps {
   onDelete: () => void;
 }
 
+// Given real measured widths for each visible item (plus chrome: divider,
+// container padding, the More button), figure out how many can stay fully
+// labelled, which get squeezed to icon-only, and which have to move into
+// the More menu — in that order, lowest-priority items degrading first —
+// until everything fits inside `containerWidth`. Pure function so it's easy
+// to reason about independent of React's render cycle.
+function computeLayout(
+  items: ToolbarItemDef[],
+  widths: Record<string, { label: number; icon: number }>,
+  containerWidth: number,
+  dividerWidth: number,
+  moreIconWidth: number,
+  showDivider: boolean
+): Map<string, ItemMode> {
+  const GAP = 1;
+  const CONTAINER_PADDING = 16;
+  const modes = new Map<string, ItemMode>();
+  items.forEach(i => modes.set(i.key, 'label'));
+
+  const total = () => {
+    const inline = items.filter(i => modes.get(i.key) !== 'overflow');
+    const anyOverflow = items.some(i => modes.get(i.key) === 'overflow');
+    let w = CONTAINER_PADDING;
+    inline.forEach(i => {
+      const mode = modes.get(i.key);
+      const measured = widths[i.key];
+      w += measured ? (mode === 'label' ? measured.label : measured.icon) : 0;
+    });
+    if (showDivider) w += dividerWidth;
+    if (anyOverflow) w += moreIconWidth;
+    const slots = inline.length + (anyOverflow ? 1 : 0);
+    w += Math.max(0, slots - 1) * GAP;
+    return w;
+  };
+
+  if (total() <= containerWidth) return modes;
+
+  const collapsible = items.filter(i => i.priority < 4).sort((a, b) => a.priority - b.priority);
+
+  for (const item of collapsible) {
+    if (total() <= containerWidth) break;
+    modes.set(item.key, 'icon');
+  }
+  if (total() <= containerWidth) return modes;
+
+  for (const item of collapsible) {
+    if (total() <= containerWidth) break;
+    modes.set(item.key, 'overflow');
+  }
+  return modes;
+}
+
 const NetViewHeader: React.FC<NetViewHeaderProps> = ({
   net,
   netId,
@@ -223,6 +273,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
   isAssignedNCS,
   isNCS,
   hasNCS,
+  otherActiveNCSExists,
   user,
   userNetRole,
   userActiveCheckIn,
@@ -270,96 +321,91 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
   const navigate = useNavigate();
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   const [moreMenuAnchor, setMoreMenuAnchor] = useState<null | HTMLElement>(null);
+  const [stepAwayConfirmOpen, setStepAwayConfirmOpen] = useState(false);
 
-  // Collapse ladder — page-width breakpoints from the design handoff, not
-  // the app's default MUI breakpoints. >=1400: everything labelled.
-  // 1024-1399: info group icon-only, management stays labelled. <1024:
-  // only Bulk add/Search/Map/Stats stay inline from the info group (the
-  // rest join the More menu); management is icon-only except the primary
-  // status CTA (Start net / Check in / Go live / Close net).
-  const isFull = useMediaQuery('(min-width:1400px)');
-  const isMediumUp = useMediaQuery('(min-width:1024px)');
+  // Touch-target sizing only (26px dense vs 30px comfortable) — unrelated to
+  // the content-driven collapse logic below, which reacts to the bar's own
+  // measured width rather than a viewport breakpoint.
   const comfortable = !useMediaQuery('(min-width:600px)');
-  const tier: 'full' | 'medium' | 'compact' = isFull ? 'full' : isMediumUp ? 'medium' : 'compact';
 
   const isActiveOrLobby = net.status === 'active' || net.status === 'lobby';
   const isDraftOrScheduled = net.status === 'draft' || net.status === 'scheduled';
   const isClosedOrArchived = net.status === 'closed' || net.status === 'archived';
 
+  const startingUpNet = canStartNet && isDraftOrScheduled;
+
   // ===== INFO GROUP (read / view actions) =====
   const infoItems: ToolbarItemDef[] = [
     {
-      key: 'bulk', core: true,
+      key: 'bulk', group: 'info', priority: 3,
       visible: isActiveOrLobby && checkInsCount > 0,
       Icon: FastForwardIcon, color: '#1976d2', label: 'Bulk add',
       tooltip: 'Bulk add multiple check-ins', onClick: () => bulkCheckIn.onOpen(),
     },
     {
-      key: 'search', core: true,
+      key: 'search', group: 'info', priority: 3,
       visible: checkInsCount > 0,
       Icon: SearchIcon, color: '#1976d2', label: 'Search',
       tooltip: 'Search check-ins', onClick: () => search.onOpen(),
       active: !!searchQuery, activeTone: 'primary',
     },
     {
-      key: 'map', core: true,
+      key: 'map', group: 'info', priority: 3,
       visible: checkInsCount > 0,
       Icon: MapIcon, color: '#1976d2', label: 'Map',
       tooltip: 'View check-in locations on map', onClick: map.onOpen,
     },
     {
-      key: 'audio', core: false,
+      key: 'audio', group: 'info', priority: 1,
       visible: checkInsCount > 0 && !!net.stream_url,
       Icon: VolumeUpIcon, color: '#9c27b0', label: 'Audio',
       tooltip: 'Listen to net audio', onClick: () => window.open(net.stream_url, '_blank'),
     },
     {
-      key: 'stats', core: true,
+      key: 'stats', group: 'info', priority: 3,
       visible: checkInsCount > 0,
       Icon: BarChartIcon, color: '#ed6c02', label: 'Stats',
       tooltip: 'Net statistics', onClick: () => navigate(`/statistics/nets/${netId}`),
     },
     {
-      key: 'script', core: false,
+      key: 'script', group: 'info', priority: 2,
       visible: checkInsCount > 0 && !!net.script,
       Icon: ArticleIcon, color: '#4a4f55', label: 'Script',
       tooltip: 'View net script', onClick: () => script.onOpen(),
     },
     {
-      key: 'schedule-announcements', core: false,
+      key: 'schedule-announcements', group: 'info', priority: 2,
       visible: checkInsCount > 0 && !!net.template_id,
       Icon: CampaignIcon, color: '#4a4f55', label: 'Announcements',
       tooltip: 'View schedule announcements', onClick: () => scheduleAnnouncements.onOpen(),
     },
     {
-      key: 'notes', core: false,
+      key: 'notes', group: 'info', priority: 2,
       visible: checkInsCount > 0 && !!net.announcements,
       Icon: SpeakerNotesIcon, color: '#4a4f55', label: 'Notes',
       tooltip: 'View net notes', onClick: () => announcements.onOpen(),
     },
     {
-      key: 'topics', core: false,
+      key: 'topics', group: 'info', priority: 2,
       visible: checkInsCount > 0 && !!net.template_id,
       Icon: HistoryIcon, color: '#4a4f55', label: 'Topics',
       tooltip: 'View prior topics', onClick: () => topicHistory.onOpen(),
     },
-  ];
-
-  // Rarest info-adjacent items — always live in the More menu regardless of
-  // tier ("the two rarest (Website, Import) live in a More menu").
-  const overflowOnlyItems: ToolbarItemDef[] = [
     {
-      key: 'website', visible: !!net.info_url,
+      key: 'website', group: 'info', priority: 1,
+      visible: !!net.info_url,
       Icon: LanguageIcon, color: '#1976d2', label: 'Website',
       tooltip: 'Net/Club info', onClick: () => window.open(net.info_url, '_blank'),
     },
     {
-      key: 'net-info', visible: !(canManage && isActiveOrLobby),
+      key: 'net-info', group: 'info', priority: 1,
+      visible: !(canManage && isActiveOrLobby),
       Icon: InfoIcon, color: '#1976d2', label: 'Net info',
       tooltip: 'View net info', onClick: () => navigate(`/nets/${netId}/info`),
     },
     {
-      key: 'import', visible: canManage && (isActiveOrLobby || isClosedOrArchived),
+      key: 'import', group: 'info', priority: 1,
+      visible: canManage && (isActiveOrLobby || isClosedOrArchived),
       Icon: UploadFileIcon, color: '#2e7d32', label: 'Import',
       tooltip: 'Import check-ins from CSV', onClick: importDialog.onOpen,
     },
@@ -367,16 +413,23 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
 
   // ===== MANAGEMENT GROUP (state / participation-changing actions) =====
   const managementItems: ToolbarItemDef[] = [
-    // Start net is rendered separately (loading spinner + adjacent topic/poll
-    // warning icon), but still occupies its ordinal position in the bar.
     {
-      key: 'edit-net',
+      key: 'start-net', group: 'management', priority: 4,
+      visible: startingUpNet,
+      Icon: PlayArrowIcon, color: '#2e7d32', label: 'Start net',
+      tooltip: 'Start the net', onClick: onStartNetClick,
+      disabled: startingNet,
+      iconOverride: startingNet ? <CircularProgress size={16} sx={{ color: '#2e7d32' }} /> : undefined,
+      extraSx: highlightStartNet ? { animation: `${pulseAnimationGreen} 1s infinite` } : undefined,
+    },
+    {
+      key: 'edit-net', group: 'management', priority: 3,
       visible: canManage && (isDraftOrScheduled || isActiveOrLobby),
       Icon: EditIcon, color: '#4a4f55', label: 'Edit net',
       tooltip: 'Edit net settings', onClick: () => navigate(`/nets/${netId}/edit`),
     },
     {
-      key: 'roles',
+      key: 'roles', group: 'management', priority: 3,
       visible: canManage && (isDraftOrScheduled || isActiveOrLobby),
       Icon: GroupIcon, color: '#9c27b0', label: 'Roles',
       tooltip: isDraftOrScheduled
@@ -385,14 +438,16 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
       onClick: onOpenRoleDialog,
     },
     {
-      key: 'claim-ncs',
+      key: 'claim-ncs', group: 'management', priority: 2,
       visible: canManage && isActiveOrLobby && !hasNCS,
       Icon: WorkspacePremiumIcon, color: '#ed6c02', label: 'Claim NCS',
       tooltip: 'Claim NCS role for this net', onClick: onClaimNCS,
     },
     {
-      key: 'raise-hand',
-      visible: isAuthenticated && isActiveOrLobby && !!userActiveCheckIn,
+      // Not offered to the acting NCS — raising a hand to get NCS's own
+      // attention doesn't make sense; they run the queue, they don't join it.
+      key: 'raise-hand', group: 'management', priority: 3,
+      visible: isAuthenticated && isActiveOrLobby && !!userActiveCheckIn && !isNCS,
       Icon: PanToolIcon, color: '#4a4f55',
       label: userActiveCheckIn?.hand_raised ? 'Lower hand' : 'Raise hand',
       tooltip: userActiveCheckIn?.hand_raised ? 'Lower hand' : 'Raise hand',
@@ -400,16 +455,25 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
       active: !!userActiveCheckIn?.hand_raised, activeTone: 'warning',
     },
     {
-      key: 'step-away',
+      key: 'step-away', group: 'management', priority: 3,
       visible: isAuthenticated && isActiveOrLobby && !!userActiveCheckIn,
       Icon: PauseCircleOutlineIcon, color: '#4a4f55',
       label: userActiveCheckIn?.status === 'away' ? 'Return' : 'Step away',
-      tooltip: userActiveCheckIn?.status === 'away' ? 'Return from break' : 'Step away',
-      onClick: () => onStatusChange(userActiveCheckIn?.id, userActiveCheckIn?.status === 'away' ? 'checked_in' : 'away'),
+      tooltip: userActiveCheckIn?.status === 'away'
+        ? 'Return from break'
+        : (isNCS && !otherActiveNCSExists ? 'Step away (you are the only active NCS)' : 'Step away'),
+      onClick: () => {
+        const goingAway = userActiveCheckIn?.status !== 'away';
+        if (goingAway && isNCS && !otherActiveNCSExists) {
+          setStepAwayConfirmOpen(true);
+          return;
+        }
+        onStatusChange(userActiveCheckIn?.id, goingAway ? 'away' : 'checked_in');
+      },
       active: userActiveCheckIn?.status === 'away', activeTone: 'warning',
     },
     {
-      key: 'ncs-role',
+      key: 'ncs-role', group: 'management', priority: 3,
       visible: isAuthenticated && isActiveOrLobby && !!userActiveCheckIn && isAssignedNCS,
       Icon: WorkspacePremiumIcon, color: '#1976d2', label: 'NCS role',
       tooltip: isNCS ? 'Step down — stop acting as NCS' : 'Step up — take NCS role',
@@ -417,13 +481,13 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
       active: isNCS, activeTone: 'primary',
     },
     {
-      key: 'check-out',
+      key: 'check-out', group: 'management', priority: 3,
       visible: isAuthenticated && isActiveOrLobby && !!userActiveCheckIn,
       Icon: LogoutIcon, color: '#d32f2f', label: 'Check out',
       tooltip: 'Check out of net', onClick: onCheckOut,
     },
     {
-      key: 'check-in', core: true,
+      key: 'check-in', group: 'management', priority: 4,
       visible: isAuthenticated && isActiveOrLobby && !userActiveCheckIn
         && !!(net.self_checkin_enabled !== false || canManageCheckIns),
       Icon: LoginIcon, color: '#1976d2', label: 'Check in',
@@ -431,93 +495,163 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
       extraSx: highlightCheckIn ? { animation: `${pulseAnimation} 1s infinite` } : undefined,
     },
     {
-      key: 'go-live', core: true,
+      key: 'go-live', group: 'management', priority: 4,
       visible: canManage && net.status === 'lobby',
       Icon: PlayArrowIcon, color: '#2e7d32', label: 'Go live',
       tooltip: 'Go live - Start the net officially and notify subscribers', onClick: onGoLive,
     },
     {
-      key: 'close-net', core: true, emphasis: true,
+      key: 'close-net', group: 'management', priority: 4, emphasis: true,
       visible: canManage && isActiveOrLobby,
       Icon: CloseIcon, color: '#d32f2f', label: 'Close net',
       tooltip: 'Close net', onClick: () => closeNetDialog.onOpen(),
     },
     {
-      key: 'export',
+      key: 'export', group: 'management', priority: 2,
       visible: isClosedOrArchived,
       Icon: DownloadIcon, color: '#4caf50', label: 'Export',
       tooltip: 'Export check-ins to CSV', onClick: onExportCSV,
     },
     {
-      key: 'ics309',
+      key: 'ics309', group: 'management', priority: 2,
       visible: isClosedOrArchived,
       Icon: DescriptionIcon, color: '#009688', label: 'ICS-309',
       tooltip: 'Download ICS-309 Communications Log', onClick: onExportICS309,
     },
     {
-      key: 'report',
+      key: 'report', group: 'management', priority: 2,
       visible: isClosedOrArchived,
       Icon: PictureAsPdfIcon, color: '#4caf50', label: 'Report',
       tooltip: 'Generate comprehensive net report (PDF)', onClick: () => navigate(`/nets/${netId}/report`),
     },
     {
-      key: 'archive',
+      key: 'archive', group: 'management', priority: 2,
       visible: canManage && net.status === 'closed',
       Icon: ArchiveIcon, color: '#4a4f55', label: 'Archive',
       tooltip: 'Archive net', onClick: onArchive,
     },
     {
-      key: 'delete-admin',
+      key: 'delete-admin', group: 'management', priority: 2,
       visible: isAdmin && net.status === 'closed',
       Icon: DeleteIcon, color: '#d32f2f', label: 'Delete',
       tooltip: 'Delete net', onClick: onDelete,
     },
     {
-      key: 'unarchive',
+      key: 'unarchive', group: 'management', priority: 2,
       visible: canManage && net.status === 'archived',
       Icon: UnarchiveIcon, color: '#4a4f55', label: 'Unarchive',
       tooltip: 'Unarchive net - restore to closed status', onClick: onUnarchive,
     },
     {
-      key: 'delete-manager',
+      key: 'delete-manager', group: 'management', priority: 2,
       visible: canManage && (net.status === 'draft' || net.status === 'archived'),
       Icon: DeleteIcon, color: '#d32f2f', label: 'Delete',
       tooltip: 'Delete net', onClick: onDelete,
     },
   ];
 
-  const visibleInfo = infoItems.filter(i => i.visible);
-  const inlineInfo = tier === 'compact' ? visibleInfo.filter(i => i.core) : visibleInfo;
-  const overflowInfo = tier === 'compact' ? visibleInfo.filter(i => !i.core) : [];
-  const overflowItems = [...overflowInfo, ...overflowOnlyItems.filter(i => i.visible)];
-  const visibleManagement = managementItems.filter(i => i.visible);
+  const allItems = [...infoItems, ...managementItems].filter(i => i.visible);
+  const infoVisible = allItems.filter(i => i.group === 'info');
+  const managementVisible = allItems.filter(i => i.group === 'management');
+  const showDivider = infoVisible.length > 0 && managementVisible.length > 0;
 
-  const showStartNet = canStartNet && isDraftOrScheduled;
-  const infoShowLabel = tier === 'full';
-  const managementShowLabel = (item: ToolbarItemDef) => tier !== 'compact' || !!item.core;
+  // ===== Width measurement =====
+  // A hidden clone of every visible item (in both label and icon-only form)
+  // plus the divider and the More button, rendered off-screen so it has real
+  // layout without affecting the page. Measured widths feed computeLayout().
+  const measureRefs = useRef<Record<string, HTMLElement | null>>({});
+  const [widths, setWidths] = useState<Record<string, { label: number; icon: number }>>({});
+  const [dividerWidth, setDividerWidth] = useState(9);
+  const [moreIconWidth, setMoreIconWidth] = useState(32);
 
-  const renderItem = (item: ToolbarItemDef, showLabel: boolean) => (
-    <Tooltip key={item.key} title={item.tooltip}>
-      <span>
-        <Button
-          variant="text"
-          disableElevation
-          onClick={item.onClick}
-          disabled={item.disabled}
-          sx={{
-            ...flushBtnSx(comfortable, !showLabel, { emphasis: item.emphasis, active: item.active, activeTone: item.activeTone }),
-            ...item.extraSx,
-          }}
-        >
-          <item.Icon sx={{ fontSize: 18, color: item.color }} />
-          {showLabel && <Box component="span">{item.label}</Box>}
+  const signature = allItems.map(i => `${i.key}:${i.label}:${i.disabled ? 1 : 0}`).join('|') + '|' + comfortable;
+
+  useLayoutEffect(() => {
+    const nextWidths: Record<string, { label: number; icon: number }> = {};
+    allItems.forEach(item => {
+      const labelEl = measureRefs.current[`${item.key}__label`];
+      const iconEl = measureRefs.current[`${item.key}__icon`];
+      nextWidths[item.key] = {
+        label: labelEl?.getBoundingClientRect().width ?? 0,
+        icon: iconEl?.getBoundingClientRect().width ?? labelEl?.getBoundingClientRect().width ?? 0,
+      };
+    });
+    setWidths(nextWidths);
+    const dividerEl = measureRefs.current['__divider'];
+    if (dividerEl) setDividerWidth(dividerEl.getBoundingClientRect().width);
+    const moreEl = measureRefs.current['__more_icon'];
+    if (moreEl) setMoreIconWidth(moreEl.getBoundingClientRect().width);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [signature]);
+
+  // ===== Available width tracking =====
+  const barRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(9999);
+
+  useLayoutEffect(() => {
+    const el = barRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(entries => {
+      setContainerWidth(entries[0].contentRect.width);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const modes = computeLayout(allItems, widths, containerWidth, dividerWidth, moreIconWidth, showDivider);
+  const overflowItems = allItems.filter(i => modes.get(i.key) === 'overflow');
+
+  const renderItem = (item: ToolbarItemDef, mode: ItemMode) => {
+    const showLabel = mode === 'label';
+    return (
+      <Tooltip key={item.key} title={item.tooltip}>
+        <span>
+          <Button
+            variant="text"
+            disableElevation
+            onClick={item.onClick}
+            disabled={item.disabled}
+            sx={{
+              ...flushBtnSx(comfortable, !showLabel, { emphasis: item.emphasis, active: item.active, activeTone: item.activeTone }),
+              ...item.extraSx,
+            }}
+          >
+            {item.iconOverride ?? <item.Icon sx={{ fontSize: 18, color: item.color }} />}
+            {showLabel && <Box component="span">{item.label}</Box>}
+          </Button>
+        </span>
+      </Tooltip>
+    );
+  };
+
+  // Renders both a labelled and an icon-only clone of every item (plus
+  // chrome) off-screen so their real widths can be measured.
+  const measurementBlock = (
+    <Box sx={{ position: 'fixed', top: -9999, left: -9999, visibility: 'hidden', pointerEvents: 'none', display: 'flex' }} aria-hidden>
+      {allItems.map(item => (
+        <React.Fragment key={item.key}>
+          <span ref={el => { measureRefs.current[`${item.key}__label`] = el; }}>
+            {renderItem(item, 'label')}
+          </span>
+          <span ref={el => { measureRefs.current[`${item.key}__icon`] = el; }}>
+            {renderItem(item, 'icon')}
+          </span>
+        </React.Fragment>
+      ))}
+      <span ref={el => { measureRefs.current['__divider'] = el; }}>
+        <Box sx={{ width: '1px', height: 20, backgroundColor: '#dcdfe3', mx: 0.5 }} />
+      </span>
+      <span ref={el => { measureRefs.current['__more_icon'] = el; }}>
+        <Button variant="text" sx={flushBtnSx(comfortable, true)}>
+          <MoreHorizIcon sx={{ fontSize: 18, color: '#5f6368' }} />
         </Button>
       </span>
-    </Tooltip>
+    </Box>
   );
 
   return (
     <Box sx={{ flexShrink: 0 }}>
+      {measurementBlock}
       {/* ===== TITLE ROW: net name, description, status/stat/frequency chips ===== */}
       <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.25, flexWrap: 'wrap', px: 2, pt: 1.25, pb: 0.75 }}>
         <Typography variant="h5" component="h1" sx={{ flex: '0 0 auto', whiteSpace: 'nowrap' }}>
@@ -729,6 +863,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
 
       {/* ===== COMMAND BAR — full-bleed strip spanning the whole page width ===== */}
       <Box
+        ref={barRef}
         sx={{
           display: 'flex',
           alignItems: 'center',
@@ -743,7 +878,10 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
           borderBottom: '1px solid #e4e6e9',
         }}
       >
-        {inlineInfo.map(item => renderItem(item, infoShowLabel))}
+        {infoVisible.map(item => {
+          const mode = modes.get(item.key)!;
+          return mode === 'overflow' ? null : renderItem(item, mode);
+        })}
 
         {overflowItems.length > 0 && (
           <Tooltip title="More net information">
@@ -751,10 +889,9 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
               variant="text"
               disableElevation
               onClick={(e) => setMoreMenuAnchor(e.currentTarget)}
-              sx={flushBtnSx(comfortable, tier === 'compact')}
+              sx={flushBtnSx(comfortable, true)}
             >
               <MoreHorizIcon sx={{ fontSize: 18, color: '#5f6368' }} />
-              {tier !== 'compact' && <Box component="span">More</Box>}
             </Button>
           </Tooltip>
         )}
@@ -777,54 +914,61 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
           ))}
         </Menu>
 
-        {(inlineInfo.length > 0 || overflowItems.length > 0) && visibleManagement.length + (showStartNet ? 1 : 0) > 0 && (
+        {showDivider && (
           <Box sx={{ width: '1px', height: 20, backgroundColor: '#dcdfe3', mx: 0.5, flex: '0 0 auto' }} />
         )}
 
-        {/* Start net — rendered separately for its loading spinner + adjacent topic/poll warning */}
-        {showStartNet && (
-          <>
-            <Tooltip title="Start the net">
-              <span>
-                <Button
-                  variant="text"
-                  disableElevation
-                  onClick={onStartNetClick}
-                  disabled={startingNet}
-                  sx={{
-                    ...flushBtnSx(comfortable, false),
-                    ...(highlightStartNet && { animation: `${pulseAnimationGreen} 1s infinite` }),
-                  }}
-                >
-                  {startingNet ? (
-                    <CircularProgress size={16} sx={{ color: '#2e7d32' }} />
-                  ) : (
-                    <PlayArrowIcon sx={{ fontSize: 18, color: '#2e7d32' }} />
-                  )}
-                  <Box component="span">Start net</Box>
-                </Button>
-              </span>
-            </Tooltip>
-            {needsTopicPollConfig() && (
-              <Tooltip title="Topic or poll question needs to be set before starting">
-                <IconButton
-                  size="small"
-                  onClick={onOpenTopicPollConfig}
-                  sx={{
-                    p: 0.5,
-                    borderRadius: '50%',
-                    animation: `${shimmerYellow} 2s ease-in-out infinite`,
-                  }}
-                >
-                  <HelpOutlineIcon fontSize="small" sx={{ color: 'warning.dark' }} />
-                </IconButton>
-              </Tooltip>
-            )}
-          </>
-        )}
-
-        {visibleManagement.map(item => renderItem(item, managementShowLabel(item)))}
+        {managementVisible.map(item => {
+          const mode = modes.get(item.key)!;
+          if (mode === 'overflow') return null;
+          if (item.key === 'start-net') {
+            return (
+              <React.Fragment key={item.key}>
+                {renderItem(item, mode)}
+                {needsTopicPollConfig() && (
+                  <Tooltip title="Topic or poll question needs to be set before starting">
+                    <IconButton
+                      size="small"
+                      onClick={onOpenTopicPollConfig}
+                      sx={{
+                        p: 0.5,
+                        borderRadius: '50%',
+                        animation: `${shimmerYellow} 2s ease-in-out infinite`,
+                      }}
+                    >
+                      <HelpOutlineIcon fontSize="small" sx={{ color: 'warning.dark' }} />
+                    </IconButton>
+                  </Tooltip>
+                )}
+              </React.Fragment>
+            );
+          }
+          return renderItem(item, mode);
+        })}
       </Box>
+
+      <Dialog open={stepAwayConfirmOpen} onClose={() => setStepAwayConfirmOpen(false)}>
+        <DialogTitle>Step away as the only active NCS?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            No one else is currently acting as NCS on this net. Stepping away leaves it without anyone
+            actively running it until you return or hand the NCS role to someone else. Continue?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setStepAwayConfirmOpen(false)}>Cancel</Button>
+          <Button
+            color="warning"
+            variant="contained"
+            onClick={() => {
+              setStepAwayConfirmOpen(false);
+              onStatusChange(userActiveCheckIn?.id, 'away');
+            }}
+          >
+            Step Away Anyway
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

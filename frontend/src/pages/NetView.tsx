@@ -838,6 +838,13 @@ const NetView: React.FC = () => {
   // Check if net has any NCS assigned
   const hasNCS = netRoles.some((role: any) => role.role === 'NCS');
 
+  // Is there an NCS other than the current user actively acting as NCS right
+  // now? Used to warn before stepping away leaves the net with no one
+  // actively running it.
+  const otherActiveNCSExists = netRoles.some(
+    (role: any) => role.role === 'NCS' && role.user_id !== user?.id && role.is_active !== false
+  );
+
   // Get NCS roles sorted by assigned_at for consistent color assignment
   const ncsRoles = netRoles
     .filter((role: any) => role.role === 'NCS')
@@ -1080,6 +1087,7 @@ const NetView: React.FC = () => {
         isAssignedNCS={isAssignedNCS}
         isNCS={isNCS}
         hasNCS={hasNCS}
+        otherActiveNCSExists={otherActiveNCSExists}
         user={user}
         userNetRole={userNetRole}
         userActiveCheckIn={userActiveCheckIn}
