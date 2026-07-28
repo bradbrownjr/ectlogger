@@ -61,7 +61,10 @@ async def sync_net_pause_state(db: AsyncSession, net_id: int) -> None:
         net.paused_at = now
         changed = True
     elif not should_be_paused and net.paused_at is not None:
-        elapsed = (now - net.paused_at).total_seconds()
+        # SQLite drops tzinfo on round-trip even for DateTime(timezone=True)
+        # columns — normalize before subtracting from the aware `now`.
+        paused_at = net.paused_at if net.paused_at.tzinfo else net.paused_at.replace(tzinfo=timezone.utc)
+        elapsed = (now - paused_at).total_seconds()
         net.total_paused_seconds = (net.total_paused_seconds or 0) + int(elapsed)
         net.paused_at = None
         changed = True
