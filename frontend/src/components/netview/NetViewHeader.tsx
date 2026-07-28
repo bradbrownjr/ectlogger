@@ -68,12 +68,6 @@ import type { UseDialogResult } from '../../hooks/useDialog';
 
 type NcsColor = { bg: string; border: string; text: string } | null;
 
-const pulseAnimation = keyframes`
-  0% { box-shadow: 0 0 0 0 rgba(25, 118, 210, 0.7); }
-  70% { box-shadow: 0 0 0 10px rgba(25, 118, 210, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(25, 118, 210, 0); }
-`;
-
 const pulseAnimationGreen = keyframes`
   0% { box-shadow: 0 0 0 0 rgba(46, 125, 50, 0.7); }
   70% { box-shadow: 0 0 0 10px rgba(46, 125, 50, 0); }
@@ -90,10 +84,16 @@ const shimmerYellow = keyframes`
 // (design_handoff_netview_toolbar, option 3a): borderless "application
 // toolbar" buttons flush against each other so labelled controls read as
 // one calm strip instead of a wall of separate cards.
+const ACTIVE_TONE_COLORS: Record<'primary' | 'warning' | 'success', { border: string; background: string }> = {
+  primary: { border: '#90caf9', background: 'rgba(25,118,210,0.12)' },
+  warning: { border: '#ed6c02', background: 'rgba(237,108,2,0.12)' },
+  success: { border: '#2e7d32', background: 'rgba(46,125,50,0.14)' },
+};
+
 const flushBtnSx = (
   comfortable: boolean,
   iconOnly: boolean,
-  opts: { emphasis?: boolean; active?: boolean; activeTone?: 'primary' | 'warning' } = {}
+  opts: { emphasis?: boolean; active?: boolean; activeTone?: 'primary' | 'warning' | 'success' } = {}
 ) => ({
   display: 'inline-flex',
   alignItems: 'center',
@@ -105,8 +105,8 @@ const flushBtnSx = (
   padding: iconOnly ? '0 6px' : '0 7px',
   borderRadius: '3px',
   border: '1px solid',
-  borderColor: opts.active ? (opts.activeTone === 'warning' ? '#ed6c02' : '#90caf9') : 'transparent',
-  backgroundColor: opts.active ? (opts.activeTone === 'warning' ? 'rgba(237,108,2,0.12)' : 'rgba(25,118,210,0.12)') : 'transparent',
+  borderColor: opts.active ? ACTIVE_TONE_COLORS[opts.activeTone ?? 'primary'].border : 'transparent',
+  backgroundColor: opts.active ? ACTIVE_TONE_COLORS[opts.activeTone ?? 'primary'].background : 'transparent',
   color: opts.emphasis ? '#c62828' : '#25282c',
   fontWeight: opts.emphasis ? 500 : 400,
   fontSize: comfortable ? 13 : 12,
@@ -141,7 +141,7 @@ interface ToolbarItemDef {
   onClick: () => void;
   disabled?: boolean;
   active?: boolean;
-  activeTone?: 'primary' | 'warning';
+  activeTone?: 'primary' | 'warning' | 'success';
   emphasis?: boolean;
   extraSx?: object;
   // Start net needs a loading spinner in place of its icon.
@@ -492,7 +492,8 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
         && !!(net.self_checkin_enabled !== false || canManageCheckIns),
       Icon: LoginIcon, color: '#1976d2', label: 'Check in',
       tooltip: 'Check into net', onClick: onOpenCheckIn,
-      extraSx: highlightCheckIn ? { animation: `${pulseAnimation} 1s infinite` } : undefined,
+      active: true, activeTone: 'success',
+      extraSx: highlightCheckIn ? { animation: `${pulseAnimationGreen} 1s infinite` } : undefined,
     },
     {
       key: 'go-live', group: 'management', priority: 4,

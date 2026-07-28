@@ -297,6 +297,13 @@ Step Away: if the acting NCS is the only currently-active NCS on the net,
 clicking it shows a confirmation dialog warning that no one else is running
 the net before letting it proceed (doesn't block the action, just warns).
 
+**Active-state tinting** — some buttons carry a persistent tinted background
++ border (via `activeTone`) so their current state reads at a glance instead
+of blending into the flush strip: primary (blue) for toggles like Search-open
+or Role: NCS, warning (orange) for Return-from-away, success (green) for
+Check in — the primary call-to-action for anyone not yet logged into the
+net, including guests who might otherwise skim past a plain icon+label.
+
 ### Collapse ladder — measured, not breakpoint-based
 
 The bar never wraps (`flex-wrap:nowrap`, `flex:0 0 auto` on every child) and
