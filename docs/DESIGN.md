@@ -279,29 +279,47 @@ net** is the only emphasised item (red `#c62828` label text, weight 500 — not
 a filled block). Every button keeps its Tooltip regardless of whether its
 label is currently shown.
 
-Two groups, separated by a `1px × 20px` vertical divider:
+Two groups, separated by a `1px × 20px` vertical divider (shown whenever both
+groups have at least one visible item):
 
 **Information group** (left) — Bulk add, Search, Map, Audio, Stats, Script,
-Announcements, Notes, Topics, then the `More` button (Website, Net info,
-Import always live inside `More` — never inline, "the two rarest").
+Announcements, Notes, Topics, Website, Net info, Import, then the `More`
+button for whatever didn't fit.
 
 **Management group** (right) — Start net, Edit net, Roles, Claim NCS, Raise
-hand, Step away, NCS role, Check out, Check in, Go live, Close net, Export,
-ICS-309, Report, Archive, Unarchive, Delete. Same visibility conditions as
-before the redesign (see `NetViewHeader.tsx` — each button's condition is
-unchanged, only the visual treatment and grouping moved).
+hand (hidden for the acting NCS — doesn't make sense to raise a hand to get
+your own attention), Step away, NCS role, Check out, Check in, Go live, Close
+net, Export, ICS-309, Report, Archive, Unarchive, Delete. Same visibility
+conditions as before the redesign (see `NetViewHeader.tsx` — each button's
+condition is unchanged, only the visual treatment and grouping moved), except
+Step Away: if the acting NCS is the only currently-active NCS on the net,
+clicking it shows a confirmation dialog warning that no one else is running
+the net before letting it proceed (doesn't block the action, just warns).
 
-### Collapse ladder
+### Collapse ladder — measured, not breakpoint-based
 
-The bar never wraps (`flex-wrap:nowrap`, `flex:0 0 auto` on every child).
-Three width tiers, driven by `useMediaQuery` at fixed page-width breakpoints
-(not the app's default MUI breakpoints):
+The bar never wraps (`flex-wrap:nowrap`, `flex:0 0 auto` on every child) and
+is **not** capped to a fixed maximum width or fixed viewport breakpoints —
+every item uses inline labelled space whenever the bar's actual measured
+width allows it, all the way up to ultrawide monitors. Nothing is
+permanently pinned to the `More` menu; Website/Net info/Import show inline
+like everything else whenever there's room.
 
-| Width | Information group | Management group |
-|---|---|---|
-| ≥ 1400px | All buttons labelled | All buttons labelled |
-| 1024–1399px | Icon-only (all items stay inline) | Labelled |
-| < 1024px | Only Bulk add / Search / Map / Stats stay inline (icon-only); Audio/Script/Announcements/Notes/Topics join `More` | Icon-only, **except** the primary status CTA (Start net / Check in / Go live / Close net), which always keeps its label |
+Implementation (`NetViewHeader.tsx`): a `ResizeObserver` on the bar tracks
+its real rendered width (via `getBoundingClientRect()`, not
+`ResizeObserver`'s `contentRect` — `NetView.tsx` applies a CSS `zoom` on
+short viewports to fit the logging panel without scrolling, and `contentRect`
+reports the pre-zoom layout width while `getBoundingClientRect()` reports the
+actual post-zoom rendered width, the same basis the per-item widths use). A
+hidden off-screen clone of every visible item (both labelled and icon-only
+form) is measured the same way. Every item carries a `priority` (1 lowest–4
+highest); `computeLayout()` is a pure function that, given the real widths
+and the real available width: keeps everything labelled if it fits;
+otherwise drops labels lowest-priority-first (one at a time, re-checking
+after each) until it fits; otherwise moves items into the `More` menu,
+again lowest-priority-first, until it fits. Priority 4 (Start net, Check in,
+Go live, Close net — the single primary status CTA for whatever the net is
+doing right now) never loses its label and never overflows.
 
 On touch/mobile (`< 600px`) buttons use the "comfortable" 30px height instead
 of the 26px desktop-dense height (still narrower than the general 44px

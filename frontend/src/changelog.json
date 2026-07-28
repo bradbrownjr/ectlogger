@@ -1,6 +1,26 @@
 {
-  "version": "2026.07.26f",
+  "version": "2026.07.27",
   "entries": [
+    {
+      "version": "2026.07.27",
+      "date": "2026-07-27",
+      "sections": [
+        {
+          "title": "Improvements",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Net View: Toolbar fills the available width — The net toolbar now uses as much of the page as it has, showing full button labels whenever there's room instead of hiding items into the More menu at a fixed screen size. It also collapses correctly on short screens and at different browser zoom levels.",
+              "userImpact": true
+            },
+            {
+              "text": "Net View: Toolbar respects the NCS role — Raise Hand is hidden while you're acting as NCS, since it doesn't apply to the person running the net. Stepping away as the only active NCS now warns you first that no one else is currently running the net before letting you proceed.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.07.26",
       "date": "2026-07-26",

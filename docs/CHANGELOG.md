@@ -4,6 +4,16 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# July 27, 2026
+
+## Improvements
+
+* **Net View: Toolbar fills the available width** — The net toolbar now uses as much of the page as it has, showing full button labels whenever there's room instead of hiding items into the More menu at a fixed screen size. It also collapses correctly on short screens and at different browser zoom levels.
+
+* **Net View: Toolbar respects the NCS role** — Raise Hand is hidden while you're acting as NCS, since it doesn't apply to the person running the net. Stepping away as the only active NCS now warns you first that no one else is currently running the net before letting you proceed.
+
+---
+
 # July 26, 2026
 
 ## New Features
