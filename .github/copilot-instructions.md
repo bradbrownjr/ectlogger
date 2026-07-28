@@ -283,13 +283,16 @@ Users see a red badge on the info icon (lower-left) until they view the changelo
 - **Purpose**: Testing new features before production deployment
 - **Note**: Deploy new/incomplete features to beta ONLY until tested and confirmed working
 - **Path**: `/home/bradb/ectlogger`
-- **Frontend**: Vite dev server on port 3000
+- **Frontend**: `vite preview` serving a static build on port 3000 — **not** a dev server. No HMR, no live reload. Confirmed 2026-07-28 via `ps aux` (`vite preview --host 0.0.0.0 --port 3000`). `npm run build` is REQUIRED after every frontend change, exactly like production — a plain `git pull` is not enough for frontend changes to appear.
 - **Backend**: uvicorn on port 8000 (with auto-reload)
 - **Deploy from GitHub** (preferred):
   ```bash
   # First commit and push locally, then pull on beta
   # Note: beta is an LXC container on the same host — commands run directly, no SSH needed
   cd /home/bradb/ectlogger && git pull origin main
+
+  # Build frontend (REQUIRED after any frontend change — git pull alone is not enough)
+  cd /home/bradb/ectlogger/frontend && npm run build
 
   # Restart backend (passwordless sudo configured for these exact commands)
   sudo -n systemctl restart ectlogger
@@ -304,7 +307,7 @@ Users see a red badge on the info icon (lower-left) until they view the changelo
 - **Python**: 3.13
 - **Path**: `/home/bradb/ectlogger`
 - **Purpose**: Feature testing before beta
-- **Frontend**: Vite dev server on port 3000
+- **Frontend**: documented as Vite dev server on port 3000, but beta's identical-sounding entry turned out to actually be `vite preview` (static build) — alpha was unreachable (`No route to host`) when this was checked 2026-07-28, so this line is unverified. Confirm with `ps aux | grep vite` before assuming HMR works here; if it's also `vite preview`, `npm run build` is required after frontend changes.
 - **Backend**: uvicorn on port 8000 (with auto-reload)
 
 ### Local Development

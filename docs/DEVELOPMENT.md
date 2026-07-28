@@ -420,5 +420,5 @@ account password.
 | Name | Host | Python | Notes |
 |---|---|---|---|
 | Production | `ectlogger@app.ectlogger.us` | 3.11.2 | Caddy, static build, port 8001 |
-| Beta | `bradb@10.6.26.3` | 3.13 | Vite dev server, port 8000, auto-reload |
-| Alpha | `bradb@10.6.26.6` | 3.13 | Feature testing before beta |
+| Beta | `bradb@10.6.26.3` | 3.13 | Backend: uvicorn port 8000, auto-reload. Frontend: `vite preview` (static build) port 3000 — not a dev server, `npm run build` required after frontend changes |
+| Alpha | `bradb@10.6.26.6` | 3.13 | Feature testing before beta; frontend serving mode unverified — check with `ps aux \| grep vite` before assuming HMR |
