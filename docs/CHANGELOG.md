@@ -40,6 +40,8 @@ All notable changes to ECTLogger are documented here.
 
 * **Nets and Schedule: Staff controls sit on their own row** — Buttons that change something (Create, Edit, Cancel, Start, Delete) now group into a row above the view-only buttons everyone sees, so cards with a lot of controls no longer wrap into a jumble. They're ordered so Start is easy to reach and no longer sits right beside Cancel. If you're not staff on a net, you just see the single row of everyday buttons.
 
+* **Nets and Schedule: Card buttons use the full width of wide cards** — On a card wide enough to fit them, the staff buttons stay left and the everyday buttons move over to the right edge instead of leaving a large empty gap. Narrower cards still stack the two groups on separate lines.
+
 * **Net View: Correcting a net's times moved somewhere sensible** — The unlabeled pencil tucked among the status chips is gone. You now correct a net's actual start and end times under Basic Info, on Edit Net while the net is running or on Net Info once it has closed, so a late start or a net you forgot to close can still be fixed for the official log.
 
 ---

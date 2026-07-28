@@ -524,20 +524,43 @@ Color rules:
   the icon element. This keeps the color conventions in the Toolbar Icon Buttons
   table intact without shouting a whole button in orange.
 
-### Two-row layout: management row above standard row
+### Two action groups: management and standard
 
-Both `NetCard.tsx` and `ScheduleCard.tsx` split `<CardActions>` into two stacked
-rows. This exists because cards with six or seven actions crammed into one
-wrapping row broke unpredictably at card widths.
+Both `NetCard.tsx` and `ScheduleCard.tsx` split `<CardActions>` into two groups.
+This exists because cards with six or seven actions crammed into one wrapping row
+broke unpredictably at card widths.
 
-| Row | Contains | Who sees it |
+| Group | Contains | Who sees it |
 |---|---|---|
-| **Management row** (top) | Mutating actions — Create, Edit, Cancel, Delete, Start, Email, Archive, Export, Report | Only users passing the card's `canManage` / `isOwnerOrAdmin` / `can_create_net` gate |
-| **Standard row** (bottom) | View-only actions — View, Staff, Stats, Info, Subscribe/Unsubscribe | Everyone, including guests |
+| **Management** (first in DOM) | Mutating actions — Create, Edit, Cancel, Delete, Start, Email, Archive, Export, Report | Only users passing the card's `canManage` / `isOwnerOrAdmin` / `can_create_net` gate |
+| **Standard** (second in DOM) | View-only actions — View, Staff, Stats, Info, Subscribe/Unsubscribe | Everyone, including guests |
 
-Managers get their controls first, at the top, instead of hunting past the
-view-only buttons everyone else sees. A standard user sees a single row, which is
-why the standard row must stay view-only — never move a mutating action into it.
+Managers get their controls first — leading the row on a wide card, on the top
+line on a narrow one — instead of hunting past the view-only buttons everyone
+else sees. A standard user sees only the second group, which is why it must stay
+view-only — never move a mutating action into it.
+
+### Width-responsive: one row when wide, stacked when narrow
+
+The groups are **not** permanently stacked. `<CardActions>` is a wrapping flex
+row with `justifyContent: 'space-between'`, which yields both behaviours from one
+declaration and no breakpoint or measurement:
+
+- **Both groups fit on one line** (wide cards — e.g. a lone net stretching the
+  full grid width): `space-between` pushes them to opposite edges. Management sits
+  flush left, standard flush right, filling what would otherwise be dead space.
+- **They no longer fit side by side**: each group wraps onto its own line. A lone
+  item on a flex line is placed at that line's *start*, so the stacked groups stay
+  left-aligned exactly as before.
+- **Only one group rendered** (non-staff): it sits alone at the left.
+
+Because the trigger is the card's own width, cards in a dense multi-column grid
+stack while a full-width card on the same page shares one row.
+
+Keep each inner group at the default `flex: 0 1 auto`. Setting `flex-shrink: 0`
+makes a group overflow the card instead of wrapping internally on narrow
+viewports; the default lets an over-wide group wrap its own buttons once it is
+alone on a line.
 
 ### Ordering within a row: by severity
 
@@ -554,28 +577,31 @@ strict severity sort here.
 ### Required: `disableSpacing` on `CardActions`
 
 MUI's `CardActions` ships a CSS rule that applies `margin-left: 8px` to every
-sibling after the first, assuming a horizontal row of buttons. With
-`flexDirection: 'column'` that margin lands on the **second row's wrapper**,
-pushing it 8 px right of the first and making the two rows look askew.
+sibling after the first, assuming a horizontal row of buttons. That margin lands
+on the **second group's wrapper**, offsetting it from the first — visible as
+8 px of misalignment when the groups are stacked.
 
 Always pass `disableSpacing` and supply your own `gap`:
 
 {% raw %}
 ```tsx
-<CardActions disableSpacing sx={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 0.5 }}>
+<CardActions
+  disableSpacing
+  sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 0.5 }}
+>
   <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-start', gap: 0.5 }}>
-    {/* management row */}
+    {/* management group */}
   </Box>
   <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-start', gap: 0.5 }}>
-    {/* standard row */}
+    {/* standard group */}
   </Box>
 </CardActions>
 ```
 {% endraw %}
 
-Both inner rows use `justifyContent: 'flex-start'` so they align flush at the
-card's lower-left corner. Verify alignment by computed style, not by eye — both
-rows must report the same `left` offset.
+Verify by computed style, not by eye, at more than one width — when stacked, both
+groups must report the same `left`; when sharing a row, the standard group's
+`right` must sit flush with the card's content edge.
 
 ---
 

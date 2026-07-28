@@ -65,22 +65,30 @@ cards. Every button at the bottom of a card has a **text label** next to its
 icon, so you can tell what each one does without hovering over it, and the
 buttons are sized for comfortable tapping on a phone.
 
-### Two rows of buttons
+### Two groups of buttons
 
-If you help run a net, a card shows **two rows** of buttons:
+If you help run a net, a card's buttons come in **two groups**:
 
-- **Top row — management.** The actions that change something: Create, Edit,
-  Cancel, Delete, Start, Email, Archive, Export, Report. You only see this row on
-  nets and schedules you're allowed to manage.
-- **Bottom row — everyone.** The view-only actions: View, Staff, Stats, Info, and
+- **Management.** The actions that change something: Create, Edit, Cancel,
+  Delete, Start, Email, Archive, Export, Report. You only see these on nets and
+  schedules you're allowed to manage.
+- **Everyone.** The view-only actions: View, Staff, Stats, Info, and
   Subscribe/Unsubscribe.
 
-If you're not staff on a net, you simply see the single bottom row.
+If you're not staff on a net, you simply see the second group on its own.
 
-Within the management row, buttons run from least to most consequential, with the
-action you want most sitting at the safe end. On a net card that means **Edit,
-Cancel, Start** — so Start is easy to hit and is not sitting next to Cancel. On a
-schedule card, **Create** leads the row, followed by Edit and Delete.
+**How they're arranged depends on how wide the card is.** On a wide card — say a
+single net stretching the full width of the page — both groups share one row, with
+the management buttons on the left and the everyday buttons pushed over to the
+right, so the space is actually used. When the card is too narrow to fit them side
+by side, the groups stack into two rows, management on top, both lined up on the
+left. Cards in a busy multi-column grid will usually stack, while a lone
+full-width card on the same page shares a single row.
+
+Within the management group, buttons run from least to most consequential, with
+the action you want most sitting at the safe end. On a net card that means
+**Edit, Cancel, Start** — so Start is easy to hit and is not sitting next to
+Cancel. On a schedule card, **Create** leads, followed by Edit and Delete.
 
 ### What each button does
 

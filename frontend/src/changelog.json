@@ -1,8 +1,8 @@
 {
-  "version": "2026.07.28c",
+  "version": "2026.07.28d",
   "entries": [
     {
-      "version": "2026.07.28c",
+      "version": "2026.07.28d",
       "date": "2026-07-28",
       "sections": [
         {
@@ -72,6 +72,10 @@
             },
             {
               "text": "Net View: Correcting a net's times moved somewhere sensible — The unlabeled pencil tucked among the status chips is gone. You now correct a net's actual start and end times under Basic Info, on Edit Net while the net is running or on Net Info once it has closed, so a late start or a net you forgot to close can still be fixed for the official log.",
+              "userImpact": true
+            },
+            {
+              "text": "Nets and Schedule: Card buttons use the full width of wide cards — On a card wide enough to fit them, the staff buttons stay left and the everyday buttons move over to the right edge instead of leaving a large empty gap. Narrower cards still stack the two groups on separate lines.",
               "userImpact": true
             }
           ]
