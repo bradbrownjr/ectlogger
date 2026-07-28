@@ -265,7 +265,10 @@ const NetCard: React.FC<NetCardProps> = ({
             />
           )}
 
-          {/* Draft/Scheduled: email, edit, start, cancel */}
+          {/* Draft/Scheduled: email, edit, cancel, start — ordered by
+              severity (neutral, then destructive, then the primary action
+              last) so Start sits away from Cancel and is easy to hit without
+              risking an accidental cancel. */}
           {(net.status === 'draft' || net.status === 'scheduled') && canManage && (
             <>
               {net.template_id && (
@@ -283,18 +286,18 @@ const NetCard: React.FC<NetCardProps> = ({
                 onClick={() => navigate(`/nets/${net.id}/edit`)}
               />
               <CardActionButton
-                icon={<PlayArrowIcon />}
-                label="Start"
-                color="success"
-                tooltip="Start net"
-                onClick={onStartNet}
-              />
-              <CardActionButton
                 icon={<DeleteIcon />}
                 label="Cancel"
                 color="error"
                 tooltip="Cancel this net"
                 onClick={onDeleteClick}
+              />
+              <CardActionButton
+                icon={<PlayArrowIcon />}
+                label="Start"
+                color="success"
+                tooltip="Start net"
+                onClick={onStartNet}
               />
             </>
           )}

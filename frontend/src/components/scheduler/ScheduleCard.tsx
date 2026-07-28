@@ -9,7 +9,6 @@ import {
   Chip,
   IconButton,
   Tooltip,
-  Button,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -277,15 +276,46 @@ const ScheduleCard: React.FC<ScheduleCardProps> = ({
         </Box>
       </CardContent>
 
-      <CardActions sx={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 0.5 }}>
-        <Box>
-          {schedule.can_create_net && (
-            <Button size="small" startIcon={<PlayArrowIcon />} onClick={onCreateNet}>
-              Create Net
-            </Button>
-          )}
-        </Box>
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 0.5 }}>
+      <CardActions sx={{ flexDirection: 'column', alignItems: 'stretch', gap: 0.5 }}>
+        {/* ---- Management row (staff/admin only) ----
+            Above the standard row so managers reach Edit/Delete/Create
+            without hunting past the info controls everyone else sees.
+            Ordered by severity: neutral change, then destructive, then the
+            primary create action last. */}
+        {(canManage || isOwnerOrAdmin || schedule.can_create_net) && (
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+            {canManage && (
+              <CardActionButton
+                icon={<EditIcon />}
+                label="Edit"
+                tooltip="Edit schedule"
+                onClick={() => navigate(`/scheduler/${schedule.id}/edit`)}
+              />
+            )}
+            {/* Delete is restricted to owner and admin only */}
+            {isOwnerOrAdmin && (
+              <CardActionButton
+                icon={<DeleteIcon />}
+                label="Delete"
+                color="error"
+                tooltip="Delete schedule"
+                onClick={onDelete}
+              />
+            )}
+            {schedule.can_create_net && (
+              <CardActionButton
+                icon={<PlayArrowIcon />}
+                label="Create"
+                color="primary"
+                tooltip="Create net from this schedule"
+                onClick={onCreateNet}
+              />
+            )}
+          </Box>
+        )}
+
+        {/* ---- Standard row (everyone) ---- */}
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
           {schedule.info_url && (
             <CardActionButton
               icon={<LanguageIcon />}
@@ -311,7 +341,7 @@ const ScheduleCard: React.FC<ScheduleCardProps> = ({
             schedule.is_subscribed ? (
               <CardActionButton
                 icon={<NotificationsActiveIcon />}
-                label="Unsub"
+                label="Unsubscribe"
                 color="primary"
                 tooltip="Unsubscribe from notifications"
                 onClick={onUnsubscribe}
@@ -324,24 +354,6 @@ const ScheduleCard: React.FC<ScheduleCardProps> = ({
                 onClick={onSubscribe}
               />
             )
-          )}
-          {canManage && (
-            <CardActionButton
-              icon={<EditIcon />}
-              label="Edit"
-              tooltip="Edit schedule"
-              onClick={() => navigate(`/scheduler/${schedule.id}/edit`)}
-            />
-          )}
-          {/* Delete is restricted to owner and admin only */}
-          {isOwnerOrAdmin && (
-            <CardActionButton
-              icon={<DeleteIcon />}
-              label="Delete"
-              color="error"
-              tooltip="Delete schedule"
-              onClick={onDelete}
-            />
           )}
         </Box>
       </CardActions>
