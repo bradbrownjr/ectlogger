@@ -13,6 +13,7 @@ import {
   ListItemText,
   CircularProgress,
   useMediaQuery,
+  useTheme,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -93,6 +94,7 @@ const ACTIVE_TONE_COLORS: Record<'primary' | 'warning' | 'success', { border: st
 const flushBtnSx = (
   comfortable: boolean,
   iconOnly: boolean,
+  isDarkMode: boolean,
   opts: { emphasis?: boolean; active?: boolean; activeTone?: 'primary' | 'warning' | 'success' } = {}
 ) => ({
   display: 'inline-flex',
@@ -107,7 +109,7 @@ const flushBtnSx = (
   border: '1px solid',
   borderColor: opts.active ? ACTIVE_TONE_COLORS[opts.activeTone ?? 'primary'].border : 'transparent',
   backgroundColor: opts.active ? ACTIVE_TONE_COLORS[opts.activeTone ?? 'primary'].background : 'transparent',
-  color: opts.emphasis ? '#c62828' : '#25282c',
+  color: opts.emphasis ? (isDarkMode ? '#f28b82' : '#c62828') : (isDarkMode ? '#e8eaed' : '#25282c'),
   fontWeight: opts.emphasis ? 500 : 400,
   fontSize: comfortable ? 13 : 12,
   lineHeight: 1,
@@ -115,8 +117,8 @@ const flushBtnSx = (
   letterSpacing: '.01em',
   whiteSpace: 'nowrap' as const,
   '&:hover': {
-    backgroundColor: '#e6e9ec',
-    borderColor: '#d3d7dc',
+    backgroundColor: isDarkMode ? 'rgba(255,255,255,0.08)' : '#e6e9ec',
+    borderColor: isDarkMode ? 'rgba(255,255,255,0.2)' : '#d3d7dc',
   },
   '&.Mui-disabled': {
     opacity: 0.4,
@@ -319,6 +321,8 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
   onDelete,
 }) => {
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isDarkMode = theme.palette.mode === 'dark';
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   const [moreMenuAnchor, setMoreMenuAnchor] = useState<null | HTMLElement>(null);
   const [stepAwayConfirmOpen, setStepAwayConfirmOpen] = useState(false);
@@ -333,6 +337,10 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
   const isClosedOrArchived = net.status === 'closed' || net.status === 'archived';
 
   const startingUpNet = canStartNet && isDraftOrScheduled;
+
+  // Neutral (non-brand-colored) toolbar icon color — the dark-mode value
+  // must be light enough to read against the dark command bar background.
+  const neutralIconColor = isDarkMode ? '#b0b7c0' : '#4a4f55';
 
   // ===== INFO GROUP (read / view actions) =====
   const infoItems: ToolbarItemDef[] = [
@@ -370,25 +378,25 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
     {
       key: 'script', group: 'info', priority: 2,
       visible: checkInsCount > 0 && !!net.script,
-      Icon: ArticleIcon, color: '#4a4f55', label: 'Script',
+      Icon: ArticleIcon, color: neutralIconColor, label: 'Script',
       tooltip: 'View net script', onClick: () => script.onOpen(),
     },
     {
       key: 'schedule-announcements', group: 'info', priority: 2,
       visible: checkInsCount > 0 && !!net.template_id,
-      Icon: CampaignIcon, color: '#4a4f55', label: 'Announcements',
+      Icon: CampaignIcon, color: neutralIconColor, label: 'Announcements',
       tooltip: 'View schedule announcements', onClick: () => scheduleAnnouncements.onOpen(),
     },
     {
       key: 'notes', group: 'info', priority: 2,
       visible: checkInsCount > 0 && !!net.announcements,
-      Icon: SpeakerNotesIcon, color: '#4a4f55', label: 'Notes',
+      Icon: SpeakerNotesIcon, color: neutralIconColor, label: 'Notes',
       tooltip: 'View net notes', onClick: () => announcements.onOpen(),
     },
     {
       key: 'topics', group: 'info', priority: 2,
       visible: checkInsCount > 0 && !!net.template_id,
-      Icon: HistoryIcon, color: '#4a4f55', label: 'Topics',
+      Icon: HistoryIcon, color: neutralIconColor, label: 'Topics',
       tooltip: 'View prior topics', onClick: () => topicHistory.onOpen(),
     },
     {
@@ -425,7 +433,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
     {
       key: 'edit-net', group: 'management', priority: 3,
       visible: canManage && (isDraftOrScheduled || isActiveOrLobby),
-      Icon: EditIcon, color: '#4a4f55', label: 'Edit net',
+      Icon: EditIcon, color: neutralIconColor, label: 'Edit net',
       tooltip: 'Edit net settings', onClick: () => navigate(`/nets/${netId}/edit`),
     },
     {
@@ -448,7 +456,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
       // attention doesn't make sense; they run the queue, they don't join it.
       key: 'raise-hand', group: 'management', priority: 3,
       visible: isAuthenticated && isActiveOrLobby && !!userActiveCheckIn && !isNCS,
-      Icon: PanToolIcon, color: '#4a4f55',
+      Icon: PanToolIcon, color: neutralIconColor,
       label: userActiveCheckIn?.hand_raised ? 'Lower hand' : 'Raise hand',
       tooltip: userActiveCheckIn?.hand_raised ? 'Lower hand' : 'Raise hand',
       onClick: () => onToggleHand(userActiveCheckIn?.id),
@@ -457,7 +465,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
     {
       key: 'step-away', group: 'management', priority: 3,
       visible: isAuthenticated && isActiveOrLobby && !!userActiveCheckIn,
-      Icon: PauseCircleOutlineIcon, color: '#4a4f55',
+      Icon: PauseCircleOutlineIcon, color: neutralIconColor,
       label: userActiveCheckIn?.status === 'away' ? 'Return' : 'Step away',
       tooltip: userActiveCheckIn?.status === 'away'
         ? 'Return from break'
@@ -528,7 +536,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
     {
       key: 'archive', group: 'management', priority: 2,
       visible: canManage && net.status === 'closed',
-      Icon: ArchiveIcon, color: '#4a4f55', label: 'Archive',
+      Icon: ArchiveIcon, color: neutralIconColor, label: 'Archive',
       tooltip: 'Archive net', onClick: onArchive,
     },
     {
@@ -540,7 +548,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
     {
       key: 'unarchive', group: 'management', priority: 2,
       visible: canManage && net.status === 'archived',
-      Icon: UnarchiveIcon, color: '#4a4f55', label: 'Unarchive',
+      Icon: UnarchiveIcon, color: neutralIconColor, label: 'Unarchive',
       tooltip: 'Unarchive net - restore to closed status', onClick: onUnarchive,
     },
     {
@@ -619,7 +627,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
             onClick={item.onClick}
             disabled={item.disabled}
             sx={{
-              ...flushBtnSx(comfortable, !showLabel, { emphasis: item.emphasis, active: item.active, activeTone: item.activeTone }),
+              ...flushBtnSx(comfortable, !showLabel, isDarkMode, { emphasis: item.emphasis, active: item.active, activeTone: item.activeTone }),
               ...item.extraSx,
             }}
           >
@@ -646,11 +654,11 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
         </React.Fragment>
       ))}
       <span ref={el => { measureRefs.current['__divider'] = el; }}>
-        <Box sx={{ width: '1px', height: 20, backgroundColor: '#dcdfe3', mx: 0.5 }} />
+        <Box sx={{ width: '1px', height: 20, backgroundColor: isDarkMode ? 'rgba(255,255,255,0.16)' : '#dcdfe3', mx: 0.5 }} />
       </span>
       <span ref={el => { measureRefs.current['__more_icon'] = el; }}>
-        <Button variant="text" sx={flushBtnSx(comfortable, true)}>
-          <MoreHorizIcon sx={{ fontSize: 18, color: '#5f6368' }} />
+        <Button variant="text" sx={flushBtnSx(comfortable, true, isDarkMode)}>
+          <MoreHorizIcon sx={{ fontSize: 18, color: neutralIconColor }} />
         </Button>
       </span>
     </Box>
@@ -856,7 +864,8 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
           sx={{
             mx: 2, mb: 1, maxWidth: 620,
             backgroundColor: 'background.paper',
-            border: '1px solid #dfe1e5',
+            border: '1px solid',
+            borderColor: 'divider',
             borderRadius: '4px',
             boxShadow: '0 6px 20px rgba(15,23,42,.12)',
             p: '10px 13px',
@@ -880,9 +889,9 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
           px: 1,
           py: 0.5,
           mx: -0.5,
-          backgroundColor: '#f7f8f9',
-          borderTop: '1px solid #e4e6e9',
-          borderBottom: '1px solid #e4e6e9',
+          backgroundColor: isDarkMode ? 'rgba(255,255,255,0.04)' : '#f7f8f9',
+          borderTop: `1px solid ${isDarkMode ? 'rgba(255,255,255,0.12)' : '#e4e6e9'}`,
+          borderBottom: `1px solid ${isDarkMode ? 'rgba(255,255,255,0.12)' : '#e4e6e9'}`,
         }}
       >
         {infoVisible.map(item => {
@@ -896,9 +905,9 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
               variant="text"
               disableElevation
               onClick={(e) => setMoreMenuAnchor(e.currentTarget)}
-              sx={flushBtnSx(comfortable, true)}
+              sx={flushBtnSx(comfortable, true, isDarkMode)}
             >
-              <MoreHorizIcon sx={{ fontSize: 18, color: '#5f6368' }} />
+              <MoreHorizIcon sx={{ fontSize: 18, color: neutralIconColor }} />
             </Button>
           </Tooltip>
         )}
@@ -914,7 +923,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
               onClick={() => { setMoreMenuAnchor(null); item.onClick(); }}
             >
               <ListItemIcon>
-                <item.Icon sx={{ fontSize: 18, color: '#5f6368' }} />
+                <item.Icon sx={{ fontSize: 18, color: item.color }} />
               </ListItemIcon>
               <ListItemText>{item.label}</ListItemText>
             </MenuItem>
@@ -922,7 +931,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
         </Menu>
 
         {showDivider && (
-          <Box sx={{ width: '1px', height: 20, backgroundColor: '#dcdfe3', mx: 0.5, flex: '0 0 auto' }} />
+          <Box sx={{ width: '1px', height: 20, backgroundColor: isDarkMode ? 'rgba(255,255,255,0.16)' : '#dcdfe3', mx: 0.5, flex: '0 0 auto' }} />
         )}
 
         {managementVisible.map(item => {

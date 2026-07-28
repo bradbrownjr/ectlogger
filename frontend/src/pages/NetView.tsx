@@ -1082,11 +1082,21 @@ const NetView: React.FC = () => {
 
   return (
     <Container maxWidth={false} sx={{ height: { xs: 'auto', md: '100%' }, py: 0, px: { xs: 0.5, sm: 0 }, display: 'flex', flexDirection: 'column' }}>
+      {/* Frames the whole browser viewport (not just this card) so a paused
+          net is unmistakable even above the navbar — see app/net_pause.py */}
+      {!!net.paused_at && (
+        <Box
+          aria-hidden
+          sx={{
+            position: 'fixed', inset: 0, border: '3px solid', borderColor: 'info.main',
+            pointerEvents: 'none', zIndex: (theme) => theme.zIndex.appBar + 1,
+          }}
+        />
+      )}
       <Paper
         sx={{
           p: 0.5, flex: { xs: 'none', md: 1 }, display: 'flex', flexDirection: 'column',
           overflow: { xs: 'visible', md: 'hidden' }, minHeight: 0,
-          ...(net.paused_at && { border: '3px solid', borderColor: 'info.main' }),
         }}
       >
       <NetViewHeader

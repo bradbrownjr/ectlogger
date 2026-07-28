@@ -304,6 +304,13 @@ or Role: NCS, warning (orange) for Return-from-away, success (green) for
 Check in — the primary call-to-action for anyone not yet logged into the
 net, including guests who might otherwise skim past a plain icon+label.
 
+**Dark mode** — the strip's chrome (background, top/bottom border, group
+divider, label text, hover state, and the neutral/gray icons like Script or
+Edit net) reads `theme.palette.mode` via `useTheme()` and switches to
+light-on-dark values instead of the fixed light-mode hex colors. Brand-hued
+icons (blue/orange/purple/green/red/teal) are left as-is — they carry enough
+contrast on a dark background without a second variant.
+
 ### Collapse ladder — measured, not breakpoint-based
 
 The bar never wraps (`flex-wrap:nowrap`, `flex:0 0 auto` on every child) and
@@ -468,8 +475,10 @@ a page reload.
 When a net has an assigned NCS but none are actively present (all
 away/not checked in — see `backend/app/net_pause.py`), the net view shows:
 
-- A `3px solid` border in `info.main` (blue) on the outer net `Paper`,
-  applied whenever `net.paused_at` is set.
+- A `3px solid` border in `info.main` (blue) framing the entire browser
+  viewport (`position: fixed; inset: 0`, `zIndex: theme.zIndex.appBar + 1`,
+  `pointerEvents: 'none'`) — not just the net's `Paper` card — so it's
+  visible above the navbar too, applied whenever `net.paused_at` is set.
 - A persistent `Alert variant="filled" severity="info"` banner directly
   below the command bar (not dismissible — it reflects live state and
   clears itself the instant the condition resolves, so there's nothing for
