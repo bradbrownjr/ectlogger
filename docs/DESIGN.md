@@ -121,6 +121,71 @@ On mobile (`xs`) the variant drops to `h5`; the icon scales proportionally (24 p
 
 ---
 
+## Theme & Dark Mode Compliance
+
+Every custom color (background, border, divider, hover state, text) must
+render correctly in both light and dark mode. The app's theme toggle flips
+MUI's `palette.mode` at runtime — a component that hardcodes light-mode hex
+values will look broken (invisible, low contrast, or jarring bright-on-dark)
+the moment a user switches themes, even if it looked fine during development
+in light mode. This was the root cause of the July 2026 net-view toolbar bug:
+the command bar's chrome was hardcoded to light-mode hex, so it stayed a
+bright light-gray strip with near-black text in dark mode instead of adapting.
+
+### Preferred approach: theme tokens
+
+For anything MUI already themes, use the token instead of a literal hex value
+— it resolves automatically per mode, no conditional needed:
+
+| Instead of | Use |
+|---|---|
+| `'#ffffff'` / `'#1e1e1e'` background | `'background.paper'` or `'background.default'` |
+| `'#000000'` / near-black text | `'text.primary'` |
+| Muted gray text | `'text.secondary'` |
+| Light gray border | `'divider'` |
+
+### When a token doesn't fit: `useTheme()` + `palette.mode`
+
+Some UI (dense toolbars with per-item brand colors, tinted status chips)
+needs values MUI doesn't expose as a token. Gate those explicitly:
+
+{% raw %}
+```tsx
+const theme = useTheme();
+const isDarkMode = theme.palette.mode === 'dark';
+
+sx={{
+  backgroundColor: isDarkMode ? 'rgba(255,255,255,0.04)' : '#f7f8f9',
+  borderColor: isDarkMode ? 'rgba(255,255,255,0.12)' : '#e4e6e9',
+  color: isDarkMode ? '#e8eaed' : '#25282c',
+}}
+```
+{% endraw %}
+
+Saturated brand/semantic hues (MUI-style blue/orange/purple/green/red/teal
+used for icon colors — e.g. `#1976d2`, `#ed6c02`, `#4caf50`) generally do
+**not** need a second dark-mode variant; they already carry enough contrast
+on a dark surface. It's specifically **neutral grays, near-black, and
+near-white** chrome — backgrounds, borders, dividers, label text, hover
+states — that break in the opposite theme and need explicit `isDarkMode`
+handling.
+
+### Reference implementation
+
+`NetViewHeader.tsx`'s command bar (see "Net View Toolbar" below) — the
+strip's background, top/bottom border, group divider, hover state, label
+text, and neutral gray icons are all gated on `isDarkMode`; brand-hued icons
+are left unconditional.
+
+### Before shipping
+
+Toggle dark mode and check the new UI in both modes before considering a
+change done — do not assume a literal color "probably" works in the other
+theme just because it looked right in whichever mode you happened to be
+testing in.
+
+---
+
 ## Floating Action Buttons (FABs)
 
 FABs appear at the bottom-right of pages that have primary creation/navigation actions.
@@ -304,12 +369,10 @@ or Role: NCS, warning (orange) for Return-from-away, success (green) for
 Check in — the primary call-to-action for anyone not yet logged into the
 net, including guests who might otherwise skim past a plain icon+label.
 
-**Dark mode** — the strip's chrome (background, top/bottom border, group
-divider, label text, hover state, and the neutral/gray icons like Script or
-Edit net) reads `theme.palette.mode` via `useTheme()` and switches to
-light-on-dark values instead of the fixed light-mode hex colors. Brand-hued
-icons (blue/orange/purple/green/red/teal) are left as-is — they carry enough
-contrast on a dark background without a second variant.
+**Dark mode** — see "Theme & Dark Mode Compliance" above. The strip's
+background, top/bottom border, group divider, hover state, label text, and
+neutral gray icons (Script, Edit net, etc.) are all gated on `isDarkMode`;
+brand-hued icons (blue/orange/purple/green/red/teal) are left unconditional.
 
 ### Collapse ladder — measured, not breakpoint-based
 
