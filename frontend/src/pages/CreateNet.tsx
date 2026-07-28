@@ -160,6 +160,14 @@ const CreateNet: React.FC = () => {
     try {
       const response = await netApi.get(parseInt(netId));
       const net = response.data;
+      // Net Info is a read-only render of this same form, and shows
+      // config fields (rotation, custom fields, ICS-309 settings) that
+      // aren't meant for standard/guest visitors — direct-URL access is
+      // blocked the same way the toolbar button is hidden from them.
+      if (isInfoMode && !net.can_manage) {
+        navigate(`/nets/${netId}`, { replace: true });
+        return;
+      }
       setName(net.name);
       setDescription(net.description || '');
       setInfoUrl(net.info_url || '');

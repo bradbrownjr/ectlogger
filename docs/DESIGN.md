@@ -357,7 +357,11 @@ browsing history doesn't lose your place in the currently-open net); the
 form — rotation, custom fields, ICS-309 settings) is staff-only outright
 (`canManage && !isActiveOrLobby` — hidden while Edit net covers the same
 ground) since it exposes editable-looking config that isn't meant for
-standard/guest visitors.
+standard/guest visitors. The `/nets/:netId/info` route itself (unlike
+`/edit`) has no `PrivateRoute` wrapper, so direct-URL access is guarded in
+`CreateNet.tsx`: if `net.can_manage` comes back `false` for the current
+user (or lack thereof), info mode redirects to the net view instead of
+rendering the form.
 
 **Management group** (right) — Start net, Edit net, Roles, Claim NCS, Raise
 hand (hidden for the acting NCS — doesn't make sense to raise a hand to get
