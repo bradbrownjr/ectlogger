@@ -18,6 +18,7 @@ export const STORAGE_KEYS = {
   FLOATING_ACTIVITY_LOG: 'floatingWindow_activityLog_detached',
   DOCKED_CHAT_MINIMIZED: 'dockedPanel_chat_minimized',
   DOCKED_ACTIVITY_LOG_MINIMIZED: 'dockedPanel_activityLog_minimized',
+  MOBILE_ACTIVITY_LOG_MINIMIZED: 'mobilePanel_activityLog_minimized',
 } as const;
 
 // Dynamic key builders

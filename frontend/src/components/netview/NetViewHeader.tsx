@@ -733,7 +733,15 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
           </>
         )}
         {/* ===== STATUS / STAT / FREQUENCY CHIPS (moved here from below the toolbar) ===== */}
-        <Box sx={{ flex: '0 0 auto', display: 'flex', gap: 0.75, alignItems: 'center', flexWrap: 'wrap', ml: 'auto' }}>
+        {/* flex-shrink must stay enabled (not '0 0 auto') — a flex:0
+            container's hypothetical/max-content width for line-wrap
+            purposes is its full all-chips-unwrapped width (same gotcha as
+            the description above), so with shrink disabled this box never
+            gets constrained down to the row's actual width and its own
+            flexWrap never has a reason to kick in, overflowing the whole
+            page horizontally on narrow (mobile) screens instead of
+            wrapping chips onto additional lines. */}
+        <Box sx={{ flex: '0 1 auto', display: 'flex', gap: 0.75, alignItems: 'center', flexWrap: 'wrap', ml: 'auto' }}>
           <Chip label={net.status === 'lobby' ? 'LOBBY' : net.status} size="small" color={net.status === 'active' ? 'success' : net.status === 'lobby' ? 'warning' : 'default'} />
           {canManage && (net.status === 'active' || net.status === 'closed' || net.status === 'archived') && (
             <Tooltip title="Edit net start/end times">

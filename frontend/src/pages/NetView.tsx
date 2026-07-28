@@ -42,6 +42,8 @@ import {
   Tooltip,
   Collapse,
   Alert,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
@@ -198,6 +200,15 @@ const NetView: React.FC = () => {
   const [chatMinimized, setChatMinimized] = useLocalStorage<boolean>(STORAGE_KEYS.DOCKED_CHAT_MINIMIZED, false);
   // activityLog defaults to minimized (true) when no stored preference exists
   const [activityLogMinimized, setActivityLogMinimized] = useLocalStorage<boolean>(STORAGE_KEYS.DOCKED_ACTIVITY_LOG_MINIMIZED, true);
+  // Mobile gets its own independent minimize preference (also defaulting
+  // collapsed) instead of sharing the desktop one — the stacked mobile
+  // layout has much less room, so a desktop session's "expanded" choice
+  // shouldn't force every phone visit to start expanded too.
+  const theme = useTheme();
+  const isMobileLayout = useMediaQuery(theme.breakpoints.down('md'));
+  const [mobileActivityLogMinimized, setMobileActivityLogMinimized] = useLocalStorage<boolean>(STORAGE_KEYS.MOBILE_ACTIVITY_LOG_MINIMIZED, true);
+  const effectiveActivityLogMinimized = isMobileLayout ? mobileActivityLogMinimized : activityLogMinimized;
+  const setEffectiveActivityLogMinimized = isMobileLayout ? setMobileActivityLogMinimized : setActivityLogMinimized;
   const [activityLogDetached, setActivityLogDetached] = useLocalStorage<boolean>(STORAGE_KEYS.FLOATING_ACTIVITY_LOG, false);
   // Frequency filter state - allows filtering check-ins by selected frequencies
   const [filteredFrequencyIds, setFilteredFrequencyIds] = useState<number[]>([]);
@@ -1910,10 +1921,10 @@ const NetView: React.FC = () => {
               chatDetached={chatDetached}
               activityLogDetached={activityLogDetached}
               chatMinimized={chatMinimized}
-              activityLogMinimized={activityLogMinimized}
+              activityLogMinimized={effectiveActivityLogMinimized}
               setProfileUserId={setProfileUserId}
               setChatMinimized={setChatMinimized}
-              setActivityLogMinimized={setActivityLogMinimized}
+              setActivityLogMinimized={setEffectiveActivityLogMinimized}
               setActivityLogDetached={setActivityLogDetached}
               handleAttachChat={handleAttachChat}
               handleDetachChat={handleDetachChat}
