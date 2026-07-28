@@ -16,9 +16,9 @@ import type { UseDialogResult } from '../../hooks/useDialog';
 
 // ========== NET CONTROL DIALOGS ==========
 // The small NCS/owner net-control modals grouped in one place: Close Net,
-// Subscribe-to-schedule, Topic/Poll configuration, Available Frequencies, and
-// Edit Net Times. Each is purely presentational; the parent owns all state and
-// actions. Grouped to keep NetView's JSX lean without a file per tiny dialog.
+// Subscribe-to-schedule, Topic/Poll configuration, and Available Frequencies.
+// Each is purely presentational; the parent owns all state and actions.
+// Grouped to keep NetView's JSX lean without a file per tiny dialog.
 
 interface NetControlDialogsProps {
   // Close Net
@@ -48,14 +48,6 @@ interface NetControlDialogsProps {
   availableFrequencyIds: number[];
   onAvailableFrequencyIdsChange: (ids: number[]) => void;
   formatFrequency: (freq: any) => string;
-
-  // Edit net times
-  timeEditDialog: UseDialogResult;
-  editStartedAt: string;
-  setEditStartedAt: (v: string) => void;
-  editClosedAt: string;
-  setEditClosedAt: (v: string) => void;
-  onSaveTimes: () => void;
 }
 
 const NetControlDialogs: React.FC<NetControlDialogsProps> = ({
@@ -79,12 +71,6 @@ const NetControlDialogs: React.FC<NetControlDialogsProps> = ({
   availableFrequencyIds,
   onAvailableFrequencyIdsChange,
   formatFrequency,
-  timeEditDialog,
-  editStartedAt,
-  setEditStartedAt,
-  editClosedAt,
-  setEditClosedAt,
-  onSaveTimes,
 }) => {
   return (
     <>
@@ -250,34 +236,6 @@ const NetControlDialogs: React.FC<NetControlDialogsProps> = ({
         </DialogContent>
         <DialogActions>
           <Button onClick={frequencyDialog.onClose}>Done</Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* ========== NET TIME EDIT DIALOG ========== */}
-      <Dialog open={timeEditDialog.open} onClose={timeEditDialog.onClose} maxWidth="xs" fullWidth>
-        <DialogTitle>Edit Net Times</DialogTitle>
-        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-          <TextField
-            label="Started At"
-            type="datetime-local"
-            value={editStartedAt}
-            onChange={(e) => setEditStartedAt(e.target.value)}
-            InputLabelProps={{ shrink: true }}
-            fullWidth
-            sx={{ mt: 1 }}
-          />
-          <TextField
-            label="Closed At"
-            type="datetime-local"
-            value={editClosedAt}
-            onChange={(e) => setEditClosedAt(e.target.value)}
-            InputLabelProps={{ shrink: true }}
-            fullWidth
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={timeEditDialog.onClose}>Cancel</Button>
-          <Button variant="contained" onClick={onSaveTimes}>Save</Button>
         </DialogActions>
       </Dialog>
     </>

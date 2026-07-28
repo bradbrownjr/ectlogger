@@ -182,10 +182,6 @@ const NetView: React.FC = () => {
   const topicPollDialog = useDialog();
   const [tempTopicPrompt, setTempTopicPrompt] = useState('');
   const [tempPollQuestion, setTempPollQuestion] = useState('');
-  // Net time editing dialog state
-  const timeEditDialog = useDialog();
-  const [editStartedAt, setEditStartedAt] = useState('');
-  const [editClosedAt, setEditClosedAt] = useState('');
   // Check-in prompt for authenticated users viewing active/lobby nets
   const checkInPrompt = useDialog();
   const checkInPromptShownRef = useRef(false);
@@ -658,22 +654,6 @@ const NetView: React.FC = () => {
     }
   };
 
-  // Save adjusted net start/end times
-  const handleSaveNetTimes = async () => {
-    try {
-      const updateData: any = {};
-      if (editStartedAt) updateData.started_at = new Date(editStartedAt).toISOString();
-      if (editClosedAt) updateData.closed_at = new Date(editClosedAt).toISOString();
-      await netApi.update(Number(netId), updateData);
-      await fetchNet();
-      timeEditDialog.onClose();
-      setToastMessage('Net times updated');
-    } catch (error: any) {
-      console.error('Failed to update net times:', error);
-      setToastMessage(error.response?.data?.detail || 'Failed to update net times');
-    }
-  };
-
   const handleExportCSV = async () => {
     try {
       const response = await api.get(`/nets/${netId}/export/csv`, {
@@ -1035,21 +1015,6 @@ const NetView: React.FC = () => {
     }
   };
 
-  // Open the "Edit Net Times" dialog, converting stored UTC timestamps to
-  // local datetime-local input format
-  const handleOpenTimeEdit = () => {
-    const toLocal = (isoStr?: string) => {
-      if (!isoStr) return '';
-      const d = new Date(isoStr.endsWith('Z') ? isoStr : isoStr + 'Z');
-      const offset = d.getTimezoneOffset();
-      const local = new Date(d.getTime() - offset * 60000);
-      return local.toISOString().slice(0, 16);
-    };
-    setEditStartedAt(toLocal(net?.started_at));
-    setEditClosedAt(toLocal(net?.closed_at));
-    timeEditDialog.onOpen();
-  };
-
   // Open the Topic/Poll configuration dialog, seeded with current values
   const handleOpenTopicPollConfig = () => {
     setTempTopicPrompt(net?.topic_of_week_prompt || '');
@@ -1149,7 +1114,6 @@ const NetView: React.FC = () => {
         topicHistory={topicHistory}
         importDialog={importDialog}
         closeNetDialog={closeNetDialog}
-        onOpenTimeEdit={handleOpenTimeEdit}
         onOpenTopicPollConfig={handleOpenTopicPollConfig}
         onOpenRoleDialog={handleOpenRoleDialog}
         onOpenCheckIn={handleOpenCheckIn}
@@ -2116,12 +2080,6 @@ const NetView: React.FC = () => {
         availableFrequencyIds={checkInForm.available_frequency_ids}
         onAvailableFrequencyIdsChange={(ids) => setCheckInForm({ ...checkInForm, available_frequency_ids: ids })}
         formatFrequency={formatFrequencyDisplay}
-        timeEditDialog={timeEditDialog}
-        editStartedAt={editStartedAt}
-        setEditStartedAt={setEditStartedAt}
-        editClosedAt={editClosedAt}
-        setEditClosedAt={setEditClosedAt}
-        onSaveTimes={handleSaveNetTimes}
       />
 
       {/* Role Management Dialog */}

@@ -44,6 +44,11 @@ export interface CreateNetContextValue {
   // Scheduled start time (countdown timer)
   scheduledStartTime: string; setScheduledStartTime: Dispatch<SetStateAction<string>>;
 
+  // Actual start/end time (staff correction, once the net has run)
+  startedAt: string; setStartedAt: Dispatch<SetStateAction<string>>;
+  closedAt: string; setClosedAt: Dispatch<SetStateAction<string>>;
+  onSaveTimes: () => Promise<void>;
+
   // Frequency selection
   frequencies: FrequencyItem[]; setFrequencies: Dispatch<SetStateAction<FrequencyItem[]>>;
   selectedFrequencyIds: number[]; setSelectedFrequencyIds: Dispatch<SetStateAction<number[]>>;

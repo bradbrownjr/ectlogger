@@ -95,6 +95,10 @@ const CreateNet: React.FC = () => {
   // ---- Scheduled start time (countdown timer) ----
   const [scheduledStartTime, setScheduledStartTime] = useState('');
 
+  // ---- Actual start/end time (staff correction, once the net has run) ----
+  const [startedAt, setStartedAt] = useState('');
+  const [closedAt, setClosedAt] = useState('');
+
   // ---- Template reference ----
   const [templateId, setTemplateId] = useState<number | null>(null);
 
@@ -199,6 +203,17 @@ const CreateNet: React.FC = () => {
         const localDt = new Date(dt.getTime() - tzOffset);
         setScheduledStartTime(localDt.toISOString().slice(0, 16));
       }
+      // Actual start/end times (only set once the net has gone active).
+      // Reuses the same UTC-to-local conversion as scheduled_start_time above.
+      const toLocalDateTime = (isoStr?: string) => {
+        if (!isoStr) return '';
+        const withZ = isoStr.endsWith('Z') ? isoStr : isoStr + 'Z';
+        const dt = new Date(withZ);
+        const tzOffset = dt.getTimezoneOffset() * 60000;
+        return new Date(dt.getTime() - tzOffset).toISOString().slice(0, 16);
+      };
+      setStartedAt(toLocalDateTime(net.started_at));
+      setClosedAt(toLocalDateTime(net.closed_at));
       setSelectedFrequencyIds(net.frequencies.map((f: FrequencyItem) => f.id!));
       if (net.field_config) {
         const mergedConfig: Record<string, FieldConfigEntry> = {};
@@ -318,6 +333,22 @@ const CreateNet: React.FC = () => {
     }
   };
 
+  // Correct the actual start/end times (independent of the main form save,
+  // since this is available on the read-only Net Info page too)
+  const handleSaveTimes = async () => {
+    if (!netId) return;
+    try {
+      const updateData: { started_at?: string; closed_at?: string } = {};
+      if (startedAt) updateData.started_at = new Date(startedAt).toISOString();
+      if (closedAt) updateData.closed_at = new Date(closedAt).toISOString();
+      await netApi.update(parseInt(netId), updateData);
+      showToast('Net times updated', 'success');
+    } catch (error: any) {
+      console.error('Failed to update net times:', error);
+      showToast(error.response?.data?.detail || 'Failed to update net times', 'error');
+    }
+  };
+
   // ---- Context value ----
   const contextValue: CreateNetContextValue = {
     netId,
@@ -340,6 +371,9 @@ const CreateNet: React.FC = () => {
     pollEnabled, setPollEnabled,
     pollQuestion, setPollQuestion,
     scheduledStartTime, setScheduledStartTime,
+    startedAt, setStartedAt,
+    closedAt, setClosedAt,
+    onSaveTimes: handleSaveTimes,
     frequencies, setFrequencies: setFrequencies as React.Dispatch<React.SetStateAction<FrequencyItem[]>>,
     selectedFrequencyIds, setSelectedFrequencyIds,
     fieldDefinitions,

@@ -9,6 +9,7 @@ import {
   Switch,
   Divider,
   Autocomplete,
+  Button,
 } from '@mui/material';
 import { useCreateNetContext } from '../../contexts/CreateNetContext';
 
@@ -33,6 +34,9 @@ const BasicInfoTab: React.FC = () => {
     pollEnabled, setPollEnabled,
     pollQuestion, setPollQuestion,
     scheduledStartTime, setScheduledStartTime,
+    startedAt, setStartedAt,
+    closedAt, setClosedAt,
+    onSaveTimes,
     isInfoMode,
   } = useCreateNetContext();
 
@@ -86,6 +90,37 @@ const BasicInfoTab: React.FC = () => {
           margin="normal" InputLabelProps={{ shrink: true }}
           helperText="Optional. If set, a countdown timer will be displayed before the net starts."
         />
+      )}
+
+      {/* Actual Start/End Time — correction, only once the net has actually
+          run. Editable on both Edit Net (active nets) and the read-only Net
+          Info page (closed/archived nets), since staff still need to fix
+          these for accurate logs after a net closes. */}
+      {!!startedAt && (
+        <Box sx={{ mt: 2, p: 2, border: '1px dashed', borderColor: 'divider', borderRadius: 1 }}>
+          <Typography variant="subtitle2" gutterBottom>Actual Net Times</Typography>
+          <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
+            Correct the recorded start/end times if the net was started or closed late (or early).
+            This affects the official log, not the countdown timer above.
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+            <TextField
+              label="Actual Start Time" type="datetime-local"
+              value={startedAt}
+              onChange={(e: any) => setStartedAt(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+              sx={{ flex: '1 1 220px' }}
+            />
+            <TextField
+              label="Actual End Time" type="datetime-local"
+              value={closedAt}
+              onChange={(e: any) => setClosedAt(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+              sx={{ flex: '1 1 220px' }}
+            />
+            <Button variant="outlined" onClick={onSaveTimes}>Save Times</Button>
+          </Box>
+        </Box>
       )}
 
       {/* ========== General Net Features ========== */}

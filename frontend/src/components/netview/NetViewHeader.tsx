@@ -199,7 +199,6 @@ interface NetViewHeaderProps {
   closeNetDialog: UseDialogResult;
 
   // Actions requiring parent-owned pre-processing or API calls
-  onOpenTimeEdit: () => void;
   onOpenTopicPollConfig: () => void;
   onOpenRoleDialog: () => void;
   onOpenCheckIn: () => void;
@@ -308,7 +307,6 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
   topicHistory,
   importDialog,
   closeNetDialog,
-  onOpenTimeEdit,
   onOpenTopicPollConfig,
   onOpenRoleDialog,
   onOpenCheckIn,
@@ -743,17 +741,6 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
             wrapping chips onto additional lines. */}
         <Box sx={{ flex: '0 1 auto', display: 'flex', gap: 0.75, alignItems: 'center', flexWrap: 'wrap', ml: 'auto' }}>
           <Chip label={net.status === 'lobby' ? 'LOBBY' : net.status} size="small" color={net.status === 'active' ? 'success' : net.status === 'lobby' ? 'warning' : 'default'} />
-          {canManage && (net.status === 'active' || net.status === 'closed' || net.status === 'archived') && (
-            <Tooltip title="Edit net start/end times">
-              <IconButton
-                size="small"
-                onClick={onOpenTimeEdit}
-                sx={{ p: 0.25, display: { xs: 'none', md: 'inline-flex' } }}
-              >
-                <EditIcon sx={{ fontSize: 16 }} />
-              </IconButton>
-            </Tooltip>
-          )}
           {countdownTime && (
             <Chip
               icon={<TimerIcon />}
