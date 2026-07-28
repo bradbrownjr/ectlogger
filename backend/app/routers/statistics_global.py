@@ -153,3 +153,119 @@ async def get_global_statistics(
     )
 
 
+# Helper functions for time series data
+
+async def _get_nets_per_day(db: AsyncSession, days: int) -> List[TimeSeriesDataPoint]:
+    """Get count of nets started per day for the last N days."""
+    now = datetime.now(timezone.utc)
+    result = []
+
+    for i in range(days - 1, -1, -1):
+        day_start = (now - timedelta(days=i)).replace(hour=0, minute=0, second=0, microsecond=0)
+        day_end = day_start + timedelta(days=1)
+
+        count_result = await db.execute(
+            select(func.count(Net.id)).where(
+                and_(
+                    Net.started_at >= day_start,
+                    Net.started_at < day_end,
+                    Net.status.in_([NetStatus.ACTIVE, NetStatus.CLOSED, NetStatus.ARCHIVED])
+                )
+            )
+        )
+        count = count_result.scalar() or 0
+
+        result.append(TimeSeriesDataPoint(
+            label=day_start.strftime("%m/%d"),
+            value=count,
+            date=day_start.date().isoformat()
+        ))
+
+    return result
+
+
+async def _get_nets_per_week(db: AsyncSession, weeks: int) -> List[TimeSeriesDataPoint]:
+    """Get count of nets started per week for the last N weeks."""
+    now = datetime.now(timezone.utc)
+    result = []
+
+    for i in range(weeks - 1, -1, -1):
+        week_start = (now - timedelta(weeks=i)).replace(hour=0, minute=0, second=0, microsecond=0)
+        week_start = week_start - timedelta(days=week_start.weekday())  # Start of week (Monday)
+        week_end = week_start + timedelta(weeks=1)
+
+        count_result = await db.execute(
+            select(func.count(Net.id)).where(
+                and_(
+                    Net.started_at >= week_start,
+                    Net.started_at < week_end,
+                    Net.status.in_([NetStatus.ACTIVE, NetStatus.CLOSED, NetStatus.ARCHIVED])
+                )
+            )
+        )
+        count = count_result.scalar() or 0
+
+        result.append(TimeSeriesDataPoint(
+            label=week_start.strftime("%m/%d"),
+            value=count,
+            date=week_start.date().isoformat()
+        ))
+
+    return result
+
+
+async def _get_check_ins_per_day(db: AsyncSession, days: int) -> List[TimeSeriesDataPoint]:
+    """Get count of check-ins per day for the last N days."""
+    now = datetime.now(timezone.utc)
+    result = []
+
+    for i in range(days - 1, -1, -1):
+        day_start = (now - timedelta(days=i)).replace(hour=0, minute=0, second=0, microsecond=0)
+        day_end = day_start + timedelta(days=1)
+
+        count_result = await db.execute(
+            select(func.count(CheckIn.id)).where(
+                and_(
+                    CheckIn.checked_in_at >= day_start,
+                    CheckIn.checked_in_at < day_end
+                )
+            )
+        )
+        count = count_result.scalar() or 0
+
+        result.append(TimeSeriesDataPoint(
+            label=day_start.strftime("%m/%d"),
+            value=count,
+            date=day_start.date().isoformat()
+        ))
+
+    return result
+
+
+async def _get_unique_operators_per_week(db: AsyncSession, weeks: int) -> List[TimeSeriesDataPoint]:
+    """Get count of unique operators (callsigns) per week for the last N weeks."""
+    now = datetime.now(timezone.utc)
+    result = []
+
+    for i in range(weeks - 1, -1, -1):
+        week_start = (now - timedelta(weeks=i)).replace(hour=0, minute=0, second=0, microsecond=0)
+        week_start = week_start - timedelta(days=week_start.weekday())  # Start of week (Monday)
+        week_end = week_start + timedelta(weeks=1)
+
+        count_result = await db.execute(
+            select(func.count(distinct(CheckIn.callsign))).where(
+                and_(
+                    CheckIn.checked_in_at >= week_start,
+                    CheckIn.checked_in_at < week_end
+                )
+            )
+        )
+        count = count_result.scalar() or 0
+
+        result.append(TimeSeriesDataPoint(
+            label=week_start.strftime("%m/%d"),
+            value=count,
+            date=week_start.date().isoformat()
+        ))
+
+    return result
