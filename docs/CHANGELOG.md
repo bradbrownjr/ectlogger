@@ -10,11 +10,21 @@ All notable changes to ECTLogger are documented here.
 
 * **Net View: Bulk Add hidden from guests** — The Bulk Add button no longer shows to guests or other non-staff visitors; only NCS, loggers, and net managers see it now, matching who's actually allowed to use it.
 
+* **Net View: Toolbar buttons keep their color on hover** — Buttons that show your current state, like Check In or Return, no longer flash gray when you hover over them; they now deepen their own color instead, so they don't look like they turned off.
+
+* **Net View: Toolbar reads correctly in dark mode** — The toolbar's background, borders, and button labels now switch with dark mode instead of staying stuck in light colors, so nothing shows up as dark text on a bright strip anymore.
+
+* **Net View: Net Info and adding topics limited to staff** — Net Info showed net configuration details that aren't meant for regular participants, and anyone could see the option to add a historical topic entry even though only staff could actually save one. Both are now limited to NCS, loggers, and net managers — including if someone tries the Net Info page directly by its web address. Everyone can still browse the list of prior topics.
+
 ## Improvements
 
 * **Net View: Check In stands out** — The Check In button now has a green background so first-time visitors notice it right away instead of hunting for it in the toolbar.
 
 * **Net View: Clearer status wording** — The paused-net banner now says the net is paused until Net Control returns, and the toolbar's NCS toggle is labeled "Role: NCS" or "Role: Standard" so it's obvious at a glance which role you're in and what clicking it does.
+
+* **Net View: Paused-net border spans the whole page** — When Net Control has stepped away with no one covering, the blue border now frames the entire browser window instead of just the net panel, so it's impossible to miss.
+
+* **Net View: Prior topics link back to their net** — Each entry in the prior-topics list now has a link that opens the net it came from in a new tab, so you can browse history without losing your place in the net you have open.
 
 ---
 
