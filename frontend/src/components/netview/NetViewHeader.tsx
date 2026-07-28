@@ -591,10 +591,16 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
   useLayoutEffect(() => {
     const el = barRef.current;
     if (!el) return;
-    const ro = new ResizeObserver(entries => {
-      setContainerWidth(entries[0].contentRect.width);
-    });
+    // Read getBoundingClientRect() rather than the ResizeObserver entry's
+    // contentRect: NetView applies a CSS `zoom` on short viewports (see
+    // NetView.tsx) to fit the logging panel without scrolling, and
+    // contentRect reports the pre-zoom layout width while
+    // getBoundingClientRect() reports the actual post-zoom rendered width —
+    // the same basis used for the item widths measured below.
+    const measure = () => setContainerWidth(el.getBoundingClientRect().width);
+    const ro = new ResizeObserver(measure);
     ro.observe(el);
+    measure();
     return () => ro.disconnect();
   }, []);
 
