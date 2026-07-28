@@ -2224,6 +2224,7 @@ const NetView: React.FC = () => {
           onClose={topicHistory.onClose}
           templateId={net.template_id}
           templateName={net.name}
+          canManage={canManage}
         />
       )}
 

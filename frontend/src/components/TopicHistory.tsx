@@ -14,10 +14,13 @@ import {
   InputAdornment,
   Pagination,
   Divider,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
 import HistoryIcon from '@mui/icons-material/History';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import api from '../services/api';
 
 const PAGE_SIZE = 25;
@@ -34,6 +37,9 @@ interface TopicHistoryProps {
   onClose: () => void;
   templateId: number;
   templateName: string;
+  // Only staff (owner/admin/NCS/co-manager) may add historical topic
+  // entries — everyone else gets a read-only list.
+  canManage: boolean;
 }
 
 const TopicHistory: React.FC<TopicHistoryProps> = ({
@@ -41,6 +47,7 @@ const TopicHistory: React.FC<TopicHistoryProps> = ({
   onClose,
   templateId,
   templateName,
+  canManage,
 }) => {
   const [topics, setTopics] = useState<TopicHistoryEntry[]>([]);
   const [loading, setLoading] = useState(false);
@@ -118,20 +125,24 @@ const TopicHistory: React.FC<TopicHistoryProps> = ({
             <HistoryIcon />
             <Typography variant="h6">Prior Topics — {templateName}</Typography>
           </Box>
-          <Button
-            startIcon={<AddIcon />}
-            size="small"
-            onClick={() => setShowAddForm(!showAddForm)}
-            variant={showAddForm ? 'contained' : 'outlined'}
-          >
-            Add Historical Topic
-          </Button>
+          {/* Adding historical entries is a staff action — regular
+              participants only get the read-only list below. */}
+          {canManage && (
+            <Button
+              startIcon={<AddIcon />}
+              size="small"
+              onClick={() => setShowAddForm(!showAddForm)}
+              variant={showAddForm ? 'contained' : 'outlined'}
+            >
+              Add Historical Topic
+            </Button>
+          )}
         </Box>
       </DialogTitle>
 
       <DialogContent dividers>
-        {/* ========== ADD FORM ========== */}
-        <Collapse in={showAddForm}>
+        {/* ========== ADD FORM (staff only) ========== */}
+        <Collapse in={canManage && showAddForm}>
           <Box sx={{ mb: 3, p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
             <Typography variant="subtitle2" gutterBottom>
               Add a historical topic (for nets run before ECTLogger)
@@ -235,9 +246,25 @@ const TopicHistory: React.FC<TopicHistoryProps> = ({
                   >
                     {formatDate(topic.used_date)}
                   </Typography>
-                  <Typography variant="body1">
+                  <Typography variant="body1" sx={{ flex: 1 }}>
                     {topic.topic}
                   </Typography>
+                  {/* Opens in a new tab so browsing history doesn't lose
+                      the visitor's place in the currently-open net. */}
+                  {topic.net_id && (
+                    <Tooltip title="Open that net in a new tab">
+                      <IconButton
+                        size="small"
+                        component="a"
+                        href={`/nets/${topic.net_id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        sx={{ flexShrink: 0 }}
+                      >
+                        <OpenInNewIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  )}
                 </Box>
                 {index < paginated.length - 1 && <Divider />}
               </React.Fragment>

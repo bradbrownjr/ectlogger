@@ -349,7 +349,15 @@ groups have at least one visible item):
 
 **Information group** (left) — Bulk add, Search, Map, Audio, Stats, Script,
 Announcements, Notes, Topics, Website, Net info, Import, then the `More`
-button for whatever didn't fit.
+button for whatever didn't fit. Topics opens a read-only prior-topics list to
+everyone (with a new-tab link to the originating net for each entry, so
+browsing history doesn't lose your place in the currently-open net); the
+"Add Historical Topic" control inside that dialog is staff-only
+(`canManage`). Net info (a read-only render of the net's configuration
+form — rotation, custom fields, ICS-309 settings) is staff-only outright
+(`canManage && !isActiveOrLobby` — hidden while Edit net covers the same
+ground) since it exposes editable-looking config that isn't meant for
+standard/guest visitors.
 
 **Management group** (right) — Start net, Edit net, Roles, Claim NCS, Raise
 hand (hidden for the acting NCS — doesn't make sense to raise a hand to get

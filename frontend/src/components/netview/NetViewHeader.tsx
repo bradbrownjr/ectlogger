@@ -411,8 +411,12 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
       tooltip: 'Net/Club info', onClick: () => window.open(net.info_url, '_blank'),
     },
     {
+      // Staff-only: this is a read-only render of the net's configuration
+      // form (rotation, custom fields, ICS-309 settings, etc.) — not
+      // appropriate for standard/guest visitors, and redundant with
+      // Edit net while that's available (active/lobby/draft/scheduled).
       key: 'net-info', group: 'info', priority: 1,
-      visible: !(canManage && isActiveOrLobby),
+      visible: canManage && !isActiveOrLobby,
       Icon: InfoIcon, color: '#1976d2', label: 'Net info',
       tooltip: 'View net info', onClick: () => navigate(`/nets/${netId}/info`),
     },
