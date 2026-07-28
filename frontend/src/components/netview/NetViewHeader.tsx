@@ -688,7 +688,14 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
               title={net.description}
               onClick={() => setDescriptionExpanded(v => !v)}
               sx={{
-                flex: '1 1 auto',
+                // flex-basis: 0 (not 'auto') is required here — with 'auto',
+                // the browser's line-wrap decision uses this item's
+                // *unshrunk* content width as its hypothetical size (since
+                // the text itself is white-space:nowrap), which for a long
+                // description is far wider than the row, so the whole row
+                // wraps onto separate lines instead of the description
+                // shrinking to fit + ellipsis in place.
+                flex: '1 1 0',
                 minWidth: 40,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
