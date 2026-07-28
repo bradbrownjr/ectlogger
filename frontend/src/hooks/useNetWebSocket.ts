@@ -134,6 +134,11 @@ export function useNetWebSocket(deps: NetWebSocketDeps): WebSocket | null {
           console.log('Net status changed:', message.data);
           fetchNet();
           fetchNetStats();
+        } else if (message.type === 'net_pause_change') {
+          // No NCS actively present (or one became present again) - refresh
+          // net data so paused_at/total_paused_seconds stay in sync for
+          // everyone connected, not just the client that triggered it.
+          fetchNet();
         }
       };
 

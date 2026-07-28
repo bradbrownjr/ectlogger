@@ -41,6 +41,7 @@ import {
   Grid,
   Tooltip,
   Collapse,
+  Alert,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
@@ -360,13 +361,19 @@ const NetView: React.FC = () => {
         setCountdownTime(null);
       }
       
-      // Duration timer: show elapsed time since net started (only for active nets)
+      // Duration timer: show elapsed time since net started, minus any time
+      // spent with no NCS actively present (only for active nets).
       if (net.started_at && net.status === 'active') {
         // Ensure the timestamp is parsed as UTC (backend stores UTC without 'Z' suffix)
         const startTimeStr = net.started_at.endsWith('Z') ? net.started_at : net.started_at + 'Z';
         const startTime = new Date(startTimeStr);
-        const diff = now.getTime() - startTime.getTime();
-        
+        let pausedMs = (net.total_paused_seconds || 0) * 1000;
+        if (net.paused_at) {
+          const pausedAtStr = net.paused_at.endsWith('Z') ? net.paused_at : net.paused_at + 'Z';
+          pausedMs += Math.max(0, now.getTime() - new Date(pausedAtStr).getTime());
+        }
+        const diff = now.getTime() - startTime.getTime() - pausedMs;
+
         // Only show duration if it's positive (started_at is in the past)
         if (diff > 0) {
           const hours = Math.floor(diff / (1000 * 60 * 60));
@@ -394,7 +401,7 @@ const NetView: React.FC = () => {
     const interval = setInterval(updateTimers, 1000);
     
     return () => clearInterval(interval);
-  }, [net?.scheduled_start_time, net?.started_at, net?.status, net?.owner_id, net?.id, user?.id, user?.role, netRoles]);
+  }, [net?.scheduled_start_time, net?.started_at, net?.status, net?.owner_id, net?.id, net?.paused_at, net?.total_paused_seconds, user?.id, user?.role, netRoles]);
 
   // Show check-in prompt for authenticated users viewing an active/lobby net they haven't checked into
   useEffect(() => {
@@ -1075,7 +1082,13 @@ const NetView: React.FC = () => {
 
   return (
     <Container maxWidth={false} sx={{ height: { xs: 'auto', md: '100%' }, py: 0, px: { xs: 0.5, sm: 0 }, display: 'flex', flexDirection: 'column' }}>
-      <Paper sx={{ p: 0.5, flex: { xs: 'none', md: 1 }, display: 'flex', flexDirection: 'column', overflow: { xs: 'visible', md: 'hidden' }, minHeight: 0 }}>
+      <Paper
+        sx={{
+          p: 0.5, flex: { xs: 'none', md: 1 }, display: 'flex', flexDirection: 'column',
+          overflow: { xs: 'visible', md: 'hidden' }, minHeight: 0,
+          ...(net.paused_at && { border: '3px solid', borderColor: 'info.main' }),
+        }}
+      >
       <NetViewHeader
         net={net}
         netId={netId}
@@ -1132,6 +1145,13 @@ const NetView: React.FC = () => {
         onUnarchive={handleUnarchive}
         onDelete={handleDelete}
       />
+
+      {/* Persistent banner while no NCS is actively present — see app/net_pause.py */}
+      {!!net.paused_at && (
+        <Alert variant="filled" severity="info" sx={{ borderRadius: 0 }}>
+          Net Control has stepped away — no one is actively running this net right now.
+        </Alert>
+      )}
 
         {(net.status === 'active' || net.status === 'lobby' || net.status === 'closed' || net.status === 'archived') && (
           <Grid container spacing={0} sx={{ mt: 0.5, flex: { xs: 'none', md: 1 }, minHeight: 0 }}>

@@ -81,6 +81,10 @@ async def assign_net_role(
         db
     )
 
+    if role == "NCS":
+        from app.net_pause import sync_net_pause_state
+        await sync_net_pause_state(db, net_id)
+
     return {"message": f"Role {role} assigned to user {user_id}"}
 
 
@@ -154,6 +158,10 @@ async def remove_net_role(
             db
         )
 
+    if role_name == "NCS":
+        from app.net_pause import sync_net_pause_state
+        await sync_net_pause_state(db, net_id)
+
     return None
 
 
@@ -225,7 +233,10 @@ async def claim_ncs_role(
         },
         "timestamp": datetime.datetime.utcnow().isoformat()
     }, net_id)
-    
+
+    from app.net_pause import sync_net_pause_state
+    await sync_net_pause_state(db, net_id)
+
     return {"message": "NCS role claimed successfully"}
 
 
@@ -286,6 +297,9 @@ async def toggle_self_net_role(
 
     action = "stepped up to NCS" if role.is_active else "stepped down to participant"
     await post_system_message(net_id, f"{display_callsign(current_user)} {action}", db)
+
+    from app.net_pause import sync_net_pause_state
+    await sync_net_pause_state(db, net_id)
 
     return {
         "id": role.id,

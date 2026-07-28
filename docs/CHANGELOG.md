@@ -6,6 +6,10 @@ All notable changes to ECTLogger are documented here.
 
 # July 27, 2026
 
+## New Features
+
+* **Net View: Paused-net indicator** — If the NCS steps away and no co-NCS is covering, the net now shows a blue border and a banner letting everyone know no one is actively running it, and the on-air duration timer pauses too. Both clear automatically the instant an NCS is present again. The net's recorded duration (used in statistics and reports) no longer counts time with no NCS present.
+
 ## Improvements
 
 * **Net View: Toolbar fills the available width** — The net toolbar now uses as much of the page as it has, showing full button labels whenever there's room instead of hiding items into the More menu at a fixed screen size. It also collapses correctly on short screens and at different browser zoom levels.

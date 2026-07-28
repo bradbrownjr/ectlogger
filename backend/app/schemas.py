@@ -386,6 +386,11 @@ class NetResponse(NetBase):
     started_at: Optional[datetime] = None
     closed_at: Optional[datetime] = None
     created_at: datetime
+    # Set while the net has an assigned NCS but none are actively present
+    # (all away/not checked in); null otherwise. total_paused_seconds
+    # accumulates each past paused window and is folded in at close.
+    paused_at: Optional[datetime] = None
+    total_paused_seconds: int = 0
     frequencies: List[FrequencyResponse] = []
     check_in_count: Optional[int] = None
     can_manage: bool = False  # True if current user can edit (owner, admin, or NCS)
@@ -423,6 +428,8 @@ class NetResponse(NetBase):
             'started_at': net.started_at,
             'closed_at': net.closed_at,
             'created_at': net.created_at,
+            'paused_at': net.paused_at,
+            'total_paused_seconds': net.total_paused_seconds or 0,
             'frequencies': [FrequencyResponse.model_validate(f) for f in net.frequencies],
             'check_in_count': check_in_count,
             'can_manage': can_manage,

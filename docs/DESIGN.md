@@ -455,6 +455,24 @@ a page reload.
 
 ---
 
+## Net-Paused Indicator (`NetView.tsx`)
+
+When a net has an assigned NCS but none are actively present (all
+away/not checked in — see `backend/app/net_pause.py`), the net view shows:
+
+- A `3px solid` border in `info.main` (blue) on the outer net `Paper`,
+  applied whenever `net.paused_at` is set.
+- A persistent `Alert variant="filled" severity="info"` banner directly
+  below the command bar (not dismissible — it reflects live state and
+  clears itself the instant the condition resolves, so there's nothing for
+  the user to dismiss).
+
+Unlike `MaintenanceBanner`, this state is per-net and derived from
+`net.paused_at`/`net.total_paused_seconds` (refreshed via the `net_pause_change`
+WebSocket message), not polled — no interval needed since it's pushed live.
+
+---
+
 ## What's New / Changelog (`frontend/src/changelog.json`)
 
 Add an entry to the **current release version** object whenever a user-facing

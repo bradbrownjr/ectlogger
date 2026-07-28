@@ -400,6 +400,11 @@ async def update_check_in(
         },
         "timestamp": datetime.now(UTC).isoformat()
     }, check_in.net_id)
+
+    if 'status' in check_in_update.dict(exclude_unset=True):
+        from app.net_pause import sync_net_pause_state
+        await sync_net_pause_state(db, check_in.net_id)
+
     return CheckInResponse.from_orm(check_in)
 
 
@@ -443,7 +448,10 @@ async def delete_check_in(
         },
         "timestamp": datetime.datetime.utcnow().isoformat()
     }, net_id)
-    
+
+    from app.net_pause import sync_net_pause_state
+    await sync_net_pause_state(db, net_id)
+
     return None
 
 

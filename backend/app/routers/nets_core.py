@@ -782,6 +782,15 @@ async def close_net(
     net.status = NetStatus.CLOSED
     net.closed_at = datetime.utcnow()
 
+    # Finalize an in-progress pause (net closed while NCS was away) so
+    # total_paused_seconds reflects the full paused window.
+    if net.paused_at:
+        from datetime import timezone as _timezone
+        closed_at_aware = net.closed_at.replace(tzinfo=_timezone.utc) if net.closed_at.tzinfo is None else net.closed_at
+        paused_at_aware = net.paused_at.replace(tzinfo=_timezone.utc) if net.paused_at.tzinfo is None else net.paused_at
+        net.total_paused_seconds = (net.total_paused_seconds or 0) + int((closed_at_aware - paused_at_aware).total_seconds())
+        net.paused_at = None
+
     # If started_at was never set (net closed from LOBBY without going ACTIVE),
     # backfill it from scheduled_start_time so duration stats are accurate.
     if not net.started_at:

@@ -134,6 +134,13 @@ class Net(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
+    # Set while the net has no actively-present NCS (assigned NCS exists but
+    # all are away/not checked in); cleared and folded into
+    # total_paused_seconds the moment an NCS is present again. See
+    # app/net_pause.py.
+    paused_at = Column(DateTime(timezone=True), nullable=True)
+    total_paused_seconds = Column(Integer, default=0)
+
     # Relationships
     owner = relationship("User", back_populates="owned_nets", foreign_keys=[owner_id])
     template = relationship("NetTemplate", back_populates="nets", foreign_keys=[template_id])

@@ -66,7 +66,12 @@ async def get_net_statistics(
         else:
             end_time = datetime.now(timezone.utc)
         
-        duration_minutes = int((end_time - started_at).total_seconds() / 60)
+        # Exclude windows where no NCS was actively present.
+        paused_seconds = net.total_paused_seconds or 0
+        if net.paused_at:
+            paused_at = net.paused_at if net.paused_at.tzinfo else net.paused_at.replace(tzinfo=timezone.utc)
+            paused_seconds += (end_time - paused_at).total_seconds()
+        duration_minutes = max(0, int((end_time - started_at).total_seconds() / 60) - int(paused_seconds / 60))
     elif net.scheduled_start_time:
         # started_at not recorded but a scheduled time exists — use it
         started_at = net.scheduled_start_time

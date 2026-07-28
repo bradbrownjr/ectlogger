@@ -334,6 +334,17 @@ For nets with multiple frequencies, you can have multiple NCS operators:
    - Frequency chips and check-in rows are colored to match the monitoring NCS
 4. **Check-ins** — When you check in a station, they're automatically assigned to your claimed frequency
 
+### Stepping Away as NCS
+
+If you're the only active NCS and click Step Away, you'll see a confirmation
+warning that no one else is currently running the net. If you continue, or
+if you're disconnected/check out with no co-NCS covering, the net shows a
+blue border and a banner telling everyone no one is actively running it, and
+the on-air duration timer pauses. Both clear automatically the moment an NCS
+is present again — either you returning, a co-NCS stepping up, or someone
+claiming NCS. Time spent with no NCS present doesn't count toward the net's
+recorded duration in statistics or reports.
+
 ### Assigning Roles
 
 Delegate responsibilities:
