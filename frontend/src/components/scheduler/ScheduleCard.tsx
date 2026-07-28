@@ -278,12 +278,22 @@ const ScheduleCard: React.FC<ScheduleCardProps> = ({
 
       <CardActions sx={{ flexDirection: 'column', alignItems: 'stretch', gap: 0.5 }}>
         {/* ---- Management row (staff/admin only) ----
-            Above the standard row so managers reach Edit/Delete/Create
+            Above the standard row so managers reach Create/Edit/Delete
             without hunting past the info controls everyone else sees.
-            Ordered by severity: neutral change, then destructive, then the
-            primary create action last. */}
+            Create leads (primary action, left-aligned like it was before
+            the row split), then Edit, then Delete last as the most
+            destructive action. */}
         {(canManage || isOwnerOrAdmin || schedule.can_create_net) && (
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-start', gap: 0.5 }}>
+            {schedule.can_create_net && (
+              <CardActionButton
+                icon={<PlayArrowIcon />}
+                label="Create"
+                color="primary"
+                tooltip="Create net from this schedule"
+                onClick={onCreateNet}
+              />
+            )}
             {canManage && (
               <CardActionButton
                 icon={<EditIcon />}
@@ -302,20 +312,11 @@ const ScheduleCard: React.FC<ScheduleCardProps> = ({
                 onClick={onDelete}
               />
             )}
-            {schedule.can_create_net && (
-              <CardActionButton
-                icon={<PlayArrowIcon />}
-                label="Create"
-                color="primary"
-                tooltip="Create net from this schedule"
-                onClick={onCreateNet}
-              />
-            )}
           </Box>
         )}
 
         {/* ---- Standard row (everyone) ---- */}
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-start', gap: 0.5 }}>
           {schedule.info_url && (
             <CardActionButton
               icon={<LanguageIcon />}

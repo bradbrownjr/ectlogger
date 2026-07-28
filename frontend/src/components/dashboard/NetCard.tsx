@@ -216,37 +216,116 @@ const NetCard: React.FC<NetCardProps> = ({
         </Box>
       </CardContent>
 
-      <CardActions sx={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 0.5 }}>
-        {/* View — always on left */}
-        <Box>
-          <CardActionButton
-            icon={<SearchIcon />}
-            label="View"
-            color="primary"
-            tooltip="View net"
-            onClick={() => navigate(`/nets/${net.id}`)}
-          />
-        </Box>
+      <CardActions sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-start', gap: 0.5 }}>
+        {/* All actions in one left-aligned, wrapping row so every wrapped
+            line still starts flush with the card's left edge. */}
+        <CardActionButton
+          icon={<SearchIcon />}
+          label="View"
+          color="primary"
+          tooltip="View net"
+          onClick={() => navigate(`/nets/${net.id}`)}
+        />
+        {/* Net staff — always visible */}
+        <CardActionButton
+          icon={<GroupsIcon sx={{ color: '#9c27b0' }} />}
+          label="Staff"
+          tooltip="View net staff"
+          onClick={onStaffClick}
+        />
 
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 0.5 }}>
-          {/* Net staff — always visible */}
+        {/* Active/Lobby: stats and delete */}
+        {(net.status === 'active' || net.status === 'lobby') && (
           <CardActionButton
-            icon={<GroupsIcon sx={{ color: '#9c27b0' }} />}
-            label="Staff"
-            tooltip="View net staff"
-            onClick={onStaffClick}
+            icon={<BarChartIcon sx={{ color: '#ff9800' }} />}
+            label="Stats"
+            tooltip="Net statistics"
+            onClick={() => navigate(`/statistics/nets/${net.id}`)}
           />
+        )}
+        {(net.status === 'active' || net.status === 'lobby') && canManage && (
+          <CardActionButton
+            icon={<DeleteIcon />}
+            label="Delete"
+            color="error"
+            tooltip="Delete net"
+            onClick={onDeleteClick}
+          />
+        )}
 
-          {/* Active/Lobby: stats and delete */}
-          {(net.status === 'active' || net.status === 'lobby') && (
+        {net.info_url && (
+          <CardActionButton
+            icon={<LanguageIcon />}
+            label="Info"
+            tooltip="Net/Club info"
+            onClick={() => window.open(net.info_url, '_blank')}
+          />
+        )}
+
+        {/* Draft/Scheduled: email, edit, cancel, start — ordered by
+            severity (neutral, then destructive, then the primary action
+            last) so Start sits away from Cancel and is easy to hit without
+            risking an accidental cancel. */}
+        {(net.status === 'draft' || net.status === 'scheduled') && canManage && (
+          <>
+            {net.template_id && (
+              <CardActionButton
+                icon={<EmailIcon />}
+                label="Email"
+                tooltip="Email subscribers"
+                onClick={onEmailClick}
+              />
+            )}
+            <CardActionButton
+              icon={<EditIcon />}
+              label="Edit"
+              tooltip="Edit net"
+              onClick={() => navigate(`/nets/${net.id}/edit`)}
+            />
+            <CardActionButton
+              icon={<DeleteIcon />}
+              label="Cancel"
+              color="error"
+              tooltip="Cancel this net"
+              onClick={onDeleteClick}
+            />
+            <CardActionButton
+              icon={<PlayArrowIcon />}
+              label="Start"
+              color="success"
+              tooltip="Start net"
+              onClick={onStartNet}
+            />
+          </>
+        )}
+
+        {/* Closed: stats, export, PDF, archive, delete */}
+        {net.status === 'closed' && canManage && (
+          <>
             <CardActionButton
               icon={<BarChartIcon sx={{ color: '#ff9800' }} />}
               label="Stats"
               tooltip="Net statistics"
               onClick={() => navigate(`/statistics/nets/${net.id}`)}
             />
-          )}
-          {(net.status === 'active' || net.status === 'lobby') && canManage && (
+            <CardActionButton
+              icon={<DownloadIcon sx={{ color: '#4caf50' }} />}
+              label="Export"
+              tooltip="Export log"
+              onClick={onExportCSV}
+            />
+            <CardActionButton
+              icon={<PictureAsPdfIcon sx={{ color: '#4caf50' }} />}
+              label="Report"
+              tooltip="Net report (PDF)"
+              onClick={() => navigate(`/nets/${net.id}/report`)}
+            />
+            <CardActionButton
+              icon={<ArchiveIcon />}
+              label="Archive"
+              tooltip="Archive net"
+              onClick={onArchiveNet}
+            />
             <CardActionButton
               icon={<DeleteIcon />}
               label="Delete"
@@ -254,91 +333,8 @@ const NetCard: React.FC<NetCardProps> = ({
               tooltip="Delete net"
               onClick={onDeleteClick}
             />
-          )}
-
-          {net.info_url && (
-            <CardActionButton
-              icon={<LanguageIcon />}
-              label="Info"
-              tooltip="Net/Club info"
-              onClick={() => window.open(net.info_url, '_blank')}
-            />
-          )}
-
-          {/* Draft/Scheduled: email, edit, cancel, start — ordered by
-              severity (neutral, then destructive, then the primary action
-              last) so Start sits away from Cancel and is easy to hit without
-              risking an accidental cancel. */}
-          {(net.status === 'draft' || net.status === 'scheduled') && canManage && (
-            <>
-              {net.template_id && (
-                <CardActionButton
-                  icon={<EmailIcon />}
-                  label="Email"
-                  tooltip="Email subscribers"
-                  onClick={onEmailClick}
-                />
-              )}
-              <CardActionButton
-                icon={<EditIcon />}
-                label="Edit"
-                tooltip="Edit net"
-                onClick={() => navigate(`/nets/${net.id}/edit`)}
-              />
-              <CardActionButton
-                icon={<DeleteIcon />}
-                label="Cancel"
-                color="error"
-                tooltip="Cancel this net"
-                onClick={onDeleteClick}
-              />
-              <CardActionButton
-                icon={<PlayArrowIcon />}
-                label="Start"
-                color="success"
-                tooltip="Start net"
-                onClick={onStartNet}
-              />
-            </>
-          )}
-
-          {/* Closed: stats, export, PDF, archive, delete */}
-          {net.status === 'closed' && canManage && (
-            <>
-              <CardActionButton
-                icon={<BarChartIcon sx={{ color: '#ff9800' }} />}
-                label="Stats"
-                tooltip="Net statistics"
-                onClick={() => navigate(`/statistics/nets/${net.id}`)}
-              />
-              <CardActionButton
-                icon={<DownloadIcon sx={{ color: '#4caf50' }} />}
-                label="Export"
-                tooltip="Export log"
-                onClick={onExportCSV}
-              />
-              <CardActionButton
-                icon={<PictureAsPdfIcon sx={{ color: '#4caf50' }} />}
-                label="Report"
-                tooltip="Net report (PDF)"
-                onClick={() => navigate(`/nets/${net.id}/report`)}
-              />
-              <CardActionButton
-                icon={<ArchiveIcon />}
-                label="Archive"
-                tooltip="Archive net"
-                onClick={onArchiveNet}
-              />
-              <CardActionButton
-                icon={<DeleteIcon />}
-                label="Delete"
-                color="error"
-                tooltip="Delete net"
-                onClick={onDeleteClick}
-              />
-            </>
-          )}
-        </Box>
+          </>
+        )}
       </CardActions>
     </Card>
   );
