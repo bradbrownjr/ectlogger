@@ -1149,7 +1149,7 @@ const NetView: React.FC = () => {
       {/* Persistent banner while no NCS is actively present — see app/net_pause.py */}
       {!!net.paused_at && (
         <Alert variant="filled" severity="info" sx={{ borderRadius: 0 }}>
-          Net Control has stepped away — no one is actively running this net right now.
+          Net Control has stepped away — this net has been paused until they return.
         </Alert>
       )}
 

@@ -475,8 +475,8 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
     {
       key: 'ncs-role', group: 'management', priority: 3,
       visible: isAuthenticated && isActiveOrLobby && !!userActiveCheckIn && isAssignedNCS,
-      Icon: WorkspacePremiumIcon, color: '#1976d2', label: 'NCS role',
-      tooltip: isNCS ? 'Step down — stop acting as NCS' : 'Step up — take NCS role',
+      Icon: WorkspacePremiumIcon, color: '#1976d2', label: isNCS ? 'Role: NCS' : 'Role: Standard',
+      tooltip: isNCS ? 'Acting as NCS — click to step down to Standard' : 'Acting as Standard — click to step up to NCS',
       onClick: onToggleNCSRole,
       active: isNCS, activeTone: 'primary',
     },

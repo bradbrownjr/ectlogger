@@ -288,7 +288,8 @@ button for whatever didn't fit.
 
 **Management group** (right) — Start net, Edit net, Roles, Claim NCS, Raise
 hand (hidden for the acting NCS — doesn't make sense to raise a hand to get
-your own attention), Step away, NCS role, Check out, Check in, Go live, Close
+your own attention), Step away, Role switch (labelled "Role: NCS" / "Role:
+Standard" depending on current state — click to toggle), Check out, Check in, Go live, Close
 net, Export, ICS-309, Report, Archive, Unarchive, Delete. Same visibility
 conditions as before the redesign (see `NetViewHeader.tsx` — each button's
 condition is unchanged, only the visual treatment and grouping moved), except
