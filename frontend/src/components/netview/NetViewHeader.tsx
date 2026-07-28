@@ -19,6 +19,7 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
+  Popover,
 } from '@mui/material';
 import { keyframes } from '@mui/system';
 import EditIcon from '@mui/icons-material/Edit';
@@ -326,7 +327,8 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
   const navigate = useNavigate();
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
-  const [descriptionExpanded, setDescriptionExpanded] = useState(false);
+  const [descriptionAnchorEl, setDescriptionAnchorEl] = useState<HTMLElement | null>(null);
+  const descriptionExpanded = !!descriptionAnchorEl;
   const [moreMenuAnchor, setMoreMenuAnchor] = useState<null | HTMLElement>(null);
   const [stepAwayConfirmOpen, setStepAwayConfirmOpen] = useState(false);
 
@@ -684,7 +686,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
             <Typography
               variant="body2"
               title={net.description}
-              onClick={() => setDescriptionExpanded(v => !v)}
+              onClick={(e) => setDescriptionAnchorEl(a => a ? null : e.currentTarget)}
               sx={{
                 // flex-basis: 0 (not 'auto') is required here — with 'auto',
                 // the browser's line-wrap decision uses this item's
@@ -709,7 +711,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
             </Typography>
             <Box
               component="button"
-              onClick={() => setDescriptionExpanded(v => !v)}
+              onClick={(e) => setDescriptionAnchorEl(a => a ? null : e.currentTarget)}
               sx={{
                 flex: '0 0 auto',
                 display: 'inline-flex',
@@ -869,24 +871,30 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
         </Box>
       </Box>
 
-      {/* ===== EXPANDED DESCRIPTION BLOCK (only when toggled open) ===== */}
-      {descriptionExpanded && net.description && (
-        <Box
-          sx={{
-            mx: 2, mb: 1, maxWidth: 620,
-            backgroundColor: 'background.paper',
-            border: '1px solid',
-            borderColor: 'divider',
-            borderRadius: '4px',
-            boxShadow: '0 6px 20px rgba(15,23,42,.12)',
-            p: '10px 13px',
-          }}
-        >
-          <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: 1.55 }}>
-            {net.description}
-          </Typography>
-        </Box>
-      )}
+      {/* ===== EXPANDED DESCRIPTION POPOVER — floats over the page instead
+          of pushing the toolbar/content down ===== */}
+      <Popover
+        open={descriptionExpanded}
+        anchorEl={descriptionAnchorEl}
+        onClose={() => setDescriptionAnchorEl(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+        slotProps={{
+          paper: {
+            sx: {
+              maxWidth: 420,
+              mt: 0.5,
+              borderRadius: '4px',
+              boxShadow: '0 6px 20px rgba(15,23,42,.12)',
+              p: '10px 13px',
+            },
+          },
+        }}
+      >
+        <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: 1.55 }}>
+          {net.description}
+        </Typography>
+      </Popover>
 
       {/* ===== COMMAND BAR — full-bleed strip spanning the whole page width ===== */}
       <Box
