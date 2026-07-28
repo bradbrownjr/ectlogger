@@ -1,6 +1,6 @@
 # ECT Logger — Product Roadmap
 
-*Last updated: 2026-07-26 (rev 40 — pruned completed items. Milestone 0.1 through 0.4 (the codebase health and modularity program) are done and have been removed; their durable conventions now live in [`docs/DEVELOPMENT.md`](DEVELOPMENT.md) and the shipped user-facing result is in [`docs/CHANGELOG.md`](CHANGELOG.md). Section numbers 0.5–0.7 are kept as-is so commit messages and docs referencing "Milestone 0.4" still resolve.)*  
+*Last updated: 2026-07-28 (rev 41 — moved section 0.5 into Milestone 2. Its only open item, the Alembic-vs-numbered-scripts decision, was already a stated prerequisite of the PostgreSQL migration, so it now lives there as "Schema Tooling Decision", a sibling prerequisite section alongside UTC-Aware Datetime Hardening, rather than as a separate Milestone 0 section. Milestone 0.1 through 0.4 (the codebase health and modularity program) are done and have been removed; their durable conventions now live in [`docs/DEVELOPMENT.md`](DEVELOPMENT.md) and the shipped user-facing result is in [`docs/CHANGELOG.md`](CHANGELOG.md). Section numbers 0.6 and 0.7 are kept as-is so commit messages and docs referencing "Milestone 0.4" still resolve.)*  
 *Compiled from user feedback: AA1GM, KC1UIX, W1BKW, W1MTW, N1GSK, KC1JMH*
 
 > **Canonical location:** `docs/ROADMAP.md`.
@@ -35,12 +35,6 @@ Rule of thumb: Haiku and Sonnet can only maintain this codebase safely once file
 ## Milestone 0 — Codebase Health & Maintainability
 
 *The bulk of this milestone (0.1 confirmed bugs, 0.2 orphaned code, 0.3 guardrails, 0.4 the modularity and componentization program) completed between 2026-07-03 and 2026-07-06 and has been pruned. What it delivered: a test suite and CI pipeline, React error boundaries, WebSocket resilience, SMTP timeouts, IANA timezone validation, composite indexes, shared frontend hooks, `app/permissions.py`, the backend router facades, and the frontend page splits. The patterns those splits established are documented in [`docs/DEVELOPMENT.md`](DEVELOPMENT.md) ("Backend router-split (facade) pattern", "Frontend component-split pattern", "Post-split verification checklist"). Sections below are what remains open.*
-
-### 0.5 Migration hygiene policy *(process, not code)*
-
-*The `013_` numbering collision and the instance-specific-data-migration norm were both resolved 2026-07-07; see the "Migration content guidelines" section of `backend/migrations/README.md` for the standing rule.*
-
-- **Alembic adoption** — deferred to the PostgreSQL item in Milestone 2, whose plan currently references `alembic upgrade head` even though **Alembic is not set up in this project**. Must be resolved as part of that work: either adopt Alembic first, or rewrite that step. **Model:** Opus for the design decision, Sonnet for execution.
 
 ### 0.6 Post-Milestone-0.4 cleanup *(non-blocking, found during PR #2 review, 2026-07-26)*
 
@@ -324,17 +318,32 @@ Load trivia questions from a CSV file or URL. During a net, NCS can click a triv
 ### Database Migration Path
 
 **✨ Migrate from SQLite to PostgreSQL ahead of expected growth** *(KC1JMH)*  
-**Model:** Opus — data migration with zero-loss requirements, plus two audit-found landmines: (1) the plan below says `alembic upgrade head`, but **Alembic is not set up in this project** — migrations are hand-numbered scripts in `backend/migrations/`; adopt Alembic first or replace that step with a schema bootstrap from `models.py`; (2) several columns store JSON as `Text` (e.g. `User.callsigns`) and enums via SQLAlchemy `Enum` — both need an explicit porting decision for Postgres.  
+**Model:** Opus — data migration with zero-loss requirements, plus an audit-found landmine: several columns store JSON as `Text` (e.g. `User.callsigns`) and enums via SQLAlchemy `Enum` — both need an explicit porting decision for Postgres. The schema-tooling question (Alembic or not) is its own prerequisite section below.  
 ECTLogger runs SQLite today, which is appropriate for a low-concurrency single-server deployment. SQLite serializes all writes; under concurrent net sessions and real-time check-ins from multiple NCS operators at once, this will become a bottleneck. The ORM layer (SQLAlchemy async with `aiosqlite`) already supports PostgreSQL via `asyncpg` — the `DATABASE_URL` env var is the primary code-level change.
 
 Migration plan:
+- Resolve the schema-tooling decision (see the prerequisite section below)
 - Provision a PostgreSQL instance on the IONOS VPS (or use a managed instance)
-- Run `alembic upgrade head` against the new database
+- Bring the new database to the current schema (`alembic upgrade head` if Alembic is adopted, otherwise create from `models.py`)
 - Write a one-time data migration script to export SQLite rows and import into Postgres (preserve all timestamps and IDs)
 - Flip `DATABASE_URL`, restart, smoke-test
 - Keep the SQLite file as a backup for 30 days post-migration
 
 **Trigger:** migrate before the user base exceeds ~300 accounts or before any feature requiring high concurrent write throughput (e.g., simultaneous multi-net operation). The expected inbound migration from ham.live's closure makes this a near-term planning item rather than a back-burner one.
+
+### Schema Tooling Decision *(prerequisite for the PostgreSQL migration above)*
+
+**🔧 Decide whether to adopt Alembic before the Postgres cutover** *(formerly roadmap item 0.5, "Migration hygiene policy")*  
+**Model:** Opus for the decision, Sonnet for execution.
+
+Migrations today are hand-numbered Python scripts in `backend/migrations/`, each run individually against each deployment. That works for SQLite schema tweaks but leaves no versioning record, so a fresh Postgres database has no defined "current schema" to build from. Decide and execute one of two paths before the cutover:
+
+- **Adopt Alembic** — autogenerate an initial revision from `models.py`, stamp the existing production/beta databases as current so they are not re-run from scratch, and convert the run-each-script workflow (including the docs in `backend/migrations/README.md`, `docs/DEVELOPMENT.md`, and the deployment steps in `.github/copilot-instructions.md`).
+- **Skip Alembic** — bootstrap the Postgres schema directly from `models.py` and keep the numbered-script convention for incremental changes.
+
+Whichever path is taken, the PostgreSQL migration plan above must be rewritten to match: it currently assumes Alembic.
+
+**Already settled (2026-07-07), keep enforcing:** migrations carry schema changes only, never instance-specific data fixes — a self-hoster must never inherit another deployment's roster seeding. The standing rule lives in the "Migration content guidelines" section of `backend/migrations/README.md`, and it constrains whichever tooling path is chosen. The `013_` numbering collision that prompted the rule is resolved.
 
 ### UTC-Aware Datetime Hardening *(prerequisite for the PostgreSQL migration above)*
 
@@ -402,7 +411,7 @@ This is separate from the standalone desktop client above. Both are back-burner 
 ### Self-Hosting Enhancements
 
 **✨ Docker image for self-hosters**  
-**Model:** Sonnet. Note: cleaning up the instance-specific data migrations issue (Milestone 0.5) matters here — a fresh Docker install should never execute another deployment's roster fixes.  
+**Model:** Sonnet. Note: a fresh Docker install must never execute another deployment's roster fixes — the schema-changes-only rule in `backend/migrations/README.md` ("Migration content guidelines") is what keeps that true, so verify the image's migration step honors it.  
 Official `Dockerfile` / `docker-compose.yml` for a one-command self-hosted deployment. Publish to Docker Hub alongside each release.
 
 **✨ Net template portability between hosted and self-hosted**  
