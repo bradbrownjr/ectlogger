@@ -25,6 +25,7 @@ import BarChartIcon from '@mui/icons-material/BarChart';
 import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
 import ExpandableDescription from '../ExpandableDescription';
+import CardActionButton from '../CardActionButton';
 
 // ---- Types ----
 
@@ -276,7 +277,7 @@ const ScheduleCard: React.FC<ScheduleCardProps> = ({
         </Box>
       </CardContent>
 
-      <CardActions sx={{ justifyContent: 'space-between', flexWrap: 'wrap' }}>
+      <CardActions sx={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 0.5 }}>
         <Box>
           {schedule.can_create_net && (
             <Button size="small" startIcon={<PlayArrowIcon />} onClick={onCreateNet}>
@@ -284,53 +285,63 @@ const ScheduleCard: React.FC<ScheduleCardProps> = ({
             </Button>
           )}
         </Box>
-        <Box>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 0.5 }}>
           {schedule.info_url && (
-            <Tooltip title="Net/Club info">
-              <IconButton size="small" color="primary" onClick={() => window.open(schedule.info_url, '_blank')}>
-                <LanguageIcon />
-              </IconButton>
-            </Tooltip>
+            <CardActionButton
+              icon={<LanguageIcon />}
+              label="Info"
+              color="primary"
+              tooltip="Net/Club info"
+              onClick={() => window.open(schedule.info_url, '_blank')}
+            />
           )}
-          <Tooltip title="Schedule statistics">
-            <IconButton size="small" sx={{ color: '#ff9800' }} onClick={() => navigate(`/statistics/schedules/${schedule.id}`)}>
-              <BarChartIcon />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="View net staff">
-            <IconButton size="small" sx={{ color: '#9c27b0' }} onClick={onOpenRotationModal}>
-              <GroupsIcon />
-            </IconButton>
-          </Tooltip>
+          <CardActionButton
+            icon={<BarChartIcon sx={{ color: '#ff9800' }} />}
+            label="Stats"
+            tooltip="Schedule statistics"
+            onClick={() => navigate(`/statistics/schedules/${schedule.id}`)}
+          />
+          <CardActionButton
+            icon={<GroupsIcon sx={{ color: '#9c27b0' }} />}
+            label="Staff"
+            tooltip="View net staff"
+            onClick={onOpenRotationModal}
+          />
           {isAuthenticated && (
             schedule.is_subscribed ? (
-              <Tooltip title="Unsubscribe from notifications">
-                <IconButton size="small" color="primary" onClick={onUnsubscribe}>
-                  <NotificationsActiveIcon />
-                </IconButton>
-              </Tooltip>
+              <CardActionButton
+                icon={<NotificationsActiveIcon />}
+                label="Unsub"
+                color="primary"
+                tooltip="Unsubscribe from notifications"
+                onClick={onUnsubscribe}
+              />
             ) : (
-              <Tooltip title="Subscribe to notifications">
-                <IconButton size="small" onClick={onSubscribe}>
-                  <NotificationsOffIcon />
-                </IconButton>
-              </Tooltip>
+              <CardActionButton
+                icon={<NotificationsOffIcon />}
+                label="Subscribe"
+                tooltip="Subscribe to notifications"
+                onClick={onSubscribe}
+              />
             )
           )}
           {canManage && (
-            <Tooltip title="Edit schedule">
-              <IconButton size="small" onClick={() => navigate(`/scheduler/${schedule.id}/edit`)}>
-                <EditIcon />
-              </IconButton>
-            </Tooltip>
+            <CardActionButton
+              icon={<EditIcon />}
+              label="Edit"
+              tooltip="Edit schedule"
+              onClick={() => navigate(`/scheduler/${schedule.id}/edit`)}
+            />
           )}
           {/* Delete is restricted to owner and admin only */}
           {isOwnerOrAdmin && (
-            <Tooltip title="Delete schedule">
-              <IconButton size="small" color="error" onClick={onDelete}>
-                <DeleteIcon />
-              </IconButton>
-            </Tooltip>
+            <CardActionButton
+              icon={<DeleteIcon />}
+              label="Delete"
+              color="error"
+              tooltip="Delete schedule"
+              onClick={onDelete}
+            />
           )}
         </Box>
       </CardActions>

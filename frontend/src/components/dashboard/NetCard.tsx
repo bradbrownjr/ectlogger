@@ -27,6 +27,7 @@ import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
 import EmailIcon from '@mui/icons-material/Email';
 import ExpandableDescription from '../ExpandableDescription';
+import CardActionButton from '../CardActionButton';
 import { formatDateTime } from '../../utils/dateUtils';
 
 // ---- Types ----
@@ -218,101 +219,120 @@ const NetCard: React.FC<NetCardProps> = ({
       <CardActions sx={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 0.5 }}>
         {/* View — always on left */}
         <Box>
-          <Tooltip title="View net">
-            <IconButton size="small" color="primary" onClick={() => navigate(`/nets/${net.id}`)}>
-              <SearchIcon />
-            </IconButton>
-          </Tooltip>
+          <CardActionButton
+            icon={<SearchIcon />}
+            label="View"
+            color="primary"
+            tooltip="View net"
+            onClick={() => navigate(`/nets/${net.id}`)}
+          />
         </Box>
 
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 0.5 }}>
           {/* Net staff — always visible */}
-          <Tooltip title="View net staff">
-            <IconButton size="small" sx={{ color: '#9c27b0' }} onClick={onStaffClick}>
-              <GroupsIcon />
-            </IconButton>
-          </Tooltip>
+          <CardActionButton
+            icon={<GroupsIcon sx={{ color: '#9c27b0' }} />}
+            label="Staff"
+            tooltip="View net staff"
+            onClick={onStaffClick}
+          />
 
           {/* Active/Lobby: stats and delete */}
           {(net.status === 'active' || net.status === 'lobby') && (
-            <Tooltip title="Net statistics">
-              <IconButton size="small" sx={{ color: '#ff9800' }} onClick={() => navigate(`/statistics/nets/${net.id}`)}>
-                <BarChartIcon />
-              </IconButton>
-            </Tooltip>
+            <CardActionButton
+              icon={<BarChartIcon sx={{ color: '#ff9800' }} />}
+              label="Stats"
+              tooltip="Net statistics"
+              onClick={() => navigate(`/statistics/nets/${net.id}`)}
+            />
           )}
           {(net.status === 'active' || net.status === 'lobby') && canManage && (
-            <Tooltip title="Delete net">
-              <IconButton size="small" color="error" onClick={onDeleteClick}>
-                <DeleteIcon />
-              </IconButton>
-            </Tooltip>
+            <CardActionButton
+              icon={<DeleteIcon />}
+              label="Delete"
+              color="error"
+              tooltip="Delete net"
+              onClick={onDeleteClick}
+            />
           )}
 
           {net.info_url && (
-            <Tooltip title="Net/Club info">
-              <IconButton size="small" onClick={() => window.open(net.info_url, '_blank')}>
-                <LanguageIcon />
-              </IconButton>
-            </Tooltip>
+            <CardActionButton
+              icon={<LanguageIcon />}
+              label="Info"
+              tooltip="Net/Club info"
+              onClick={() => window.open(net.info_url, '_blank')}
+            />
           )}
 
           {/* Draft/Scheduled: email, edit, start, cancel */}
           {(net.status === 'draft' || net.status === 'scheduled') && canManage && (
             <>
               {net.template_id && (
-                <Tooltip title="Email subscribers">
-                  <IconButton size="small" onClick={onEmailClick}>
-                    <EmailIcon />
-                  </IconButton>
-                </Tooltip>
+                <CardActionButton
+                  icon={<EmailIcon />}
+                  label="Email"
+                  tooltip="Email subscribers"
+                  onClick={onEmailClick}
+                />
               )}
-              <Tooltip title="Edit net">
-                <IconButton size="small" onClick={() => navigate(`/nets/${net.id}/edit`)}>
-                  <EditIcon />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Start net">
-                <IconButton size="small" color="success" onClick={onStartNet}>
-                  <PlayArrowIcon />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Cancel this net">
-                <IconButton size="small" color="error" onClick={onDeleteClick}>
-                  <DeleteIcon />
-                </IconButton>
-              </Tooltip>
+              <CardActionButton
+                icon={<EditIcon />}
+                label="Edit"
+                tooltip="Edit net"
+                onClick={() => navigate(`/nets/${net.id}/edit`)}
+              />
+              <CardActionButton
+                icon={<PlayArrowIcon />}
+                label="Start"
+                color="success"
+                tooltip="Start net"
+                onClick={onStartNet}
+              />
+              <CardActionButton
+                icon={<DeleteIcon />}
+                label="Cancel"
+                color="error"
+                tooltip="Cancel this net"
+                onClick={onDeleteClick}
+              />
             </>
           )}
 
           {/* Closed: stats, export, PDF, archive, delete */}
           {net.status === 'closed' && canManage && (
             <>
-              <Tooltip title="Net statistics">
-                <IconButton size="small" sx={{ color: '#ff9800' }} onClick={() => navigate(`/statistics/nets/${net.id}`)}>
-                  <BarChartIcon />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Export log">
-                <IconButton size="small" sx={{ color: '#4caf50' }} onClick={onExportCSV}>
-                  <DownloadIcon />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Net report (PDF)">
-                <IconButton size="small" sx={{ color: '#4caf50' }} onClick={() => navigate(`/nets/${net.id}/report`)}>
-                  <PictureAsPdfIcon />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Archive net">
-                <IconButton size="small" onClick={onArchiveNet}>
-                  <ArchiveIcon />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Delete net">
-                <IconButton size="small" color="error" onClick={onDeleteClick}>
-                  <DeleteIcon />
-                </IconButton>
-              </Tooltip>
+              <CardActionButton
+                icon={<BarChartIcon sx={{ color: '#ff9800' }} />}
+                label="Stats"
+                tooltip="Net statistics"
+                onClick={() => navigate(`/statistics/nets/${net.id}`)}
+              />
+              <CardActionButton
+                icon={<DownloadIcon sx={{ color: '#4caf50' }} />}
+                label="Export"
+                tooltip="Export log"
+                onClick={onExportCSV}
+              />
+              <CardActionButton
+                icon={<PictureAsPdfIcon sx={{ color: '#4caf50' }} />}
+                label="Report"
+                tooltip="Net report (PDF)"
+                onClick={() => navigate(`/nets/${net.id}/report`)}
+              />
+              <CardActionButton
+                icon={<ArchiveIcon />}
+                label="Archive"
+                tooltip="Archive net"
+                onClick={onArchiveNet}
+              />
+              <CardActionButton
+                icon={<DeleteIcon />}
+                label="Delete"
+                color="error"
+                tooltip="Delete net"
+                onClick={onDeleteClick}
+              />
             </>
           )}
         </Box>
