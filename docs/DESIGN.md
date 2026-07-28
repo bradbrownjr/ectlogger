@@ -368,6 +368,10 @@ of blending into the flush strip: primary (blue) for toggles like Search-open
 or Role: NCS, warning (orange) for Return-from-away, success (green) for
 Check in — the primary call-to-action for anyone not yet logged into the
 net, including guests who might otherwise skim past a plain icon+label.
+On hover, a tinted (`active`) button deepens its own tone's background
+alpha instead of switching to the generic neutral hover gray — losing the
+color on hover reads as the button turning "off." Untinted buttons still
+get the plain neutral hover.
 
 **Dark mode** — see "Theme & Dark Mode Compliance" above. The strip's
 background, top/bottom border, group divider, hover state, label text, and

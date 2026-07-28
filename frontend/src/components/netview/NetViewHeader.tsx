@@ -85,10 +85,10 @@ const shimmerYellow = keyframes`
 // (design_handoff_netview_toolbar, option 3a): borderless "application
 // toolbar" buttons flush against each other so labelled controls read as
 // one calm strip instead of a wall of separate cards.
-const ACTIVE_TONE_COLORS: Record<'primary' | 'warning' | 'success', { border: string; background: string }> = {
-  primary: { border: '#90caf9', background: 'rgba(25,118,210,0.12)' },
-  warning: { border: '#ed6c02', background: 'rgba(237,108,2,0.12)' },
-  success: { border: '#2e7d32', background: 'rgba(46,125,50,0.14)' },
+const ACTIVE_TONE_COLORS: Record<'primary' | 'warning' | 'success', { border: string; background: string; hoverBackground: string }> = {
+  primary: { border: '#90caf9', background: 'rgba(25,118,210,0.12)', hoverBackground: 'rgba(25,118,210,0.24)' },
+  warning: { border: '#ed6c02', background: 'rgba(237,108,2,0.12)', hoverBackground: 'rgba(237,108,2,0.24)' },
+  success: { border: '#2e7d32', background: 'rgba(46,125,50,0.14)', hoverBackground: 'rgba(46,125,50,0.28)' },
 };
 
 const flushBtnSx = (
@@ -116,10 +116,15 @@ const flushBtnSx = (
   textTransform: 'none' as const,
   letterSpacing: '.01em',
   whiteSpace: 'nowrap' as const,
-  '&:hover': {
-    backgroundColor: isDarkMode ? 'rgba(255,255,255,0.08)' : '#e6e9ec',
-    borderColor: isDarkMode ? 'rgba(255,255,255,0.2)' : '#d3d7dc',
-  },
+  '&:hover': opts.active
+    ? {
+        backgroundColor: ACTIVE_TONE_COLORS[opts.activeTone ?? 'primary'].hoverBackground,
+        borderColor: ACTIVE_TONE_COLORS[opts.activeTone ?? 'primary'].border,
+      }
+    : {
+        backgroundColor: isDarkMode ? 'rgba(255,255,255,0.08)' : '#e6e9ec',
+        borderColor: isDarkMode ? 'rgba(255,255,255,0.2)' : '#d3d7dc',
+      },
   '&.Mui-disabled': {
     opacity: 0.4,
   },
