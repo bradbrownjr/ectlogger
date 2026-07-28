@@ -16,6 +16,10 @@ All notable changes to ECTLogger are documented here.
 
 * **Net View: Net Info and adding topics limited to staff** — Net Info showed net configuration details that aren't meant for regular participants, and anyone could see the option to add a historical topic entry even though only staff could actually save one. Both are now limited to NCS, loggers, and net managers — including if someone tries the Net Info page directly by its web address. Everyone can still browse the list of prior topics.
 
+* **Net View: Long descriptions no longer break the header layout** — A net with a long description could push the status chips and the More link onto their own separate lines instead of staying on one row. The description now truncates in place like it's supposed to.
+
+* **Mobile: Status chips wrap instead of pushing the page sideways** — On a phone, a busy net's status chips (Stations, Online, frequency, etc.) could force the whole page into horizontal scrolling. They now wrap onto additional lines and stay within the screen.
+
 ## Improvements
 
 * **Net View: Check In stands out** — The Check In button now has a green background so first-time visitors notice it right away instead of hunting for it in the toolbar.
@@ -25,6 +29,8 @@ All notable changes to ECTLogger are documented here.
 * **Net View: Paused-net border spans the whole page** — When Net Control has stepped away with no one covering, the blue border now frames the entire browser window instead of just the net panel, so it's impossible to miss.
 
 * **Net View: Prior topics link back to their net** — Each entry in the prior-topics list now has a link that opens the net it came from in a new tab, so you can browse history without losing your place in the net you have open.
+
+* **Mobile: Activity Log starts collapsed** — On a phone, the Activity Log now starts closed by default so the check-in list and chat are easier to reach without scrolling past it first. It remembers your choice separately from the desktop view, and you can still open it anytime.
 
 ---
 
