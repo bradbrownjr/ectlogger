@@ -696,16 +696,10 @@ const NetReport: React.FC = () => {
               {net.description}
             </Typography>
           )}
-          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
-            <Chip
-              label={net.status.toUpperCase()}
-              color={net.status === 'active' ? 'success' : net.status === 'closed' ? 'default' : 'info'}
-              size="small"
-            />
-            {net.ics309_enabled && (
-              <Chip label="ICS-309" color="primary" size="small" variant="outlined" />
-            )}
-          </Box>
+          {/* No status/ICS-309 badge row here. Reports are read after the net
+              has closed or been archived, so the status adds nothing, and the
+              ICS-309 log gets its own section below plus a download button for
+              net managers. */}
           <Box sx={{ display: 'flex', gap: 4, flexWrap: 'wrap', mb: 2 }}>
             <Typography variant="body2" color="text.secondary">
               Started: {stats.started_at ? formatDateTime(stats.started_at, user?.prefer_utc || false) : '—'}
