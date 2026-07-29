@@ -1,112 +1,60 @@
-Testing regmine
-Here's a prioritized checklist, ordered by what's most likely to actually break.
+ECTLogger field bug log
+=======================
 
-Priority 1 — Confirmed bugs, must verify the fix holds
+Working scratch file for raw field reports before they are triaged into
+docs/ROADMAP.md. Once an item is either fixed or promoted to the roadmap,
+it comes out of this file. The roadmap is the record of what is open; the
+changelog is the record of what shipped.
 
-1. Create Net from a schedule — the original bug report. Click Create Net on a schedule row, confirm it succeeds and copies frequencies onto the new net.
-2. Chat avatars — send a chat message while the net is open in a second browser/tab watching live; confirm the avatar shows on the new message as it arrives (not just on reload).
-3. Check-in map — open it, click Maximize, click Restore. No console crash, map still responsive.
-4. Logger role — assign someone as Logger (not NCS), confirm they can set/clear the active frequency.
-5. Role-assignment picker — as a non-admin net owner, open "Manage NCS and logger roles" and confirm the user dropdown actually lists names (this was silently empty before).
-6. Check-in edit permission — log in as a plain participant with no role, try to edit someone else's check-in row — should be blocked. Editing your own row should still work.
-7. Guest view (logged out, incognito window) — check-ins and chat should show (already worked); poll results, topic-of-week answers, and check-in field labels should now also show correctly instead of appearing blank/broken.
-
-Priority 2 — Regression sweep (every page that got split into pieces this session)
-
-- NetView: full lifecycle draft→lobby/active→close→archive; check-in table on both desktop and mobile width; search; bulk check-in; CSV import/export; ICS-309 export; script/announcements/topic-history dialogs; time editing; frequency claim/change; two tabs open side-by-side to confirm WebSocket sync (check-in from one shows live on the other)
-- NCSStaffModal ("Net Staff" button): all 4 tabs — Net Control Stations, Rotation Order (try dragging to reorder), Schedule (try a swap/cancel), Subscribers; manager transfer; email dialog
-- Profile: all 3 tabs; avatar upload/crop/delete; stat-card drill-downs; favorite-nets drill-down; PDF export
-- Admin panel: spot-check each of the 6 tabs loads and its main action works
-- CreateNet / CreateSchedule: full creation flow, custom fields, staff assignment, frequencies
-- Dashboard / Scheduler: cards render, favorites toggle works
-
-Priority 3 — Lower risk, quick sanity check
-
-- Migrations directory looks right (ls backend/migrations — no 013_ collisions, sequential up to 042)
-- General click-through of anything not listed above that's part of your normal net-running routine
-
-If you want, I can also run the automated backend test suite one more time right before you deploy tomorrow, as a final gate — just say the word.
+Currently open, untriaged: none.
 
 
-Maine Dirigo Net bug reports
-https://app.ectlogger.us/nets/41
-See chat for further details:
-- Mobile user N1GSK wasn't prompted to check in and couldn't tell which button is check-in, "I just kept hitting icons.. 😃"
-- I, KC1JMH, wasn't prompted to check in as a regular user like other NCS should have been. I'm an admin, if that makes a difference
-- After I checked in, it seems avatars in chat stopped showing images, instead using the letter. This possibly affected the check-in table as well.
-- When Dave KC1UIX closed the net, he archived it, while I was still staring at the net and its prompt asking me if I want to archive or delete the net. My client should have received the update that the net was archived, and the dialog could disappear, or change to "return to dashboard"
+Cleared 2026-07-29
+------------------
 
-Error in browser console during net:
-content-script.js:104 Failed to get subsystem status for purpose Object
-index-zfIj3ZdH.js:682 WebSocket connected to net 41
+The Maine Dirigo Net reports from nets #41 and #44 (2026-07-26) are fully
+dispositioned. Nothing from them remains untracked.
 
-Improvement
-- Maybe change Join Net on net reminders to "View net" and "Check-in to Net"
-- On the reminder for NCS, where there are buttons for Access Net, Open Lobby, change Access Net to two buttons: View Net, Check Into Net (if lobby is open or net already active), and keep Open Lobby
-- As an NCS staff person, I got both the end user and NCS / staff reminder, I should only get the staff reminder to reduce confusion
-- Edit net: "Keep chat open after closing" and "Schedule is active (can be used to create nets)" should be on the Schedule tab
+Fixed:
+- Scheduled net did not auto-create, forcing a manual Create Net (f866587)
+- Duplicate and triplicate 1-hour reminders; NCS staff receiving both the
+  staff and the subscriber reminder (f866587)
+- Mobile check-in entry point not discoverable / "kept hitting icons"
+  (3e31355 command-bar rewrite, 026a238 green Check In tint)
+- Chat avatars falling back to letter avatars on new messages (3859cc9)
+- Manually checked-in station appearing a second time with Recheck status
+  once that operator logged in and checked in themselves (e0fdc1a)
+- Archive/delete prompt going stale when another client archived the net
+  (f6099cc)
+- NCS/staff reminder omitting the on-duty NCS name (f6099cc)
+- Subscriber "net starting" notification firing on go-live instead of on
+  lobby open, leaving no lead time (f6099cc)
+- Self check-in toggle per net and per schedule, requested by AA1GM
+  (shipped 2026-07-26)
 
-Feature request
-- Auto-checkin on certain nets, maybe via the subscription icon
-- Joel AA1GM asks:
-Hi Brad, I would like to have a toggle in the net schedule editor to allow not allow self check in. Self check in is great for some but I’ve found it confusing to the NCS when a station checks in by both ECTLogger and by voice. Thanks for your consideration of this request. 
+Not a defect:
+- Admin acting as NCS reportedly not prompted to check in. Did not
+  reproduce. The prompt condition in NetView.tsx has always OR'd
+  role === 'admin' in as an inclusion rather than gating on it, so an
+  admin can only ever gain the prompt, never lose it.
+- "content-script.js:104 Failed to get subsystem status" in the browser
+  console. That file belongs to a browser extension, not to ECTLogger.
+  The adjacent "WebSocket connected to net 41" line is normal operation.
+- Magic link needing to be re-requested. Sessions are a 30-day rolling
+  window that resets on each visit, so this is cache clearing, a privacy
+  browser, or a device switch. A longer window is on the roadmap as an
+  improvement, not as a fix.
 
-More Maine Dirigo Net bug reports
-https://app.ectlogger.us/nets/44
-Brian Walls W1BKW:
-I found the ECT to be somewhat confusing this morning.  Maybe due to the schedule change?  Not sure.
-1) I got two email notifications, one was an NCS duty reminder and the second said the net was starting in 1 hour but it came at 9:30.
-2) when I logged in I had to hit Create Net versus Start Net which is what I thought I had to do on Office Hours Net on Thursday.  After hitting Create, I then had to hit Start Net?
-Not sure I understand the intent or use cases of Create, Start, etc.
-
-Also, someone on Thursday night asked again about having to get the magic link every week.  I thought you fixed that so that it held for like a month and also didn't get reset when you pushed a new update?  We told him he could use the old links but if you have a busy inbox that can be a pain too.
-
-Brad Brown KC1JMH: 
-Good morning Brian. I tried to check in near the end of the net this morning, but must've doubled with Cory, and then couldn't get back out with the handheld. Oh well.
-
-I see the numerous emails. I tried to ratchet it down for net staff, but it still seems to be a bug. Too many, and each duplicated. and the Net Staff reminder doesn't include the 'who is on schedule' data. Only one of the three did say the NCS on schedule. At least it got that right this time. lol
-
-The scheduler is supposed to automatically open the net , we shouldn't have to create it now unless it didn't fire. That's definitely a bug. And the emails are supposed to give us the option of viewing or starting the net, as a net staff member. 
-
-The log-in sessions are supposed to be retained locally on a 30-day rolling period. When they open the page, it's supposed to reset the timer. If they open the ECTLogger from another browser, cleared their cache on their computer, or opened the page 31 days later, it'd forget. But, they can bookmark the magic link. I can increase the threshold for the rolling quantity of days, but it won't survive clearing cache, privacy browsers that don't keep a cache, or moving to another browser or computer. Bookmark is best.
-
-Brian:
-I thought the Office Hours Net on Thursday acted exactly as you describe that is why it seemed odd that Dirigo was so different or reverted back to previous state before many recent improvements
-
-Brad:
-hmm, I'll have to see what's different between the two
-
-Brian:
-I think it was that Create Net and no prompt to start the Net etc.  all the things you described it should do. Maybe it just didn’t fire that script
-
-From Brian W1BKW:
-ECT Report:  I had checked someone in manually and later, they logged in and they showed up as a second instance and had a status of Recheck.
-36m
-
-Weird, Dave had a recheck happen too
-
-When things quiet down, I've got a big update to the backend to push. I just didn't want to interrupt the nets.
-34m
-
-👍
-
-Also, when starting the Net, it was on the Active Nets page and I hit start the Net which opened the Lobby I guess.  I noticed I had to hit the Green Arrow to start the net and notify the subscribers (or it will auto start also).  I would think you would notify the subscriber when I initially start the net, not when it actually starts.  I know H.L did that which gives them ample notice that the Net is starting in whatever lead time I open the lobby, etc.
-
-You (Me, Brad)
-Weird, Dave had a recheck happen too
-
-Yes, Dave mentioned the same happened to him on the WSSM net
-32m
-
-Yeah, it's supposed to remind everyone when it creates the net from the schedule an hour ahead of time
-32m
-
-I guess I could just do the Open and then the Start action sequentially?
-32m
-
-I'll have it worked out soon
-31m
-
-Ok, I am not sure what it is doing, just based upon the information box, it says it will notify the subscribers upon the second Open action
-31m
-
+Promoted to docs/ROADMAP.md, still open:
+- Reminder email call-to-action wording: split "Join Net" into "View Net"
+  and "Check-in to Net"; on the NCS/staff reminder replace "Access Net"
+  with "View Net" plus a conditional "Check Into Net", keeping Open Lobby
+  (Net Reminders & Lifecycle UX)
+- Move "Keep chat open after closing" and "Schedule is active" onto the
+  Schedule tab in Edit Net (Net Reminders & Lifecycle UX)
+- Clarify the Create-vs-Start workflow copy (Net Reminders & Lifecycle UX)
+- Auto-check-in for subscribed stations (Net Reminders & Lifecycle UX)
+- Extend the login session window past 30 days (Security & Authentication)
+- Verify the 1-hour reminder send time against the scheduled start; the
+  "starting in 1 hour" mail that arrived at 9:30 may already be resolved
+  by the f866587 scheduler fix (Security & Authentication)
