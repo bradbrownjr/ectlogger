@@ -1,11 +1,14 @@
 import csv
 import io
-from typing import List, Optional
 
 from jinja2 import Template
 
 from app.config import settings
-from app.email.base import get_unsubscribe_footer, send_email, send_email_with_attachments
+from app.email.base import (
+    get_unsubscribe_footer,
+    send_email_with_attachment,
+    send_email_with_attachments,
+)
 
 async def send_net_log(
     email: str, 
@@ -261,7 +264,7 @@ async def send_net_log(
         # Add poll results summary at the end if enabled
         if poll_enabled and poll_results:
             chat_output.write(f"\n{'='*60}\n")
-            chat_output.write(f"📊 Poll Results Summary\n")
+            chat_output.write("📊 Poll Results Summary\n")
             chat_output.write(f"Question: {poll_question}\n")
             chat_output.write(f"{'-'*40}\n")
             for response, count in poll_results:
