@@ -48,6 +48,8 @@ All notable changes to ECTLogger are documented here.
 
 * **Net Report: Cleaner header** — The status and ICS-309 badges no longer sit at the top of a net report. Reports are read after a net has closed or been archived, so the badges told you nothing you didn't already know, and the ICS-309 log still has its own section and download button further down.
 
+* **What's New: Consistent item styling** — Items in this dialog all use the same text weight now, instead of the mix of bold and normal that made the list look uneven. Items affecting your workflow are still marked with a User Impact tag and still sort to the top.
+
 * **Under the Hood: Leftover code cleanup** — Cleared out unused leftovers from the recent internal reorganization across 29 backend files, which is how the missing net log email above came to light.
 
 ---

@@ -716,20 +716,42 @@ maintain a separate list.
 
 ### Item rendering rules (`ChangelogNotification.tsx`)
 
-Every changelog item renders with a tinted background box regardless of
-`userImpact`. The `userImpact` flag controls two things only: bold text and the
-"User Impact" chip. Do **not** make the background conditional on `userImpact` —
-all items should have uniform visual treatment.
+**Every item gets identical typography and an identical tinted background box.**
+Item text is always `variant="body2"` at the default weight — never bold, never
+a heavier `fontWeight`, and never conditional on `userImpact`. The single
+permitted difference between items is the "User Impact" chip appended to the
+text of flagged items.
+
+`userImpact` therefore controls exactly one visual thing: whether that chip is
+rendered. It also controls sort order (flagged items sort first), which is
+behavior rather than styling.
+
+Rationale: a flagged item is already marked twice — it sorts to the top and it
+carries a chip. Weighting the text as well was a third signal, and because
+flagged and unflagged items sit adjacent in the same list it read as a ragged
+mix of bold and non-bold bullets rather than as emphasis. Uniform weight also
+matches the PDF export in the same component, which has always rendered every
+item at one weight with bold reserved for section headings.
 
 {% raw %}
 ```tsx
-// Correct — background always applied
+// Correct — one weight for every item, background always applied
+<Typography variant="body2">{item.text}{item.userImpact && <Chip label="User Impact" ... />}</Typography>
 sx={{ backgroundColor: alpha(theme.palette.primary.main, 0.08), borderRadius: 1, ... }}
 
-// Wrong — creates inconsistent appearance for non-userImpact items
+// Wrong — ragged mix of weights down the list
+sx={{ ...(item.userImpact && { fontWeight: 500 }) }}
+
+// Wrong — inconsistent appearance for non-userImpact items
 ...(item.userImpact && { backgroundColor: ... })
 ```
 {% endraw %}
+
+The same rule governs the **Markdown** changelog: in `docs/CHANGELOG.md` every
+item is `* **Category: Label** — sentence.`, where the bold wraps the
+`Category: Label` and nothing else. Bold is structural there (it marks the
+label segment of every item without exception), not a per-item emphasis — so
+no item is ever fully bold and no item ever lacks the bold label.
 
 ---
 

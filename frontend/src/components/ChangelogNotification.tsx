@@ -673,10 +673,13 @@ const ChangelogNotification: React.FC = () => {
                           py: 0.25,
                         }}
                       >
-                        <Typography
-                          variant="body2"
-                          sx={{ ...(item.userImpact && { fontWeight: 500 }) }}
-                        >
+                        {/* Every item renders at the same weight. The "User
+                            Impact" chip below and the impact-first sort order
+                            already mark these items; adding a third signal made
+                            the list look ragged and inconsistent. Matches the
+                            PDF export, which has always used one weight for all
+                            items. Do NOT reintroduce a conditional fontWeight. */}
+                        <Typography variant="body2">
                           {item.text}
                           {item.userImpact && (
                             <Chip
