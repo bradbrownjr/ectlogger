@@ -417,6 +417,49 @@ truth, and the relay is only a hint to go read it.
 
 ---
 
+## Enabling and disabling outbound email
+
+`EMAIL_ENABLED` in `backend/.env` is the master send switch. It defaults to
+`true`, so production and fresh installs behave normally without setting it.
+
+**To disable sending** (the correct state for alpha and beta):
+
+```bash
+# in backend/.env
+EMAIL_ENABLED=false
+```
+
+then restart the backend (`sudo -n systemctl restart ectlogger`). Every send
+becomes a no-op: `_send_suppressed()` in `app/email/base.py` logs the intended
+recipient and subject and returns, and the caller carries on as if delivery
+succeeded. Nothing raises, so net closes, user creation, and the reminder
+service all behave exactly as they do in production.
+
+Confirm it is off by watching the log during an action that sends mail:
+
+```bash
+journalctl -u ectlogger -f | grep EMAIL
+# expect: [EMAIL] Suppressed email to someone@example.com (EMAIL_ENABLED=false): <subject>
+```
+
+**To temporarily enable sending on a test instance** — for example to verify a
+new template actually renders in a mail client — set `EMAIL_ENABLED=true`,
+point the `SMTP_*` settings at a real relay, restart, run the one action you
+need, then **set it back to `false` and restart again**. While it is on, that
+instance will mail whatever real addresses its database holds; beta's database
+contains real user rows, so prefer a net or template whose only subscriber is
+your own address.
+
+Why this exists as well as the SMTP setting: beta has long pointed `SMTP_HOST`
+at `127.0.0.1` so connections are refused. That works, but it is failure-based
+protection — the message is fully composed and the real recipient list resolved
+before anything stops it, and a single `SMTP_HOST` edit would start delivering
+to real users with nothing else in the way. `EMAIL_ENABLED=false` stops the
+send before any connection is attempted and is independent of SMTP config, so
+the two together are belt and braces. Keep both in place on alpha and beta.
+
+---
+
 ## Changelog (user-facing)
 
 `frontend/src/changelog.json` is the **single source of truth**. Both the

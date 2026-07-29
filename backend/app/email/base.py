@@ -9,6 +9,30 @@ import aiosmtplib
 from app.config import settings
 from app.logger import logger
 
+def _send_suppressed(to_email: str, subject: str, what: str = "email") -> bool:
+    """Return True when outbound mail is switched off for this deployment.
+
+    Every send path calls this first. When EMAIL_ENABLED is false the send
+    becomes a no-op: the intended recipient and subject are logged and the
+    caller returns normally, exactly as if delivery had succeeded. Callers
+    therefore continue their work (closing a net, creating a user) instead of
+    hitting an exception, which is what makes this safe to leave off on
+    alpha/beta.
+
+    This is deliberately independent of the SMTP settings. Pointing SMTP_HOST
+    at an unreachable address also stops delivery, but only by failing at the
+    TCP layer after the message is fully composed and the real recipient list
+    resolved. This switch stops the send before any connection is attempted,
+    so a mistaken SMTP_HOST edit on a test instance cannot mail real users.
+    """
+    if settings.email_enabled:
+        return False
+    logger.info(
+        "EMAIL",
+        f"Suppressed {what} to {to_email} (EMAIL_ENABLED=false): {subject}",
+    )
+    return True
+
 def get_unsubscribe_url(unsubscribe_token: str, list_name: Optional[str] = None) -> str:
     """Generate the unsubscribe URL for a user.
 
@@ -54,6 +78,9 @@ async def send_email(to_email: str, subject: str, html_content: str,
     plain-text unsubscribe link to a per-list opt-out (e.g. ``"whats_new"``)
     instead of the master unsubscribe.
     """
+    if _send_suppressed(to_email, subject):
+        return
+
     logger.info("EMAIL", f"Sending email to {to_email}")
     logger.debug("EMAIL", f"Subject: {subject}")
     logger.debug("EMAIL", f"From: {settings.smtp_from_name} <{settings.smtp_from_email}>")
@@ -130,6 +157,9 @@ This is an automated message, please do not reply.
 
 async def send_email_with_attachment(to_email: str, subject: str, html_content: str, attachment_data: str, attachment_filename: str, attachment_type: str = "text/csv", unsubscribe_token: str = None):
     """Send an email with an attachment"""
+    if _send_suppressed(to_email, subject, "email with attachment"):
+        return
+
     logger.info("EMAIL", f"Sending email with attachment to {to_email}")
     
     message = MIMEMultipart("mixed")
@@ -180,6 +210,9 @@ async def send_email_with_attachments(to_email: str, subject: str, html_content:
     """Send an email with multiple attachments
     attachments: list of tuples (data, filename, mime_type)
     """
+    if _send_suppressed(to_email, subject, f"email with {len(attachments)} attachments"):
+        return
+
     logger.info("EMAIL", f"Sending email with {len(attachments)} attachments to {to_email}")
     
     message = MIMEMultipart("mixed")

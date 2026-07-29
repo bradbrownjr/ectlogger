@@ -31,6 +31,11 @@ class Settings(BaseSettings):
     github_client_secret: Optional[str] = None
     
     # Email
+    # Master send switch. False makes every send a no-op that logs the intended
+    # recipient and returns, so a non-production instance cannot mail real users
+    # no matter what the SMTP settings below point at. See docs/DEVELOPMENT.md
+    # "Enabling and disabling outbound email".
+    email_enabled: bool = True
     smtp_host: str = "smtp.gmail.com"
     smtp_port: int = 587
     smtp_user: str

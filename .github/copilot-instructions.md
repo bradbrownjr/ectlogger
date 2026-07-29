@@ -26,7 +26,7 @@ Key rules enforced there:
 - Identical controls must look identical across pages (symmetry and uniformity principle).
 - Minimum touch target 44 × 44 px for primary actions.
 - Card footer actions always use the shared `<CardActionButton>` (icon + one-word label), never a bare `<IconButton>`. Net and schedule cards split `<CardActions>` into a staff-gated management group and a view-only standard group; the standard group must never contain a mutating action. Order each group neutral → destructive → primary CTA last. `<CardActions>` is a wrapping flex row with `justifyContent: 'space-between'` so the groups share one row on wide cards (management left, standard right) and stack left-aligned when narrow — do not hardcode `flexDirection: 'column'` or a breakpoint. It must also carry `disableSpacing`, or MUI's sibling `margin-left: 8px` offsets the second group. See DESIGN.md "Card Action Buttons".
-- In `ChangelogNotification.tsx`, every changelog item always gets the tinted background box. Do NOT make it conditional on `userImpact`. Only bold text and the "User Impact" chip are conditional.
+- In `ChangelogNotification.tsx`, every changelog item gets identical typography and an identical tinted background box. Item text is always `variant="body2"` at the default weight — never bold and never a conditional `fontWeight`. The ONLY thing `userImpact` changes visually is whether the "User Impact" chip is appended. Do NOT make the background or the text weight conditional.
 - In `MaintenanceBanner.tsx`: always use `variant="filled"` on `<Alert>` (standard warning is invisible in dark mode), never wrap in `<Collapse>` (clips text), and poll at 10 s not 60 s. See DESIGN.md "Sitewide Alert Banners" for full rules.
 
 **Before adding new development patterns, read [`docs/DEVELOPMENT.md`](../docs/DEVELOPMENT.md).**
@@ -302,7 +302,7 @@ Users see a red badge on the info icon (lower-left) until they view the changelo
   sudo -n systemctl is-active ectlogger
   ```
 - **Sudo**: passwordless sudo configured for `stop`, `start`, `restart`, `is-active`, `status` on the `ectlogger` service via `/etc/sudoers.d/ectlogger`. Use `sudo -n` (non-interactive).
-- **SMTP**: set to `127.0.0.1` in `.env` so emails fail immediately — beta never sends real emails.
+- **Email**: two independent guards, and **both must stay in place**. `EMAIL_ENABLED=false` in `.env` makes every send a logged no-op before any connection is attempted, and `SMTP_HOST=127.0.0.1` makes connections fail anyway. Never set `EMAIL_ENABLED=true` on beta or alpha without the user explicitly asking — beta's database holds real user addresses. See `docs/DEVELOPMENT.md` "Enabling and disabling outbound email" for the temporary-enable procedure.
 - **Database**: SQLite at `/home/bradb/ectlogger/backend/ectlogger.db`
 
 ### Alpha (10.6.26.6)
