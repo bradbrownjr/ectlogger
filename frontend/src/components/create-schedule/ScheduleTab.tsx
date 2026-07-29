@@ -11,6 +11,7 @@ import {
   FormGroup,
   InputLabel,
   Autocomplete,
+  Switch,
 } from '@mui/material';
 import { useCreateScheduleContext, User } from '../../contexts/CreateScheduleContext';
 
@@ -28,6 +29,11 @@ const ScheduleTab: React.FC = () => {
     ownerId,
     users,
     staff,
+    isEdit,
+    autoLobbyEnabled, setAutoLobbyEnabled,
+    autoLobbyMinutes, setAutoLobbyMinutes,
+    autoLobbyMode, setAutoLobbyMode,
+    oneTimeScheduledStartTime, setOneTimeScheduledStartTime,
   } = useCreateScheduleContext();
 
   // Whether the current user can configure the fifth-week operator:
@@ -193,6 +199,103 @@ const ScheduleTab: React.FC = () => {
               sx={{ minWidth: 150 }}
             />
           </Box>
+        </Box>
+      )}
+
+      {/* ========== Auto-open lobby ==========
+          Same underlying setting (auto_lobby_minutes) everywhere, but what there
+          is to configure depends on whether this schedule type has a start time
+          to count down from. Ad-hoc never does; one-time only does if the user
+          gives it one; the recurring types always do. */}
+      {scheduleType === 'ad_hoc' && (
+        <Box sx={{ mt: 3 }}>
+          <FormControlLabel
+            control={<Switch checked={autoLobbyEnabled} onChange={(e) => setAutoLobbyEnabled(e.target.checked)} />}
+            label="Enable lobby at start of net"
+          />
+          <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
+            Ad-hoc nets have no scheduled time, so there's nothing to count down from. When this
+            is on, clicking Start opens the lobby first instead of going straight live — Net
+            Control clicks "Go Live" when ready to officially begin.
+          </Typography>
+        </Box>
+      )}
+
+      {scheduleType === 'one_time' && !isEdit && (
+        <Box sx={{ mt: 3 }}>
+          <FormControlLabel
+            control={<Switch checked={autoLobbyEnabled} onChange={(e) => setAutoLobbyEnabled(e.target.checked)} />}
+            label="Enable lobby"
+          />
+          <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5, mb: autoLobbyEnabled ? 1 : 0 }}>
+            Stations can check in and chat before the net officially starts.
+          </Typography>
+          {autoLobbyEnabled && (
+            <Box sx={{ ml: 4.5 }}>
+              <FormControl size="small" sx={{ minWidth: 200 }}>
+                <InputLabel>Open lobby</InputLabel>
+                <Select
+                  label="Open lobby"
+                  value={autoLobbyMode}
+                  onChange={(e) => setAutoLobbyMode(e.target.value as 'now' | 'at')}
+                >
+                  <MenuItem value="now">Now</MenuItem>
+                  <MenuItem value="at">At a specific time</MenuItem>
+                </Select>
+              </FormControl>
+              {autoLobbyMode === 'at' && (
+                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center', mt: 2 }}>
+                  <TextField
+                    type="datetime-local"
+                    label={`Net Start Time (${timezoneAbbr})`}
+                    value={oneTimeScheduledStartTime}
+                    onChange={(e) => setOneTimeScheduledStartTime(e.target.value)}
+                    InputLabelProps={{ shrink: true }}
+                    sx={{ minWidth: 220 }}
+                  />
+                  <FormControl size="small" sx={{ minWidth: 180 }}>
+                    <InputLabel>Open lobby</InputLabel>
+                    <Select
+                      label="Open lobby"
+                      value={autoLobbyMinutes}
+                      onChange={(e) => setAutoLobbyMinutes(Number(e.target.value))}
+                    >
+                      <MenuItem value={15}>15 minutes before</MenuItem>
+                      <MenuItem value={30}>30 minutes before</MenuItem>
+                      <MenuItem value={60}>60 minutes before</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Box>
+              )}
+            </Box>
+          )}
+        </Box>
+      )}
+
+      {(scheduleType === 'daily' || scheduleType === 'weekly' || scheduleType === 'monthly') && (
+        <Box sx={{ mt: 3 }}>
+          <FormControlLabel
+            control={<Switch checked={autoLobbyEnabled} onChange={(e) => setAutoLobbyEnabled(e.target.checked)} />}
+            label="Open the lobby automatically before the net"
+          />
+          <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5, mb: autoLobbyEnabled ? 1 : 0 }}>
+            Stations can check in and chat ahead of the official start without waiting for Net
+            Control to open the net. Net Control can still open the lobby by hand at any time,
+            and can turn this off for a single net from that net's settings.
+          </Typography>
+          {autoLobbyEnabled && (
+            <Box sx={{ ml: 4.5 }}>
+              <Select
+                size="small"
+                value={autoLobbyMinutes}
+                onChange={(e) => setAutoLobbyMinutes(Number(e.target.value))}
+              >
+                <MenuItem value={15}>15 minutes before</MenuItem>
+                <MenuItem value={30}>30 minutes before</MenuItem>
+                <MenuItem value={60}>60 minutes before</MenuItem>
+              </Select>
+            </Box>
+          )}
         </Box>
       )}
     </>

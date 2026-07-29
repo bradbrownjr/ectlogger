@@ -77,6 +77,40 @@ async def test_create_net_from_template_404_for_missing_template(client, owner):
     assert resp.status_code == 404
 
 
+@pytest.mark.asyncio
+async def test_create_net_from_template_accepts_scheduled_start_time_override(client, db, owner):
+    """A one-time schedule has no recurrence to compute a start time from, so the
+    caller supplies one directly - the only way a one-time net gets an official
+    start time (and therefore an auto-lobby window) at all."""
+    template = await _make_template(db, owner.id, schedule_type="one_time")
+    start = (datetime.now(timezone.utc) + timedelta(days=3)).replace(microsecond=0)
+
+    resp = await client.post(
+        f"/api/templates/{template.id}/create-net",
+        json={"scheduled_start_time": start.isoformat()},
+        headers=auth_headers(owner),
+    )
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["scheduled_start_time"] is not None
+    returned = datetime.fromisoformat(data["scheduled_start_time"].replace("Z", "+00:00"))
+    assert returned == start
+
+
+@pytest.mark.asyncio
+async def test_create_net_from_template_without_override_leaves_one_time_unscheduled(client, db, owner):
+    """No override, no body at all (matching the plain "Create Net" button call) -
+    a one-time/ad-hoc net still gets no scheduled_start_time, same as before this
+    endpoint gained the override parameter."""
+    template = await _make_template(db, owner.id, schedule_type="one_time")
+
+    resp = await client.post(f"/api/templates/{template.id}/create-net", headers=auth_headers(owner))
+
+    assert resp.status_code == 200
+    assert resp.json()["scheduled_start_time"] is None
+
+
 # ---------------------------------------------------------------------------
 # NCSReminderService._get_or_create_scheduled_net (automatic background
 # net creation ahead of a scheduled duty reminder)

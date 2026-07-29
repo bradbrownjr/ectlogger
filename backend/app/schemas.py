@@ -320,7 +320,7 @@ class NetBase(BaseModel):
     chat_grace_period_minutes: Optional[int] = None
     self_checkin_enabled: Optional[bool] = True
     # Minutes before the scheduled start to auto-open the lobby; null = disabled
-    auto_lobby_minutes: Optional[int] = Field(None, ge=1, le=1440)
+    auto_lobby_minutes: Optional[int] = Field(None, ge=0, le=1440)
     # Topic of the Week / Poll features
     topic_of_week_enabled: Optional[bool] = False
     topic_of_week_prompt: Optional[str] = Field(None, max_length=500)
@@ -349,7 +349,7 @@ class NetUpdate(BaseModel):
     mobile_priority_sort: Optional[bool] = None
     chat_grace_period_minutes: Optional[int] = None
     self_checkin_enabled: Optional[bool] = None
-    auto_lobby_minutes: Optional[int] = Field(None, ge=1, le=1440)
+    auto_lobby_minutes: Optional[int] = Field(None, ge=0, le=1440)
     # Topic of the Week / Poll features
     topic_of_week_enabled: Optional[bool] = None
     topic_of_week_prompt: Optional[str] = Field(None, max_length=500)
@@ -465,7 +465,7 @@ class NetTemplateBase(BaseModel):
     self_checkin_enabled: Optional[bool] = True
     # Default minutes before the scheduled start to auto-open the lobby for nets
     # created from this schedule; null = disabled
-    auto_lobby_minutes: Optional[int] = Field(None, ge=1, le=1440)
+    auto_lobby_minutes: Optional[int] = Field(None, ge=0, le=1440)
     # Topic of the Week / Poll features
     topic_of_week_enabled: Optional[bool] = False
     topic_of_week_prompt: Optional[str] = Field(None, max_length=500)
@@ -496,7 +496,7 @@ class NetTemplateUpdate(BaseModel):
     mobile_priority_sort: Optional[bool] = None
     chat_grace_period_minutes: Optional[int] = None
     self_checkin_enabled: Optional[bool] = None
-    auto_lobby_minutes: Optional[int] = Field(None, ge=1, le=1440)
+    auto_lobby_minutes: Optional[int] = Field(None, ge=0, le=1440)
     # Topic of the Week / Poll features
     topic_of_week_enabled: Optional[bool] = None
     topic_of_week_prompt: Optional[str] = Field(None, max_length=500)
@@ -571,6 +571,17 @@ class TemplateMergeRequest(BaseModel):
 class NetTemplateLinkRequest(BaseModel):
     """Request to attach (or detach) an existing net to a schedule/template"""
     template_id: Optional[int] = Field(None, description="Template to link this net to. Pass null to detach.")
+
+
+class CreateNetFromTemplateRequest(BaseModel):
+    """Optional override for the net's scheduled start time when creating from a template.
+
+    Only meaningful for one-time schedules: daily/weekly/monthly templates compute
+    their own next occurrence server-side, and ad-hoc templates have no start time
+    at all. A one-time schedule has neither, so this is the only way to give its
+    single net an official start time (and therefore an auto-lobby window).
+    """
+    scheduled_start_time: Optional[datetime] = None
 
 
 class TemplateMergeConflict(BaseModel):

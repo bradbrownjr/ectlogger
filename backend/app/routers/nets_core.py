@@ -493,7 +493,13 @@ async def start_net(
             now = datetime.now(timezone.utc)
         if scheduled > now:
             go_to_lobby = True
-    
+    elif net.auto_lobby_minutes is not None:
+        # Ad-hoc nets (and a one-time net with "open lobby now") have no
+        # scheduled_start_time to count down from, so there's no offset to wait
+        # for. "Enable lobby" here just means: don't skip straight to Active,
+        # stage through Lobby first so Net Control clicks "Go Live" when ready.
+        go_to_lobby = True
+
     if go_to_lobby:
         net.status = NetStatus.LOBBY
         # Don't set started_at yet - that's for when it goes ACTIVE

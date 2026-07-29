@@ -300,6 +300,34 @@ class NCSReminderService:
 
         return bool(schedule[0].user_id) and not schedule[0].is_cancelled
 
+    async def _find_lobby_candidates(self, db):
+        """Nets that might need their lobby auto-opened, before the offset/staffing checks.
+
+        Matches both DRAFT and SCHEDULED nets. Only the recurring background
+        auto-create job (_get_or_create_scheduled_net) produces SCHEDULED nets;
+        every manually created net - including a one-time net given a specific
+        start time and offset - starts life as DRAFT. A net with no
+        scheduled_start_time at all (an ad-hoc net, or a one-time net set to open
+        "now") never matches this query regardless of status: it has nothing for
+        lobby_open_due() to count down from, and is handled instead by the
+        manual-start branch in routers/nets_core.py::start_net().
+
+        Split out from _check_and_auto_open_lobbies so the status filter can be
+        tested directly against a test session, the same as _find_stale_nets.
+        """
+        result = await db.execute(
+            select(Net)
+            .options(selectinload(Net.frequencies))
+            .where(
+                and_(
+                    Net.status.in_([NetStatus.DRAFT, NetStatus.SCHEDULED]),
+                    Net.auto_lobby_minutes.isnot(None),
+                    Net.scheduled_start_time.isnot(None),
+                )
+            )
+        )
+        return result.scalars().all()
+
     async def _check_and_auto_open_lobbies(self):
         """Open the lobby for scheduled nets whose auto_lobby_minutes offset has arrived.
 
@@ -310,18 +338,7 @@ class NCSReminderService:
         logger.debug("NCS_REMINDER", "Checking for lobbies to auto-open...")
 
         async with AsyncSessionLocal() as db:
-            result = await db.execute(
-                select(Net)
-                .options(selectinload(Net.frequencies))
-                .where(
-                    and_(
-                        Net.status == NetStatus.SCHEDULED,
-                        Net.auto_lobby_minutes.isnot(None),
-                        Net.scheduled_start_time.isnot(None),
-                    )
-                )
-            )
-            candidates = result.scalars().all()
+            candidates = await self._find_lobby_candidates(db)
 
             opened = 0
             for net in candidates:

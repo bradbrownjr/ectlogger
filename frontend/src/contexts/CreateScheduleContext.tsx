@@ -89,10 +89,15 @@ export interface CreateScheduleContextValue {
   chatGracePeriodEnabled: boolean; setChatGracePeriodEnabled: Dispatch<SetStateAction<boolean>>;
   chatGracePeriodMinutes: number; setChatGracePeriodMinutes: Dispatch<SetStateAction<number>>;
   selfCheckinEnabled: boolean; setSelfCheckinEnabled: Dispatch<SetStateAction<boolean>>;
-  // Auto-open lobby: enabled flag plus the offset, sent as a single nullable
-  // auto_lobby_minutes (null = disabled)
+  // Auto-open lobby: presentation varies by scheduleType (see ScheduleTab), but all
+  // three collapse to the same nullable auto_lobby_minutes on the schedule/net (null
+  // = disabled; 0 = "enabled, no offset" for ad-hoc and one-time "now").
   autoLobbyEnabled: boolean; setAutoLobbyEnabled: Dispatch<SetStateAction<boolean>>;
   autoLobbyMinutes: number; setAutoLobbyMinutes: Dispatch<SetStateAction<number>>;
+  // One-time only: "now" opens the lobby as soon as the net is created; "at" gives
+  // the net a real start time (oneTimeScheduledStartTime) and the usual offset.
+  autoLobbyMode: 'now' | 'at'; setAutoLobbyMode: Dispatch<SetStateAction<'now' | 'at'>>;
+  oneTimeScheduledStartTime: string; setOneTimeScheduledStartTime: Dispatch<SetStateAction<string>>;
 
   // Community net features
   topicOfWeekEnabled: boolean; setTopicOfWeekEnabled: Dispatch<SetStateAction<boolean>>;

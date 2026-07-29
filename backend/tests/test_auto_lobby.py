@@ -27,6 +27,7 @@ from app.models import (
 )
 from app.ncs_reminder_service import NCSReminderService
 from app.net_start import auto_open_lobby, lobby_open_due
+from tests.conftest import auth_headers
 
 
 # 20:00 America/New_York on Sunday 2026-03-15 is 00:00 UTC on Monday 2026-03-16.
@@ -265,3 +266,98 @@ async def test_sweep_leaves_recent_nets_alone(db, owner):
 
     stale = await NCSReminderService()._find_stale_nets(db, datetime.utcnow() - timedelta(hours=24))
     assert stale == []
+
+
+# ==========================================================================
+# Ad-hoc / one-time "now": forced lobby on manual Start
+#
+# These nets have no scheduled_start_time at all, so there is nothing for the
+# background scheduler to count down from - lobby_open_due() always returns
+# False for them (covered above). Instead, "enable lobby" is honored directly
+# by start_net() the moment a human clicks Start: it stages through LOBBY
+# rather than skipping straight to ACTIVE.
+# ==========================================================================
+
+@pytest.mark.asyncio
+async def test_manual_start_forces_lobby_when_no_scheduled_time(client, owner):
+    create = await client.post(
+        "/api/nets/",
+        json={"name": "Ad-Hoc Net", "auto_lobby_minutes": 0},
+        headers=auth_headers(owner),
+    )
+    net_id = create.json()["id"]
+
+    resp = await client.post(f"/api/nets/{net_id}/start", headers=auth_headers(owner))
+
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "lobby"
+
+
+@pytest.mark.asyncio
+async def test_manual_start_goes_active_when_lobby_not_enabled(client, owner):
+    """Unchanged default: a plain ad-hoc net with no auto_lobby_minutes still
+    skips straight to ACTIVE, exactly as before this feature existed."""
+    create = await client.post(
+        "/api/nets/",
+        json={"name": "Plain Ad-Hoc Net"},
+        headers=auth_headers(owner),
+    )
+    net_id = create.json()["id"]
+
+    resp = await client.post(f"/api/nets/{net_id}/start", headers=auth_headers(owner))
+
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "active"
+
+
+# ==========================================================================
+# One-time "at a specific time": reuses the recurring scheduler mechanism
+# ==========================================================================
+
+@pytest.mark.asyncio
+async def test_auto_open_lobbies_matches_draft_status_not_only_scheduled(db, owner):
+    """Manually created nets (including a one-time net given a start time) are
+    always DRAFT, never SCHEDULED - only the recurring auto-create job produces
+    SCHEDULED nets. The candidate query must still find them."""
+    draft_net = await _net(
+        db, owner.id,
+        status=NetStatus.DRAFT,
+        scheduled_start_time=datetime.utcnow() + timedelta(minutes=10),
+        auto_lobby_minutes=15,
+    )
+    scheduled_net = await _net(
+        db, owner.id,
+        status=NetStatus.SCHEDULED,
+        scheduled_start_time=datetime.utcnow() + timedelta(minutes=10),
+        auto_lobby_minutes=15,
+    )
+    # A closed net with the same fields should never resurface as a candidate.
+    await _net(
+        db, owner.id,
+        status=NetStatus.CLOSED,
+        scheduled_start_time=datetime.utcnow() + timedelta(minutes=10),
+        auto_lobby_minutes=15,
+    )
+
+    candidates = await NCSReminderService()._find_lobby_candidates(db)
+
+    assert {n.id for n in candidates} == {draft_net.id, scheduled_net.id}
+
+
+@pytest.mark.asyncio
+async def test_auto_open_lobby_applied_to_a_draft_net(db, owner):
+    """End-to-end through auto_open_lobby(): a DRAFT one-time net that reached its
+    offset transitions to LOBBY exactly like a SCHEDULED recurring one does."""
+    net = await _net(
+        db, owner.id,
+        status=NetStatus.DRAFT,
+        scheduled_start_time=datetime.utcnow() + timedelta(minutes=10),
+        auto_lobby_minutes=15,
+    )
+    assert lobby_open_due(net)
+
+    await auto_open_lobby(db, net)
+    await db.refresh(net)
+
+    assert net.status == NetStatus.LOBBY
+    assert net.lobby_opened_automatically is True

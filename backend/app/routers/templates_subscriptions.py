@@ -21,6 +21,7 @@ from app.models import (
     UserRole,
 )
 from app.schemas import (
+    CreateNetFromTemplateRequest,
     NetResponse,
     NetTemplateSubscriptionDetailResponse,
     NetTemplateSubscriptionResponse,
@@ -128,6 +129,7 @@ async def list_template_subscriptions(
 @router.post("/{template_id}/create-net", response_model=NetResponse)
 async def create_net_from_template(
     template_id: int,
+    request: CreateNetFromTemplateRequest = CreateNetFromTemplateRequest(),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -232,7 +234,12 @@ async def create_net_from_template(
             import logging
             logging.warning(f"Failed to calculate scheduled_start_time: {e}")
             scheduled_start_time = None
-    
+
+    # A one-time schedule has no recurrence to compute from, so the caller
+    # supplies the net's official start time directly (see CreateNetFromTemplateRequest).
+    if request.scheduled_start_time is not None:
+        scheduled_start_time = request.scheduled_start_time
+
     # Create net from template
     from app.models import net_frequencies as net_freq_table
     
