@@ -391,7 +391,7 @@ write. These are the authoritative events:
 | `check_in_deleted` | `routers/check_ins.py` |
 | `hand_raised_changed` | `routers/check_ins.py` |
 | `net_started` / `net_lobby_opened` | `routers/nets_core.py` — one call site picks between them based on whether the NCS opened the lobby or went straight live |
-| `net_status_change` | `routers/nets_core.py` |
+| `net_status_change` | `routers/nets_core.py` (net closed) and `routers/nets_export.py` (net archived/unarchived) |
 | `net_pause_change` | `net_pause.py` |
 | `role_change` | `routers/nets_roles.py` |
 | `chat_message`, `chat_reaction`, `chat_image` | `routers/chat.py` |

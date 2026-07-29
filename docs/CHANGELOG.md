@@ -4,6 +4,20 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# July 29, 2026
+
+## Improvements
+
+* **Reminders: Subscribers hear about a net when the lobby opens** — The net starting email now goes out the moment Net Control opens the lobby, instead of when the net goes live. You get real lead time to get to the radio rather than finding out once the net is already running.
+
+* **Reminders: Staff reminder names the NCS on duty** — The one hour reminder sent to net staff now says who is scheduled as Net Control, so you no longer have to open the net or the rotation to find out who is running it.
+
+## Bug Fixes
+
+* **Net View: Archive prompt clears itself when someone else archives the net** — If another manager archived or deleted a net while you still had the archive or delete question open, your prompt sat there offering an action that had already happened. It now closes on its own and tells you the net was archived.
+
+---
+
 # July 28, 2026
 
 ## New Features

@@ -1,6 +1,8 @@
 """
 Net lifecycle smoke tests: create → active → close, plus 403 permission checks.
 """
+from unittest.mock import AsyncMock, patch
+
 import pytest
 from tests.conftest import auth_headers
 
@@ -93,6 +95,58 @@ async def test_full_lifecycle_draft_to_lobby_to_active_to_closed(client, owner):
     assert close.json()["status"] == "closed"
 
 
+@pytest.mark.asyncio
+async def test_lobby_open_sends_notification_go_live_does_not(client, owner):
+    """Milestone 0.7 (W1BKW): the "net starting" email must fire once, at lobby
+    open, and go-live must send nothing (previously it double-sent: once here
+    and again in go_live()).
+    """
+    from datetime import datetime, timedelta, timezone
+
+    future = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
+    create = await client.post(
+        "/api/nets/",
+        json={"name": "Notify Test Net", "scheduled_start_time": future},
+        headers=auth_headers(owner),
+    )
+    net_id = create.json()["id"]
+
+    with patch(
+        "app.routers.nets_core.EmailService.send_net_notification",
+        new_callable=AsyncMock,
+    ) as mock_notify:
+        # /start → LOBBY: this is the one and only send.
+        start = await client.post(f"/api/nets/{net_id}/start", headers=auth_headers(owner))
+        assert start.status_code == 200
+        assert start.json()["status"] == "lobby"
+        mock_notify.assert_called_once()
+
+        # /go-live → ACTIVE: must NOT send again.
+        live = await client.post(f"/api/nets/{net_id}/go-live", headers=auth_headers(owner))
+        assert live.status_code == 200
+        assert live.json()["status"] == "active"
+        mock_notify.assert_called_once()  # still just the one call from lobby-open
+
+
+@pytest.mark.asyncio
+async def test_straight_to_active_sends_notification_once(client, owner):
+    """Ad-hoc nets (no scheduled_start_time) skip LOBBY entirely, so /start's
+    ACTIVE branch is the only place they can be notified - confirm it still
+    sends exactly once.
+    """
+    create = await client.post("/api/nets/", json={"name": "Adhoc Notify Net"}, headers=auth_headers(owner))
+    net_id = create.json()["id"]
+
+    with patch(
+        "app.routers.nets_core.EmailService.send_net_notification",
+        new_callable=AsyncMock,
+    ) as mock_notify:
+        resp = await client.post(f"/api/nets/{net_id}/start", headers=auth_headers(owner))
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "active"
+        mock_notify.assert_called_once()
+
+
 # ---------------------------------------------------------------------------
 # Permission checks
 # ---------------------------------------------------------------------------
@@ -121,6 +175,54 @@ async def test_admin_can_close_any_net(client, owner, admin):
     await client.post(f"/api/nets/{net_id}/start", headers=auth_headers(owner))
     resp = await client.post(f"/api/nets/{net_id}/close", headers=auth_headers(admin))
     assert resp.status_code == 200
+
+
+# ---------------------------------------------------------------------------
+# Archive/unarchive broadcasts (Milestone 0.7: a second client with the
+# archive/delete prompt still open never learned the net had already been
+# archived elsewhere, because archive_net/unarchive_net never broadcast at
+# all. Mirrors the close_net broadcast pattern in nets_core.py.)
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_archive_net_broadcasts_status_change(client, owner):
+    create = await client.post("/api/nets/", json={"name": "Archive Broadcast Net"}, headers=auth_headers(owner))
+    net_id = create.json()["id"]
+    await client.post(f"/api/nets/{net_id}/start", headers=auth_headers(owner))
+    await client.post(f"/api/nets/{net_id}/close", headers=auth_headers(owner))
+
+    with patch("app.main.manager.broadcast", new_callable=AsyncMock) as mock_broadcast:
+        resp = await client.post(f"/api/nets/{net_id}/archive", headers=auth_headers(owner))
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "archived"
+
+        mock_broadcast.assert_called_once()
+        broadcast_payload, broadcast_net_id = mock_broadcast.call_args[0]
+        assert broadcast_payload["type"] == "net_status_change"
+        assert broadcast_payload["data"]["net_id"] == net_id
+        assert broadcast_payload["data"]["status"] == "archived"
+        assert broadcast_net_id == net_id
+
+
+@pytest.mark.asyncio
+async def test_unarchive_net_broadcasts_status_change(client, owner):
+    create = await client.post("/api/nets/", json={"name": "Unarchive Broadcast Net"}, headers=auth_headers(owner))
+    net_id = create.json()["id"]
+    await client.post(f"/api/nets/{net_id}/start", headers=auth_headers(owner))
+    await client.post(f"/api/nets/{net_id}/close", headers=auth_headers(owner))
+    await client.post(f"/api/nets/{net_id}/archive", headers=auth_headers(owner))
+
+    with patch("app.main.manager.broadcast", new_callable=AsyncMock) as mock_broadcast:
+        resp = await client.post(f"/api/nets/{net_id}/unarchive", headers=auth_headers(owner))
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "closed"
+
+        mock_broadcast.assert_called_once()
+        broadcast_payload, broadcast_net_id = mock_broadcast.call_args[0]
+        assert broadcast_payload["type"] == "net_status_change"
+        assert broadcast_payload["data"]["net_id"] == net_id
+        assert broadcast_payload["data"]["status"] == "closed"
+        assert broadcast_net_id == net_id
 
 
 # ---------------------------------------------------------------------------

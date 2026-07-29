@@ -248,7 +248,9 @@ async def send_staff_reminder(
     frequencies: list,
     net_url: str,
     lobby_url: str,
-    unsubscribe_token: str = None
+    unsubscribe_token: str = None,
+    ncs_name: str = None,
+    ncs_callsign: str = None
 ):
     """Send net-start reminder to template staff 1 hour before the net"""
     logger.info("EMAIL", f"Sending staff reminder to {to_email} for {net_name}")
@@ -310,6 +312,7 @@ async def send_staff_reminder(
                 <ul>
                     {{ freq_list }}
                 </ul>
+                {% if ncs_name %}<p><strong>NCS on duty:</strong> {{ ncs_name }}{% if ncs_callsign %} ({{ ncs_callsign }}){% endif %}</p>{% endif %}
             </div>
 
             <div class="buttons">
@@ -339,6 +342,8 @@ async def send_staff_reminder(
         freq_list=freq_list,
         net_url=net_url,
         lobby_url=lobby_url,
+        ncs_name=ncs_name,
+        ncs_callsign=ncs_callsign,
         app_name=settings.app_name,
         unsubscribe_footer=get_unsubscribe_footer(unsubscribe_token)
     )

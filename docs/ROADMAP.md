@@ -1,6 +1,6 @@
 # ECT Logger — Product Roadmap
 
-*Last updated: 2026-07-28 (rev 42 — pruned section 0.6, the post-Milestone-0.4 cleanup: the dead-import sweep and the WebSocket message-type doc reconciliation both shipped. The sweep was widened past the four files the PR review named to all 29 backend files carrying the same debt, and it surfaced a live bug — `send_email_with_attachment` was left unimported by the email-service split, so net log emails failed for any net without chat. Rev 41 — moved section 0.5 into Milestone 2. Its only open item, the Alembic-vs-numbered-scripts decision, was already a stated prerequisite of the PostgreSQL migration, so it now lives there as "Schema Tooling Decision", a sibling prerequisite section alongside UTC-Aware Datetime Hardening, rather than as a separate Milestone 0 section. Milestone 0.1 through 0.4 (the codebase health and modularity program) are done and have been removed; their durable conventions now live in [`docs/DEVELOPMENT.md`](DEVELOPMENT.md) and the shipped user-facing result is in [`docs/CHANGELOG.md`](CHANGELOG.md). Section number 0.7 is kept as-is so commit messages and docs referencing "Milestone 0.4" still resolve.)*  
+*Last updated: 2026-07-29 (rev 43 — pruned section 0.7, the Maine Dirigo Net field reports, which closes Milestone 0 entirely. Three of the six reports needed no code change: the two mobile/discoverability check-in reports were already resolved by the 2026-07-27 command-bar rewrite (`3e31355`) and its green Check In tint (`026a238`), which landed the day after the reports were filed; the "admin not prompted to check in" report did not reproduce, because the prompt condition in `NetView.tsx` has always OR'd `role === 'admin'` in as an inclusion rather than gating on it; and the chat avatar fallback was fixed on 2026-07-07 by `3859cc9`, so that report was most likely a stale frontend build. The other three shipped 2026-07-29: the archive endpoint had never broadcast a status change at all (a gap pre-dating the 0.4 split, not a regression from it), the staff reminder had no duty-NCS field to begin with, and the subscriber "net starting" notification moved to lobby-open, which also removed a duplicated send block between `/start` and `/go-live` that would otherwise have double-notified. Rev 42 — pruned section 0.6, the post-Milestone-0.4 cleanup: the dead-import sweep and the WebSocket message-type doc reconciliation both shipped. The sweep was widened past the four files the PR review named to all 29 backend files carrying the same debt, and it surfaced a live bug — `send_email_with_attachment` was left unimported by the email-service split, so net log emails failed for any net without chat. Rev 41 — moved section 0.5 into Milestone 2. Its only open item, the Alembic-vs-numbered-scripts decision, was already a stated prerequisite of the PostgreSQL migration, so it now lives there as "Schema Tooling Decision", a sibling prerequisite section alongside UTC-Aware Datetime Hardening, rather than as a separate Milestone 0 section. Milestone 0.1 through 0.4 (the codebase health and modularity program) are done and have been removed; their durable conventions now live in [`docs/DEVELOPMENT.md`](DEVELOPMENT.md) and the shipped user-facing result is in [`docs/CHANGELOG.md`](CHANGELOG.md). Section number 0.7 is kept as-is so commit messages and docs referencing "Milestone 0.4" still resolve.)*  
 *Compiled from user feedback: AA1GM, KC1UIX, W1BKW, W1MTW, N1GSK, KC1JMH*
 
 > **Canonical location:** `docs/ROADMAP.md`.
@@ -34,35 +34,9 @@ Rule of thumb: Haiku and Sonnet can only maintain this codebase safely once file
 
 ## Milestone 0 — Codebase Health & Maintainability
 
-*The bulk of this milestone (0.1 confirmed bugs, 0.2 orphaned code, 0.3 guardrails, 0.4 the modularity and componentization program) completed between 2026-07-03 and 2026-07-06 and has been pruned. What it delivered: a test suite and CI pipeline, React error boundaries, WebSocket resilience, SMTP timeouts, IANA timezone validation, composite indexes, shared frontend hooks, `app/permissions.py`, the backend router facades, and the frontend page splits. The patterns those splits established are documented in [`docs/DEVELOPMENT.md`](DEVELOPMENT.md) ("Backend router-split (facade) pattern", "Frontend component-split pattern", "Post-split verification checklist"). Sections below are what remains open.*
+*The bulk of this milestone (0.1 confirmed bugs, 0.2 orphaned code, 0.3 guardrails, 0.4 the modularity and componentization program) completed between 2026-07-03 and 2026-07-06 and has been pruned. What it delivered: a test suite and CI pipeline, React error boundaries, WebSocket resilience, SMTP timeouts, IANA timezone validation, composite indexes, shared frontend hooks, `app/permissions.py`, the backend router facades, and the frontend page splits. The patterns those splits established are documented in [`docs/DEVELOPMENT.md`](DEVELOPMENT.md) ("Backend router-split (facade) pattern", "Frontend component-split pattern", "Post-split verification checklist").*
 
-### 0.7 Field bug reports — Maine Dirigo Net (2026-07-26)
-
-*Raised live via chat during nets [#41](https://app.ectlogger.us/nets/41) and [#44](https://app.ectlogger.us/nets/44). Two root causes described in these reports were already fixed same-day in `f866587` before this triage: (1) scheduled net auto-create silently failing whenever the template has an NCS rotation (a `NetRole` import was missing, so `_get_or_create_scheduled_net` raised and swallowed the error) — this explains the "had to hit Create Net instead of it just being there" and "scheduler didn't fire" reports; (2) duplicate/triplicate 1-hour reminder emails and NCS staff receiving both the staff and subscriber reminder — fixed via a cross-type dedup helper. See that commit for detail. Everything below is still open.*
-
-**🐛 Mobile check-in entry point not discoverable** *(N1GSK)*  
-**Model:** Sonnet — reproduce on a real mobile viewport first; likely a missing/unclear check-in CTA rather than a one-line fix.  
-Mobile user reported not being prompted to check in and being unable to identify which button performs check-in ("I just kept hitting icons"). Needs reproduction against an active net on a narrow viewport to determine whether the check-in control is present but unclear, or missing for some net/user state.
-
-**🐛 Admin user not shown the check-in prompt other NCS/staff receive** *(KC1JMH)*  
-**Model:** Sonnet.  
-An admin-role user acting as NCS was not prompted to check in the way other (non-admin) NCS/staff are. Suggests the check-in-prompt trigger branches on global user role in a way that excludes admins — audit the prompt condition (likely in `NetView.tsx` or a check-in hook) for an `is_admin` short-circuit that should be checking net-role (NCS/staff) instead.
-
-**🐛 Chat avatars fall back to letter-avatar after a check-in event** *(KC1JMH)*  
-**Model:** Sonnet.  
-After checking in, avatar images in chat stopped rendering (fell back to initial-letter avatars); reporter suspects this may also affect the check-in table. Investigate whether the `check_in` WebSocket payload or the user-serializer used post-check-in omits `avatar_url` where the initial page load includes it.
-
-**🐛 Archive/delete dialog doesn't update when another client archives the net** *(KC1JMH)*  
-**Model:** Sonnet.  
-NCS closed and archived a net while a second user was still looking at the "archive or delete?" prompt for the same net. The second client should receive the net-archived WebSocket event and either dismiss the dialog or swap it to a "return to dashboard" state, instead of leaving a stale prompt for an action that already happened.
-
-**🐛 NCS/staff reminder omits "who is on duty" schedule data** *(W1BKW, KC1JMH)*  
-**Model:** Haiku — same file as the `f866587` fix (`ncs_reminder_service.py`); reuse the duty-NCS lookup that fix's tests already exercise and add it to the staff reminder's render context.  
-Of the several reminder emails received during net #44, only one included the on-duty NCS name; the NCS/staff variant is missing it. Confirm which template(s) omit the duty-NCS field and add it.
-
-**🐛 Subscriber "net starting" notification fires on the second lifecycle action (Start) instead of the first (Open Lobby)** *(W1BKW)*  
-**Model:** Sonnet — touches net lifecycle + `ncs_reminder_service.py`/notification dispatch, the same area as the `f866587` fix.  
-NCS opens the lobby expecting subscribers to be notified then, giving lead time before the net goes active; instead the notify-subscribers email fires only when the net is actually started, giving little to no lead time. Move (or add an option for) the subscriber notification to fire on the lobby-open transition.
+***Milestone 0 is complete as of 2026-07-29.** Every section has shipped and been pruned. Section numbers are not reused, so commit messages and docs referencing "Milestone 0.4" or "Milestone 0.7" still resolve against the changelog. New codebase-health work should open a new section here rather than reopening a pruned one.*
 
 ---
 

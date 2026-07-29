@@ -330,6 +330,23 @@ class NCSReminderService:
                             'talkgroup_id': freq.talkgroup,
                         })
 
+                # Query the on-duty NCS for this net
+                ncs_name = None
+                ncs_callsign = None
+                if net_id:
+                    ncs_result = await db.execute(
+                        select(User.callsign, User.name)
+                        .join(NetRole, NetRole.user_id == User.id)
+                        .where(NetRole.net_id == net_id)
+                        .where(NetRole.role == "NCS")
+                        .order_by(NetRole.assigned_at.desc())
+                        .limit(1)
+                    )
+                    ncs_row = ncs_result.first()
+                    if ncs_row:
+                        ncs_callsign = ncs_row[0]
+                        ncs_name = ncs_row[1]
+
                 for staff_entry in active_staff:
                     user = staff_entry.user
                     if not user.email or not user.email_notifications:
@@ -353,6 +370,8 @@ class NCSReminderService:
                             net_url=net_url,
                             lobby_url=lobby_url,
                             unsubscribe_token=user.unsubscribe_token,
+                            ncs_name=ncs_name,
+                            ncs_callsign=ncs_callsign,
                         )
                         db.add(NCSReminderLog(
                             template_id=template.id,

@@ -403,7 +403,19 @@ async def archive_net(
     net.status = NetStatus.ARCHIVED
     await db.commit()
     await db.refresh(net, ['frequencies'])
-    
+
+    # Broadcast net status change so other clients viewing this net (e.g. a second
+    # manager with the archive/delete prompt open) update immediately instead of
+    # keeping a stale prompt for an action that already happened.
+    from app.main import manager
+    await manager.broadcast({
+        "type": "net_status_change",
+        "data": {
+            "net_id": net_id,
+            "status": "archived",
+        }
+    }, net_id)
+
     return NetResponse.from_orm(net)
 
 
@@ -431,7 +443,18 @@ async def unarchive_net(
     net.status = NetStatus.CLOSED
     await db.commit()
     await db.refresh(net, ['frequencies'])
-    
+
+    # Broadcast symmetrically with archive_net so other clients see the net
+    # revert to closed instead of continuing to treat it as archived.
+    from app.main import manager
+    await manager.broadcast({
+        "type": "net_status_change",
+        "data": {
+            "net_id": net_id,
+            "status": "closed",
+        }
+    }, net_id)
+
     return NetResponse.from_orm(net)
 
 

@@ -439,6 +439,26 @@ const NetView: React.FC = () => {
     }
   }, [net?.status, net?.can_manage]);
 
+  // Tracks the net's previously-seen status so the effect below can tell a live
+  // status transition (someone just archived it) apart from simply loading a
+  // page that was already archived, which should stay silent.
+  const prevNetStatusRef = useRef<string | undefined>(undefined);
+
+  // If another client archives this net (or this client's own archive request
+  // completes) while the archive reminder, help, or delete-confirm dialog is
+  // still open here, close the stale prompts instead of leaving them pointing
+  // at an action that has already happened.
+  useEffect(() => {
+    const prevStatus = prevNetStatusRef.current;
+    prevNetStatusRef.current = net?.status;
+    if (net?.status === 'archived' && prevStatus && prevStatus !== 'archived') {
+      if (archiveReminder.open) archiveReminder.onClose();
+      if (archiveDeleteConfirm.open) archiveDeleteConfirm.onClose();
+      if (archiveHelp.open) archiveHelp.onClose();
+      setToastMessage('This net has been archived.');
+    }
+  }, [net?.status]);
+
   const handleDetachCheckInList = () => setCheckInListDetached(true);
   const handleAttachCheckInList = () => setCheckInListDetached(false);
   const handleDetachChat = () => setChatDetached(true);

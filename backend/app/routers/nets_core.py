@@ -34,6 +34,54 @@ from app.utils import display_callsign, format_time_for_net
 
 router = APIRouter()
 
+
+async def _send_net_start_notifications(db: AsyncSession, net: Net) -> None:
+    """Email the net owner and template subscribers that the net is starting.
+
+    Business rule (Milestone 0.7, W1BKW): exactly one "net starting" email is sent
+    per net, at whichever transition first makes the net visible to check in -
+    either LOBBY open (nets with a future scheduled_start_time) or ACTIVE (nets
+    that skip the lobby because they're ad hoc or already past their scheduled
+    time). Callers must ensure this is invoked from exactly one call site per
+    net's lifecycle - see the LOBBY and ACTIVE branches in start_net(). go_live()
+    must NOT call this; doing so would double-send for any net that used a lobby.
+    """
+    try:
+        emails_to_notify = []
+        unsubscribe_tokens = {}  # Map email -> unsubscribe_token
+
+        # Add net owner (if they have notifications enabled)
+        result = await db.execute(select(User).where(User.id == net.owner_id))
+        owner = result.scalar_one_or_none()
+        if owner and owner.email and owner.email_notifications and owner.notify_net_start:
+            emails_to_notify.append(owner.email)
+            if owner.unsubscribe_token:
+                unsubscribe_tokens[owner.email] = owner.unsubscribe_token
+
+        # If net was created from template, add all subscribers who want start notifications
+        if net.template_id:
+            from app.models import NetTemplateSubscription
+            result = await db.execute(
+                select(User)
+                .join(NetTemplateSubscription, NetTemplateSubscription.user_id == User.id)
+                .where(NetTemplateSubscription.template_id == net.template_id)
+                .where(User.email_notifications == True)
+                .where(User.notify_net_start == True)
+            )
+            subscribers = result.scalars().all()
+            for subscriber in subscribers:
+                if subscriber.email and subscriber.email not in emails_to_notify:
+                    emails_to_notify.append(subscriber.email)
+                    if subscriber.unsubscribe_token:
+                        unsubscribe_tokens[subscriber.email] = subscriber.unsubscribe_token
+
+        # Send notifications
+        if emails_to_notify:
+            await EmailService.send_net_notification(emails_to_notify, net.name, net.id, unsubscribe_tokens)
+    except Exception as e:
+        print(f"Failed to send net start notification: {e}")
+
+
 @router.post("/", response_model=NetResponse, status_code=status.HTTP_201_CREATED)
 async def create_net(
     net_data: NetCreate,
@@ -552,43 +600,14 @@ async def start_net(
         }
     }, net_id)
     
-    # Only send email notifications when going ACTIVE (not LOBBY)
-    if not go_to_lobby:
-        try:
-            emails_to_notify = []
-            unsubscribe_tokens = {}  # Map email -> unsubscribe_token
-            
-            # Add net owner (if they have notifications enabled)
-            result = await db.execute(select(User).where(User.id == net.owner_id))
-            owner = result.scalar_one_or_none()
-            if owner and owner.email and owner.email_notifications and owner.notify_net_start:
-                emails_to_notify.append(owner.email)
-                if owner.unsubscribe_token:
-                    unsubscribe_tokens[owner.email] = owner.unsubscribe_token
-            
-            # If net was created from template, add all subscribers who want start notifications
-            if net.template_id:
-                from app.models import NetTemplateSubscription
-                result = await db.execute(
-                    select(User)
-                    .join(NetTemplateSubscription, NetTemplateSubscription.user_id == User.id)
-                    .where(NetTemplateSubscription.template_id == net.template_id)
-                    .where(User.email_notifications == True)
-                    .where(User.notify_net_start == True)
-                )
-                subscribers = result.scalars().all()
-                for subscriber in subscribers:
-                    if subscriber.email and subscriber.email not in emails_to_notify:
-                        emails_to_notify.append(subscriber.email)
-                        if subscriber.unsubscribe_token:
-                            unsubscribe_tokens[subscriber.email] = subscriber.unsubscribe_token
-            
-            # Send notifications
-            if emails_to_notify:
-                await EmailService.send_net_notification(emails_to_notify, net.name, net.id, unsubscribe_tokens)
-        except Exception as e:
-            print(f"Failed to send net start notification: {e}")
-    
+    # Send the single "net starting" notification here, regardless of which branch
+    # was taken above: LOBBY open is the first moment subscribers should hear about
+    # the net (giving them lead time before the official start), and straight-to-
+    # ACTIVE nets (ad hoc, or already past their scheduled time) have no earlier
+    # moment to notify at. go_live() (LOBBY -> ACTIVE) intentionally sends nothing -
+    # see _send_net_start_notifications() docstring.
+    await _send_net_start_notifications(db, net)
+
     return NetResponse.from_orm(net)
 
 
@@ -598,7 +617,14 @@ async def go_live(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """Transition a net from LOBBY to ACTIVE mode. This sends out the start notifications."""
+    """Transition a net from LOBBY to ACTIVE mode.
+
+    Sends NO email. The subscriber "net starting" notification already went out
+    when the lobby opened (see start_net() / _send_net_start_notifications()) -
+    that is the whole point of Milestone 0.7 (W1BKW): subscribers get lead time
+    at lobby-open instead of at go-live. Do not add a send here; that would
+    double-notify every net that used a lobby.
+    """
     result = await db.execute(
         select(Net).options(selectinload(Net.frequencies)).where(Net.id == net_id)
     )
@@ -634,43 +660,9 @@ async def go_live(
             "started_at": net.started_at.isoformat() if net.started_at else None
         }
     }, net_id)
-    
-    # Send email notifications now that we're going live
-    try:
-        emails_to_notify = []
-        unsubscribe_tokens = {}  # Map email -> unsubscribe_token
-        
-        # Add net owner (if they have notifications enabled)
-        result = await db.execute(select(User).where(User.id == net.owner_id))
-        owner = result.scalar_one_or_none()
-        if owner and owner.email and owner.email_notifications and owner.notify_net_start:
-            emails_to_notify.append(owner.email)
-            if owner.unsubscribe_token:
-                unsubscribe_tokens[owner.email] = owner.unsubscribe_token
-        
-        # If net was created from template, add all subscribers who want start notifications
-        if net.template_id:
-            from app.models import NetTemplateSubscription
-            result = await db.execute(
-                select(User)
-                .join(NetTemplateSubscription, NetTemplateSubscription.user_id == User.id)
-                .where(NetTemplateSubscription.template_id == net.template_id)
-                .where(User.email_notifications == True)
-                .where(User.notify_net_start == True)
-            )
-            subscribers = result.scalars().all()
-            for subscriber in subscribers:
-                if subscriber.email and subscriber.email not in emails_to_notify:
-                    emails_to_notify.append(subscriber.email)
-                    if subscriber.unsubscribe_token:
-                        unsubscribe_tokens[subscriber.email] = subscriber.unsubscribe_token
-        
-        # Send notifications
-        if emails_to_notify:
-            await EmailService.send_net_notification(emails_to_notify, net.name, net.id, unsubscribe_tokens)
-    except Exception as e:
-        print(f"Failed to send net start notification: {e}")
-    
+
+    # No email send here by design - see docstring above.
+
     return NetResponse.from_orm(net)
 
 
