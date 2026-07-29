@@ -214,6 +214,16 @@ Category: Short label — Full sentence explaining what changed and why the user
 - **Write for operators, not developers.** Forbidden terms: "drill-down", "component", "endpoint", "schema", "refactor", "overflow", "boolean flag", "modal". Use plain language: "your past nets", "the list narrows", "you can now jump to".
 - **Group related changes under one item** when they serve the same user goal. Three UI changes that all help the user find past nets belong together, not as three separate entries.
 
+### What NOT to log (as important as the format)
+
+The changelog is a summary of what changed **for the user**, not a record of what we did. Three rules keep an entry readable:
+
+1. **Never log a defect we introduced and fixed before it reached users.** If a redesign broke hover colors, dark mode, and a layout, and all three were fixed in the same release cycle, the net effect on the user is zero. Listing them reads as "we broke five things" and buries the changes that actually matter. They belong in git history. Only log a bug that users could actually hit in a released version.
+2. **One user goal = one item**, no matter how many commits, files, or days it took. Labels on card buttons, splitting the staff row, and the wide-card layout are one item ("Redesigned card buttons"), not three.
+3. **Nothing the user cannot perceive.** No "Under the Hood", no dependency bumps, no internal cleanups, no changelog-about-the-changelog. If you cannot finish the sentence "so you can now..." or "so that problem is gone", leave it out.
+
+Before writing an entry, read it back as a user: if a reader would skim it, consolidate. An entry of 20+ items for one piece of work always means rules 1-3 were skipped. For reference, the 2026-07-28 UI/UX overhaul was written up as 24 items across two entries and consolidated down to 9 in one.
+
 **In `CHANGELOG.md`**, the bold portion wraps the `Category: Label`, and a ` — ` separates it from the explanatory sentence:
 
 ```

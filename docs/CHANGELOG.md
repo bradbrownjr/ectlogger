@@ -6,67 +6,32 @@ All notable changes to ECTLogger are documented here.
 
 # July 28, 2026
 
-## Bug Fixes
+## New Features
 
-* **Net View: Bulk Add hidden from guests** — The Bulk Add button no longer shows to guests or other non-staff visitors; only NCS, loggers, and net managers see it now, matching who's actually allowed to use it.
-
-* **Net View: Toolbar buttons keep their color on hover** — Buttons that show your current state, like Check In or Return, no longer flash gray when you hover over them; they now deepen their own color instead, so they don't look like they turned off.
-
-* **Net View: Toolbar reads correctly in dark mode** — The toolbar's background, borders, and button labels now switch with dark mode instead of staying stuck in light colors, so nothing shows up as dark text on a bright strip anymore.
-
-* **Net View: Net Info and adding topics limited to staff** — Net Info showed net configuration details that aren't meant for regular participants, and anyone could see the option to add a historical topic entry even though only staff could actually save one. Both are now limited to NCS, loggers, and net managers — including if someone tries the Net Info page directly by its web address. Everyone can still browse the list of prior topics.
-
-* **Net View: Long descriptions no longer break the header layout** — A net with a long description could push the status chips and the More link onto their own separate lines instead of staying on one row. The description now truncates in place like it's supposed to.
-
-* **Mobile: Status chips wrap instead of pushing the page sideways** — On a phone, a busy net's status chips (Stations, Online, frequency, etc.) could force the whole page into horizontal scrolling. They now wrap onto additional lines and stay within the screen.
-
-* **Net View: Long descriptions no longer shove the page around** — Opening a net's full description now floats it above the page instead of pushing the toolbar and check-in list down, then snapping them back up when you close it.
-
-* **Statistics: Platform statistics and the check-in map load again** — The Statistics page and its map of where stations are checking in from were both failing with an error instead of loading. Both work again.
-
-* **Net Logs: Missing log email for quiet nets** — Closing a net that had no chat messages silently failed to email the net log and its check-in spreadsheet, so anyone subscribed got nothing at all; those emails now send for every net, whether or not anyone used chat.
+* **Net View: Paused-net indicator** — If the NCS steps away and no co-NCS is covering, a blue border frames the whole window and a banner says the net is paused until Net Control returns. The on-air timer pauses too, and both clear the instant an NCS is present again, so a net's recorded duration no longer counts time with nobody running it.
 
 ## Improvements
 
-* **Net View: Check In stands out** — The Check In button now has a green background so first-time visitors notice it right away instead of hunting for it in the toolbar.
+* **Net View: Redesigned toolbar** — The toolbar now uses the full width of the page and keeps full button labels visible whenever there is room, instead of hiding them behind More at a fixed screen size. Check In is green so newcomers spot it immediately, and the NCS toggle reads "Role: NCS" or "Role: Standard" so it is obvious which role you are in. Raise Hand is hidden while you are NCS, and stepping away as the only NCS now warns you first.
 
-* **Net View: Clearer status wording** — The paused-net banner now says the net is paused until Net Control returns, and the toolbar's NCS toggle is labeled "Role: NCS" or "Role: Standard" so it's obvious at a glance which role you're in and what clicking it does.
-
-* **Net View: Paused-net border spans the whole page** — When Net Control has stepped away with no one covering, the blue border now frames the entire browser window instead of just the net panel, so it's impossible to miss.
-
-* **Net View: Prior topics link back to their net** — Each entry in the prior-topics list now has a link that opens the net it came from in a new tab, so you can browse history without losing your place in the net you have open.
-
-* **Mobile: Activity Log starts collapsed** — On a phone, the Activity Log now starts closed by default so the check-in list and chat are easier to reach without scrolling past it first. It remembers your choice separately from the desktop view, and you can still open it anytime.
-
-* **Nets and Schedule: Card buttons are labeled and easier to tap** — Every button on a net or schedule card now shows a short label beside its icon, and gives you a bigger target on a phone. You can tell what each one does at a glance instead of hovering to find out, and you're far less likely to hit the wrong one with a thumb.
-
-* **Nets and Schedule: Staff controls sit on their own row** — Buttons that change something (Create, Edit, Cancel, Start, Delete) now group into a row above the view-only buttons everyone sees, so cards with a lot of controls no longer wrap into a jumble. They're ordered so Start is easy to reach and no longer sits right beside Cancel. If you're not staff on a net, you just see the single row of everyday buttons.
-
-* **Nets and Schedule: Card buttons use the full width of wide cards** — On a card wide enough to fit them, the staff buttons stay left and the everyday buttons move over to the right edge instead of leaving a large empty gap. Narrower cards still stack the two groups on separate lines.
+* **Nets and Schedule: Redesigned card buttons** — Every button on a net or schedule card now shows a short label beside its icon and offers a bigger target on a phone, so you can tell what each one does at a glance instead of hovering. Buttons that change something (Create, Edit, Cancel, Start, Delete) are grouped apart from the view-only buttons everyone sees, ordered so Start is easy to reach and no longer sits beside Cancel. Wide cards spread the two groups to opposite edges; narrow ones stack them.
 
 * **Net View: Correcting a net's times moved somewhere sensible** — The unlabeled pencil tucked among the status chips is gone. You now correct a net's actual start and end times under Basic Info, on Edit Net while the net is running or on Net Info once it has closed, so a late start or a net you forgot to close can still be fixed for the official log.
 
-* **Net Report: Cleaner header** — The status and ICS-309 badges no longer sit at the top of a net report. Reports are read after a net has closed or been archived, so the badges told you nothing you didn't already know, and the ICS-309 log still has its own section and download button further down.
+* **Mobile: Less scrolling to reach the net** — The Activity Log now starts collapsed on a phone so the check-in list and chat are within reach, and it remembers that separately from your desktop setting. A busy net's status chips now wrap onto extra lines instead of forcing the whole page to scroll sideways.
 
-* **What's New: Consistent item styling** — Items in this dialog all use the same text weight now, instead of the mix of bold and normal that made the list look uneven. Items affecting your workflow are still marked with a User Impact tag and still sort to the top.
+* **Net View: Prior topics link back to their net** — Each entry in the prior-topics list now opens the net it came from in a new tab, so you can look through past topics without losing your place in the net you have open.
 
-* **Under the Hood: Leftover code cleanup** — Cleared out unused leftovers from the recent internal reorganization across 29 backend files, which is how the missing net log email above came to light.
+## Bug Fixes
 
----
+* **Statistics: Platform statistics and the check-in map load again** — The Statistics page and its map of where stations are checking in from were both failing with an error instead of loading. Both work again.
 
-# July 27, 2026
+* **Net Logs: Missing log email for quiet nets** — Closing a net that had no chat messages silently failed to email the net log and its check-in spreadsheet, so anyone subscribed got nothing at all. Those emails now send for every net, whether or not anyone used chat.
 
-## New Features
-
-* **Net View: Paused-net indicator** — If the NCS steps away and no co-NCS is covering, the net now shows a blue border and a banner letting everyone know no one is actively running it, and the on-air duration timer pauses too. Both clear automatically the instant an NCS is present again. The net's recorded duration (used in statistics and reports) no longer counts time with no NCS present.
-
-## Improvements
-
-* **Net View: Toolbar fills the available width** — The net toolbar now uses as much of the page as it has, showing full button labels whenever there's room instead of hiding items into the More menu at a fixed screen size. It also collapses correctly on short screens and at different browser zoom levels.
-
-* **Net View: Toolbar respects the NCS role** — Raise Hand is hidden while you're acting as NCS, since it doesn't apply to the person running the net. Stepping away as the only active NCS now warns you first that no one else is currently running the net before letting you proceed.
+* **Net View: Staff-only controls no longer shown to everyone** — Bulk Add, Net Info, and the option to add a historical topic were visible to guests and regular participants even though only NCS, loggers, and net managers could use them. All three are now limited to staff, including when the page is opened directly by its web address. Everyone can still browse the list of prior topics.
 
 ---
+
 
 # July 26, 2026
 

@@ -714,6 +714,30 @@ implementation details.
 The `whats_new_service.py` daily digest email reads the same file — do not
 maintain a separate list.
 
+### Entry length is a design constraint
+
+An entry is read in a dialog, top to bottom, by someone who wants to get back
+to their net. Length is the main thing that stops it being read at all, so what
+gets left out matters as much as how items are worded:
+
+- **Do not log a defect introduced and fixed before it reached users.** A
+  redesign that broke hover colors and dark mode, both fixed in the same cycle,
+  is a net change of zero for the user. Listing those fixes reads as a list of
+  our mistakes and pushes the real changes off the screen. Log only bugs that
+  users could hit in a released version.
+- **One user goal is one item**, regardless of how many commits or days it took.
+- **Omit anything the user cannot perceive** — internal cleanups, dependency
+  bumps, changelog items about the changelog itself.
+- **Prefer one merged entry over consecutive daily entries for the same piece of
+  work.** A multi-day overhaul reads as one story; splitting it by date makes
+  the reader reconstruct it themselves.
+
+If an entry passes ~10 items for a single body of work, it needs consolidating.
+Worked example: the 2026-07-28 UI/UX overhaul first landed as 24 items across
+two dated entries, and was consolidated to 9 items in one — five self-inflicted
+regressions dropped, three card-button items merged into one, two mobile items
+merged, and two internal items removed.
+
 ### Item rendering rules (`ChangelogNotification.tsx`)
 
 **Every item gets identical typography and an identical tinted background box.**
