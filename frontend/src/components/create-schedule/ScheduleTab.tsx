@@ -32,9 +32,21 @@ const ScheduleTab: React.FC = () => {
     isEdit,
     autoLobbyEnabled, setAutoLobbyEnabled,
     autoLobbyMinutes, setAutoLobbyMinutes,
-    autoLobbyMode, setAutoLobbyMode,
     oneTimeScheduledStartTime, setOneTimeScheduledStartTime,
   } = useCreateScheduleContext();
+
+  // Editing an existing one-time schedule never recreates its net, so its
+  // start-time and lobby controls only matter at initial creation.
+  const showOneTimeControls = scheduleType === 'one_time' && !isEdit;
+
+  // A one-time net only has a real time to count down from once the manager
+  // enters one; until then it behaves like Ad-Hoc (no offset, staged on manual
+  // Start) instead of like the recurring types (offset dropdown).
+  const showOffsetFreeLobby = scheduleType === 'ad_hoc' ||
+    (showOneTimeControls && !oneTimeScheduledStartTime);
+  const showOffsetLobby =
+    scheduleType === 'daily' || scheduleType === 'weekly' || scheduleType === 'monthly' ||
+    (showOneTimeControls && !!oneTimeScheduledStartTime);
 
   // Whether the current user can configure the fifth-week operator:
   // admins, the schedule manager, and active co-managers.
@@ -62,8 +74,8 @@ const ScheduleTab: React.FC = () => {
         Choose how often this net runs:
       </Typography>
       <Box component="ul" sx={{ mt: 0, mb: 2, pl: 2, color: 'text.secondary', fontSize: '0.875rem' }}>
-        <li><strong>One-Time</strong> — Create a single net right now (for special events or testing)</li>
         <li><strong>Ad-Hoc</strong> — Save as a template to start nets manually whenever needed</li>
+        <li><strong>One-Time</strong> — Create a single net, optionally with its own start date and time</li>
         <li><strong>Daily/Weekly/Monthly</strong> — Set up a recurring schedule</li>
       </Box>
 
@@ -79,13 +91,31 @@ const ScheduleTab: React.FC = () => {
             }
           }}
         >
-          <MenuItem value="one_time">One-Time Net</MenuItem>
           <MenuItem value="ad_hoc">Ad-Hoc (Start Manually)</MenuItem>
+          <MenuItem value="one_time">One-Time Net</MenuItem>
           <MenuItem value="daily">Daily</MenuItem>
           <MenuItem value="weekly">Weekly</MenuItem>
           <MenuItem value="monthly">Monthly</MenuItem>
         </Select>
       </FormControl>
+
+      {/* ========== One-Time config ==========
+          Optional — leaving it blank keeps today's behavior (create the net
+          immediately with no scheduled time). Filling it in gives the net a
+          real start time, which unlocks the offset-style lobby control below,
+          the same one Daily/Weekly/Monthly use. */}
+      {showOneTimeControls && (
+        <TextField
+          fullWidth
+          type="datetime-local"
+          label={`Net Start Time (${timezoneAbbr})`}
+          value={oneTimeScheduledStartTime}
+          onChange={(e) => setOneTimeScheduledStartTime(e.target.value)}
+          margin="normal"
+          InputLabelProps={{ shrink: true }}
+          helperText="Optional. Leave blank to create the net now with no scheduled start."
+        />
+      )}
 
       {/* ========== Daily config ========== */}
       {scheduleType === 'daily' && (
@@ -203,76 +233,28 @@ const ScheduleTab: React.FC = () => {
       )}
 
       {/* ========== Auto-open lobby ==========
-          Same underlying setting (auto_lobby_minutes) everywhere, but what there
-          is to configure depends on whether this schedule type has a start time
-          to count down from. Ad-hoc never does; one-time only does if the user
-          gives it one; the recurring types always do. */}
-      {scheduleType === 'ad_hoc' && (
+          Same underlying setting (auto_lobby_minutes) everywhere. Ad-Hoc and a
+          One-Time net with no start time entered above have nothing to count
+          down from, so the toggle is offset-free; everything else (the
+          recurring types, and a One-Time net once it has a start time) gets
+          the same offset dropdown. */}
+      {showOffsetFreeLobby && (
         <Box sx={{ mt: 3 }}>
           <FormControlLabel
             control={<Switch checked={autoLobbyEnabled} onChange={(e) => setAutoLobbyEnabled(e.target.checked)} />}
-            label="Enable lobby at start of net"
+            label={scheduleType === 'ad_hoc' ? 'Enable lobby at start of net' : 'Enable lobby'}
           />
           <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
-            Ad-hoc nets have no scheduled time, so there's nothing to count down from. When this
-            is on, clicking Start opens the lobby first instead of going straight live — Net
-            Control clicks "Go Live" when ready to officially begin.
+            {scheduleType === 'ad_hoc'
+              ? "Ad-hoc nets have no scheduled time, so there's nothing to count down from."
+              : "This net has no start time set above, so there's nothing to count down from."}
+            {' '}When this is on, clicking Start opens the lobby first instead of going straight
+            live — Net Control clicks "Go Live" when ready to officially begin.
           </Typography>
         </Box>
       )}
 
-      {scheduleType === 'one_time' && !isEdit && (
-        <Box sx={{ mt: 3 }}>
-          <FormControlLabel
-            control={<Switch checked={autoLobbyEnabled} onChange={(e) => setAutoLobbyEnabled(e.target.checked)} />}
-            label="Enable lobby"
-          />
-          <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5, mb: autoLobbyEnabled ? 1 : 0 }}>
-            Stations can check in and chat before the net officially starts.
-          </Typography>
-          {autoLobbyEnabled && (
-            <Box sx={{ ml: 4.5 }}>
-              <FormControl size="small" sx={{ minWidth: 200 }}>
-                <InputLabel>Open lobby</InputLabel>
-                <Select
-                  label="Open lobby"
-                  value={autoLobbyMode}
-                  onChange={(e) => setAutoLobbyMode(e.target.value as 'now' | 'at')}
-                >
-                  <MenuItem value="now">Now</MenuItem>
-                  <MenuItem value="at">At a specific time</MenuItem>
-                </Select>
-              </FormControl>
-              {autoLobbyMode === 'at' && (
-                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center', mt: 2 }}>
-                  <TextField
-                    type="datetime-local"
-                    label={`Net Start Time (${timezoneAbbr})`}
-                    value={oneTimeScheduledStartTime}
-                    onChange={(e) => setOneTimeScheduledStartTime(e.target.value)}
-                    InputLabelProps={{ shrink: true }}
-                    sx={{ minWidth: 220 }}
-                  />
-                  <FormControl size="small" sx={{ minWidth: 180 }}>
-                    <InputLabel>Open lobby</InputLabel>
-                    <Select
-                      label="Open lobby"
-                      value={autoLobbyMinutes}
-                      onChange={(e) => setAutoLobbyMinutes(Number(e.target.value))}
-                    >
-                      <MenuItem value={15}>15 minutes before</MenuItem>
-                      <MenuItem value={30}>30 minutes before</MenuItem>
-                      <MenuItem value={60}>60 minutes before</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Box>
-              )}
-            </Box>
-          )}
-        </Box>
-      )}
-
-      {(scheduleType === 'daily' || scheduleType === 'weekly' || scheduleType === 'monthly') && (
+      {showOffsetLobby && (
         <Box sx={{ mt: 3 }}>
           <FormControlLabel
             control={<Switch checked={autoLobbyEnabled} onChange={(e) => setAutoLobbyEnabled(e.target.checked)} />}

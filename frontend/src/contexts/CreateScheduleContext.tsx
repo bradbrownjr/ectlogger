@@ -90,13 +90,13 @@ export interface CreateScheduleContextValue {
   chatGracePeriodMinutes: number; setChatGracePeriodMinutes: Dispatch<SetStateAction<number>>;
   selfCheckinEnabled: boolean; setSelfCheckinEnabled: Dispatch<SetStateAction<boolean>>;
   // Auto-open lobby: presentation varies by scheduleType (see ScheduleTab), but all
-  // three collapse to the same nullable auto_lobby_minutes on the schedule/net (null
-  // = disabled; 0 = "enabled, no offset" for ad-hoc and one-time "now").
+  // collapse to the same nullable auto_lobby_minutes on the schedule/net (null =
+  // disabled; 0 = "enabled, no offset" for ad-hoc and a one-time net with no start time).
   autoLobbyEnabled: boolean; setAutoLobbyEnabled: Dispatch<SetStateAction<boolean>>;
   autoLobbyMinutes: number; setAutoLobbyMinutes: Dispatch<SetStateAction<number>>;
-  // One-time only: "now" opens the lobby as soon as the net is created; "at" gives
-  // the net a real start time (oneTimeScheduledStartTime) and the usual offset.
-  autoLobbyMode: 'now' | 'at'; setAutoLobbyMode: Dispatch<SetStateAction<'now' | 'at'>>;
+  // One-time only: an optional real start time for the net, independent of the lobby
+  // toggle. Blank keeps today's "create now" behavior; filled in, it becomes the
+  // net's scheduled_start_time and unlocks the offset-style lobby control.
   oneTimeScheduledStartTime: string; setOneTimeScheduledStartTime: Dispatch<SetStateAction<string>>;
 
   // Community net features

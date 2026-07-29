@@ -374,18 +374,18 @@ Click the green **Start** button on the net's card on the Dashboard, or **Start 
 
 This is useful for opening check-ins early while operators are gathering, before the net officially starts on the air.
 
-**Opening the lobby automatically** — A schedule can open its lobby on its own, so nobody has to be at a screen for early check-ins to begin. The control lives on the **Schedule** tab of the schedule editor, and what it offers depends on the schedule type:
+**Opening the lobby automatically** — A schedule can open its lobby on its own, so nobody has to be at a screen for early check-ins to begin. The control lives on the **Schedule** tab of the schedule editor, right after the schedule type, and what it offers depends on that type:
 
 - **Daily / Weekly / Monthly** — turn on **Open the lobby automatically before the net** and choose how far ahead (15, 30, or 60 minutes). Every net created from that schedule inherits the setting.
 - **Ad-Hoc** — turn on **Enable lobby at start of net**. These nets have no scheduled time to count down from, so there's no minutes picker; instead, whenever Net Control clicks **Start**, the net stages through Lobby first instead of going straight live. Click **Go live** when ready to officially begin.
-- **One-Time** — turn on **Enable lobby**, then choose **Now** (the net stages into Lobby the moment Net Control starts it, same as Ad-Hoc) or **At a specific time** (pick the net's actual start date and time, plus a 15/30/60-minute lead, and the lobby opens itself exactly like a recurring schedule).
+- **One-Time** — a **Net Start Time** field appears in the same spot Daily/Weekly/Monthly show their recurrence. Leave it blank and the net is created immediately with no scheduled time, same as before. Fill it in and the lobby toggle below becomes **Open the lobby automatically before the net** with the same 15/30/60-minute picker as a recurring schedule; leave the start time blank and the toggle instead reads **Enable lobby**, behaving like Ad-Hoc (stages into Lobby the moment Net Control clicks Start).
 
 Details worth knowing:
 - It is off by default for every schedule type. Existing schedules are unaffected until you turn it on.
 - Net Control can still open the lobby by hand at any time, exactly as before.
 - For Daily/Weekly/Monthly, to skip auto-lobby for one week only, open that net's **Edit Net** page and turn the switch off there. The schedule is left alone, so following weeks still open automatically.
-- The recurring and one-time-with-a-specific-time cases will not open if the week's Net Control duty was cancelled or nobody is on the rotation for that date, so an unstaffed lobby never looks like a running net.
-- Subscribers are not emailed when the lobby opens automatically (recurring, or one-time "at a specific time"). That notice waits until Net Control checks in or the net goes live, so nobody is told a net started that never ran. Ad-Hoc and one-time "Now" are triggered by Net Control clicking Start, so the usual start notification applies.
+- The recurring case, and a One-Time net given a start time, will not open the lobby if the week's Net Control duty was cancelled or nobody is on the rotation for that date, so an unstaffed lobby never looks like a running net.
+- Subscribers are not emailed when the lobby opens automatically (recurring, or a One-Time net with a start time). That notice waits until Net Control checks in or the net goes live, so nobody is told a net started that never ran. Ad-Hoc, and a One-Time net with no start time, are triggered by Net Control clicking Start, so the usual start notification applies immediately.
 - If a lobby opened on its own and nobody ever checked in, it is archived off the dashboard a day later, the same as a scheduled net that was never opened.
 
 ### Canceling or Deleting a Net

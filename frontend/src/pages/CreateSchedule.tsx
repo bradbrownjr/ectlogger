@@ -85,7 +85,6 @@ const CreateSchedule: React.FC = () => {
   // Auto-open lobby is off by default; existing schedules keep their current behavior
   const [autoLobbyEnabled, setAutoLobbyEnabled] = useState(false);
   const [autoLobbyMinutes, setAutoLobbyMinutes] = useState(15);
-  const [autoLobbyMode, setAutoLobbyMode] = useState<'now' | 'at'>('now');
   const [oneTimeScheduledStartTime, setOneTimeScheduledStartTime] = useState('');
 
   // ---- Community net features ----
@@ -246,28 +245,18 @@ const CreateSchedule: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (scheduleType === 'one_time' && autoLobbyEnabled && autoLobbyMode === 'at' && !oneTimeScheduledStartTime) {
-      setBlockingAlert({
-        open: true,
-        message: 'Pick a net start time, or switch "Open lobby" back to "Now".',
-        title: 'Missing Start Time',
-        severity: 'error',
-      });
-      return;
-    }
-
     // auto_lobby_minutes is one nullable number everywhere, but what it means
-    // depends on scheduleType: ad-hoc and one-time "now" have no scheduled time
-    // to count down from, so 0 just means "enabled, no offset" (see start_net()'s
-    // manual-start branch). One-time "at a specific time" and the recurring types
-    // use it as a real minutes-before offset for the background scheduler.
+    // depends on whether there's a scheduled time to count down from: ad-hoc
+    // never has one, and neither does a one-time net whose start time was left
+    // blank, so 0 just means "enabled, no offset" (see start_net()'s
+    // manual-start branch). A one-time net with a start time, and the recurring
+    // types, use it as a real minutes-before offset for the background scheduler.
+    const oneTimeHasStartTime = scheduleType === 'one_time' && !!oneTimeScheduledStartTime;
     const effectiveAutoLobbyMinutes = !autoLobbyEnabled
       ? null
-      : scheduleType === 'ad_hoc'
+      : (scheduleType === 'ad_hoc' || (scheduleType === 'one_time' && !oneTimeHasStartTime))
         ? 0
-        : scheduleType === 'one_time'
-          ? (autoLobbyMode === 'now' ? 0 : autoLobbyMinutes)
-          : autoLobbyMinutes;
+        : autoLobbyMinutes;
 
     const scheduleData: any = {
       name,
@@ -316,7 +305,10 @@ const CreateSchedule: React.FC = () => {
 
         if (scheduleType === 'one_time') {
           try {
-            const overridePayload = (autoLobbyEnabled && autoLobbyMode === 'at' && oneTimeScheduledStartTime)
+            // The start-time field is independent of the lobby toggle - it's
+            // the net's actual scheduled start regardless of whether auto-lobby
+            // is on, same as Daily/Weekly/Monthly's time field.
+            const overridePayload = oneTimeScheduledStartTime
               ? { scheduled_start_time: new Date(oneTimeScheduledStartTime).toISOString() }
               : undefined;
             const netResponse = await templateApi.createNetFromTemplate(newScheduleId, overridePayload);
@@ -350,7 +342,6 @@ const CreateSchedule: React.FC = () => {
     selfCheckinEnabled, setSelfCheckinEnabled,
     autoLobbyEnabled, setAutoLobbyEnabled,
     autoLobbyMinutes, setAutoLobbyMinutes,
-    autoLobbyMode, setAutoLobbyMode,
     oneTimeScheduledStartTime, setOneTimeScheduledStartTime,
     topicOfWeekEnabled, setTopicOfWeekEnabled, topicOfWeekPrompt, setTopicOfWeekPrompt,
     pollEnabled, setPollEnabled, pollQuestion, setPollQuestion,
