@@ -24,6 +24,8 @@ All notable changes to ECTLogger are documented here.
 
 * **Statistics: Platform statistics and the check-in map load again** — The Statistics page and its map of where stations are checking in from were both failing with an error instead of loading. Both work again.
 
+* **Net Logs: Missing log email for quiet nets** — Closing a net that had no chat messages silently failed to email the net log and its check-in spreadsheet, so anyone subscribed got nothing at all; those emails now send for every net, whether or not anyone used chat.
+
 ## Improvements
 
 * **Net View: Check In stands out** — The Check In button now has a green background so first-time visitors notice it right away instead of hunting for it in the toolbar.
@@ -43,6 +45,10 @@ All notable changes to ECTLogger are documented here.
 * **Nets and Schedule: Card buttons use the full width of wide cards** — On a card wide enough to fit them, the staff buttons stay left and the everyday buttons move over to the right edge instead of leaving a large empty gap. Narrower cards still stack the two groups on separate lines.
 
 * **Net View: Correcting a net's times moved somewhere sensible** — The unlabeled pencil tucked among the status chips is gone. You now correct a net's actual start and end times under Basic Info, on Edit Net while the net is running or on Net Info once it has closed, so a late start or a net you forgot to close can still be fixed for the official log.
+
+* **Net Report: Cleaner header** — The status and ICS-309 badges no longer sit at the top of a net report. Reports are read after a net has closed or been archived, so the badges told you nothing you didn't already know, and the ICS-309 log still has its own section and download button further down.
+
+* **Under the Hood: Leftover code cleanup** — Cleared out unused leftovers from the recent internal reorganization across 29 backend files, which is how the missing net log email above came to light.
 
 ---
 

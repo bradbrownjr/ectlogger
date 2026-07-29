@@ -1,8 +1,8 @@
 {
-  "version": "2026.07.28d",
+  "version": "2026.07.28e",
   "entries": [
     {
-      "version": "2026.07.28d",
+      "version": "2026.07.28e",
       "date": "2026-07-28",
       "sections": [
         {
@@ -35,6 +35,10 @@
             },
             {
               "text": "Statistics: Platform statistics and the check-in map load again — The Statistics page and its map of where stations are checking in from were both failing with an error instead of loading. Both work again.",
+              "userImpact": true
+            },
+            {
+              "text": "Net Logs: Missing log email for quiet nets — Closing a net that had no chat messages silently failed to email the net log and its check-in spreadsheet, so anyone subscribed got nothing at all; those emails now send for every net, whether or not anyone used chat.",
               "userImpact": true
             }
           ]
@@ -76,6 +80,13 @@
             },
             {
               "text": "Nets and Schedule: Card buttons use the full width of wide cards — On a card wide enough to fit them, the staff buttons stay left and the everyday buttons move over to the right edge instead of leaving a large empty gap. Narrower cards still stack the two groups on separate lines.",
+              "userImpact": true
+            },
+            {
+              "text": "Under the Hood: Leftover code cleanup — Cleared out unused leftovers from the recent internal reorganization across 29 backend files, which is how the missing net log email above came to light."
+            },
+            {
+              "text": "Net Report: Cleaner header — The status and ICS-309 badges no longer sit at the top of a net report. Reports are read after a net has closed or been archived, so the badges told you nothing you didn't already know, and the ICS-309 log still has its own section and download button further down.",
               "userImpact": true
             }
           ]

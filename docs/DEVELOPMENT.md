@@ -376,9 +376,44 @@ This is what makes multi-timezone nets correct: the net happens at one instant, 
 
 Endpoint: `WS /api/ws/nets/{net_id}?token=<jwt>`
 
-`ConnectionManager` in `main.py` tracks connections per net. Message types:
-`check_in_update`, `frequency_change`, `chat_message`, `online_users`, `net_started`,
-`active_speaker`, `check_in_deleted`, `role_change`, `active_frequency`.
+`ConnectionManager` in `main.py` tracks connections per net and broadcasts to every
+socket on that net. Every message has the shape `type` / `data` / `timestamp`, plus a
+`user_id` on relayed messages.
+
+Messages come from two directions, which is easy to miss when tracing a bug:
+
+**Server-originated** — a route handler calls `manager.broadcast(...)` after a database
+write. These are the authoritative events:
+
+| Type | Emitted by |
+|---|---|
+| `status_change` | `routers/check_ins.py` — a station's status changed |
+| `check_in_deleted` | `routers/check_ins.py` |
+| `hand_raised_changed` | `routers/check_ins.py` |
+| `net_started` / `net_lobby_opened` | `routers/nets_core.py` — one call site picks between them based on whether the NCS opened the lobby or went straight live |
+| `net_status_change` | `routers/nets_core.py` |
+| `net_pause_change` | `net_pause.py` |
+| `role_change` | `routers/nets_roles.py` |
+| `chat_message`, `chat_reaction`, `chat_image` | `routers/chat.py` |
+| `ping` | `main.py` keepalive |
+
+**Client-originated (relayed)** — the socket handler in `main.py` sanitizes whatever a
+client sends and rebroadcasts it verbatim to the net, defaulting the type to `message`.
+The server does not generate or validate these; they are peer-to-peer nudges telling
+other clients to refetch:
+
+| Type | Sent by | Effect on receivers |
+|---|---|---|
+| `check_in` | `components/netview/checkInActions.ts` | refetch the check-in list |
+| `active_speaker` | `checkInActions.ts` | highlight the speaking station |
+| `active_frequency` | `checkInActions.ts` | refetch the net |
+
+Because relayed events are client-generated, a client that never sends one (or drops
+offline mid-action) leaves other clients stale until their next poll or refetch. Do not
+treat them as guaranteed delivery of a state change — the REST write is the source of
+truth, and the relay is only a hint to go read it.
+
+`useNetWebSocket.ts` is the single frontend consumer and handles both sets.
 
 ---
 
