@@ -1,25 +1,20 @@
 from datetime import datetime, timedelta, timezone
-from typing import List, Optional
+from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import and_, case, distinct, func, or_, select
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.dependencies import get_current_user, get_current_user_optional
-from app.models import CheckIn, Net, NetRole, NetStatus, NetTemplate, NetTemplateSubscription, User
+from app.models import CheckIn, Net, NetStatus, User
 from app.schemas import (
-    CheckInMapDataPoint,
-    CheckInMapResponse,
     CheckInsByNet,
     FrequentNetStats,
-    GlobalStatsResponse,
     NcsNetEntry,
     NetParticipation,
-    NetStatsResponse,
     TimeSeriesDataPoint,
-    TopOperator,
     UserStatsResponse,
 )
 

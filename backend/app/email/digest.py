@@ -1,10 +1,9 @@
 from app.logger import logger
-from typing import List, Optional
+from typing import Optional
 
-from jinja2 import Template
 
 from app.config import settings
-from app.email.base import get_unsubscribe_footer, get_unsubscribe_url, send_email
+from app.email.base import get_unsubscribe_footer, send_email
 
 async def send_feedback_email(
     to_email: str,

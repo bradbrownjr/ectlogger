@@ -1,10 +1,10 @@
 from app.logger import logger
-from typing import List, Optional
+from typing import List
 
 from jinja2 import Template
 
 from app.config import settings
-from app.email.base import get_unsubscribe_footer, get_unsubscribe_url, send_email
+from app.email.base import get_unsubscribe_footer, send_email
 
 async def send_net_notification(emails: List[str], net_name: str, net_id: int, unsubscribe_tokens: dict = None):
     """Send notification that a net has started, with magic link for instant login

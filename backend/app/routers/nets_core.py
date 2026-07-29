@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -22,9 +22,8 @@ from app.models import (
     UserRole,
     net_frequencies,
 )
-from app.permissions import check_net_lifecycle_permission, check_net_permission, is_admin
+from app.permissions import check_net_permission, is_admin
 from app.schemas import (
-    FrequencyResponse,
     NetCreate,
     NetResponse,
     NetTemplateLinkRequest,
@@ -307,7 +306,6 @@ async def get_net_stats(
 
     # Compute per-callsign stats
     # "latest" row per callsign = the row with the most recent checked_in_at
-    from collections import defaultdict
     latest_by_callsign: dict[str, CheckIn] = {}
     for ci in all_check_ins:
         callsign = ci.callsign

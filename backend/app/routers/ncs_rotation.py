@@ -1,11 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, Query, Body
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, delete, and_
+from sqlalchemy import select, delete
 from sqlalchemy.orm import selectinload
 from typing import List, Optional
-from datetime import datetime, timedelta, timezone
-from dateutil.relativedelta import relativedelta
-from dateutil.rrule import rrule, DAILY, WEEKLY, MONTHLY
+from datetime import datetime
 import json
 from pydantic import BaseModel
 
@@ -28,10 +26,6 @@ from app.routers.ncs_schedule import (
     calculate_schedule_dates,
     compute_anchored_ncs_schedule,
     compute_ncs_schedule,
-    get_rotation_anchor_date,
-    is_fifth_occurrence,
-    template_local_to_utc,
-    template_utc_to_local,
 )
 
 router = APIRouter(prefix="/templates/{template_id}/ncs-rotation", tags=["ncs-rotation"])

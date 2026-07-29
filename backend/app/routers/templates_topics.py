@@ -1,47 +1,18 @@
-import json
-from datetime import datetime, timedelta, timezone
 from typing import List
 
 from app import schemas
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import delete, func, select
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.database import get_db
-from app.dependencies import get_current_user, get_current_user_optional
-from app.logger import logger
+from app.dependencies import get_current_user
 from app.models import (
-    AppSettings,
-    CheckIn,
-    Frequency,
-    NCSRotationMember,
-    NCSScheduleOverride,
-    Net,
-    NetRole,
-    NetStatus,
     NetTemplate,
-    NetTemplateSubscription,
-    TemplateStaff,
     TopicHistory,
     User,
-    UserRole,
-    net_template_frequencies,
 )
 from app.permissions import check_template_permission
-from app.schemas import (
-    NetResponse,
-    NetTemplateCreate,
-    NetTemplateResponse,
-    NetTemplateSubscriptionDetailResponse,
-    NetTemplateSubscriptionResponse,
-    NetTemplateUpdate,
-    TemplateMergeConflict,
-    TemplateMergePreview,
-    TemplateMergeRequest,
-    TemplateMergeResponse,
-    public_display_name,
-)
 
 router = APIRouter()
 
@@ -62,7 +33,6 @@ async def get_topic_history(
         raise HTTPException(status_code=404, detail="Template not found")
     
     # Get topic history ordered by most recent first
-    from app.models import TopicHistory
     result = await db.execute(
         select(TopicHistory)
         .where(TopicHistory.template_id == template_id)
@@ -95,7 +65,6 @@ async def add_topic_history(
         raise HTTPException(status_code=403, detail="Not authorized to manage this template")
     
     # Create topic history entry
-    from app.models import TopicHistory
     topic_entry = TopicHistory(
         template_id=template_id,
         topic=topic_data.topic,

@@ -2,45 +2,28 @@ import json
 from datetime import datetime, timedelta, timezone
 from typing import List
 
-from app import schemas
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import delete, func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.database import get_db
-from app.dependencies import get_current_user, get_current_user_optional
+from app.dependencies import get_current_user
 from app.logger import logger
 from app.models import (
-    AppSettings,
-    CheckIn,
-    Frequency,
-    NCSRotationMember,
-    NCSScheduleOverride,
     Net,
     NetRole,
     NetStatus,
     NetTemplate,
     NetTemplateSubscription,
     TemplateStaff,
-    TopicHistory,
     User,
     UserRole,
-    net_template_frequencies,
 )
-from app.permissions import check_template_permission
 from app.schemas import (
     NetResponse,
-    NetTemplateCreate,
-    NetTemplateResponse,
     NetTemplateSubscriptionDetailResponse,
     NetTemplateSubscriptionResponse,
-    NetTemplateUpdate,
-    TemplateMergeConflict,
-    TemplateMergePreview,
-    TemplateMergeRequest,
-    TemplateMergeResponse,
-    public_display_name,
 )
 
 from app.routers.templates_core import is_active_co_manager
@@ -175,7 +158,6 @@ async def create_net_from_template(
     # Check staff table
     is_staff = False
     if not (is_admin or is_owner or is_rotation_member):
-        from app.models import TemplateStaff
         staff_result = await db.execute(
             select(TemplateStaff).where(
                 TemplateStaff.template_id == template.id,
@@ -340,7 +322,6 @@ async def email_template_subscribers(
     Permission: admin, template owner, or active template co-manager.
     """
     from app.email_service import EmailService
-    from app.models import NetTemplateSubscription, TemplateStaff
     from app.utils import display_callsign
     from jinja2 import Template
     

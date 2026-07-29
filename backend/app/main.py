@@ -1,5 +1,5 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, HTTPException
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -78,7 +78,7 @@ if match := re.match(r'http://([0-9.]+):3000', settings.frontend_url):
     allowed_origins.append(f"http://{match.group(1)}:8000")
 
 print(f"\n{'='*60}")
-print(f"ECTLogger Backend Starting")
+print("ECTLogger Backend Starting")
 print(f"{'='*60}")
 print(f"Log Level: {settings.log_level.upper()}")
 print(f"CORS Origins: {', '.join(allowed_origins)}")
@@ -274,7 +274,7 @@ async def websocket_endpoint(websocket: WebSocket, net_id: int, token: str = Non
                     if not user or not user.is_active:
                         user_id = 0  # Fall back to guest
                     break
-        except Exception as e:
+        except Exception:
             user_id = 0  # Fall back to guest on auth errors
     
     await manager.connect(websocket, net_id, user_id)
@@ -298,7 +298,7 @@ async def websocket_endpoint(websocket: WebSocket, net_id: int, token: str = Non
             }, net_id)
     except WebSocketDisconnect:
         manager.disconnect(websocket, net_id)
-    except Exception as e:
+    except Exception:
         manager.disconnect(websocket, net_id)
 
 

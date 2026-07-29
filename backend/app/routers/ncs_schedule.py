@@ -10,7 +10,7 @@ from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
 from dateutil.relativedelta import relativedelta
-from dateutil.rrule import DAILY, MONTHLY, WEEKLY, rrule
+from dateutil.rrule import DAILY, WEEKLY, rrule
 
 from app.models import NCSRotationMember, NCSScheduleOverride, NetTemplate
 from app.schemas import NCSScheduleEntry

@@ -1,25 +1,16 @@
 import re
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import case, func, or_, select
+from fastapi import APIRouter, Depends
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.database import get_db
-from app.dependencies import get_current_user, get_current_user_optional
-from app.models import CheckIn, NetRole, NetTemplate, NetTemplateSubscription, User
+from app.dependencies import get_current_user_optional
+from app.models import CheckIn, User
 from app.schemas import (
     CheckInMapDataPoint,
     CheckInMapResponse,
-    CheckInsByNet,
-    FrequentNetStats,
-    GlobalStatsResponse,
-    NcsNetEntry,
-    NetParticipation,
-    NetStatsResponse,
-    TopOperator,
-    UserStatsResponse,
 )
 
 router = APIRouter()

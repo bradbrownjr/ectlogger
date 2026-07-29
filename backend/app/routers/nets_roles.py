@@ -12,7 +12,7 @@ from app.dependencies import get_current_user, get_current_user_optional
 from app.email_service import EmailService
 from app.models import Net, NetRole, NetStatus, NetTemplateSubscription, TemplateStaff, User, UserRole
 from app.permissions import is_admin
-from app.schemas import NetResponse, public_display_name
+from app.schemas import public_display_name
 from app.utils import display_callsign, get_avatar_url
 
 router = APIRouter()
@@ -62,7 +62,6 @@ async def assign_net_role(
 
     # Broadcast role change via WebSocket
     from app.main import manager, post_system_message
-    import datetime
     await manager.broadcast({
         "type": "role_change",
         "data": {
@@ -137,7 +136,6 @@ async def remove_net_role(
 
     # Broadcast role removal via WebSocket
     from app.main import manager, post_system_message
-    import datetime
     await manager.broadcast({
         "type": "role_change",
         "data": {
@@ -221,7 +219,6 @@ async def claim_ncs_role(
     
     # Broadcast role change via WebSocket
     from app.main import manager
-    import datetime
     await manager.broadcast({
         "type": "role_change",
         "data": {
@@ -282,7 +279,6 @@ async def toggle_self_net_role(
     await db.refresh(role)
 
     from app.main import manager, post_system_message
-    import datetime
     await manager.broadcast({
         "type": "role_change",
         "data": {
@@ -326,7 +322,6 @@ async def list_net_roles(
     # Build role list using eagerly loaded user data.
     # For unauthenticated callers we expose only callsign + first name so guests
     # can see who is running the net without leaking email or surnames.
-    from app.utils import get_avatar_url
     role_list = []
     is_authed = current_user is not None
     for role in roles:
@@ -409,7 +404,6 @@ async def claim_ncs_frequency(
     
     # Broadcast role update via WebSocket
     from app.main import manager
-    import datetime
     await manager.broadcast({
         "type": "role_change",
         "data": {
@@ -454,7 +448,6 @@ async def clear_ncs_frequency(
     
     # Broadcast role update via WebSocket
     from app.main import manager
-    import datetime
     await manager.broadcast({
         "type": "role_change",
         "data": {
@@ -486,9 +479,6 @@ async def email_net_subscribers(
 
     Permission: admin, net owner/manager, or active template co-manager.
     """
-    from app.email_service import EmailService
-    from app.models import NetTemplateSubscription, TemplateStaff
-    from jinja2 import Template
     
     result = await db.execute(
         select(Net).options(selectinload(Net.frequencies)).where(Net.id == net_id)

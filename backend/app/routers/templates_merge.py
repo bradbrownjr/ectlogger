@@ -1,46 +1,27 @@
-import json
-from datetime import datetime, timedelta, timezone
-from typing import List
 
-from app import schemas
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import delete, func, select
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.database import get_db
-from app.dependencies import get_current_user, get_current_user_optional
-from app.logger import logger
+from app.dependencies import get_current_user
 from app.models import (
-    AppSettings,
-    CheckIn,
-    Frequency,
     NCSRotationMember,
     NCSScheduleOverride,
     Net,
-    NetRole,
-    NetStatus,
     NetTemplate,
     NetTemplateSubscription,
     TemplateStaff,
     TopicHistory,
     User,
     UserRole,
-    net_template_frequencies,
 )
-from app.permissions import check_template_permission
 from app.schemas import (
-    NetResponse,
-    NetTemplateCreate,
-    NetTemplateResponse,
-    NetTemplateSubscriptionDetailResponse,
-    NetTemplateSubscriptionResponse,
-    NetTemplateUpdate,
     TemplateMergeConflict,
     TemplateMergePreview,
     TemplateMergeRequest,
     TemplateMergeResponse,
-    public_display_name,
 )
 
 from app.routers.templates_core import is_active_co_manager
@@ -218,6 +199,8 @@ async def merge_templates(
     Moves all nets, subscriptions, staff, rotation members, topic history,
     and schedule overrides. Source templates are deleted after merge.
     """
+    # Local stdlib logger: app.logger.logger takes info(category, message),
+    # so it is not a drop-in for these single-argument info() calls.
     import logging
     logger = logging.getLogger(__name__)
 

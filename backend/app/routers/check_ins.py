@@ -10,7 +10,7 @@ from app.models import CheckIn, Net, NetStatus, User, UserRole, StationStatus, N
 from app.schemas import CheckInCreate, CheckInUpdate, CheckInResponse
 from app.dependencies import get_current_user
 from app.utils import display_callsign
-from app.permissions import check_net_permission, is_admin
+from app.permissions import check_net_permission
 
 router = APIRouter(prefix="/check-ins", tags=["check-ins"])
 

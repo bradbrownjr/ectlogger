@@ -9,7 +9,6 @@ FastAPI dependencies live here.
 from __future__ import annotations
 
 import csv
-import io
 import json
 import re
 from dataclasses import dataclass, field

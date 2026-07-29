@@ -12,7 +12,7 @@ from typing import List
 from app.database import get_db
 from app.models import Contact, User
 from app.schemas import ContactCreate, ContactUpdate, ContactResponse
-from app.dependencies import get_current_user, get_admin_user
+from app.dependencies import get_admin_user
 
 router = APIRouter(prefix="/contacts", tags=["contacts"])
 

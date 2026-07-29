@@ -252,9 +252,6 @@ async def export_net_ics309(
     if not await check_net_permission(db, net, current_user):
         raise HTTPException(status_code=403, detail="Not authorized to export this net")
     
-    # Build frequency lookup map
-    freq_map = {f.id: f for f in net.frequencies}
-    
     # Helper to format frequency
     def format_freq(freq):
         if freq.frequency:

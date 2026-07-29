@@ -29,7 +29,7 @@ async def get_current_user(
     payload = verify_token(token, client_ip)
     
     if payload is None:
-        logger.auth_failure(f"Token verification failed", client_ip)
+        logger.auth_failure("Token verification failed", client_ip)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials"

@@ -1,5 +1,3 @@
-import io
-import csv
 from email import encoders
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart

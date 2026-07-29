@@ -1,7 +1,7 @@
 """
 Geocoding API router - proxies requests to Nominatim to avoid CORS issues
 """
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Query
 from pydantic import BaseModel
 import httpx
 import asyncio

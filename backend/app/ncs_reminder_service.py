@@ -19,8 +19,10 @@ from app.logger import logger
 # Import the schedule calculation functions from the router
 from app.routers.ncs_rotation import (
     compute_anchored_ncs_schedule, calculate_schedule_dates,
-    template_local_to_utc, template_utc_to_local,
 )
+# template_*_to_* are defined in ncs_schedule; import them from there rather than
+# through ncs_rotation, which only ever passed them along.
+from app.routers.ncs_schedule import template_local_to_utc, template_utc_to_local
 
 
 class NCSReminderService:
@@ -84,7 +86,6 @@ class NCSReminderService:
         Returns the net ID, or None on failure.
         """
         from app.models import net_frequencies as net_freq_table
-        import json
 
         # Look for any non-closed net for this template at exactly this scheduled time
         # (±5 min tolerance guards against floating-point datetime drift between scheduler runs)
@@ -609,7 +610,6 @@ class NCSReminderService:
         
         async with AsyncSessionLocal() as db:
             from app.routers.ncs_rotation import calculate_schedule_dates
-            import json
             
             # Get all active templates
             result = await db.execute(
