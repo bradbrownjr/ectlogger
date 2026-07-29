@@ -8,7 +8,7 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Schedule: Automatic lobby opening** — A schedule's Schedule tab can now open its net's lobby on its own, so stations can check in and chat early without waiting for Net Control. Recurring schedules pick a lead time (15/30/60 minutes); Ad-Hoc opens the lobby the moment Net Control clicks Start; One-Time nets can do either, or be given an actual future start time for the first time. It is off by default, and Net Control can still open the lobby by hand at any time.
+* **Schedule: Automatic lobby opening** — A schedule's Schedule tab can now open its net's lobby on its own, so stations can check in and chat early without waiting for Net Control. Recurring schedules pick a lead time (15/30/60 minutes); Ad-Hoc opens the lobby the moment Net Control clicks Start; One-Time nets can do either, or be given an actual future start time for the first time. A net with automatic opening enabled shows a live countdown to when its lobby will open. It is off by default, and Net Control can still open the lobby by hand at any time.
 
 ## Improvements
 

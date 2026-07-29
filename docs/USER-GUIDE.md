@@ -387,6 +387,7 @@ Details worth knowing:
 - The recurring case, and a One-Time net given a start time, will not open the lobby if the week's Net Control duty was cancelled or nobody is on the rotation for that date, so an unstaffed lobby never looks like a running net.
 - Subscribers are not emailed when the lobby opens automatically (recurring, or a One-Time net with a start time). That notice waits until Net Control checks in or the net goes live, so nobody is told a net started that never ran. Ad-Hoc, and a One-Time net with no start time, are triggered by Net Control clicking Start, so the usual start notification applies immediately.
 - If a lobby opened on its own and nobody ever checked in, it is archived off the dashboard a day later, the same as a scheduled net that was never opened.
+- While waiting for it to fire, the net's page shows a live **Lobby opens in** countdown next to the existing **Starts in** countdown, so nobody has to guess whether or when it will happen. The underlying check runs every 15 minutes, so the lobby may open a few minutes after the countdown reaches zero.
 
 ### Canceling or Deleting a Net
 

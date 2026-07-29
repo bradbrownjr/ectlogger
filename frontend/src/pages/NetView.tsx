@@ -178,6 +178,7 @@ const NetView: React.FC = () => {
   // Countdown and duration timer state
   const [countdownTime, setCountdownTime] = useState<string | null>(null);
   const [durationTime, setDurationTime] = useState<string | null>(null);
+  const [lobbyOpensCountdown, setLobbyOpensCountdown] = useState<string | null>(null);
   // Topic/Poll configuration dialog state
   const topicPollDialog = useDialog();
   const [tempTopicPrompt, setTempTopicPrompt] = useState('');
@@ -367,7 +368,44 @@ const NetView: React.FC = () => {
       } else {
         setCountdownTime(null);
       }
-      
+
+      // Lobby-opens countdown: only meaningful before the lobby has actually
+      // opened (draft/scheduled), for a net with a real offset to count down to
+      // (auto_lobby_minutes > 0 - the 0 sentinel means "opens on manual Start",
+      // which has no target time). Once status flips to 'lobby' this hides
+      // itself; the LOBBY status chip already says the lobby is open.
+      if (
+        net.scheduled_start_time &&
+        (net.auto_lobby_minutes ?? 0) > 0 &&
+        (net.status === 'draft' || net.status === 'scheduled')
+      ) {
+        const scheduledTimeStr = net.scheduled_start_time.endsWith('Z') ? net.scheduled_start_time : net.scheduled_start_time + 'Z';
+        const scheduledTime = new Date(scheduledTimeStr);
+        const opensAt = scheduledTime.getTime() - net.auto_lobby_minutes * 60 * 1000;
+        const diff = opensAt - now.getTime();
+
+        if (diff > 0) {
+          const hours = Math.floor(diff / (1000 * 60 * 60));
+          const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+          const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+          if (hours > 0) {
+            setLobbyOpensCountdown(`${hours}h ${minutes}m ${seconds}s`);
+          } else if (minutes > 0) {
+            setLobbyOpensCountdown(`${minutes}m ${seconds}s`);
+          } else {
+            setLobbyOpensCountdown(`${seconds}s`);
+          }
+        } else {
+          // Past the offset - the background check runs every 15 minutes
+          // (NCSReminderService.CHECK_INTERVAL_MINUTES), so there can be a
+          // short lag between this moment and the status actually flipping.
+          setLobbyOpensCountdown('Opening any moment');
+        }
+      } else {
+        setLobbyOpensCountdown(null);
+      }
+
       // Duration timer: show elapsed time since net started, minus any time
       // spent with no NCS actively present (only for active nets).
       if (net.started_at && net.status === 'active') {
@@ -1112,6 +1150,7 @@ const NetView: React.FC = () => {
         userActiveCheckIn={userActiveCheckIn}
         netStats={netStats}
         countdownTime={countdownTime}
+        lobbyOpensCountdown={lobbyOpensCountdown}
         durationTime={durationTime}
         checkInsCount={checkIns.length}
         searchQuery={searchQuery}

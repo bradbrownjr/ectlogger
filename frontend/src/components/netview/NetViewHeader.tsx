@@ -173,6 +173,7 @@ interface NetViewHeaderProps {
   userActiveCheckIn: any;
   netStats: any;
   countdownTime: string | null;
+  lobbyOpensCountdown: string | null;
   durationTime: string | null;
   checkInsCount: number;
   searchQuery: string;
@@ -286,6 +287,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
   userActiveCheckIn,
   netStats,
   countdownTime,
+  lobbyOpensCountdown,
   durationTime,
   checkInsCount,
   searchQuery,
@@ -752,6 +754,18 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
               variant="outlined"
               sx={{ fontFamily: 'monospace' }}
             />
+          )}
+          {lobbyOpensCountdown && (
+            <Tooltip title="This net's lobby opens automatically. The check runs every 15 minutes, so it may open a few minutes after this countdown reaches zero.">
+              <Chip
+                icon={<TimerIcon />}
+                label={lobbyOpensCountdown === 'Opening any moment' ? lobbyOpensCountdown : `Lobby opens in ${lobbyOpensCountdown}`}
+                size="small"
+                color="info"
+                variant="outlined"
+                sx={{ fontFamily: 'monospace' }}
+              />
+            </Tooltip>
           )}
           {durationTime && (
             <Chip
