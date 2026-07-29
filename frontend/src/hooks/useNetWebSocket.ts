@@ -129,6 +129,23 @@ export function useNetWebSocket(deps: NetWebSocketDeps): WebSocket | null {
             // Remove highlight after 10 seconds
             setTimeout(() => setHighlightCheckIn(false), 10000);
           }, 500);
+        } else if (message.type === 'net_lobby_opened') {
+          // Lobby is open for early check-ins, either because staff opened it or
+          // because the schedule opened it on its own (started_by is null then).
+          // Without this branch a viewer already sitting on the net page would
+          // never see an automatic open.
+          fetchNet();
+          fetchCheckIns();
+          fetchNetRoles();
+          setTimeout(() => {
+            setToastMessage(
+              message.data?.started_by
+                ? `Lobby opened by ${message.data.started_by} - check in early!`
+                : 'Lobby is open - check in early!'
+            );
+            setHighlightCheckIn(true);
+            setTimeout(() => setHighlightCheckIn(false), 10000);
+          }, 500);
         } else if (message.type === 'net_status_change') {
           // Net status changed (e.g., closed) - refresh net data immediately
           console.log('Net status changed:', message.data);

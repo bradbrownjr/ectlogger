@@ -122,6 +122,18 @@ class Net(Base):
     chat_grace_period_minutes = Column(Integer, nullable=True)  # Minutes to keep chat open after close; null = disabled
     self_checkin_enabled = Column(Boolean, default=True)  # If False, only NCS/logger-entered check-ins are accepted
 
+    # Auto-open lobby: minutes before scheduled_start_time that the scheduler
+    # moves this net to LOBBY on its own. Null = disabled (the default). Copied
+    # from the template at auto-create time; the per-net value is authoritative
+    # so an NCS can switch it off for a single occurrence.
+    auto_lobby_minutes = Column(Integer, nullable=True)
+    # True only when the scheduler opened the lobby. Lets the stale sweep archive
+    # a lobby nobody attended without ever undoing a human's manual open.
+    lobby_opened_automatically = Column(Boolean, nullable=False, default=False)
+    # Set when the one-and-only "net starting" email goes out, making that send
+    # idempotent across the several transitions that can trigger it.
+    start_notification_sent_at = Column(DateTime(timezone=True), nullable=True)
+
     # Topic of the Week / Poll features for community nets
     topic_of_week_enabled = Column(Boolean, default=False)
     topic_of_week_prompt = Column(String(500))  # The topic question, e.g., "What's your favorite radio?"
@@ -170,6 +182,9 @@ class NetTemplate(Base):
     mobile_priority_sort = Column(Boolean, default=True)  # Promote mobile stations above chronological order
     chat_grace_period_minutes = Column(Integer, nullable=True)  # Minutes to keep chat open after close; null = disabled
     self_checkin_enabled = Column(Boolean, default=True)  # If False, nets from this schedule accept only NCS/logger-entered check-ins
+    # Default auto-open-lobby offset for nets created from this schedule, in
+    # minutes before the scheduled start. Null = disabled (the default).
+    auto_lobby_minutes = Column(Integer, nullable=True)
 
     # Topic of the Week / Poll features for community nets
     topic_of_week_enabled = Column(Boolean, default=False)

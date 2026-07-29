@@ -259,6 +259,23 @@ async def create_check_in(
             # Contact auto-creation is best-effort — don't fail the check-in
             await db.rollback()
     
+    # ========== NCS ARRIVAL IN AN AUTO-OPENED LOBBY ==========
+    # An automatically opened lobby stays silent until a human confirms the net
+    # is really happening, so subscribers aren't told a net started that nobody
+    # ran. The NCS checking in is that confirmation. The send is idempotent, so
+    # a second NCS arriving does not re-notify. See app/net_start.py.
+    if net.lobby_opened_automatically and net.status == NetStatus.LOBBY and linked_user_id:
+        ncs_arrival = await db.execute(
+            select(NetRole).where(
+                NetRole.net_id == net_id,
+                NetRole.user_id == linked_user_id,
+                NetRole.role == "NCS",
+            )
+        )
+        if ncs_arrival.scalar_one_or_none():
+            from app.net_start import send_net_start_notifications
+            await send_net_start_notifications(db, net)
+
     # Re-fetch with user relationship loaded (needed for avatar_url in response)
     result = await db.execute(
         select(CheckIn).options(selectinload(CheckIn.user)).where(CheckIn.id == check_in.id)

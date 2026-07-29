@@ -84,6 +84,10 @@ const CreateNet: React.FC = () => {
   const [chatGracePeriodEnabled, setChatGracePeriodEnabled] = useState(false);
   const [chatGracePeriodMinutes, setChatGracePeriodMinutes] = useState(15);
   const [selfCheckinEnabled, setSelfCheckinEnabled] = useState(true);
+  // Auto-open lobby: inherited from the schedule when the net was created, and
+  // overridable here for this net alone. Off by default.
+  const [autoLobbyEnabled, setAutoLobbyEnabled] = useState(false);
+  const [autoLobbyMinutes, setAutoLobbyMinutes] = useState(15);
 
   // ---- Community net features ----
   const [topicOfWeekEnabled, setTopicOfWeekEnabled] = useState(false);
@@ -184,6 +188,9 @@ const CreateNet: React.FC = () => {
       setChatGracePeriodEnabled(!!grace);
       if (grace) setChatGracePeriodMinutes(grace);
       setSelfCheckinEnabled(net.self_checkin_enabled !== false);
+      const autoLobby = net.auto_lobby_minutes;
+      setAutoLobbyEnabled(!!autoLobby);
+      if (autoLobby) setAutoLobbyMinutes(autoLobby);
       setTopicOfWeekEnabled(net.topic_of_week_enabled || false);
       setTopicOfWeekPrompt(net.topic_of_week_prompt || '');
       if (net.template_id) {
@@ -270,6 +277,7 @@ const CreateNet: React.FC = () => {
         mobile_priority_sort: mobilePrioritySort,
         chat_grace_period_minutes: chatGracePeriodEnabled ? chatGracePeriodMinutes : null,
         self_checkin_enabled: selfCheckinEnabled,
+        auto_lobby_minutes: autoLobbyEnabled ? autoLobbyMinutes : null,
         topic_of_week_enabled: topicOfWeekEnabled,
         topic_of_week_prompt: topicOfWeekPrompt || null,
         poll_enabled: pollEnabled,
@@ -312,6 +320,7 @@ const CreateNet: React.FC = () => {
         frequency_ids: selectedFrequencyIds,
         field_config: fieldConfig,
         ics309_enabled: ics309Enabled,
+        auto_lobby_minutes: autoLobbyEnabled ? autoLobbyMinutes : null,
         topic_of_week_enabled: topicOfWeekEnabled,
         topic_of_week_prompt: topicOfWeekPrompt || null,
         poll_enabled: pollEnabled,
@@ -366,6 +375,8 @@ const CreateNet: React.FC = () => {
     chatGracePeriodEnabled, setChatGracePeriodEnabled,
     chatGracePeriodMinutes, setChatGracePeriodMinutes,
     selfCheckinEnabled, setSelfCheckinEnabled,
+    autoLobbyEnabled, setAutoLobbyEnabled,
+    autoLobbyMinutes, setAutoLobbyMinutes,
     topicOfWeekEnabled, setTopicOfWeekEnabled,
     topicOfWeekPrompt, setTopicOfWeekPrompt,
     pollEnabled, setPollEnabled,

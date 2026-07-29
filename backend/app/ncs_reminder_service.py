@@ -6,12 +6,13 @@ Background task service that sends email reminders to NCS operators
 """
 
 import asyncio
-from datetime import datetime, timedelta
-from sqlalchemy import select, and_
+from datetime import datetime, timedelta, timezone
+from sqlalchemy import select, and_, or_
 from sqlalchemy.orm import selectinload
 from app.database import AsyncSessionLocal
+from app.net_start import auto_open_lobby, lobby_open_due
 from app.utils import display_callsign
-from app.models import NetTemplate, NCSRotationMember, NCSReminderLog, NCSScheduleOverride, User, NetTemplateSubscription, Net, NetStatus, TemplateStaff, NetRole
+from app.models import CheckIn, NetTemplate, NCSRotationMember, NCSReminderLog, NCSScheduleOverride, User, NetTemplateSubscription, Net, NetStatus, TemplateStaff, NetRole
 from app.email_service import EmailService
 from app.config import settings
 from app.logger import logger
@@ -69,6 +70,7 @@ class NCSReminderService:
         while self.running:
             try:
                 await self._check_and_auto_create_nets()
+                await self._check_and_auto_open_lobbies()
                 await self._check_and_send_ncs_reminders()
                 await self._check_and_send_staff_reminders()
                 await self._check_and_send_subscriber_reminders()
@@ -121,6 +123,9 @@ class NCSReminderService:
                 status=NetStatus.SCHEDULED,
                 ics309_enabled=template.ics309_enabled or False,
                 self_checkin_enabled=template.self_checkin_enabled if template.self_checkin_enabled is not None else True,
+                # Copied forward so the NCS can turn auto-lobby off for this one
+                # occurrence without editing the schedule.
+                auto_lobby_minutes=template.auto_lobby_minutes,
                 topic_of_week_enabled=template.topic_of_week_enabled or False,
                 topic_of_week_prompt=template.topic_of_week_prompt,
                 poll_enabled=template.poll_enabled or False,
@@ -249,6 +254,97 @@ class NCSReminderService:
 
             if created > 0:
                 logger.info("NCS_REMINDER", f"Auto-created {created} scheduled net(s)")
+
+    async def _is_occurrence_staffed(self, db, net: Net) -> bool:
+        """Whether someone is on duty for this net's occurrence.
+
+        An automated lobby must not open for a net whose duty was cancelled or
+        whose rotation has a gap - an unstaffed open lobby is worse than leaving
+        the net scheduled, because it looks to everyone like the net is on.
+
+        The rotation is recomputed rather than trusting the NetRole assigned at
+        auto-create time, because a duty can be cancelled (an NCSScheduleOverride
+        with no replacement) after the net row already exists, and that path does
+        not touch the net.
+
+        Nets with no rotation to consult (ad hoc nets, or a schedule that never
+        set one up) are treated as staffed: the owner is the de facto NCS, and
+        refusing to fire would silently disable a setting they turned on.
+        """
+        if not net.template_id:
+            return True
+
+        from app.models import NCSScheduleOverride as _Override
+
+        tpl_result = await db.execute(
+            select(NetTemplate)
+            .options(
+                selectinload(NetTemplate.rotation_members),
+                selectinload(NetTemplate.schedule_overrides).selectinload(_Override.replacement_user),
+                selectinload(NetTemplate.fifth_week_user),
+            )
+            .where(NetTemplate.id == net.template_id)
+        )
+        tpl = tpl_result.scalar_one_or_none()
+        if not tpl or not tpl.rotation_members:
+            return True
+
+        # scheduled_start_time is stored UTC; the anchored schedule works in the
+        # template's local-naive dates, so convert before matching the occurrence.
+        local_dt = template_utc_to_local(tpl, net.scheduled_start_time)
+        schedule = compute_anchored_ncs_schedule(
+            tpl, [local_dt], tpl.rotation_members, tpl.schedule_overrides
+        )
+        if not schedule:
+            return True  # Occurrence isn't in the rotation's view; don't block on it
+
+        return bool(schedule[0].user_id) and not schedule[0].is_cancelled
+
+    async def _check_and_auto_open_lobbies(self):
+        """Open the lobby for scheduled nets whose auto_lobby_minutes offset has arrived.
+
+        Reads the per-net auto_lobby_minutes only, never the template's: the value
+        was copied forward at auto-create time, so an NCS who switched it off for
+        a single occurrence cannot have that decision undone here.
+        """
+        logger.debug("NCS_REMINDER", "Checking for lobbies to auto-open...")
+
+        async with AsyncSessionLocal() as db:
+            result = await db.execute(
+                select(Net)
+                .options(selectinload(Net.frequencies))
+                .where(
+                    and_(
+                        Net.status == NetStatus.SCHEDULED,
+                        Net.auto_lobby_minutes.isnot(None),
+                        Net.scheduled_start_time.isnot(None),
+                    )
+                )
+            )
+            candidates = result.scalars().all()
+
+            opened = 0
+            for net in candidates:
+                try:
+                    if not lobby_open_due(net):
+                        continue
+
+                    if not await self._is_occurrence_staffed(db, net):
+                        logger.info(
+                            "NCS_REMINDER",
+                            f"Skipping auto-lobby for net {net.id} ({net.name}) - "
+                            f"no NCS on duty for this occurrence",
+                        )
+                        continue
+
+                    await auto_open_lobby(db, net)
+                    opened += 1
+                except Exception as e:
+                    logger.error("NCS_REMINDER", f"Auto-lobby failed for net {net.id}: {e}")
+                    await db.rollback()
+
+            if opened > 0:
+                logger.info("NCS_REMINDER", f"Auto-opened {opened} net lobby/lobbies")
 
     async def _check_and_send_staff_reminders(self):
         """Send 1h reminders to all active template staff for upcoming nets.
@@ -773,38 +869,69 @@ class NCSReminderService:
         )
 
 
-    async def _check_and_archive_stale_scheduled_nets(self):
-        """Auto-archive SCHEDULED nets that were never opened 24+ hours after their start time.
+    async def _find_stale_nets(self, db, cutoff: datetime):
+        """Nets scheduled before `cutoff` that never actually happened.
 
-        Nets in SCHEDULED status were pre-created by the reminder service but never
-        transitioned to LOBBY or ACTIVE. If the start time has passed by more than
-        24 hours the net simply didn't happen — archive it so it stops appearing on
-        the dashboard.
+        Split out from the sweep so the two "didn't happen" shapes can be tested
+        without the background loop's own session - see
+        _check_and_archive_stale_scheduled_nets for what each one means.
+        """
+        # Nets with at least one check-in were attended, so they happened even
+        # if the NCS never pressed "go live".
+        attended = select(CheckIn.net_id).where(CheckIn.net_id == Net.id)
+
+        result = await db.execute(
+            select(Net).where(
+                and_(
+                    Net.scheduled_start_time.isnot(None),
+                    Net.scheduled_start_time < cutoff,
+                    or_(
+                        Net.status == NetStatus.SCHEDULED,
+                        and_(
+                            Net.status == NetStatus.LOBBY,
+                            Net.lobby_opened_automatically == True,
+                            Net.started_at.is_(None),
+                            ~attended.exists(),
+                        ),
+                    ),
+                )
+            )
+        )
+        return result.scalars().all()
+
+    async def _check_and_archive_stale_scheduled_nets(self):
+        """Auto-archive nets that never actually happened, 24+ hours after their start time.
+
+        Two shapes of "didn't happen":
+
+        1. Still SCHEDULED. The net was pre-created by the reminder service and
+           nobody ever opened it.
+        2. In LOBBY, but the lobby opened itself (auto_lobby_minutes), never went
+           live, and nobody checked in. Without this case an auto-opened lobby
+           would sit on the dashboard forever, because leaving SCHEDULED is the
+           only signal case 1 has. A lobby a human opened is never swept: the
+           scheduler must not undo a deliberate action.
         """
         logger.debug("NCS_REMINDER", "Checking for stale scheduled nets...")
 
         async with AsyncSessionLocal() as db:
             cutoff = datetime.utcnow() - timedelta(hours=24)
-            result = await db.execute(
-                select(Net).where(
-                    and_(
-                        Net.status == NetStatus.SCHEDULED,
-                        Net.scheduled_start_time.isnot(None),
-                        Net.scheduled_start_time < cutoff,
-                    )
-                )
-            )
-            stale = result.scalars().all()
+            stale = await self._find_stale_nets(db, cutoff)
 
             if not stale:
                 return
 
             for net in stale:
+                reason = (
+                    "auto-opened lobby, nobody attended"
+                    if net.status == NetStatus.LOBBY
+                    else "never opened"
+                )
                 net.status = NetStatus.ARCHIVED
                 logger.info(
                     "NCS_REMINDER",
                     f"Auto-archived stale scheduled net {net.id} "
-                    f"({net.name}) — scheduled {net.scheduled_start_time}, never opened",
+                    f"({net.name}) — scheduled {net.scheduled_start_time}, {reason}",
                 )
 
             await db.commit()

@@ -368,6 +368,8 @@ This is what makes multi-timezone nets correct: the net happens at one instant, 
 
 **The rule that prevents reminder/scheduling bugs:** `calculate_schedule_dates()` (in `routers/ncs_rotation.py`) projects *naive local* datetimes from the template rule. Any consumer that compares those projections against "now" must first convert with `template_local_to_utc(template, dt)` — never compare a naive local datetime against `datetime.utcnow()`. (This was the root cause of the June 2026 early/duplicate-reminder bug.)
 
+**Comparing against a stored net instant:** helpers that do arithmetic on `Net.scheduled_start_time` must not assume it is naive. SQLite returns naive values, PostgreSQL returns tz-aware ones, and mixing the two raises `TypeError: can't compare offset-naive and offset-aware datetimes`. Normalize both sides first — `app/net_start.py::_as_naive_utc` is the pattern (auto-lobby's fire-time math uses it).
+
 **Current storage caveat (see ROADMAP — "UTC-aware datetime hardening"):** on SQLite, `DateTime(timezone=True)` does not actually persist an offset, so UTC instants are stored *naive by convention*. That is why several frontend call sites defensively append `'Z'` before parsing, and why backend boundary helpers return naive UTC. This convention is fragile and would break under PostgreSQL (`timestamptz` returns tz-aware values); the roadmap item tracks standardizing on tz-aware UTC end-to-end.
 
 ---
@@ -390,7 +392,7 @@ write. These are the authoritative events:
 | `status_change` | `routers/check_ins.py` — a station's status changed |
 | `check_in_deleted` | `routers/check_ins.py` |
 | `hand_raised_changed` | `routers/check_ins.py` |
-| `net_started` / `net_lobby_opened` | `routers/nets_core.py` — one call site picks between them based on whether the NCS opened the lobby or went straight live |
+| `net_started` / `net_lobby_opened` | `routers/nets_core.py` — one call site picks between them based on whether the NCS opened the lobby or went straight live. `net_lobby_opened` is also emitted by `app/net_start.py::auto_open_lobby` for a scheduler-opened lobby, where `started_by` is `null` because no human opened it. Both are handled in `hooks/useNetWebSocket.ts` |
 | `net_status_change` | `routers/nets_core.py` (net closed) and `routers/nets_export.py` (net archived/unarchived) |
 | `net_pause_change` | `net_pause.py` |
 | `role_change` | `routers/nets_roles.py` |

@@ -34,6 +34,9 @@ export interface CreateNetContextValue {
   chatGracePeriodEnabled: boolean; setChatGracePeriodEnabled: Dispatch<SetStateAction<boolean>>;
   chatGracePeriodMinutes: number; setChatGracePeriodMinutes: Dispatch<SetStateAction<number>>;
   selfCheckinEnabled: boolean; setSelfCheckinEnabled: Dispatch<SetStateAction<boolean>>;
+  // Auto-open lobby for this net only; sent as a nullable auto_lobby_minutes
+  autoLobbyEnabled: boolean; setAutoLobbyEnabled: Dispatch<SetStateAction<boolean>>;
+  autoLobbyMinutes: number; setAutoLobbyMinutes: Dispatch<SetStateAction<number>>;
 
   // Community features
   topicOfWeekEnabled: boolean; setTopicOfWeekEnabled: Dispatch<SetStateAction<boolean>>;

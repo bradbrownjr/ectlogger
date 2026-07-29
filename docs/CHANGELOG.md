@@ -6,6 +6,10 @@ All notable changes to ECTLogger are documented here.
 
 # July 29, 2026
 
+## New Features
+
+* **Schedule: Automatic lobby opening** — A schedule can now open its net's lobby on its own a set number of minutes before the start time, so stations can check in and chat early without waiting for Net Control to open the net. It is off by default, Net Control can still open the lobby by hand at any time, and it can be switched off for a single net from that net's settings when you aren't sure the net will run.
+
 ## Improvements
 
 * **Reminders: Subscribers hear about a net when the lobby opens** — The net starting email now goes out the moment Net Control opens the lobby, instead of when the net goes live. You get real lead time to get to the radio rather than finding out once the net is already running.

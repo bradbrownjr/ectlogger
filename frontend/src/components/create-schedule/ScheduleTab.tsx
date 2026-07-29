@@ -11,6 +11,7 @@ import {
   FormGroup,
   InputLabel,
   Autocomplete,
+  Switch,
 } from '@mui/material';
 import { useCreateScheduleContext, User } from '../../contexts/CreateScheduleContext';
 
@@ -23,6 +24,8 @@ const ScheduleTab: React.FC = () => {
     scheduleType, setScheduleType,
     scheduleConfig, setScheduleConfig,
     fifthWeekUserId, setFifthWeekUserId,
+    autoLobbyEnabled, setAutoLobbyEnabled,
+    autoLobbyMinutes, setAutoLobbyMinutes,
     timezoneAbbr,
     currentUser,
     ownerId,
@@ -193,6 +196,48 @@ const ScheduleTab: React.FC = () => {
               sx={{ minWidth: 150 }}
             />
           </Box>
+        </Box>
+      )}
+
+      {/* ========== Auto-open lobby ==========
+          Only meaningful for schedule types that have a start time to count back
+          from. Ad-hoc nets are started by hand, so there is nothing to anticipate. */}
+      {scheduleType !== 'ad_hoc' && (
+        <Box sx={{ mt: 3 }}>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={autoLobbyEnabled}
+                onChange={(e) => setAutoLobbyEnabled(e.target.checked)}
+              />
+            }
+            label="Open the lobby automatically before the net"
+          />
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            display="block"
+            sx={{ ml: 4.5, mb: autoLobbyEnabled ? 1 : 0 }}
+          >
+            Stations can check in and chat ahead of the official start without waiting for
+            Net Control to open the net. Net Control can still open the lobby by hand at any
+            time, and can turn this off for a single net from that net's settings.
+          </Typography>
+          {autoLobbyEnabled && (
+            <Box sx={{ ml: 4.5 }}>
+              <Select
+                size="small"
+                value={autoLobbyMinutes}
+                onChange={(e) => setAutoLobbyMinutes(Number(e.target.value))}
+              >
+                <MenuItem value={5}>5 minutes before</MenuItem>
+                <MenuItem value={10}>10 minutes before</MenuItem>
+                <MenuItem value={15}>15 minutes before</MenuItem>
+                <MenuItem value={30}>30 minutes before</MenuItem>
+                <MenuItem value={60}>60 minutes before</MenuItem>
+              </Select>
+            </Box>
+          )}
         </Box>
       )}
     </>

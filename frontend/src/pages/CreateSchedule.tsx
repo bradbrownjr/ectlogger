@@ -82,6 +82,9 @@ const CreateSchedule: React.FC = () => {
   const [chatGracePeriodEnabled, setChatGracePeriodEnabled] = useState(false);
   const [chatGracePeriodMinutes, setChatGracePeriodMinutes] = useState(15);
   const [selfCheckinEnabled, setSelfCheckinEnabled] = useState(true);
+  // Auto-open lobby is off by default; existing schedules keep their current behavior
+  const [autoLobbyEnabled, setAutoLobbyEnabled] = useState(false);
+  const [autoLobbyMinutes, setAutoLobbyMinutes] = useState(15);
 
   // ---- Community net features ----
   const [topicOfWeekEnabled, setTopicOfWeekEnabled] = useState(false);
@@ -195,6 +198,9 @@ const CreateSchedule: React.FC = () => {
       setChatGracePeriodEnabled(!!grace);
       if (grace) setChatGracePeriodMinutes(grace);
       setSelfCheckinEnabled(schedule.self_checkin_enabled !== false);
+      const autoLobby = schedule.auto_lobby_minutes;
+      setAutoLobbyEnabled(!!autoLobby);
+      if (autoLobby) setAutoLobbyMinutes(autoLobby);
       setTopicOfWeekEnabled(schedule.topic_of_week_enabled || false);
       setTopicOfWeekPrompt(schedule.topic_of_week_prompt || '');
       setPollEnabled(schedule.poll_enabled || false);
@@ -252,6 +258,7 @@ const CreateSchedule: React.FC = () => {
       mobile_priority_sort: mobilePrioritySort,
       chat_grace_period_minutes: chatGracePeriodEnabled ? chatGracePeriodMinutes : null,
       self_checkin_enabled: selfCheckinEnabled,
+      auto_lobby_minutes: autoLobbyEnabled ? autoLobbyMinutes : null,
       topic_of_week_enabled: topicOfWeekEnabled,
       topic_of_week_prompt: topicOfWeekPrompt || null,
       poll_enabled: pollEnabled,
@@ -312,6 +319,8 @@ const CreateSchedule: React.FC = () => {
     chatGracePeriodEnabled, setChatGracePeriodEnabled,
     chatGracePeriodMinutes, setChatGracePeriodMinutes,
     selfCheckinEnabled, setSelfCheckinEnabled,
+    autoLobbyEnabled, setAutoLobbyEnabled,
+    autoLobbyMinutes, setAutoLobbyMinutes,
     topicOfWeekEnabled, setTopicOfWeekEnabled, topicOfWeekPrompt, setTopicOfWeekPrompt,
     pollEnabled, setPollEnabled, pollQuestion, setPollQuestion,
     isActive, setIsActive,

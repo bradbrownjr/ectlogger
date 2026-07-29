@@ -80,11 +80,19 @@ New "Themes" section in the Admin panel. Admins see the same swatch picker that 
 
 **✨ Auto-open lobby before scheduled start** *(KC1JMH)*  
 **Model:** Sonnet (touches the reminder/scheduler background service, where the June 2026 naive-UTC bug lived — write the schedule-calc test first). The UI toggle alone is Haiku-sized.  
-Add a per-schedule setting (e.g. "Open lobby X minutes before start time") that automatically transitions a scheduled net into Lobby mode without requiring the NCS to click a link. The NCS could still open the lobby manually at any time — this is an optional server-side trigger for groups that always open the net at the same offset before their formal start. Requires:
-- New `auto_lobby_minutes` column on `NetTemplate` (nullable; null = disabled)
-- UI toggle + number input in the schedule editor (Net Settings tab)
-- Background task in the reminder/scheduler service to fire the transition at the right time
-- Guard to skip if the net is already in Lobby/Active state
+Add an off-by-default setting ("Open lobby X minutes before start time") that automatically transitions a scheduled net into Lobby mode without requiring the NCS to click a link. The NCS can still open the lobby manually at any time — this is an optional server-side trigger for groups that always open the net at the same offset before their formal start.
+
+**Design decision (2026-07-29, KC1JMH):** the setting is gated at the schedule level and overridable per net, because auto-lobby collides with the existing auto-cancel sweep. `_check_and_archive_stale_scheduled_nets` identifies a net that never ran by one signal only: it is still in SCHEDULED status 24 hours after its start time. Auto-lobby moves every net out of SCHEDULED on a timer, so a net nobody showed up for would sit in Lobby on the dashboard forever. Groups that do not reliably run every week are exactly the ones that would accumulate them. The same root issue affects notifications: the single "net starting" subscriber email fires at lobby open (see `nets_core.py::start_net`), so an automated open would announce nets that never happen.
+
+Requires:
+- New nullable `auto_lobby_minutes` column on **both** `NetTemplate` (the schedule default) and `Net` (the occurrence), following the existing `chat_grace_period_minutes` / `self_checkin_enabled` pattern. Null = disabled, so existing schedules are unaffected.
+- `_get_or_create_scheduled_net` copies the value forward at auto-create time. The scheduler reads `Net.auto_lobby_minutes` only and never re-reads the template, so a per-net "off" cannot be undone by a later sweep.
+- Toggle + number input in the schedule editor (`CreateSchedule.tsx`, Schedule tab) for the default, and in the net editor (`CreateNet.tsx`, Basic Info) so an NCS can disable or adjust it for a single occurrence. The existing "Save to Schedule" button pushes a per-net change back up when the group wants it permanent.
+- New `lobby_opened_automatically` boolean on `Net`, set only by the scheduler, so the stale sweep can also archive auto-opened lobbies that never went live and have zero check-ins. Manually opened lobbies keep today's behavior of never being auto-archived — the scheduler must not undo a human action.
+- Background task in the reminder/scheduler service to fire the transition at the right time. It cannot reuse `start_net` as-is: that path auto-checks-in the caller and grants them NCS, and an automated open has no caller. Extract a shared helper that opens the lobby without those side effects.
+- Guards: skip if the net is not still SCHEDULED, if the occurrence has a cancelled `NCSScheduleOverride`, if no NCS is assigned for the occurrence, or if the scheduled start time has already passed.
+- Hold the subscriber "net starting" email until an NCS actually arrives or the net goes ACTIVE, so a no-show net does not announce itself.
+- Write the schedule-calc test first. The offset math runs through `template_local_to_utc` / `template_utc_to_local`, where the June 2026 naive-UTC bug lived. `backend/tests/test_reminder_service.py` is the home for it.
 
 ### Net Reminders & Lifecycle UX *(field reports, Maine Dirigo Net, 2026-07-26)*
 

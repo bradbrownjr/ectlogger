@@ -38,6 +38,7 @@ The responsive interface works beautifully on any device — from a phone in the
 ### Net Management
 
 - **📅 Scheduling** — Schedule recurring nets with automatic NCS rotation
+- **🚪 Automatic Lobby** — Optionally open a scheduled net's lobby a set number of minutes early so stations can check in before Net Control arrives
 - **📜 Net Scripts** — Create formatted scripts for NCS operators to follow during nets
 - **✏️ Inline Editing** — NCS/Loggers can click any check-in row to edit fields directly
 - **🦔 Speed Entry** - Hit the ⏩ button to enter a string of check-ins in fast-moving nets

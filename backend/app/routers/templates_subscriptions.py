@@ -251,6 +251,7 @@ async def create_net_from_template(
         mobile_priority_sort=template.mobile_priority_sort if template.mobile_priority_sort is not None else True,
         chat_grace_period_minutes=template.chat_grace_period_minutes,
         self_checkin_enabled=template.self_checkin_enabled if template.self_checkin_enabled is not None else True,
+        auto_lobby_minutes=template.auto_lobby_minutes,
         topic_of_week_enabled=template.topic_of_week_enabled or False,
         topic_of_week_prompt=template.topic_of_week_prompt,
         poll_enabled=template.poll_enabled or False,

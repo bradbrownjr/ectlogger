@@ -89,6 +89,10 @@ export interface CreateScheduleContextValue {
   chatGracePeriodEnabled: boolean; setChatGracePeriodEnabled: Dispatch<SetStateAction<boolean>>;
   chatGracePeriodMinutes: number; setChatGracePeriodMinutes: Dispatch<SetStateAction<number>>;
   selfCheckinEnabled: boolean; setSelfCheckinEnabled: Dispatch<SetStateAction<boolean>>;
+  // Auto-open lobby: enabled flag plus the offset, sent as a single nullable
+  // auto_lobby_minutes (null = disabled)
+  autoLobbyEnabled: boolean; setAutoLobbyEnabled: Dispatch<SetStateAction<boolean>>;
+  autoLobbyMinutes: number; setAutoLobbyMinutes: Dispatch<SetStateAction<number>>;
 
   // Community net features
   topicOfWeekEnabled: boolean; setTopicOfWeekEnabled: Dispatch<SetStateAction<boolean>>;

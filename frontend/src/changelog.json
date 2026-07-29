@@ -1,10 +1,20 @@
 {
-  "version": "2026.07.29",
+  "version": "2026.07.29b",
   "entries": [
     {
-      "version": "2026.07.29",
+      "version": "2026.07.29b",
       "date": "2026-07-29",
       "sections": [
+        {
+          "title": "New Features",
+          "type": "feature",
+          "items": [
+            {
+              "text": "Schedule: Automatic lobby opening — A schedule can now open its net's lobby on its own a set number of minutes before the start time, so stations can check in and chat early without waiting for Net Control to open the net. It is off by default, Net Control can still open the lobby by hand at any time, and it can be switched off for a single net from that net's settings when you aren't sure the net will run.",
+              "userImpact": true
+            }
+          ]
+        },
         {
           "title": "Improvements",
           "type": "improvement",

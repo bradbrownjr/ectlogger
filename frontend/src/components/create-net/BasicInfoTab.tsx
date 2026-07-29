@@ -28,6 +28,8 @@ const BasicInfoTab: React.FC = () => {
     chatGracePeriodEnabled, setChatGracePeriodEnabled,
     chatGracePeriodMinutes, setChatGracePeriodMinutes,
     selfCheckinEnabled, setSelfCheckinEnabled,
+    autoLobbyEnabled, setAutoLobbyEnabled,
+    autoLobbyMinutes, setAutoLobbyMinutes,
     topicOfWeekEnabled, setTopicOfWeekEnabled,
     topicOfWeekPrompt, setTopicOfWeekPrompt,
     topicHistory,
@@ -167,6 +169,34 @@ const BasicInfoTab: React.FC = () => {
               When disabled, stations can't check themselves in from the app; only Net Control and logging staff can add check-ins. Use this if self check-in causes confusion alongside voice roll call.
             </Typography>
           </Box>
+
+          {/* Auto-open lobby — needs a scheduled start time to count back from.
+              Inherited from the schedule; changing it here affects this net only. */}
+          {!!scheduledStartTime && (
+            <Box sx={{ mt: 2 }}>
+              <FormControlLabel
+                control={<Switch checked={autoLobbyEnabled} onChange={(e) => setAutoLobbyEnabled(e.target.checked)} />}
+                label="Open the lobby automatically before the net"
+              />
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5, mb: autoLobbyEnabled ? 1 : 0 }}>
+                Stations can check in and chat ahead of the official start without waiting for Net Control to open the net. Turn this off if you aren't sure this net will run.
+              </Typography>
+              {autoLobbyEnabled && (
+                <Box sx={{ ml: 4.5 }}>
+                  <Select
+                    size="small" value={autoLobbyMinutes}
+                    onChange={(e) => setAutoLobbyMinutes(Number(e.target.value))}
+                  >
+                    <MenuItem value={5}>5 minutes before</MenuItem>
+                    <MenuItem value={10}>10 minutes before</MenuItem>
+                    <MenuItem value={15}>15 minutes before</MenuItem>
+                    <MenuItem value={30}>30 minutes before</MenuItem>
+                    <MenuItem value={60}>60 minutes before</MenuItem>
+                  </Select>
+                </Box>
+              )}
+            </Box>
+          )}
         </>
       )}
 

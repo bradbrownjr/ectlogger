@@ -22,6 +22,7 @@ from app.models import (
     UserRole,
     net_frequencies,
 )
+from app.net_start import send_net_start_notifications
 from app.permissions import check_net_permission, is_admin
 from app.schemas import (
     NetCreate,
@@ -33,53 +34,6 @@ from app.schemas import (
 from app.utils import display_callsign, format_time_for_net
 
 router = APIRouter()
-
-
-async def _send_net_start_notifications(db: AsyncSession, net: Net) -> None:
-    """Email the net owner and template subscribers that the net is starting.
-
-    Business rule (Milestone 0.7, W1BKW): exactly one "net starting" email is sent
-    per net, at whichever transition first makes the net visible to check in -
-    either LOBBY open (nets with a future scheduled_start_time) or ACTIVE (nets
-    that skip the lobby because they're ad hoc or already past their scheduled
-    time). Callers must ensure this is invoked from exactly one call site per
-    net's lifecycle - see the LOBBY and ACTIVE branches in start_net(). go_live()
-    must NOT call this; doing so would double-send for any net that used a lobby.
-    """
-    try:
-        emails_to_notify = []
-        unsubscribe_tokens = {}  # Map email -> unsubscribe_token
-
-        # Add net owner (if they have notifications enabled)
-        result = await db.execute(select(User).where(User.id == net.owner_id))
-        owner = result.scalar_one_or_none()
-        if owner and owner.email and owner.email_notifications and owner.notify_net_start:
-            emails_to_notify.append(owner.email)
-            if owner.unsubscribe_token:
-                unsubscribe_tokens[owner.email] = owner.unsubscribe_token
-
-        # If net was created from template, add all subscribers who want start notifications
-        if net.template_id:
-            from app.models import NetTemplateSubscription
-            result = await db.execute(
-                select(User)
-                .join(NetTemplateSubscription, NetTemplateSubscription.user_id == User.id)
-                .where(NetTemplateSubscription.template_id == net.template_id)
-                .where(User.email_notifications == True)
-                .where(User.notify_net_start == True)
-            )
-            subscribers = result.scalars().all()
-            for subscriber in subscribers:
-                if subscriber.email and subscriber.email not in emails_to_notify:
-                    emails_to_notify.append(subscriber.email)
-                    if subscriber.unsubscribe_token:
-                        unsubscribe_tokens[subscriber.email] = subscriber.unsubscribe_token
-
-        # Send notifications
-        if emails_to_notify:
-            await EmailService.send_net_notification(emails_to_notify, net.name, net.id, unsubscribe_tokens)
-    except Exception as e:
-        print(f"Failed to send net start notification: {e}")
 
 
 @router.post("/", response_model=NetResponse, status_code=status.HTTP_201_CREATED)
@@ -101,6 +55,7 @@ async def create_net(
         mobile_priority_sort=net_data.mobile_priority_sort if net_data.mobile_priority_sort is not None else True,
         chat_grace_period_minutes=net_data.chat_grace_period_minutes,
         self_checkin_enabled=net_data.self_checkin_enabled if net_data.self_checkin_enabled is not None else True,
+        auto_lobby_minutes=net_data.auto_lobby_minutes,
         topic_of_week_enabled=net_data.topic_of_week_enabled or False,
         topic_of_week_prompt=net_data.topic_of_week_prompt,
         poll_enabled=net_data.poll_enabled or False,
@@ -601,12 +556,12 @@ async def start_net(
     }, net_id)
     
     # Send the single "net starting" notification here, regardless of which branch
-    # was taken above: LOBBY open is the first moment subscribers should hear about
-    # the net (giving them lead time before the official start), and straight-to-
-    # ACTIVE nets (ad hoc, or already past their scheduled time) have no earlier
-    # moment to notify at. go_live() (LOBBY -> ACTIVE) intentionally sends nothing -
-    # see _send_net_start_notifications() docstring.
-    await _send_net_start_notifications(db, net)
+    # was taken above: a human opening the lobby is the first moment subscribers
+    # should hear about the net (giving them lead time before the official start),
+    # and straight-to-ACTIVE nets (ad hoc, or already past their scheduled time)
+    # have no earlier moment to notify at. The send is idempotent, so the later
+    # transitions that also call it are harmless - see app/net_start.py.
+    await send_net_start_notifications(db, net)
 
     return NetResponse.from_orm(net)
 
@@ -619,11 +574,12 @@ async def go_live(
 ):
     """Transition a net from LOBBY to ACTIVE mode.
 
-    Sends NO email. The subscriber "net starting" notification already went out
-    when the lobby opened (see start_net() / _send_net_start_notifications()) -
-    that is the whole point of Milestone 0.7 (W1BKW): subscribers get lead time
-    at lobby-open instead of at go-live. Do not add a send here; that would
-    double-notify every net that used a lobby.
+    Normally sends no email: for a human-opened lobby the subscriber "net
+    starting" notification already went out at lobby-open, which is the whole
+    point of Milestone 0.7 (W1BKW) - subscribers get lead time instead of being
+    told at go-live. The call below is a no-op in that case because the send is
+    idempotent. It matters only for an automatically opened lobby, which stays
+    silent until a human confirms the net is really happening.
     """
     result = await db.execute(
         select(Net).options(selectinload(Net.frequencies)).where(Net.id == net_id)
@@ -661,7 +617,9 @@ async def go_live(
         }
     }, net_id)
 
-    # No email send here by design - see docstring above.
+    # Idempotent: only actually sends for an auto-opened lobby that never
+    # announced itself. See docstring above.
+    await send_net_start_notifications(db, net)
 
     return NetResponse.from_orm(net)
 

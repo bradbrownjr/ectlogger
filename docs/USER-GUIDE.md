@@ -374,6 +374,16 @@ Click the green **Start** button on the net's card on the Dashboard, or **Start 
 
 This is useful for opening check-ins early while operators are gathering, before the net officially starts on the air.
 
+**Opening the lobby automatically** — A schedule can open its lobby on its own, so nobody has to be at a screen for early check-ins to begin. In the schedule editor's **Schedule** tab, turn on **Open the lobby automatically before the net** and choose how far ahead (5 to 60 minutes). Every net created from that schedule inherits the setting.
+
+Details worth knowing:
+- It is off by default. Existing schedules are unaffected until you turn it on.
+- Net Control can still open the lobby by hand at any time, exactly as before.
+- To skip it for one week only, open that net's **Edit Net** page and turn the switch off there. The schedule is left alone, so following weeks still open automatically.
+- The lobby will not open if the week's Net Control duty was cancelled or nobody is on the rotation for that date, so an unstaffed lobby never looks like a running net.
+- Subscribers are not emailed when the lobby opens by itself. That notice waits until Net Control checks in or the net goes live, so nobody is told a net started that never ran.
+- If a net's lobby opened automatically and nobody ever checked in, it is archived off the dashboard a day later, the same as a scheduled net that was never opened.
+
 ### Canceling or Deleting a Net
 
 To cancel or remove a specific net instance:
