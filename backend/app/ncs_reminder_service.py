@@ -30,7 +30,16 @@ class NCSReminderService:
     """Service for sending NCS duty reminder emails"""
     
     REMINDER_HOURS = [24, 1]  # Send reminders 24 hours and 1 hour before
-    CHECK_INTERVAL_MINUTES = 15  # How often to check for reminders to send
+    # How often the loop below ticks. Every check here is dedup-gated (a log
+    # row, an idempotent status transition, or a re-derivable existence check),
+    # so running them often is safe - see e.g. _get_or_create_scheduled_net's
+    # docstring. Was 15 until 2026-07-29: auto-lobby's smallest offset is also
+    # 15 minutes, so a poll tick could land just before a net's open-lobby
+    # window and the next one just before its official start, opening the
+    # lobby with almost no lead time. The ±30-minute tolerances used elsewhere
+    # in this file (reminder timing, auto-create) have plenty of headroom at
+    # this tighter interval.
+    CHECK_INTERVAL_MINUTES = 1
 
     # All reminder_type values that represent the same "~1 hour before the net"
     # email. A user should receive AT MOST ONE of these per net occurrence, so

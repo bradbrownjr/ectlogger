@@ -397,9 +397,9 @@ const NetView: React.FC = () => {
             setLobbyOpensCountdown(`${seconds}s`);
           }
         } else {
-          // Past the offset - the background check runs every 15 minutes
+          // Past the offset - the background check runs every minute
           // (NCSReminderService.CHECK_INTERVAL_MINUTES), so there can be a
-          // short lag between this moment and the status actually flipping.
+          // brief lag between this moment and the status actually flipping.
           setLobbyOpensCountdown('Opening any moment');
         }
       } else {

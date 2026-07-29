@@ -756,7 +756,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
             />
           )}
           {lobbyOpensCountdown && (
-            <Tooltip title="This net's lobby opens automatically. The check runs every 15 minutes, so it may open a few minutes after this countdown reaches zero.">
+            <Tooltip title="This net's lobby opens automatically. The check runs every minute, so it may open shortly after this countdown reaches zero.">
               <Chip
                 icon={<TimerIcon />}
                 label={lobbyOpensCountdown === 'Opening any moment' ? lobbyOpensCountdown : `Lobby opens in ${lobbyOpensCountdown}`}
