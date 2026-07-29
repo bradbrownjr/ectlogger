@@ -374,7 +374,7 @@ Click the green **Start** button on the net's card on the Dashboard, or **Start 
 
 This is useful for opening check-ins early while operators are gathering, before the net officially starts on the air.
 
-**Opening the lobby automatically** — A schedule can open its lobby on its own, so nobody has to be at a screen for early check-ins to begin. In the schedule editor's **Schedule** tab, turn on **Open the lobby automatically before the net** and choose how far ahead (5 to 60 minutes). Every net created from that schedule inherits the setting.
+**Opening the lobby automatically** — A schedule can open its lobby on its own, so nobody has to be at a screen for early check-ins to begin. In the schedule editor's **Basic Info** tab, under General Net Features, turn on **Open the lobby automatically before the net** and choose how far ahead (5 to 60 minutes). Every net created from that schedule inherits the setting.
 
 Details worth knowing:
 - It is off by default. Existing schedules are unaffected until you turn it on.
