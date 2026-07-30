@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, nullslast
+from sqlalchemy import select, nullslast, and_
 from sqlalchemy.exc import IntegrityError
 from typing import List, Optional
 from io import BytesIO
 from PIL import Image, ImageOps
 from app.database import get_db
-from app.models import User, UserRole, Contact
+from app.models import User, UserRole, Contact, NetRole
 from app.schemas import UserResponse, UserUpdate, AdminUserCreate, CallsignLookupResponse, UserDirectoryEntry, UserPopupResponse
 from app.dependencies import get_current_user, get_current_user_optional, get_admin_user
 from app.utils import AVATAR_DIR
@@ -157,11 +157,28 @@ async def list_users(
     db: AsyncSession = Depends(get_db)
 ):
     """List all users (admin only)"""
-    result = await db.execute(
-        select(User).order_by(nullslast(User.last_active.desc())).offset(skip).limit(limit)
+    # "Has this user ever held NCS on any net?" is computed live via an EXISTS
+    # subquery rather than a denormalized column - at this app's scale (low
+    # hundreds of users) a live join is simplest and always correct, with no
+    # migration and no write-path drift risk.
+    is_ncs_subquery = (
+        select(NetRole.id)
+        .where(and_(NetRole.user_id == User.id, NetRole.role == "NCS"))
+        .exists()
+        .label("is_ncs")
     )
-    users = result.scalars().all()
-    return [UserResponse.from_orm(user) for user in users]
+    result = await db.execute(
+        select(User, is_ncs_subquery)
+        .order_by(nullslast(User.last_active.desc()))
+        .offset(skip)
+        .limit(limit)
+    )
+    responses = []
+    for user, is_ncs in result.all():
+        response = UserResponse.from_orm(user)
+        response.is_ncs = bool(is_ncs)
+        responses.append(response)
+    return responses
 
 
 @router.post("", response_model=UserResponse, status_code=status.HTTP_201_CREATED)

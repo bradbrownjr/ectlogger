@@ -1,8 +1,8 @@
 {
-  "version": "2026.07.30b",
+  "version": "2026.07.30c",
   "entries": [
     {
-      "version": "2026.07.30b",
+      "version": "2026.07.30c",
       "date": "2026-07-30",
       "sections": [
         {
@@ -19,6 +19,10 @@
             },
             {
               "text": "Schedule: Clearer \"Create net now\" tooltip — The manual create button on the Scheduler page now says it skips the normal auto-schedule timing, so it's clear that's what you're choosing to do instead of waiting for the net to auto-create.",
+              "userImpact": true
+            },
+            {
+              "text": "Admin: NCS and subscriber badges on the Users list — See at a glance which users have run a net as NCS and which are subscribed to What's New emails, without opening their profile.",
               "userImpact": true
             }
           ]

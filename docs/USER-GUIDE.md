@@ -737,6 +737,12 @@ The Users tab shows all registered users with online presence indicators:
 - 🟡 **Yellow** — Away (5-15 minutes since last activity)
 - 🔴 **Red** — Offline (15+ minutes since last activity)
 
+**Power-User Indicators (icons):** Two columns flag engaged users at a glance, without opening their profile:
+- 🏅 **NCS badge** — shown for any user who has held the NCS role on a net, past or present.
+- 📰 **Subscriber badge** — shown for any user currently subscribed to "What's New" emails (Profile → Settings).
+
+Both columns are blank for users the badge doesn't apply to, and both are sortable — click the column header to list all NCS operators, or all subscribers, together.
+
 **Default Sort:** Users are sorted by online status (online first), then alphabetically by name.
 
 **Available Actions:**
@@ -744,7 +750,7 @@ The Users tab shows all registered users with online presence indicators:
 - Ban/unban users
 - Delete users
 
-**Column Order:** Name, Callsign, Email, Role, Status, Last Active, Created, Actions
+**Column Order:** Name, Callsign, Email, Role, NCS, Subscriber, Status, Last Active, Created, Actions
 
 ### Additional Admin Features
 

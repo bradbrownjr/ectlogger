@@ -139,6 +139,11 @@ class UserResponse(UserBase):
     previous_callsigns: List[str] = Field(default_factory=list)
     last_active: Optional[datetime] = None
     schedule_age_bypass: bool = False
+    # Whether this user has ever held the NCS role on any net. Computed live by
+    # list_users() via an EXISTS subquery - not a real column on User, so it
+    # always defaults to False when a UserResponse is built from a bare User
+    # (e.g. /users/me). Only the admin users list (GET /users) sets it.
+    is_ncs: bool = False
     created_at: datetime
     live_location: Optional[str] = None
     live_location_updated: Optional[datetime] = None

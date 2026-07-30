@@ -38,6 +38,8 @@ import EmailIcon from '@mui/icons-material/Email';
 import TimerIcon from '@mui/icons-material/Timer';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
+import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium';
+import NewReleasesIcon from '@mui/icons-material/NewReleases';
 import useSortableTable from '../../hooks/useSortableTable';
 import api from '../../services/api';
 import { formatDateTime, formatDate } from '../../utils/dateUtils';
@@ -54,9 +56,12 @@ interface AdminUser {
   last_active?: string;
   created_at: string;
   schedule_age_bypass: boolean;
+  // Power-user indicators (Admin Tooling roadmap item) - see docs/USER-GUIDE.md
+  is_ncs: boolean;
+  notify_whats_new: boolean;
 }
 
-type UserSortField = 'online' | 'email' | 'name' | 'callsign' | 'role' | 'status' | 'last_active' | 'created_at';
+type UserSortField = 'online' | 'email' | 'name' | 'callsign' | 'role' | 'status' | 'last_active' | 'created_at' | 'is_ncs' | 'notify_whats_new';
 type OnlineStatus = 'online' | 'away' | 'offline';
 
 interface Props {
@@ -206,6 +211,14 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
         aVal = a.is_active ? 1 : 0;
         bVal = b.is_active ? 1 : 0;
         break;
+      case 'is_ncs':
+        aVal = a.is_ncs ? 1 : 0;
+        bVal = b.is_ncs ? 1 : 0;
+        break;
+      case 'notify_whats_new':
+        aVal = a.notify_whats_new ? 1 : 0;
+        bVal = b.notify_whats_new ? 1 : 0;
+        break;
       case 'last_active': {
         const aTime = a.last_active ? new Date(a.last_active.endsWith('Z') ? a.last_active : a.last_active + 'Z').getTime() : 0;
         const bTime = b.last_active ? new Date(b.last_active.endsWith('Z') ? b.last_active : b.last_active + 'Z').getTime() : 0;
@@ -219,7 +232,7 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
         break;
     }
 
-    if (userSortField === 'status' || userSortField === 'last_active' || userSortField === 'created_at') {
+    if (userSortField === 'status' || userSortField === 'last_active' || userSortField === 'created_at' || userSortField === 'is_ncs' || userSortField === 'notify_whats_new') {
       return userSortDirection === 'asc'
         ? (aVal as number) - (bVal as number)
         : (bVal as number) - (aVal as number);
@@ -442,6 +455,29 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
                   Role
                 </TableSortLabel>
               </TableCell>
+              {/* Power-user indicator columns - icon-only headers, sortable, matching the
+                  compact "online" status column pattern above so the already-wide table
+                  (see commit d552c2b) doesn't grow further than necessary. */}
+              <TableCell padding="checkbox" sx={{ width: 32 }} sortDirection={userSortField === 'is_ncs' ? userSortDirection : false}>
+                <TableSortLabel
+                  active={userSortField === 'is_ncs'}
+                  direction={userSortField === 'is_ncs' ? userSortDirection : 'asc'}
+                  onClick={() => handleUserSort('is_ncs')}
+                  title="Sort by NCS history"
+                >
+                  <WorkspacePremiumIcon fontSize="small" sx={{ color: 'text.secondary' }} />
+                </TableSortLabel>
+              </TableCell>
+              <TableCell padding="checkbox" sx={{ width: 32 }} sortDirection={userSortField === 'notify_whats_new' ? userSortDirection : false}>
+                <TableSortLabel
+                  active={userSortField === 'notify_whats_new'}
+                  direction={userSortField === 'notify_whats_new' ? userSortDirection : 'asc'}
+                  onClick={() => handleUserSort('notify_whats_new')}
+                  title="Sort by What's New subscription"
+                >
+                  <NewReleasesIcon fontSize="small" sx={{ color: 'text.secondary' }} />
+                </TableSortLabel>
+              </TableCell>
               <TableCell sortDirection={userSortField === 'status' ? userSortDirection : false}>
                 <TableSortLabel
                   active={userSortField === 'status'}
@@ -503,6 +539,23 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
                       color={getRoleColor(user.role) as any}
                       size="small"
                     />
+                  </TableCell>
+                  {/* Power-user indicator cells - icon-only, blank when not applicable so
+                      the column stays quiet for the common case (see the age-bypass
+                      TimerIcon column below for the same "blank unless relevant" idiom) */}
+                  <TableCell padding="checkbox">
+                    {user.is_ncs && (
+                      <Tooltip title="Has held NCS on a net">
+                        <WorkspacePremiumIcon fontSize="small" sx={{ color: '#ed6c02', display: 'block', mx: 'auto' }} />
+                      </Tooltip>
+                    )}
+                  </TableCell>
+                  <TableCell padding="checkbox">
+                    {user.notify_whats_new && (
+                      <Tooltip title="Subscribed to What's New emails">
+                        <NewReleasesIcon fontSize="small" color="primary" sx={{ display: 'block', mx: 'auto' }} />
+                      </Tooltip>
+                    )}
                   </TableCell>
                   <TableCell>
                     <Chip

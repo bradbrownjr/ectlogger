@@ -14,6 +14,8 @@ All notable changes to ECTLogger are documented here.
 
 * **Schedule: Clearer "Create net now" tooltip** — The manual create button on the Scheduler page now says it skips the normal auto-schedule timing, so it's clear that's what you're choosing to do instead of waiting for the net to auto-create.
 
+* **Admin: NCS and subscriber badges on the Users list** — See at a glance which users have run a net as NCS and which are subscribed to What's New emails, without opening their profile. Both are sortable columns.
+
 ## Bug Fixes
 
 * **Admin, Profile, Statistics: Swiping a wide table no longer flips tabs** — Dragging sideways through a table that scrolls horizontally (like the Users list on a phone) was being read as a swipe to the next tab, so a slow reload interrupted your scroll. Scrolling that table now stays put.
