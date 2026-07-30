@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Box,
   Chip,
@@ -124,6 +124,26 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
   handleDeleteCheckIn,
   setProfileUserId,
 }) => {
+  // Frozen (sticky) trailing columns: the Actions column and the header-only
+  // hide-duplicates/detach icon column both pin to the right edge during
+  // horizontal scroll so the primary per-row controls stay reachable on wide
+  // nets or narrow screens. The Actions column's right offset must equal the
+  // rendered width of the icon column next to it, measured via ResizeObserver
+  // rather than hardcoded, since that column's width depends on whether the
+  // detach icon is present (attached vs detached placement).
+  const utilityColRef = useRef<HTMLTableCellElement>(null);
+  const [utilityColWidth, setUtilityColWidth] = useState(40);
+
+  useEffect(() => {
+    const el = utilityColRef.current;
+    if (!el) return;
+    const update = () => setUtilityColWidth(el.getBoundingClientRect().width);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [detached]);
+
   // Outer container styling differs by placement. Attached: hidden on mobile
   // (CheckInMobileList shows instead) with a fully-rounded border. Detached:
   // always visible, fills the floating window, top-rounded border only. Both
@@ -179,8 +199,32 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                       {net?.poll_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Poll</TableCell>}
                       {hasAnyRelayedBy && <TableCell sx={{ whiteSpace: 'nowrap' }}>Relayed By</TableCell>}
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>Time</TableCell>
-                      {canManage && <TableCell sx={{ whiteSpace: 'nowrap' }}>Actions</TableCell>}
-                      <TableCell sx={{ whiteSpace: 'nowrap', width: 30, p: 0.5 }}>
+                      {canManage && (
+                        <TableCell
+                          sx={{
+                            whiteSpace: 'nowrap',
+                            position: 'sticky',
+                            right: utilityColWidth,
+                            zIndex: 2,
+                            backgroundColor: 'background.default',
+                            boxShadow: '-4px 0 6px -4px rgba(0,0,0,0.3)',
+                          }}
+                        >
+                          Actions
+                        </TableCell>
+                      )}
+                      <TableCell
+                        ref={utilityColRef}
+                        sx={{
+                          whiteSpace: 'nowrap',
+                          width: 30,
+                          p: 0.5,
+                          position: 'sticky',
+                          right: 0,
+                          zIndex: 2,
+                          backgroundColor: 'background.default',
+                        }}
+                      >
                         <IconButton
                           size="small"
                           onClick={() => setHideDuplicates(!hideDuplicates)}
@@ -236,6 +280,23 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                       return latest !== undefined && checkIn.checked_in_at < latest;
                     })();
 
+                    // Row background reflects status/role state (active speaker, checked-out,
+                    // away, NCS coloring, active-frequency highlight). Extracted to a variable
+                    // so the sticky Actions/utility cells can mirror it explicitly — a sticky
+                    // cell with a transparent background lets the same row's other columns
+                    // bleed through as they scroll underneath it.
+                    const rowBgColor = checkIn.id === activeSpeakerId
+                      ? (theme: any) => theme.palette.mode === 'dark' ? theme.palette.success.dark : theme.palette.success.light
+                      : checkIn.status === 'checked_out'
+                      ? 'action.disabledBackground'
+                      : checkIn.status === 'away'
+                      ? (theme: any) => theme.palette.mode === 'dark' ? 'rgba(255, 193, 7, 0.18)' : 'rgba(255, 193, 7, 0.22)'
+                      : isNcsUser && ncsColor ? ncsColor.bg
+                      : isOnActiveFrequency
+                      ? (theme: any) => theme.palette.mode === 'dark' ? 'rgba(25, 118, 210, 0.15)' : 'rgba(25, 118, 210, 0.08)'
+                      : 'transparent';
+                    const stickyCellBg = rowBgColor === 'transparent' ? 'background.default' : rowBgColor;
+
                     return (
                     <React.Fragment key={checkIn.id}>
                     <TableRow
@@ -254,17 +315,8 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                           handleStartInlineEdit(checkIn, focusField);
                         }
                       }}
-                      sx={{ 
-                        backgroundColor: checkIn.id === activeSpeakerId 
-                          ? (theme) => theme.palette.mode === 'dark' ? theme.palette.success.dark : theme.palette.success.light
-                          : checkIn.status === 'checked_out' 
-                          ? 'action.disabledBackground' 
-                          : checkIn.status === 'away'
-                          ? (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 193, 7, 0.18)' : 'rgba(255, 193, 7, 0.22)'
-                          : isNcsUser && ncsColor ? ncsColor.bg
-                          : isOnActiveFrequency
-                          ? (theme) => theme.palette.mode === 'dark' ? 'rgba(25, 118, 210, 0.15)' : 'rgba(25, 118, 210, 0.08)'
-                          : 'transparent',
+                      sx={{
+                        backgroundColor: rowBgColor,
                         opacity: isPriorRow ? 0.4 : checkIn.status === 'checked_out' ? 0.6 : 1,
                         border: checkIn.id === activeSpeakerId ? 2 : 0,
                         borderColor: checkIn.id === activeSpeakerId ? 'success.main' : 'transparent',
@@ -581,7 +633,17 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                       </TableCell>
                       {/* Actions column - hand raise, active speaker and delete */}
                       {(canManage || checkIn.user_id === user?.id) && (
-                      <TableCell sx={{ width: 70 }} onClick={(e) => e.stopPropagation()}>
+                      <TableCell
+                        sx={{
+                          width: 70,
+                          position: 'sticky',
+                          right: utilityColWidth,
+                          zIndex: 1,
+                          backgroundColor: stickyCellBg,
+                          boxShadow: '-4px 0 6px -4px rgba(0,0,0,0.3)',
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         {/* Step away button - only show when net is active or lobby */}
                         {(net.status === 'active' || net.status === 'lobby') && checkIn.status !== 'checked_out' && (
                           <IconButton
@@ -629,7 +691,15 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                         )}
                       </TableCell>
                       )}
-                      <TableCell />
+                      <TableCell
+                        sx={{
+                          width: 30,
+                          position: 'sticky',
+                          right: 0,
+                          zIndex: 1,
+                          backgroundColor: stickyCellBg,
+                        }}
+                      />
                     </TableRow>
                     {/* Frequency chips row - only show if net has multiple frequencies */}
                     {hasFrequencyChips && (

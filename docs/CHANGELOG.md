@@ -16,6 +16,8 @@ All notable changes to ECTLogger are documented here.
 
 * **Admin: Users list improvements** — New NCS and What's New subscriber badges show at a glance who has run a net as NCS and who is following development, without opening their profile. The table is also tighter so more columns fit on screen, and clicking Status, Last Active, Created, or either badge column now shows active/most-recent first instead of oldest first.
 
+* **Net View: Check-in action buttons stay visible while scrolling** — On a wide net or a narrow phone screen, the check-in list's action buttons (step away, raise hand, delete) now stay pinned to the edge as you scroll sideways through the other columns, so you don't have to scroll back to reach them.
+
 ## Bug Fixes
 
 * **Admin, Profile, Statistics: Swiping a wide table no longer flips tabs** — Dragging sideways through a table that scrolls horizontally (like the Users list on a phone) was being read as a swipe to the next tab, so a slow reload interrupted your scroll. Scrolling that table now stays put.

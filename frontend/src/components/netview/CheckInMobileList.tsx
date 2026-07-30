@@ -121,7 +121,20 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
             {net?.poll_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Poll</TableCell>}
             {hasAnyRelayedBy && <TableCell sx={{ whiteSpace: 'nowrap' }}>Relayed By</TableCell>}
             <TableCell sx={{ whiteSpace: 'nowrap' }}>Time</TableCell>
-            {canManage && <TableCell sx={{ whiteSpace: 'nowrap' }}>Actions</TableCell>}
+            {canManage && (
+              <TableCell
+                sx={{
+                  whiteSpace: 'nowrap',
+                  position: 'sticky',
+                  right: 0,
+                  zIndex: 2,
+                  backgroundColor: 'background.default',
+                  boxShadow: '-4px 0 6px -4px rgba(0,0,0,0.3)',
+                }}
+              >
+                Actions
+              </TableCell>
+            )}
           </TableRow>
         </TableHead>
         <TableBody>
@@ -135,13 +148,19 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
               return latest !== undefined && checkIn.checked_in_at < latest;
             })();
 
+            // See CheckInTable.tsx for why this is extracted: the sticky Actions
+            // cell needs an explicit, opaque background matching the row so the
+            // row's other columns don't bleed through as they scroll underneath it.
+            const rowBgColor = checkIn.id === activeSpeakerId
+              ? (theme: any) => theme.palette.mode === 'dark' ? theme.palette.success.dark : theme.palette.success.light
+              : checkIn.status === 'checked_out' ? 'action.disabledBackground'
+              : isNcsUser && ncsColor ? ncsColor.bg
+              : isOnActiveFrequency ? (theme: any) => theme.palette.mode === 'dark' ? 'rgba(25, 118, 210, 0.15)' : 'rgba(25, 118, 210, 0.08)' : 'inherit';
+            const stickyCellBg = rowBgColor === 'inherit' ? 'background.default' : rowBgColor;
+
             return (
               <TableRow key={checkIn.id} sx={{
-                backgroundColor: checkIn.id === activeSpeakerId
-                  ? (theme) => theme.palette.mode === 'dark' ? theme.palette.success.dark : theme.palette.success.light
-                  : checkIn.status === 'checked_out' ? 'action.disabledBackground'
-                  : isNcsUser && ncsColor ? ncsColor.bg
-                  : isOnActiveFrequency ? (theme) => theme.palette.mode === 'dark' ? 'rgba(25, 118, 210, 0.15)' : 'rgba(25, 118, 210, 0.08)' : 'inherit',
+                backgroundColor: rowBgColor,
                 opacity: isPriorRowMobile ? 0.4 : checkIn.status === 'checked_out' ? 0.6 : 1,
                 // Add left border for NCS users
                 ...(isNcsUser && ncsColor && checkIn.status !== 'checked_out' && {
@@ -228,7 +247,16 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
                 {hasAnyRelayedBy && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.relayed_by || ''}</TableCell>}
                 <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatTimeWithDate(checkIn.checked_in_at, user?.prefer_utc || false, net?.started_at)}</TableCell>
                 {canManage && (
-                  <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                  <TableCell
+                    sx={{
+                      whiteSpace: 'nowrap',
+                      position: 'sticky',
+                      right: 0,
+                      zIndex: 1,
+                      backgroundColor: stickyCellBg,
+                      boxShadow: '-4px 0 6px -4px rgba(0,0,0,0.3)',
+                    }}
+                  >
                     <IconButton size="small" onClick={() => onDeleteCheckIn(checkIn.id)}><DeleteIcon fontSize="small" /></IconButton>
                   </TableCell>
                 )}
