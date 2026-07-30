@@ -3,12 +3,9 @@ import {
   TextField,
   Typography,
   Box,
-  Select,
-  MenuItem,
   FormControlLabel,
   FormGroup,
   Switch,
-  Checkbox,
 } from '@mui/material';
 import { useCreateScheduleContext } from '../../contexts/CreateScheduleContext';
 
@@ -22,15 +19,11 @@ const BasicInfoTab: React.FC = () => {
     infoUrl, setInfoUrl,
     ics309Enabled, setIcs309Enabled,
     mobilePrioritySort, setMobilePrioritySort,
-    chatGracePeriodEnabled, setChatGracePeriodEnabled,
-    chatGracePeriodMinutes, setChatGracePeriodMinutes,
     selfCheckinEnabled, setSelfCheckinEnabled,
     topicOfWeekEnabled, setTopicOfWeekEnabled,
     topicOfWeekPrompt, setTopicOfWeekPrompt,
     pollEnabled, setPollEnabled,
     pollQuestion, setPollQuestion,
-    isActive, setIsActive,
-    isEdit,
   } = useCreateScheduleContext();
 
   return (
@@ -89,34 +82,6 @@ const BasicInfoTab: React.FC = () => {
           <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
             Mobile stations appear at the top of the check-in list (after NCS) so they can be called before they move out of range. Disable for strict chronological order.
           </Typography>
-        </Box>
-
-        <Box sx={{ ml: 1, mt: 2 }}>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={chatGracePeriodEnabled}
-                onChange={(e) => setChatGracePeriodEnabled(e.target.checked)}
-              />
-            }
-            label="Keep chat open after closing"
-          />
-          <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5, mb: chatGracePeriodEnabled ? 1 : 0 }}>
-            Chat stays open for a set time after the net closes, so participants can finish off-air conversations before it goes read-only.
-          </Typography>
-          {chatGracePeriodEnabled && (
-            <Box sx={{ ml: 4.5 }}>
-              <Select
-                size="small"
-                value={chatGracePeriodMinutes}
-                onChange={(e) => setChatGracePeriodMinutes(Number(e.target.value))}
-              >
-                <MenuItem value={15}>15 minutes</MenuItem>
-                <MenuItem value={30}>30 minutes</MenuItem>
-                <MenuItem value={60}>60 minutes</MenuItem>
-              </Select>
-            </Box>
-          )}
         </Box>
 
         <Box sx={{ ml: 1, mt: 2 }}>
@@ -221,19 +186,6 @@ const BasicInfoTab: React.FC = () => {
       </FormGroup>
 
       {/* Owner selector is in the Net Staff tab alongside the rotation. */}
-
-      {isEdit && (
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={isActive}
-              onChange={(e) => setIsActive(e.target.checked)}
-            />
-          }
-          label="Schedule is active (can be used to create nets)"
-          sx={{ mt: 2, display: 'block' }}
-        />
-      )}
     </>
   );
 };

@@ -33,6 +33,9 @@ const ScheduleTab: React.FC = () => {
     autoLobbyEnabled, setAutoLobbyEnabled,
     autoLobbyMinutes, setAutoLobbyMinutes,
     oneTimeScheduledStartTime, setOneTimeScheduledStartTime,
+    chatGracePeriodEnabled, setChatGracePeriodEnabled,
+    chatGracePeriodMinutes, setChatGracePeriodMinutes,
+    isActive, setIsActive,
   } = useCreateScheduleContext();
 
   // Editing an existing one-time schedule never recreates its net, so its
@@ -279,6 +282,49 @@ const ScheduleTab: React.FC = () => {
             </Box>
           )}
         </Box>
+      )}
+
+      {/* ========== Keep chat open after closing ========== */}
+      <Box sx={{ ml: 1, mt: 3 }}>
+        <FormControlLabel
+          control={
+            <Switch
+              checked={chatGracePeriodEnabled}
+              onChange={(e) => setChatGracePeriodEnabled(e.target.checked)}
+            />
+          }
+          label="Keep chat open after closing"
+        />
+        <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5, mb: chatGracePeriodEnabled ? 1 : 0 }}>
+          Chat stays open for a set time after the net closes, so participants can finish off-air conversations before it goes read-only.
+        </Typography>
+        {chatGracePeriodEnabled && (
+          <Box sx={{ ml: 4.5 }}>
+            <Select
+              size="small"
+              value={chatGracePeriodMinutes}
+              onChange={(e) => setChatGracePeriodMinutes(Number(e.target.value))}
+            >
+              <MenuItem value={15}>15 minutes</MenuItem>
+              <MenuItem value={30}>30 minutes</MenuItem>
+              <MenuItem value={60}>60 minutes</MenuItem>
+            </Select>
+          </Box>
+        )}
+      </Box>
+
+      {/* ========== Schedule is active ========== */}
+      {isEdit && (
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={isActive}
+              onChange={(e) => setIsActive(e.target.checked)}
+            />
+          }
+          label="Schedule is active (can be used to create nets)"
+          sx={{ mt: 2, display: 'block' }}
+        />
       )}
     </>
   );
