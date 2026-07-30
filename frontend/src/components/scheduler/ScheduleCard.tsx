@@ -308,7 +308,7 @@ const ScheduleCard: React.FC<ScheduleCardProps> = ({
                 icon={<PlayArrowIcon />}
                 label="Create"
                 color="primary"
-                tooltip="Create net from this schedule"
+                tooltip="Create net now (skip auto-schedule)"
                 onClick={onCreateNet}
               />
             )}
