@@ -125,27 +125,38 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
   handleDeleteCheckIn,
   setProfileUserId,
 }) => {
-  // Frozen (sticky) trailing columns: the Actions column and the header-only
-  // hide-duplicates/detach icon column both pin to the right edge during
-  // horizontal scroll so the primary per-row controls stay reachable on wide
-  // nets or narrow screens. The Actions column's right offset must equal the
-  // rendered width of the icon column next to it, measured via ResizeObserver
-  // rather than hardcoded, since that column's width depends on whether the
-  // detach icon is present (attached vs detached placement).
-  const utilityColRef = useRef<HTMLTableCellElement>(null);
-  const [utilityColWidth, setUtilityColWidth] = useState(40);
+  // Frozen (sticky) trailing column: Actions and the hide-duplicates/detach
+  // icons share a single pinned column at the right edge so per-row controls
+  // stay reachable on wide nets or narrow screens, with no dead space between
+  // it and the true right edge.
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
 
+  // A shadow on the frozen column's left edge signals "there's more to the
+  // left" only while that's actually true — it fades out once scrolled all
+  // the way to the right, since at that point nothing is hidden behind the
+  // frozen column anymore. Re-measured on scroll and on resize (column set
+  // changes with net.field_config, so content width can change too).
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [hasMoreToScroll, setHasMoreToScroll] = useState(false);
+  const stickyShadow = hasMoreToScroll ? '-4px 0 6px -4px rgba(0,0,0,0.3)' : 'none';
+
   useEffect(() => {
-    const el = utilityColRef.current;
+    const el = containerRef.current;
     if (!el) return;
-    const update = () => setUtilityColWidth(el.getBoundingClientRect().width);
+    const update = () => {
+      const maxScrollLeft = el.scrollWidth - el.clientWidth;
+      setHasMoreToScroll(maxScrollLeft > 1 && el.scrollLeft < maxScrollLeft - 1);
+    };
     update();
+    el.addEventListener('scroll', update, { passive: true });
     const observer = new ResizeObserver(update);
     observer.observe(el);
-    return () => observer.disconnect();
-  }, [detached]);
+    return () => {
+      el.removeEventListener('scroll', update);
+      observer.disconnect();
+    };
+  }, [detached, filteredCheckIns.length]);
 
   // Outer container styling differs by placement. Attached: hidden on mobile
   // (CheckInMobileList shows instead) with a fully-rounded border. Detached:
@@ -176,7 +187,7 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
         '&::-webkit-scrollbar-thumb': { backgroundColor: (theme: any) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)', borderRadius: 4, '&:hover': { backgroundColor: (theme: any) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)' } },
       };
   return (
-              <TableContainer sx={containerSx}>
+              <TableContainer ref={containerRef} sx={containerSx}>
                 {/* ========== CHECK-IN LIST TABLE 1: Desktop Inline (attached) ========== */}
                 {/* This table displays when check-in list is NOT detached, on medium+ screens */}
                 <Table size="small" sx={{ borderCollapse: 'collapse' }}>
@@ -202,50 +213,38 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                       {net?.poll_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Poll</TableCell>}
                       {hasAnyRelayedBy && <TableCell sx={{ whiteSpace: 'nowrap' }}>Relayed By</TableCell>}
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>Time</TableCell>
-                      {canManage && (
-                        <TableCell
-                          sx={{
-                            whiteSpace: 'nowrap',
-                            position: 'sticky',
-                            right: utilityColWidth,
-                            zIndex: 2,
-                            backgroundColor: 'background.default',
-                            boxShadow: '-4px 0 6px -4px rgba(0,0,0,0.3)',
-                          }}
-                        >
-                          Actions
-                        </TableCell>
-                      )}
                       <TableCell
-                        ref={utilityColRef}
                         sx={{
                           whiteSpace: 'nowrap',
-                          width: 30,
                           p: 0.5,
                           position: 'sticky',
                           right: 0,
                           zIndex: 2,
                           backgroundColor: 'background.default',
+                          boxShadow: stickyShadow,
                         }}
                       >
-                        <IconButton
-                          size="small"
-                          onClick={() => setHideDuplicates(!hideDuplicates)}
-                          title={hideDuplicates ? 'Show all rows (including re-checks)' : 'Hide duplicate rows (show latest per station)'}
-                          sx={{ p: 0.25, color: hideDuplicates ? 'primary.main' : 'text.secondary' }}
-                        >
-                          <GroupIcon sx={{ fontSize: 14 }} />
-                        </IconButton>
-                        {!detached && (
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.25 }}>
+                          {canManage && <Box component="span" sx={{ mr: 0.5 }}>Actions</Box>}
                           <IconButton
                             size="small"
-                            onClick={handleDetachCheckInList}
-                            title="Detach to floating window"
-                            sx={{ p: 0.25 }}
+                            onClick={() => setHideDuplicates(!hideDuplicates)}
+                            title={hideDuplicates ? 'Show all rows (including re-checks)' : 'Hide duplicate rows (show latest per station)'}
+                            sx={{ p: 0.25, color: hideDuplicates ? 'primary.main' : 'text.secondary' }}
                           >
-                            <OpenInNewIcon sx={{ fontSize: 14 }} />
+                            <GroupIcon sx={{ fontSize: 14 }} />
                           </IconButton>
-                        )}
+                          {!detached && (
+                            <IconButton
+                              size="small"
+                              onClick={handleDetachCheckInList}
+                              title="Detach to floating window"
+                              sx={{ p: 0.25 }}
+                            >
+                              <OpenInNewIcon sx={{ fontSize: 14 }} />
+                            </IconButton>
+                          )}
+                        </Box>
                       </TableCell>
                     </TableRow>
                   </TableHead>
@@ -262,7 +261,7 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                     
                     // Calculate column count for frequency chip row colspan
                     const hasFrequencyChips = net.frequencies && net.frequencies.length > 1 && checkIn.available_frequencies && checkIn.available_frequencies.length > 0;
-                    let columnCount = 5; // #, Status, Callsign, Time, pop-out icon
+                    let columnCount = 5; // #, Status, Callsign, Time, Actions (merged with pop-out icon column)
                     if (net?.field_config?.name?.enabled) columnCount++;
                     if (net?.field_config?.location?.enabled) columnCount++;
                     if (net?.field_config?.skywarn_number?.enabled) columnCount++;
@@ -272,7 +271,6 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                     if (net?.field_config?.notes?.enabled) columnCount++;
                     columnCount += getEnabledCustomFields().length;
                     if (hasAnyRelayedBy) columnCount++;
-                    if (canManage) columnCount++;
                     
                     // Check if this row is being inline edited
                     const isInlineEditing = inlineEditingId === checkIn.id;
@@ -644,19 +642,22 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>
                         {formatTimeWithDate(checkIn.checked_in_at, user?.prefer_utc || false, net?.started_at)}
                       </TableCell>
-                      {/* Actions column - hand raise, active speaker and delete */}
-                      {(canManage || checkIn.user_id === user?.id) && (
+                      {/* Actions column - hand raise, active speaker and delete. Always
+                          rendered (matching the header's always-present merged cell) so
+                          table columns stay aligned even on a row where neither canManage
+                          nor "own check-in" applies; the cell is simply empty then. */}
                       <TableCell
                         sx={{
-                          width: 70,
                           position: 'sticky',
-                          right: utilityColWidth,
+                          right: 0,
                           zIndex: 1,
                           ...stickyCellSx,
-                          boxShadow: '-4px 0 6px -4px rgba(0,0,0,0.3)',
+                          boxShadow: stickyShadow,
                         }}
                         onClick={(e) => e.stopPropagation()}
                       >
+                        {(canManage || checkIn.user_id === user?.id) && (
+                        <>
                         {/* Step away button - only show when net is active or lobby */}
                         {(net.status === 'active' || net.status === 'lobby') && checkIn.status !== 'checked_out' && (
                           <IconButton
@@ -702,17 +703,9 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                         </IconButton>
                         </>
                         )}
+                        </>
+                        )}
                       </TableCell>
-                      )}
-                      <TableCell
-                        sx={{
-                          width: 30,
-                          position: 'sticky',
-                          right: 0,
-                          zIndex: 1,
-                          ...stickyCellSx,
-                        }}
-                      />
                     </TableRow>
                     {/* Frequency chips row - only show if net has multiple frequencies */}
                     {hasFrequencyChips && (

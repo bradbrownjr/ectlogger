@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Box,
   Table,
@@ -80,8 +80,32 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
 
+  // A shadow on the frozen Actions column's left edge signals "there's more
+  // to the left" only while that's actually true — see CheckInTable.tsx for
+  // the full rationale; same technique here.
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [hasMoreToScroll, setHasMoreToScroll] = useState(false);
+  const stickyShadow = hasMoreToScroll ? '-4px 0 6px -4px rgba(0,0,0,0.3)' : 'none';
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const update = () => {
+      const maxScrollLeft = el.scrollWidth - el.clientWidth;
+      setHasMoreToScroll(maxScrollLeft > 1 && el.scrollLeft < maxScrollLeft - 1);
+    };
+    update();
+    el.addEventListener('scroll', update, { passive: true });
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => {
+      el.removeEventListener('scroll', update);
+      observer.disconnect();
+    };
+  }, [filteredCheckIns.length]);
+
   return (
-    <TableContainer sx={{
+    <TableContainer ref={containerRef} sx={{
       display: { xs: 'block', md: 'none' },
       overflow: 'auto',
       border: 1,
@@ -133,7 +157,7 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
                   right: 0,
                   zIndex: 2,
                   backgroundColor: 'background.default',
-                  boxShadow: '-4px 0 6px -4px rgba(0,0,0,0.3)',
+                  boxShadow: stickyShadow,
                 }}
               >
                 Actions
@@ -266,7 +290,7 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
                       right: 0,
                       zIndex: 1,
                       ...stickyCellSx,
-                      boxShadow: '-4px 0 6px -4px rgba(0,0,0,0.3)',
+                      boxShadow: stickyShadow,
                     }}
                   >
                     <IconButton size="small" onClick={() => onDeleteCheckIn(checkIn.id)}><DeleteIcon fontSize="small" /></IconButton>
