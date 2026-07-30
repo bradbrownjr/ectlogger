@@ -14,7 +14,7 @@ All notable changes to ECTLogger are documented here.
 
 * **Schedule: Clearer "Create net now" tooltip** — The manual create button on the Scheduler page now says it skips the normal auto-schedule timing, so it's clear that's what you're choosing to do instead of waiting for the net to auto-create.
 
-* **Admin: NCS and subscriber badges on the Users list** — See at a glance which users have run a net as NCS and which are subscribed to What's New emails, without opening their profile. Both are sortable columns.
+* **Admin: Users list improvements** — New NCS and What's New subscriber badges show at a glance who has run a net as NCS and who is following development, without opening their profile. The table is also tighter so more columns fit on screen, and clicking Status, Last Active, Created, or either badge column now shows active/most-recent first instead of oldest first.
 
 ## Bug Fixes
 

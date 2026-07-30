@@ -87,8 +87,13 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
   const [usersPerPage, setUsersPerPage] = useState(25);
   const [scheduleMinAccountAgeDays, setScheduleMinAccountAgeDays] = useState(0);
 
+  // Columns where "most interesting first" means descending on the first click
+  // (has the badge / is active / most recent), unlike the text columns which
+  // default to ascending (alphabetical).
+  const DESC_DEFAULT_SORT_FIELDS: UserSortField[] = ['online', 'is_ncs', 'notify_whats_new', 'status', 'last_active', 'created_at'];
+
   const { sortField: userSortField, sortDirection: userSortDirection, handleSort: _handleUserSortBase } =
-    useSortableTable<UserSortField>('online', (f) => f === 'online' ? 'desc' : 'asc');
+    useSortableTable<UserSortField>('online', (f) => DESC_DEFAULT_SORT_FIELDS.includes(f) ? 'desc' : 'asc');
 
   const fetchUsers = async () => {
     try {
@@ -405,7 +410,10 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
       </Box>
 
       <TableContainer>
-        <Table size="small">
+        {/* Tighter horizontal padding on non-checkbox cells so this wide table (Name
+            through Actions) fits more comfortably in view without shrinking the already-
+            compact checkbox-padding columns (online dot, NCS, subscriber). */}
+        <Table size="small" sx={{ '& .MuiTableCell-root:not(.MuiTableCell-paddingCheckbox)': { px: 1 } }}>
           <TableHead>
             <TableRow>
               {/* Online status indicator column - sortable */}
@@ -461,7 +469,7 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
               <TableCell padding="checkbox" sx={{ width: 32 }} sortDirection={userSortField === 'is_ncs' ? userSortDirection : false}>
                 <TableSortLabel
                   active={userSortField === 'is_ncs'}
-                  direction={userSortField === 'is_ncs' ? userSortDirection : 'asc'}
+                  direction={userSortField === 'is_ncs' ? userSortDirection : 'desc'}
                   onClick={() => handleUserSort('is_ncs')}
                   title="Sort by NCS history"
                 >
@@ -471,7 +479,7 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
               <TableCell padding="checkbox" sx={{ width: 32 }} sortDirection={userSortField === 'notify_whats_new' ? userSortDirection : false}>
                 <TableSortLabel
                   active={userSortField === 'notify_whats_new'}
-                  direction={userSortField === 'notify_whats_new' ? userSortDirection : 'asc'}
+                  direction={userSortField === 'notify_whats_new' ? userSortDirection : 'desc'}
                   onClick={() => handleUserSort('notify_whats_new')}
                   title="Sort by What's New subscription"
                 >
@@ -481,7 +489,7 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
               <TableCell sortDirection={userSortField === 'status' ? userSortDirection : false}>
                 <TableSortLabel
                   active={userSortField === 'status'}
-                  direction={userSortField === 'status' ? userSortDirection : 'asc'}
+                  direction={userSortField === 'status' ? userSortDirection : 'desc'}
                   onClick={() => handleUserSort('status')}
                 >
                   Status
@@ -490,7 +498,7 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
               <TableCell sortDirection={userSortField === 'last_active' ? userSortDirection : false}>
                 <TableSortLabel
                   active={userSortField === 'last_active'}
-                  direction={userSortField === 'last_active' ? userSortDirection : 'asc'}
+                  direction={userSortField === 'last_active' ? userSortDirection : 'desc'}
                   onClick={() => handleUserSort('last_active')}
                 >
                   Last Active
@@ -499,7 +507,7 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
               <TableCell sortDirection={userSortField === 'created_at' ? userSortDirection : false}>
                 <TableSortLabel
                   active={userSortField === 'created_at'}
-                  direction={userSortField === 'created_at' ? userSortDirection : 'asc'}
+                  direction={userSortField === 'created_at' ? userSortDirection : 'desc'}
                   onClick={() => handleUserSort('created_at')}
                 >
                   Created
