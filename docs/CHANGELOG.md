@@ -6,6 +6,14 @@ All notable changes to ECTLogger are documented here.
 
 # July 30, 2026
 
+## Improvements
+
+* **Reminders: Clearer buttons on net-starting and staff emails** — The subscriber "net starting" email and the NCS staff reminder now have separate View Net and Check Into Net buttons, so you can jump straight to checking in instead of landing on the net page and hunting for the button.
+
+* **Schedule: Chat and active-status settings moved to the Schedule tab** — "Keep chat open after closing" and "Schedule is active" now live on the Schedule tab instead of Basic Info, next to the other scheduling controls they belong with.
+
+* **Schedule: Clearer "Create net now" tooltip** — The manual create button on the Scheduler page now says it skips the normal auto-schedule timing, so it's clear that's what you're choosing to do instead of waiting for the net to auto-create.
+
 ## Bug Fixes
 
 * **Admin, Profile, Statistics: Swiping a wide table no longer flips tabs** — Dragging sideways through a table that scrolls horizontally (like the Users list on a phone) was being read as a swipe to the next tab, so a slow reload interrupted your scroll. Scrolling that table now stays put.

@@ -1,10 +1,28 @@
 {
-  "version": "2026.07.30",
+  "version": "2026.07.30b",
   "entries": [
     {
-      "version": "2026.07.30",
+      "version": "2026.07.30b",
       "date": "2026-07-30",
       "sections": [
+        {
+          "title": "Improvements",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Reminders: Clearer buttons on net-starting and staff emails — The subscriber \"net starting\" email and the NCS staff reminder now have separate View Net and Check Into Net buttons, so you can jump straight to checking in instead of landing on the net page and hunting for the button.",
+              "userImpact": true
+            },
+            {
+              "text": "Schedule: Chat and active-status settings moved to the Schedule tab — \"Keep chat open after closing\" and \"Schedule is active\" now live on the Schedule tab instead of Basic Info, next to the other scheduling controls they belong with.",
+              "userImpact": true
+            },
+            {
+              "text": "Schedule: Clearer \"Create net now\" tooltip — The manual create button on the Scheduler page now says it skips the normal auto-schedule timing, so it's clear that's what you're choosing to do instead of waiting for the net to auto-create.",
+              "userImpact": true
+            }
+          ]
+        },
         {
           "title": "Bug Fixes",
           "type": "bugfix",
