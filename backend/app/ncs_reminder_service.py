@@ -436,8 +436,11 @@ class NCSReminderService:
                 if not existing_net:
                     existing_net_id = await self._get_or_create_scheduled_net(db, template, next_utc)
                     net_id = existing_net_id
+                    # A freshly created net is always SCHEDULED - nothing to check into yet.
+                    net_is_open = False
                 else:
                     net_id = existing_net.id
+                    net_is_open = existing_net.status in (NetStatus.LOBBY, NetStatus.ACTIVE)
 
                 net_url = f"{settings.frontend_url}/nets/{net_id}" if net_id else f"{settings.frontend_url}/dashboard"
                 lobby_url = f"{net_url}?open_lobby=1" if net_id else net_url
@@ -494,6 +497,7 @@ class NCSReminderService:
                             unsubscribe_token=user.unsubscribe_token,
                             ncs_name=ncs_name,
                             ncs_callsign=ncs_callsign,
+                            net_is_open=net_is_open,
                         )
                         db.add(NCSReminderLog(
                             template_id=template.id,

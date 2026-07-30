@@ -250,9 +250,15 @@ async def send_staff_reminder(
     lobby_url: str,
     unsubscribe_token: str = None,
     ncs_name: str = None,
-    ncs_callsign: str = None
+    ncs_callsign: str = None,
+    net_is_open: bool = False
 ):
-    """Send net-start reminder to template staff 1 hour before the net"""
+    """Send net-start reminder to template staff 1 hour before the net
+
+    net_is_open: True once the net's lobby has opened or the net has gone active.
+    Gates the "Check Into Net" button, since there's nothing to check into while
+    the net is still draft/scheduled.
+    """
     logger.info("EMAIL", f"Sending staff reminder to {to_email} for {net_name}")
 
     freq_list = ""
@@ -263,6 +269,10 @@ async def send_staff_reminder(
             freq_list += f"<li>{freq['talkgroup_name']} (TG: {freq.get('talkgroup_id', 'N/A')})</li>"
     if not freq_list:
         freq_list = "<li>No frequencies configured</li>"
+
+    # Same check_in=1 query-param convention as open_lobby=1 below: NetView picks
+    # this up and triggers the check-in dialog once the net has loaded.
+    check_in_url = f"{net_url}?check_in=1"
 
     html_template = Template("""
     <!DOCTYPE html>
@@ -316,11 +326,14 @@ async def send_staff_reminder(
             </div>
 
             <div class="buttons">
-                <a href="{{ net_url }}" class="button" style="color: #ffffff;">Access Net</a>
+                <a href="{{ net_url }}" class="button" style="color: #ffffff;">View Net</a>
+                {% if net_is_open %}<a href="{{ check_in_url }}" class="button" style="color: #ffffff;">Check Into Net</a>{% endif %}
                 <a href="{{ lobby_url }}" class="button button-green" style="color: #ffffff;">Open Lobby</a>
             </div>
 
-            <p style="font-size: 13px; color: #555;">The <em>Open Lobby</em> button loads the net and opens the lobby immediately. Use <em>Access Net</em> to view first.</p>
+            <p style="font-size: 13px; color: #555;">
+                {% if net_is_open %}Use <em>View Net</em> to look before you log in, <em>Check Into Net</em> to log your station in directly, or <em>Open Lobby</em> if the lobby isn't open yet.{% else %}Use <em>View Net</em> to look at the net page, or <em>Open Lobby</em> to load the net and open the lobby immediately. Check-in isn't available until the lobby is open.{% endif %}
+            </p>
 
             <div class="footer">
                 <p>This is an automated reminder from {{ app_name }}.</p>
@@ -342,6 +355,8 @@ async def send_staff_reminder(
         freq_list=freq_list,
         net_url=net_url,
         lobby_url=lobby_url,
+        check_in_url=check_in_url,
+        net_is_open=net_is_open,
         ncs_name=ncs_name,
         ncs_callsign=ncs_callsign,
         app_name=settings.app_name,
