@@ -11,6 +11,7 @@ import {
   MenuItem,
   IconButton,
   Tooltip,
+  useTheme,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import UserAvatar from '../UserAvatar';
@@ -76,6 +77,9 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
   onDeleteCheckIn,
   onShowProfile,
 }) => {
+  const theme = useTheme();
+  const isDarkMode = theme.palette.mode === 'dark';
+
   return (
     <TableContainer sx={{
       display: { xs: 'block', md: 'none' },
@@ -148,15 +152,23 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
               return latest !== undefined && checkIn.checked_in_at < latest;
             })();
 
-            // See CheckInTable.tsx for why this is extracted: the sticky Actions
-            // cell needs an explicit, opaque background matching the row so the
-            // row's other columns don't bleed through as they scroll underneath it.
+            // Row background reflects status/role state, resolved (not a function) so
+            // the sticky Actions cell can layer it over an opaque backdrop below.
             const rowBgColor = checkIn.id === activeSpeakerId
-              ? (theme: any) => theme.palette.mode === 'dark' ? theme.palette.success.dark : theme.palette.success.light
-              : checkIn.status === 'checked_out' ? 'action.disabledBackground'
+              ? (isDarkMode ? theme.palette.success.dark : theme.palette.success.light)
+              : checkIn.status === 'checked_out' ? theme.palette.action.disabledBackground
               : isNcsUser && ncsColor ? ncsColor.bg
-              : isOnActiveFrequency ? (theme: any) => theme.palette.mode === 'dark' ? 'rgba(25, 118, 210, 0.15)' : 'rgba(25, 118, 210, 0.08)' : 'inherit';
-            const stickyCellBg = rowBgColor === 'inherit' ? 'background.default' : rowBgColor;
+              : isOnActiveFrequency ? (isDarkMode ? 'rgba(25, 118, 210, 0.15)' : 'rgba(25, 118, 210, 0.08)') : 'inherit';
+            // NCS/active-frequency/disabled tints are semi-transparent rgba() values
+            // meant to blend over the table's plain background. A sticky cell using
+            // one directly still lets the column scrolling underneath show through
+            // the alpha gap, so paint an opaque backdrop first and layer the tint on
+            // top as a background-image gradient (see CheckInTable.tsx for the same
+            // technique in more detail).
+            const stickyCellSx = {
+              backgroundColor: 'background.default',
+              backgroundImage: rowBgColor !== 'inherit' ? `linear-gradient(${rowBgColor}, ${rowBgColor})` : 'none',
+            };
 
             return (
               <TableRow key={checkIn.id} sx={{
@@ -253,7 +265,7 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
                       position: 'sticky',
                       right: 0,
                       zIndex: 1,
-                      backgroundColor: stickyCellBg,
+                      ...stickyCellSx,
                       boxShadow: '-4px 0 6px -4px rgba(0,0,0,0.3)',
                     }}
                   >

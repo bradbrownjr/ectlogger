@@ -13,6 +13,7 @@ import {
   TableRow,
   TextField,
   Tooltip,
+  useTheme,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import GroupIcon from '@mui/icons-material/Group';
@@ -133,6 +134,8 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
   // detach icon is present (attached vs detached placement).
   const utilityColRef = useRef<HTMLTableCellElement>(null);
   const [utilityColWidth, setUtilityColWidth] = useState(40);
+  const theme = useTheme();
+  const isDarkMode = theme.palette.mode === 'dark';
 
   useEffect(() => {
     const el = utilityColRef.current;
@@ -281,21 +284,31 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                     })();
 
                     // Row background reflects status/role state (active speaker, checked-out,
-                    // away, NCS coloring, active-frequency highlight). Extracted to a variable
-                    // so the sticky Actions/utility cells can mirror it explicitly — a sticky
-                    // cell with a transparent background lets the same row's other columns
-                    // bleed through as they scroll underneath it.
+                    // away, NCS coloring, active-frequency highlight). Extracted to a resolved
+                    // (non-function) value so the sticky Actions/utility cells can layer it
+                    // explicitly over an opaque backdrop below — see stickyCellSx.
                     const rowBgColor = checkIn.id === activeSpeakerId
-                      ? (theme: any) => theme.palette.mode === 'dark' ? theme.palette.success.dark : theme.palette.success.light
+                      ? (isDarkMode ? theme.palette.success.dark : theme.palette.success.light)
                       : checkIn.status === 'checked_out'
-                      ? 'action.disabledBackground'
+                      ? theme.palette.action.disabledBackground
                       : checkIn.status === 'away'
-                      ? (theme: any) => theme.palette.mode === 'dark' ? 'rgba(255, 193, 7, 0.18)' : 'rgba(255, 193, 7, 0.22)'
+                      ? (isDarkMode ? 'rgba(255, 193, 7, 0.18)' : 'rgba(255, 193, 7, 0.22)')
                       : isNcsUser && ncsColor ? ncsColor.bg
                       : isOnActiveFrequency
-                      ? (theme: any) => theme.palette.mode === 'dark' ? 'rgba(25, 118, 210, 0.15)' : 'rgba(25, 118, 210, 0.08)'
+                      ? (isDarkMode ? 'rgba(25, 118, 210, 0.15)' : 'rgba(25, 118, 210, 0.08)')
                       : 'transparent';
-                    const stickyCellBg = rowBgColor === 'transparent' ? 'background.default' : rowBgColor;
+                    // Most row tints (NCS color, away, active-frequency, disabled) are
+                    // semi-transparent rgba() values, meant to blend over the table's plain
+                    // background. Setting one directly as a sticky cell's background still
+                    // lets the column scrolling underneath show through the alpha gap. Paint
+                    // an opaque backdrop first, then layer the (possibly transparent) tint on
+                    // top as a background-image gradient — gradients paint over background-
+                    // color within the same element, so the tint blends against the opaque
+                    // backdrop instead of whatever is scrolled behind it.
+                    const stickyCellSx = {
+                      backgroundColor: 'background.default',
+                      backgroundImage: rowBgColor !== 'transparent' ? `linear-gradient(${rowBgColor}, ${rowBgColor})` : 'none',
+                    };
 
                     return (
                     <React.Fragment key={checkIn.id}>
@@ -639,7 +652,7 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                           position: 'sticky',
                           right: utilityColWidth,
                           zIndex: 1,
-                          backgroundColor: stickyCellBg,
+                          ...stickyCellSx,
                           boxShadow: '-4px 0 6px -4px rgba(0,0,0,0.3)',
                         }}
                         onClick={(e) => e.stopPropagation()}
@@ -697,7 +710,7 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                           position: 'sticky',
                           right: 0,
                           zIndex: 1,
-                          backgroundColor: stickyCellBg,
+                          ...stickyCellSx,
                         }}
                       />
                     </TableRow>
