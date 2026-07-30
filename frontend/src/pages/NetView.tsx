@@ -312,6 +312,19 @@ const NetView: React.FC = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [net?.id, net?.can_manage, user?.id]); // Re-check when server permissions arrive
 
+  // Auto-open the check-in dialog when ?check_in=1 is present (from the reminder
+  // and net-starting email buttons). Self-service, so unlike ?open_lobby=1 above
+  // there's no manage-permission gate beyond what handleOpenCheckIn already does.
+  useEffect(() => {
+    if (!net) return;
+    if (searchParams.get('check_in') !== '1') return;
+
+    // Remove the param so a refresh doesn't re-trigger
+    setSearchParams(prev => { prev.delete('check_in'); return prev; }, { replace: true });
+    handleOpenCheckIn();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [net?.id]); // Fires once the net has loaded
+
   // Countdown and duration timer effect - updates every second
   useEffect(() => {
     if (!net) return;

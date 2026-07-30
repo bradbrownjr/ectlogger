@@ -37,8 +37,9 @@ async def send_net_notification(emails: List[str], net_name: str, net_id: int, u
                 <strong>A net you're subscribed to has started!</strong>
             </div>
             <p>The <strong>{{ net_name }}</strong> net is now active and ready for check-ins.</p>
-            <a href="{{ join_url }}" class="button" style="color: #ffffff;">Join Net</a>
-            <p>Click the button above to view the net and check in. You'll be automatically signed in.</p>
+            <a href="{{ view_url }}" class="button" style="color: #ffffff;">View Net</a>
+            <a href="{{ check_in_url }}" class="button" style="color: #ffffff;">Check-in to Net</a>
+            <p>Click a button above to view the net or jump straight to checking in. You'll be automatically signed in.</p>
             <p class="info">This link is unique to you and will sign you in automatically. Do not share it.</p>
             
             {{ unsubscribe_footer }}
@@ -54,14 +55,19 @@ async def send_net_notification(emails: List[str], net_name: str, net_id: int, u
             # Generate a magic link token for this user
             token = create_magic_link_token(email)
             # URL that logs them in and redirects to the net
-            join_url = f"{settings.frontend_url}/auth/verify?token={token}&redirect=/nets/{net_id}"
-            
+            view_url = f"{settings.frontend_url}/auth/verify?token={token}&redirect=/nets/{net_id}"
+            # Same magic link, but the redirect carries check_in=1 so NetView opens
+            # the check-in dialog immediately (see the open_lobby=1 pattern in
+            # reminders.py for the same convention).
+            check_in_url = f"{settings.frontend_url}/auth/verify?token={token}&redirect=/nets/{net_id}%3Fcheck_in%3D1"
+
             # Get unsubscribe token for this email
             unsub_token = unsubscribe_tokens.get(email)
-            
+
             html_content = html_template.render(
                 net_name=net_name,
-                join_url=join_url,
+                view_url=view_url,
+                check_in_url=check_in_url,
                 unsubscribe_footer=get_unsubscribe_footer(unsub_token)
             )
             
