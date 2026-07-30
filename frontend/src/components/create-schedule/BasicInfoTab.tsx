@@ -24,7 +24,6 @@ const BasicInfoTab: React.FC = () => {
     topicOfWeekPrompt, setTopicOfWeekPrompt,
     pollEnabled, setPollEnabled,
     pollQuestion, setPollQuestion,
-    isEdit,
   } = useCreateScheduleContext();
 
   return (
