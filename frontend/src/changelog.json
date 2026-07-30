@@ -1,6 +1,22 @@
 {
-  "version": "2026.07.29c",
+  "version": "2026.07.30",
   "entries": [
+    {
+      "version": "2026.07.30",
+      "date": "2026-07-30",
+      "sections": [
+        {
+          "title": "Bug Fixes",
+          "type": "bugfix",
+          "items": [
+            {
+              "text": "Admin, Profile, Statistics: Swiping a wide table no longer flips tabs — Dragging sideways through a table that scrolls horizontally (like the Users list on a phone) was being read as a swipe to the next tab, so a slow reload interrupted your scroll. Scrolling that table now stays put.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.07.29c",
       "date": "2026-07-29",

@@ -285,13 +285,33 @@ Wrap the `<Paper>` containing the tabs in touch handlers so users can swipe
 horizontally to advance or retreat tabs. Only horizontal swipes are captured;
 vertical scrolls pass through.
 
+Also skip the swipe entirely when the gesture starts inside a nested
+horizontally-scrollable element — a wide `<TableContainer>` on a narrow
+screen, or the `<Tabs>` scroller itself when tabs overflow. Without this
+check, dragging that content sideways reads as "dominant X, >50px" just like
+an intentional tab swipe and steals the gesture from native scrolling mid-drag
+(regressed on Admin's Users tab in 2026-07: swiping the wide user table kept
+flipping tabs, made worse by that tab's slow reload). Detect it by walking up
+from `e.target` to the `Paper` boundary at `touchstart` looking for
+`scrollWidth > clientWidth`.
+
 ```tsx
 const touchStartX = useRef<number | null>(null);
 const touchStartY = useRef<number | null>(null);
+const touchOnScrollable = useRef(false);
 
 const handleTouchStart = (e: React.TouchEvent) => {
   touchStartX.current = e.touches[0].clientX;
   touchStartY.current = e.touches[0].clientY;
+  touchOnScrollable.current = false;
+  let el = e.target as HTMLElement | null;
+  while (el && el !== e.currentTarget) {
+    if (el.scrollWidth > el.clientWidth) {
+      touchOnScrollable.current = true;
+      break;
+    }
+    el = el.parentElement;
+  }
 };
 
 const handleTouchEnd = (e: React.TouchEvent) => {
@@ -300,6 +320,7 @@ const handleTouchEnd = (e: React.TouchEvent) => {
   const deltaY = e.changedTouches[0].clientY - touchStartY.current;
   touchStartX.current = null;
   touchStartY.current = null;
+  if (touchOnScrollable.current) return;
   if (Math.abs(deltaX) < 50 || Math.abs(deltaY) > Math.abs(deltaX)) return;
   setTabValue(v => deltaX < 0 ? Math.min(v + 1, MAX_TAB_INDEX) : Math.max(v - 1, 0));
 };

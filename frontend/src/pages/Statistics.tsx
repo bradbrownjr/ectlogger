@@ -132,10 +132,22 @@ const Statistics: React.FC = () => {
   // Swipe-to-switch tabs on touch
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
+  const touchOnScrollable = useRef(false);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
     touchStartY.current = e.touches[0].clientY;
+    // If the gesture starts inside a horizontally-scrollable element, let it scroll
+    // natively instead of hijacking the drag as a tab swipe.
+    touchOnScrollable.current = false;
+    let el = e.target as HTMLElement | null;
+    while (el && el !== e.currentTarget) {
+      if (el.scrollWidth > el.clientWidth) {
+        touchOnScrollable.current = true;
+        break;
+      }
+      el = el.parentElement;
+    }
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
@@ -144,6 +156,7 @@ const Statistics: React.FC = () => {
     const deltaY = e.changedTouches[0].clientY - touchStartY.current;
     touchStartX.current = null;
     touchStartY.current = null;
+    if (touchOnScrollable.current) return;
     if (Math.abs(deltaX) < 50 || Math.abs(deltaY) > Math.abs(deltaX)) return;
     setChartTab(v => deltaX < 0 ? Math.min(v + 1, 3) : Math.max(v - 1, 0));
   };
