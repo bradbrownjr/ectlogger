@@ -313,17 +313,26 @@ const NetView: React.FC = () => {
   }, [net?.id, net?.can_manage, user?.id]); // Re-check when server permissions arrive
 
   // Auto-open the check-in dialog when ?check_in=1 is present (from the reminder
-  // and net-starting email buttons). Self-service, so unlike ?open_lobby=1 above
-  // there's no manage-permission gate beyond what handleOpenCheckIn already does.
+  // and net-starting email buttons).
   useEffect(() => {
-    if (!net) return;
+    if (!net || !user) return;
     if (searchParams.get('check_in') !== '1') return;
 
     // Remove the param so a refresh doesn't re-trigger
     setSearchParams(prev => { prev.delete('check_in'); return prev; }, { replace: true });
+
+    // Self check-in may be disabled for this net — an emailed link can outlive a
+    // setting change, and the toolbar hides this action from non-staff in that
+    // case too (see the self_checkin_enabled check in NetViewHeader.tsx).
+    // Duplicates the canManageCheckIns test inline (declared later) for the same
+    // null-safety reason the check-in prompt effect below does.
+    const isStaffForNet = user.id === net.owner_id || user.role === 'admin' || net.can_manage
+      || netRoles.some((r: any) => r.user_id === user.id && (r.role === 'NCS' || r.role === 'LOGGER') && r.is_active !== false);
+    if (net.self_checkin_enabled === false && !isStaffForNet) return;
+
     handleOpenCheckIn();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [net?.id]); // Fires once the net has loaded
+  }, [net?.id, net?.can_manage, net?.self_checkin_enabled, user?.id, netRoles]);
 
   // Countdown and duration timer effect - updates every second
   useEffect(() => {

@@ -6,14 +6,19 @@ from jinja2 import Template
 from app.config import settings
 from app.email.base import get_unsubscribe_footer, send_email
 
-async def send_net_notification(emails: List[str], net_name: str, net_id: int, unsubscribe_tokens: dict = None):
+async def send_net_notification(emails: List[str], net_name: str, net_id: int, unsubscribe_tokens: dict = None, self_checkin_enabled: bool = True):
     """Send notification that a net has started, with magic link for instant login
-    
+
     Args:
         emails: List of email addresses to notify
         net_name: Name of the net
         net_id: ID of the net
         unsubscribe_tokens: Optional dict mapping email -> unsubscribe_token
+        self_checkin_enabled: Whether this net allows self check-in. When False,
+            the "Check-in to Net" button is omitted — these recipients are plain
+            subscribers, not staff, so the in-app toolbar hides that action for
+            them too (see NetViewHeader.tsx), and offering it here would send
+            them to a form the backend then rejects.
     """
     from app.auth import create_magic_link_token
     
@@ -38,8 +43,8 @@ async def send_net_notification(emails: List[str], net_name: str, net_id: int, u
             </div>
             <p>The <strong>{{ net_name }}</strong> net is now active and ready for check-ins.</p>
             <a href="{{ view_url }}" class="button" style="color: #ffffff;">View Net</a>
-            <a href="{{ check_in_url }}" class="button" style="color: #ffffff;">Check-in to Net</a>
-            <p>Click a button above to view the net or jump straight to checking in. You'll be automatically signed in.</p>
+            {% if self_checkin_enabled %}<a href="{{ check_in_url }}" class="button" style="color: #ffffff;">Check-in to Net</a>{% endif %}
+            <p>{% if self_checkin_enabled %}Click a button above to view the net or jump straight to checking in.{% else %}Click above to view the net. Net Control checks stations in for this net.{% endif %} You'll be automatically signed in.</p>
             <p class="info">This link is unique to you and will sign you in automatically. Do not share it.</p>
             
             {{ unsubscribe_footer }}
@@ -68,6 +73,7 @@ async def send_net_notification(emails: List[str], net_name: str, net_id: int, u
                 net_name=net_name,
                 view_url=view_url,
                 check_in_url=check_in_url,
+                self_checkin_enabled=self_checkin_enabled,
                 unsubscribe_footer=get_unsubscribe_footer(unsub_token)
             )
             
