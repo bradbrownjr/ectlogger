@@ -456,7 +456,7 @@ const Scheduler: React.FC = () => {
               </TableCell>
               <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
                 {schedule.can_create_net && (
-                  <Tooltip title="Create Net">
+                  <Tooltip title="Create net now (skip auto-schedule)">
                     <IconButton size="small" color="success" onClick={() => handleCreateNetFromSchedule(schedule.id)}>
                       <PlayArrowIcon fontSize="small" />
                     </IconButton>
