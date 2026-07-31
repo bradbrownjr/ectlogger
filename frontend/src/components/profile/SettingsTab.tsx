@@ -54,14 +54,6 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
         </Typography>
 
         <Box sx={{ mb: 2 }}>
-          <FormControlLabel
-            control={<Switch checked={mode === 'dark'} onChange={toggleColorMode} />}
-            label="Dark mode"
-          />
-          <Typography variant="body2" color="text.secondary" sx={{ ml: 4, mb: 2 }}>
-            Switch between light and dark display. Applies immediately — also available from the navbar icon.
-          </Typography>
-
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             Choose a color theme for your account, or follow whatever the system default is set to.
           </Typography>
@@ -69,7 +61,17 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
             value={formData.theme}
             onSelect={(key) => setFormData({ ...formData, theme: key })}
             allowSystemDefault
+            allowCustom={false}
           />
+
+          <FormControlLabel
+            sx={{ mt: 2 }}
+            control={<Switch checked={mode === 'dark'} onChange={toggleColorMode} />}
+            label="Dark mode"
+          />
+          <Typography variant="body2" color="text.secondary" sx={{ ml: 4 }}>
+            Switch between light and dark display. Applies immediately — also available from the navbar icon.
+          </Typography>
         </Box>
 
         <Divider sx={{ my: 3 }} />

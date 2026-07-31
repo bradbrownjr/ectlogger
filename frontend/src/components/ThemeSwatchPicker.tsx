@@ -13,6 +13,11 @@ interface ThemeSwatchPickerProps {
   // Profile usage offers "Follow system default"; Admin's system-default
   // picker does not (there's nothing further up the hierarchy to follow).
   allowSystemDefault?: boolean;
+  // Admin's own pickers show the site-wide custom theme (they're the ones
+  // who define it). Profile hides it - there's no personal customization
+  // behind it yet, so surfacing it as a generic "pick this" swatch to
+  // regular users would be more confusing than useful.
+  allowCustom?: boolean;
 }
 
 const SwatchButton: React.FC<{
@@ -62,7 +67,7 @@ const SwatchButton: React.FC<{
 // Shared theme picker: Profile (personal preference, includes "Follow system
 // default") and Admin (system default). Swatches preview each theme's colors
 // for whichever light/dark mode is currently active.
-const ThemeSwatchPicker: React.FC<ThemeSwatchPickerProps> = ({ value, onSelect, allowSystemDefault = false }) => {
+const ThemeSwatchPicker: React.FC<ThemeSwatchPickerProps> = ({ value, onSelect, allowSystemDefault = false, allowCustom = true }) => {
   const muiTheme = useTheme();
   const mode = muiTheme.palette.mode;
   const { customTheme } = useThemeMode();
@@ -89,7 +94,7 @@ const ThemeSwatchPicker: React.FC<ThemeSwatchPickerProps> = ({ value, onSelect, 
           />
         );
       })}
-      {customTheme && (
+      {allowCustom && customTheme && (
         <SwatchButton
           selected={value === 'custom'}
           label={customTheme.name}
