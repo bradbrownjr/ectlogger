@@ -529,8 +529,8 @@ const NetView: React.FC = () => {
 
   // Pop Chat / Activity Log out into a real, separate browser window (for
   // dual-monitor setups) — distinct from the in-page floating overlay above.
-  const chatPopout = usePoppedOutWindow(`/nets/${netId}/pane/chat`, `ectlogger-chat-${netId}`);
-  const activityLogPopout = usePoppedOutWindow(`/nets/${netId}/pane/activity-log`, `ectlogger-activity-log-${netId}`);
+  const chatPopout = usePoppedOutWindow(`/nets/${netId}/pane/chat`, `ectlogger-chat-${netId}`, 'chat');
+  const activityLogPopout = usePoppedOutWindow(`/nets/${netId}/pane/activity-log`, `ectlogger-activity-log-${netId}`, 'activityLog');
   const handlePopOutChat = () => {
     if (!chatPopout.open()) setToastMessage('Popup blocked — please allow popups for this site.');
   };
