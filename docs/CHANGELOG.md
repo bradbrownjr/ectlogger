@@ -24,7 +24,7 @@ All notable changes to ECTLogger are documented here.
 
 * **Admin, Profile, Statistics: Swiping a wide table no longer flips tabs** — Dragging sideways through a table that scrolls horizontally (like the Users list on a phone) was being read as a swipe to the next tab, so a slow reload interrupted your scroll. Scrolling that table now stays put.
 
-* **Net Log: Emailed logs and CSV exports now match your timezone** — The net-close email and the CSV/ICS-309 exports always showed check-in and start/close times in UTC, even for users with a local timezone. They now display in your device's timezone once it's been recorded on your account.
+* **Net Log: Emailed logs and CSV exports now honor your timezone setting** — The net-close email and the CSV/ICS-309 exports always showed check-in and start/close times in raw UTC, ignoring your Settings preference. They now follow that setting correctly: your local timezone if you're set to local (once your device has reported it to your account), or UTC if you've chosen "Display times in UTC."
 
 ---
 
