@@ -399,7 +399,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
     },
     {
       key: 'notes', group: 'info', priority: 2,
-      visible: checkInsCount > 0 && !!net.announcements,
+      visible: checkInsCount > 0,
       Icon: SpeakerNotesIcon, color: neutralIconColor, label: 'Notes',
       tooltip: 'View net notes', onClick: () => announcements.onOpen(),
     },

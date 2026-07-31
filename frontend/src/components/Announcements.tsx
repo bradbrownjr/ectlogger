@@ -24,7 +24,7 @@ import HorizontalRuleIcon from '@mui/icons-material/HorizontalRule';
 import { Rnd } from 'react-rnd';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { templateApi } from '../services/api';
+import { netApi } from '../services/api';
 
 interface AnnouncementsProps {
   open: boolean;
@@ -32,7 +32,6 @@ interface AnnouncementsProps {
   announcements: string;
   netName: string;
   netId: number;
-  templateId?: number;
   canEdit?: boolean;
   onSaved?: (newAnnouncements: string) => void;
   // Renders filling 100% of its parent with no Rnd/drag chrome, for docking
@@ -71,8 +70,7 @@ const Announcements: React.FC<AnnouncementsProps> = ({
   onClose,
   announcements,
   netName,
-  netId: _netId,
-  templateId,
+  netId,
   canEdit = false,
   onSaved,
   embedded = false,
@@ -144,10 +142,9 @@ const Announcements: React.FC<AnnouncementsProps> = ({
   };
 
   const handleSave = async () => {
-    if (!templateId) return;
     setSaving(true);
     try {
-      await templateApi.update(templateId, { announcements: editValue });
+      await netApi.update(netId, { announcements: editValue });
       onSaved?.(editValue);
       setEditing(false);
     } catch {
@@ -271,7 +268,7 @@ const Announcements: React.FC<AnnouncementsProps> = ({
   // Editing toolbar buttons shared by both title bars below.
   const renderEditControls = () => (
     <>
-      {!editing && canEdit && templateId && (
+      {!editing && canEdit && (
         <Tooltip title="Edit announcements">
           <IconButton size="small" onClick={() => { setEditValue(announcements); setEditing(true); }} sx={{ color: 'inherit' }}>
             <EditIcon fontSize="small" />

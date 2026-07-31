@@ -2412,8 +2412,7 @@ const NetView: React.FC = () => {
         announcements={net?.announcements || ''}
         netName={net?.name || 'Net'}
         netId={Number(netId)}
-        templateId={net?.template_id}
-        canEdit={canManage && !!net?.template_id}
+        canEdit={canManage}
         onSaved={(newAnnouncements) => setNet((prev: any) => prev ? { ...prev, announcements: newAnnouncements } : prev)}
         onDock={isXlUp ? handleDockAnnouncements : undefined}
       />
