@@ -101,11 +101,15 @@ const ActivityLog: React.FC<ActivityLogProps> = ({ netId, minimized, onMinimize,
                       </IconButton>
                     )}
                     {onPopOut && (
+                      // Unlike float (needs in-page room to drag), a real
+                      // window pop-out needs no page space at all, so it
+                      // only hides on true phone widths, not a narrow
+                      // desktop window — that's exactly when it's most useful.
                       <IconButton
                         size="small"
                         onClick={onPopOut}
                         title="Open in new window"
-                        sx={{ p: 0.25, display: { xs: 'none', lg: 'inline-flex' } }}
+                        sx={{ p: 0.25, display: { xs: 'none', sm: 'inline-flex' } }}
                       >
                         <OpenInNewIcon sx={{ fontSize: 14 }} />
                       </IconButton>
