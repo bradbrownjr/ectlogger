@@ -184,6 +184,7 @@ const Announcements: React.FC<AnnouncementsProps> = ({
         </html>
       `);
       newWindow.document.close();
+      onClose();
     }
   };
 

@@ -549,6 +549,15 @@ const NetView: React.FC = () => {
   const handlePopOutCheckIns = () => {
     if (!checkInsPopout.open()) setToastMessage('Popup blocked — please allow popups for this site.');
   };
+  const mapPopout = usePoppedOutWindow(`/nets/${netId}/pane/map`, `ectlogger-map-${netId}`, 'map', 900, 700);
+  // The map dialog (unlike Chat/Activity Log/Check-ins) isn't a persistent
+  // docked panel with its own detached state - it's a one-off overlay opened
+  // from the toolbar, so popping it out closes the overlay outright instead
+  // of leaving both open at once (same fix applied to Script/Announcements).
+  const handlePopOutMap = () => {
+    if (mapPopout.open()) map.onClose();
+    else setToastMessage('Popup blocked — please allow popups for this site.');
+  };
   // Lets a pane jump directly from the in-page floating overlay to a real
   // window in one click, instead of re-docking first and then popping out.
   const handleFloatToWindowChat = () => { handleAttachChat(); handlePopOutChat(); };
@@ -2245,6 +2254,7 @@ const NetView: React.FC = () => {
         ncsUserIds={netRoles.filter((r: any) => r.role === 'NCS').map((r: any) => r.user_id)}
         loggerUserIds={netRoles.filter((r: any) => r.role === 'LOGGER').map((r: any) => r.user_id)}
         relayUserIds={netRoles.filter((r: any) => r.role === 'Relay').map((r: any) => r.user_id)}
+        onPopOut={handlePopOutMap}
       />
 
       {/* Bulk Check-In Dialog */}

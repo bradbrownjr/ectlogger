@@ -16,6 +16,7 @@ import { useNetData } from '../hooks/useNetData';
 import { useNetWebSocket } from '../hooks/useNetWebSocket';
 import Chat from '../components/Chat';
 import ActivityLog from '../components/ActivityLog';
+import CheckInMap from '../components/CheckInMap';
 import CheckInTable from '../components/netview/CheckInTable';
 import { getCheckInActions } from '../components/netview/checkInActions';
 import { getCheckInStatusHelpers } from '../components/netview/checkInStatusHelpers';
@@ -36,6 +37,7 @@ const PANE_LABELS: Record<string, string> = {
   chat: 'Chat',
   'activity-log': 'Activity Log',
   'check-ins': 'Check-Ins',
+  map: 'Map',
 };
 
 // Bare-bones page rendered inside a real popped-out browser window (see
@@ -145,6 +147,23 @@ const NetPaneWindow: React.FC = () => {
       <Box sx={{ height: '100vh', width: '100vw', p: 0.5, boxSizing: 'border-box', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <ActivityLog netId={Number(netId)} />
         <Snackbar open={toastMessage !== ''} autoHideDuration={6000} onClose={() => setToastMessage('')} message={toastMessage} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }} />
+      </Box>
+    );
+  }
+
+  if (paneType === 'map') {
+    return (
+      <Box sx={{ height: '100vh', width: '100vw', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <CheckInMap
+          open
+          onClose={() => {}}
+          checkIns={checkIns}
+          netName={net.name || 'Net'}
+          ncsUserIds={netRoles.filter((r: any) => r.role === 'NCS').map((r: any) => r.user_id)}
+          loggerUserIds={netRoles.filter((r: any) => r.role === 'LOGGER').map((r: any) => r.user_id)}
+          relayUserIds={netRoles.filter((r: any) => r.role === 'Relay').map((r: any) => r.user_id)}
+          embedded
+        />
       </Box>
     );
   }

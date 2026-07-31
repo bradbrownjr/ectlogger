@@ -15,6 +15,7 @@ import CropSquareIcon from '@mui/icons-material/CropSquare';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
 import MapIcon from '@mui/icons-material/Map';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import { Rnd } from 'react-rnd';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
@@ -76,6 +77,13 @@ interface CheckInMapProps {
   ncsUserIds?: number[]; // User IDs of NCS operators
   loggerUserIds?: number[]; // User IDs of Logger operators
   relayUserIds?: number[]; // User IDs of Relay operators
+  // Renders filling 100% of its parent with no Rnd/dialog chrome (no drag,
+  // minimize, maximize, or close) - for use inside a real popped-out browser
+  // window (see NetPaneWindow.tsx), where the OS window IS the chrome.
+  embedded?: boolean;
+  // Opens the map in a real, separate browser window; when provided, a
+  // button for it appears in both the windowed and maximized title bars.
+  onPopOut?: () => void;
 }
 
 interface MappedCheckIn extends CheckIn {
@@ -102,7 +110,7 @@ const FitBounds: React.FC<{ positions: [number, number][]; disabled?: boolean }>
   return null;
 };
 
-const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netName, ncsUserIds = [], loggerUserIds = [], relayUserIds = [] }) => {
+const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netName, ncsUserIds = [], loggerUserIds = [], relayUserIds = [], embedded = false, onPopOut }) => {
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
   
@@ -391,9 +399,166 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
 
   // Default center (USA)
   const defaultCenter: [number, number] = [39.8283, -98.5795];
-  const center = positions.length > 0 
+  const center = positions.length > 0
     ? positions.reduce((acc, pos) => [acc[0] + pos[0] / positions.length, acc[1] + pos[1] / positions.length], [0, 0]) as [number, number]
     : defaultCenter;
+
+  // Loading / empty / map+legend content shared by the maximized, windowed,
+  // and embedded (real popped-out window) render modes below - previously
+  // duplicated verbatim between the maximized and windowed branches.
+  const renderMapContent = () => (
+    <Box id="check-in-map-content" sx={{ flexGrow: 1, position: 'relative', overflow: 'hidden' }}>
+      {loading ? (
+        <Box sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100%',
+          gap: 2
+        }}>
+          <CircularProgress />
+          <Typography color="text.secondary">
+            Parsing locations and geocoding addresses...
+          </Typography>
+        </Box>
+      ) : mappedCheckIns.length === 0 ? (
+        <Box sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100%',
+          gap: 2,
+          p: 2,
+        }}>
+          <Typography variant="h6" color="text.secondary">
+            No mappable locations found
+          </Typography>
+          <Typography color="text.secondary" sx={{ maxWidth: 400, textAlign: 'center' }}>
+            Check-ins need a location in one of these formats: GPS coordinates,
+            Maidenhead grid square, UTM, MGRS, or City/State address.
+          </Typography>
+        </Box>
+      ) : (
+        <>
+          <MapContainer
+            key={mapKey}
+            center={center}
+            zoom={6}
+            style={{ height: '100%', width: '100%' }}
+            ref={mapRef}
+            zoomAnimation={false}
+          >
+            <TileLayer
+              attribution={tileAttribution}
+              url={tileUrl}
+              crossOrigin="anonymous"
+            />
+            <FitBounds positions={positions} disabled={isExporting} />
+            {mappedCheckIns.map((checkIn) => (
+              checkIn.parsedLocation.lat !== 0 && checkIn.parsedLocation.lon !== 0 && (
+                <Marker
+                  key={checkIn.id}
+                  position={[checkIn.parsedLocation.lat, checkIn.parsedLocation.lon]}
+                  icon={createColoredIcon(getMarkerColor(checkIn))}
+                >
+                  <Popup>
+                    <Box sx={{ minWidth: 150 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+                          {checkIn.callsign}
+                        </Typography>
+                        {checkIn.user_id && ncsUserIds.includes(checkIn.user_id) && (
+                          <Typography component="span" sx={{ fontSize: '0.9rem' }}>👑</Typography>
+                        )}
+                      </Box>
+                      {checkIn.name && (
+                        <Typography variant="body2">{checkIn.name}</Typography>
+                      )}
+                      <Typography variant="caption" color="text.secondary">
+                        {checkIn.location}
+                      </Typography>
+                      <Typography variant="caption" display="block" color="text.secondary">
+                        ({checkIn.parsedLocation.type})
+                      </Typography>
+                    </Box>
+                  </Popup>
+                </Marker>
+              )
+            ))}
+          </MapContainer>
+          {/* Color Legend */}
+          <Box
+            sx={{
+              position: 'absolute',
+              bottom: 32,
+              right: 8,
+              backgroundColor: isDarkMode ? 'rgba(30, 30, 30, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+              borderRadius: 1,
+              px: 1,
+              py: 0.5,
+              boxShadow: 1,
+              zIndex: 1000,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 0.25,
+              maxHeight: 'calc(100% - 60px)',
+              overflowY: 'auto',
+            }}
+          >
+            {colorLegend
+              .filter(item => item.show)
+              .map((item) => (
+                <Box key={item.label} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <Box
+                    sx={{
+                      width: 12,
+                      height: 12,
+                      borderRadius: '50%',
+                      backgroundColor: item.color,
+                      border: '1px solid white',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
+                    }}
+                  />
+                  <Typography variant="caption" sx={{ fontSize: '0.65rem', lineHeight: 1.2, color: isDarkMode ? '#eee' : '#333' }}>
+                    {item.label}
+                  </Typography>
+                </Box>
+              ))}
+          </Box>
+        </>
+      )}
+    </Box>
+  );
+
+  if (embedded) {
+    return (
+      <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <Box sx={{ py: 0.5, px: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'primary.main', color: 'primary.contrastText', flexShrink: 0 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>📍 Check-in Map</Typography>
+            <Chip
+              label={`${mappedCheckIns.length} mapped`}
+              size="small"
+              sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'inherit', height: 20 }}
+            />
+          </Box>
+          <Tooltip title="Export to PDF">
+            <IconButton
+              size="small"
+              onClick={handleExportPdf}
+              disabled={exporting || loading}
+              sx={{ color: 'inherit', p: 0.5 }}
+            >
+              {exporting ? <CircularProgress size={16} color="inherit" /> : <PictureAsPdfIcon fontSize="small" />}
+            </IconButton>
+          </Tooltip>
+        </Box>
+        {renderMapContent()}
+      </Box>
+    );
+  }
 
   if (!open) return null;
 
@@ -455,145 +620,37 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
                   {exporting ? <CircularProgress size={16} color="inherit" /> : <PictureAsPdfIcon fontSize="small" />}
                 </IconButton>
               </Tooltip>
-              <IconButton 
-                size="small" 
+              <IconButton
+                size="small"
                 onClick={toggleMaximize}
                 sx={{ color: 'inherit' }}
                 title="Restore"
               >
                 <FullscreenExitIcon fontSize="small" />
               </IconButton>
-              <IconButton 
-                size="small" 
+              <IconButton
+                size="small"
                 onClick={onClose}
                 sx={{ color: 'inherit' }}
                 title="Close"
               >
                 <CloseIcon fontSize="small" />
               </IconButton>
+              {onPopOut && (
+                <IconButton
+                  size="small"
+                  onClick={onPopOut}
+                  sx={{ color: 'inherit' }}
+                  title="Open in new window"
+                >
+                  <OpenInNewIcon fontSize="small" />
+                </IconButton>
+              )}
             </Box>
           </Box>
           
           {/* Map content */}
-          <Box id="check-in-map-content" sx={{ flexGrow: 1, position: 'relative', overflow: 'hidden' }}>
-            {loading ? (
-              <Box sx={{ 
-                display: 'flex', 
-                flexDirection: 'column',
-                alignItems: 'center', 
-                justifyContent: 'center', 
-                height: '100%',
-                gap: 2
-              }}>
-                <CircularProgress />
-                <Typography color="text.secondary">
-                  Parsing locations and geocoding addresses...
-                </Typography>
-              </Box>
-            ) : mappedCheckIns.length === 0 ? (
-              <Box sx={{ 
-                display: 'flex', 
-                flexDirection: 'column',
-                alignItems: 'center', 
-                justifyContent: 'center', 
-                height: '100%',
-                gap: 2,
-                p: 2,
-              }}>
-                <Typography variant="h6" color="text.secondary">
-                  No mappable locations found
-                </Typography>
-              </Box>
-            ) : (
-              <>
-                <MapContainer
-                  key={mapKey}
-                  center={center}
-                  zoom={6}
-                  style={{ height: '100%', width: '100%' }}
-                  ref={mapRef}
-                  zoomAnimation={false}
-                >
-                  <TileLayer
-                    attribution={tileAttribution}
-                    url={tileUrl}
-                    crossOrigin="anonymous"
-                  />
-                  <FitBounds positions={positions} disabled={isExporting} />
-                  {mappedCheckIns.map((checkIn) => (
-                    checkIn.parsedLocation.lat !== 0 && checkIn.parsedLocation.lon !== 0 && (
-                      <Marker
-                        key={checkIn.id}
-                        position={[checkIn.parsedLocation.lat, checkIn.parsedLocation.lon]}
-                        icon={createColoredIcon(getMarkerColor(checkIn))}
-                      >
-                        <Popup>
-                          <Box sx={{ minWidth: 150 }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                              <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-                                {checkIn.callsign}
-                              </Typography>
-                              {checkIn.user_id && ncsUserIds.includes(checkIn.user_id) && (
-                                <Typography component="span" sx={{ fontSize: '0.9rem' }}>👑</Typography>
-                              )}
-                            </Box>
-                            {checkIn.name && (
-                              <Typography variant="body2">{checkIn.name}</Typography>
-                            )}
-                            <Typography variant="caption" color="text.secondary">
-                              {checkIn.location}
-                            </Typography>
-                            <Typography variant="caption" display="block" color="text.secondary">
-                              ({checkIn.parsedLocation.type})
-                            </Typography>
-                          </Box>
-                        </Popup>
-                      </Marker>
-                    )
-                  ))}
-                </MapContainer>
-                {/* Color Legend */}
-                <Box
-                  sx={{
-                    position: 'absolute',
-                    bottom: 32,
-                    right: 8,
-                    backgroundColor: isDarkMode ? 'rgba(30, 30, 30, 0.9)' : 'rgba(255, 255, 255, 0.9)',
-                    borderRadius: 1,
-                    px: 1,
-                    py: 0.5,
-                    boxShadow: 1,
-                    zIndex: 1000,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 0.25,
-                    maxHeight: 'calc(100% - 60px)',
-                    overflowY: 'auto',
-                  }}
-                >
-                  {colorLegend
-                    .filter(item => item.show)
-                    .map((item) => (
-                      <Box key={item.label} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <Box
-                          sx={{
-                            width: 12,
-                            height: 12,
-                            borderRadius: '50%',
-                            backgroundColor: item.color,
-                            border: '1px solid white',
-                            boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
-                          }}
-                        />
-                        <Typography variant="caption" sx={{ fontSize: '0.65rem', lineHeight: 1.2, color: isDarkMode ? '#eee' : '#333' }}>
-                          {item.label}
-                        </Typography>
-                      </Box>
-                    ))}
-                </Box>
-              </>
-            )}
-          </Box>
+          {renderMapContent()}
         </Paper>
       </div>
     );
@@ -711,135 +768,22 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
             >
               <CloseIcon fontSize="small" />
             </IconButton>
+            {onPopOut && (
+              <IconButton
+                size="small"
+                onClick={onPopOut}
+                onTouchEnd={(e) => { e.preventDefault(); e.stopPropagation(); onPopOut(); }}
+                sx={{ color: 'inherit', p: 0.5 }}
+                title="Open in new window"
+              >
+                <OpenInNewIcon fontSize="small" />
+              </IconButton>
+            )}
           </Box>
         </Box>
 
         {/* Map Content - Only show when not minimized */}
-        {!minimized && (
-          <Box id="check-in-map-content" sx={{ flexGrow: 1, position: 'relative', overflow: 'hidden' }}>
-            {loading ? (
-              <Box sx={{ 
-                display: 'flex', 
-                flexDirection: 'column',
-                alignItems: 'center', 
-                justifyContent: 'center', 
-                height: '100%',
-                gap: 2
-              }}>
-                <CircularProgress />
-                <Typography color="text.secondary">
-                  Parsing locations and geocoding addresses...
-                </Typography>
-              </Box>
-            ) : mappedCheckIns.length === 0 ? (
-              <Box sx={{ 
-                display: 'flex', 
-                flexDirection: 'column',
-                alignItems: 'center', 
-                justifyContent: 'center', 
-                height: '100%',
-                gap: 2,
-                p: 2,
-              }}>
-                <Typography variant="h6" color="text.secondary">
-                  No mappable locations found
-                </Typography>
-                <Typography color="text.secondary" sx={{ maxWidth: 400, textAlign: 'center' }}>
-                  Check-ins need a location in one of these formats: GPS coordinates, 
-                  Maidenhead grid square, UTM, MGRS, or City/State address.
-                </Typography>
-              </Box>
-            ) : (
-              <>
-              <MapContainer
-                key={mapKey}
-                center={center}
-                zoom={6}
-                style={{ height: '100%', width: '100%' }}
-                ref={mapRef}
-                zoomAnimation={false}
-              >
-                <TileLayer
-                  attribution={tileAttribution}
-                  url={tileUrl}
-                  crossOrigin="anonymous"
-                />
-                <FitBounds positions={positions} disabled={isExporting} />
-                {mappedCheckIns.map((checkIn) => (
-                  checkIn.parsedLocation.lat !== 0 && checkIn.parsedLocation.lon !== 0 && (
-                    <Marker
-                      key={checkIn.id}
-                      position={[checkIn.parsedLocation.lat, checkIn.parsedLocation.lon]}
-                      icon={createColoredIcon(getMarkerColor(checkIn))}
-                    >
-                      <Popup>
-                        <Box sx={{ minWidth: 150 }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
-                              {checkIn.callsign}
-                            </Typography>
-                            {checkIn.user_id && ncsUserIds.includes(checkIn.user_id) && (
-                              <Typography component="span" sx={{ fontSize: '0.9rem' }}>👑</Typography>
-                            )}
-                          </Box>
-                          {checkIn.name && (
-                            <Typography variant="body2">{checkIn.name}</Typography>
-                          )}
-                          <Typography variant="caption" color="text.secondary">
-                            {checkIn.location}
-                          </Typography>
-                          <Typography variant="caption" display="block" color="text.secondary">
-                            ({checkIn.parsedLocation.type})
-                          </Typography>
-                        </Box>
-                      </Popup>
-                    </Marker>
-                  )
-                ))}
-              </MapContainer>
-              {/* Color Legend */}
-              <Box
-                sx={{
-                  position: 'absolute',
-                  bottom: 32,
-                  right: 8,
-                  backgroundColor: isDarkMode ? 'rgba(30, 30, 30, 0.9)' : 'rgba(255, 255, 255, 0.9)',
-                  borderRadius: 1,
-                  px: 1,
-                  py: 0.5,
-                  boxShadow: 1,
-                  zIndex: 1000,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 0.25,
-                  maxHeight: 'calc(100% - 60px)',
-                  overflowY: 'auto',
-                }}
-              >
-                {colorLegend
-                  .filter(item => item.show)
-                  .map((item) => (
-                    <Box key={item.label} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <Box
-                        sx={{
-                          width: 12,
-                          height: 12,
-                          borderRadius: '50%',
-                          backgroundColor: item.color,
-                          border: '1px solid white',
-                          boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
-                        }}
-                      />
-                      <Typography variant="caption" sx={{ fontSize: '0.65rem', lineHeight: 1.2, color: isDarkMode ? '#eee' : '#333' }}>
-                        {item.label}
-                      </Typography>
-                    </Box>
-                  ))}
-              </Box>
-              </>
-            )}
-          </Box>
-        )}
+        {!minimized && renderMapContent()}
       </Paper>
     </Rnd>
   );

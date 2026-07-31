@@ -185,6 +185,7 @@ const NetScript: React.FC<NetScriptProps> = ({
         </html>
       `);
       newWindow.document.close();
+      onClose();
     }
   };
 

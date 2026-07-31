@@ -185,6 +185,7 @@ const ScheduleAnnouncements: React.FC<ScheduleAnnouncementsProps> = ({
         </html>
       `);
       newWindow.document.close();
+      onClose();
     }
   };
 
