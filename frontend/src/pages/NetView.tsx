@@ -532,10 +532,14 @@ const NetView: React.FC = () => {
   // floating overlay above.
   const chatPopout = usePoppedOutWindow(`/nets/${netId}/pane/chat`, `ectlogger-chat-${netId}`, 'chat');
   const activityLogPopout = usePoppedOutWindow(`/nets/${netId}/pane/activity-log`, `ectlogger-activity-log-${netId}`, 'activityLog');
-  // 1300 wide fits with margin on a 1366px-wide laptop display (a common
-  // "smaller screen" baseline) while still being noticeably roomier than
-  // the 1100 default the check-in table's columns were still cramped at.
-  const checkInsPopout = usePoppedOutWindow(`/nets/${netId}/pane/check-ins`, `ectlogger-check-ins-${netId}`, 'checkInList', 1300, 550, 900, 400);
+  // 1200 wide fits with margin on a 1366px-wide laptop display (a common
+  // "smaller screen" baseline) while still being roomier than the 1100
+  // default the check-in table's columns were still cramped at. Storage key
+  // bumped to v2: an earlier, taller/wider saved size from testing this
+  // default before it was tuned down would otherwise keep winning over the
+  // new default forever, since the min-size floor only guards against too
+  // small, not too large.
+  const checkInsPopout = usePoppedOutWindow(`/nets/${netId}/pane/check-ins`, `ectlogger-check-ins-${netId}`, 'checkInList-v2', 1200, 480, 900, 400);
   const handlePopOutChat = () => {
     if (!chatPopout.open()) setToastMessage('Popup blocked — please allow popups for this site.');
   };
