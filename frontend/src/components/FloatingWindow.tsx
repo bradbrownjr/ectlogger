@@ -155,9 +155,9 @@ const FloatingWindow: React.FC<FloatingWindowProps> = ({
           <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
             {title}
           </Typography>
-          {/* Grouped so the two actions that stay within this browser tab
-              (minimize, dock back) sit together, with the one that leaves to
-              a separate window (pop-out) last. */}
+          {/* Close is always the rightmost icon (common window-chrome
+              convention: minimize, [actions], close-last). Pop-out sits
+              just before it. */}
           <Box sx={{ display: 'flex', gap: 0.5 }}>
             <IconButton
               size="small"
@@ -166,14 +166,6 @@ const FloatingWindow: React.FC<FloatingWindowProps> = ({
               sx={{ color: 'inherit', p: 0.25 }}
             >
               {isMinimized ? <CropSquareIcon fontSize="small" /> : <MinimizeIcon fontSize="small" />}
-            </IconButton>
-            <IconButton
-              size="small"
-              onClick={onAttach}
-              title="Dock back to main view"
-              sx={{ color: 'inherit', p: 0.25 }}
-            >
-              <CloseIcon fontSize="small" />
             </IconButton>
             {onPopOut && (
               <IconButton
@@ -185,6 +177,14 @@ const FloatingWindow: React.FC<FloatingWindowProps> = ({
                 <OpenInNewIcon fontSize="small" />
               </IconButton>
             )}
+            <IconButton
+              size="small"
+              onClick={onAttach}
+              title="Dock back to main view"
+              sx={{ color: 'inherit', p: 0.25 }}
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
           </Box>
         </Box>
 

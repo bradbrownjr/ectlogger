@@ -628,14 +628,6 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
               >
                 <FullscreenExitIcon fontSize="small" />
               </IconButton>
-              <IconButton
-                size="small"
-                onClick={onClose}
-                sx={{ color: 'inherit' }}
-                title="Close"
-              >
-                <CloseIcon fontSize="small" />
-              </IconButton>
               {onPopOut && (
                 <IconButton
                   size="small"
@@ -646,6 +638,14 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
                   <OpenInNewIcon fontSize="small" />
                 </IconButton>
               )}
+              <IconButton
+                size="small"
+                onClick={onClose}
+                sx={{ color: 'inherit' }}
+                title="Close"
+              >
+                <CloseIcon fontSize="small" />
+              </IconButton>
             </Box>
           </Box>
           
@@ -759,15 +759,6 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
             >
               {maximized ? <FullscreenExitIcon fontSize="small" /> : <FullscreenIcon fontSize="small" />}
             </IconButton>
-            <IconButton
-              size="small"
-              onClick={onClose}
-              onTouchEnd={(e) => { e.preventDefault(); e.stopPropagation(); onClose(); }}
-              sx={{ color: 'inherit', p: 0.5 }}
-              title="Close"
-            >
-              <CloseIcon fontSize="small" />
-            </IconButton>
             {onPopOut && (
               <IconButton
                 size="small"
@@ -779,6 +770,15 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
                 <OpenInNewIcon fontSize="small" />
               </IconButton>
             )}
+            <IconButton
+              size="small"
+              onClick={onClose}
+              onTouchEnd={(e) => { e.preventDefault(); e.stopPropagation(); onClose(); }}
+              sx={{ color: 'inherit', p: 0.5 }}
+              title="Close"
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
           </Box>
         </Box>
 
