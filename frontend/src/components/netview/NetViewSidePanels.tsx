@@ -14,7 +14,10 @@ import ActivityLog from '../ActivityLog';
 // if Chat is popped out while Activity Log stays docked, Activity Log's own
 // docked slot disappears along with the whole column. Activity Log has its
 // own inner `!activityLogDetached` check for its own detached state, but that
-// inner check can't fire if the outer column itself never renders.
+// inner check can't fire if the outer column itself never renders. The same
+// applies to `chatWindowOpen`/`activityLogWindowOpen` (popped into a real
+// browser window rather than the in-page floating overlay) — both states
+// hide a pane's docked slot the same way.
 
 interface NetViewSidePanelsProps {
   netId: string | undefined;
@@ -25,6 +28,8 @@ interface NetViewSidePanelsProps {
   checkInListDetached: boolean;
   chatDetached: boolean;
   activityLogDetached: boolean;
+  chatWindowOpen: boolean;
+  activityLogWindowOpen: boolean;
   chatMinimized: boolean;
   activityLogMinimized: boolean;
   setProfileUserId: (userId: number | null) => void;
@@ -35,6 +40,8 @@ interface NetViewSidePanelsProps {
   handleDetachChat: () => void;
   handleAttachActivityLog: () => void;
   handleDetachActivityLog: () => void;
+  handlePopOutChat: () => void;
+  handlePopOutActivityLog: () => void;
 }
 
 const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
@@ -46,6 +53,8 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
   checkInListDetached,
   chatDetached,
   activityLogDetached,
+  chatWindowOpen,
+  activityLogWindowOpen,
   chatMinimized,
   activityLogMinimized,
   setProfileUserId,
@@ -56,11 +65,13 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
   handleDetachChat,
   handleAttachActivityLog,
   handleDetachActivityLog,
+  handlePopOutChat,
+  handlePopOutActivityLog,
 }) => {
   return (
     <>
       {/* Right column: Chat + Activity Log stacked vertically */}
-      {!chatDetached && (
+      {!chatDetached && !chatWindowOpen && (
       <Grid item xs={12} md={checkInListDetached ? 12 : 4} sx={{ pl: { md: 0.5 }, display: 'flex', flexDirection: 'column', gap: 0.5, minHeight: { xs: 300, md: 0 }, height: { xs: 'auto', md: '100%' } }}>
         {/* Chat panel */}
         <Box sx={{
@@ -82,7 +93,7 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
           >
             <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
               <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-                <Chat netId={Number(netId)} netStartedAt={net?.started_at} netStatus={net?.status} searchQuery={searchQuery} canManage={canManage} onDetach={handleDetachChat}
+                <Chat netId={Number(netId)} netStartedAt={net?.started_at} netStatus={net?.status} searchQuery={searchQuery} canManage={canManage} onDetach={handleDetachChat} onPopOut={handlePopOutChat}
                   chatGracePeriodMinutes={net?.chat_grace_period_minutes ?? undefined} closedAt={net?.closed_at}
                   onlineUserIds={onlineUserIds} onProfileClick={(id) => setProfileUserId(id)}
                   minimized={chatMinimized} onMinimize={() => setChatMinimized(true)} onRestore={() => setChatMinimized(false)} />
@@ -110,8 +121,8 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
             storageKey="activityLog"
           >
             <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-              {!activityLogDetached && <ActivityLog netId={Number(netId)}
-                  minimized={activityLogMinimized} onMinimize={() => setActivityLogMinimized(true)} onRestore={() => setActivityLogMinimized(false)} onDetach={() => setActivityLogDetached(true)} />}
+              {!activityLogDetached && !activityLogWindowOpen && <ActivityLog netId={Number(netId)}
+                  minimized={activityLogMinimized} onMinimize={() => setActivityLogMinimized(true)} onRestore={() => setActivityLogMinimized(false)} onDetach={() => setActivityLogDetached(true)} onPopOut={handlePopOutActivityLog} />}
             </Box>
           </FloatingWindow>
         </Box>

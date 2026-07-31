@@ -12,6 +12,7 @@ import api from './services/api';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import NetView from './pages/NetView';
+import NetPaneWindow from './pages/NetPaneWindow';
 import CreateNet from './pages/CreateNet';
 import Scheduler from './pages/Scheduler';
 import CreateSchedule from './pages/CreateSchedule';
@@ -83,12 +84,17 @@ const AppRoutes: React.FC = () => {
   // Hide changelog notification on net view pages
   const showChangelog = !location.pathname.startsWith('/nets/') || location.pathname === '/nets/create';
 
+  // Popped-out pane windows (Chat / Activity Log opened in their own real
+  // browser window via "Open in new window") render with no app chrome —
+  // just the pane filling the window.
+  const isPaneWindow = /^\/nets\/[^/]+\/pane\//.test(location.pathname);
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: 'var(--ect-app-h, 100vh)', overflow: 'hidden' }}>
-      <Navbar />
-      <MaintenanceBanner />
-      {isAuthenticated && <ProfileSetupDialog />}
-      {showChangelog && <ChangelogNotification />}
+      {!isPaneWindow && <Navbar />}
+      {!isPaneWindow && <MaintenanceBanner />}
+      {isAuthenticated && !isPaneWindow && <ProfileSetupDialog />}
+      {showChangelog && !isPaneWindow && <ChangelogNotification />}
       <Box component="main" sx={{ flexGrow: 1, bgcolor: 'background.default', display: 'flex', flexDirection: 'column', overflow: 'auto', minHeight: 0 }}>
         <Routes>
           <Route path="/login" element={<Login />} />
@@ -113,6 +119,7 @@ const AppRoutes: React.FC = () => {
           />
           <Route path="/nets/:netId/info" element={<CreateNet />} />
           <Route path="/nets/:netId/report" element={<NetReport />} />
+          <Route path="/nets/:netId/pane/:paneType" element={<NetPaneWindow />} />
           <Route
             path="/nets/:netId"
             element={

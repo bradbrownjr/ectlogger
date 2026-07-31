@@ -97,12 +97,6 @@ Design questions to resolve before implementation:
 
 This is a substantial multi-part feature: sequence the data model + Forms menu first, then on-net entry and email delivery, then the stats rollup.
 
-### Multi-Window Support
-
-**✨ "Open in new tab" for Chat and Activity Log panes** *(AA1GM)*  
-**Model:** Opus to scope the architecture (cross-tab state sync, WebSocket sharing or duplication, auth in the popped-out tab), then Sonnet to build. Blocked on the NetView split (Milestone 0.4) — popping panes out of the current monolith would multiply its complexity.  
-Allow the chat and activity log floating windows to be popped out into a standalone browser tab, useful for dual-monitor setups. Interim workaround (detach within canvas, span browser window across monitors) should be documented. This is a non-trivial frontend architecture change — scope separately.
-
 ### Relaying & Propagation Mapping
 
 **✨ "Can hear" inter-station propagation logging** *(KC1UIX)*  

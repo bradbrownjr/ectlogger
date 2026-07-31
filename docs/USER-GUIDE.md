@@ -456,7 +456,7 @@ This eliminates the need for a separate edit dialog for quick corrections.
 For multi-monitor setups or larger screens, you can pop out components into separate floating windows:
 
 - **Check-in List** — Click the pop-out icon (↗) in the check-in table header
-- **Chat** — Click the pop-out icon in the chat panel header
+- **Chat** and **Activity Log** — Click the picture-in-picture icon in the panel header
 
 Detached windows can be:
 - Resized by dragging edges or corners
@@ -465,6 +465,15 @@ Detached windows can be:
 - Reattached by clicking the attach icon or closing the window
 
 Your detach preferences are saved and restored when you return to the net.
+
+### Opening Chat and Activity Log in a Separate Browser Window
+
+If you're running a net across two monitors, Chat and Activity Log can also
+open in a real, separate browser window instead of a panel inside the page —
+click the "open in new window" icon (next to the picture-in-picture icon)
+in either panel's header. The new window signs in automatically and stays
+live for the net, so you can drag it to your second monitor and leave it
+there. Closing the window brings the panel back into the main net view.
 
 ### Multi-NCS Operations
 
@@ -502,7 +511,7 @@ Each net has a built-in chat for coordination between participants:
 
 - **Send messages** — Type in the chat input and press Enter or click Send
 - **System messages** — See when stations check in/out (enable "Show activity in chat" in Profile settings)
-- **Pop-out chat** — Detach the chat window to keep it visible while managing the net
+- **Pop-out chat** — Detach the chat window to keep it visible while managing the net, or open it in its own browser window for a second monitor
 - **Persistent history** — Chat messages are saved and visible to participants who join later
 
 Chat is useful for:

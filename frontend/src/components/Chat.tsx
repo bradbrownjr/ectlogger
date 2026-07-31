@@ -23,6 +23,7 @@ import {
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import PictureInPictureAltIcon from '@mui/icons-material/PictureInPictureAlt';
 import MinimizeIcon from '@mui/icons-material/Minimize';
 import CropSquareIcon from '@mui/icons-material/CropSquare';
 import CloseIcon from '@mui/icons-material/Close';
@@ -43,6 +44,7 @@ interface ChatProps {
   onProfileClick?: (userId: number) => void;
   onNewMessage?: (message: ChatMessage) => void;
   onDetach?: () => void;
+  onPopOut?: () => void;
   minimized?: boolean;
   onMinimize?: () => void;
   onRestore?: () => void;
@@ -51,7 +53,7 @@ interface ChatProps {
 const REACTION_EMOJIS = ['👍', '🙂', '🙁', '❤️', '✅'];
 const CHAT_IMAGE_PREFIX = '__CHAT_IMAGE__';
 
-const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery, canManage, chatGracePeriodMinutes, closedAt, onlineUserIds = [], onProfileClick, onNewMessage, onDetach, minimized, onMinimize, onRestore }) => {
+const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery, canManage, chatGracePeriodMinutes, closedAt, onlineUserIds = [], onProfileClick, onNewMessage, onDetach, onPopOut, minimized, onMinimize, onRestore }) => {
   const { user } = useAuth();
   const theme = useTheme();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -286,6 +288,16 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
                         size="small"
                         onClick={onDetach}
                         title="Detach to floating window"
+                        sx={{ p: 0.25, display: { xs: 'none', lg: 'inline-flex' } }}
+                      >
+                        <PictureInPictureAltIcon sx={{ fontSize: 14 }} />
+                      </IconButton>
+                    )}
+                    {onPopOut && (
+                      <IconButton
+                        size="small"
+                        onClick={onPopOut}
+                        title="Open in new window"
                         sx={{ p: 0.25, display: { xs: 'none', lg: 'inline-flex' } }}
                       >
                         <OpenInNewIcon sx={{ fontSize: 14 }} />

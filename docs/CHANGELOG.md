@@ -11,6 +11,8 @@ All notable changes to ECTLogger are documented here.
 * **Branding: Color themes** — Pick a color theme in Profile → Settings, each with light and dark variants that follow the existing dark mode toggle.
   * Admins can set the site-wide default everyone else follows, build a fully custom color theme, and upload a custom logo to replace the built-in mark — all from Admin → Branding — useful for a self-hosted instance that wants to look like its own organization.
 
+* **Net View: Pop out Chat and Activity Log into their own window** — Chat and the activity log can now open in a separate browser window, not just the movable panel inside the page, so you can drag them onto a second monitor while running a net.
+
 ---
 
 # July 30, 2026

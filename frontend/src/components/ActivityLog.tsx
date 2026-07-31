@@ -10,6 +10,7 @@ import {
   IconButton,
 } from '@mui/material';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import PictureInPictureAltIcon from '@mui/icons-material/PictureInPictureAlt';
 import MinimizeIcon from '@mui/icons-material/Minimize';
 import CropSquareIcon from '@mui/icons-material/CropSquare';
 import { chatApi, ChatMessage } from '../api/chat';
@@ -21,9 +22,10 @@ interface ActivityLogProps {
   onMinimize?: () => void;
   onRestore?: () => void;
   onDetach?: () => void;
+  onPopOut?: () => void;
 }
 
-const ActivityLog: React.FC<ActivityLogProps> = ({ netId, minimized, onMinimize, onRestore, onDetach }) => {
+const ActivityLog: React.FC<ActivityLogProps> = ({ netId, minimized, onMinimize, onRestore, onDetach, onPopOut }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -78,6 +80,16 @@ const ActivityLog: React.FC<ActivityLogProps> = ({ netId, minimized, onMinimize,
                         size="small"
                         onClick={onDetach}
                         title="Detach to floating window"
+                        sx={{ p: 0.25, display: { xs: 'none', lg: 'inline-flex' } }}
+                      >
+                        <PictureInPictureAltIcon sx={{ fontSize: 14 }} />
+                      </IconButton>
+                    )}
+                    {onPopOut && (
+                      <IconButton
+                        size="small"
+                        onClick={onPopOut}
+                        title="Open in new window"
                         sx={{ p: 0.25, display: { xs: 'none', lg: 'inline-flex' } }}
                       >
                         <OpenInNewIcon sx={{ fontSize: 14 }} />

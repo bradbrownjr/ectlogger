@@ -3,6 +3,7 @@ import useDialog from '../hooks/useDialog';
 import useLocalStorage from '../hooks/useLocalStorage';
 import { useNetWebSocket } from '../hooks/useNetWebSocket';
 import { useNetData } from '../hooks/useNetData';
+import { usePoppedOutWindow } from '../hooks/usePoppedOutWindow';
 import CsvImportDialog from '../components/netview/CsvImportDialog';
 import ArchiveDialogs from '../components/netview/ArchiveDialogs';
 import RoleAssignmentDialog from '../components/netview/RoleAssignmentDialog';
@@ -525,6 +526,17 @@ const NetView: React.FC = () => {
   const handleAttachChat = () => setChatDetached(false);
   const handleDetachActivityLog = () => setActivityLogDetached(true);
   const handleAttachActivityLog = () => setActivityLogDetached(false);
+
+  // Pop Chat / Activity Log out into a real, separate browser window (for
+  // dual-monitor setups) — distinct from the in-page floating overlay above.
+  const chatPopout = usePoppedOutWindow(`/nets/${netId}/pane/chat`, `ectlogger-chat-${netId}`);
+  const activityLogPopout = usePoppedOutWindow(`/nets/${netId}/pane/activity-log`, `ectlogger-activity-log-${netId}`);
+  const handlePopOutChat = () => {
+    if (!chatPopout.open()) setToastMessage('Popup blocked — please allow popups for this site.');
+  };
+  const handlePopOutActivityLog = () => {
+    if (!activityLogPopout.open()) setToastMessage('Popup blocked — please allow popups for this site.');
+  };
 
 
   // Live message socket (connection, reconnect, message routing, cleanup).
@@ -1965,6 +1977,8 @@ const NetView: React.FC = () => {
               checkInListDetached={checkInListDetached}
               chatDetached={chatDetached}
               activityLogDetached={activityLogDetached}
+              chatWindowOpen={chatPopout.isOpen}
+              activityLogWindowOpen={activityLogPopout.isOpen}
               chatMinimized={chatMinimized}
               activityLogMinimized={effectiveActivityLogMinimized}
               setProfileUserId={setProfileUserId}
@@ -1975,6 +1989,8 @@ const NetView: React.FC = () => {
               handleDetachChat={handleDetachChat}
               handleAttachActivityLog={handleAttachActivityLog}
               handleDetachActivityLog={handleDetachActivityLog}
+              handlePopOutChat={handlePopOutChat}
+              handlePopOutActivityLog={handlePopOutActivityLog}
             />
           </Grid>
         )}

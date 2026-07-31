@@ -12,7 +12,7 @@ Whether you're running a casual weekly club net or coordinating a multi-agency e
 
 **For ARES and emergency communications**, ECTLogger handles the complexity. Multiple NCS operators can work different frequencies simultaneously, with check-ins intelligently separated by band but logged together in one unified view. When the incident wraps up, generate ICS-309 Communications Logs with a single click for your after-action reports.
 
-The responsive interface works beautifully on any device — from a phone in the field to a multi-monitor EOC workstation. Pop out the check-in list or chat into detachable windows within the browser to customize your workspace. Dark mode keeps things easy on the eyes during those long operational periods.
+The responsive interface works beautifully on any device — from a phone in the field to a multi-monitor EOC workstation. Pop out the check-in list, chat, or activity log into detachable panels within the browser, or open chat and the activity log in their own separate browser window for a true multi-monitor setup. Dark mode keeps things easy on the eyes during those long operational periods.
 
 **🌐 Try it now at [app.ectlogger.us](https://app.ectlogger.us)** — No installation required!
 
