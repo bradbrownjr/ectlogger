@@ -13,6 +13,8 @@ import CloseIcon from '@mui/icons-material/Close';
 import MinimizeIcon from '@mui/icons-material/Minimize';
 import CropSquareIcon from '@mui/icons-material/CropSquare';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import PictureInPictureAltIcon from '@mui/icons-material/PictureInPictureAlt';
+import ViewSidebarIcon from '@mui/icons-material/ViewSidebar';
 import EditIcon from '@mui/icons-material/Edit';
 import FormatBoldIcon from '@mui/icons-material/FormatBold';
 import FormatItalicIcon from '@mui/icons-material/FormatItalic';
@@ -33,6 +35,15 @@ interface NetScriptProps {
   templateId?: number;
   canEdit?: boolean;
   onSaved?: (newScript: string) => void;
+  // Renders filling 100% of its parent with no Rnd/drag chrome, for docking
+  // into NetView's layout (see NetViewLeftPanels.tsx) instead of floating.
+  embedded?: boolean;
+  // Moves the panel from docked back to the floating overlay - only
+  // meaningful (and only rendered) in embedded mode.
+  onUndock?: () => void;
+  // Moves the panel from floating into NetView's docked layout - only
+  // rendered (by the parent passing it) once the viewport is wide enough.
+  onDock?: () => void;
 }
 
 // CommonMark requires no whitespace adjacent to bold/italic delimiters.
@@ -57,6 +68,9 @@ const NetScript: React.FC<NetScriptProps> = ({
   templateId,
   canEdit = false,
   onSaved,
+  embedded = false,
+  onUndock,
+  onDock,
 }) => {
   const [minimized, setMinimized] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -189,6 +203,121 @@ const NetScript: React.FC<NetScriptProps> = ({
     }
   };
 
+  // Editing toolbar + textarea, or the rendered markdown - shared by the
+  // floating (Rnd) and embedded (docked / real popped-out window) render
+  // modes below.
+  const renderContent = () => (
+    <Box sx={{ flex: 1, display: minimized ? 'none' : 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      {editing ? (
+        <>
+          {/* Formatting toolbar */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, px: 1, py: 0.5, borderBottom: 1, borderColor: 'divider', flexShrink: 0 }}>
+            <Tooltip title="H1"><IconButton size="small" onClick={() => insertMarkdown('# ', '', 'Heading', true)} sx={{ fontWeight: 'bold', fontSize: '0.85rem' }}>H1</IconButton></Tooltip>
+            <Tooltip title="H2"><IconButton size="small" onClick={() => insertMarkdown('## ', '', 'Heading', true)} sx={{ fontWeight: 'bold', fontSize: '0.8rem' }}>H2</IconButton></Tooltip>
+            <Tooltip title="H3"><IconButton size="small" onClick={() => insertMarkdown('### ', '', 'Heading', true)} sx={{ fontWeight: 'bold', fontSize: '0.75rem' }}>H3</IconButton></Tooltip>
+            <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
+            <Tooltip title="Bold"><IconButton size="small" onClick={() => insertMarkdown('**', '**', 'bold text')}><FormatBoldIcon fontSize="small" /></IconButton></Tooltip>
+            <Tooltip title="Italic"><IconButton size="small" onClick={() => insertMarkdown('*', '*', 'italic text')}><FormatItalicIcon fontSize="small" /></IconButton></Tooltip>
+            <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
+            <Tooltip title="Bullet list"><IconButton size="small" onClick={() => insertMarkdown('- ', '', 'List item', true)}><FormatListBulletedIcon fontSize="small" /></IconButton></Tooltip>
+            <Tooltip title="Numbered list"><IconButton size="small" onClick={() => insertMarkdown('1. ', '', 'List item', true)}><FormatListNumberedIcon fontSize="small" /></IconButton></Tooltip>
+            <Tooltip title="Divider"><IconButton size="small" onClick={() => insertMarkdown('\n---\n')}><HorizontalRuleIcon fontSize="small" /></IconButton></Tooltip>
+          </Box>
+          {/* Editor */}
+          <TextField
+            multiline
+            fullWidth
+            value={editValue}
+            onChange={e => setEditValue(e.target.value)}
+            inputRef={textAreaRef}
+            variant="outlined"
+            sx={{ flex: 1, '& .MuiInputBase-root': { height: '100%', alignItems: 'flex-start', fontFamily: 'monospace', fontSize: '0.85rem' }, '& .MuiOutlinedInput-notchedOutline': { border: 'none' }, '& textarea': { resize: 'none' } }}
+            InputProps={{ sx: { height: '100%' } }}
+          />
+        </>
+      ) : (
+        <Box
+          sx={{
+            flex: 1, p: 2, overflow: 'auto', fontSize: '0.95rem', lineHeight: 1.6,
+            '& h1, & h2, & h3': { mt: 2, mb: 1, '&:first-of-type': { mt: 0 } },
+            '& h1': { fontSize: '1.5rem', borderBottom: 1, borderColor: 'divider', pb: 1 },
+            '& h2': { fontSize: '1.25rem' },
+            '& h3': { fontSize: '1.1rem' },
+            '& p': { my: 1 },
+            '& ul, & ol': { pl: 3, my: 1 },
+            '& li': { my: 0.5 },
+            '& hr': { my: 2, border: 'none', borderTop: 1, borderColor: 'divider' },
+            '& strong': { fontWeight: 'bold' },
+            '& em': { fontStyle: 'italic' },
+          }}
+        >
+          {script ? (
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{normalizeMarkdownDelimiters(script)}</ReactMarkdown>
+          ) : (
+            <Typography color="text.secondary" fontStyle="italic">No script defined for this net.</Typography>
+          )}
+        </Box>
+      )}
+    </Box>
+  );
+
+  // Editing toolbar buttons shared by both title bars below.
+  const renderEditControls = () => (
+    <>
+      {!editing && canEdit && templateId && (
+        <Tooltip title="Edit script">
+          <IconButton size="small" onClick={() => { setEditValue(script); setEditing(true); }} sx={{ color: 'inherit' }}>
+            <EditIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+      )}
+      {editing && (
+        <>
+          <Button size="small" variant="contained" color="success" onClick={handleSave} disabled={saving}
+            sx={{ py: 0, px: 1, minWidth: 0, fontSize: '0.75rem', color: '#fff' }}>
+            {saving ? 'Saving…' : 'Save'}
+          </Button>
+          <Button size="small" onClick={handleCancel} disabled={saving}
+            sx={{ py: 0, px: 1, minWidth: 0, fontSize: '0.75rem', color: 'inherit' }}>
+            Cancel
+          </Button>
+        </>
+      )}
+    </>
+  );
+
+  if (embedded) {
+    return (
+      <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1.5, py: 0.5, bgcolor: 'primary.main', color: 'primary.contrastText', flexShrink: 0 }}>
+          <Typography variant="subtitle2" fontWeight="bold">Net Script</Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            {renderEditControls()}
+            {!editing && (
+              <IconButton size="small" onClick={handleMinimizeToggle} sx={{ color: 'inherit', p: 0.25 }} title={minimized ? 'Restore' : 'Minimize'}>
+                {minimized ? <CropSquareIcon fontSize="small" /> : <MinimizeIcon fontSize="small" />}
+              </IconButton>
+            )}
+            {onUndock && (
+              <IconButton size="small" onClick={onUndock} sx={{ color: 'inherit', p: 0.25 }} title="Detach to floating window">
+                <PictureInPictureAltIcon fontSize="small" />
+              </IconButton>
+            )}
+            {!editing && (
+              <IconButton size="small" onClick={handleOpenInNewTab} sx={{ color: 'inherit', p: 0.25 }} title="Open in new window">
+                <OpenInNewIcon fontSize="small" />
+              </IconButton>
+            )}
+            <IconButton size="small" onClick={onClose} sx={{ color: 'inherit', p: 0.25 }} title="Close">
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </Box>
+        </Box>
+        {renderContent()}
+      </Box>
+    );
+  }
+
   if (!open) return null;
 
   return (
@@ -214,28 +343,15 @@ const NetScript: React.FC<NetScriptProps> = ({
         >
           <Typography variant="subtitle1" fontWeight="bold">Net Script</Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            {!editing && canEdit && templateId && (
-              <Tooltip title="Edit script">
-                <IconButton size="small" onClick={() => { setEditValue(script); setEditing(true); }} sx={{ color: 'inherit' }}>
-                  <EditIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            )}
-            {editing && (
-              <>
-                <Button size="small" variant="contained" color="success" onClick={handleSave} disabled={saving}
-                  sx={{ py: 0, px: 1, minWidth: 0, fontSize: '0.75rem', color: '#fff' }}>
-                  {saving ? 'Saving…' : 'Save'}
-                </Button>
-                <Button size="small" onClick={handleCancel} disabled={saving}
-                  sx={{ py: 0, px: 1, minWidth: 0, fontSize: '0.75rem', color: 'inherit' }}>
-                  Cancel
-                </Button>
-              </>
-            )}
+            {renderEditControls()}
             {!editing && (
               <IconButton size="small" onClick={handleOpenInNewTab} sx={{ color: 'inherit' }} title="Open in new window">
                 <OpenInNewIcon fontSize="small" />
+              </IconButton>
+            )}
+            {!editing && onDock && (
+              <IconButton size="small" onClick={onDock} sx={{ color: 'inherit' }} title="Dock to layout">
+                <ViewSidebarIcon fontSize="small" />
               </IconButton>
             )}
             <IconButton size="small" onClick={handleMinimizeToggle} sx={{ color: 'inherit' }}>
@@ -248,59 +364,7 @@ const NetScript: React.FC<NetScriptProps> = ({
         </Box>
 
         {/* ========== CONTENT ========== */}
-        {/* Keep content mounted (display:none when minimized) to preserve scroll position */}
-        <Box sx={{ flex: 1, display: minimized ? 'none' : 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          {editing ? (
-            <>
-              {/* Formatting toolbar */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, px: 1, py: 0.5, borderBottom: 1, borderColor: 'divider', flexShrink: 0 }}>
-                <Tooltip title="H1"><IconButton size="small" onClick={() => insertMarkdown('# ', '', 'Heading', true)} sx={{ fontWeight: 'bold', fontSize: '0.85rem' }}>H1</IconButton></Tooltip>
-                <Tooltip title="H2"><IconButton size="small" onClick={() => insertMarkdown('## ', '', 'Heading', true)} sx={{ fontWeight: 'bold', fontSize: '0.8rem' }}>H2</IconButton></Tooltip>
-                <Tooltip title="H3"><IconButton size="small" onClick={() => insertMarkdown('### ', '', 'Heading', true)} sx={{ fontWeight: 'bold', fontSize: '0.75rem' }}>H3</IconButton></Tooltip>
-                <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
-                <Tooltip title="Bold"><IconButton size="small" onClick={() => insertMarkdown('**', '**', 'bold text')}><FormatBoldIcon fontSize="small" /></IconButton></Tooltip>
-                <Tooltip title="Italic"><IconButton size="small" onClick={() => insertMarkdown('*', '*', 'italic text')}><FormatItalicIcon fontSize="small" /></IconButton></Tooltip>
-                <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
-                <Tooltip title="Bullet list"><IconButton size="small" onClick={() => insertMarkdown('- ', '', 'List item', true)}><FormatListBulletedIcon fontSize="small" /></IconButton></Tooltip>
-                <Tooltip title="Numbered list"><IconButton size="small" onClick={() => insertMarkdown('1. ', '', 'List item', true)}><FormatListNumberedIcon fontSize="small" /></IconButton></Tooltip>
-                <Tooltip title="Divider"><IconButton size="small" onClick={() => insertMarkdown('\n---\n')}><HorizontalRuleIcon fontSize="small" /></IconButton></Tooltip>
-              </Box>
-              {/* Editor */}
-              <TextField
-                multiline
-                fullWidth
-                value={editValue}
-                onChange={e => setEditValue(e.target.value)}
-                inputRef={textAreaRef}
-                variant="outlined"
-                sx={{ flex: 1, '& .MuiInputBase-root': { height: '100%', alignItems: 'flex-start', fontFamily: 'monospace', fontSize: '0.85rem' }, '& .MuiOutlinedInput-notchedOutline': { border: 'none' }, '& textarea': { resize: 'none' } }}
-                InputProps={{ sx: { height: '100%' } }}
-              />
-            </>
-          ) : (
-            <Box
-              sx={{
-                flex: 1, p: 2, overflow: 'auto', fontSize: '0.95rem', lineHeight: 1.6,
-                '& h1, & h2, & h3': { mt: 2, mb: 1, '&:first-of-type': { mt: 0 } },
-                '& h1': { fontSize: '1.5rem', borderBottom: 1, borderColor: 'divider', pb: 1 },
-                '& h2': { fontSize: '1.25rem' },
-                '& h3': { fontSize: '1.1rem' },
-                '& p': { my: 1 },
-                '& ul, & ol': { pl: 3, my: 1 },
-                '& li': { my: 0.5 },
-                '& hr': { my: 2, border: 'none', borderTop: 1, borderColor: 'divider' },
-                '& strong': { fontWeight: 'bold' },
-                '& em': { fontStyle: 'italic' },
-              }}
-            >
-              {script ? (
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{normalizeMarkdownDelimiters(script)}</ReactMarkdown>
-              ) : (
-                <Typography color="text.secondary" fontStyle="italic">No script defined for this net.</Typography>
-              )}
-            </Box>
-          )}
-        </Box>
+        {renderContent()}
       </Paper>
     </Rnd>
   );

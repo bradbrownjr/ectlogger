@@ -3,15 +3,22 @@ import { Box, Grid } from '@mui/material';
 import FloatingWindow from '../FloatingWindow';
 import Chat from '../Chat';
 import ActivityLog from '../ActivityLog';
+import CheckInMap from '../CheckInMap';
 
-// ========== NET VIEW SIDE PANELS (Chat + Activity Log) ==========
-// The right-column Chat/Activity Log pair, docked or detached. Chat and
-// Activity Log detach independently of each other and of the check-in list.
-// Each pane's docked Box renders only when that pane is actually docked, so
-// undocking one (float or real-window pop-out) lets the other expand to
-// fill the freed space instead of the whole column disappearing. The
-// check-in list's own width (NetView.tsx) expands separately once BOTH
-// panes are undocked and this column has nothing left in it.
+// ========== NET VIEW SIDE PANELS (Chat + Activity Log + Map) ==========
+// The right-column Chat/Activity Log/Map stack, docked or detached. All
+// three detach independently of each other and of the check-in list. Each
+// pane's docked Box renders only when that pane is actually docked/shown,
+// so the others expand to fill the freed space instead of the whole column
+// disappearing (or, if none are present, the column itself doesn't render).
+// The check-in list's own width (NetView.tsx) expands separately once
+// nothing is left in this column.
+//
+// Unlike Chat/Activity Log (always present once docked), Map is on-demand —
+// only opened via the toolbar — so it additionally needs mapOpen true, not
+// just mapDocked. Map's own minimize state lives inside CheckInMap itself
+// (not lifted here), so its flex share is always 1 rather than being part
+// of the chat/activityLog minimized cross-referencing below.
 // Purely presentational — the parent owns all state and handlers.
 
 interface NetViewSidePanelsProps {
@@ -20,8 +27,7 @@ interface NetViewSidePanelsProps {
   canManage: boolean;
   searchQuery: string;
   onlineUserIds: number[];
-  checkInListDetached: boolean;
-  checkInListWindowOpen: boolean;
+  width: number;
   chatDetached: boolean;
   activityLogDetached: boolean;
   chatWindowOpen: boolean;
@@ -40,6 +46,16 @@ interface NetViewSidePanelsProps {
   handlePopOutActivityLog: () => void;
   handleFloatToWindowChat: () => void;
   handleFloatToWindowActivityLog: () => void;
+  // Map (ultrawide docking only — see NetView.tsx's xl-gating)
+  mapOpen: boolean;
+  mapDocked: boolean;
+  filteredCheckIns: any[];
+  ncsUserIds: number[];
+  loggerUserIds: number[];
+  relayUserIds: number[];
+  onCloseMap: () => void;
+  onUndockMap: () => void;
+  handlePopOutMap: () => void;
 }
 
 const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
@@ -48,8 +64,7 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
   canManage,
   searchQuery,
   onlineUserIds,
-  checkInListDetached,
-  checkInListWindowOpen,
+  width,
   chatDetached,
   activityLogDetached,
   chatWindowOpen,
@@ -68,23 +83,33 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
   handlePopOutActivityLog,
   handleFloatToWindowChat,
   handleFloatToWindowActivityLog,
+  mapOpen,
+  mapDocked,
+  filteredCheckIns,
+  ncsUserIds,
+  loggerUserIds,
+  relayUserIds,
+  onCloseMap,
+  onUndockMap,
+  handlePopOutMap,
 }) => {
   const chatDocked = !chatDetached && !chatWindowOpen;
   const activityLogDocked = !activityLogDetached && !activityLogWindowOpen;
+  const showMap = mapOpen && mapDocked;
 
   return (
     <>
-      {/* Right column: Chat + Activity Log stacked vertically. Each pane
-          renders only when it's docked, so the other expands into the
-          freed space instead of the whole column disappearing. */}
-      {(chatDocked || activityLogDocked) && (
-      <Grid item xs={12} md={(checkInListDetached || checkInListWindowOpen) ? 12 : 4} sx={{ pl: { md: 0.5 }, display: 'flex', flexDirection: 'column', gap: 0.5, minHeight: { xs: 300, md: 0 }, height: { xs: 'auto', md: '100%' } }}>
+      {/* Right column: Chat + Activity Log + Map stacked vertically. Each
+          pane renders only when it's docked/shown, so the others expand
+          into the freed space instead of the whole column disappearing. */}
+      {(chatDocked || activityLogDocked || showMap) && (
+      <Grid item xs={12} md={width} sx={{ pl: { md: 0.5 }, display: 'flex', flexDirection: 'column', gap: 0.5, minHeight: { xs: 300, md: 0 }, height: { xs: 'auto', md: '100%' } }}>
         {/* Chat panel */}
         {chatDocked && (
         <Box sx={{
           display: 'flex',
           flexDirection: 'column',
-          flex: (!activityLogDocked || activityLogMinimized) ? 1 : (chatMinimized ? '0 0 auto' : 1),
+          flex: chatMinimized ? '0 0 auto' : 1,
           minHeight: chatMinimized ? 'auto' : 0,
           overflow: 'hidden',
         }}>
@@ -115,7 +140,7 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
         <Box sx={{
           display: 'flex',
           flexDirection: 'column',
-          flex: (!chatDocked || chatMinimized) ? 1 : (activityLogMinimized ? '0 0 auto' : 1),
+          flex: activityLogMinimized ? '0 0 auto' : 1,
           minHeight: activityLogMinimized ? 'auto' : 0,
           overflow: 'hidden',
         }}>
@@ -134,6 +159,24 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
                   minimized={activityLogMinimized} onMinimize={() => setActivityLogMinimized(true)} onRestore={() => setActivityLogMinimized(false)} onDetach={() => setActivityLogDetached(true)} onPopOut={handlePopOutActivityLog} />
             </Box>
           </FloatingWindow>
+        </Box>
+        )}
+
+        {/* Map panel — bottom of the right column, below Activity Log */}
+        {showMap && (
+        <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
+          <CheckInMap
+            embedded
+            open={mapOpen}
+            onClose={onCloseMap}
+            checkIns={filteredCheckIns}
+            netName={net?.name || 'Net'}
+            ncsUserIds={ncsUserIds}
+            loggerUserIds={loggerUserIds}
+            relayUserIds={relayUserIds}
+            onUndock={onUndockMap}
+            onPopOut={handlePopOutMap}
+          />
         </Box>
         )}
       </Grid>

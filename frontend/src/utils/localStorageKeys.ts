@@ -19,6 +19,13 @@ export const STORAGE_KEYS = {
   DOCKED_CHAT_MINIMIZED: 'dockedPanel_chat_minimized',
   DOCKED_ACTIVITY_LOG_MINIMIZED: 'dockedPanel_activityLog_minimized',
   MOBILE_ACTIVITY_LOG_MINIMIZED: 'mobilePanel_activityLog_minimized',
+  // Ultrawide layout: whether Script/Announcements/Map are docked into
+  // NetView's grid (left column for the first two, bottom-right for Map)
+  // rather than floating, when open. Gated at render time on an xl-width
+  // viewport regardless of this stored preference - see NetView.tsx.
+  SCRIPT_DOCKED: 'dockedPanel_script_docked',
+  ANNOUNCEMENTS_DOCKED: 'dockedPanel_announcements_docked',
+  MAP_DOCKED: 'dockedPanel_map_docked',
 } as const;
 
 // Dynamic key builders

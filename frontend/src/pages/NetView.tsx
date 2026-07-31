@@ -15,6 +15,7 @@ import { getCheckInActions } from '../components/netview/checkInActions';
 import CheckInMobileList from '../components/netview/CheckInMobileList';
 import CheckInTable from '../components/netview/CheckInTable';
 import NetViewSidePanels from '../components/netview/NetViewSidePanels';
+import NetViewLeftPanels from '../components/netview/NetViewLeftPanels';
 import { STORAGE_KEYS } from '../utils/localStorageKeys';
 import { displayCallsign } from '../utils/userDisplay';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
@@ -120,6 +121,21 @@ const NCS_COLORS = [
   { bg: 'rgba(0, 188, 212, 0.15)', border: '#00bcd4', text: '#00bcd4' },   // Cyan
 ];
 
+// 12-column grid split across up to 3 docked slots: left (Script/
+// Announcements, ultrawide-only), center (check-in list), right (Chat/
+// Activity Log/Map). Preserves today's exact 8/4 split when only center+
+// right are active - the default, pre-ultrawide-docking case - so existing
+// users see no layout change.
+function getColumnWidths(leftActive: boolean, centerActive: boolean, rightActive: boolean): { left: number; center: number; right: number } {
+  if (leftActive && centerActive && rightActive) return { left: 3, center: 6, right: 3 };
+  if (!leftActive && centerActive && rightActive) return { left: 0, center: 8, right: 4 };
+  if (leftActive && centerActive && !rightActive) return { left: 4, center: 8, right: 0 };
+  if (leftActive && !centerActive && rightActive) return { left: 6, center: 0, right: 6 };
+  if (!leftActive && centerActive && !rightActive) return { left: 0, center: 12, right: 0 };
+  if (leftActive && !centerActive && !rightActive) return { left: 12, center: 0, right: 0 };
+  return { left: 0, center: 0, right: 12 }; // only right active (or none - harmless)
+}
+
 
 const NetView: React.FC = () => {
   const { netId } = useParams<{ netId: string }>();
@@ -207,6 +223,26 @@ const NetView: React.FC = () => {
   const [mobileActivityLogMinimized, setMobileActivityLogMinimized] = useLocalStorage<boolean>(STORAGE_KEYS.MOBILE_ACTIVITY_LOG_MINIMIZED, true);
   const effectiveActivityLogMinimized = isMobileLayout ? mobileActivityLogMinimized : activityLogMinimized;
   const setEffectiveActivityLogMinimized = isMobileLayout ? setMobileActivityLogMinimized : setActivityLogMinimized;
+
+  // Ultrawide layout: Script/Announcements dock to a new left column, Map
+  // docks to the bottom of the right column, below Activity Log. The dock
+  // option itself (and the docked rendering) only appears once the viewport
+  // is xl-wide - below that, docking is not offered at all (see the
+  // "Width gating" decision) and these three stay purely on-demand floating
+  // dialogs like they've always been.
+  const isXlUp = useMediaQuery(theme.breakpoints.up('xl'));
+  const [scriptDockedPref, setScriptDockedPref] = useLocalStorage<boolean>(STORAGE_KEYS.SCRIPT_DOCKED, false);
+  const [announcementsDockedPref, setAnnouncementsDockedPref] = useLocalStorage<boolean>(STORAGE_KEYS.ANNOUNCEMENTS_DOCKED, false);
+  const [mapDockedPref, setMapDockedPref] = useLocalStorage<boolean>(STORAGE_KEYS.MAP_DOCKED, false);
+  const scriptDocked = scriptDockedPref && isXlUp;
+  const announcementsDocked = announcementsDockedPref && isXlUp;
+  const mapDocked = mapDockedPref && isXlUp;
+  const handleDockScript = () => setScriptDockedPref(true);
+  const handleUndockScript = () => setScriptDockedPref(false);
+  const handleDockAnnouncements = () => setAnnouncementsDockedPref(true);
+  const handleUndockAnnouncements = () => setAnnouncementsDockedPref(false);
+  const handleDockMap = () => setMapDockedPref(true);
+  const handleUndockMap = () => setMapDockedPref(false);
   const [activityLogDetached, setActivityLogDetached] = useLocalStorage<boolean>(STORAGE_KEYS.FLOATING_ACTIVITY_LOG, false);
   // Frequency filter state - allows filtering check-ins by selected frequencies
   const [filteredFrequencyIds, setFilteredFrequencyIds] = useState<number[]>([]);
@@ -563,10 +599,16 @@ const NetView: React.FC = () => {
   const handleFloatToWindowChat = () => { handleAttachChat(); handlePopOutChat(); };
   const handleFloatToWindowActivityLog = () => { handleAttachActivityLog(); handlePopOutActivityLog(); };
   const handleFloatToWindowCheckIns = () => { handleAttachCheckInList(); handlePopOutCheckIns(); };
-  // True once neither Chat nor Activity Log has anything docked (both
-  // floated and/or popped to a real window) — the side column disappears
-  // entirely in that case, so the check-in list should expand to fill it.
-  const sidePanelsEmpty = (chatDetached || chatPopout.isOpen) && (activityLogDetached || activityLogPopout.isOpen);
+  const showMapDocked = map.open && mapDocked;
+  // True once neither Chat, Activity Log, nor Map has anything docked —
+  // the side column disappears entirely in that case, so the check-in
+  // list should expand to fill it.
+  const sidePanelsEmpty = (chatDetached || chatPopout.isOpen) && (activityLogDetached || activityLogPopout.isOpen) && !showMapDocked;
+
+  const leftPanelsActive = (script.open && scriptDocked) || (announcements.open && announcementsDocked);
+  const centerActive = !checkInListDetached && !checkInsPopout.isOpen;
+  const rightActive = !sidePanelsEmpty;
+  const columnWidths = getColumnWidths(leftPanelsActive, centerActive, rightActive);
 
 
   // Live message socket (connection, reconnect, message routing, cleanup).
@@ -1082,6 +1124,11 @@ const NetView: React.FC = () => {
     return new Date(a.checked_in_at).getTime() - new Date(b.checked_in_at).getTime();
   });
 
+  // Shared by the floating and docked CheckInMap instances below.
+  const ncsUserIds = netRoles.filter((r: any) => r.role === 'NCS').map((r: any) => r.user_id);
+  const loggerUserIds = netRoles.filter((r: any) => r.role === 'LOGGER').map((r: any) => r.user_id);
+  const relayUserIds = netRoles.filter((r: any) => r.role === 'Relay').map((r: any) => r.user_id);
+
   // Find the user's active check-in (not checked out)
   const userActiveCheckIn = checkIns.find(
     (checkIn: any) => checkIn.user_id === user?.id && checkIn.status !== 'checked_out'
@@ -1263,9 +1310,25 @@ const NetView: React.FC = () => {
 
         {(net.status === 'active' || net.status === 'lobby' || net.status === 'closed' || net.status === 'archived') && (
           <Grid container spacing={0} sx={{ mt: 0.5, flex: { xs: 'none', md: 1 }, minHeight: 0 }}>
+            <NetViewLeftPanels
+              netId={netId}
+              net={net}
+              canManage={canManage}
+              width={columnWidths.left}
+              scriptOpen={script.open}
+              scriptDocked={scriptDocked}
+              announcementsOpen={announcements.open}
+              announcementsDocked={announcementsDocked}
+              onCloseScript={script.onClose}
+              onCloseAnnouncements={announcements.onClose}
+              onUndockScript={handleUndockScript}
+              onUndockAnnouncements={handleUndockAnnouncements}
+              onScriptSaved={(newScript) => setNet((prev: any) => prev ? { ...prev, script: newScript } : prev)}
+              onAnnouncementsSaved={(newAnnouncements) => setNet((prev: any) => prev ? { ...prev, announcements: newAnnouncements } : prev)}
+            />
             {/* Check-in list - hide Grid if detached or popped to a real window */}
             {!checkInListDetached && !checkInsPopout.isOpen && (
-            <Grid item xs={12} md={sidePanelsEmpty ? 12 : 8} sx={{ pr: { md: 0.5 }, display: 'flex', flexDirection: 'column', minHeight: { xs: 'auto', md: 0 }, height: { xs: 'auto', md: '100%' }, mb: { xs: 2, md: 0 } }}>
+            <Grid item xs={12} md={columnWidths.center} sx={{ pr: { md: 0.5 }, display: 'flex', flexDirection: 'column', minHeight: { xs: 'auto', md: 0 }, height: { xs: 'auto', md: '100%' }, mb: { xs: 2, md: 0 } }}>
               <FloatingWindow
                 title="Check-in List"
                 isDetached={false}
@@ -2006,8 +2069,7 @@ const NetView: React.FC = () => {
               canManage={canManage}
               searchQuery={searchQuery}
               onlineUserIds={onlineUserIds}
-              checkInListDetached={checkInListDetached}
-              checkInListWindowOpen={checkInsPopout.isOpen}
+              width={columnWidths.right}
               chatDetached={chatDetached}
               activityLogDetached={activityLogDetached}
               chatWindowOpen={chatPopout.isOpen}
@@ -2026,6 +2088,15 @@ const NetView: React.FC = () => {
               handlePopOutActivityLog={handlePopOutActivityLog}
               handleFloatToWindowChat={handleFloatToWindowChat}
               handleFloatToWindowActivityLog={handleFloatToWindowActivityLog}
+              mapOpen={map.open}
+              mapDocked={mapDocked}
+              filteredCheckIns={filteredCheckIns}
+              ncsUserIds={ncsUserIds}
+              loggerUserIds={loggerUserIds}
+              relayUserIds={relayUserIds}
+              onCloseMap={map.onClose}
+              onUndockMap={handleUndockMap}
+              handlePopOutMap={handlePopOutMap}
             />
           </Grid>
         )}
@@ -2245,17 +2316,20 @@ const NetView: React.FC = () => {
         formatFrequency={formatFrequencyDisplay}
       />
 
-      {/* Check-in Location Map */}
+      {/* Check-in Location Map - docked version lives in NetViewSidePanels */}
+      {!mapDocked && (
       <CheckInMap
         open={map.open}
         onClose={map.onClose}
         checkIns={filteredCheckIns}
         netName={net?.name || 'Net'}
-        ncsUserIds={netRoles.filter((r: any) => r.role === 'NCS').map((r: any) => r.user_id)}
-        loggerUserIds={netRoles.filter((r: any) => r.role === 'LOGGER').map((r: any) => r.user_id)}
-        relayUserIds={netRoles.filter((r: any) => r.role === 'Relay').map((r: any) => r.user_id)}
+        ncsUserIds={ncsUserIds}
+        loggerUserIds={loggerUserIds}
+        relayUserIds={relayUserIds}
         onPopOut={handlePopOutMap}
+        onDock={isXlUp ? handleDockMap : undefined}
       />
+      )}
 
       {/* Bulk Check-In Dialog */}
       <BulkCheckIn
@@ -2286,7 +2360,8 @@ const NetView: React.FC = () => {
         matchCount={filteredCheckIns.length}
       />
 
-      {/* Net Script Viewer */}
+      {/* Net Script Viewer - docked version lives in NetViewLeftPanels */}
+      {!scriptDocked && (
       <NetScript
         open={script.open}
         onClose={script.onClose}
@@ -2296,9 +2371,12 @@ const NetView: React.FC = () => {
         templateId={net?.template_id}
         canEdit={canManage && !!net?.template_id}
         onSaved={(newScript) => setNet((prev: any) => prev ? { ...prev, script: newScript } : prev)}
+        onDock={isXlUp ? handleDockScript : undefined}
       />
+      )}
 
-      {/* Per-net notes viewer */}
+      {/* Per-net notes viewer - docked version lives in NetViewLeftPanels */}
+      {!announcementsDocked && (
       <Announcements
         open={announcements.open}
         onClose={announcements.onClose}
@@ -2308,7 +2386,9 @@ const NetView: React.FC = () => {
         templateId={net?.template_id}
         canEdit={canManage && !!net?.template_id}
         onSaved={(newAnnouncements) => setNet((prev: any) => prev ? { ...prev, announcements: newAnnouncements } : prev)}
+        onDock={isXlUp ? handleDockAnnouncements : undefined}
       />
+      )}
 
       {/* Schedule announcements viewer */}
       {net?.template_id && (

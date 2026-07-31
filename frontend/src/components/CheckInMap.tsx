@@ -16,6 +16,8 @@ import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
 import MapIcon from '@mui/icons-material/Map';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import PictureInPictureAltIcon from '@mui/icons-material/PictureInPictureAlt';
+import ViewSidebarIcon from '@mui/icons-material/ViewSidebar';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import { Rnd } from 'react-rnd';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
@@ -77,13 +79,19 @@ interface CheckInMapProps {
   ncsUserIds?: number[]; // User IDs of NCS operators
   loggerUserIds?: number[]; // User IDs of Logger operators
   relayUserIds?: number[]; // User IDs of Relay operators
-  // Renders filling 100% of its parent with no Rnd/dialog chrome (no drag,
-  // minimize, maximize, or close) - for use inside a real popped-out browser
-  // window (see NetPaneWindow.tsx), where the OS window IS the chrome.
+  // Renders filling 100% of its parent. Used both for the real popped-out
+  // browser window (NetPaneWindow.tsx, no onUndock - minimal chrome) and
+  // NetView's docked-in-grid slot (onUndock provided - full chrome).
   embedded?: boolean;
   // Opens the map in a real, separate browser window; when provided, a
   // button for it appears in both the windowed and maximized title bars.
   onPopOut?: () => void;
+  // Moves the panel from docked back to the floating overlay - only
+  // meaningful (and only rendered) in embedded mode.
+  onUndock?: () => void;
+  // Moves the panel from floating into NetView's docked layout - only
+  // rendered (by the parent passing it) once the viewport is wide enough.
+  onDock?: () => void;
 }
 
 interface MappedCheckIn extends CheckIn {
@@ -110,7 +118,7 @@ const FitBounds: React.FC<{ positions: [number, number][]; disabled?: boolean }>
   return null;
 };
 
-const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netName, ncsUserIds = [], loggerUserIds = [], relayUserIds = [], embedded = false, onPopOut }) => {
+const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netName, ncsUserIds = [], loggerUserIds = [], relayUserIds = [], embedded = false, onPopOut, onUndock, onDock }) => {
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
   
@@ -533,6 +541,12 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
   );
 
   if (embedded) {
+    // Two callers use embedded mode: the standalone popped-out window
+    // (NetPaneWindow.tsx, no onUndock - minimal chrome, just PDF export)
+    // and NetView's docked-in-grid slot (NetViewSidePanels.tsx, onUndock
+    // provided - full chrome matching Chat/Announcements/Script's docked
+    // headers).
+    const docked = !!onUndock;
     return (
       <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <Box sx={{ py: 0.5, px: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'primary.main', color: 'primary.contrastText', flexShrink: 0 }}>
@@ -544,18 +558,40 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
               sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'inherit', height: 20 }}
             />
           </Box>
-          <Tooltip title="Export to PDF">
-            <IconButton
-              size="small"
-              onClick={handleExportPdf}
-              disabled={exporting || loading}
-              sx={{ color: 'inherit', p: 0.5 }}
-            >
-              {exporting ? <CircularProgress size={16} color="inherit" /> : <PictureAsPdfIcon fontSize="small" />}
-            </IconButton>
-          </Tooltip>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <Tooltip title="Export to PDF">
+              <IconButton
+                size="small"
+                onClick={handleExportPdf}
+                disabled={exporting || loading}
+                sx={{ color: 'inherit', p: 0.5 }}
+              >
+                {exporting ? <CircularProgress size={16} color="inherit" /> : <PictureAsPdfIcon fontSize="small" />}
+              </IconButton>
+            </Tooltip>
+            {docked && (
+              <IconButton size="small" onClick={() => setMinimized(!minimized)} sx={{ color: 'inherit', p: 0.5 }} title={minimized ? 'Restore' : 'Minimize'}>
+                {minimized ? <CropSquareIcon fontSize="small" /> : <MinimizeIcon fontSize="small" />}
+              </IconButton>
+            )}
+            {onUndock && (
+              <IconButton size="small" onClick={onUndock} sx={{ color: 'inherit', p: 0.5 }} title="Detach to floating window">
+                <PictureInPictureAltIcon fontSize="small" />
+              </IconButton>
+            )}
+            {onPopOut && (
+              <IconButton size="small" onClick={onPopOut} sx={{ color: 'inherit', p: 0.5 }} title="Open in new window">
+                <OpenInNewIcon fontSize="small" />
+              </IconButton>
+            )}
+            {docked && (
+              <IconButton size="small" onClick={onClose} sx={{ color: 'inherit', p: 0.5 }} title="Close">
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            )}
+          </Box>
         </Box>
-        {renderMapContent()}
+        {!minimized && renderMapContent()}
       </Box>
     );
   }
@@ -636,6 +672,16 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
                   title="Open in new window"
                 >
                   <OpenInNewIcon fontSize="small" />
+                </IconButton>
+              )}
+              {onDock && (
+                <IconButton
+                  size="small"
+                  onClick={onDock}
+                  sx={{ color: 'inherit' }}
+                  title="Dock to layout"
+                >
+                  <ViewSidebarIcon fontSize="small" />
                 </IconButton>
               )}
               <IconButton
@@ -768,6 +814,17 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
                 title="Open in new window"
               >
                 <OpenInNewIcon fontSize="small" />
+              </IconButton>
+            )}
+            {onDock && (
+              <IconButton
+                size="small"
+                onClick={onDock}
+                onTouchEnd={(e) => { e.preventDefault(); e.stopPropagation(); onDock(); }}
+                sx={{ color: 'inherit', p: 0.5 }}
+                title="Dock to layout"
+              >
+                <ViewSidebarIcon fontSize="small" />
               </IconButton>
             )}
             <IconButton
