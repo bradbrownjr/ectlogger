@@ -7,17 +7,12 @@ import ActivityLog from '../ActivityLog';
 // ========== NET VIEW SIDE PANELS (Chat + Activity Log) ==========
 // The right-column Chat/Activity Log pair, docked or detached. Chat and
 // Activity Log detach independently of each other and of the check-in list.
+// Each pane's docked Box renders only when that pane is actually docked, so
+// undocking one (float or real-window pop-out) lets the other expand to
+// fill the freed space instead of the whole column disappearing. The
+// check-in list's own width (NetView.tsx) expands separately once BOTH
+// panes are undocked and this column has nothing left in it.
 // Purely presentational — the parent owns all state and handlers.
-//
-// Note (preserved from the original, not changed by this extraction): the
-// docked column only renders when Chat is NOT detached (`!chatDetached`), so
-// if Chat is popped out while Activity Log stays docked, Activity Log's own
-// docked slot disappears along with the whole column. Activity Log has its
-// own inner `!activityLogDetached` check for its own detached state, but that
-// inner check can't fire if the outer column itself never renders. The same
-// applies to `chatWindowOpen`/`activityLogWindowOpen` (popped into a real
-// browser window rather than the in-page floating overlay) — both states
-// hide a pane's docked slot the same way.
 
 interface NetViewSidePanelsProps {
   netId: string | undefined;
@@ -68,16 +63,22 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
   handlePopOutChat,
   handlePopOutActivityLog,
 }) => {
+  const chatDocked = !chatDetached && !chatWindowOpen;
+  const activityLogDocked = !activityLogDetached && !activityLogWindowOpen;
+
   return (
     <>
-      {/* Right column: Chat + Activity Log stacked vertically */}
-      {!chatDetached && !chatWindowOpen && (
+      {/* Right column: Chat + Activity Log stacked vertically. Each pane
+          renders only when it's docked, so the other expands into the
+          freed space instead of the whole column disappearing. */}
+      {(chatDocked || activityLogDocked) && (
       <Grid item xs={12} md={checkInListDetached ? 12 : 4} sx={{ pl: { md: 0.5 }, display: 'flex', flexDirection: 'column', gap: 0.5, minHeight: { xs: 300, md: 0 }, height: { xs: 'auto', md: '100%' } }}>
         {/* Chat panel */}
+        {chatDocked && (
         <Box sx={{
           display: 'flex',
           flexDirection: 'column',
-          flex: activityLogMinimized ? 1 : (chatMinimized ? '0 0 auto' : 1),
+          flex: (!activityLogDocked || activityLogMinimized) ? 1 : (chatMinimized ? '0 0 auto' : 1),
           minHeight: chatMinimized ? 'auto' : 0,
           overflow: 'hidden',
         }}>
@@ -101,12 +102,14 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
             </Box>
           </FloatingWindow>
         </Box>
+        )}
 
         {/* Activity Log panel */}
+        {activityLogDocked && (
         <Box sx={{
           display: 'flex',
           flexDirection: 'column',
-          flex: chatMinimized ? 1 : (activityLogMinimized ? '0 0 auto' : 1),
+          flex: (!chatDocked || chatMinimized) ? 1 : (activityLogMinimized ? '0 0 auto' : 1),
           minHeight: activityLogMinimized ? 'auto' : 0,
           overflow: 'hidden',
         }}>
@@ -121,11 +124,12 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
             storageKey="activityLog"
           >
             <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-              {!activityLogDetached && !activityLogWindowOpen && <ActivityLog netId={Number(netId)}
-                  minimized={activityLogMinimized} onMinimize={() => setActivityLogMinimized(true)} onRestore={() => setActivityLogMinimized(false)} onDetach={() => setActivityLogDetached(true)} onPopOut={handlePopOutActivityLog} />}
+              <ActivityLog netId={Number(netId)}
+                  minimized={activityLogMinimized} onMinimize={() => setActivityLogMinimized(true)} onRestore={() => setActivityLogMinimized(false)} onDetach={() => setActivityLogDetached(true)} onPopOut={handlePopOutActivityLog} />
             </Box>
           </FloatingWindow>
         </Box>
+        )}
       </Grid>
       )}
 

@@ -17,9 +17,9 @@ import {
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import GroupIcon from '@mui/icons-material/Group';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import PanToolIcon from '@mui/icons-material/PanTool';
 import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutline';
+import PictureInPictureAltIcon from '@mui/icons-material/PictureInPictureAlt';
 import UserAvatar from '../UserAvatar';
 import { formatTimeWithDate } from '../../utils/dateUtils';
 
@@ -241,7 +241,7 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                               title="Detach to floating window"
                               sx={{ p: 0.25 }}
                             >
-                              <OpenInNewIcon sx={{ fontSize: 14 }} />
+                              <PictureInPictureAltIcon sx={{ fontSize: 14 }} />
                             </IconButton>
                           )}
                         </Box>

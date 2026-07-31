@@ -139,7 +139,7 @@ const Announcements: React.FC<AnnouncementsProps> = ({
   };
 
   const handleOpenInNewTab = () => {
-    const newWindow = window.open('', '_blank');
+    const newWindow = window.open('', '_blank', 'width=900,height=800,resizable=yes');
     if (newWindow) {
       const htmlContent = announcements
         .replace(/^### (.*$)/gim, '<h3>$1</h3>')
@@ -239,7 +239,7 @@ const Announcements: React.FC<AnnouncementsProps> = ({
               </>
             )}
             {!editing && (
-              <IconButton size="small" onClick={handleOpenInNewTab} sx={{ color: 'inherit' }} title="Open in new tab">
+              <IconButton size="small" onClick={handleOpenInNewTab} sx={{ color: 'inherit' }} title="Open in new window">
                 <OpenInNewIcon fontSize="small" />
               </IconButton>
             )}

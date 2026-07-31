@@ -537,6 +537,10 @@ const NetView: React.FC = () => {
   const handlePopOutActivityLog = () => {
     if (!activityLogPopout.open()) setToastMessage('Popup blocked — please allow popups for this site.');
   };
+  // True once neither Chat nor Activity Log has anything docked (both
+  // floated and/or popped to a real window) — the side column disappears
+  // entirely in that case, so the check-in list should expand to fill it.
+  const sidePanelsEmpty = (chatDetached || chatPopout.isOpen) && (activityLogDetached || activityLogPopout.isOpen);
 
 
   // Live message socket (connection, reconnect, message routing, cleanup).
@@ -1235,7 +1239,7 @@ const NetView: React.FC = () => {
           <Grid container spacing={0} sx={{ mt: 0.5, flex: { xs: 'none', md: 1 }, minHeight: 0 }}>
             {/* Check-in list - hide Grid if detached */}
             {!checkInListDetached && (
-            <Grid item xs={12} md={chatDetached ? 12 : 8} sx={{ pr: { md: 0.5 }, display: 'flex', flexDirection: 'column', minHeight: { xs: 'auto', md: 0 }, height: { xs: 'auto', md: '100%' }, mb: { xs: 2, md: 0 } }}>
+            <Grid item xs={12} md={sidePanelsEmpty ? 12 : 8} sx={{ pr: { md: 0.5 }, display: 'flex', flexDirection: 'column', minHeight: { xs: 'auto', md: 0 }, height: { xs: 'auto', md: '100%' }, mb: { xs: 2, md: 0 } }}>
               <FloatingWindow
                 title="Check-in List"
                 isDetached={false}
