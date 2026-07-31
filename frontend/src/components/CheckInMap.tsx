@@ -92,6 +92,14 @@ interface CheckInMapProps {
   // Moves the panel from floating into NetView's docked layout - only
   // rendered (by the parent passing it) once the viewport is wide enough.
   onDock?: () => void;
+  // Controlled minimize state for the docked-in-grid embedded case only
+  // (distinguished from the standalone-popped-out-window embedded case by
+  // onUndock's presence) so the parent (NetViewSidePanels) can expand a
+  // sibling pane into the freed space - mirrors Chat.tsx's pattern. The
+  // floating/maximized modes keep their own internal minimize state.
+  minimized?: boolean;
+  onMinimize?: () => void;
+  onRestore?: () => void;
 }
 
 interface MappedCheckIn extends CheckIn {
@@ -118,7 +126,7 @@ const FitBounds: React.FC<{ positions: [number, number][]; disabled?: boolean }>
   return null;
 };
 
-const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netName, ncsUserIds = [], loggerUserIds = [], relayUserIds = [], embedded = false, onPopOut, onUndock, onDock }) => {
+const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netName, ncsUserIds = [], loggerUserIds = [], relayUserIds = [], embedded = false, onPopOut, onUndock, onDock, minimized: dockedMinimized = false, onMinimize: onDockedMinimize, onRestore: onDockedRestore }) => {
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
   
@@ -549,13 +557,13 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
     const docked = !!onUndock;
     return (
       <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <Box sx={{ py: 0.5, px: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: 'primary.main', color: 'primary.contrastText', flexShrink: 0 }}>
+        <Box sx={{ py: 0.5, px: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'background.default', borderBottom: 1, borderColor: 'divider', flexShrink: 0 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>📍 Check-in Map</Typography>
             <Chip
               label={`${mappedCheckIns.length} mapped`}
               size="small"
-              sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'inherit', height: 20 }}
+              sx={{ height: 20 }}
             />
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -564,34 +572,34 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
                 size="small"
                 onClick={handleExportPdf}
                 disabled={exporting || loading}
-                sx={{ color: 'inherit', p: 0.5 }}
+                sx={{ p: 0.5 }}
               >
-                {exporting ? <CircularProgress size={16} color="inherit" /> : <PictureAsPdfIcon fontSize="small" />}
+                {exporting ? <CircularProgress size={16} /> : <PictureAsPdfIcon fontSize="small" />}
               </IconButton>
             </Tooltip>
-            {docked && (
-              <IconButton size="small" onClick={() => setMinimized(!minimized)} sx={{ color: 'inherit', p: 0.5 }} title={minimized ? 'Restore' : 'Minimize'}>
-                {minimized ? <CropSquareIcon fontSize="small" /> : <MinimizeIcon fontSize="small" />}
+            {docked && (onDockedMinimize || onDockedRestore) && (
+              <IconButton size="small" onClick={dockedMinimized ? onDockedRestore : onDockedMinimize} sx={{ p: 0.5 }} title={dockedMinimized ? 'Restore' : 'Minimize'}>
+                {dockedMinimized ? <CropSquareIcon fontSize="small" /> : <MinimizeIcon fontSize="small" />}
               </IconButton>
             )}
             {onUndock && (
-              <IconButton size="small" onClick={onUndock} sx={{ color: 'inherit', p: 0.5 }} title="Detach to floating window">
+              <IconButton size="small" onClick={onUndock} sx={{ p: 0.5 }} title="Detach to floating window">
                 <PictureInPictureAltIcon fontSize="small" />
               </IconButton>
             )}
             {onPopOut && (
-              <IconButton size="small" onClick={onPopOut} sx={{ color: 'inherit', p: 0.5 }} title="Open in new window">
+              <IconButton size="small" onClick={onPopOut} sx={{ p: 0.5 }} title="Open in new window">
                 <OpenInNewIcon fontSize="small" />
               </IconButton>
             )}
             {docked && (
-              <IconButton size="small" onClick={onClose} sx={{ color: 'inherit', p: 0.5 }} title="Close">
+              <IconButton size="small" onClick={onClose} sx={{ p: 0.5 }} title="Close">
                 <CloseIcon fontSize="small" />
               </IconButton>
             )}
           </Box>
         </Box>
-        {!minimized && renderMapContent()}
+        {!dockedMinimized && renderMapContent()}
       </Box>
     );
   }

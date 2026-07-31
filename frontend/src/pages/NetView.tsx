@@ -224,25 +224,38 @@ const NetView: React.FC = () => {
   const effectiveActivityLogMinimized = isMobileLayout ? mobileActivityLogMinimized : activityLogMinimized;
   const setEffectiveActivityLogMinimized = isMobileLayout ? setMobileActivityLogMinimized : setActivityLogMinimized;
 
-  // Ultrawide layout: Script/Announcements dock to a new left column, Map
-  // docks to the bottom of the right column, below Activity Log. The dock
-  // option itself (and the docked rendering) only appears once the viewport
-  // is xl-wide - below that, docking is not offered at all (see the
-  // "Width gating" decision) and these three stay purely on-demand floating
-  // dialogs like they've always been.
+  // Ultrawide layout: Script, Notes, and Schedule Announcements dock to a
+  // new left column, Map docks to the bottom of the right column, below
+  // Activity Log. The dock option itself (and the docked rendering) only
+  // appears once the viewport is xl-wide - below that, docking is not
+  // offered at all (see the "Width gating" decision) and these four stay
+  // purely on-demand floating dialogs like they've always been. Default to
+  // docked (true) at xl+ so a first-time ultrawide user sees them land in
+  // the layout immediately, matching Chat/Activity Log's default-docked
+  // behavior, rather than defaulting to floating like a narrower screen.
   const isXlUp = useMediaQuery(theme.breakpoints.up('xl'));
-  const [scriptDockedPref, setScriptDockedPref] = useLocalStorage<boolean>(STORAGE_KEYS.SCRIPT_DOCKED, false);
-  const [announcementsDockedPref, setAnnouncementsDockedPref] = useLocalStorage<boolean>(STORAGE_KEYS.ANNOUNCEMENTS_DOCKED, false);
-  const [mapDockedPref, setMapDockedPref] = useLocalStorage<boolean>(STORAGE_KEYS.MAP_DOCKED, false);
+  const [scriptDockedPref, setScriptDockedPref] = useLocalStorage<boolean>(STORAGE_KEYS.SCRIPT_DOCKED, true);
+  const [announcementsDockedPref, setAnnouncementsDockedPref] = useLocalStorage<boolean>(STORAGE_KEYS.ANNOUNCEMENTS_DOCKED, true);
+  const [scheduleAnnouncementsDockedPref, setScheduleAnnouncementsDockedPref] = useLocalStorage<boolean>(STORAGE_KEYS.SCHEDULE_ANNOUNCEMENTS_DOCKED, true);
+  const [mapDockedPref, setMapDockedPref] = useLocalStorage<boolean>(STORAGE_KEYS.MAP_DOCKED, true);
   const scriptDocked = scriptDockedPref && isXlUp;
   const announcementsDocked = announcementsDockedPref && isXlUp;
+  const scheduleAnnouncementsDocked = scheduleAnnouncementsDockedPref && isXlUp;
   const mapDocked = mapDockedPref && isXlUp;
   const handleDockScript = () => setScriptDockedPref(true);
   const handleUndockScript = () => setScriptDockedPref(false);
   const handleDockAnnouncements = () => setAnnouncementsDockedPref(true);
   const handleUndockAnnouncements = () => setAnnouncementsDockedPref(false);
+  const handleDockScheduleAnnouncements = () => setScheduleAnnouncementsDockedPref(true);
+  const handleUndockScheduleAnnouncements = () => setScheduleAnnouncementsDockedPref(false);
   const handleDockMap = () => setMapDockedPref(true);
   const handleUndockMap = () => setMapDockedPref(false);
+  // Minimize state for the four docked-only panes above, persisted like
+  // Chat/Activity Log's DOCKED_*_MINIMIZED keys.
+  const [scriptMinimized, setScriptMinimized] = useLocalStorage<boolean>(STORAGE_KEYS.SCRIPT_MINIMIZED, false);
+  const [announcementsMinimized, setAnnouncementsMinimized] = useLocalStorage<boolean>(STORAGE_KEYS.ANNOUNCEMENTS_MINIMIZED, false);
+  const [scheduleAnnouncementsMinimized, setScheduleAnnouncementsMinimized] = useLocalStorage<boolean>(STORAGE_KEYS.SCHEDULE_ANNOUNCEMENTS_MINIMIZED, false);
+  const [mapMinimized, setMapMinimized] = useLocalStorage<boolean>(STORAGE_KEYS.MAP_MINIMIZED, false);
   const [activityLogDetached, setActivityLogDetached] = useLocalStorage<boolean>(STORAGE_KEYS.FLOATING_ACTIVITY_LOG, false);
   // Frequency filter state - allows filtering check-ins by selected frequencies
   const [filteredFrequencyIds, setFilteredFrequencyIds] = useState<number[]>([]);
@@ -605,7 +618,7 @@ const NetView: React.FC = () => {
   // list should expand to fill it.
   const sidePanelsEmpty = (chatDetached || chatPopout.isOpen) && (activityLogDetached || activityLogPopout.isOpen) && !showMapDocked;
 
-  const leftPanelsActive = (script.open && scriptDocked) || (announcements.open && announcementsDocked);
+  const leftPanelsActive = (script.open && scriptDocked) || (announcements.open && announcementsDocked) || (scheduleAnnouncements.open && scheduleAnnouncementsDocked);
   const centerActive = !checkInListDetached && !checkInsPopout.isOpen;
   const rightActive = !sidePanelsEmpty;
   const columnWidths = getColumnWidths(leftPanelsActive, centerActive, rightActive);
@@ -1317,12 +1330,25 @@ const NetView: React.FC = () => {
               width={columnWidths.left}
               scriptOpen={script.open}
               scriptDocked={scriptDocked}
+              scriptMinimized={scriptMinimized}
               announcementsOpen={announcements.open}
               announcementsDocked={announcementsDocked}
+              announcementsMinimized={announcementsMinimized}
+              scheduleAnnouncementsOpen={scheduleAnnouncements.open}
+              scheduleAnnouncementsDocked={scheduleAnnouncementsDocked}
+              scheduleAnnouncementsMinimized={scheduleAnnouncementsMinimized}
               onCloseScript={script.onClose}
               onCloseAnnouncements={announcements.onClose}
+              onCloseScheduleAnnouncements={scheduleAnnouncements.onClose}
               onUndockScript={handleUndockScript}
               onUndockAnnouncements={handleUndockAnnouncements}
+              onUndockScheduleAnnouncements={handleUndockScheduleAnnouncements}
+              onMinimizeScript={() => setScriptMinimized(true)}
+              onRestoreScript={() => setScriptMinimized(false)}
+              onMinimizeAnnouncements={() => setAnnouncementsMinimized(true)}
+              onRestoreAnnouncements={() => setAnnouncementsMinimized(false)}
+              onMinimizeScheduleAnnouncements={() => setScheduleAnnouncementsMinimized(true)}
+              onRestoreScheduleAnnouncements={() => setScheduleAnnouncementsMinimized(false)}
               onScriptSaved={(newScript) => setNet((prev: any) => prev ? { ...prev, script: newScript } : prev)}
               onAnnouncementsSaved={(newAnnouncements) => setNet((prev: any) => prev ? { ...prev, announcements: newAnnouncements } : prev)}
             />
@@ -2097,6 +2123,9 @@ const NetView: React.FC = () => {
               onCloseMap={map.onClose}
               onUndockMap={handleUndockMap}
               handlePopOutMap={handlePopOutMap}
+              mapMinimized={mapMinimized}
+              onMinimizeMap={() => setMapMinimized(true)}
+              onRestoreMap={() => setMapMinimized(false)}
             />
           </Grid>
         )}
@@ -2390,14 +2419,15 @@ const NetView: React.FC = () => {
       />
       )}
 
-      {/* Schedule announcements viewer */}
-      {net?.template_id && (
+      {/* Schedule announcements viewer - docked version lives in NetViewLeftPanels */}
+      {net?.template_id && !scheduleAnnouncementsDocked && (
         <ScheduleAnnouncements
           open={scheduleAnnouncements.open}
           onClose={scheduleAnnouncements.onClose}
           templateId={net.template_id}
           netName={net?.name || 'Net'}
           canEdit={canManage}
+          onDock={isXlUp ? handleDockScheduleAnnouncements : undefined}
         />
       )}
 

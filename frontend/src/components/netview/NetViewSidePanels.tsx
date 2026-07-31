@@ -56,6 +56,9 @@ interface NetViewSidePanelsProps {
   onCloseMap: () => void;
   onUndockMap: () => void;
   handlePopOutMap: () => void;
+  mapMinimized: boolean;
+  onMinimizeMap: () => void;
+  onRestoreMap: () => void;
 }
 
 const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
@@ -92,6 +95,9 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
   onCloseMap,
   onUndockMap,
   handlePopOutMap,
+  mapMinimized,
+  onMinimizeMap,
+  onRestoreMap,
 }) => {
   const chatDocked = !chatDetached && !chatWindowOpen;
   const activityLogDocked = !activityLogDetached && !activityLogWindowOpen;
@@ -164,7 +170,7 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
 
         {/* Map panel — bottom of the right column, below Activity Log */}
         {showMap && (
-        <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', flex: mapMinimized ? '0 0 auto' : 1, minHeight: mapMinimized ? 'auto' : 0, overflow: 'hidden' }}>
           <CheckInMap
             embedded
             open={mapOpen}
@@ -176,6 +182,9 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
             relayUserIds={relayUserIds}
             onUndock={onUndockMap}
             onPopOut={handlePopOutMap}
+            minimized={mapMinimized}
+            onMinimize={onMinimizeMap}
+            onRestore={onRestoreMap}
           />
         </Box>
         )}

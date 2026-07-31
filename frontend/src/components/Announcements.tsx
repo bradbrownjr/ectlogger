@@ -44,6 +44,13 @@ interface AnnouncementsProps {
   // Moves the panel from floating into NetView's docked layout - only
   // rendered (by the parent passing it) once the viewport is wide enough.
   onDock?: () => void;
+  // Controlled minimize state for embedded (docked) mode only, so the
+  // parent (NetViewLeftPanels) can expand a sibling pane into the freed
+  // space - mirrors Chat.tsx's pattern. Floating mode keeps its own
+  // internal minimize state (tied to the Rnd window height) untouched.
+  minimized?: boolean;
+  onMinimize?: () => void;
+  onRestore?: () => void;
 }
 
 // CommonMark requires no whitespace adjacent to bold/italic delimiters.
@@ -71,6 +78,9 @@ const Announcements: React.FC<AnnouncementsProps> = ({
   embedded = false,
   onUndock,
   onDock,
+  minimized: dockedMinimized = false,
+  onMinimize: onDockedMinimize,
+  onRestore: onDockedRestore,
 }) => {
   const [minimized, setMinimized] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -205,8 +215,8 @@ const Announcements: React.FC<AnnouncementsProps> = ({
   // Editing toolbar + textarea, or the rendered markdown - shared by the
   // floating (Rnd) and embedded (docked / real popped-out window) render
   // modes below.
-  const renderContent = () => (
-    <Box sx={{ flex: 1, display: minimized ? 'none' : 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+  const renderContent = (contentMinimized: boolean) => (
+    <Box sx={{ flex: 1, display: contentMinimized ? 'none' : 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {editing ? (
         <>
           {/* Formatting toolbar */}
@@ -286,31 +296,31 @@ const Announcements: React.FC<AnnouncementsProps> = ({
   if (embedded) {
     return (
       <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1.5, py: 0.5, bgcolor: 'primary.main', color: 'primary.contrastText', flexShrink: 0 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1.5, py: 0.5, backgroundColor: 'background.default', borderBottom: 1, borderColor: 'divider', flexShrink: 0 }}>
           <Typography variant="subtitle2" fontWeight="bold">Announcements</Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
             {renderEditControls()}
-            {!editing && (
-              <IconButton size="small" onClick={handleMinimizeToggle} sx={{ color: 'inherit', p: 0.25 }} title={minimized ? 'Restore' : 'Minimize'}>
-                {minimized ? <CropSquareIcon fontSize="small" /> : <MinimizeIcon fontSize="small" />}
+            {!editing && (onDockedMinimize || onDockedRestore) && (
+              <IconButton size="small" onClick={dockedMinimized ? onDockedRestore : onDockedMinimize} sx={{ p: 0.25 }} title={dockedMinimized ? 'Restore' : 'Minimize'}>
+                {dockedMinimized ? <CropSquareIcon fontSize="small" /> : <MinimizeIcon fontSize="small" />}
               </IconButton>
             )}
             {onUndock && (
-              <IconButton size="small" onClick={onUndock} sx={{ color: 'inherit', p: 0.25 }} title="Detach to floating window">
+              <IconButton size="small" onClick={onUndock} sx={{ p: 0.25 }} title="Detach to floating window">
                 <PictureInPictureAltIcon fontSize="small" />
               </IconButton>
             )}
             {!editing && (
-              <IconButton size="small" onClick={handleOpenInNewTab} sx={{ color: 'inherit', p: 0.25 }} title="Open in new window">
+              <IconButton size="small" onClick={handleOpenInNewTab} sx={{ p: 0.25 }} title="Open in new window">
                 <OpenInNewIcon fontSize="small" />
               </IconButton>
             )}
-            <IconButton size="small" onClick={onClose} sx={{ color: 'inherit', p: 0.25 }} title="Close">
+            <IconButton size="small" onClick={onClose} sx={{ p: 0.25 }} title="Close">
               <CloseIcon fontSize="small" />
             </IconButton>
           </Box>
         </Box>
-        {renderContent()}
+        {renderContent(dockedMinimized)}
       </Box>
     );
   }
@@ -368,7 +378,7 @@ const Announcements: React.FC<AnnouncementsProps> = ({
         </Box>
 
         {/* ========== CONTENT ========== */}
-        {renderContent()}
+        {renderContent(minimized)}
       </Paper>
     </Rnd>
   );

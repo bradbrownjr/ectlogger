@@ -386,12 +386,6 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
       tooltip: 'Listen to net audio', onClick: () => window.open(net.stream_url, '_blank'),
     },
     {
-      key: 'stats', group: 'info', priority: 3,
-      visible: checkInsCount > 0,
-      Icon: BarChartIcon, color: '#ed6c02', label: 'Stats',
-      tooltip: 'Net statistics', onClick: () => navigate(`/statistics/nets/${netId}`),
-    },
-    {
       key: 'script', group: 'info', priority: 2,
       visible: checkInsCount > 0 && !!net.script,
       Icon: ArticleIcon, color: neutralIconColor, label: 'Script',
@@ -414,6 +408,12 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
       visible: checkInsCount > 0 && !!net.template_id,
       Icon: HistoryIcon, color: neutralIconColor, label: 'Topics',
       tooltip: 'View prior topics', onClick: () => topicHistory.onOpen(),
+    },
+    {
+      key: 'stats', group: 'info', priority: 3,
+      visible: checkInsCount > 0,
+      Icon: BarChartIcon, color: '#ed6c02', label: 'Stats',
+      tooltip: 'Net statistics', onClick: () => navigate(`/statistics/nets/${netId}`),
     },
     {
       key: 'website', group: 'info', priority: 1,
@@ -466,6 +466,14 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
       onClick: onOpenRoleDialog,
     },
     {
+      key: 'ncs-role', group: 'management', priority: 3,
+      visible: isAuthenticated && isActiveOrLobby && !!userActiveCheckIn && isAssignedNCS,
+      Icon: WorkspacePremiumIcon, color: theme.palette.primary.main, label: isNCS ? 'Role: NCS' : 'Role: Standard',
+      tooltip: isNCS ? 'Acting as NCS — click to step down to Standard' : 'Acting as Standard — click to step up to NCS',
+      onClick: onToggleNCSRole,
+      active: isNCS, activeTone: 'primary',
+    },
+    {
       key: 'claim-ncs', group: 'management', priority: 2,
       visible: canManage && isActiveOrLobby && !hasNCS,
       Icon: WorkspacePremiumIcon, color: '#ed6c02', label: 'Claim NCS',
@@ -499,14 +507,6 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
         onStatusChange(userActiveCheckIn?.id, goingAway ? 'away' : 'checked_in');
       },
       active: userActiveCheckIn?.status === 'away', activeTone: 'warning',
-    },
-    {
-      key: 'ncs-role', group: 'management', priority: 3,
-      visible: isAuthenticated && isActiveOrLobby && !!userActiveCheckIn && isAssignedNCS,
-      Icon: WorkspacePremiumIcon, color: theme.palette.primary.main, label: isNCS ? 'Role: NCS' : 'Role: Standard',
-      tooltip: isNCS ? 'Acting as NCS — click to step down to Standard' : 'Acting as Standard — click to step up to NCS',
-      onClick: onToggleNCSRole,
-      active: isNCS, activeTone: 'primary',
     },
     {
       key: 'check-out', group: 'management', priority: 3,
