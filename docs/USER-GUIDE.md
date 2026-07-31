@@ -153,8 +153,8 @@ keeps its label and never disappears into the menu.
 
 The toolbar is split into two groups by a thin divider:
 
-- **Left — information.** Search, Map, Stats, Script, Announcements, Notes,
-  Topics, Website, and similar. These don't change anything.
+- **Left — information.** Search, Map, Script, Announcements, Notes,
+  Topics, Stats, Website, and similar. These don't change anything.
 - **Right — management.** Check in, Check out, Raise hand, Step away, and the
   staff controls for running and closing the net.
 
@@ -332,6 +332,20 @@ Example uses:
 - Emergency procedures and frequencies
 - Traffic handling protocols
 
+### Net Notes vs. Announcements
+
+These sound similar but are separate features:
+
+- **Announcements** is your schedule's standing text — kept current and
+  reused every time a net runs under that schedule (recurring news, ongoing
+  repeater status, etc.). Edit it from the **Announcements** toolbar button;
+  changes apply to future nets on that schedule too.
+- **Notes** belongs to one specific net only, and doesn't touch your
+  schedule. Use it for something you noticed just for tonight — a repeater
+  running weaker than usual, an unusual check-in pattern — that shouldn't
+  carry forward. Anyone checked in who can manage the net can open **Notes**
+  from the toolbar and start writing, even if nothing's been added yet.
+
 ### Net Timers
 
 The net header displays helpful timing information:
@@ -482,6 +496,22 @@ If you've already floated a panel into the in-page movable window and decide
 you'd rather have it in its own real window, there's no need to dock it back
 first — the floating panel's title bar has its own "open in new window"
 icon that sends it straight there in one click.
+
+### Wide-Screen Layout
+
+On an ultrawide monitor (roughly 1536px or wider), Script, Announcements, and
+the Check-In Map can dock directly into the page next to Chat and Activity
+Log instead of floating on top of everything else — Script/Announcements sit
+in a column to the left of the check-in table, and the Map sits below
+Activity Log on the right. Open any of them from the toolbar as usual; on a
+screen this wide they land in the layout by default. Each keeps the same
+minimize, undock-to-floating, and open-in-new-window controls as the docked
+Chat and Activity Log panels.
+
+Once two or more panels or columns are docked side by side, drag the thin
+divider between them to resize — between two panels stacked in the same
+column, or between the left/center/right columns themselves. Sizes are
+remembered the next time you open the net.
 
 ### Multi-NCS Operations
 

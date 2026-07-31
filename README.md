@@ -12,7 +12,7 @@ Whether you're running a casual weekly club net or coordinating a multi-agency e
 
 **For ARES and emergency communications**, ECTLogger handles the complexity. Multiple NCS operators can work different frequencies simultaneously, with check-ins intelligently separated by band but logged together in one unified view. When the incident wraps up, generate ICS-309 Communications Logs with a single click for your after-action reports.
 
-The responsive interface works beautifully on any device — from a phone in the field to a multi-monitor EOC workstation. Pop out the check-in list, chat, or activity log into detachable panels within the browser, or send any of them to their own separate browser window and dedicate a full screen to each for a true multi-monitor NCS setup. Dark mode keeps things easy on the eyes during those long operational periods.
+The responsive interface works beautifully on any device — from a phone in the field to a multi-monitor EOC workstation. Pop out the check-in list, chat, or activity log into detachable panels within the browser, or send any of them to their own separate browser window and dedicate a full screen to each for a true multi-monitor NCS setup. On an ultrawide monitor, the script, announcements, and check-in map can dock right into the page layout instead, with resizable panels and columns that remember the size you set. Dark mode keeps things easy on the eyes during those long operational periods.
 
 **🌐 Try it now at [app.ectlogger.us](https://app.ectlogger.us)** — No installation required!
 
@@ -41,6 +41,7 @@ The responsive interface works beautifully on any device — from a phone in the
 - **📅 Scheduling** — Schedule recurring nets with automatic NCS rotation
 - **🚪 Automatic Lobby** — Optionally open a scheduled net's lobby a set number of minutes early so stations can check in before Net Control arrives
 - **📜 Net Scripts** — Create formatted scripts for NCS operators to follow during nets
+- **🗒️ Net Notes** — Jot down something specific to one net (e.g. a repeater running weak) separately from your schedule's standing announcements
 - **✏️ Inline Editing** — NCS/Loggers can click any check-in row to edit fields directly
 - **🦔 Speed Entry** - Hit the ⏩ button to enter a string of check-ins in fast-moving nets
 - **🔄 Recheck Tracking** — Track stations as they check in and out, on different frequencies if needed

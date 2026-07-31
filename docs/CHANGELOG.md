@@ -13,6 +13,14 @@ All notable changes to ECTLogger are documented here.
 
 * **Net View: Run a net across multiple monitors** — Check-Ins, Chat, and Activity Log can each open in their own real browser window, not just a movable panel inside the page, so a multi-monitor NCS station can dedicate a full screen to logging, another to chat, and another to the activity feed. Every window stays live and in sync with the net in real time. Already using the in-page floating panel? A new button on its title bar sends it straight to its own window — no need to dock it back first.
 
+* **Net View: Arrange the page for a wide screen** — On an ultrawide monitor, Script, Announcements, and the Check-In Map can now dock directly into the page next to Chat and Activity Log, instead of floating on top of everything else. Drag the divider between any two panels — or between the columns themselves — to resize them however you use them; your layout is remembered next time.
+
+* **Net View: Net Notes** — Jot down something you noticed during a specific net, like a repeater running weaker than usual, without touching your schedule's standing Announcements text. Look for the Notes button once you're checked in.
+
+## Bug Fixes
+
+* **Net View: Notes no longer overwrites your schedule's Announcements** — Editing a net's Notes was silently saving into the schedule's Announcements text instead, so it could carry over onto every future net from that schedule. Notes now saves to just that net, and the button no longer stays hidden until something has already been written.
+
 ---
 
 # July 30, 2026
