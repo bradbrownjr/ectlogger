@@ -7,6 +7,8 @@ import { SnackbarProvider } from 'notistack';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeContext } from './contexts/ThemeContext';
 import { LocationProvider } from './contexts/LocationContext';
+import { THEMES, DEFAULT_THEME_KEY } from './theme/themes';
+import api from './services/api';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import NetView from './pages/NetView';
@@ -27,34 +29,21 @@ import ChangelogNotification from './components/ChangelogNotification';
 import MaintenanceBanner from './components/MaintenanceBanner';
 import ErrorBoundary from './components/ErrorBoundary';
 
-const getDesignTokens = (mode: PaletteMode) => ({
+const getDesignTokens = (mode: PaletteMode, themeKey: string) => {
+  const variant = (THEMES[themeKey] ?? THEMES[DEFAULT_THEME_KEY])[mode];
+  return {
   palette: {
     mode,
-    ...(mode === 'light'
-      ? {
-          primary: {
-            main: '#1976d2',
-          },
-          secondary: {
-            main: '#dc004e',
-          },
-          background: {
-            default: '#e8eef4',  // Light blue-gray background
-            paper: '#ffffff',
-          },
-        }
-      : {
-          primary: {
-            main: '#90caf9',
-          },
-          secondary: {
-            main: '#f48fb1',
-          },
-          background: {
-            default: '#121212',
-            paper: '#1e1e1e',
-          },
-        }),
+    primary: {
+      main: variant.primary,
+    },
+    secondary: {
+      main: variant.secondary,
+    },
+    background: {
+      default: variant.background,
+      paper: variant.paper,
+    },
   },
   components: {
     MuiCssBaseline: {
@@ -78,7 +67,8 @@ const getDesignTokens = (mode: PaletteMode) => ({
       },
     },
   },
-});
+  };
+};
 
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
@@ -173,39 +163,70 @@ const AppRoutes: React.FC = () => {
   );
 };
 
-const App: React.FC = () => {
+// Resolves and applies the effective theme (mode + named color palette).
+// Lives inside AuthProvider so it can read the current user's personal
+// theme preference; falls back to the system default (fetched once from
+// the public /settings/theme endpoint) for guests and users who haven't
+// picked one.
+const ThemedApp: React.FC = () => {
+  const { user } = useAuth();
   const [mode, setMode] = useState<PaletteMode>(() => {
     const savedMode = localStorage.getItem('themeMode');
     return (savedMode as PaletteMode) || 'light';
   });
+  const [systemDefaultTheme, setSystemDefaultTheme] = useState<string>(
+    () => localStorage.getItem('systemDefaultTheme') || DEFAULT_THEME_KEY
+  );
 
   useEffect(() => {
     localStorage.setItem('themeMode', mode);
   }, [mode]);
 
+  useEffect(() => {
+    api.get('/settings/theme')
+      .then((res) => {
+        const key = res.data?.default_theme;
+        if (key) {
+          setSystemDefaultTheme(key);
+          localStorage.setItem('systemDefaultTheme', key);
+        }
+      })
+      .catch(() => {
+        // Non-critical: keep whatever was cached in localStorage / the hardcoded fallback.
+      });
+  }, []);
+
   const toggleColorMode = () => {
     setMode((prevMode: PaletteMode) => (prevMode === 'light' ? 'dark' : 'light'));
   };
 
-  const theme = useMemo(() => createTheme(getDesignTokens(mode)), [mode]);
+  const themeKey = user?.theme || systemDefaultTheme;
+
+  const theme = useMemo(() => createTheme(getDesignTokens(mode, themeKey)), [mode, themeKey]);
 
   return (
-    <ThemeContext.Provider value={{ mode, toggleColorMode }}>
+    <ThemeContext.Provider value={{ mode, toggleColorMode, systemDefaultTheme, setSystemDefaultTheme }}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <SnackbarProvider maxSnack={3} autoHideDuration={6000}>
-          <Router>
-            <AuthProvider>
-              <LocationProvider>
-                <ErrorBoundary>
-                  <AppRoutes />
-                </ErrorBoundary>
-              </LocationProvider>
-            </AuthProvider>
-          </Router>
+          <LocationProvider>
+            <ErrorBoundary>
+              <AppRoutes />
+            </ErrorBoundary>
+          </LocationProvider>
         </SnackbarProvider>
       </ThemeProvider>
     </ThemeContext.Provider>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <Router>
+      <AuthProvider>
+        <ThemedApp />
+      </AuthProvider>
+    </Router>
   );
 };
 

@@ -1,6 +1,22 @@
 {
-  "version": "2026.07.30h",
+  "version": "2026.07.31",
   "entries": [
+    {
+      "version": "2026.07.31",
+      "date": "2026-07-31",
+      "sections": [
+        {
+          "title": "New Features",
+          "type": "feature",
+          "items": [
+            {
+              "text": "Personalization: Color themes — Pick a color theme in Profile → Settings, each with light and dark variants that follow the existing dark mode toggle; admins can set the site-wide default everyone else follows from Admin → Themes.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.07.30h",
       "date": "2026-07-30",

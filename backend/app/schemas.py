@@ -5,6 +5,12 @@ from app.models import UserRole, NetStatus, StationStatus
 import re
 
 
+# Named theme keys, mirrored from frontend/src/theme/themes.ts. Kept as a
+# plain tuple (not an Enum) so adding a theme only requires touching that
+# one frontend file plus this list, not a schema migration.
+VALID_THEME_KEYS = ('ectlogger-blue', 'ocean', 'forest', 'sunset', 'berry')
+
+
 def public_display_name(name: Optional[str], is_authenticated: bool) -> Optional[str]:
     """Reduce a display name for unauthenticated callers.
 
@@ -84,6 +90,7 @@ class UserUpdate(BaseModel):
     walkthrough_seen: Optional[bool] = None
     dashboard_sort_order: Optional[Literal['status', 'alpha']] = None
     schedule_sort_order: Optional[Literal['alpha', 'date']] = None
+    theme: Optional[str] = Field(None, max_length=32)  # Null = follow system default
 
     @model_validator(mode='before')
     @classmethod
@@ -120,6 +127,13 @@ class UserUpdate(BaseModel):
                 raise ValueError(f'"{v}" is not a valid IANA timezone')
         return v
 
+    @field_validator('theme')
+    @classmethod
+    def validate_theme(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and v not in VALID_THEME_KEYS:
+            raise ValueError(f'"{v}" is not a recognized theme')
+        return v
+
 
 class UserResponse(UserBase):
     id: int
@@ -140,6 +154,7 @@ class UserResponse(UserBase):
     walkthrough_seen: bool = False
     dashboard_sort_order: str = 'status'
     schedule_sort_order: str = 'date'
+    theme: Optional[str] = None
     previous_callsigns: List[str] = Field(default_factory=list)
     last_active: Optional[datetime] = None
     schedule_age_bypass: bool = False
@@ -887,6 +902,8 @@ class AppSettingsResponse(BaseModel):
     maintenance_banner_dismissible: bool = True
     maintenance_banner_scheduled_start: Optional[datetime] = None
     maintenance_banner_scheduled_end: Optional[datetime] = None
+    # Theming
+    default_theme: str = 'ectlogger-blue'
 
     class Config:
         from_attributes = True
@@ -908,6 +925,15 @@ class AppSettingsUpdate(BaseModel):
     maintenance_banner_dismissible: Optional[bool] = None
     maintenance_banner_scheduled_start: Optional[datetime] = None
     maintenance_banner_scheduled_end: Optional[datetime] = None
+    # Theming
+    default_theme: Optional[str] = None
+
+    @field_validator('default_theme')
+    @classmethod
+    def validate_default_theme(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and v not in VALID_THEME_KEYS:
+            raise ValueError(f'"{v}" is not a recognized theme')
+        return v
 
 
 # Field Definition Schemas

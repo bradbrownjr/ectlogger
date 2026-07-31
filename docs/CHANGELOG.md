@@ -4,6 +4,14 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# July 31, 2026
+
+## New Features
+
+* **Personalization: Color themes** — Pick a color theme in Profile → Settings, each with light and dark variants that follow the existing dark mode toggle; admins can set the site-wide default everyone else follows from Admin → Themes.
+
+---
+
 # July 30, 2026
 
 ## Improvements

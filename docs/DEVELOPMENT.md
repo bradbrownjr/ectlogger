@@ -348,6 +348,34 @@ admin-only settings go through the standard `GET /settings` / `PUT /settings` pa
 
 ---
 
+## Theming
+
+Named color themes live in `frontend/src/theme/themes.ts` — a `THEMES` record
+mapping a key (e.g. `'ocean'`) to a `{ name, light, dark }` definition, each
+variant a flat `{ primary, secondary, background, paper }` hex set. `App.tsx`'s
+`getDesignTokens(mode, themeKey)` reads from this constant instead of
+hardcoding colors; everything else (typography, component overrides) is
+shared across all themes.
+
+**Resolution hierarchy**, computed in `ThemedApp` (`App.tsx`, mounted inside
+`AuthProvider` specifically so it can read `useAuth().user`):
+1. `user.theme` — the authenticated user's personal pick (`PUT /users/me`).
+2. else the system default, fetched once from the public `GET /settings/theme`
+   endpoint (`app_settings.default_theme`, admin-editable via Admin → Themes).
+3. else `DEFAULT_THEME_KEY` (`'ectlogger-blue'`) as an offline/pre-fetch fallback.
+
+Both `user.theme` (nullable) and `app_settings.default_theme` are validated
+server-side against `VALID_THEME_KEYS` in `schemas.py` — keep that tuple in
+sync with `THEMES`'s keys.
+
+**To add a new theme**: add one entry to `THEMES` (pick two accent hues from
+a source palette, hand-tune a light/dark background pair) and add its key to
+`VALID_THEME_KEYS` in `backend/app/schemas.py`. No migration, endpoint, or
+component change is needed — `ThemeSwatchPicker.tsx` (shared by Profile →
+Settings and Admin → Themes) renders `THEMES` generically.
+
+---
+
 ## Date & Time Handling
 
 ECTLogger deals with two fundamentally different kinds of time, and they are stored differently **on purpose**:

@@ -93,6 +93,7 @@ class User(Base):
     avatar_url = Column(String(500), nullable=True)  # Custom profile image URL; overrides Gravatar when set
     dashboard_sort_order = Column(String(16), nullable=False, default='status', server_default='status')  # 'status' (active first, then next up) or 'alpha'
     schedule_sort_order = Column(String(16), nullable=False, default='date', server_default='date')  # 'date' (next occurrence first) or 'alpha'
+    theme = Column(String(32), nullable=True)  # Named color theme key; null = follow system default
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
@@ -563,6 +564,9 @@ class AppSettings(Base):
     # Session / authentication settings
     session_lifetime_days = Column(Integer, default=90)  # JWT lifetime in days
     session_rolling_renewal = Column(Boolean, default=True)  # Auto-refresh when < 7 days remain
+
+    # Theming
+    default_theme = Column(String(32), default='ectlogger-blue')  # System-wide default theme key for users with no personal preference
 
     # Maintenance banner (in-app, DB-backed)
     maintenance_banner_enabled = Column(Boolean, default=False)

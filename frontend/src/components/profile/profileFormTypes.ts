@@ -17,4 +17,5 @@ export interface ProfileFormData {
   notify_net_reminder: boolean;
   notify_ics309: boolean;
   notify_whats_new: boolean;
+  theme: string | null;
 }

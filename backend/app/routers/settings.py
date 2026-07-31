@@ -79,6 +79,7 @@ def _build_settings_response(settings: AppSettings) -> AppSettingsResponse:
         maintenance_banner_dismissible=settings.maintenance_banner_dismissible if settings.maintenance_banner_dismissible is not None else True,
         maintenance_banner_scheduled_start=settings.maintenance_banner_scheduled_start,
         maintenance_banner_scheduled_end=settings.maintenance_banner_scheduled_end,
+        default_theme=settings.default_theme or 'ectlogger-blue',
     )
 
 
@@ -133,6 +134,10 @@ async def update_settings(
     if "maintenance_banner_scheduled_end" in settings_update.model_fields_set:
         settings.maintenance_banner_scheduled_end = settings_update.maintenance_banner_scheduled_end
 
+    # Theming
+    if settings_update.default_theme is not None:
+        settings.default_theme = settings_update.default_theme
+
     await db.commit()
     await db.refresh(settings)
 
@@ -178,6 +183,16 @@ async def get_field_labels(
     """Get field labels (public endpoint for display purposes)"""
     settings = await get_or_create_settings(db)
     return json.loads(settings.field_labels) if settings.field_labels else {}
+
+
+@router.get("/theme")
+async def get_theme_settings(
+    db: AsyncSession = Depends(get_db)
+):
+    """Get the system default theme (public endpoint, needed pre-login so the
+    login screen can render the system default instead of a hardcoded one)"""
+    settings = await get_or_create_settings(db)
+    return {"default_theme": settings.default_theme or 'ectlogger-blue'}
 
 
 # Field Definition Endpoints

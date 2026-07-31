@@ -26,6 +26,7 @@ interface User {
   timezone?: string;
   dashboard_sort_order?: 'status' | 'alpha';
   schedule_sort_order?: 'alpha' | 'date';
+  theme?: string | null;
   role: string;
 }
 

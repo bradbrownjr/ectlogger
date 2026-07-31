@@ -13,6 +13,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
 import type { ProfileFormData } from './profileFormTypes';
+import ThemeSwatchPicker from '../ThemeSwatchPicker';
 
 // ========== SETTINGS TAB ==========
 // Display/notification toggle switches. formData/handleSubmit are shared
@@ -117,6 +118,20 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
             </Box>
           )}
         </Box>
+
+        <Divider sx={{ my: 3 }} />
+
+        <Typography variant="h6" gutterBottom>
+          Color Theme
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Choose a color theme for your account, or follow whatever the system default is set to.
+        </Typography>
+        <ThemeSwatchPicker
+          value={formData.theme}
+          onSelect={(key) => setFormData({ ...formData, theme: key })}
+          allowSystemDefault
+        />
 
         <Divider sx={{ my: 3 }} />
 

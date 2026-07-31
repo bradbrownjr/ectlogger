@@ -675,7 +675,11 @@ Use this for after-action reporting, club records, or emergency management docum
 
 ### Dark Mode
 
-ECTLogger automatically follows your system's light/dark mode preference. If your device is set to dark mode, ECTLogger will display in dark mode — easier on the eyes during those late-night nets!
+Toggle dark mode from the navbar's sun/moon icon (or the user menu on mobile) — easier on the eyes during those late-night nets. Your choice is remembered on this device.
+
+### Color Themes
+
+Pick a color theme from **Profile → Settings**: each named theme is a coordinated light/dark pair, so whichever one you choose works automatically with the dark mode toggle above. Select "Follow system default" to always match whatever the site admin has set as the default theme instead of a fixed personal choice — this is also what you get automatically until you pick something else.
 
 ### Mobile Use
 
@@ -759,6 +763,7 @@ Both columns are blank for users the badge doesn't apply to, and both are sortab
 - **Frequency Library** — Manage shared frequency presets
 - **Security** — View fail2ban status and recent authentication events
 - **Site Settings** — Configure schedule creation limits
+- **Themes** — Set the system-wide default color theme. Applies immediately to any user who hasn't picked a personal theme in their own Profile → Settings.
 
 ---
 

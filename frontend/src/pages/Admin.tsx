@@ -14,6 +14,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import RadioIcon from '@mui/icons-material/Radio';
 import SecurityIcon from '@mui/icons-material/Security';
 import BuildIcon from '@mui/icons-material/Build';
+import PaletteIcon from '@mui/icons-material/Palette';
 import { useAuth } from '../contexts/AuthContext';
 import AdminUsersTab from '../components/admin/AdminUsersTab';
 import AdminContactsTab from '../components/admin/AdminContactsTab';
@@ -21,6 +22,7 @@ import AdminFieldsTab from '../components/admin/AdminFieldsTab';
 import AdminFrequenciesTab from '../components/admin/AdminFrequenciesTab';
 import AdminSecurityTab from '../components/admin/AdminSecurityTab';
 import AdminMaintenanceTab from '../components/admin/AdminMaintenanceTab';
+import AdminThemeTab from '../components/admin/AdminThemeTab';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -95,7 +97,7 @@ const Admin: React.FC = () => {
     // Only trigger if horizontal swipe is dominant (more X than Y) and long enough
     if (Math.abs(deltaX) < 50 || Math.abs(deltaX) < Math.abs(deltaY)) return;
     setTabValue((prev) => {
-      if (deltaX < 0) return Math.min(prev + 1, 5);
+      if (deltaX < 0) return Math.min(prev + 1, 6);
       return Math.max(prev - 1, 0);
     });
   };
@@ -128,6 +130,7 @@ const Admin: React.FC = () => {
           <Tab label="Frequencies" id="admin-tab-3" aria-controls="admin-tabpanel-3" icon={<RadioIcon />} iconPosition="start" />
           <Tab label="Security" id="admin-tab-4" aria-controls="admin-tabpanel-4" icon={<SecurityIcon />} iconPosition="start" />
           <Tab label="Maintenance" id="admin-tab-5" aria-controls="admin-tabpanel-5" icon={<BuildIcon />} iconPosition="start" />
+          <Tab label="Themes" id="admin-tab-6" aria-controls="admin-tabpanel-6" icon={<PaletteIcon />} iconPosition="start" />
         </Tabs>
 
         {/* ========== TAB 0: USERS ========== */}
@@ -161,6 +164,11 @@ const Admin: React.FC = () => {
         {/* ========== TAB 5: MAINTENANCE ========== */}
         <TabPanel value={tabValue} index={5}>
           <AdminMaintenanceTab showSnackbar={showSnackbar} />
+        </TabPanel>
+
+        {/* ========== TAB 6: THEMES ========== */}
+        <TabPanel value={tabValue} index={6}>
+          <AdminThemeTab showSnackbar={showSnackbar} />
         </TabPanel>
       </Paper>
 

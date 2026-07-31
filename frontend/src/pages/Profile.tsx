@@ -101,6 +101,7 @@ const Profile: React.FC = () => {
     notify_net_reminder: user?.notify_net_reminder ?? false,
     notify_ics309: user?.notify_ics309 ?? false,
     notify_whats_new: user?.notify_whats_new ?? false,
+    theme: user?.theme ?? null,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {

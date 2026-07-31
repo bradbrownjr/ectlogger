@@ -62,3 +62,10 @@ async def test_guest_can_view_field_definitions(client):
     resp = await client.get("/api/settings/fields")
     assert resp.status_code == 200
     assert isinstance(resp.json(), list)
+
+
+@pytest.mark.asyncio
+async def test_guest_can_view_default_theme(client):
+    resp = await client.get("/api/settings/theme")
+    assert resp.status_code == 200
+    assert resp.json() == {"default_theme": "ectlogger-blue"}

@@ -44,38 +44,6 @@ Rule of thumb: Haiku and Sonnet can only maintain this codebase safely once file
 
 *Meaningful new capabilities that don't require architectural changes.*
 
-### Theming
-
-**✨ User-selectable color themes** *(KC1JMH)*  
-**Model:** Sonnet for the ThemeContext plumbing, migration, and endpoints; palette curation is a human/Opus taste task; the swatch picker component is Haiku-sized once the THEMES constant exists. *(Note: the existing `ThemeContext.tsx` handles only the dark/light toggle — this feature extends it, it does not exist yet.)*  
-Allow users to choose a named color theme for the app from a hand-curated palette library. Each theme is a coordinated light/dark pair — selecting it works with the existing dark/light mode toggle automatically. Themes are per-user with a system-wide default that admins can change from the Admin panel.
-
-**Palette source**  
-**[Jam3/nice-color-palettes](https://github.com/Jam3/nice-color-palettes)** (MIT) — 1,000+ five-color palettes curated from ColourLovers. From the full library, a small set of themes will be hand-picked: one light-mode palette and one complementary dark-mode palette per color family (blues, greens, reds, purples, etc.). Attribution to Jam3 / Experience Monks is required in the app's About or Settings UI per the MIT license terms.
-
-**Theme structure**  
-Each named theme bundles a `light` and `dark` variant derived from Jam3 palettes in the same color family. MUI `createTheme()` maps the palette's primary and accent colors to `primary.main` and `secondary.main`; everything else (typography, spacing, component overrides) inherits from the base theme. The dark/light toggle remains a separate user preference that selects which variant of the active theme renders.
-
-**Preference hierarchy**  
-1. **User preference** — stored in `users.theme` (nullable string, e.g. `"ocean"`, `"forest"`). Null means "follow the system default."  
-2. **System default** — stored in `app_settings` (existing key/value config table) under key `default_theme`. Admins can change this from a new Theme tab in the Admin panel. Ships set to `"ectlogger-blue"` (the current `#1976d2` palette) so no visible change for existing deployments.
-
-When a user clears their preference or a new user registers, they automatically inherit whatever the admin has set as the system default. If the admin later changes the system default, only users with `users.theme = null` are affected.
-
-**Admin panel**  
-New "Themes" section in the Admin panel. Admins see the same swatch picker that users see, plus a "Set as system default" button. The current system default is highlighted with a badge. Changing it takes effect immediately for all users on the system default.
-
-**Implementation checklist** *(not started)*  
-- [ ] Curate the theme set: pick light + dark palette pairs per color family from Jam3 library
-- [ ] Define `THEMES` constant (token → `{ name, light: MuiPaletteOptions, dark: MuiPaletteOptions }`)
-- [ ] Add `theme` column to `users` table (migration)
-- [ ] Add `default_theme` key to `app_settings` (seed or migration)
-- [ ] Expose `GET /settings/theme` (public — needed before login for guests) and `PUT /admin/settings/theme` (admin only)
-- [ ] Add `PUT /users/me` support for `theme` field (already exists, just add the field)
-- [ ] Wrap app in a `ThemeContext` that resolves user → system → hardcoded fallback
-- [ ] Theme swatch picker component (reused in both Profile and Admin panel)
-- [ ] Add attribution credit in About / Settings footer
-
 ### Security & Authentication
 
 **✨ MFA / TOTP authenticator support** *(KC1JMH)*  
