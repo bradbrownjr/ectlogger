@@ -8,7 +8,8 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Branding: Color themes** — Pick a color theme in Profile → Settings, each with light and dark variants that follow the existing dark mode toggle. Admins can set the site-wide default everyone else follows, build a fully custom color theme, and upload a custom logo to replace the built-in mark — all from Admin → Branding — useful for a self-hosted instance that wants to look like its own organization.
+* **Branding: Color themes** — Pick a color theme in Profile → Settings, each with light and dark variants that follow the existing dark mode toggle.
+  * Admins can set the site-wide default everyone else follows, build a fully custom color theme, and upload a custom logo to replace the built-in mark — all from Admin → Branding — useful for a self-hosted instance that wants to look like its own organization.
 
 ---
 

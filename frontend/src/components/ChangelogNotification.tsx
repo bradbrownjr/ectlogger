@@ -679,7 +679,7 @@ const ChangelogNotification: React.FC = () => {
                             the list look ragged and inconsistent. Matches the
                             PDF export, which has always used one weight for all
                             items. Do NOT reintroduce a conditional fontWeight. */}
-                        <Typography variant="body2">
+                        <Typography variant="body2" sx={{ whiteSpace: 'pre-line' }}>
                           {item.text}
                           {item.userImpact && (
                             <Chip
