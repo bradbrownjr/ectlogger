@@ -16,6 +16,8 @@ import CheckInMobileList from '../components/netview/CheckInMobileList';
 import CheckInTable from '../components/netview/CheckInTable';
 import NetViewSidePanels from '../components/netview/NetViewSidePanels';
 import NetViewLeftPanels from '../components/netview/NetViewLeftPanels';
+import ResizeHandle from '../components/ResizeHandle';
+import useResizableSplit from '../hooks/useResizableSplit';
 import { STORAGE_KEYS } from '../utils/localStorageKeys';
 import { displayCallsign } from '../utils/userDisplay';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
@@ -234,6 +236,12 @@ const NetView: React.FC = () => {
   // the layout immediately, matching Chat/Activity Log's default-docked
   // behavior, rather than defaulting to floating like a narrower screen.
   const isXlUp = useMediaQuery(theme.breakpoints.up('xl'));
+  // Column widths become resizable as soon as two of the three slots can sit
+  // side by side, which starts at the md breakpoint (left only ever joins
+  // at xl - see scriptDocked etc. below). Below md everything stacks full
+  // width and there's nothing to resize.
+  const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
+  const { containerRef: columnsRef, getWeight: getColumnWeight, startDrag: startColumnDrag } = useResizableSplit(STORAGE_KEYS.COLUMN_SPLIT, 'row');
   const [scriptDockedPref, setScriptDockedPref] = useLocalStorage<boolean>(STORAGE_KEYS.SCRIPT_DOCKED, true);
   const [announcementsDockedPref, setAnnouncementsDockedPref] = useLocalStorage<boolean>(STORAGE_KEYS.ANNOUNCEMENTS_DOCKED, true);
   const [scheduleAnnouncementsDockedPref, setScheduleAnnouncementsDockedPref] = useLocalStorage<boolean>(STORAGE_KEYS.SCHEDULE_ANNOUNCEMENTS_DOCKED, true);
@@ -622,6 +630,19 @@ const NetView: React.FC = () => {
   const centerActive = !checkInListDetached && !checkInsPopout.isOpen;
   const rightActive = !sidePanelsEmpty;
   const columnWidths = getColumnWidths(leftPanelsActive, centerActive, rightActive);
+  // Resizable weight override for each column, seeded from the fixed split
+  // above so a first drag starts from today's proportions. Only takes effect
+  // once columns can sit side by side (md+); below that Grid's own xs={12}
+  // stacking is left alone.
+  const leftColumnStyle = isMdUp && leftPanelsActive
+    ? { flexGrow: getColumnWeight('left', columnWidths.left), flexBasis: 0, maxWidth: 'none', minWidth: 0 } as React.CSSProperties
+    : undefined;
+  const centerColumnStyle = isMdUp && centerActive
+    ? { flexGrow: getColumnWeight('center', columnWidths.center), flexBasis: 0, maxWidth: 'none', minWidth: 0 } as React.CSSProperties
+    : undefined;
+  const rightColumnStyle = isMdUp && rightActive
+    ? { flexGrow: getColumnWeight('right', columnWidths.right), flexBasis: 0, maxWidth: 'none', minWidth: 0 } as React.CSSProperties
+    : undefined;
 
 
   // Live message socket (connection, reconnect, message routing, cleanup).
@@ -1322,12 +1343,13 @@ const NetView: React.FC = () => {
       )}
 
         {(net.status === 'active' || net.status === 'lobby' || net.status === 'closed' || net.status === 'archived') && (
-          <Grid container spacing={0} sx={{ mt: 0.5, flex: { xs: 'none', md: 1 }, minHeight: 0 }}>
+          <Grid container spacing={0} ref={columnsRef} sx={{ mt: 0.5, flex: { xs: 'none', md: 1 }, minHeight: 0 }}>
             <NetViewLeftPanels
               netId={netId}
               net={net}
               canManage={canManage}
               width={columnWidths.left}
+              columnStyle={leftColumnStyle}
               scriptOpen={script.open}
               scriptDocked={scriptDocked}
               scriptMinimized={scriptMinimized}
@@ -1352,9 +1374,15 @@ const NetView: React.FC = () => {
               onScriptSaved={(newScript) => setNet((prev: any) => prev ? { ...prev, script: newScript } : prev)}
               onAnnouncementsSaved={(newAnnouncements) => setNet((prev: any) => prev ? { ...prev, announcements: newAnnouncements } : prev)}
             />
+            {isMdUp && leftPanelsActive && centerActive && (
+              <ResizeHandle direction="row" onDragStart={startColumnDrag('left', 'center', columnWidths.left, columnWidths.center)} />
+            )}
+            {isMdUp && leftPanelsActive && !centerActive && rightActive && (
+              <ResizeHandle direction="row" onDragStart={startColumnDrag('left', 'right', columnWidths.left, columnWidths.right)} />
+            )}
             {/* Check-in list - hide Grid if detached or popped to a real window */}
             {!checkInListDetached && !checkInsPopout.isOpen && (
-            <Grid item xs={12} md={columnWidths.center} sx={{ pr: { md: 0.5 }, display: 'flex', flexDirection: 'column', minHeight: { xs: 'auto', md: 0 }, height: { xs: 'auto', md: '100%' }, mb: { xs: 2, md: 0 } }}>
+            <Grid item xs={12} md={columnWidths.center} data-pane-key="center" style={centerColumnStyle} sx={{ pr: { md: 0.5 }, display: 'flex', flexDirection: 'column', minHeight: { xs: 'auto', md: 0 }, height: { xs: 'auto', md: '100%' }, mb: { xs: 2, md: 0 } }}>
               <FloatingWindow
                 title="Check-in List"
                 isDetached={false}
@@ -2088,7 +2116,10 @@ const NetView: React.FC = () => {
               </FloatingWindow>
             </Grid>
             )}
-            
+            {isMdUp && centerActive && rightActive && (
+              <ResizeHandle direction="row" onDragStart={startColumnDrag('center', 'right', columnWidths.center, columnWidths.right)} />
+            )}
+
             <NetViewSidePanels
               netId={netId}
               net={net}
@@ -2096,6 +2127,7 @@ const NetView: React.FC = () => {
               searchQuery={searchQuery}
               onlineUserIds={onlineUserIds}
               width={columnWidths.right}
+              columnStyle={rightColumnStyle}
               chatDetached={chatDetached}
               activityLogDetached={activityLogDetached}
               chatWindowOpen={chatPopout.isOpen}

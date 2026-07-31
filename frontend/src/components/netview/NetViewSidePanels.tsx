@@ -4,6 +4,9 @@ import FloatingWindow from '../FloatingWindow';
 import Chat from '../Chat';
 import ActivityLog from '../ActivityLog';
 import CheckInMap from '../CheckInMap';
+import ResizeHandle from '../ResizeHandle';
+import useResizableSplit from '../../hooks/useResizableSplit';
+import { STORAGE_KEYS } from '../../utils/localStorageKeys';
 
 // ========== NET VIEW SIDE PANELS (Chat + Activity Log + Map) ==========
 // The right-column Chat/Activity Log/Map stack, docked or detached. All
@@ -28,6 +31,9 @@ interface NetViewSidePanelsProps {
   searchQuery: string;
   onlineUserIds: number[];
   width: number;
+  // Inline style override for resizable column-width mode (md+) - see
+  // NetView.tsx's rightColumnStyle / useResizableSplit.ts.
+  columnStyle?: React.CSSProperties;
   chatDetached: boolean;
   activityLogDetached: boolean;
   chatWindowOpen: boolean;
@@ -68,6 +74,7 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
   searchQuery,
   onlineUserIds,
   width,
+  columnStyle,
   chatDetached,
   activityLogDetached,
   chatWindowOpen,
@@ -103,91 +110,114 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
   const activityLogDocked = !activityLogDetached && !activityLogWindowOpen;
   const showMap = mapOpen && mapDocked;
 
+  const { containerRef, getWeight, startDrag } = useResizableSplit(STORAGE_KEYS.RIGHT_PANELS_SPLIT, 'column');
+
+  // Ordered list of the panes actually rendered this pass, so a
+  // ResizeHandle is only inserted between two panes that are genuinely
+  // adjacent in the DOM (e.g. Chat+Map directly if Activity Log is
+  // detached) and only when both sides are expanded - a minimized
+  // neighbor keeps its fixed '0 0 auto' height and doesn't participate
+  // in the resizable pool.
+  const panes: Array<{ key: string; minimized: boolean; content: React.ReactNode }> = [];
+  if (chatDocked) {
+    panes.push({
+      key: 'chat',
+      minimized: chatMinimized,
+      content: (
+        <FloatingWindow
+          title="Chat"
+          isDetached={false}
+          onAttach={handleAttachChat}
+          defaultWidth={450}
+          defaultHeight={500}
+          minWidth={300}
+          minHeight={250}
+          storageKey="chat"
+        >
+          <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+              <Chat netId={Number(netId)} netStartedAt={net?.started_at} netStatus={net?.status} searchQuery={searchQuery} canManage={canManage} onDetach={handleDetachChat} onPopOut={handlePopOutChat}
+                chatGracePeriodMinutes={net?.chat_grace_period_minutes ?? undefined} closedAt={net?.closed_at}
+                onlineUserIds={onlineUserIds} onProfileClick={(id) => setProfileUserId(id)}
+                minimized={chatMinimized} onMinimize={() => setChatMinimized(true)} onRestore={() => setChatMinimized(false)} />
+            </Box>
+          </Box>
+        </FloatingWindow>
+      ),
+    });
+  }
+  if (activityLogDocked) {
+    panes.push({
+      key: 'activityLog',
+      minimized: activityLogMinimized,
+      content: (
+        <FloatingWindow
+          title="Activity Log"
+          isDetached={false}
+          onAttach={() => {}}
+          defaultWidth={450}
+          defaultHeight={500}
+          minWidth={300}
+          minHeight={250}
+          storageKey="activityLog"
+        >
+          <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <ActivityLog netId={Number(netId)}
+                minimized={activityLogMinimized} onMinimize={() => setActivityLogMinimized(true)} onRestore={() => setActivityLogMinimized(false)} onDetach={() => setActivityLogDetached(true)} onPopOut={handlePopOutActivityLog} />
+          </Box>
+        </FloatingWindow>
+      ),
+    });
+  }
+  if (showMap) {
+    panes.push({
+      key: 'map',
+      minimized: mapMinimized,
+      content: (
+        <CheckInMap
+          embedded
+          open={mapOpen}
+          onClose={onCloseMap}
+          checkIns={filteredCheckIns}
+          netName={net?.name || 'Net'}
+          ncsUserIds={ncsUserIds}
+          loggerUserIds={loggerUserIds}
+          relayUserIds={relayUserIds}
+          onUndock={onUndockMap}
+          onPopOut={handlePopOutMap}
+          minimized={mapMinimized}
+          onMinimize={onMinimizeMap}
+          onRestore={onRestoreMap}
+        />
+      ),
+    });
+  }
+
   return (
     <>
       {/* Right column: Chat + Activity Log + Map stacked vertically. Each
           pane renders only when it's docked/shown, so the others expand
-          into the freed space instead of the whole column disappearing. */}
-      {(chatDocked || activityLogDocked || showMap) && (
-      <Grid item xs={12} md={width} sx={{ pl: { md: 0.5 }, display: 'flex', flexDirection: 'column', gap: 0.5, minHeight: { xs: 300, md: 0 }, height: { xs: 'auto', md: '100%' } }}>
-        {/* Chat panel */}
-        {chatDocked && (
-        <Box sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          flex: chatMinimized ? '0 0 auto' : 1,
-          minHeight: chatMinimized ? 'auto' : 0,
-          overflow: 'hidden',
-        }}>
-          <FloatingWindow
-            title="Chat"
-            isDetached={false}
-            onAttach={handleAttachChat}
-            defaultWidth={450}
-            defaultHeight={500}
-            minWidth={300}
-            minHeight={250}
-            storageKey="chat"
-          >
-            <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-              <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-                <Chat netId={Number(netId)} netStartedAt={net?.started_at} netStatus={net?.status} searchQuery={searchQuery} canManage={canManage} onDetach={handleDetachChat} onPopOut={handlePopOutChat}
-                  chatGracePeriodMinutes={net?.chat_grace_period_minutes ?? undefined} closedAt={net?.closed_at}
-                  onlineUserIds={onlineUserIds} onProfileClick={(id) => setProfileUserId(id)}
-                  minimized={chatMinimized} onMinimize={() => setChatMinimized(true)} onRestore={() => setChatMinimized(false)} />
-              </Box>
+          into the freed space instead of the whole column disappearing.
+          Drag handles between expanded panes let the split be resized;
+          see useResizableSplit.ts. */}
+      {panes.length > 0 && (
+      <Grid item xs={12} md={width} ref={containerRef} data-pane-key="right" style={columnStyle} sx={{ pl: { md: 0.5 }, display: 'flex', flexDirection: 'column', gap: 0.5, minHeight: { xs: 300, md: 0 }, height: { xs: 'auto', md: '100%' } }}>
+        {panes.map((pane, idx) => (
+          <React.Fragment key={pane.key}>
+            {idx > 0 && !panes[idx - 1].minimized && !pane.minimized && (
+              <ResizeHandle direction="column" onDragStart={startDrag(panes[idx - 1].key, pane.key)} />
+            )}
+            <Box data-pane-key={pane.key} sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              flex: pane.minimized ? '0 0 auto' : `${getWeight(pane.key)} 1 0px`,
+              minHeight: pane.minimized ? 'auto' : 0,
+              overflow: 'hidden',
+            }}>
+              {pane.content}
             </Box>
-          </FloatingWindow>
-        </Box>
-        )}
-
-        {/* Activity Log panel */}
-        {activityLogDocked && (
-        <Box sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          flex: activityLogMinimized ? '0 0 auto' : 1,
-          minHeight: activityLogMinimized ? 'auto' : 0,
-          overflow: 'hidden',
-        }}>
-          <FloatingWindow
-            title="Activity Log"
-            isDetached={false}
-            onAttach={() => {}}
-            defaultWidth={450}
-            defaultHeight={500}
-            minWidth={300}
-            minHeight={250}
-            storageKey="activityLog"
-          >
-            <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-              <ActivityLog netId={Number(netId)}
-                  minimized={activityLogMinimized} onMinimize={() => setActivityLogMinimized(true)} onRestore={() => setActivityLogMinimized(false)} onDetach={() => setActivityLogDetached(true)} onPopOut={handlePopOutActivityLog} />
-            </Box>
-          </FloatingWindow>
-        </Box>
-        )}
-
-        {/* Map panel — bottom of the right column, below Activity Log */}
-        {showMap && (
-        <Box sx={{ display: 'flex', flexDirection: 'column', flex: mapMinimized ? '0 0 auto' : 1, minHeight: mapMinimized ? 'auto' : 0, overflow: 'hidden' }}>
-          <CheckInMap
-            embedded
-            open={mapOpen}
-            onClose={onCloseMap}
-            checkIns={filteredCheckIns}
-            netName={net?.name || 'Net'}
-            ncsUserIds={ncsUserIds}
-            loggerUserIds={loggerUserIds}
-            relayUserIds={relayUserIds}
-            onUndock={onUndockMap}
-            onPopOut={handlePopOutMap}
-            minimized={mapMinimized}
-            onMinimize={onMinimizeMap}
-            onRestore={onRestoreMap}
-          />
-        </Box>
-        )}
+          </React.Fragment>
+        ))}
       </Grid>
       )}
 

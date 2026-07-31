@@ -32,6 +32,12 @@ export const STORAGE_KEYS = {
   ANNOUNCEMENTS_MINIMIZED: 'dockedPanel_announcements_minimized',
   SCHEDULE_ANNOUNCEMENTS_MINIMIZED: 'dockedPanel_scheduleAnnouncements_minimized',
   MAP_MINIMIZED: 'dockedPanel_map_minimized',
+  // Resizable split weights (flex-grow ratios) - see useResizableSplit.ts.
+  // Left/right panel stacks are vertical splits; the column split is
+  // horizontal (left/center/right widths), xl-breakpoint only.
+  LEFT_PANELS_SPLIT: 'netview_leftPanels_split',
+  RIGHT_PANELS_SPLIT: 'netview_rightPanels_split',
+  COLUMN_SPLIT: 'netview_columns_split',
 } as const;
 
 // Dynamic key builders
