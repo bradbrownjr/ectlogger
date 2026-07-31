@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { authApi } from '../services/api';
+import { authApi, userApi } from '../services/api';
 
 interface User {
   id: number;
@@ -24,6 +24,8 @@ interface User {
   notify_ics309?: boolean;
   notify_whats_new?: boolean;
   timezone?: string;
+  dashboard_sort_order?: 'status' | 'alpha';
+  schedule_sort_order?: 'alpha' | 'date';
   role: string;
 }
 
@@ -68,6 +70,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         role: response.data.role?.toLowerCase() || 'user'
       };
       setActualUser(userData);
+
+      // Keep the account's timezone in sync with the browser so server-generated
+      // output (net log emails, CSV/ICS-309 exports, What's New digest timing)
+      // can display times in the user's actual zone instead of raw UTC.
+      try {
+        const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        if (browserTz && browserTz !== userData.timezone) {
+          await userApi.updateProfile({ timezone: browserTz });
+        }
+      } catch {
+        // Non-critical: worst case the account keeps its previous/unset timezone.
+      }
     } catch (error: any) {
       console.error('[AUTH] Failed to fetch user:', error.response?.status, error.response?.data);
       // Only clear the session on an explicit 401 (invalid/expired token).

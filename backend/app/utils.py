@@ -2,9 +2,10 @@
 
 import hashlib
 import urllib.request
-from datetime import datetime
+from datetime import datetime, timezone as dt_timezone
 from pathlib import Path
 from typing import Optional
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 # Single source of truth for where uploaded avatar files live on disk.
 # routers/users.py imports this rather than redefining it.
@@ -57,6 +58,34 @@ def get_avatar_url(email: Optional[str], custom_url: Optional[str] = None) -> Op
         pass
 
     return None
+
+
+def resolve_display_tz(user) -> Optional[ZoneInfo]:
+    """Return the IANA zone a user's times should be displayed in for server-generated
+    output (net log emails, CSV/ICS-309 exports), or None to mean "leave as UTC".
+
+    None covers both real cases: the user has ``prefer_utc`` set, or they haven't
+    got a ``timezone`` on file yet (the common case today, since nothing populates
+    it automatically). Falling back to UTC rather than guessing a region keeps
+    output correct for everyone until the frontend starts reporting a real zone.
+    """
+    if user is None or getattr(user, 'prefer_utc', False):
+        return None
+    tz_name = getattr(user, 'timezone', None)
+    if not tz_name:
+        return None
+    try:
+        return ZoneInfo(tz_name)
+    except ZoneInfoNotFoundError:
+        return None
+
+
+def to_display_tz(dt: Optional[datetime], tz: Optional[ZoneInfo]) -> Optional[datetime]:
+    """Convert a UTC datetime for display in ``tz``. No-op when ``dt`` or ``tz`` is None."""
+    if dt is None or tz is None:
+        return dt
+    aware = dt if dt.tzinfo else dt.replace(tzinfo=dt_timezone.utc)
+    return aware.astimezone(tz).replace(tzinfo=None)
 
 
 def format_time_for_net(

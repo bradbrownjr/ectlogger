@@ -67,6 +67,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { formatDateTime } from '../utils/dateUtils';
 import NetCard, { Net, getStatusColor } from '../components/dashboard/NetCard';
 import { useFavorites } from '../hooks/useFavorites';
+import useAccountSortOrder from '../hooks/useAccountSortOrder';
 
 const Dashboard: React.FC = () => {
   const [nets, setNets] = useState<Net[]>([]);
@@ -86,9 +87,8 @@ const Dashboard: React.FC = () => {
   const [archiveSortDirection, setArchiveSortDirection] = useState<'asc' | 'desc'>('desc');
   const [archiveShowAttended, setArchiveShowAttended] = useState(false);
   const [archiveShowRan, setArchiveShowRan] = useState(false);
-  // View mode, sort order, and filter state - persist view/sort preference
+  // View mode and filter state - persist view preference
   const [viewMode, setViewMode] = useLocalStorage<'card' | 'list'>(STORAGE_KEYS.DASHBOARD_VIEW_MODE, 'card');
-  const [netSortOrder, setNetSortOrder] = useLocalStorage<'status' | 'alpha'>(STORAGE_KEYS.DASHBOARD_SORT_ORDER, 'status');
   const [showFilter, setShowFilter] = useState(false);
   const [netFilter, setNetFilter] = useState('');
   // Email subscribers dialog state
@@ -101,6 +101,10 @@ const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, isAuthenticated, simulateRegularUser } = useAuth();
+  // Sort order persists on the account so it follows the user across devices
+  const [netSortOrder, setNetSortOrder] = useAccountSortOrder<'status' | 'alpha'>(
+    user?.dashboard_sort_order, 'dashboard_sort_order', 'status', STORAGE_KEYS.DASHBOARD_SORT_ORDER
+  );
   // In admin simulation mode, use the non-admin permission flag so buttons reflect what a real user would see
   const canManage = (net: Net) => simulateRegularUser ? (net.is_owner_or_ncs ?? false) : (net.can_manage ?? false);
   const theme = useTheme();

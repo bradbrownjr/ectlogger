@@ -91,6 +91,8 @@ class User(Base):
     schedule_age_bypass = Column(Boolean, default=False)  # Admin-granted early access to schedule creation
     walkthrough_seen = Column(Boolean, default=False)  # Set true after user dismisses the onboarding walkthrough
     avatar_url = Column(String(500), nullable=True)  # Custom profile image URL; overrides Gravatar when set
+    dashboard_sort_order = Column(String(16), nullable=False, default='status', server_default='status')  # 'status' (active first, then next up) or 'alpha'
+    schedule_sort_order = Column(String(16), nullable=False, default='date', server_default='date')  # 'date' (next occurrence first) or 'alpha'
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

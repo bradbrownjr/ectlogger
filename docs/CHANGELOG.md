@@ -18,9 +18,13 @@ All notable changes to ECTLogger are documented here.
 
 * **Net View: Check-in action buttons stay visible while scrolling** — On a wide net or a narrow phone screen, the check-in list's action buttons (step away, raise hand, delete) now stay pinned to the edge as you scroll sideways through the other columns, so you don't have to scroll back to reach them.
 
+* **Nets & Schedule: Sort choice now follows your account** — Switching Active Nets or Schedule to alphabetical (or back) used to reset when you opened the app on a different device or browser. It's now saved to your account, and Schedule now defaults to next-occurrence order for anyone who hasn't picked a preference yet.
+
 ## Bug Fixes
 
 * **Admin, Profile, Statistics: Swiping a wide table no longer flips tabs** — Dragging sideways through a table that scrolls horizontally (like the Users list on a phone) was being read as a swipe to the next tab, so a slow reload interrupted your scroll. Scrolling that table now stays put.
+
+* **Net Log: Emailed logs and CSV exports now match your timezone** — The net-close email and the CSV/ICS-309 exports always showed check-in and start/close times in UTC, even for users with a local timezone. They now display in your device's timezone once it's been recorded on your account.
 
 ---
 

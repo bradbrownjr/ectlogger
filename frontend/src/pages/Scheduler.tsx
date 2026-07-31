@@ -65,15 +65,15 @@ import { useAuth } from '../contexts/AuthContext';
 import NCSStaffModal from '../components/NCSStaffModal';
 import ScheduleCard, { Schedule, computeNextOccurrence, formatSchedule } from '../components/scheduler/ScheduleCard';
 import { useFavorites } from '../hooks/useFavorites';
+import useAccountSortOrder from '../hooks/useAccountSortOrder';
 
 const Scheduler: React.FC = () => {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [rotationModalOpen, setRotationModalOpen] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null);
-  // View mode and sort order persist across sessions
+  // View mode persists across sessions
   const [viewMode, setViewMode] = useLocalStorage<'card' | 'list'>(STORAGE_KEYS.SCHEDULER_VIEW_MODE, 'card');
-  const [sortOrder, setSortOrder] = useLocalStorage<'alpha' | 'date'>(STORAGE_KEYS.SCHEDULER_SORT_ORDER, 'alpha');
   const [showFilter, setShowFilter] = useState(false);
   const [scheduleFilter, setScheduleFilter] = useState('');
   const [schedulePage, setSchedulePage] = useState(1);
@@ -93,6 +93,10 @@ const Scheduler: React.FC = () => {
   const { user, isAuthenticated } = useAuth();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  // Sort order persists on the account so it follows the user across devices
+  const [sortOrder, setSortOrder] = useAccountSortOrder<'alpha' | 'date'>(
+    user?.schedule_sort_order, 'schedule_sort_order', 'date', STORAGE_KEYS.SCHEDULER_SORT_ORDER
+  );
 
   // Favorites — stored in localStorage per user so each person's pins survive a page reload
   const [favorites, toggleFavorite] = useFavorites(user?.id);

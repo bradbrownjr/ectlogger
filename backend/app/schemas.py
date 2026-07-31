@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
-from typing import Optional, List
+from typing import Optional, List, Literal
 from datetime import datetime
 from app.models import UserRole, NetStatus, StationStatus
 import re
@@ -82,6 +82,8 @@ class UserUpdate(BaseModel):
     location: Optional[str] = Field(None, max_length=200)
     prefer_utc: Optional[bool] = None
     walkthrough_seen: Optional[bool] = None
+    dashboard_sort_order: Optional[Literal['status', 'alpha']] = None
+    schedule_sort_order: Optional[Literal['alpha', 'date']] = None
 
     @model_validator(mode='before')
     @classmethod
@@ -136,6 +138,8 @@ class UserResponse(UserBase):
     location: Optional[str] = None
     prefer_utc: bool = False
     walkthrough_seen: bool = False
+    dashboard_sort_order: str = 'status'
+    schedule_sort_order: str = 'date'
     previous_callsigns: List[str] = Field(default_factory=list)
     last_active: Optional[datetime] = None
     schedule_age_bypass: bool = False

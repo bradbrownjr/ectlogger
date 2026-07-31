@@ -23,7 +23,7 @@ from app.services.csv_import import (
     decode_csv_bytes,
     process_csv_rows,
 )
-from app.utils import display_callsign, format_time_for_net
+from app.utils import display_callsign, format_time_for_net, resolve_display_tz, to_display_tz
 
 router = APIRouter()
 
@@ -52,7 +52,7 @@ async def export_net_csv(
     
     # Build frequency lookup map
     freq_map = {f.id: f for f in net.frequencies}
-    
+
     # Helper to format frequency
     def format_freq(freq):
         if freq.frequency:
@@ -60,14 +60,20 @@ async def export_net_csv(
         elif freq.network:
             return f"{freq.network} TG{freq.talkgroup or ''}"
         return ""
-    
+
+    # Display times in the requesting user's timezone preference (falls back to
+    # UTC if they prefer UTC or haven't got a timezone on file yet)
+    tz = resolve_display_tz(current_user)
+    display_started_at = to_display_tz(net.started_at, tz)
+    display_closed_at = to_display_tz(net.closed_at, tz)
+
     # Create CSV in memory
     output = io.StringIO()
     writer = csv.writer(output)
-    
+
     # Build headers - add topic/poll columns if enabled
     headers = [
-        "Check-in Time", "Callsign", "Name", "Location", 
+        "Check-in Time", "Callsign", "Name", "Location",
         "Available Frequencies", "Spotter #", "Weather Observation",
         "Power Src", "Power", "Feedback", "Notes", "Relayed By", "Status"
     ]
@@ -76,7 +82,7 @@ async def export_net_csv(
     if net.poll_enabled:
         headers.append("Poll Response")
     writer.writerow(headers)
-    
+
     # Write check-ins
     for check_in in sorted(net.check_ins, key=lambda x: x.checked_in_at):
         # Get available frequencies list
@@ -89,9 +95,9 @@ async def export_net_csv(
                         available_freqs.append(format_freq(freq_map[fid]))
             except (json.JSONDecodeError, TypeError):
                 pass
-        
+
         row = [
-            format_time_for_net(check_in.checked_in_at, net.started_at, net.closed_at),
+            format_time_for_net(to_display_tz(check_in.checked_in_at, tz), display_started_at, display_closed_at),
             check_in.callsign,
             check_in.name,
             check_in.location,
@@ -113,7 +119,7 @@ async def export_net_csv(
     
     # Prepare response
     output.seek(0)
-    filename = f"{net.name.replace(' ', '_')}_{net.started_at.strftime('%Y%m%d') if net.started_at else 'draft'}.csv"
+    filename = f"{net.name.replace(' ', '_')}_{display_started_at.strftime('%Y%m%d') if display_started_at else 'draft'}.csv"
     
     return StreamingResponse(
         iter([output.getvalue()]),
@@ -276,10 +282,16 @@ async def export_net_ics309(
     ncs_callsign = ncs_role_row[0] if ncs_role_row else (display_callsign(net.owner) if net.owner else "Unknown")
     ncs_name = ncs_role_row[1] if ncs_role_row else (net.owner.name or display_callsign(net.owner) if net.owner else "Unknown")
     
+    # Display times in the requesting user's timezone preference (falls back to
+    # UTC if they prefer UTC or haven't got a timezone on file yet)
+    tz = resolve_display_tz(current_user)
+    display_started_at = to_display_tz(net.started_at, tz)
+    display_closed_at = to_display_tz(net.closed_at, tz)
+
     # Format times
-    started_at = net.started_at.strftime("%Y-%m-%d %H:%M:%S") if net.started_at else "N/A"
-    closed_at = net.closed_at.strftime("%Y-%m-%d %H:%M:%S") if net.closed_at else "N/A"
-    
+    started_at = display_started_at.strftime("%Y-%m-%d %H:%M:%S") if display_started_at else "N/A"
+    closed_at = display_closed_at.strftime("%Y-%m-%d %H:%M:%S") if display_closed_at else "N/A"
+
     # Get chat messages
     from app.models import ChatMessage
     chat_result = await db.execute(
@@ -289,28 +301,28 @@ async def export_net_ics309(
         .order_by(ChatMessage.created_at.asc())
     )
     chat_messages = chat_result.scalars().all()
-    
+
     # Build log entries combining check-ins and chat
     log_entries = []
-    
+
     # Add check-ins
     for check_in in sorted(net.check_ins, key=lambda x: x.checked_in_at):
         location_info = f" from {check_in.location}" if check_in.location else ""
         weather_info = f" | WX: {check_in.weather_observation}" if check_in.weather_observation else ""
-        
+
         log_entries.append({
-            'time': format_time_for_net(check_in.checked_in_at, net.started_at, net.closed_at),
+            'time': format_time_for_net(to_display_tz(check_in.checked_in_at, tz), display_started_at, display_closed_at),
             'from_station': check_in.callsign,
             'to_station': 'NET',
             'message': f"Check-in{location_info}{weather_info}"
         })
-    
+
     # Add chat messages (non-system)
     for msg in chat_messages:
         callsign = msg.user.callsign if msg.user and msg.user.callsign else ('System' if msg.is_system else 'Unknown')
         if callsign != 'System':
             log_entries.append({
-                'time': format_time_for_net(msg.created_at, net.started_at, net.closed_at),
+                'time': format_time_for_net(to_display_tz(msg.created_at, tz), display_started_at, display_closed_at),
                 'from_station': callsign,
                 'to_station': 'NET',
                 'message': msg.message
@@ -347,7 +359,7 @@ async def export_net_ics309(
     
     # Prepare response
     output.seek(0)
-    date_str = net.started_at.strftime('%Y%m%d') if net.started_at else 'draft'
+    date_str = display_started_at.strftime('%Y%m%d') if display_started_at else 'draft'
     filename = f"ICS309_{net.name.replace(' ', '_')}_{date_str}.csv"
     
     return StreamingResponse(

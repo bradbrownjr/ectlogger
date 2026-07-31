@@ -31,7 +31,7 @@ from app.schemas import (
     NetUpdate,
     public_display_name,
 )
-from app.utils import display_callsign, format_time_for_net
+from app.utils import display_callsign, format_time_for_net, resolve_display_tz, to_display_tz
 
 router = APIRouter()
 
@@ -799,37 +799,6 @@ async def close_net(
             return f"{freq.network} TG{freq.talkgroup or ''}"
         return ""
     
-    # Prepare check-ins data for email
-    check_ins_data = []
-    for check_in in sorted(net.check_ins, key=lambda x: x.checked_in_at):
-        # Get available frequencies list
-        available_freqs = []
-        if check_in.available_frequencies:
-            try:
-                freq_ids = json.loads(check_in.available_frequencies)
-                for fid in freq_ids:
-                    if fid in freq_map:
-                        available_freqs.append(format_freq(freq_map[fid]))
-            except (json.JSONDecodeError, TypeError):
-                pass
-        
-        check_ins_data.append({
-            'time': format_time_for_net(check_in.checked_in_at, net.started_at, net.closed_at),
-            'callsign': check_in.callsign,
-            'name': check_in.name,
-            'location': check_in.location,
-            'frequencies': ', '.join(available_freqs) if available_freqs else '',
-            'skywarn_number': check_in.skywarn_number or '',
-            'weather_observation': check_in.weather_observation or '',
-            'power_source': check_in.power_source or '',
-            'power': check_in.power or '',
-            'feedback': check_in.feedback or '',
-            'notes': check_in.notes or '',
-            'topic_response': check_in.topic_response or '',
-            'poll_response': check_in.poll_response or '',
-            'status': check_in.status.value if check_in.status else ''
-        })
-    
     # Get chat messages
     from app.models import ChatMessage
     result = await db.execute(
@@ -838,13 +807,68 @@ async def close_net(
         .where(ChatMessage.net_id == net_id)
         .order_by(ChatMessage.created_at.asc())
     )
-    chat_messages_data = []
-    for msg in result.scalars().all():
-        chat_messages_data.append({
-            'timestamp': format_time_for_net(msg.created_at, net.started_at, net.closed_at),
-            'callsign': msg.user.callsign if msg.user and msg.user.callsign else ('System' if msg.is_system else 'Unknown'),
-            'message': msg.message
-        })
+    chat_messages = result.scalars().all()
+
+    # Check-ins/chat/timestamps are formatted per-recipient timezone (see
+    # resolve_display_tz), so build them lazily per unique tz below rather than
+    # once here — two recipients can have different display preferences.
+    sorted_check_ins = sorted(net.check_ins, key=lambda x: x.checked_in_at)
+
+    def build_log_payload(tz):
+        started_at = to_display_tz(net.started_at, tz)
+        closed_at = to_display_tz(net.closed_at, tz)
+
+        check_ins_data = []
+        for check_in in sorted_check_ins:
+            # Get available frequencies list
+            available_freqs = []
+            if check_in.available_frequencies:
+                try:
+                    freq_ids = json.loads(check_in.available_frequencies)
+                    for fid in freq_ids:
+                        if fid in freq_map:
+                            available_freqs.append(format_freq(freq_map[fid]))
+                except (json.JSONDecodeError, TypeError):
+                    pass
+
+            check_ins_data.append({
+                'time': format_time_for_net(to_display_tz(check_in.checked_in_at, tz), started_at, closed_at),
+                'callsign': check_in.callsign,
+                'name': check_in.name,
+                'location': check_in.location,
+                'frequencies': ', '.join(available_freqs) if available_freqs else '',
+                'skywarn_number': check_in.skywarn_number or '',
+                'weather_observation': check_in.weather_observation or '',
+                'power_source': check_in.power_source or '',
+                'power': check_in.power or '',
+                'feedback': check_in.feedback or '',
+                'notes': check_in.notes or '',
+                'topic_response': check_in.topic_response or '',
+                'poll_response': check_in.poll_response or '',
+                'status': check_in.status.value if check_in.status else ''
+            })
+
+        chat_messages_data = []
+        for msg in chat_messages:
+            chat_messages_data.append({
+                'timestamp': format_time_for_net(to_display_tz(msg.created_at, tz), started_at, closed_at),
+                'callsign': msg.user.callsign if msg.user and msg.user.callsign else ('System' if msg.is_system else 'Unknown'),
+                'message': msg.message
+            })
+
+        started_at_str = started_at.strftime("%Y-%m-%d %H:%M:%S") if started_at else "N/A"
+        closed_at_str = closed_at.strftime("%Y-%m-%d %H:%M:%S") if closed_at else "N/A"
+        return check_ins_data, chat_messages_data, started_at_str, closed_at_str
+
+    # Cache built payloads by tz key so recipients sharing a display preference
+    # (the common case: everyone on UTC/no-timezone-set) don't redo the work.
+    log_payload_cache = {}
+
+    def log_payload_for(tz):
+        cache_key = tz.key if tz else None
+        if cache_key not in log_payload_cache:
+            log_payload_cache[cache_key] = build_log_payload(tz)
+        return log_payload_cache[cache_key]
     
     # Build list of email recipients (owner + subscribers who want close notifications)
     # Store as list of (email, user) tuples to check preferences
@@ -894,13 +918,17 @@ async def close_net(
     for email, recipient in recipients_to_notify:
         try:
             email_service = EmailService()
-            
+
             # Use ICS-309 if net has it enabled OR user prefers it
             use_ics309 = net.ics309_enabled or getattr(recipient, 'notify_ics309', False)
-            
+
             # Get unsubscribe token for compliance
             unsub_token = getattr(recipient, 'unsubscribe_token', None)
-            
+
+            check_ins_data, chat_messages_data, started_at_str, closed_at_str = log_payload_for(
+                resolve_display_tz(recipient)
+            )
+
             if use_ics309:
                 await email_service.send_ics309_log(
                     email=email,
@@ -909,8 +937,8 @@ async def close_net(
                     ncs_name=ncs_name,
                     ncs_callsign=ncs_callsign,
                     check_ins=check_ins_data,
-                    started_at=net.started_at.strftime("%Y-%m-%d %H:%M:%S") if net.started_at else "N/A",
-                    closed_at=net.closed_at.strftime("%Y-%m-%d %H:%M:%S") if net.closed_at else "N/A",
+                    started_at=started_at_str,
+                    closed_at=closed_at_str,
                     chat_messages=chat_messages_data if chat_messages_data else None,
                     frequencies=freq_strings,
                     unsubscribe_token=unsub_token
@@ -922,8 +950,8 @@ async def close_net(
                     net_description=net.description or "",
                     ncs_name=ncs_name,
                     check_ins=check_ins_data,
-                    started_at=net.started_at.strftime("%Y-%m-%d %H:%M:%S") if net.started_at else "N/A",
-                    closed_at=net.closed_at.strftime("%Y-%m-%d %H:%M:%S") if net.closed_at else "N/A",
+                    started_at=started_at_str,
+                    closed_at=closed_at_str,
                     chat_messages=chat_messages_data if chat_messages_data else None,
                     field_config=json.loads(net.field_config) if isinstance(net.field_config, str) else net.field_config,
                     topic_of_week_enabled=net.topic_of_week_enabled,
