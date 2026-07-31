@@ -5,7 +5,6 @@ import {
   Box,
   Typography,
   IconButton,
-  useTheme,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import MinimizeIcon from '@mui/icons-material/Minimize';
@@ -42,8 +41,6 @@ const FloatingWindow: React.FC<FloatingWindowProps> = ({
   minHeight = 200,
   storageKey,
 }) => {
-  const theme = useTheme();
-  const isDarkMode = theme.palette.mode === 'dark';
   const [isMinimized, setIsMinimized] = useState(false);
   const [position, setPosition] = useState<WindowPosition>(() => {
     // Try to load saved position from localStorage
@@ -130,7 +127,7 @@ const FloatingWindow: React.FC<FloatingWindowProps> = ({
           flexDirection: 'column',
           overflow: 'hidden',
           border: 2,
-          borderColor: isDarkMode ? '#1565c0' : 'primary.main',
+          borderColor: 'primary.main',
           borderRadius: 1,
         }}
       >
@@ -143,8 +140,8 @@ const FloatingWindow: React.FC<FloatingWindowProps> = ({
             justifyContent: 'space-between',
             px: 1.5,
             py: 0.5,
-            backgroundColor: isDarkMode ? '#1565c0' : 'primary.main',
-            color: '#ffffff',
+            backgroundColor: 'primary.main',
+            color: 'primary.contrastText',
             cursor: 'move',
             userSelect: 'none',
             flexShrink: 0,

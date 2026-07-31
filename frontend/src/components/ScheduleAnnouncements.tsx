@@ -4,7 +4,6 @@ import {
   IconButton,
   Box,
   Typography,
-  useTheme,
   TextField,
   Button,
   Tooltip,
@@ -53,8 +52,6 @@ const ScheduleAnnouncements: React.FC<ScheduleAnnouncementsProps> = ({
   netName,
   canEdit = false,
 }) => {
-  const theme = useTheme();
-  const isDarkMode = theme.palette.mode === 'dark';
   const [minimized, setMinimized] = useState(false);
   const [announcements, setAnnouncements] = useState('');
   const [editing, setEditing] = useState(false);
@@ -210,12 +207,15 @@ const ScheduleAnnouncements: React.FC<ScheduleAnnouncementsProps> = ({
     >
       <Paper
         elevation={8}
-        sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: isDarkMode ? '#1e1e1e' : '#ffffff', overflow: 'hidden' }}
+        sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: 'background.paper', overflow: 'hidden' }}
       >
         {/* ========== TITLE BAR ========== */}
+        {/* Uses primary.contrastText (not a hardcoded white) since some named
+            themes' primary is light enough that MUI itself picks dark text
+            for contrast — see DESIGN.md "Multi-theme compliance". */}
         <Box
           className="drag-handle"
-          sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1, bgcolor: isDarkMode ? '#1565c0' : 'primary.main', color: '#ffffff', cursor: 'move', flexShrink: 0 }}
+          sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1, bgcolor: 'primary.main', color: 'primary.contrastText', cursor: 'move', flexShrink: 0 }}
         >
           <Typography variant="subtitle1" fontWeight="bold">Schedule Announcements</Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -285,12 +285,12 @@ const ScheduleAnnouncements: React.FC<ScheduleAnnouncementsProps> = ({
           ) : (
             <Box
               sx={{
-                flex: 1, p: 2, overflowY: 'auto', backgroundColor: isDarkMode ? '#1e1e1e' : '#ffffff',
-                '& h1, & h2, & h3': { mt: 2, mb: 1, color: isDarkMode ? '#90caf9' : '#1976d2' },
+                flex: 1, p: 2, overflowY: 'auto', backgroundColor: 'background.paper',
+                '& h1, & h2, & h3': { mt: 2, mb: 1, color: 'primary.main' },
                 '& h1:first-of-type, & h2:first-of-type, & h3:first-of-type': { mt: 0 },
                 '& ul, & ol': { pl: 3, my: 1 },
                 '& li': { my: 0.5 },
-                '& hr': { border: 'none', borderTop: `1px solid ${isDarkMode ? '#444' : '#e0e0e0'}`, my: 2 },
+                '& hr': { border: 'none', borderTop: '1px solid', borderColor: 'divider', my: 2 },
                 '& p': { my: 1 },
                 '& strong': { fontWeight: 'bold' },
                 '& em': { fontStyle: 'italic' },

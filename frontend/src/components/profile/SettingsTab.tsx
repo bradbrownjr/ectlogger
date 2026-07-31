@@ -11,6 +11,7 @@ import {
   Divider,
 } from '@mui/material';
 import { useAuth } from '../../contexts/AuthContext';
+import { useThemeMode } from '../../contexts/ThemeContext';
 import api from '../../services/api';
 import type { ProfileFormData } from './profileFormTypes';
 import ThemeSwatchPicker from '../ThemeSwatchPicker';
@@ -39,6 +40,7 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
   success,
 }) => {
   const { user, login } = useAuth();
+  const { mode, toggleColorMode } = useThemeMode();
   const navigate = useNavigate();
 
   return (
@@ -47,6 +49,31 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
       {success && <Alert severity="success" sx={{ mb: 2 }}>Settings updated successfully!</Alert>}
 
       <Box component="form" onSubmit={handleSubmit}>
+        <Typography variant="h6" gutterBottom>
+          Appearance
+        </Typography>
+
+        <Box sx={{ mb: 2 }}>
+          <FormControlLabel
+            control={<Switch checked={mode === 'dark'} onChange={toggleColorMode} />}
+            label="Dark mode"
+          />
+          <Typography variant="body2" color="text.secondary" sx={{ ml: 4, mb: 2 }}>
+            Switch between light and dark display. Applies immediately — also available from the navbar icon.
+          </Typography>
+
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Choose a color theme for your account, or follow whatever the system default is set to.
+          </Typography>
+          <ThemeSwatchPicker
+            value={formData.theme}
+            onSelect={(key) => setFormData({ ...formData, theme: key })}
+            allowSystemDefault
+          />
+        </Box>
+
+        <Divider sx={{ my: 3 }} />
+
         <Box sx={{ mt: 1, mb: 2 }}>
           <FormControlLabel
             control={
@@ -118,22 +145,6 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
             </Box>
           )}
         </Box>
-
-        <Divider sx={{ my: 3 }} />
-
-        <Typography variant="h6" gutterBottom>
-          Color Theme
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Choose a color theme for your account, or follow whatever the system default is set to.
-        </Typography>
-        <ThemeSwatchPicker
-          value={formData.theme}
-          onSelect={(key) => setFormData({ ...formData, theme: key })}
-          allowSystemDefault
-        />
-
-        <Divider sx={{ my: 3 }} />
 
         <Typography variant="h6" gutterBottom>
           Email Notifications

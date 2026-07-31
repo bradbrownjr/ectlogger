@@ -435,8 +435,8 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
               alignItems: 'center',
               justifyContent: 'space-between',
               p: 1,
-              bgcolor: isDarkMode ? '#1565c0' : 'primary.main',
-              color: '#ffffff',
+              bgcolor: 'primary.main',
+              color: 'primary.contrastText',
               cursor: 'default',
             }}
           >
@@ -651,8 +651,8 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            bgcolor: isDarkMode ? '#1565c0' : 'primary.main',
-            color: '#ffffff',
+            bgcolor: 'primary.main',
+            color: 'primary.contrastText',
             cursor: 'move',
             userSelect: 'none',
             flexShrink: 0,

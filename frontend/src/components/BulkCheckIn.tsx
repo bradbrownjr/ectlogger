@@ -9,7 +9,6 @@ import {
   Alert,
   Snackbar,
   CircularProgress,
-  useTheme,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import MinimizeIcon from '@mui/icons-material/Minimize';
@@ -57,8 +56,6 @@ const STATUS_SHORTCUTS: Record<string, string> = {
 };
 
 const BulkCheckIn: React.FC<BulkCheckInProps> = ({ open, onClose, netId, onCheckInsAdded, fieldConfig }) => {
-  const theme = useTheme();
-  const isDarkMode = theme.palette.mode === 'dark';
   const [minimized, setMinimized] = useState(false);
   const [bulkText, setBulkText] = useState('');
   const [processing, setProcessing] = useState(false);
@@ -297,8 +294,8 @@ const BulkCheckIn: React.FC<BulkCheckInProps> = ({ open, onClose, netId, onCheck
               justifyContent: 'space-between',
               px: 2,
               py: 1,
-              bgcolor: isDarkMode ? '#1565c0' : 'primary.main',
-              color: '#ffffff',
+              bgcolor: 'primary.main',
+              color: 'primary.contrastText',
               cursor: 'move',
               flexShrink: 0,
             }}

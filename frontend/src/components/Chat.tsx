@@ -19,6 +19,7 @@ import {
   Dialog,
   DialogContent,
   CircularProgress,
+  useTheme,
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
@@ -52,6 +53,7 @@ const CHAT_IMAGE_PREFIX = '__CHAT_IMAGE__';
 
 const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery, canManage, chatGracePeriodMinutes, closedAt, onlineUserIds = [], onProfileClick, onNewMessage, onDetach, minimized, onMinimize, onRestore }) => {
   const { user } = useAuth();
+  const theme = useTheme();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
@@ -249,7 +251,7 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
             href={part}
             target="_blank"
             rel="noopener noreferrer"
-            style={{ color: '#1976d2', textDecoration: 'underline' }}
+            style={{ color: theme.palette.primary.main, textDecoration: 'underline' }}
           >
             {part}
           </a>

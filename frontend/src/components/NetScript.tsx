@@ -4,7 +4,6 @@ import {
   IconButton,
   Box,
   Typography,
-  useTheme,
   TextField,
   Button,
   Tooltip,
@@ -59,8 +58,6 @@ const NetScript: React.FC<NetScriptProps> = ({
   canEdit = false,
   onSaved,
 }) => {
-  const theme = useTheme();
-  const isDarkMode = theme.palette.mode === 'dark';
   const [minimized, setMinimized] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState(script);
@@ -212,7 +209,7 @@ const NetScript: React.FC<NetScriptProps> = ({
         {/* ========== TITLE BAR ========== */}
         <Box
           className="drag-handle"
-          sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1, bgcolor: isDarkMode ? '#1565c0' : 'primary.main', color: '#ffffff', cursor: 'move', flexShrink: 0 }}
+          sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1, bgcolor: 'primary.main', color: 'primary.contrastText', cursor: 'move', flexShrink: 0 }}
         >
           <Typography variant="subtitle1" fontWeight="bold">Net Script</Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>

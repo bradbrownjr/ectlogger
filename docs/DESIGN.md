@@ -166,20 +166,20 @@ sx={{
 ```
 {% endraw %}
 
-Saturated brand/semantic hues (MUI-style blue/orange/purple/green/red/teal
-used for icon colors — e.g. `#1976d2`, `#ed6c02`, `#4caf50`) generally do
-**not** need a second dark-mode variant; they already carry enough contrast
-on a dark surface. It's specifically **neutral grays, near-black, and
-near-white** chrome — backgrounds, borders, dividers, label text, hover
-states — that break in the opposite theme and need explicit `isDarkMode`
-handling.
+Saturated **semantic** hues — MUI's fixed warning/success/error/info palette
+(e.g. `#ed6c02`, `#4caf50`) used to signal meaning ("this is destructive",
+"this succeeded") — generally do **not** need a second dark-mode variant;
+they already carry enough contrast on a dark surface. It's specifically
+**neutral grays, near-black, and near-white** chrome — backgrounds, borders,
+dividers, label text, hover states — that break in the opposite theme and
+need explicit `isDarkMode` handling.
 
 ### Reference implementation
 
 `NetViewHeader.tsx`'s command bar (see "Net View Toolbar" below) — the
-strip's background, top/bottom border, group divider, hover state, label
-text, and neutral gray icons are all gated on `isDarkMode`; brand-hued icons
-are left unconditional.
+strip's background, top/bottom border, group divider, hover state, and
+neutral gray icons are all gated on `isDarkMode`; semantic-hued icons are
+left unconditional.
 
 ### Before shipping
 
@@ -187,6 +187,34 @@ Toggle dark mode and check the new UI in both modes before considering a
 change done — do not assume a literal color "probably" works in the other
 theme just because it looked right in whichever mode you happened to be
 testing in.
+
+### Multi-theme compliance (named color themes)
+
+The app also ships multiple named color themes (Profile → Settings; system
+default in Admin → Themes — see `docs/DEVELOPMENT.md` "Theming"), not just
+one fixed blue/pink palette with a dark variant. **A saturated hue meant to
+read as "the app's brand color" is a different case from a semantic hue
+above** — it must use the `primary.main` / `secondary.main` tokens (or
+`theme.palette.primary.main` via `useTheme()`) instead of a literal hex, so
+it follows whichever theme the viewer has selected. A hardcoded `#1976d2`
+icon or link color is not a neutral choice anymore — it's specifically
+*ectlogger-blue's* primary, and looks like a bug (a stray blue accent that
+doesn't match anything else on screen) to a user running Forest, Ocean,
+Sunset, or Berry. This is why the earlier example above no longer lists
+`#1976d2` as a hardcode-safe brand hue — it used to be, before named themes
+existed.
+
+**Exception — printed, exported, and emailed HTML.** Net scripts
+(`NetScript.tsx`), announcement printouts (`Announcements.tsx`,
+`ScheduleAnnouncements.tsx`), and outbound email templates render a
+standalone HTML string outside the app's React tree and MUI
+`ThemeProvider` entirely — there is no theme to read at render time, and
+arguably shouldn't be one: a printed net script or a digest email is a
+fixed document, not a live view, so it intentionally keeps ECTLogger's
+brand blue (`#1976d2`) regardless of the recipient's personal in-app theme
+choice, the same way a PDF letterhead doesn't change per reader. Only the
+in-app, on-screen rendering of that same content (e.g. the announcement
+panel's on-screen heading color) needs to follow the active theme.
 
 ---
 

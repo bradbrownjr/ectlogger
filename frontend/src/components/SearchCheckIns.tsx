@@ -7,7 +7,6 @@ import {
   TextField,
   InputAdornment,
   Chip,
-  useTheme,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import MinimizeIcon from '@mui/icons-material/Minimize';
@@ -31,8 +30,6 @@ const SearchCheckIns: React.FC<SearchCheckInsProps> = ({
   onSearchChange,
   matchCount 
 }) => {
-  const theme = useTheme();
-  const isDarkMode = theme.palette.mode === 'dark';
   const [minimized, setMinimized] = useState(false);
 
   // Window position and size state
@@ -96,8 +93,8 @@ const SearchCheckIns: React.FC<SearchCheckInsProps> = ({
             justifyContent: 'space-between',
             px: 2,
             py: 1,
-            bgcolor: isDarkMode ? '#1565c0' : 'primary.main',
-            color: '#ffffff',
+            bgcolor: 'primary.main',
+            color: 'primary.contrastText',
             cursor: 'move',
             flexShrink: 0,
           }}

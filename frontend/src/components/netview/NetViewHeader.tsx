@@ -14,6 +14,7 @@ import {
   CircularProgress,
   useMediaQuery,
   useTheme,
+  alpha,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -86,18 +87,25 @@ const shimmerYellow = keyframes`
 // (design_handoff_netview_toolbar, option 3a): borderless "application
 // toolbar" buttons flush against each other so labelled controls read as
 // one calm strip instead of a wall of separate cards.
-const ACTIVE_TONE_COLORS: Record<'primary' | 'warning' | 'success', { border: string; background: string; hoverBackground: string }> = {
-  primary: { border: '#90caf9', background: 'rgba(25,118,210,0.12)', hoverBackground: 'rgba(25,118,210,0.24)' },
+// 'primary' follows the active named color theme (theme.palette.primary.main)
+// so the "active" tone always matches whichever theme the viewer selected;
+// 'warning'/'success' are fixed semantic hues, unrelated to brand identity,
+// so they stay literal. See DESIGN.md "Multi-theme compliance".
+const getActiveToneColors = (primaryMain: string): Record<'primary' | 'warning' | 'success', { border: string; background: string; hoverBackground: string }> => ({
+  primary: { border: primaryMain, background: alpha(primaryMain, 0.12), hoverBackground: alpha(primaryMain, 0.24) },
   warning: { border: '#ed6c02', background: 'rgba(237,108,2,0.12)', hoverBackground: 'rgba(237,108,2,0.24)' },
   success: { border: '#2e7d32', background: 'rgba(46,125,50,0.14)', hoverBackground: 'rgba(46,125,50,0.28)' },
-};
+});
 
 const flushBtnSx = (
   comfortable: boolean,
   iconOnly: boolean,
   isDarkMode: boolean,
+  primaryMain: string,
   opts: { emphasis?: boolean; active?: boolean; activeTone?: 'primary' | 'warning' | 'success' } = {}
-) => ({
+) => {
+  const activeToneColors = getActiveToneColors(primaryMain);
+  return {
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -108,8 +116,8 @@ const flushBtnSx = (
   padding: iconOnly ? '0 6px' : '0 7px',
   borderRadius: '3px',
   border: '1px solid',
-  borderColor: opts.active ? ACTIVE_TONE_COLORS[opts.activeTone ?? 'primary'].border : 'transparent',
-  backgroundColor: opts.active ? ACTIVE_TONE_COLORS[opts.activeTone ?? 'primary'].background : 'transparent',
+  borderColor: opts.active ? activeToneColors[opts.activeTone ?? 'primary'].border : 'transparent',
+  backgroundColor: opts.active ? activeToneColors[opts.activeTone ?? 'primary'].background : 'transparent',
   color: opts.emphasis ? (isDarkMode ? '#f28b82' : '#c62828') : (isDarkMode ? '#e8eaed' : '#25282c'),
   fontWeight: opts.emphasis ? 500 : 400,
   fontSize: comfortable ? 13 : 12,
@@ -119,8 +127,8 @@ const flushBtnSx = (
   whiteSpace: 'nowrap' as const,
   '&:hover': opts.active
     ? {
-        backgroundColor: ACTIVE_TONE_COLORS[opts.activeTone ?? 'primary'].hoverBackground,
-        borderColor: ACTIVE_TONE_COLORS[opts.activeTone ?? 'primary'].border,
+        backgroundColor: activeToneColors[opts.activeTone ?? 'primary'].hoverBackground,
+        borderColor: activeToneColors[opts.activeTone ?? 'primary'].border,
       }
     : {
         backgroundColor: isDarkMode ? 'rgba(255,255,255,0.08)' : '#e6e9ec',
@@ -129,7 +137,8 @@ const flushBtnSx = (
   '&.Mui-disabled': {
     opacity: 0.4,
   },
-});
+  };
+};
 
 // Collapse priority: 4 = never loses its label and never overflows (the
 // single primary status CTA for whatever state the net is in right now).
@@ -354,20 +363,20 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
     {
       key: 'bulk', group: 'info', priority: 3,
       visible: isActiveOrLobby && checkInsCount > 0 && !!canManageCheckIns,
-      Icon: FastForwardIcon, color: '#1976d2', label: 'Bulk add',
+      Icon: FastForwardIcon, color: theme.palette.primary.main, label: 'Bulk add',
       tooltip: 'Bulk add multiple check-ins', onClick: () => bulkCheckIn.onOpen(),
     },
     {
       key: 'search', group: 'info', priority: 3,
       visible: checkInsCount > 0,
-      Icon: SearchIcon, color: '#1976d2', label: 'Search',
+      Icon: SearchIcon, color: theme.palette.primary.main, label: 'Search',
       tooltip: 'Search check-ins', onClick: () => search.onOpen(),
       active: !!searchQuery, activeTone: 'primary',
     },
     {
       key: 'map', group: 'info', priority: 3,
       visible: checkInsCount > 0,
-      Icon: MapIcon, color: '#1976d2', label: 'Map',
+      Icon: MapIcon, color: theme.palette.primary.main, label: 'Map',
       tooltip: 'View check-in locations on map', onClick: map.onOpen,
     },
     {
@@ -409,7 +418,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
     {
       key: 'website', group: 'info', priority: 1,
       visible: !!net.info_url,
-      Icon: LanguageIcon, color: '#1976d2', label: 'Website',
+      Icon: LanguageIcon, color: theme.palette.primary.main, label: 'Website',
       tooltip: 'Net/Club info', onClick: () => window.open(net.info_url, '_blank'),
     },
     {
@@ -419,7 +428,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
       // Edit net while that's available (active/lobby/draft/scheduled).
       key: 'net-info', group: 'info', priority: 1,
       visible: canManage && !isActiveOrLobby,
-      Icon: InfoIcon, color: '#1976d2', label: 'Net info',
+      Icon: InfoIcon, color: theme.palette.primary.main, label: 'Net info',
       tooltip: 'View net info', onClick: () => navigate(`/nets/${netId}/info`),
     },
     {
@@ -494,7 +503,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
     {
       key: 'ncs-role', group: 'management', priority: 3,
       visible: isAuthenticated && isActiveOrLobby && !!userActiveCheckIn && isAssignedNCS,
-      Icon: WorkspacePremiumIcon, color: '#1976d2', label: isNCS ? 'Role: NCS' : 'Role: Standard',
+      Icon: WorkspacePremiumIcon, color: theme.palette.primary.main, label: isNCS ? 'Role: NCS' : 'Role: Standard',
       tooltip: isNCS ? 'Acting as NCS — click to step down to Standard' : 'Acting as Standard — click to step up to NCS',
       onClick: onToggleNCSRole,
       active: isNCS, activeTone: 'primary',
@@ -509,7 +518,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
       key: 'check-in', group: 'management', priority: 4,
       visible: isAuthenticated && isActiveOrLobby && !userActiveCheckIn
         && !!(net.self_checkin_enabled !== false || canManageCheckIns),
-      Icon: LoginIcon, color: '#1976d2', label: 'Check in',
+      Icon: LoginIcon, color: theme.palette.primary.main, label: 'Check in',
       tooltip: 'Check into net', onClick: onOpenCheckIn,
       active: true, activeTone: 'success',
       extraSx: highlightCheckIn ? { animation: `${pulseAnimationGreen} 1s infinite` } : undefined,
@@ -638,7 +647,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
             onClick={item.onClick}
             disabled={item.disabled}
             sx={{
-              ...flushBtnSx(comfortable, !showLabel, isDarkMode, { emphasis: item.emphasis, active: item.active, activeTone: item.activeTone }),
+              ...flushBtnSx(comfortable, !showLabel, isDarkMode, theme.palette.primary.main, { emphasis: item.emphasis, active: item.active, activeTone: item.activeTone }),
               ...item.extraSx,
             }}
           >
@@ -668,7 +677,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
         <Box sx={{ width: '1px', height: 20, backgroundColor: isDarkMode ? 'rgba(255,255,255,0.16)' : '#dcdfe3', mx: 0.5 }} />
       </span>
       <span ref={el => { measureRefs.current['__more_icon'] = el; }}>
-        <Button variant="text" sx={flushBtnSx(comfortable, true, isDarkMode)}>
+        <Button variant="text" sx={flushBtnSx(comfortable, true, isDarkMode, theme.palette.primary.main)}>
           <MoreHorizIcon sx={{ fontSize: 18, color: neutralIconColor }} />
         </Button>
       </span>
@@ -938,7 +947,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
               variant="text"
               disableElevation
               onClick={(e) => setMoreMenuAnchor(e.currentTarget)}
-              sx={flushBtnSx(comfortable, true, isDarkMode)}
+              sx={flushBtnSx(comfortable, true, isDarkMode, theme.palette.primary.main)}
             >
               <MoreHorizIcon sx={{ fontSize: 18, color: neutralIconColor }} />
             </Button>
