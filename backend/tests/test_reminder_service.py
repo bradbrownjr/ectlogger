@@ -182,6 +182,46 @@ async def test_staff_reminder_includes_duty_ncs_name(db, owner):
     assert ncs_row[1] == owner.name
 
 
+@pytest.mark.parametrize(
+    "hours_until, reminder_hours, expected",
+    [
+        # Net #44 (2026-07-12): reminder fired 30m19s before start, matching
+        # the original bug report ("1 hour" email arrived with only 30 min
+        # notice). That's still inside the catch-up floor (a legitimate late
+        # send beats no send), so it's accepted - the auto-create timing skew
+        # that caused it was a separate bug, already fixed in f866587.
+        (30.32 / 60, 1.0, True),
+        # Real post-fix sends (2026-07-28, 2026-07-30 nets) fired ~83 and ~89
+        # minutes before start under the old symmetric ±30min window. The old
+        # `abs(hours_until - reminder_hours) <= 0.5` accepted both; the new
+        # one-sided window must reject both as too early.
+        (83 / 60, 1.0, False),
+        (89 / 60, 1.0, False),
+        # Exactly on the target and just inside the catch-up floor: accepted.
+        (1.0, 1.0, True),
+        (0.5, 1.0, True),
+        # Missed by more than the 30-minute catch-up floor: rejected as stale.
+        (0.49, 1.0, False),
+        (20 / 60, 1.0, False),
+        # A hair after the target (next tick hasn't fired yet, still pending
+        # by nominal reminder_hours but within a minute): accepted.
+        (1.0 - 1 / 60, 1.0, True),
+        # 24-hour tier uses the same helper with a different target.
+        (24.0, 24.0, True),
+        (23.5, 24.0, True),
+        (23.49, 24.0, False),
+        (24.5, 24.0, False),
+    ],
+)
+def test_reminder_window_is_one_sided(hours_until, reminder_hours, expected):
+    """The reminder window must never accept a time earlier than reminder_hours
+    before start - only late, within the catch-up floor. This is the fix for
+    the roadmap item confirming real "1 hour" reminders were firing ~90
+    minutes before start under the old symmetric ±30-minute window.
+    """
+    assert NCSReminderService._in_reminder_window(hours_until, reminder_hours) is expected
+
+
 @pytest.mark.asyncio
 async def test_staff_reminder_handles_missing_ncs(db, owner):
     """Staff reminder accepts None for ncs_name/ncs_callsign when no NetRole exists.

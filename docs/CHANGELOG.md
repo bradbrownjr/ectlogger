@@ -26,6 +26,8 @@ All notable changes to ECTLogger are documented here.
 
 * **Net Log: Emailed logs and CSV exports now honor your timezone setting** — The net-close email and the CSV/ICS-309 exports always showed check-in and start/close times in raw UTC, ignoring your Settings preference. They now follow that setting correctly: your local timezone if you're set to local (once your device has reported it to your account), or UTC if you've chosen "Display times in UTC."
 
+* **Reminders: The 1-hour reminder now actually arrives about 1 hour ahead** — It could go out anywhere from 90 minutes to 30 minutes before a net started, even though the subject line always said "starts in 1 hour." It now consistently arrives within a couple minutes of that mark, for NCS, staff, and subscriber reminders alike.
+
 ---
 
 # July 29, 2026

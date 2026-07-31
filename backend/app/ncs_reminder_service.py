@@ -36,9 +36,9 @@ class NCSReminderService:
     # docstring. Was 15 until 2026-07-29: auto-lobby's smallest offset is also
     # 15 minutes, so a poll tick could land just before a net's open-lobby
     # window and the next one just before its official start, opening the
-    # lobby with almost no lead time. The ±30-minute tolerances used elsewhere
-    # in this file (reminder timing, auto-create) have plenty of headroom at
-    # this tighter interval.
+    # lobby with almost no lead time. The 30-minute catch-up tolerances used
+    # elsewhere in this file (reminder timing, auto-create) have plenty of
+    # headroom at this tighter interval.
     CHECK_INTERVAL_MINUTES = 1
 
     # All reminder_type values that represent the same "~1 hour before the net"
@@ -48,7 +48,23 @@ class NCSReminderService:
     # reminder runs first and logs "1h", so an on-duty NCS who is also staff or a
     # subscriber gets only the NCS-styled email, never a second "starting soon".
     ONE_HOUR_REMINDER_TYPES = ("1h", "staff_1h", "subscriber_1h")
-    
+
+    @staticmethod
+    def _in_reminder_window(hours_until: float, reminder_hours: float, catch_up_hours: float = 0.5) -> bool:
+        """True from the target lead time down to catch_up_hours before it.
+
+        One-sided by design: the upper bound is reminder_hours itself, so this
+        goes true on the first poll tick at or after "reminder_hours before
+        start" and stays true for catch_up_hours after that. catch_up_hours only
+        exists to survive a missed tick or brief downtime — it never lets the
+        reminder fire earlier than what its subject line claims. A symmetric
+        ±catch_up_hours window (the previous behavior) fires on the *first*
+        tick anywhere in that range, which in practice meant "1 hour before"
+        emails consistently went out ~90 minutes before start; verified against
+        real production sends before this was narrowed.
+        """
+        return reminder_hours - catch_up_hours <= hours_until <= reminder_hours
+
     def __init__(self):
         self.running = False
         self._task = None
@@ -418,7 +434,7 @@ class NCSReminderService:
                     continue
 
                 hours_until = (next_utc - now).total_seconds() / 3600
-                if not (0.5 <= hours_until <= 1.5):
+                if not self._in_reminder_window(hours_until, 1.0):
                     continue
 
                 # Find the net instance (should exist from _check_and_auto_create_nets)
@@ -576,8 +592,7 @@ class NCSReminderService:
 
                     # Check if we should send a reminder
                     for reminder_hours in self.REMINDER_HOURS:
-                        # Check if we're within the reminder window (±30 minutes)
-                        if abs(hours_until - reminder_hours) <= 0.5:
+                        if self._in_reminder_window(hours_until, reminder_hours):
                             reminder_type = f"{reminder_hours}h"
                             already_sent = await self._check_reminder_sent(
                                 db, template.id, entry.user_id,
@@ -793,8 +808,7 @@ class NCSReminderService:
                 time_until = next_date - now
                 hours_until = time_until.total_seconds() / 3600
                 
-                # Only send reminders ~1 hour before (within ±30 minutes window)
-                if not (0.5 <= hours_until <= 1.5):
+                if not self._in_reminder_window(hours_until, 1.0):
                     continue
                 
                 # Get subscribers who want reminders
