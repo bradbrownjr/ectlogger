@@ -72,7 +72,7 @@ def _build_settings_response(settings: AppSettings) -> AppSettingsResponse:
         schedule_min_account_age_days=settings.schedule_min_account_age_days if settings.schedule_min_account_age_days is not None else 7,
         schedule_min_net_participations=settings.schedule_min_net_participations if settings.schedule_min_net_participations is not None else 1,
         schedule_max_per_day=settings.schedule_max_per_day if settings.schedule_max_per_day is not None else 5,
-        session_lifetime_days=settings.session_lifetime_days if settings.session_lifetime_days is not None else 30,
+        session_lifetime_days=settings.session_lifetime_days if settings.session_lifetime_days is not None else 90,
         session_rolling_renewal=settings.session_rolling_renewal if settings.session_rolling_renewal is not None else True,
         maintenance_banner_enabled=settings.maintenance_banner_enabled or False,
         maintenance_banner_message=settings.maintenance_banner_message,

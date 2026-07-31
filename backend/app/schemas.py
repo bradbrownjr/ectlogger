@@ -879,7 +879,7 @@ class AppSettingsResponse(BaseModel):
     schedule_min_net_participations: int = 1
     schedule_max_per_day: int = 5
     # Session settings
-    session_lifetime_days: int = 30
+    session_lifetime_days: int = 90
     session_rolling_renewal: bool = True
     # Maintenance banner
     maintenance_banner_enabled: bool = False

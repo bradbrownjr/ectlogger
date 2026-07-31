@@ -73,7 +73,7 @@ const AdminSecurityTab: React.FC<Props> = ({ showSnackbar }) => {
   const [scheduleSettingsSaving, setScheduleSettingsSaving] = useState(false);
 
   const [sessionSettings, setSessionSettings] = useState({
-    session_lifetime_days: 30,
+    session_lifetime_days: 90,
     session_rolling_renewal: true,
   });
   const [sessionSettingsSaving, setSessionSettingsSaving] = useState(false);
@@ -100,7 +100,7 @@ const AdminSecurityTab: React.FC<Props> = ({ showSnackbar }) => {
         schedule_max_per_day: response.data.schedule_max_per_day ?? 5,
       });
       setSessionSettings({
-        session_lifetime_days: response.data.session_lifetime_days ?? 30,
+        session_lifetime_days: response.data.session_lifetime_days ?? 90,
         session_rolling_renewal: response.data.session_rolling_renewal ?? true,
       });
     } catch (error) {
@@ -471,7 +471,7 @@ const AdminSecurityTab: React.FC<Props> = ({ showSnackbar }) => {
                     session_lifetime_days: Math.max(1, parseInt(e.target.value) || 1),
                   })}
                   inputProps={{ min: 1, max: 365 }}
-                  helperText="How long a login session lasts before the user must re-authenticate. Default: 30 days."
+                  helperText="How long a login session lasts before the user must re-authenticate. Default: 90 days."
                   fullWidth
                 />
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

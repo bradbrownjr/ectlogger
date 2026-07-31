@@ -561,7 +561,7 @@ class AppSettings(Base):
     schedule_max_per_day = Column(Integer, default=5)  # Maximum schedules per day
 
     # Session / authentication settings
-    session_lifetime_days = Column(Integer, default=30)  # JWT lifetime in days
+    session_lifetime_days = Column(Integer, default=90)  # JWT lifetime in days
     session_rolling_renewal = Column(Boolean, default=True)  # Auto-refresh when < 7 days remain
 
     # Maintenance banner (in-app, DB-backed)

@@ -20,6 +20,8 @@ All notable changes to ECTLogger are documented here.
 
 * **Nets & Schedule: Sort choice now follows your account** — Switching Active Nets or Schedule to alphabetical (or back) used to reset when you opened the app on a different device or browser. It's now saved to your account, and Schedule now defaults to next-occurrence order for anyone who hasn't picked a preference yet.
 
+* **Login: Sessions now last 90 days by default** — Login sessions were resetting to 30 days by default, which meant infrequent operators sometimes had to request a new magic link. The login page also now points out that bookmarking the emailed magic link (valid 30 days and reusable) gets you back in instantly even if your browser clears cookies or you switch devices.
+
 ## Bug Fixes
 
 * **Admin, Profile, Statistics: Swiping a wide table no longer flips tabs** — Dragging sideways through a table that scrolls horizontally (like the Users list on a phone) was being read as a swipe to the next tab, so a slow reload interrupted your scroll. Scrolling that table now stays put.

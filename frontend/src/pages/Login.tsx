@@ -89,6 +89,10 @@ const Login: React.FC = () => {
             <Typography variant="caption" display="block" sx={{ mt: 1 }} color="text.secondary" align="center">
               Magic links are valid for 30 days, keeping you connected during extended emergency events.
             </Typography>
+
+            <Typography variant="caption" display="block" sx={{ mt: 1 }} color="text.secondary" align="center">
+              Getting logged out sooner than expected? Bookmark the link from your email instead of retyping your address here &mdash; it stays valid for the full 30 days and signs you back in instantly, even if your browser clears cookies or you switch devices.
+            </Typography>
           </Box>
         </Paper>
       </Box>
