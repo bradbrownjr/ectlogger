@@ -17,6 +17,7 @@ import {
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import GroupIcon from '@mui/icons-material/Group';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import PanToolIcon from '@mui/icons-material/PanTool';
 import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutline';
 import PictureInPictureAltIcon from '@mui/icons-material/PictureInPictureAlt';
@@ -70,6 +71,7 @@ interface CheckInTableProps {
   getNcsIcon: (checkIn: any) => string;
   setHideDuplicates: (v: boolean) => void;
   handleDetachCheckInList: () => void;
+  handlePopOutCheckInList?: () => void;
   handleStartInlineEdit: (checkIn: any, focusField?: string) => void;
   handleInlineFieldChange: (field: string, value: string) => void;
   handleInlineKeyDown: (e: React.KeyboardEvent) => void;
@@ -113,6 +115,7 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
   getNcsIcon,
   setHideDuplicates,
   handleDetachCheckInList,
+  handlePopOutCheckInList,
   handleStartInlineEdit,
   handleInlineFieldChange,
   handleInlineKeyDown,
@@ -235,14 +238,28 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                             <GroupIcon sx={{ fontSize: 14 }} />
                           </IconButton>
                           {!detached && (
-                            <IconButton
-                              size="small"
-                              onClick={handleDetachCheckInList}
-                              title="Detach to floating window"
-                              sx={{ p: 0.25 }}
-                            >
-                              <PictureInPictureAltIcon sx={{ fontSize: 14 }} />
-                            </IconButton>
+                            // Float + pop-out stacked vertically (not side by side) so this
+                            // sticky trailing column doesn't get any wider than one icon's worth.
+                            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                              <IconButton
+                                size="small"
+                                onClick={handleDetachCheckInList}
+                                title="Detach to floating window"
+                                sx={{ p: 0, lineHeight: 0 }}
+                              >
+                                <PictureInPictureAltIcon sx={{ fontSize: 12 }} />
+                              </IconButton>
+                              {handlePopOutCheckInList && (
+                                <IconButton
+                                  size="small"
+                                  onClick={handlePopOutCheckInList}
+                                  title="Open in new window"
+                                  sx={{ p: 0, lineHeight: 0 }}
+                                >
+                                  <OpenInNewIcon sx={{ fontSize: 12 }} />
+                                </IconButton>
+                              )}
+                            </Box>
                           )}
                         </Box>
                       </TableCell>

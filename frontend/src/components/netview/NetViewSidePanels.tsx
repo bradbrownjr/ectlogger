@@ -37,6 +37,8 @@ interface NetViewSidePanelsProps {
   handleDetachActivityLog: () => void;
   handlePopOutChat: () => void;
   handlePopOutActivityLog: () => void;
+  handleFloatToWindowChat: () => void;
+  handleFloatToWindowActivityLog: () => void;
 }
 
 const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
@@ -62,6 +64,8 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
   handleDetachActivityLog,
   handlePopOutChat,
   handlePopOutActivityLog,
+  handleFloatToWindowChat,
+  handleFloatToWindowActivityLog,
 }) => {
   const chatDocked = !chatDetached && !chatWindowOpen;
   const activityLogDocked = !activityLogDetached && !activityLogWindowOpen;
@@ -140,6 +144,7 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
           isDetached={true}
           onDetach={handleDetachChat}
           onAttach={handleAttachChat}
+          onPopOut={handleFloatToWindowChat}
           defaultWidth={450}
           defaultHeight={500}
           minWidth={300}
@@ -159,6 +164,7 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
           isDetached={true}
           onDetach={handleDetachActivityLog}
           onAttach={handleAttachActivityLog}
+          onPopOut={handleFloatToWindowActivityLog}
           defaultWidth={450}
           defaultHeight={500}
           minWidth={300}

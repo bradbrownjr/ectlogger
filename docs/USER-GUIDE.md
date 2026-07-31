@@ -453,10 +453,11 @@ This eliminates the need for a separate edit dialog for quick corrections.
 
 ### Detachable Windows
 
-For multi-monitor setups or larger screens, you can pop out components into separate floating windows:
-
-- **Check-in List** — Click the pop-out icon (↗) in the check-in table header
-- **Chat** and **Activity Log** — Click the picture-in-picture icon in the panel header
+For multi-monitor setups or larger screens, you can pop out the Check-In
+list, Chat, or Activity Log into a movable panel inside the page — click the
+picture-in-picture icon in that panel's header (on the check-in list, it's
+stacked above the "open in new window" icon in the same corner, to keep the
+table's action column from getting any wider).
 
 Detached windows can be:
 - Resized by dragging edges or corners
@@ -466,14 +467,21 @@ Detached windows can be:
 
 Your detach preferences are saved and restored when you return to the net.
 
-### Opening Chat and Activity Log in a Separate Browser Window
+### Running a Net Across Multiple Monitors
 
-If you're running a net across two monitors, Chat and Activity Log can also
-open in a real, separate browser window instead of a panel inside the page —
-click the "open in new window" icon (next to the picture-in-picture icon)
-in either panel's header. The new window signs in automatically and stays
-live for the net, so you can drag it to your second monitor and leave it
-there. Closing the window brings the panel back into the main net view.
+Check-Ins, Chat, and Activity Log can each open in a real, separate browser
+window instead of a panel inside the page — click the "open in new window"
+icon in that panel's header (docked or floating). This is built for
+multi-monitor NCS stations: dedicate a full screen to the check-in table,
+another to chat, another to the activity feed. Each window signs in
+automatically, keeps its own live connection to the net, and remembers its
+size and position the next time you open it. Closing a window brings that
+panel back into the main net view automatically.
+
+If you've already floated a panel into the in-page movable window and decide
+you'd rather have it in its own real window, there's no need to dock it back
+first — the floating panel's title bar has its own "open in new window"
+icon that sends it straight there in one click.
 
 ### Multi-NCS Operations
 

@@ -527,16 +527,26 @@ const NetView: React.FC = () => {
   const handleDetachActivityLog = () => setActivityLogDetached(true);
   const handleAttachActivityLog = () => setActivityLogDetached(false);
 
-  // Pop Chat / Activity Log out into a real, separate browser window (for
-  // dual-monitor setups) — distinct from the in-page floating overlay above.
+  // Pop Chat / Activity Log / Check-In List out into a real, separate
+  // browser window (for dual-monitor setups) — distinct from the in-page
+  // floating overlay above.
   const chatPopout = usePoppedOutWindow(`/nets/${netId}/pane/chat`, `ectlogger-chat-${netId}`, 'chat');
   const activityLogPopout = usePoppedOutWindow(`/nets/${netId}/pane/activity-log`, `ectlogger-activity-log-${netId}`, 'activityLog');
+  const checkInsPopout = usePoppedOutWindow(`/nets/${netId}/pane/check-ins`, `ectlogger-check-ins-${netId}`, 'checkInList');
   const handlePopOutChat = () => {
     if (!chatPopout.open()) setToastMessage('Popup blocked — please allow popups for this site.');
   };
   const handlePopOutActivityLog = () => {
     if (!activityLogPopout.open()) setToastMessage('Popup blocked — please allow popups for this site.');
   };
+  const handlePopOutCheckIns = () => {
+    if (!checkInsPopout.open()) setToastMessage('Popup blocked — please allow popups for this site.');
+  };
+  // Lets a pane jump directly from the in-page floating overlay to a real
+  // window in one click, instead of re-docking first and then popping out.
+  const handleFloatToWindowChat = () => { handleAttachChat(); handlePopOutChat(); };
+  const handleFloatToWindowActivityLog = () => { handleAttachActivityLog(); handlePopOutActivityLog(); };
+  const handleFloatToWindowCheckIns = () => { handleAttachCheckInList(); handlePopOutCheckIns(); };
   // True once neither Chat nor Activity Log has anything docked (both
   // floated and/or popped to a real window) — the side column disappears
   // entirely in that case, so the check-in list should expand to fill it.
@@ -1245,6 +1255,7 @@ const NetView: React.FC = () => {
                 isDetached={false}
                 onDetach={handleDetachCheckInList}
                 onAttach={handleAttachCheckInList}
+                onPopOut={handlePopOutCheckIns}
                 defaultWidth={900}
                 defaultHeight={600}
                 minWidth={400}
@@ -1281,6 +1292,7 @@ const NetView: React.FC = () => {
                 getNcsIcon={getNcsIcon}
                 setHideDuplicates={setHideDuplicates}
                 handleDetachCheckInList={handleDetachCheckInList}
+                handlePopOutCheckInList={handlePopOutCheckIns}
                 handleStartInlineEdit={handleStartInlineEdit}
                 handleInlineFieldChange={handleInlineFieldChange}
                 handleInlineKeyDown={handleInlineKeyDown}
@@ -1995,6 +2007,8 @@ const NetView: React.FC = () => {
               handleDetachActivityLog={handleDetachActivityLog}
               handlePopOutChat={handlePopOutChat}
               handlePopOutActivityLog={handlePopOutActivityLog}
+              handleFloatToWindowChat={handleFloatToWindowChat}
+              handleFloatToWindowActivityLog={handleFloatToWindowActivityLog}
             />
           </Grid>
         )}
@@ -2006,6 +2020,7 @@ const NetView: React.FC = () => {
             isDetached={true}
             onDetach={handleDetachCheckInList}
             onAttach={handleAttachCheckInList}
+            onPopOut={handleFloatToWindowCheckIns}
             defaultWidth={1100}
             defaultHeight={600}
             minWidth={600}
@@ -2045,6 +2060,7 @@ const NetView: React.FC = () => {
                 getNcsIcon={getNcsIcon}
                 setHideDuplicates={setHideDuplicates}
                 handleDetachCheckInList={handleDetachCheckInList}
+                handlePopOutCheckInList={handlePopOutCheckIns}
                 handleStartInlineEdit={handleStartInlineEdit}
                 handleInlineFieldChange={handleInlineFieldChange}
                 handleInlineKeyDown={handleInlineKeyDown}

@@ -9,6 +9,7 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import MinimizeIcon from '@mui/icons-material/Minimize';
 import CropSquareIcon from '@mui/icons-material/CropSquare';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 
 interface FloatingWindowProps {
   title: string;
@@ -16,6 +17,9 @@ interface FloatingWindowProps {
   isDetached: boolean;
   onDetach?: () => void;
   onAttach: () => void;
+  // Optional: lets a floated pane jump straight to a real popped-out window
+  // without re-docking first. Only rendered when supplied.
+  onPopOut?: () => void;
   defaultWidth?: number;
   defaultHeight?: number;
   minWidth?: number;
@@ -35,6 +39,7 @@ const FloatingWindow: React.FC<FloatingWindowProps> = ({
   children,
   isDetached,
   onAttach,
+  onPopOut,
   defaultWidth = 500,
   defaultHeight = 400,
   minWidth = 300,
@@ -159,6 +164,16 @@ const FloatingWindow: React.FC<FloatingWindowProps> = ({
             >
               {isMinimized ? <CropSquareIcon fontSize="small" /> : <MinimizeIcon fontSize="small" />}
             </IconButton>
+            {onPopOut && (
+              <IconButton
+                size="small"
+                onClick={onPopOut}
+                title="Open in new window"
+                sx={{ color: 'inherit', p: 0.25 }}
+              >
+                <OpenInNewIcon fontSize="small" />
+              </IconButton>
+            )}
             <IconButton
               size="small"
               onClick={onAttach}
