@@ -532,7 +532,7 @@ const NetView: React.FC = () => {
   // floating overlay above.
   const chatPopout = usePoppedOutWindow(`/nets/${netId}/pane/chat`, `ectlogger-chat-${netId}`, 'chat');
   const activityLogPopout = usePoppedOutWindow(`/nets/${netId}/pane/activity-log`, `ectlogger-activity-log-${netId}`, 'activityLog');
-  const checkInsPopout = usePoppedOutWindow(`/nets/${netId}/pane/check-ins`, `ectlogger-check-ins-${netId}`, 'checkInList', 1100, 700);
+  const checkInsPopout = usePoppedOutWindow(`/nets/${netId}/pane/check-ins`, `ectlogger-check-ins-${netId}`, 'checkInList', 1100, 700, 900, 500);
   const handlePopOutChat = () => {
     if (!chatPopout.open()) setToastMessage('Popup blocked — please allow popups for this site.');
   };

@@ -75,6 +75,21 @@ const ActivityLog: React.FC<ActivityLogProps> = ({ netId, minimized, onMinimize,
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   Activity Log
                   <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
+                    {/* Grouped so the two actions that stay within this browser
+                        tab (minimize, float) sit together, with the one that
+                        leaves to a separate window (pop-out) last. */}
+                    {(onMinimize || onRestore) && (
+                      <IconButton
+                        size="small"
+                        onClick={minimized ? onRestore : onMinimize}
+                        title={minimized ? 'Restore' : 'Minimize'}
+                        sx={{ p: 0.25 }}
+                      >
+                        {minimized
+                          ? <CropSquareIcon sx={{ fontSize: 14 }} />
+                          : <MinimizeIcon sx={{ fontSize: 14 }} />}
+                      </IconButton>
+                    )}
                     {onDetach && (
                       <IconButton
                         size="small"
@@ -93,18 +108,6 @@ const ActivityLog: React.FC<ActivityLogProps> = ({ netId, minimized, onMinimize,
                         sx={{ p: 0.25, display: { xs: 'none', lg: 'inline-flex' } }}
                       >
                         <OpenInNewIcon sx={{ fontSize: 14 }} />
-                      </IconButton>
-                    )}
-                    {(onMinimize || onRestore) && (
-                      <IconButton
-                        size="small"
-                        onClick={minimized ? onRestore : onMinimize}
-                        title={minimized ? 'Restore' : 'Minimize'}
-                        sx={{ p: 0.25 }}
-                      >
-                        {minimized
-                          ? <CropSquareIcon sx={{ fontSize: 14 }} />
-                          : <MinimizeIcon sx={{ fontSize: 14 }} />}
                       </IconButton>
                     )}
                   </Box>

@@ -42,6 +42,11 @@ export function usePoppedOutWindow(
   storageKey: string,
   defaultWidth = 480,
   defaultHeight = 650,
+  // Floor a saved size can't go below, regardless of what was remembered
+  // from an earlier session (e.g. before a pane's default width changed, or
+  // the window was resized down small enough to make its content unusable).
+  minWidth = 0,
+  minHeight = 0,
 ) {
   const windowRef = useRef<Window | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -54,8 +59,8 @@ export function usePoppedOutWindow(
     }
 
     const saved = loadGeometry(storageKey);
-    const width = saved?.width ?? defaultWidth;
-    const height = saved?.height ?? defaultHeight;
+    const width = Math.max(saved?.width ?? defaultWidth, minWidth);
+    const height = Math.max(saved?.height ?? defaultHeight, minHeight);
     const features = saved
       ? `width=${width},height=${height},left=${saved.left},top=${saved.top},resizable=yes`
       : `width=${width},height=${height},resizable=yes`;
@@ -88,7 +93,7 @@ export function usePoppedOutWindow(
     }, 1000);
 
     return true;
-  }, [url, windowName, storageKey, defaultWidth, defaultHeight]);
+  }, [url, windowName, storageKey, defaultWidth, defaultHeight, minWidth, minHeight]);
 
   return { isOpen, open };
 }

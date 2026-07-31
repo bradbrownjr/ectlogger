@@ -227,40 +227,40 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                           boxShadow: stickyShadow,
                         }}
                       >
-                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.25 }}>
-                          {canManage && <Box component="span" sx={{ mr: 0.5 }}>Actions</Box>}
-                          <IconButton
-                            size="small"
-                            onClick={() => setHideDuplicates(!hideDuplicates)}
-                            title={hideDuplicates ? 'Show all rows (including re-checks)' : 'Hide duplicate rows (show latest per station)'}
-                            sx={{ p: 0.25, color: hideDuplicates ? 'primary.main' : 'text.secondary' }}
-                          >
-                            <GroupIcon sx={{ fontSize: 14 }} />
-                          </IconButton>
-                          {!detached && (
-                            // Float + pop-out stacked vertically (not side by side) so this
-                            // sticky trailing column doesn't get any wider than one icon's worth.
-                            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                              <IconButton
-                                size="small"
-                                onClick={handleDetachCheckInList}
-                                title="Detach to floating window"
-                                sx={{ p: 0, lineHeight: 0 }}
-                              >
-                                <PictureInPictureAltIcon sx={{ fontSize: 12 }} />
-                              </IconButton>
-                              {handlePopOutCheckInList && (
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 0.25 }}>
+                          {canManage ? <Box component="span">Actions</Box> : <Box component="span" />}
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
+                            <IconButton
+                              size="small"
+                              onClick={() => setHideDuplicates(!hideDuplicates)}
+                              title={hideDuplicates ? 'Show all rows (including re-checks)' : 'Hide duplicate rows (show latest per station)'}
+                              sx={{ p: 0.25, color: hideDuplicates ? 'primary.main' : 'text.secondary' }}
+                            >
+                              <GroupIcon sx={{ fontSize: 14 }} />
+                            </IconButton>
+                            {!detached && (
+                              <>
                                 <IconButton
                                   size="small"
-                                  onClick={handlePopOutCheckInList}
-                                  title="Open in new window"
-                                  sx={{ p: 0, lineHeight: 0 }}
+                                  onClick={handleDetachCheckInList}
+                                  title="Detach to floating window"
+                                  sx={{ p: 0.25 }}
                                 >
-                                  <OpenInNewIcon sx={{ fontSize: 12 }} />
+                                  <PictureInPictureAltIcon sx={{ fontSize: 14 }} />
                                 </IconButton>
-                              )}
-                            </Box>
-                          )}
+                                {handlePopOutCheckInList && (
+                                  <IconButton
+                                    size="small"
+                                    onClick={handlePopOutCheckInList}
+                                    title="Open in new window"
+                                    sx={{ p: 0.25 }}
+                                  >
+                                    <OpenInNewIcon sx={{ fontSize: 14 }} />
+                                  </IconButton>
+                                )}
+                              </>
+                            )}
+                          </Box>
                         </Box>
                       </TableCell>
                     </TableRow>
