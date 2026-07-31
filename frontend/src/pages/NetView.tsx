@@ -539,7 +539,7 @@ const NetView: React.FC = () => {
   // default before it was tuned down would otherwise keep winning over the
   // new default forever, since the min-size floor only guards against too
   // small, not too large.
-  const checkInsPopout = usePoppedOutWindow(`/nets/${netId}/pane/check-ins`, `ectlogger-check-ins-${netId}`, 'checkInList-v2', 1200, 480, 900, 400);
+  const checkInsPopout = usePoppedOutWindow(`/nets/${netId}/pane/check-ins`, `ectlogger-check-ins-${netId}`, 'checkInList-v3', 1200, 800, 900, 400);
   const handlePopOutChat = () => {
     if (!chatPopout.open()) setToastMessage('Popup blocked — please allow popups for this site.');
   };
