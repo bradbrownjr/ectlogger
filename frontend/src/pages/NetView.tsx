@@ -532,7 +532,7 @@ const NetView: React.FC = () => {
   // floating overlay above.
   const chatPopout = usePoppedOutWindow(`/nets/${netId}/pane/chat`, `ectlogger-chat-${netId}`, 'chat');
   const activityLogPopout = usePoppedOutWindow(`/nets/${netId}/pane/activity-log`, `ectlogger-activity-log-${netId}`, 'activityLog');
-  const checkInsPopout = usePoppedOutWindow(`/nets/${netId}/pane/check-ins`, `ectlogger-check-ins-${netId}`, 'checkInList');
+  const checkInsPopout = usePoppedOutWindow(`/nets/${netId}/pane/check-ins`, `ectlogger-check-ins-${netId}`, 'checkInList', 1100, 700);
   const handlePopOutChat = () => {
     if (!chatPopout.open()) setToastMessage('Popup blocked — please allow popups for this site.');
   };
@@ -1247,8 +1247,8 @@ const NetView: React.FC = () => {
 
         {(net.status === 'active' || net.status === 'lobby' || net.status === 'closed' || net.status === 'archived') && (
           <Grid container spacing={0} sx={{ mt: 0.5, flex: { xs: 'none', md: 1 }, minHeight: 0 }}>
-            {/* Check-in list - hide Grid if detached */}
-            {!checkInListDetached && (
+            {/* Check-in list - hide Grid if detached or popped to a real window */}
+            {!checkInListDetached && !checkInsPopout.isOpen && (
             <Grid item xs={12} md={sidePanelsEmpty ? 12 : 8} sx={{ pr: { md: 0.5 }, display: 'flex', flexDirection: 'column', minHeight: { xs: 'auto', md: 0 }, height: { xs: 'auto', md: '100%' }, mb: { xs: 2, md: 0 } }}>
               <FloatingWindow
                 title="Check-in List"
@@ -1991,6 +1991,7 @@ const NetView: React.FC = () => {
               searchQuery={searchQuery}
               onlineUserIds={onlineUserIds}
               checkInListDetached={checkInListDetached}
+              checkInListWindowOpen={checkInsPopout.isOpen}
               chatDetached={chatDetached}
               activityLogDetached={activityLogDetached}
               chatWindowOpen={chatPopout.isOpen}

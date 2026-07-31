@@ -7,9 +7,6 @@ interface WindowGeometry {
   height: number;
 }
 
-const DEFAULT_WIDTH = 480;
-const DEFAULT_HEIGHT = 650;
-
 function loadGeometry(storageKey: string): WindowGeometry | null {
   try {
     const saved = localStorage.getItem(`poppedWindow_${storageKey}`);
@@ -39,7 +36,13 @@ function saveGeometry(storageKey: string, geometry: WindowGeometry) {
 // of resetting to a fixed default every time — losing that continuity was a
 // real complaint about a past floating-window bug (NetScript), so this
 // popup window shouldn't repeat it.
-export function usePoppedOutWindow(url: string, windowName: string, storageKey: string) {
+export function usePoppedOutWindow(
+  url: string,
+  windowName: string,
+  storageKey: string,
+  defaultWidth = 480,
+  defaultHeight = 650,
+) {
   const windowRef = useRef<Window | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -51,8 +54,8 @@ export function usePoppedOutWindow(url: string, windowName: string, storageKey: 
     }
 
     const saved = loadGeometry(storageKey);
-    const width = saved?.width ?? DEFAULT_WIDTH;
-    const height = saved?.height ?? DEFAULT_HEIGHT;
+    const width = saved?.width ?? defaultWidth;
+    const height = saved?.height ?? defaultHeight;
     const features = saved
       ? `width=${width},height=${height},left=${saved.left},top=${saved.top},resizable=yes`
       : `width=${width},height=${height},resizable=yes`;
@@ -85,7 +88,7 @@ export function usePoppedOutWindow(url: string, windowName: string, storageKey: 
     }, 1000);
 
     return true;
-  }, [url, windowName, storageKey]);
+  }, [url, windowName, storageKey, defaultWidth, defaultHeight]);
 
   return { isOpen, open };
 }

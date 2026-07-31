@@ -21,6 +21,7 @@ interface NetViewSidePanelsProps {
   searchQuery: string;
   onlineUserIds: number[];
   checkInListDetached: boolean;
+  checkInListWindowOpen: boolean;
   chatDetached: boolean;
   activityLogDetached: boolean;
   chatWindowOpen: boolean;
@@ -48,6 +49,7 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
   searchQuery,
   onlineUserIds,
   checkInListDetached,
+  checkInListWindowOpen,
   chatDetached,
   activityLogDetached,
   chatWindowOpen,
@@ -76,7 +78,7 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
           renders only when it's docked, so the other expands into the
           freed space instead of the whole column disappearing. */}
       {(chatDocked || activityLogDocked) && (
-      <Grid item xs={12} md={checkInListDetached ? 12 : 4} sx={{ pl: { md: 0.5 }, display: 'flex', flexDirection: 'column', gap: 0.5, minHeight: { xs: 300, md: 0 }, height: { xs: 'auto', md: '100%' } }}>
+      <Grid item xs={12} md={(checkInListDetached || checkInListWindowOpen) ? 12 : 4} sx={{ pl: { md: 0.5 }, display: 'flex', flexDirection: 'column', gap: 0.5, minHeight: { xs: 300, md: 0 }, height: { xs: 'auto', md: '100%' } }}>
         {/* Chat panel */}
         {chatDocked && (
         <Box sx={{
