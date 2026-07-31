@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 type PaletteMode = 'light' | 'dark';
@@ -7,7 +7,7 @@ import { SnackbarProvider } from 'notistack';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeContext } from './contexts/ThemeContext';
 import { LocationProvider } from './contexts/LocationContext';
-import { THEMES, DEFAULT_THEME_KEY } from './theme/themes';
+import { THEMES, DEFAULT_THEME_KEY, ThemeDefinition } from './theme/themes';
 import api from './services/api';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -29,8 +29,9 @@ import ChangelogNotification from './components/ChangelogNotification';
 import MaintenanceBanner from './components/MaintenanceBanner';
 import ErrorBoundary from './components/ErrorBoundary';
 
-const getDesignTokens = (mode: PaletteMode, themeKey: string) => {
-  const variant = (THEMES[themeKey] ?? THEMES[DEFAULT_THEME_KEY])[mode];
+const getDesignTokens = (mode: PaletteMode, themeKey: string, customTheme: ThemeDefinition | null) => {
+  const source = (themeKey === 'custom' && customTheme) ? customTheme : (THEMES[themeKey] ?? THEMES[DEFAULT_THEME_KEY]);
+  const variant = source[mode];
   return {
   palette: {
     mode,
@@ -170,6 +171,11 @@ const AppRoutes: React.FC = () => {
 // picked one.
 const ThemedApp: React.FC = () => {
   const { user } = useAuth();
+  // Captured once at construction time (before the persist-effect below ever
+  // runs), so it reflects whether THIS BROWSER has ever set a preference -
+  // unaffected by that same effect writing a value moments later. Used only
+  // to gate the site's default light/dark (see isFirstEverVisit below).
+  const isFirstEverVisitRef = useRef(localStorage.getItem('themeMode') === null);
   const [mode, setMode] = useState<PaletteMode>(() => {
     const savedMode = localStorage.getItem('themeMode');
     return (savedMode as PaletteMode) || 'light';
@@ -177,6 +183,8 @@ const ThemedApp: React.FC = () => {
   const [systemDefaultTheme, setSystemDefaultTheme] = useState<string>(
     () => localStorage.getItem('systemDefaultTheme') || DEFAULT_THEME_KEY
   );
+  const [customTheme, setCustomTheme] = useState<ThemeDefinition | null>(null);
+  const [customLogoUrl, setCustomLogoUrl] = useState<string | null>(null);
 
   useEffect(() => {
     localStorage.setItem('themeMode', mode);
@@ -185,11 +193,20 @@ const ThemedApp: React.FC = () => {
   useEffect(() => {
     api.get('/settings/theme')
       .then((res) => {
-        const key = res.data?.default_theme;
-        if (key) {
-          setSystemDefaultTheme(key);
-          localStorage.setItem('systemDefaultTheme', key);
+        const data = res.data ?? {};
+        if (data.default_theme) {
+          setSystemDefaultTheme(data.default_theme);
+          localStorage.setItem('systemDefaultTheme', data.default_theme);
         }
+        // Site-wide light/dark default only applies to a browser that has
+        // never toggled before - once toggled, localStorage always wins.
+        if (isFirstEverVisitRef.current && (data.default_color_mode === 'light' || data.default_color_mode === 'dark')) {
+          setMode(data.default_color_mode);
+        }
+        if (data.custom_theme) {
+          setCustomTheme(data.custom_theme);
+        }
+        setCustomLogoUrl(data.custom_logo_url ?? null);
       })
       .catch(() => {
         // Non-critical: keep whatever was cached in localStorage / the hardcoded fallback.
@@ -202,10 +219,10 @@ const ThemedApp: React.FC = () => {
 
   const themeKey = user?.theme || systemDefaultTheme;
 
-  const theme = useMemo(() => createTheme(getDesignTokens(mode, themeKey)), [mode, themeKey]);
+  const theme = useMemo(() => createTheme(getDesignTokens(mode, themeKey, customTheme)), [mode, themeKey, customTheme]);
 
   return (
-    <ThemeContext.Provider value={{ mode, toggleColorMode, systemDefaultTheme, setSystemDefaultTheme }}>
+    <ThemeContext.Provider value={{ mode, toggleColorMode, systemDefaultTheme, setSystemDefaultTheme, customTheme, setCustomTheme, customLogoUrl, setCustomLogoUrl }}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <SnackbarProvider maxSnack={3} autoHideDuration={6000}>

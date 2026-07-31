@@ -675,11 +675,11 @@ Use this for after-action reporting, club records, or emergency management docum
 
 ### Dark Mode
 
-Toggle dark mode from the navbar's sun/moon icon (or the user menu on mobile) — easier on the eyes during those late-night nets. Your choice is remembered on this device.
+Toggle dark mode from the navbar's sun/moon icon (or the user menu on mobile), or from the "Dark mode" switch at the top of **Profile → Settings** — easier on the eyes during those late-night nets. Your choice is remembered on this device.
 
 ### Color Themes
 
-Pick a color theme from **Profile → Settings**: each named theme is a coordinated light/dark pair, so whichever one you choose works automatically with the dark mode toggle above. Select "Follow system default" to always match whatever the site admin has set as the default theme instead of a fixed personal choice — this is also what you get automatically until you pick something else.
+Pick a color theme from **Profile → Settings**: each named theme is a coordinated light/dark pair, so whichever one you choose works automatically with the dark mode toggle above. Select "Follow system default" to always match whatever the site admin has set as the default theme instead of a fixed personal choice — this is also what you get automatically until you pick something else. If the site admin has configured a custom theme (Admin → Branding), it shows up here too, alongside the curated set.
 
 ### Mobile Use
 
@@ -763,7 +763,7 @@ Both columns are blank for users the badge doesn't apply to, and both are sortab
 - **Frequency Library** — Manage shared frequency presets
 - **Security** — View fail2ban status and recent authentication events
 - **Site Settings** — Configure schedule creation limits
-- **Themes** — Set the system-wide default color theme. Applies immediately to any user who hasn't picked a personal theme in their own Profile → Settings.
+- **Branding** — Set the system-wide default color theme and light/dark appearance, build a fully custom color theme, and upload a custom logo to replace the built-in mark — useful for self-hosted instances that want to look like their own organization. The default theme applies immediately to any user who hasn't picked a personal theme in their own Profile → Settings; the default appearance only affects visitors who have never toggled light/dark before.
 
 ---
 

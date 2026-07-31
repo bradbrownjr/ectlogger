@@ -31,7 +31,7 @@ The responsive interface works beautifully on any device — from a phone in the
 - **👥 Role-Based Access** — Admin, NCS, Logger, User, and Guest roles
 - **📧 Email Notifications** — Automatic net reminders, start notifications, and invitations
 - **📱 Mobile Responsive** — Works seamlessly on phones, tablets, and desktops, with labeled controls and generous touch targets sized for gloved or one-handed field use
-- **🎨 Color Themes** — Pick a personal color theme (or follow the admin-set system default), each with a coordinated light/dark pair that works with the existing dark mode toggle
+- **🎨 Color Themes & Branding** — Pick a personal color theme (or follow the admin-set system default), each with a coordinated light/dark pair that works with the existing dark mode toggle; admins can fully customize a self-hosted instance with a custom color theme and logo
 - **📻 Multi-Frequency Support** — Track stations across multiple frequencies and modes
 - **👥 Multi-NCS Support** - Multiple NCS operators can check in and track stations across multiple frequencies and modes simultaneously
 - **⏸️ Paused-Net Indicator** — If the NCS steps away with no co-NCS covering, the net shows a blue border and banner so everyone knows no one is actively running it, and the recorded duration excludes that time

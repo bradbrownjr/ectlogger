@@ -1,4 +1,5 @@
 import React from 'react';
+import { useThemeMode } from '../contexts/ThemeContext';
 
 interface AppLogoProps {
   size?: number;
@@ -7,8 +8,38 @@ interface AppLogoProps {
 }
 
 const AppLogo: React.FC<AppLogoProps> = ({ size = 32, variant = 'default' }) => {
+  const { customLogoUrl } = useThemeMode();
   const isNav  = variant === 'nav';
   const isDark = variant === 'dark';
+
+  // A self-hoster's uploaded logo (Admin -> Branding) replaces the built-in
+  // mark everywhere AppLogo is used. It's a flat asset (unlike the SVG,
+  // which recolors itself per variant), so for the "nav" toolbar context it
+  // gets a small neutral backing plate to stay visible against whichever
+  // named theme's primary color the AppBar is currently rendering in.
+  if (customLogoUrl) {
+    return (
+      <span
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: size,
+          height: size,
+          borderRadius: '50%',
+          overflow: 'hidden',
+          boxSizing: 'border-box',
+          ...(isNav ? { backgroundColor: 'rgba(255,255,255,0.9)', padding: Math.round(size * 0.12) } : {}),
+        }}
+      >
+        <img
+          src={customLogoUrl}
+          alt="ECTLogger logo"
+          style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+        />
+      </span>
+    );
+  }
 
   const borderColor  = isNav  ? 'white'               : isDark ? '#2e7d32' : '#1a6b2e';
   const bgFill       = isNav  ? 'rgba(255,255,255,0.15)' : isDark ? '#1e1e1e' : 'white';

@@ -68,4 +68,38 @@ async def test_guest_can_view_field_definitions(client):
 async def test_guest_can_view_default_theme(client):
     resp = await client.get("/api/settings/theme")
     assert resp.status_code == 200
-    assert resp.json() == {"default_theme": "ectlogger-blue"}
+    assert resp.json() == {
+        "default_theme": "ectlogger-blue",
+        "default_color_mode": "light",
+        "custom_theme": None,
+        "custom_logo_url": None,
+    }
+
+
+@pytest.mark.asyncio
+async def test_non_admin_cannot_upload_logo(client, owner):
+    resp = await client.post(
+        "/api/settings/logo",
+        files={"file": ("logo.png", b"not a real image", "image/png")},
+        headers=auth_headers(owner),
+    )
+    assert resp.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_admin_can_upload_and_delete_svg_logo(client, admin):
+    svg_bytes = b'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="10" height="10"/></svg>'
+    resp = await client.post(
+        "/api/settings/logo",
+        files={"file": ("logo.svg", svg_bytes, "image/svg+xml")},
+        headers=auth_headers(admin),
+    )
+    assert resp.status_code == 200
+    assert resp.json()["custom_logo_url"] == "/api/logo/instance-logo.svg"
+
+    theme_resp = await client.get("/api/settings/theme")
+    assert theme_resp.json()["custom_logo_url"] == "/api/logo/instance-logo.svg"
+
+    del_resp = await client.delete("/api/settings/logo", headers=auth_headers(admin))
+    assert del_resp.status_code == 200
+    assert del_resp.json()["custom_logo_url"] is None

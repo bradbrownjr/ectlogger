@@ -12,6 +12,11 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 AVATAR_DIR = Path(__file__).resolve().parents[1] / "data" / "avatars"
 AVATAR_DIR.mkdir(parents=True, exist_ok=True)
 
+# Single source of truth for the uploaded instance logo (Admin -> Branding).
+# One file for the whole instance, not per-user, unlike AVATAR_DIR.
+LOGO_DIR = Path(__file__).resolve().parents[1] / "data" / "logo"
+LOGO_DIR.mkdir(parents=True, exist_ok=True)
+
 
 def _custom_avatar_file_ok(custom_url: str) -> bool:
     """Check that an uploaded avatar's file still exists on disk and isn't empty.

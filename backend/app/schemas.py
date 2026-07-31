@@ -8,7 +8,10 @@ import re
 # Named theme keys, mirrored from frontend/src/theme/themes.ts. Kept as a
 # plain tuple (not an Enum) so adding a theme only requires touching that
 # one frontend file plus this list, not a schema migration.
-VALID_THEME_KEYS = ('ectlogger-blue', 'ocean', 'forest', 'sunset', 'berry')
+# 'custom' is always accepted even if no admin-defined custom theme exists
+# yet (Admin -> Branding) - selecting it before one is configured just
+# falls back to the default theme on the frontend until an admin sets one.
+VALID_THEME_KEYS = ('ectlogger-blue', 'ocean', 'forest', 'sunset', 'berry', 'custom')
 
 
 def public_display_name(name: Optional[str], is_authenticated: bool) -> Optional[str]:
@@ -886,6 +889,32 @@ class FieldConfigItem(BaseModel):
     label: Optional[str] = None
 
 
+HEX_COLOR_RE = re.compile(r'^#[0-9a-fA-F]{6}$')
+
+
+class CustomThemeVariant(BaseModel):
+    primary: str
+    secondary: str
+    background: str
+    paper: str
+
+    @field_validator('primary', 'secondary', 'background', 'paper')
+    @classmethod
+    def validate_hex(cls, v: str) -> str:
+        if not HEX_COLOR_RE.match(v):
+            raise ValueError(f'"{v}" is not a valid 6-digit hex color')
+        return v
+
+
+class CustomTheme(BaseModel):
+    """Admin-defined instance theme (Admin -> Branding). A single site-wide
+    slot, not per-user-created - mirrors frontend/src/theme/themes.ts's
+    ThemeDefinition shape so it can be injected as a 6th swatch at runtime."""
+    name: str = Field(default='Custom', max_length=50)
+    light: CustomThemeVariant
+    dark: CustomThemeVariant
+
+
 class AppSettingsResponse(BaseModel):
     default_field_config: dict
     field_labels: dict
@@ -904,6 +933,10 @@ class AppSettingsResponse(BaseModel):
     maintenance_banner_scheduled_end: Optional[datetime] = None
     # Theming
     default_theme: str = 'ectlogger-blue'
+    # Branding
+    default_color_mode: Literal['light', 'dark'] = 'light'
+    custom_theme: Optional[CustomTheme] = None
+    custom_logo_url: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -927,6 +960,11 @@ class AppSettingsUpdate(BaseModel):
     maintenance_banner_scheduled_end: Optional[datetime] = None
     # Theming
     default_theme: Optional[str] = None
+    # Branding (custom_logo_url is not settable here - it's only ever written
+    # by the dedicated upload/delete endpoints in routers/settings.py, which
+    # validate and save the actual file)
+    default_color_mode: Optional[Literal['light', 'dark']] = None
+    custom_theme: Optional[CustomTheme] = None
 
     @field_validator('default_theme')
     @classmethod

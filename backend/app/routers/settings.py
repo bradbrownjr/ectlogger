@@ -1,19 +1,27 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import List
 from datetime import datetime, timezone
+from io import BytesIO
+from PIL import Image, ImageOps
 import json
 
 from app.database import get_db
 from app.models import AppSettings, User, UserRole, FieldDefinition
 from app.schemas import (
-    AppSettingsResponse, AppSettingsUpdate,
+    AppSettingsResponse, AppSettingsUpdate, CustomTheme,
     FieldDefinitionCreate, FieldDefinitionUpdate, FieldDefinitionResponse
 )
-from app.dependencies import get_current_user
+from app.dependencies import get_current_user, get_admin_user
+from app.utils import LOGO_DIR
 
 router = APIRouter(prefix="/settings", tags=["settings"])
+
+LOGO_MAX_BYTES = 2 * 1024 * 1024  # 2 MB
+LOGO_MAX_DIM = 512
+LOGO_RASTER_MIME = {"image/png", "image/jpeg", "image/webp"}
+LOGO_SVG_MIME = "image/svg+xml"
 
 # Built-in fields that are created on first run
 BUILTIN_FIELDS = [
@@ -80,6 +88,9 @@ def _build_settings_response(settings: AppSettings) -> AppSettingsResponse:
         maintenance_banner_scheduled_start=settings.maintenance_banner_scheduled_start,
         maintenance_banner_scheduled_end=settings.maintenance_banner_scheduled_end,
         default_theme=settings.default_theme or 'ectlogger-blue',
+        default_color_mode=settings.default_color_mode if settings.default_color_mode in ('light', 'dark') else 'light',
+        custom_theme=CustomTheme(**json.loads(settings.custom_theme_json)) if settings.custom_theme_json else None,
+        custom_logo_url=settings.custom_logo_url,
     )
 
 
@@ -138,6 +149,15 @@ async def update_settings(
     if settings_update.default_theme is not None:
         settings.default_theme = settings_update.default_theme
 
+    # Branding
+    if settings_update.default_color_mode is not None:
+        settings.default_color_mode = settings_update.default_color_mode
+
+    if "custom_theme" in settings_update.model_fields_set:
+        settings.custom_theme_json = (
+            settings_update.custom_theme.model_dump_json() if settings_update.custom_theme else None
+        )
+
     await db.commit()
     await db.refresh(settings)
 
@@ -189,10 +209,86 @@ async def get_field_labels(
 async def get_theme_settings(
     db: AsyncSession = Depends(get_db)
 ):
-    """Get the system default theme (public endpoint, needed pre-login so the
-    login screen can render the system default instead of a hardcoded one)"""
+    """Get the site's branding settings (public endpoint, needed pre-login so
+    the login screen can render correctly before authentication resolves).
+    Kept at this URL for backward compatibility even though it now covers
+    more than just the default theme key - see docs/DEVELOPMENT.md "Theming".
+    """
     settings = await get_or_create_settings(db)
-    return {"default_theme": settings.default_theme or 'ectlogger-blue'}
+    return {
+        "default_theme": settings.default_theme or 'ectlogger-blue',
+        "default_color_mode": settings.default_color_mode if settings.default_color_mode in ('light', 'dark') else 'light',
+        "custom_theme": json.loads(settings.custom_theme_json) if settings.custom_theme_json else None,
+        "custom_logo_url": settings.custom_logo_url,
+    }
+
+
+@router.post("/logo")
+async def upload_logo(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Upload a custom instance logo, replacing the built-in SVG mark
+    (Admin -> Branding). One file for the whole instance, not per-user -
+    see LOGO_DIR in app/utils.py. Accepted: PNG, JPEG, WebP, SVG. Max 2 MB."""
+    is_svg = file.content_type == LOGO_SVG_MIME
+    if not is_svg and file.content_type not in LOGO_RASTER_MIME:
+        raise HTTPException(status_code=400, detail="Unsupported image type. Use PNG, JPEG, WebP, or SVG.")
+
+    file_bytes = await file.read()
+    if len(file_bytes) > LOGO_MAX_BYTES:
+        raise HTTPException(status_code=400, detail="Image too large (max 2 MB).")
+
+    # Clear any previously uploaded logo regardless of its extension, so
+    # switching from e.g. SVG to PNG doesn't leave the old file behind.
+    for existing in LOGO_DIR.glob("instance-logo.*"):
+        existing.unlink()
+
+    if is_svg:
+        if b'<svg' not in file_bytes.lower():
+            raise HTTPException(status_code=400, detail="Invalid SVG file.")
+        dest = LOGO_DIR / "instance-logo.svg"
+        dest.write_bytes(file_bytes)
+    else:
+        try:
+            pil_image = Image.open(BytesIO(file_bytes))
+            pil_image.load()
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail="Invalid or corrupt image.") from exc
+
+        # Physically rotate pixels to match EXIF orientation, same as avatar uploads.
+        pil_image = ImageOps.exif_transpose(pil_image)
+        if pil_image.mode not in {"RGBA", "RGB"}:
+            pil_image = pil_image.convert("RGBA")
+        pil_image.thumbnail((LOGO_MAX_DIM, LOGO_MAX_DIM), Image.Resampling.LANCZOS)
+
+        dest = LOGO_DIR / "instance-logo.png"
+        pil_image.save(str(dest), format="PNG")
+
+    settings = await get_or_create_settings(db)
+    settings.custom_logo_url = f"/api/logo/{dest.name}"
+    await db.commit()
+    await db.refresh(settings)
+
+    return _build_settings_response(settings)
+
+
+@router.delete("/logo")
+async def delete_logo(
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Remove the custom instance logo, reverting to the built-in SVG mark."""
+    for existing in LOGO_DIR.glob("instance-logo.*"):
+        existing.unlink()
+
+    settings = await get_or_create_settings(db)
+    settings.custom_logo_url = None
+    await db.commit()
+    await db.refresh(settings)
+
+    return _build_settings_response(settings)
 
 
 # Field Definition Endpoints

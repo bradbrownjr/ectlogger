@@ -568,6 +568,11 @@ class AppSettings(Base):
     # Theming
     default_theme = Column(String(32), default='ectlogger-blue')  # System-wide default theme key for users with no personal preference
 
+    # Branding
+    default_color_mode = Column(String(5), default='light')  # 'light' or 'dark' - only affects a browser's very first visit
+    custom_theme_json = Column(Text, nullable=True)  # Admin-defined instance theme: {name, light: {...}, dark: {...}}
+    custom_logo_url = Column(String(255), nullable=True)  # Uploaded logo path, replaces the built-in SVG mark when set
+
     # Maintenance banner (in-app, DB-backed)
     maintenance_banner_enabled = Column(Boolean, default=False)
     maintenance_banner_message = Column(Text, nullable=True)

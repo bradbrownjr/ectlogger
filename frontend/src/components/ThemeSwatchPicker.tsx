@@ -3,6 +3,7 @@ import { Box, ButtonBase, Typography, useTheme } from '@mui/material';
 import CheckIcon from '@mui/icons-material/Check';
 import BrightnessAutoIcon from '@mui/icons-material/BrightnessAuto';
 import { THEMES } from '../theme/themes';
+import { useThemeMode } from '../contexts/ThemeContext';
 
 interface ThemeSwatchPickerProps {
   // Currently selected theme key. Null selects "Follow system default" (only
@@ -64,6 +65,7 @@ const SwatchButton: React.FC<{
 const ThemeSwatchPicker: React.FC<ThemeSwatchPickerProps> = ({ value, onSelect, allowSystemDefault = false }) => {
   const muiTheme = useTheme();
   const mode = muiTheme.palette.mode;
+  const { customTheme } = useThemeMode();
 
   return (
     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
@@ -87,6 +89,14 @@ const ThemeSwatchPicker: React.FC<ThemeSwatchPickerProps> = ({ value, onSelect, 
           />
         );
       })}
+      {customTheme && (
+        <SwatchButton
+          selected={value === 'custom'}
+          label={customTheme.name}
+          colors={[customTheme[mode].primary, customTheme[mode].secondary]}
+          onClick={() => onSelect('custom')}
+        />
+      )}
     </Box>
   );
 };

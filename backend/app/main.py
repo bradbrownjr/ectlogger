@@ -133,6 +133,11 @@ avatars_dir = Path(__file__).resolve().parents[1] / "data" / "avatars"
 avatars_dir.mkdir(parents=True, exist_ok=True)
 app.mount("/api/avatars", StaticFiles(directory=str(avatars_dir)), name="avatars")
 
+# Serve the uploaded instance logo from backend/data/logo (Admin -> Branding)
+logo_dir = Path(__file__).resolve().parents[1] / "data" / "logo"
+logo_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/api/logo", StaticFiles(directory=str(logo_dir)), name="logo")
+
 
 # WebSocket connection manager
 class ConnectionManager:

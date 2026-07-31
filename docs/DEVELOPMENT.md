@@ -361,18 +361,46 @@ shared across all themes.
 `AuthProvider` specifically so it can read `useAuth().user`):
 1. `user.theme` — the authenticated user's personal pick (`PUT /users/me`).
 2. else the system default, fetched once from the public `GET /settings/theme`
-   endpoint (`app_settings.default_theme`, admin-editable via Admin → Themes).
+   endpoint (`app_settings.default_theme`, admin-editable via Admin → Branding).
 3. else `DEFAULT_THEME_KEY` (`'ectlogger-blue'`) as an offline/pre-fetch fallback.
 
 Both `user.theme` (nullable) and `app_settings.default_theme` are validated
 server-side against `VALID_THEME_KEYS` in `schemas.py` — keep that tuple in
-sync with `THEMES`'s keys.
+sync with `THEMES`'s keys, plus the always-valid `'custom'` key (below).
 
-**To add a new theme**: add one entry to `THEMES` (pick two accent hues from
-a source palette, hand-tune a light/dark background pair) and add its key to
-`VALID_THEME_KEYS` in `backend/app/schemas.py`. No migration, endpoint, or
-component change is needed — `ThemeSwatchPicker.tsx` (shared by Profile →
-Settings and Admin → Themes) renders `THEMES` generically.
+**To add a new curated theme**: add one entry to `THEMES` (pick two accent
+hues from a source palette, hand-tune a light/dark background pair) and add
+its key to `VALID_THEME_KEYS` in `backend/app/schemas.py`. No migration,
+endpoint, or component change is needed — `ThemeSwatchPicker.tsx` (shared by
+Profile → Settings and Admin → Branding) renders `THEMES` generically.
+
+### Branding (custom theme, custom logo, default appearance)
+
+Unlike the curated `THEMES`, per-instance branding is admin-defined data, not
+code, so it lives entirely in `app_settings` (Admin → Branding tab,
+`AdminBrandingTab.tsx`):
+
+- `default_color_mode` (`'light'`/`'dark'`) — only affects a browser's very
+  first visit (no `themeMode` key in `localStorage` yet, tracked via a ref
+  captured before the persist-effect in `ThemedApp` can write one); once a
+  visitor toggles, their own browser's choice always wins from then on.
+- `custom_theme_json` — a single admin-defined theme (not per-user-created),
+  stored as JSON matching `CustomTheme` in `schemas.py` (mirrors
+  `ThemeDefinition`'s shape: `{name, light: {...}, dark: {...}}`). Injected
+  at runtime as the `'custom'` key wherever `THEMES` is rendered
+  (`ThemeSwatchPicker`) or resolved (`getDesignTokens` in `App.tsx`) — it is
+  never added to the static `THEMES` constant itself. `'custom'` is always
+  accepted by `VALID_THEME_KEYS` even before an admin has configured one;
+  selecting it with nothing configured just falls back to the default theme.
+- `custom_logo_url` — path to an uploaded logo, served from `LOGO_DIR`
+  (`app/utils.py`, mounted at `/api/logo` in `main.py`) via
+  `POST`/`DELETE /settings/logo` (admin-only, modeled directly on
+  `routers/users.py`'s avatar upload: Pillow resize/EXIF-transpose for
+  raster formats, a light sanity check for SVG). `AppLogo.tsx` reads it from
+  `ThemeContext` and renders an `<img>` in place of the built-in SVG
+  wherever the component is used, with a small neutral backing circle for
+  the `variant="nav"` case so an arbitrary uploaded image stays visible
+  against any active theme's primary-colored AppBar.
 
 ---
 

@@ -14,7 +14,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import RadioIcon from '@mui/icons-material/Radio';
 import SecurityIcon from '@mui/icons-material/Security';
 import BuildIcon from '@mui/icons-material/Build';
-import PaletteIcon from '@mui/icons-material/Palette';
+import BrandingWatermarkIcon from '@mui/icons-material/BrandingWatermark';
 import { useAuth } from '../contexts/AuthContext';
 import AdminUsersTab from '../components/admin/AdminUsersTab';
 import AdminContactsTab from '../components/admin/AdminContactsTab';
@@ -22,7 +22,7 @@ import AdminFieldsTab from '../components/admin/AdminFieldsTab';
 import AdminFrequenciesTab from '../components/admin/AdminFrequenciesTab';
 import AdminSecurityTab from '../components/admin/AdminSecurityTab';
 import AdminMaintenanceTab from '../components/admin/AdminMaintenanceTab';
-import AdminThemeTab from '../components/admin/AdminThemeTab';
+import AdminBrandingTab from '../components/admin/AdminBrandingTab';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -130,7 +130,7 @@ const Admin: React.FC = () => {
           <Tab label="Frequencies" id="admin-tab-3" aria-controls="admin-tabpanel-3" icon={<RadioIcon />} iconPosition="start" />
           <Tab label="Security" id="admin-tab-4" aria-controls="admin-tabpanel-4" icon={<SecurityIcon />} iconPosition="start" />
           <Tab label="Maintenance" id="admin-tab-5" aria-controls="admin-tabpanel-5" icon={<BuildIcon />} iconPosition="start" />
-          <Tab label="Themes" id="admin-tab-6" aria-controls="admin-tabpanel-6" icon={<PaletteIcon />} iconPosition="start" />
+          <Tab label="Branding" id="admin-tab-6" aria-controls="admin-tabpanel-6" icon={<BrandingWatermarkIcon />} iconPosition="start" />
         </Tabs>
 
         {/* ========== TAB 0: USERS ========== */}
@@ -166,9 +166,9 @@ const Admin: React.FC = () => {
           <AdminMaintenanceTab showSnackbar={showSnackbar} />
         </TabPanel>
 
-        {/* ========== TAB 6: THEMES ========== */}
+        {/* ========== TAB 6: BRANDING ========== */}
         <TabPanel value={tabValue} index={6}>
-          <AdminThemeTab showSnackbar={showSnackbar} />
+          <AdminBrandingTab showSnackbar={showSnackbar} />
         </TabPanel>
       </Paper>
 
