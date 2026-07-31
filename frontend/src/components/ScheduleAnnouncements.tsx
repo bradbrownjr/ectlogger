@@ -186,7 +186,7 @@ const ScheduleAnnouncements: React.FC<ScheduleAnnouncementsProps> = ({
         <!DOCTYPE html>
         <html>
         <head>
-          <title>Schedule Announcements - ${netName}</title>
+          <title>Announcements - ${netName}</title>
           <style>
             body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; line-height: 1.6; background-color: #f5f5f5; }
             .header { color: #1976d2; border-bottom: 2px solid #1976d2; padding-bottom: 10px; margin-bottom: 20px; }
@@ -203,7 +203,7 @@ const ScheduleAnnouncements: React.FC<ScheduleAnnouncementsProps> = ({
           </style>
         </head>
         <body>
-          <h1 class="header">Schedule Announcements — ${netName}</h1>
+          <h1 class="header">Announcements — ${netName}</h1>
           <div class="content">${htmlContent}</div>
         </body>
         </html>
@@ -356,7 +356,7 @@ const ScheduleAnnouncements: React.FC<ScheduleAnnouncementsProps> = ({
           className="drag-handle"
           sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1, bgcolor: 'primary.main', color: 'primary.contrastText', cursor: 'move', flexShrink: 0 }}
         >
-          <Typography variant="subtitle1" fontWeight="bold">Schedule Announcements</Typography>
+          <Typography variant="subtitle1" fontWeight="bold">Announcements</Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
             {renderEditControls()}
             {!editing && (

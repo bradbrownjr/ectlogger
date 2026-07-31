@@ -182,7 +182,7 @@ const Announcements: React.FC<AnnouncementsProps> = ({
         <!DOCTYPE html>
         <html>
         <head>
-          <title>Announcements - ${netName}</title>
+          <title>Net Notes - ${netName}</title>
           <style>
             body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; line-height: 1.6; background-color: #f5f5f5; }
             .header { color: #1976d2; border-bottom: 2px solid #1976d2; padding-bottom: 10px; margin-bottom: 20px; }
@@ -199,7 +199,7 @@ const Announcements: React.FC<AnnouncementsProps> = ({
           </style>
         </head>
         <body>
-          <div class="header"><h1>Announcements</h1><p><strong>Net:</strong> ${netName}</p></div>
+          <div class="header"><h1>Net Notes</h1><p><strong>Net:</strong> ${netName}</p></div>
           <div class="content">${htmlContent}</div>
         </body>
         </html>
@@ -258,7 +258,7 @@ const Announcements: React.FC<AnnouncementsProps> = ({
           {announcements ? (
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{normalizeMarkdownDelimiters(announcements)}</ReactMarkdown>
           ) : (
-            <Typography color="text.secondary" sx={{ fontStyle: 'italic' }}>No announcements have been added for this net.</Typography>
+            <Typography color="text.secondary" sx={{ fontStyle: 'italic' }}>No notes have been added to this net.</Typography>
           )}
         </Box>
       )}
@@ -294,7 +294,7 @@ const Announcements: React.FC<AnnouncementsProps> = ({
     return (
       <Box sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1.5, py: 0.5, backgroundColor: 'background.default', borderBottom: 1, borderColor: 'divider', flexShrink: 0 }}>
-          <Typography variant="subtitle2" fontWeight="bold">Announcements</Typography>
+          <Typography variant="subtitle2" fontWeight="bold">Net Notes</Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
             {renderEditControls()}
             {!editing && (onDockedMinimize || onDockedRestore) && (
@@ -352,7 +352,7 @@ const Announcements: React.FC<AnnouncementsProps> = ({
           className="drag-handle"
           sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1, bgcolor: 'primary.main', color: 'primary.contrastText', cursor: 'move', flexShrink: 0 }}
         >
-          <Typography variant="subtitle1" fontWeight="bold">Announcements</Typography>
+          <Typography variant="subtitle1" fontWeight="bold">Net Notes</Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
             {renderEditControls()}
             {!editing && (

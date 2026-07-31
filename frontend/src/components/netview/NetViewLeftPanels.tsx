@@ -4,7 +4,7 @@ import NetScript from '../NetScript';
 import Announcements from '../Announcements';
 import ScheduleAnnouncements from '../ScheduleAnnouncements';
 
-// ========== NET VIEW LEFT PANELS (Script + Notes + Schedule Announcements) ==========
+// ========== NET VIEW LEFT PANELS (Script + Announcements + Net Notes) ==========
 // Ultrawide-only docked slot (see the xl-breakpoint gating in NetView.tsx).
 // Unlike the right column (Chat/Activity Log/Map, which are always present
 // once docked), these three are on-demand — only opened via the toolbar —
@@ -107,6 +107,28 @@ const NetViewLeftPanels: React.FC<NetViewLeftPanelsProps> = ({
           />
         </Box>
       )}
+      {showScheduleAnnouncements && (
+        <Box sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          flex: scheduleAnnouncementsMinimized ? '0 0 auto' : 1,
+          minHeight: scheduleAnnouncementsMinimized ? 'auto' : 0,
+          overflow: 'hidden',
+        }}>
+          <ScheduleAnnouncements
+            embedded
+            open={scheduleAnnouncementsOpen}
+            onClose={onCloseScheduleAnnouncements}
+            netName={net?.name || 'Net'}
+            templateId={net?.template_id}
+            canEdit={canManage}
+            onUndock={onUndockScheduleAnnouncements}
+            minimized={scheduleAnnouncementsMinimized}
+            onMinimize={onMinimizeScheduleAnnouncements}
+            onRestore={onRestoreScheduleAnnouncements}
+          />
+        </Box>
+      )}
       {showAnnouncements && (
         <Box sx={{
           display: 'flex',
@@ -128,28 +150,6 @@ const NetViewLeftPanels: React.FC<NetViewLeftPanelsProps> = ({
             minimized={announcementsMinimized}
             onMinimize={onMinimizeAnnouncements}
             onRestore={onRestoreAnnouncements}
-          />
-        </Box>
-      )}
-      {showScheduleAnnouncements && (
-        <Box sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          flex: scheduleAnnouncementsMinimized ? '0 0 auto' : 1,
-          minHeight: scheduleAnnouncementsMinimized ? 'auto' : 0,
-          overflow: 'hidden',
-        }}>
-          <ScheduleAnnouncements
-            embedded
-            open={scheduleAnnouncementsOpen}
-            onClose={onCloseScheduleAnnouncements}
-            netName={net?.name || 'Net'}
-            templateId={net?.template_id}
-            canEdit={canManage}
-            onUndock={onUndockScheduleAnnouncements}
-            minimized={scheduleAnnouncementsMinimized}
-            onMinimize={onMinimizeScheduleAnnouncements}
-            onRestore={onRestoreScheduleAnnouncements}
           />
         </Box>
       )}
