@@ -17,9 +17,21 @@ All notable changes to ECTLogger are documented here.
 
 * **Net View: Net Notes** — Jot down something you noticed during a specific net, like a repeater running weaker than usual, without touching your schedule's standing Announcements text. Look for the Notes button once you're checked in.
 
+* **Profile: Choose whether your Net View layout is remembered** — A "Remember Net View Layout" toggle and a one-click reset in Profile → Settings let you decide whether panel positions, sizes, and docking stay exactly the way you left them on that device (the default) or start fresh every time. Sizes already stay independent across a phone, a laptop, and an ultrawide monitor even if they share a browser.
+
+## Improvements
+
+* **Net View: Easier to write Script, Announcements, and Notes** — Long entries now scroll properly while editing instead of getting clipped, every line break renders the way you typed it, and a new Link button inserts a properly formatted link.
+
+* **Profile: Notifications is now its own tab** — Email notification settings moved out of Settings into a dedicated Notifications tab and menu item, with room for more notification types as they're added.
+
 ## Bug Fixes
 
 * **Net View: Notes no longer overwrites your schedule's Announcements** — Editing a net's Notes was silently saving into the schedule's Announcements text instead, so it could carry over onto every future net from that schedule. Notes now saves to just that net, and the button no longer stays hidden until something has already been written.
+
+* **Net View: Notes, Announcements, and Script now reliably show what you saved** — A backend bug meant your saved text could come back blank after leaving the page and returning, even though it was correctly stored. Fixed.
+
+* **Net View: The Website/stream button now shows up correctly** — Nets with an audio stream URL configured weren't showing the toolbar button to listen in, due to the same backend bug as above. Fixed.
 
 ---
 
