@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -9,12 +9,19 @@ import {
   FormControlLabel,
   Switch,
   Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Snackbar,
 } from '@mui/material';
 import { useAuth } from '../../contexts/AuthContext';
 import { useThemeMode } from '../../contexts/ThemeContext';
 import api from '../../services/api';
 import type { ProfileFormData } from './profileFormTypes';
 import ThemeSwatchPicker from '../ThemeSwatchPicker';
+import { clearNetViewLayoutPrefs } from '../../utils/localStorageKeys';
 
 // ========== SETTINGS TAB ==========
 // Display/notification toggle switches. formData/handleSubmit are shared
@@ -40,8 +47,21 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
   success,
 }) => {
   const { user, login } = useAuth();
-  const { mode, toggleColorMode } = useThemeMode();
+  const { mode, toggleColorMode, setPreviewThemeKey } = useThemeMode();
   const navigate = useNavigate();
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+  const [resetDone, setResetDone] = useState(false);
+
+  // Reverts to the user's actually-saved theme (or the system default) the
+  // moment this tab goes away - whether by switching Profile tabs or
+  // navigating off the page entirely - so an unsaved preview never lingers.
+  useEffect(() => () => setPreviewThemeKey(undefined), [setPreviewThemeKey]);
+
+  const handleResetLayout = () => {
+    clearNetViewLayoutPrefs();
+    setResetConfirmOpen(false);
+    setResetDone(true);
+  };
 
   return (
     <>
@@ -59,10 +79,16 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
           </Typography>
           <ThemeSwatchPicker
             value={formData.theme}
-            onSelect={(key) => setFormData({ ...formData, theme: key })}
+            onSelect={(key) => {
+              setFormData({ ...formData, theme: key });
+              setPreviewThemeKey(key);
+            }}
             allowSystemDefault
             allowCustom={false}
           />
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            Applies instantly as a preview — click Save Changes to keep it, or leave without saving to revert.
+          </Typography>
 
           <FormControlLabel
             sx={{ mt: 2 }}
@@ -249,6 +275,25 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
           </Box>
         </Box>
 
+        <Divider sx={{ my: 3 }} />
+
+        <Typography variant="h6" gutterBottom>
+          Net View Layout
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Panel positions, sizes, and whether Chat, Activity Log, Script, Announcements,
+          Notes, and the Map are docked, floating, minimized, or popped out are all
+          remembered per device. If a net's layout gets into a state you don't like,
+          reset it back to defaults here.
+        </Typography>
+        <Button
+          variant="outlined"
+          color="warning"
+          onClick={() => setResetConfirmOpen(true)}
+        >
+          Reset Net View Layout
+        </Button>
+
         <TextField
           fullWidth
           label="Email"
@@ -277,6 +322,31 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
           </Button>
         </Box>
       </Box>
+
+      <Dialog open={resetConfirmOpen} onClose={() => setResetConfirmOpen(false)}>
+        <DialogTitle>Reset Net View Layout?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            This clears every remembered panel position, size, dock state, minimized
+            state, and resize ratio for Net View on this device — Chat, Activity Log,
+            Script, Announcements, Notes, the Map, and the check-in list. It doesn't
+            affect any other settings, and only applies to this device. This can't be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setResetConfirmOpen(false)}>Cancel</Button>
+          <Button color="warning" variant="contained" onClick={handleResetLayout}>
+            Reset Layout
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Snackbar
+        open={resetDone}
+        autoHideDuration={4000}
+        onClose={() => setResetDone(false)}
+        message="Net View layout reset to defaults"
+      />
     </>
   );
 };

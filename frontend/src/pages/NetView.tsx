@@ -18,6 +18,7 @@ import NetViewSidePanels from '../components/netview/NetViewSidePanels';
 import NetViewLeftPanels from '../components/netview/NetViewLeftPanels';
 import ResizeHandle from '../components/ResizeHandle';
 import useResizableSplit from '../hooks/useResizableSplit';
+import useLayoutTier from '../hooks/useLayoutTier';
 import { STORAGE_KEYS } from '../utils/localStorageKeys';
 import { displayCallsign } from '../utils/userDisplay';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
@@ -241,7 +242,8 @@ const NetView: React.FC = () => {
   // at xl - see scriptDocked etc. below). Below md everything stacks full
   // width and there's nothing to resize.
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
-  const { containerRef: columnsRef, getWeight: getColumnWeight, startDrag: startColumnDrag } = useResizableSplit(STORAGE_KEYS.COLUMN_SPLIT, 'row');
+  const layoutTier = useLayoutTier();
+  const { containerRef: columnsRef, getWeight: getColumnWeight, startDrag: startColumnDrag } = useResizableSplit(`${STORAGE_KEYS.COLUMN_SPLIT}_${layoutTier}`, 'row');
   const [scriptDockedPref, setScriptDockedPref] = useLocalStorage<boolean>(STORAGE_KEYS.SCRIPT_DOCKED, true);
   const [announcementsDockedPref, setAnnouncementsDockedPref] = useLocalStorage<boolean>(STORAGE_KEYS.ANNOUNCEMENTS_DOCKED, true);
   const [scheduleAnnouncementsDockedPref, setScheduleAnnouncementsDockedPref] = useLocalStorage<boolean>(STORAGE_KEYS.SCHEDULE_ANNOUNCEMENTS_DOCKED, true);

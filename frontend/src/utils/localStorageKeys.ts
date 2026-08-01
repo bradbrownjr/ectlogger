@@ -34,7 +34,10 @@ export const STORAGE_KEYS = {
   MAP_MINIMIZED: 'dockedPanel_map_minimized',
   // Resizable split weights (flex-grow ratios) - see useResizableSplit.ts.
   // Left/right panel stacks are vertical splits; the column split is
-  // horizontal (left/center/right widths), xl-breakpoint only.
+  // horizontal (left/center/right widths). Each is actually stored with a
+  // useLayoutTier() suffix ('_compact'/'_wide'/'_ultrawide') appended at the
+  // call site, so a phone, a laptop, and an external ultrawide monitor keep
+  // independent sizes even under the same browser profile.
   LEFT_PANELS_SPLIT: 'netview_leftPanels_split',
   RIGHT_PANELS_SPLIT: 'netview_rightPanels_split',
   COLUMN_SPLIT: 'netview_columns_split',
@@ -46,3 +49,19 @@ export const favoritesKey = (userId: number | string): string =>
 
 export const floatingWindowKey = (storageKey: string): string =>
   `floatingWindow_${storageKey}`;
+
+// Prefixes covering every localStorage key that records a Net View panel's
+// position, size, dock state, minimized state, or resizable split ratio.
+// Used by clearNetViewLayoutPrefs() below - keep in sync if a new panel
+// persists layout under a different prefix.
+const NET_VIEW_LAYOUT_PREFIXES = ['floatingWindow_', 'poppedWindow_', 'dockedPanel_', 'mobilePanel_', 'netview_'];
+
+// Wipes every remembered Net View panel position/size/dock/minimize/split
+// preference across all screens (see NetViewLeftPanels.tsx, NetViewSidePanels.tsx,
+// useResizableSplit.ts, FloatingWindow.tsx, usePoppedOutWindow.ts). Leaves
+// unrelated preferences (theme, dashboard/scheduler view mode, etc.) alone.
+export function clearNetViewLayoutPrefs(): void {
+  Object.keys(localStorage)
+    .filter((key) => NET_VIEW_LAYOUT_PREFIXES.some((prefix) => key.startsWith(prefix)))
+    .forEach((key) => localStorage.removeItem(key));
+}

@@ -19,6 +19,15 @@ interface ThemeContextType {
   // Uploaded instance logo URL, or null to use the built-in SVG mark.
   customLogoUrl: string | null;
   setCustomLogoUrl: (url: string | null) => void;
+  // Live-preview override for the color theme swatch, so Profile ->
+  // Settings can show the effect of a click instantly instead of only
+  // after Save. `undefined` means "no active preview - show whatever the
+  // user's saved theme (or the system default) actually is". `null` is a
+  // real, distinct preview value meaning "System Default" was clicked (it's
+  // also ProfileFormData.theme's own null-means-system-default convention -
+  // see App.tsx's themeKey derivation).
+  previewThemeKey: string | null | undefined;
+  setPreviewThemeKey: (key: string | null | undefined) => void;
 }
 
 export const ThemeContext = createContext<ThemeContextType>({
@@ -30,6 +39,8 @@ export const ThemeContext = createContext<ThemeContextType>({
   setCustomTheme: () => {},
   customLogoUrl: null,
   setCustomLogoUrl: () => {},
+  previewThemeKey: undefined,
+  setPreviewThemeKey: () => {},
 });
 
 export const useThemeMode = () => useContext(ThemeContext);

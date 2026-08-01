@@ -5,6 +5,7 @@ import Announcements from '../Announcements';
 import ScheduleAnnouncements from '../ScheduleAnnouncements';
 import ResizeHandle from '../ResizeHandle';
 import useResizableSplit from '../../hooks/useResizableSplit';
+import useLayoutTier from '../../hooks/useLayoutTier';
 import { STORAGE_KEYS } from '../../utils/localStorageKeys';
 
 // ========== NET VIEW LEFT PANELS (Script + Announcements + Net Notes) ==========
@@ -85,7 +86,8 @@ const NetViewLeftPanels: React.FC<NetViewLeftPanelsProps> = ({
   const showScheduleAnnouncements = scheduleAnnouncementsOpen && scheduleAnnouncementsDocked;
   const showAnnouncements = announcementsOpen && announcementsDocked;
 
-  const { containerRef, getWeight, startDrag } = useResizableSplit(STORAGE_KEYS.LEFT_PANELS_SPLIT, 'column');
+  const layoutTier = useLayoutTier();
+  const { containerRef, getWeight, startDrag } = useResizableSplit(`${STORAGE_KEYS.LEFT_PANELS_SPLIT}_${layoutTier}`, 'column');
 
   const panes: Array<{ key: string; minimized: boolean; content: React.ReactNode }> = [];
   if (showScript) {

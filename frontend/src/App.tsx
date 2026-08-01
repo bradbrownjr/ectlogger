@@ -192,6 +192,7 @@ const ThemedApp: React.FC = () => {
   );
   const [customTheme, setCustomTheme] = useState<ThemeDefinition | null>(null);
   const [customLogoUrl, setCustomLogoUrl] = useState<string | null>(null);
+  const [previewThemeKey, setPreviewThemeKey] = useState<string | null | undefined>(undefined);
 
   useEffect(() => {
     localStorage.setItem('themeMode', mode);
@@ -224,12 +225,12 @@ const ThemedApp: React.FC = () => {
     setMode((prevMode: PaletteMode) => (prevMode === 'light' ? 'dark' : 'light'));
   };
 
-  const themeKey = user?.theme || systemDefaultTheme;
+  const themeKey = previewThemeKey !== undefined ? (previewThemeKey || systemDefaultTheme) : (user?.theme || systemDefaultTheme);
 
   const theme = useMemo(() => createTheme(getDesignTokens(mode, themeKey, customTheme)), [mode, themeKey, customTheme]);
 
   return (
-    <ThemeContext.Provider value={{ mode, toggleColorMode, systemDefaultTheme, setSystemDefaultTheme, customTheme, setCustomTheme, customLogoUrl, setCustomLogoUrl }}>
+    <ThemeContext.Provider value={{ mode, toggleColorMode, systemDefaultTheme, setSystemDefaultTheme, customTheme, setCustomTheme, customLogoUrl, setCustomLogoUrl, previewThemeKey, setPreviewThemeKey }}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <SnackbarProvider maxSnack={3} autoHideDuration={6000}>

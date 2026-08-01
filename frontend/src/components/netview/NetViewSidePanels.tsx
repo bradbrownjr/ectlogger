@@ -6,6 +6,7 @@ import ActivityLog from '../ActivityLog';
 import CheckInMap from '../CheckInMap';
 import ResizeHandle from '../ResizeHandle';
 import useResizableSplit from '../../hooks/useResizableSplit';
+import useLayoutTier from '../../hooks/useLayoutTier';
 import { STORAGE_KEYS } from '../../utils/localStorageKeys';
 
 // ========== NET VIEW SIDE PANELS (Chat + Activity Log + Map) ==========
@@ -110,7 +111,8 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
   const activityLogDocked = !activityLogDetached && !activityLogWindowOpen;
   const showMap = mapOpen && mapDocked;
 
-  const { containerRef, getWeight, startDrag } = useResizableSplit(STORAGE_KEYS.RIGHT_PANELS_SPLIT, 'column');
+  const layoutTier = useLayoutTier();
+  const { containerRef, getWeight, startDrag } = useResizableSplit(`${STORAGE_KEYS.RIGHT_PANELS_SPLIT}_${layoutTier}`, 'column');
 
   // Ordered list of the panes actually rendered this pass, so a
   // ResizeHandle is only inserted between two panes that are genuinely

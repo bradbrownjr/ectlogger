@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import {
   Container,
   Paper,
@@ -39,7 +39,6 @@ function TabPanel(props: TabPanelProps) {
 
 const Profile: React.FC = () => {
   const { user, login } = useAuth();
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -120,9 +119,6 @@ const Profile: React.FC = () => {
       }
       
       setSuccess(true);
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 1500);
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to update profile');
     } finally {
