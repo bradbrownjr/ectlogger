@@ -18,7 +18,7 @@ const ResizeHandle: React.FC<ResizeHandleProps> = ({ direction, onDragStart }) =
       position: 'relative',
       cursor: direction === 'row' ? 'col-resize' : 'row-resize',
       touchAction: 'none',
-      ...(direction === 'row' ? { width: 10 } : { height: 10 }),
+      ...(direction === 'row' ? { width: 6 } : { height: 6 }),
       zIndex: 1,
       '&::after': {
         content: '""',

@@ -159,7 +159,7 @@ const NetViewLeftPanels: React.FC<NetViewLeftPanelsProps> = ({
   if (panes.length === 0) return null;
 
   return (
-    <Grid item xs={12} xl={width} ref={containerRef} data-pane-key="left" style={columnStyle} sx={{ pr: { xl: 0.5 }, display: 'flex', flexDirection: 'column', gap: 0.5, minHeight: { xs: 300, xl: 0 }, height: { xs: 'auto', xl: '100%' } }}>
+    <Grid item xs={12} xl={width} ref={containerRef} data-pane-key="left" style={columnStyle} sx={{ pr: { xl: 0.25 }, display: 'flex', flexDirection: 'column', gap: 0.25, minHeight: { xs: 300, xl: 0 }, height: { xs: 'auto', xl: '100%' } }}>
       {panes.map((pane, idx) => (
         <React.Fragment key={pane.key}>
           {idx > 0 && !panes[idx - 1].minimized && !pane.minimized && (

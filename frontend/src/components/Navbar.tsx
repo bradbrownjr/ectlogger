@@ -41,6 +41,7 @@ import BarChartIcon from '@mui/icons-material/BarChart';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import PersonIcon from '@mui/icons-material/Person';
 import SettingsIcon from '@mui/icons-material/Settings';
+import NotificationsIcon from '@mui/icons-material/Notifications';
 import LogoutIcon from '@mui/icons-material/Logout';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import GridOnIcon from '@mui/icons-material/GridOn';
@@ -323,6 +324,12 @@ const Navbar: React.FC = () => {
                       </ListItem>
                       <ListItem disablePadding>
                         <ListItemButton onClick={() => handleNavigate('/profile?tab=2')}>
+                          <ListItemIcon><NotificationsIcon /></ListItemIcon>
+                          <ListItemText primary="Notifications" />
+                        </ListItemButton>
+                      </ListItem>
+                      <ListItem disablePadding>
+                        <ListItemButton onClick={() => handleNavigate('/profile?tab=3')}>
                           <ListItemIcon><BarChartIcon /></ListItemIcon>
                           <ListItemText primary="Personal Stats" />
                         </ListItemButton>
@@ -445,6 +452,10 @@ const Navbar: React.FC = () => {
                       Settings
                     </MenuItem>
                     <MenuItem onClick={() => handleNavigate('/profile?tab=2')}>
+                      <ListItemIcon><NotificationsIcon fontSize="small" /></ListItemIcon>
+                      Notifications
+                    </MenuItem>
+                    <MenuItem onClick={() => handleNavigate('/profile?tab=3')}>
                       <ListItemIcon><BarChartIcon fontSize="small" /></ListItemIcon>
                       Personal Stats
                     </MenuItem>

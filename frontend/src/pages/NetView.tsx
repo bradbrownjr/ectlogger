@@ -19,6 +19,8 @@ import NetViewLeftPanels from '../components/netview/NetViewLeftPanels';
 import ResizeHandle from '../components/ResizeHandle';
 import useResizableSplit from '../hooks/useResizableSplit';
 import useLayoutTier from '../hooks/useLayoutTier';
+import useNetViewLayoutStorage from '../hooks/useNetViewLayoutStorage';
+import usePersistedDialog from '../hooks/usePersistedDialog';
 import { STORAGE_KEYS } from '../utils/localStorageKeys';
 import { displayCallsign } from '../utils/userDisplay';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
@@ -175,7 +177,7 @@ const NetView: React.FC = () => {
   // it on demand when they want to log a check-in.
   const [mobileCheckInExpanded, setMobileCheckInExpanded] = useState(false);
   const frequencyDialog = useDialog();
-  const map = useDialog();
+  const map = usePersistedDialog(STORAGE_KEYS.MAP_OPEN);
   const bulkCheckIn = useDialog();
   const [hideDuplicates, setHideDuplicates] = useLocalStorage<boolean>(STORAGE_KEYS.CHECKIN_HIDE_DUPLICATES, false);
   const search = useDialog();
@@ -188,9 +190,9 @@ const NetView: React.FC = () => {
   const [profileUserId, setProfileUserId] = useState<number | null>(null);
   const [subscribing, setSubscribing] = useState(false);
   const [startingNet, setStartingNet] = useState(false);
-  const script = useDialog();
-  const announcements = useDialog();
-  const scheduleAnnouncements = useDialog();
+  const script = usePersistedDialog(STORAGE_KEYS.SCRIPT_OPEN);
+  const announcements = usePersistedDialog(STORAGE_KEYS.ANNOUNCEMENTS_OPEN);
+  const scheduleAnnouncements = usePersistedDialog(STORAGE_KEYS.SCHEDULE_ANNOUNCEMENTS_OPEN);
   const topicHistory = useDialog();
   const importDialog = useDialog();
   const [highlightCheckIn, setHighlightCheckIn] = useState(false);
@@ -212,18 +214,18 @@ const NetView: React.FC = () => {
   const [inlineEditValues, setInlineEditValues] = useState<Partial<CheckIn>>({});
   const [inlineEditFocusField, setInlineEditFocusField] = useState<string | null>(null);
   const inlineEditRowRef = useRef<HTMLTableRowElement | null>(null);
-  const [checkInListDetached, setCheckInListDetached] = useLocalStorage<boolean>(STORAGE_KEYS.FLOATING_CHECKIN_LIST, false);
-  const [chatDetached, setChatDetached] = useLocalStorage<boolean>(STORAGE_KEYS.FLOATING_CHAT, false);
-  const [chatMinimized, setChatMinimized] = useLocalStorage<boolean>(STORAGE_KEYS.DOCKED_CHAT_MINIMIZED, false);
+  const [checkInListDetached, setCheckInListDetached] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.FLOATING_CHECKIN_LIST, false);
+  const [chatDetached, setChatDetached] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.FLOATING_CHAT, false);
+  const [chatMinimized, setChatMinimized] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.DOCKED_CHAT_MINIMIZED, false);
   // activityLog defaults to minimized (true) when no stored preference exists
-  const [activityLogMinimized, setActivityLogMinimized] = useLocalStorage<boolean>(STORAGE_KEYS.DOCKED_ACTIVITY_LOG_MINIMIZED, true);
+  const [activityLogMinimized, setActivityLogMinimized] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.DOCKED_ACTIVITY_LOG_MINIMIZED, true);
   // Mobile gets its own independent minimize preference (also defaulting
   // collapsed) instead of sharing the desktop one — the stacked mobile
   // layout has much less room, so a desktop session's "expanded" choice
   // shouldn't force every phone visit to start expanded too.
   const theme = useTheme();
   const isMobileLayout = useMediaQuery(theme.breakpoints.down('md'));
-  const [mobileActivityLogMinimized, setMobileActivityLogMinimized] = useLocalStorage<boolean>(STORAGE_KEYS.MOBILE_ACTIVITY_LOG_MINIMIZED, true);
+  const [mobileActivityLogMinimized, setMobileActivityLogMinimized] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.MOBILE_ACTIVITY_LOG_MINIMIZED, true);
   const effectiveActivityLogMinimized = isMobileLayout ? mobileActivityLogMinimized : activityLogMinimized;
   const setEffectiveActivityLogMinimized = isMobileLayout ? setMobileActivityLogMinimized : setActivityLogMinimized;
 
@@ -244,10 +246,10 @@ const NetView: React.FC = () => {
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
   const layoutTier = useLayoutTier();
   const { containerRef: columnsRef, getWeight: getColumnWeight, startDrag: startColumnDrag } = useResizableSplit(`${STORAGE_KEYS.COLUMN_SPLIT}_${layoutTier}`, 'row');
-  const [scriptDockedPref, setScriptDockedPref] = useLocalStorage<boolean>(STORAGE_KEYS.SCRIPT_DOCKED, true);
-  const [announcementsDockedPref, setAnnouncementsDockedPref] = useLocalStorage<boolean>(STORAGE_KEYS.ANNOUNCEMENTS_DOCKED, true);
-  const [scheduleAnnouncementsDockedPref, setScheduleAnnouncementsDockedPref] = useLocalStorage<boolean>(STORAGE_KEYS.SCHEDULE_ANNOUNCEMENTS_DOCKED, true);
-  const [mapDockedPref, setMapDockedPref] = useLocalStorage<boolean>(STORAGE_KEYS.MAP_DOCKED, true);
+  const [scriptDockedPref, setScriptDockedPref] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.SCRIPT_DOCKED, true);
+  const [announcementsDockedPref, setAnnouncementsDockedPref] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.ANNOUNCEMENTS_DOCKED, true);
+  const [scheduleAnnouncementsDockedPref, setScheduleAnnouncementsDockedPref] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.SCHEDULE_ANNOUNCEMENTS_DOCKED, true);
+  const [mapDockedPref, setMapDockedPref] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.MAP_DOCKED, true);
   const scriptDocked = scriptDockedPref && isXlUp;
   const announcementsDocked = announcementsDockedPref && isXlUp;
   const scheduleAnnouncementsDocked = scheduleAnnouncementsDockedPref && isXlUp;
@@ -262,11 +264,11 @@ const NetView: React.FC = () => {
   const handleUndockMap = () => setMapDockedPref(false);
   // Minimize state for the four docked-only panes above, persisted like
   // Chat/Activity Log's DOCKED_*_MINIMIZED keys.
-  const [scriptMinimized, setScriptMinimized] = useLocalStorage<boolean>(STORAGE_KEYS.SCRIPT_MINIMIZED, false);
-  const [announcementsMinimized, setAnnouncementsMinimized] = useLocalStorage<boolean>(STORAGE_KEYS.ANNOUNCEMENTS_MINIMIZED, false);
-  const [scheduleAnnouncementsMinimized, setScheduleAnnouncementsMinimized] = useLocalStorage<boolean>(STORAGE_KEYS.SCHEDULE_ANNOUNCEMENTS_MINIMIZED, false);
-  const [mapMinimized, setMapMinimized] = useLocalStorage<boolean>(STORAGE_KEYS.MAP_MINIMIZED, false);
-  const [activityLogDetached, setActivityLogDetached] = useLocalStorage<boolean>(STORAGE_KEYS.FLOATING_ACTIVITY_LOG, false);
+  const [scriptMinimized, setScriptMinimized] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.SCRIPT_MINIMIZED, false);
+  const [announcementsMinimized, setAnnouncementsMinimized] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.ANNOUNCEMENTS_MINIMIZED, false);
+  const [scheduleAnnouncementsMinimized, setScheduleAnnouncementsMinimized] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.SCHEDULE_ANNOUNCEMENTS_MINIMIZED, false);
+  const [mapMinimized, setMapMinimized] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.MAP_MINIMIZED, false);
+  const [activityLogDetached, setActivityLogDetached] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.FLOATING_ACTIVITY_LOG, false);
   // Frequency filter state - allows filtering check-ins by selected frequencies
   const [filteredFrequencyIds, setFilteredFrequencyIds] = useState<number[]>([]);
   // Auto-start ref to prevent multiple go-live triggers
@@ -1384,7 +1386,7 @@ const NetView: React.FC = () => {
             )}
             {/* Check-in list - hide Grid if detached or popped to a real window */}
             {!checkInListDetached && !checkInsPopout.isOpen && (
-            <Grid item xs={12} md={columnWidths.center} data-pane-key="center" style={centerColumnStyle} sx={{ pr: { md: 0.5 }, display: 'flex', flexDirection: 'column', minHeight: { xs: 'auto', md: 0 }, height: { xs: 'auto', md: '100%' }, mb: { xs: 2, md: 0 } }}>
+            <Grid item xs={12} md={columnWidths.center} data-pane-key="center" style={centerColumnStyle} sx={{ pr: { md: 0.25 }, display: 'flex', flexDirection: 'column', minHeight: { xs: 'auto', md: 0 }, height: { xs: 'auto', md: '100%' }, mb: { xs: 2, md: 0 } }}>
               <FloatingWindow
                 title="Check-in List"
                 isDetached={false}

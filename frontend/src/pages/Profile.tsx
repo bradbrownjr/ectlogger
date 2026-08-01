@@ -10,10 +10,12 @@ import {
 import BarChartIcon from '@mui/icons-material/BarChart';
 import PersonIcon from '@mui/icons-material/Person';
 import SettingsIcon from '@mui/icons-material/Settings';
+import NotificationsIcon from '@mui/icons-material/Notifications';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import ProfileTab from '../components/profile/ProfileTab';
 import SettingsTab from '../components/profile/SettingsTab';
+import NotificationsTab from '../components/profile/NotificationsTab';
 import ActivityTab from '../components/profile/ActivityTab';
 
 interface TabPanelProps {
@@ -156,11 +158,18 @@ const Profile: React.FC = () => {
               aria-controls="profile-tabpanel-1"
             />
             <Tab
+              icon={<NotificationsIcon />}
+              iconPosition="start"
+              label="Notifications"
+              id="profile-tab-2"
+              aria-controls="profile-tabpanel-2"
+            />
+            <Tab
               icon={<BarChartIcon />}
               iconPosition="start"
               label="Activity"
-              id="profile-tab-2"
-              aria-controls="profile-tabpanel-2"
+              id="profile-tab-3"
+              aria-controls="profile-tabpanel-3"
             />
           </Tabs>
         </Box>
@@ -191,8 +200,20 @@ const Profile: React.FC = () => {
           />
         </TabPanel>
 
-        {/* ========== Activity Tab ========== */}
+        {/* ========== Notifications Tab ========== */}
         <TabPanel value={tabValue} index={2}>
+          <NotificationsTab
+            formData={formData}
+            setFormData={setFormData}
+            handleSubmit={handleSubmit}
+            saving={saving}
+            error={error}
+            success={success}
+          />
+        </TabPanel>
+
+        {/* ========== Activity Tab ========== */}
+        <TabPanel value={tabValue} index={3}>
           <ActivityTab />
         </TabPanel>
       </Paper>

@@ -21,7 +21,8 @@ import { useThemeMode } from '../../contexts/ThemeContext';
 import api from '../../services/api';
 import type { ProfileFormData } from './profileFormTypes';
 import ThemeSwatchPicker from '../ThemeSwatchPicker';
-import { clearNetViewLayoutPrefs } from '../../utils/localStorageKeys';
+import { STORAGE_KEYS, clearNetViewLayoutPrefs } from '../../utils/localStorageKeys';
+import useLocalStorage from '../../hooks/useLocalStorage';
 
 // ========== SETTINGS TAB ==========
 // Display/notification toggle switches. formData/handleSubmit are shared
@@ -51,6 +52,10 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
   const navigate = useNavigate();
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [resetDone, setResetDone] = useState(false);
+  // Always plain useLocalStorage, never the gated useNetViewLayoutStorage -
+  // this preference has to persist regardless of its own value, or turning
+  // it off would forget that it was ever turned off.
+  const [rememberLayout, setRememberLayout] = useLocalStorage<boolean>(STORAGE_KEYS.REMEMBER_NET_VIEW_LAYOUT, true);
 
   // Reverts to the user's actually-saved theme (or the system default) the
   // moment this tab goes away - whether by switching Profile tabs or
@@ -174,117 +179,33 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
           )}
         </Box>
 
-        <Typography variant="h6" gutterBottom>
-          Email Notifications
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Control which email notifications you receive for nets you're subscribed to.
-        </Typography>
-
-        <Box sx={{ ml: 1 }}>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={formData.email_notifications}
-                onChange={(e) => setFormData({ ...formData, email_notifications: e.target.checked })}
-              />
-            }
-            label="Enable email notifications"
-          />
-          <Typography variant="body2" color="text.secondary" sx={{ ml: 4, mb: 2 }}>
-            Master switch for all email notifications (except login links)
-          </Typography>
-
-          <Box sx={{ ml: 2, opacity: formData.email_notifications ? 1 : 0.5 }}>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={formData.notify_net_start}
-                  onChange={(e) => setFormData({ ...formData, notify_net_start: e.target.checked })}
-                  disabled={!formData.email_notifications}
-                />
-              }
-              label="Net start notifications"
-            />
-            <Typography variant="body2" color="text.secondary" sx={{ ml: 4, mb: 1 }}>
-              Receive an email when a subscribed net goes active
-            </Typography>
-
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={formData.notify_net_close}
-                  onChange={(e) => setFormData({ ...formData, notify_net_close: e.target.checked })}
-                  disabled={!formData.email_notifications}
-                />
-              }
-              label="Net close notifications (with log)"
-            />
-            <Typography variant="body2" color="text.secondary" sx={{ ml: 4, mb: 1 }}>
-              Receive the net log when a subscribed net closes
-            </Typography>
-
-            {/* ICS-309 format option - nested under close notifications */}
-            <Box sx={{ ml: 4, opacity: formData.notify_net_close && formData.email_notifications ? 1 : 0.5 }}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={formData.notify_ics309}
-                    onChange={(e) => setFormData({ ...formData, notify_ics309: e.target.checked })}
-                    disabled={!formData.email_notifications || !formData.notify_net_close}
-                    size="small"
-                  />
-                }
-                label="Use ICS-309 format"
-              />
-              <Typography variant="body2" color="text.secondary" sx={{ ml: 4, mb: 1 }}>
-                Format net logs as ICS-309 Communications Log (FEMA standard)
-              </Typography>
-            </Box>
-
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={formData.notify_net_reminder}
-                  onChange={(e) => setFormData({ ...formData, notify_net_reminder: e.target.checked })}
-                  disabled={!formData.email_notifications}
-                />
-              }
-              label="Net reminder (1 hour before)"
-            />
-            <Typography variant="body2" color="text.secondary" sx={{ ml: 4, mb: 1 }}>
-              Receive a reminder email 1 hour before scheduled nets start
-            </Typography>
-
-            {/* ========== "What's New" digest opt-in (off by default) ==========
-                Sends a single daily email at 8 AM (user's local TZ, PST fallback)
-                summarizing platform updates from the previous day. */}
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={formData.notify_whats_new}
-                  onChange={(e) => setFormData({ ...formData, notify_whats_new: e.target.checked })}
-                  disabled={!formData.email_notifications}
-                />
-              }
-              label="What's New emails"
-            />
-            <Typography variant="body2" color="text.secondary" sx={{ ml: 4, mb: 1 }}>
-              Get a daily 8 AM digest of new ECTLogger features and fixes (sent only on days with updates)
-            </Typography>
-          </Box>
-        </Box>
-
         <Divider sx={{ my: 3 }} />
 
         <Typography variant="h6" gutterBottom>
           Net View Layout
         </Typography>
+
+        <Box sx={{ mb: 2 }}>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={rememberLayout}
+                onChange={(e) => setRememberLayout(e.target.checked)}
+              />
+            }
+            label="Remember Net View Layout"
+          />
+          <Typography variant="body2" color="text.secondary" sx={{ ml: 4 }}>
+            Whether Chat, Activity Log, Script, Announcements, Notes, and the Map stay
+            docked, floating, minimized, or popped out, along with panel and column
+            sizes, is cached on this device so they're the way you left them next time.
+            Turn this off if you'd rather every net start from the defaults. This
+            doesn't affect any other settings, and applies only to this device.
+          </Typography>
+        </Box>
+
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Panel positions, sizes, and whether Chat, Activity Log, Script, Announcements,
-          Notes, and the Map are docked, floating, minimized, or popped out are all
-          remembered per device. If a net's layout gets into a state you don't like,
-          reset it back to defaults here.
+          If a net's layout gets into a state you don't like, reset it back to defaults here.
         </Typography>
         <Button
           variant="outlined"

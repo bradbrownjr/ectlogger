@@ -10,6 +10,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import MinimizeIcon from '@mui/icons-material/Minimize';
 import CropSquareIcon from '@mui/icons-material/CropSquare';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import { isNetViewLayoutRemembered } from '../utils/localStorageKeys';
 
 interface FloatingWindowProps {
   title: string;
@@ -49,7 +50,7 @@ const FloatingWindow: React.FC<FloatingWindowProps> = ({
   const [isMinimized, setIsMinimized] = useState(false);
   const [position, setPosition] = useState<WindowPosition>(() => {
     // Try to load saved position from localStorage
-    if (storageKey) {
+    if (storageKey && isNetViewLayoutRemembered()) {
       const saved = localStorage.getItem(`floatingWindow_${storageKey}`);
       if (saved) {
         try {
@@ -70,7 +71,7 @@ const FloatingWindow: React.FC<FloatingWindowProps> = ({
 
   // Save position to localStorage when it changes
   useEffect(() => {
-    if (storageKey && isDetached) {
+    if (storageKey && isDetached && isNetViewLayoutRemembered()) {
       localStorage.setItem(`floatingWindow_${storageKey}`, JSON.stringify(position));
     }
   }, [position, storageKey, isDetached]);

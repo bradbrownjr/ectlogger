@@ -203,7 +203,7 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
           Drag handles between expanded panes let the split be resized;
           see useResizableSplit.ts. */}
       {panes.length > 0 && (
-      <Grid item xs={12} md={width} ref={containerRef} data-pane-key="right" style={columnStyle} sx={{ pl: { md: 0.5 }, display: 'flex', flexDirection: 'column', gap: 0.5, minHeight: { xs: 300, md: 0 }, height: { xs: 'auto', md: '100%' } }}>
+      <Grid item xs={12} md={width} ref={containerRef} data-pane-key="right" style={columnStyle} sx={{ pl: { md: 0.25 }, display: 'flex', flexDirection: 'column', gap: 0.25, minHeight: { xs: 300, md: 0 }, height: { xs: 'auto', md: '100%' } }}>
         {panes.map((pane, idx) => (
           <React.Fragment key={pane.key}>
             {idx > 0 && !panes[idx - 1].minimized && !pane.minimized && (

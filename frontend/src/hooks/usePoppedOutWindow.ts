@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
+import { isNetViewLayoutRemembered } from '../utils/localStorageKeys';
 
 interface WindowGeometry {
   left: number;
@@ -8,6 +9,7 @@ interface WindowGeometry {
 }
 
 function loadGeometry(storageKey: string): WindowGeometry | null {
+  if (!isNetViewLayoutRemembered()) return null;
   try {
     const saved = localStorage.getItem(`poppedWindow_${storageKey}`);
     return saved ? JSON.parse(saved) : null;
@@ -17,6 +19,7 @@ function loadGeometry(storageKey: string): WindowGeometry | null {
 }
 
 function saveGeometry(storageKey: string, geometry: WindowGeometry) {
+  if (!isNetViewLayoutRemembered()) return;
   localStorage.setItem(`poppedWindow_${storageKey}`, JSON.stringify(geometry));
 }
 

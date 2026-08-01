@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import useLocalStorage from './useLocalStorage';
+import useNetViewLayoutStorage from './useNetViewLayoutStorage';
 
 export type SplitDirection = 'row' | 'column';
 
@@ -17,7 +17,7 @@ export type SplitDirection = 'row' | 'column';
 // for side-by-side columns (drag tracks clientX), 'column' for stacked
 // panes (drag tracks clientY).
 export function useResizableSplit(storageKey: string, direction: SplitDirection) {
-  const [weights, setWeights] = useLocalStorage<Record<string, number>>(storageKey, {});
+  const [weights, setWeights] = useNetViewLayoutStorage<Record<string, number>>(storageKey, {});
   const containerRef = useRef<HTMLDivElement>(null);
 
   // fallback lets a caller seed the starting ratio (e.g. the existing fixed
