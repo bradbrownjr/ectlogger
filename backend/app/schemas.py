@@ -1346,6 +1346,11 @@ class TopicHistoryCreate(TopicHistoryBase):
     net_id: Optional[int] = None
 
 
+class TopicHistoryUpdate(BaseModel):
+    topic: Optional[str] = Field(None, max_length=500)
+    used_date: Optional[datetime] = None
+
+
 class TopicHistoryResponse(TopicHistoryBase):
     id: int
     template_id: int

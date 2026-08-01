@@ -21,6 +21,10 @@ import HistoryIcon from '@mui/icons-material/History';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import CheckIcon from '@mui/icons-material/Check';
+import CloseIcon from '@mui/icons-material/Close';
 import api from '../services/api';
 
 const PAGE_SIZE = 25;
@@ -58,6 +62,9 @@ const TopicHistory: React.FC<TopicHistoryProps> = ({
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editTopic, setEditTopic] = useState('');
+  const [editDate, setEditDate] = useState('');
 
   useEffect(() => {
     if (open && templateId) {
@@ -107,6 +114,47 @@ const TopicHistory: React.FC<TopicHistoryProps> = ({
       setError(err.response?.data?.detail || 'Failed to add topic');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleStartEdit = (entry: TopicHistoryEntry) => {
+    setEditingId(entry.id);
+    setEditTopic(entry.topic);
+    setEditDate(entry.used_date.split('T')[0]);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditTopic('');
+    setEditDate('');
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingId || !editTopic.trim()) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await api.put(`/templates/${templateId}/topic-history/${editingId}`, {
+        topic: editTopic,
+        used_date: new Date(editDate).toISOString(),
+      });
+      handleCancelEdit();
+      await loadTopicHistory();
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to save topic');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteTopic = async (id: number) => {
+    if (!confirm('Delete this topic entry?')) return;
+    setError(null);
+    try {
+      await api.delete(`/templates/${templateId}/topic-history/${id}`);
+      await loadTopicHistory();
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to delete topic');
     }
   };
 
@@ -229,43 +277,92 @@ const TopicHistory: React.FC<TopicHistoryProps> = ({
           <Box>
             {paginated.map((topic, index) => (
               <React.Fragment key={topic.id}>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'baseline',
-                    gap: 2,
-                    py: 1.5,
-                    px: 1,
-                  }}
-                >
-                  {/* Date stamp — fixed width so topic column aligns */}
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ flexShrink: 0, width: 100 }}
-                  >
-                    {formatDate(topic.used_date)}
-                  </Typography>
-                  <Typography variant="body1" sx={{ flex: 1 }}>
-                    {topic.topic}
-                  </Typography>
-                  {/* Opens in a new tab so browsing history doesn't lose
-                      the visitor's place in the currently-open net. */}
-                  {topic.net_id && (
-                    <Tooltip title="Open that net in a new tab">
-                      <IconButton
-                        size="small"
-                        component="a"
-                        href={`/nets/${topic.net_id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        sx={{ flexShrink: 0 }}
-                      >
-                        <OpenInNewIcon fontSize="small" />
+                {editingId === topic.id ? (
+                  <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, py: 1.5, px: 1 }}>
+                    <TextField
+                      type="date"
+                      size="small"
+                      value={editDate}
+                      onChange={(e) => setEditDate(e.target.value)}
+                      InputLabelProps={{ shrink: true }}
+                      sx={{ flexShrink: 0, width: 160 }}
+                    />
+                    <TextField
+                      fullWidth
+                      size="small"
+                      multiline
+                      value={editTopic}
+                      onChange={(e) => setEditTopic(e.target.value)}
+                      sx={{ flex: 1 }}
+                    />
+                    <Tooltip title="Save">
+                      <span>
+                        <IconButton size="small" color="primary" disabled={!editTopic.trim() || saving} onClick={handleSaveEdit} sx={{ flexShrink: 0 }}>
+                          <CheckIcon fontSize="small" />
+                        </IconButton>
+                      </span>
+                    </Tooltip>
+                    <Tooltip title="Cancel">
+                      <IconButton size="small" onClick={handleCancelEdit} sx={{ flexShrink: 0 }}>
+                        <CloseIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
-                  )}
-                </Box>
+                  </Box>
+                ) : (
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'baseline',
+                      gap: 2,
+                      py: 1.5,
+                      px: 1,
+                    }}
+                  >
+                    {/* Date stamp — fixed width so topic column aligns */}
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ flexShrink: 0, width: 100 }}
+                    >
+                      {formatDate(topic.used_date)}
+                    </Typography>
+                    <Typography variant="body1" sx={{ flex: 1 }}>
+                      {topic.topic}
+                    </Typography>
+                    {/* Opens in a new tab so browsing history doesn't lose
+                        the visitor's place in the currently-open net. */}
+                    {topic.net_id && (
+                      <Tooltip title="Open that net in a new tab">
+                        <IconButton
+                          size="small"
+                          component="a"
+                          href={`/nets/${topic.net_id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          sx={{ flexShrink: 0 }}
+                        >
+                          <OpenInNewIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                    {/* Editing/deleting a topic entry is a staff action,
+                        same gate as adding one above. */}
+                    {canManage && (
+                      <>
+                        <Tooltip title="Edit topic">
+                          <IconButton size="small" onClick={() => handleStartEdit(topic)} sx={{ flexShrink: 0 }}>
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Delete topic">
+                          <IconButton size="small" onClick={() => handleDeleteTopic(topic.id)} sx={{ flexShrink: 0 }}>
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </>
+                    )}
+                  </Box>
+                )}
                 {index < paginated.length - 1 && <Divider />}
               </React.Fragment>
             ))}
