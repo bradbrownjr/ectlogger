@@ -278,6 +278,7 @@ const NetScript: React.FC<NetScriptProps> = ({
             '& hr': { my: 2, border: 'none', borderTop: 1, borderColor: 'divider' },
             '& strong': { fontWeight: 'bold' },
             '& em': { fontStyle: 'italic' },
+            '& a': { color: 'primary.main' },
           }}
         >
           {script ? (

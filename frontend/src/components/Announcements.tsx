@@ -272,6 +272,7 @@ const Announcements: React.FC<AnnouncementsProps> = ({
             '& p': { my: 1 },
             '& strong': { fontWeight: 'bold' },
             '& em': { fontStyle: 'italic' },
+            '& a': { color: 'primary.main' },
           }}
         >
           {announcements ? (
