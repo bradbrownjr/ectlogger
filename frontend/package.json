@@ -23,6 +23,7 @@
     "react-rnd": "^10.4.1",
     "react-router-dom": "^6.21.3",
     "recharts": "^2.10.4",
+    "remark-breaks": "^4.0.0",
     "remark-gfm": "^4.0.1"
   },
   "devDependencies": {

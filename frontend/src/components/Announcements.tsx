@@ -18,12 +18,14 @@ import ViewSidebarIcon from '@mui/icons-material/ViewSidebar';
 import EditIcon from '@mui/icons-material/Edit';
 import FormatBoldIcon from '@mui/icons-material/FormatBold';
 import FormatItalicIcon from '@mui/icons-material/FormatItalic';
+import LinkIcon from '@mui/icons-material/Link';
 import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
 import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
 import HorizontalRuleIcon from '@mui/icons-material/HorizontalRule';
 import { Rnd } from 'react-rnd';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkBreaks from 'remark-breaks';
 import { netApi } from '../services/api';
 
 interface AnnouncementsProps {
@@ -141,11 +143,23 @@ const Announcements: React.FC<AnnouncementsProps> = ({
     }, 0);
   };
 
+  const insertLink = () => {
+    const url = window.prompt('Link URL:', 'https://');
+    if (!url) return;
+    insertMarkdown('[', `](${url})`, 'link text');
+  };
+
   const handleSave = async () => {
     setSaving(true);
+    // Trailing spaces/tabs are invisible and don't do anything useful now
+    // that remark-breaks (see renderContent below) turns every line break
+    // into a real line break on its own - strip them so saved content
+    // matches what the editor showed.
+    const trimmed = editValue.replace(/[ \t]+$/gm, '');
     try {
-      await netApi.update(netId, { announcements: editValue });
-      onSaved?.(editValue);
+      await netApi.update(netId, { announcements: trimmed });
+      setEditValue(trimmed);
+      onSaved?.(trimmed);
       setEditing(false);
     } catch {
       // leave edit mode open so user can retry
@@ -224,20 +238,25 @@ const Announcements: React.FC<AnnouncementsProps> = ({
             <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
             <Tooltip title="Bold"><IconButton size="small" onClick={() => insertMarkdown('**', '**', 'bold text')}><FormatBoldIcon fontSize="small" /></IconButton></Tooltip>
             <Tooltip title="Italic"><IconButton size="small" onClick={() => insertMarkdown('*', '*', 'italic text')}><FormatItalicIcon fontSize="small" /></IconButton></Tooltip>
+            <Tooltip title="Link"><IconButton size="small" onClick={insertLink}><LinkIcon fontSize="small" /></IconButton></Tooltip>
             <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
             <Tooltip title="Bullet list"><IconButton size="small" onClick={() => insertMarkdown('- ', '', 'List item', true)}><FormatListBulletedIcon fontSize="small" /></IconButton></Tooltip>
             <Tooltip title="Numbered list"><IconButton size="small" onClick={() => insertMarkdown('1. ', '', 'List item', true)}><FormatListNumberedIcon fontSize="small" /></IconButton></Tooltip>
             <Tooltip title="Divider"><IconButton size="small" onClick={() => insertMarkdown('\n---\n')}><HorizontalRuleIcon fontSize="small" /></IconButton></Tooltip>
           </Box>
-          {/* Editor */}
+          {/* Editor - rows=1 (overridden to 100% height below) opts out of
+              MUI's autosize-to-content behavior, which has no cap and was
+              growing past the visible area with nothing to scroll it into
+              view - see textarea overflowY below. */}
           <TextField
             multiline
+            rows={1}
             fullWidth
             value={editValue}
             onChange={e => setEditValue(e.target.value)}
             inputRef={textAreaRef}
             variant="outlined"
-            sx={{ flex: 1, '& .MuiInputBase-root': { height: '100%', alignItems: 'flex-start', fontFamily: 'monospace', fontSize: '0.85rem' }, '& .MuiOutlinedInput-notchedOutline': { border: 'none' }, '& textarea': { resize: 'none' } }}
+            sx={{ flex: 1, '& .MuiInputBase-root': { height: '100%', alignItems: 'flex-start', fontFamily: 'monospace', fontSize: '0.85rem' }, '& .MuiOutlinedInput-notchedOutline': { border: 'none' }, '& textarea': { resize: 'none', height: '100% !important', overflowY: 'auto' } }}
             InputProps={{ sx: { height: '100%' } }}
           />
         </>
@@ -256,7 +275,7 @@ const Announcements: React.FC<AnnouncementsProps> = ({
           }}
         >
           {announcements ? (
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{normalizeMarkdownDelimiters(announcements)}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{normalizeMarkdownDelimiters(announcements)}</ReactMarkdown>
           ) : (
             <Typography color="text.secondary" sx={{ fontStyle: 'italic' }}>No notes have been added to this net.</Typography>
           )}
