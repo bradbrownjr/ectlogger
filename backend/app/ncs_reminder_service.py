@@ -141,7 +141,10 @@ class NCSReminderService:
                 info_url=template.info_url,
                 stream_url=template.stream_url,
                 script=template.script,
-                announcements=template.announcements,
+                # Deliberately NOT copying template.announcements: Net.announcements
+                # is Net Notes now (per-net, meant to start blank), separate from
+                # the schedule's Announcements which ScheduleAnnouncements.tsx reads
+                # live from the template - see schemas.py NetResponse.from_orm.
                 owner_id=template.owner_id,
                 template_id=template.id,
                 field_config=template.field_config,
