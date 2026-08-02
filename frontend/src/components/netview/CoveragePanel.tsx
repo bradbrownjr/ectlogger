@@ -12,6 +12,7 @@ import {
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
+import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 import MapIcon from '@mui/icons-material/Map';
 import MinimizeIcon from '@mui/icons-material/Minimize';
 import CropSquareIcon from '@mui/icons-material/CropSquare';
@@ -135,6 +136,16 @@ const CoveragePanel: React.FC<CoveragePanelProps> = ({
                     >
                       <SearchIcon sx={{ fontSize: 14 }} />
                     </IconButton>
+                    {highlightedCallsign && (
+                      <IconButton
+                        size="small"
+                        onClick={() => onHighlightCallsign(null)}
+                        title={`Clear highlight (${highlightedCallsign})`}
+                        sx={{ p: 0.25 }}
+                      >
+                        <HighlightOffIcon sx={{ fontSize: 14 }} />
+                      </IconButton>
+                    )}
                     {onShowOnMap && (
                       <IconButton
                         size="small"
