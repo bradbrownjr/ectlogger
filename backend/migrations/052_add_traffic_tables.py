@@ -40,7 +40,7 @@ def migrate(db_path: str = None):
                     is_builtin BOOLEAN DEFAULT 1,
                     is_enabled BOOLEAN DEFAULT 1,
                     sort_order INTEGER DEFAULT 100,
-                    created_at DATETIME,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                     updated_at DATETIME
                 )
             """)
@@ -103,8 +103,8 @@ def migrate(db_path: str = None):
                     held_by_user_id INTEGER,
                     held_since DATETIME,
                     last_action VARCHAR(20),
-                    filed_at DATETIME,
-                    created_at DATETIME,
+                    filed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                     updated_at DATETIME,
                     FOREIGN KEY(definition_id) REFERENCES form_definitions (id),
                     FOREIGN KEY(net_id) REFERENCES nets (id) ON DELETE SET NULL,
@@ -144,7 +144,7 @@ def migrate(db_path: str = None):
                     net_id INTEGER,
                     note TEXT,
                     occurred_at DATETIME NOT NULL,
-                    created_at DATETIME,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY(form_id) REFERENCES forms (id) ON DELETE CASCADE,
                     FOREIGN KEY(handed_to_user_id) REFERENCES users (id) ON DELETE SET NULL,
                     FOREIGN KEY(reported_by_user_id) REFERENCES users (id) ON DELETE SET NULL,
