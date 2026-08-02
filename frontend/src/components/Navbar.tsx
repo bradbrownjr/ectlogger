@@ -37,6 +37,7 @@ import Brightness7Icon from '@mui/icons-material/Brightness7';
 import MenuIcon from '@mui/icons-material/Menu';
 import RadioIcon from '@mui/icons-material/Radio';
 import EventIcon from '@mui/icons-material/Event';
+import MailIcon from '@mui/icons-material/Mail';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import PersonIcon from '@mui/icons-material/Person';
@@ -208,6 +209,7 @@ const Navbar: React.FC = () => {
   const navItems = [
     { label: 'Nets', path: '/dashboard', icon: <RadioIcon /> },
     { label: 'Schedule', path: '/scheduler', icon: <EventIcon /> },
+    { label: 'Traffic', path: '/traffic', icon: <MailIcon /> },
     { label: 'Stats', path: '/statistics', icon: <BarChartIcon /> },
   ];
 

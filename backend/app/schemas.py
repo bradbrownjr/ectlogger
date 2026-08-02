@@ -1642,3 +1642,31 @@ class FormResponse(BaseModel):
             created_at=obj.created_at,
             updated_at=obj.updated_at,
         )
+
+
+class FormListResponse(BaseModel):
+    """Paginated /traffic/forms response. total reflects the visibility-scoped
+    WHERE clause (app/traffic/visibility.py), not the unfiltered table -- a
+    caller who can see 1 of 3 forms gets total=1, never 3."""
+    items: List[FormResponse]
+    total: int
+
+
+class FormDetailResponse(FormResponse):
+    """GET /traffic/forms/{id}: the full instance plus its definition
+    snapshot and chain-of-custody log entries."""
+    definition: FormDefinitionResponse
+    log_entries: List[TrafficLogEntryResponse] = Field(default_factory=list)
+
+    class Config:
+        from_attributes = True
+
+    @classmethod
+    def from_orm(cls, obj):
+        base = FormResponse.from_orm(obj)
+        entries = sorted(obj.log_entries, key=lambda e: e.sequence)
+        return cls(
+            **base.model_dump(),
+            definition=FormDefinitionResponse.from_orm(obj.definition),
+            log_entries=[TrafficLogEntryResponse.from_orm(e) for e in entries],
+        )

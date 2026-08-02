@@ -231,6 +231,22 @@ export const feedbackApi = {
     api.post('/feedback', data),
 };
 
+// Traffic API (Assisted Traffic Handling & Forms — radiograms, ICS-213, etc.)
+// See docs/concepts/TRAFFIC-HANDLING-DESIGN.md sections 3.1-3.2 for this
+// phase's surface; log/export/import/reminder endpoints are later phases.
+export const trafficApi = {
+  listDefinitions: () => api.get('/traffic/definitions'),
+  getDefinition: (formType: string) => api.get(`/traffic/definitions/${formType}`),
+  updateDefinition: (id: number, data: any) => api.put(`/traffic/definitions/${id}`, data),
+
+  create: (data: any) => api.post('/traffic/forms', data),
+  list: (params?: any) => api.get('/traffic/forms', { params }),
+  listForNet: (netId: number, params?: any) => api.get(`/traffic/nets/${netId}/forms`, { params }),
+  get: (id: number) => api.get(`/traffic/forms/${id}`),
+  update: (id: number, data: any) => api.patch(`/traffic/forms/${id}`, data),
+  delete: (id: number) => api.delete(`/traffic/forms/${id}`),
+};
+
 // Contact API (station contacts from check-in history)
 export const contactApi = {
   list: (search?: string) => api.get('/contacts', { params: search ? { search } : undefined }),
