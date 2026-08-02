@@ -1,5 +1,6 @@
 import { checkInApi, netApi, netRoleApi, userApi } from '../../services/api';
 import api from '../../services/api';
+import { getErrorMessage } from '../../utils/apiErrors';
 
 // ========== CHECK-IN ACTIONS ==========
 // The check-in row action handlers: create/edit/delete a check-in, change
@@ -154,7 +155,7 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
       }
     } catch (error: any) {
       console.error('Failed to create check-in:', error);
-      setToastMessage(error.response?.data?.detail || 'Failed to check in station');
+      setToastMessage(getErrorMessage(error, 'Failed to check in station'));
     }
   };
 
@@ -201,7 +202,7 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
       }
     } catch (error: any) {
       console.error('Failed to update status:', error);
-      const message = error.response?.data?.detail || 'Failed to update status';
+      const message = getErrorMessage(error, 'Failed to update status');
       setToastMessage(message);
     }
   };
@@ -420,7 +421,7 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
           setToastMessage('You are now monitoring this frequency. Other NCS operators can claim different frequencies.');
         }
       } catch (error: any) {
-        setToastMessage(error.response?.data?.detail || 'Failed to claim frequency');
+        setToastMessage(getErrorMessage(error, 'Failed to claim frequency'));
       }
     } else if (canManageCheckIns) {
       // Non-NCS managers: set active frequency (existing behavior)

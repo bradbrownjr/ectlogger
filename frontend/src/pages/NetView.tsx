@@ -23,6 +23,7 @@ import useNetViewLayoutStorage from '../hooks/useNetViewLayoutStorage';
 import usePersistedDialog from '../hooks/usePersistedDialog';
 import { STORAGE_KEYS } from '../utils/localStorageKeys';
 import { displayCallsign } from '../utils/userDisplay';
+import { getErrorMessage } from '../utils/apiErrors';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Container,
@@ -720,7 +721,7 @@ const NetView: React.FC = () => {
       await fetchCheckIns();
     } catch (error: any) {
       console.error('Failed to assign role:', error);
-      setToastMessage(error.response?.data?.detail || 'Failed to assign role');
+      setToastMessage(getErrorMessage(error, 'Failed to assign role'));
     }
   };
 
@@ -862,7 +863,7 @@ const NetView: React.FC = () => {
       setToastMessage('Subscribed! You will receive notifications for future instances of this net.');
     } catch (error: any) {
       console.error('Failed to subscribe:', error);
-      setToastMessage(error.response?.data?.detail || 'Failed to subscribe');
+      setToastMessage(getErrorMessage(error, 'Failed to subscribe'));
     } finally {
       setSubscribing(false);
     }
@@ -880,7 +881,7 @@ const NetView: React.FC = () => {
       setToastMessage('Net is now LIVE! Subscribers have been notified.');
     } catch (error: any) {
       console.error('Failed to go live:', error);
-      setToastMessage(error.response?.data?.detail || 'Failed to go live');
+      setToastMessage(getErrorMessage(error, 'Failed to go live'));
     }
   };
 
@@ -1255,7 +1256,7 @@ const NetView: React.FC = () => {
       setToastMessage('You are now NCS');
     } catch (error: any) {
       console.error('Failed to claim NCS:', error);
-      setToastMessage(error.response?.data?.detail || 'Failed to claim NCS');
+      setToastMessage(getErrorMessage(error, 'Failed to claim NCS'));
     }
   };
 
@@ -1265,7 +1266,7 @@ const NetView: React.FC = () => {
       await netRoleApi.toggleSelf(Number(netId));
       await fetchNetRoles();
     } catch (err: any) {
-      setToastMessage(err.response?.data?.detail || 'Could not toggle NCS role');
+      setToastMessage(getErrorMessage(err, 'Could not toggle NCS role'));
     }
   };
 
