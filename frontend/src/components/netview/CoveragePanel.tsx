@@ -70,10 +70,15 @@ const CoveragePanel: React.FC<CoveragePanelProps> = ({
   onRestore,
 }) => {
   // Local UI toggle only - whether the title is replaced by the filter
-  // TextField. The actual filter VALUE (highlightedCallsign) is lifted to
-  // NetView.tsx since it's shared with the map overlay and can also be set
-  // by clicking a callsign in the table below, independent of this toggle.
+  // TextField.
   const [filterOpen, setFilterOpen] = useState(false);
+  // Typed search text is intentionally separate from highlightedCallsign:
+  // typing a filter is a deliberate, visible action that hides non-matching
+  // rows (with a Clear button right there to undo it), whereas clicking a
+  // callsign in the table only highlights it (on the map and in the table)
+  // without hiding anything else - the two must not share state, or a click
+  // would silently hide rows with no visible indication or way back.
+  const [searchText, setSearchText] = useState('');
 
   return (
     <Paper
@@ -100,12 +105,12 @@ const CoveragePanel: React.FC<CoveragePanelProps> = ({
                       autoFocus
                       fullWidth
                       placeholder="Filter by callsign..."
-                      value={highlightedCallsign ?? ''}
-                      onChange={(e) => onHighlightCallsign(e.target.value || null)}
+                      value={searchText}
+                      onChange={(e) => setSearchText(e.target.value)}
                       InputProps={{
-                        endAdornment: highlightedCallsign ? (
+                        endAdornment: searchText ? (
                           <InputAdornment position="end">
-                            <IconButton size="small" onClick={() => onHighlightCallsign(null)} sx={{ p: 0.25 }}>
+                            <IconButton size="small" onClick={() => setSearchText('')} sx={{ p: 0.25 }}>
                               <ClearIcon sx={{ fontSize: 14 }} />
                             </IconButton>
                           </InputAdornment>
@@ -122,7 +127,7 @@ const CoveragePanel: React.FC<CoveragePanelProps> = ({
                     <IconButton
                       size="small"
                       onClick={() => {
-                        if (filterOpen) onHighlightCallsign(null);
+                        if (filterOpen) setSearchText('');
                         setFilterOpen((v) => !v);
                       }}
                       title={filterOpen ? 'Close filter' : 'Filter by callsign'}
@@ -201,7 +206,8 @@ const CoveragePanel: React.FC<CoveragePanelProps> = ({
             reports={reports}
             frequencyLabels={frequencyLabels}
             showFrequencyColumn={showFrequencyColumn}
-            filterCallsign={highlightedCallsign ?? undefined}
+            filterCallsign={searchText || undefined}
+            highlightCallsign={highlightedCallsign ?? undefined}
             onCallsignClick={(cs) => onHighlightCallsign(highlightedCallsign === cs ? null : cs)}
           />
         </Box>

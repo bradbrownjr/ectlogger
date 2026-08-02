@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import {
+  alpha,
   Box,
   Chip,
   Paper,
@@ -66,10 +67,17 @@ interface CoverageReportProps {
   // reciprocity would make a genuinely two-way edge look one-way whenever
   // its partner's callsign happens to be filtered out.
   filterCallsign?: string;
+  // Exact (case-insensitive) match against reporter_callsign OR
+  // heard_callsign - visually marks matching rows (background tint) WITHOUT
+  // hiding any other rows. This is deliberately separate from filterCallsign:
+  // clicking a callsign in the table must never make other stations vanish
+  // with no visible way back - only the typed filter above does that, and it
+  // always shows a Clear button while active.
+  highlightCallsign?: string;
   // Fired when a reporter/heard callsign cell is clicked. The toggle
-  // behavior (click again to clear the filter) lives in the parent's state
-  // (CoveragePanel), not here - this component just reports which callsign
-  // was clicked.
+  // behavior (click again to clear the highlight) lives in the parent's
+  // state (CoveragePanel), not here - this component just reports which
+  // callsign was clicked.
   onCallsignClick?: (callsign: string) => void;
 }
 
@@ -87,6 +95,7 @@ const CoverageReport: React.FC<CoverageReportProps> = ({
   frequencyLabels = {},
   showFrequencyColumn = true,
   filterCallsign,
+  highlightCallsign,
   onCallsignClick,
 }) => {
   const theme = useTheme();
@@ -246,8 +255,19 @@ const CoverageReport: React.FC<CoverageReportProps> = ({
               </TableCell>
             </TableRow>
           ) : (
-            rows.map((r) => (
-              <TableRow key={r.id} sx={{ '&:nth-of-type(odd)': { backgroundColor: theme.palette.action.hover } }}>
+            rows.map((r) => {
+              const isHighlighted = !!highlightCallsign && (
+                r.reporter_callsign.toLowerCase() === highlightCallsign.toLowerCase() ||
+                r.heard_callsign.toLowerCase() === highlightCallsign.toLowerCase()
+              );
+              return (
+              <TableRow
+                key={r.id}
+                sx={{
+                  '&:nth-of-type(odd)': { backgroundColor: isHighlighted ? undefined : theme.palette.action.hover },
+                  ...(isHighlighted && { backgroundColor: alpha(theme.palette.info.main, 0.16) }),
+                }}
+              >
                 <TableCell>
                   {renderCallsign(r.reporter_callsign)}
                 </TableCell>
@@ -279,7 +299,8 @@ const CoverageReport: React.FC<CoverageReportProps> = ({
                   {formatTimeWithDate(r.reported_at, user?.prefer_utc || false)}
                 </TableCell>
               </TableRow>
-            ))
+              );
+            })
           )}
         </TableBody>
       </Table>

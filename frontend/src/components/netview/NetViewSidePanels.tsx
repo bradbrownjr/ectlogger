@@ -83,6 +83,7 @@ interface NetViewSidePanelsProps {
   coverageMinimized: boolean;
   onCloseCoverage: () => void;
   onUndockCoverage: () => void;
+  onAttachCoverage: () => void;
   handlePopOutCoverage: () => void;
   handleFloatToWindowCoverage: () => void;
   onMinimizeCoverage: () => void;
@@ -141,6 +142,7 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
   coverageMinimized,
   onCloseCoverage,
   onUndockCoverage,
+  onAttachCoverage,
   handlePopOutCoverage,
   handleFloatToWindowCoverage,
   onMinimizeCoverage,
@@ -341,15 +343,18 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
 
       {/* Floating Station Coverage panel - on-demand like Map (needs
           coverageOpen true, not just "not docked"), unlike Chat/Activity Log
-          which are always present once opted into floating. No onAttach here
-          (unlike Chat/Activity Log): CoveragePanel's own inner header already
-          has a real "close" action (onClose, below), so a second "dock back"
-          button in FloatingWindow's outer bar would be redundant chrome. */}
+          which are always present once opted into floating. FloatingWindow's
+          outer bar supplies the "dock back" action here (onAttach), matching
+          Chat/Activity Log's convention exactly - so CoveragePanel's own
+          inner header omits onClose while floating (it stays wired only on
+          the docked instance below, where there's no outer chrome and it's
+          the only way to fully hide the panel). */}
       {coverageOpen && !coverageDocked && (net.status === 'active' || net.status === 'lobby' || net.status === 'closed' || net.status === 'archived') && (
         <FloatingWindow
           title="Station Coverage"
           isDetached={true}
           onDetach={onUndockCoverage}
+          onAttach={onAttachCoverage}
           onPopOut={handleFloatToWindowCoverage}
           defaultWidth={500}
           defaultHeight={450}
@@ -365,7 +370,6 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
             highlightedCallsign={highlightedCallsign}
             onHighlightCallsign={setHighlightedCallsign}
             onShowOnMap={onShowCoverageOnMap}
-            onClose={onCloseCoverage}
           />
         </FloatingWindow>
       )}

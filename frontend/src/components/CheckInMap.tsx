@@ -489,6 +489,25 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
     return map;
   }, [mappedCheckIns]);
 
+  // Fallback lookup by callsign (case-insensitive), for resolving a can-hear
+  // edge whose reporter/heard check-in id isn't in positionByCheckInId - this
+  // happens whenever a station rechecks in (each recheck gets a NEW check_in
+  // row/id, per routers/check_ins.py, but an existing edge keeps pointing at
+  // whichever check-in id it was reported against), or when the check-in
+  // table's own view filters (search/frequency/hide-duplicates) have hidden
+  // that particular row from `checkIns`. The edge's own reporter_callsign/
+  // heard_callsign fields let it resolve to whichever check-in for that
+  // callsign IS currently mapped, rather than silently vanishing.
+  const positionByCallsign = useMemo(() => {
+    const map = new Map<string, [number, number]>();
+    for (const c of mappedCheckIns) {
+      if (c.parsedLocation.lat !== 0 && c.parsedLocation.lon !== 0) {
+        map.set(c.callsign.toLowerCase(), [c.parsedLocation.lat, c.parsedLocation.lon]);
+      }
+    }
+    return map;
+  }, [mappedCheckIns]);
+
   // Distinct frequencies present across all reports (not just the
   // currently-filtered subset), for the filter dropdown's option list.
   const availableCoverageFrequencies = useMemo(() => {
@@ -525,8 +544,8 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
     const lines: { key: string; positions: [number, number][]; twoWay: boolean }[] = [];
 
     for (const r of filtered) {
-      const from = positionByCheckInId.get(r.reporter_check_in_id);
-      const to = positionByCheckInId.get(r.heard_check_in_id);
+      const from = positionByCheckInId.get(r.reporter_check_in_id) ?? positionByCallsign.get(r.reporter_callsign.toLowerCase());
+      const to = positionByCheckInId.get(r.heard_check_in_id) ?? positionByCallsign.get(r.heard_callsign.toLowerCase());
       if (!from || !to) continue; // unmappable station on either end - skip silently
 
       const reverseKey = canHearEdgeKey(r.heard_check_in_id, r.reporter_check_in_id, r.frequency_id);
@@ -543,7 +562,7 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
     }
 
     return lines;
-  }, [coverageOverlayOn, reports, positionByCheckInId, coverageFrequencyFilter, highlightedCallsign]);
+  }, [coverageOverlayOn, reports, positionByCheckInId, positionByCallsign, coverageFrequencyFilter, highlightedCallsign]);
 
   // Loading / empty / map+legend content shared by the maximized, windowed,
   // and embedded (real popped-out window) render modes below - previously
