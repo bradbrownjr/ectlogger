@@ -8,6 +8,9 @@ import {
   Chip,
   useTheme,
   Tooltip,
+  FormControl,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import MinimizeIcon from '@mui/icons-material/Minimize';
@@ -19,12 +22,14 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import PictureInPictureAltIcon from '@mui/icons-material/PictureInPictureAlt';
 import ViewSidebarIcon from '@mui/icons-material/ViewSidebar';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import HearingIcon from '@mui/icons-material/Hearing';
 import { Rnd } from 'react-rnd';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { parseLocation, geocodeAddress, ParsedLocation } from '../utils/locationParser';
 import { exportToPdf } from '../utils/pdfExport';
+import type { CanHearReportEntry } from './netview/CoverageReport';
 
 // Fix for default marker icons in webpack/vite
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -42,6 +47,22 @@ const DefaultIcon = L.icon({
 });
 
 L.Marker.prototype.options.icon = DefaultIcon;
+
+// ========== "CAN HEAR" COVERAGE OVERLAY (Phase 4) ==========
+// See docs/ROADMAP.md "Relaying & Propagation Mapping" - the map overlay for
+// the per-net "can hear" propagation edges (Phase 3's CoverageReport.tsx is
+// the table view of the same data). Colors are chosen to be distinct from
+// every marker/status color in getMarkerColor/colorLegend below (blue,
+// deep purple, teal, green, purple, orange, red, cyan, brown, blue-gray,
+// pink) so a line is never mistaken for a marker's status.
+const COVERAGE_TWO_WAY_COLOR = '#ffab00'; // amber - confirmed both directions
+const COVERAGE_ONE_WAY_COLOR = '#616161'; // neutral gray - reported one direction only
+
+// Mirrors CoverageReport.tsx's edgeKey exactly (same Set-membership approach
+// for detecting a confirmed two-way pair) rather than reinventing it.
+function canHearEdgeKey(reporterId: number, heardId: number, frequencyId: number | null): string {
+  return `${reporterId}-${heardId}-${frequencyId ?? 'none'}`;
+}
 
 // Custom marker colors based on status
 const createColoredIcon = (color: string) => {
@@ -100,6 +121,17 @@ interface CheckInMapProps {
   minimized?: boolean;
   onMinimize?: () => void;
   onRestore?: () => void;
+  // Phase 4 "can hear" coverage overlay (see docs/ROADMAP.md). Optional and
+  // undefined by default since not every consumer of this map has "can
+  // hear" data to offer - when the prop itself isn't passed at all, the
+  // overlay toggle doesn't render and the map behaves exactly as before.
+  // Passing an empty array (feature enabled for this net, zero reports yet)
+  // still shows the toggle, just with nothing to draw.
+  canHearReports?: CanHearReportEntry[];
+  // Frequency label lookup for the overlay's filter dropdown (e.g.
+  // "146.520 FM") - same shape/convention as CoverageReport's own
+  // frequencyLabels prop, so callers can reuse the same lookup object.
+  frequencyLabels?: Record<number, string>;
 }
 
 interface MappedCheckIn extends CheckIn {
@@ -126,13 +158,18 @@ const FitBounds: React.FC<{ positions: [number, number][]; disabled?: boolean }>
   return null;
 };
 
-const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netName, ncsUserIds = [], loggerUserIds = [], relayUserIds = [], embedded = false, onPopOut, onUndock, onDock, minimized: dockedMinimized = false, onMinimize: onDockedMinimize, onRestore: onDockedRestore }) => {
+const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netName, ncsUserIds = [], loggerUserIds = [], relayUserIds = [], embedded = false, onPopOut, onUndock, onDock, minimized: dockedMinimized = false, onMinimize: onDockedMinimize, onRestore: onDockedRestore, canHearReports, frequencyLabels = {} }) => {
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
-  
+
   const [mappedCheckIns, setMappedCheckIns] = useState<MappedCheckIn[]>([]);
   const [loading, setLoading] = useState(true);
   const [minimized, setMinimized] = useState(false);
+  // "Can hear" coverage overlay (Phase 4) - off by default, and the toggle
+  // itself only renders when the parent actually passed canHearReports
+  // (see canHearFeatureAvailable below), not merely when it's non-empty.
+  const [showCoverageOverlay, setShowCoverageOverlay] = useState(false);
+  const [coverageFrequencyFilter, setCoverageFrequencyFilter] = useState<'all' | 'none' | number>('all');
   const [maximized, setMaximized] = useState(false);
   const [preMaximizeState, setPreMaximizeState] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
   const [mapKey, setMapKey] = useState(0);
@@ -419,6 +456,80 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
     ? positions.reduce((acc, pos) => [acc[0] + pos[0] / positions.length, acc[1] + pos[1] / positions.length], [0, 0]) as [number, number]
     : defaultCenter;
 
+  // The overlay toggle only renders when the parent actually passed the
+  // canHearReports prop at all (even an empty array) - a consumer that
+  // never passes it (feature not wired for that caller) gets no toggle
+  // rather than a toggle with permanently nothing to show.
+  const canHearFeatureAvailable = canHearReports !== undefined;
+  const reports = canHearReports ?? [];
+
+  // Lookup from check-in id to its resolved [lat, lon], reusing the exact
+  // same "unmappable" sentinel check (lat/lon both 0) as the Marker
+  // rendering below and the positions memo above.
+  const positionByCheckInId = useMemo(() => {
+    const map = new Map<number, [number, number]>();
+    for (const c of mappedCheckIns) {
+      if (c.parsedLocation.lat !== 0 && c.parsedLocation.lon !== 0) {
+        map.set(c.id, [c.parsedLocation.lat, c.parsedLocation.lon]);
+      }
+    }
+    return map;
+  }, [mappedCheckIns]);
+
+  // Distinct frequencies present across all reports (not just the
+  // currently-filtered subset), for the filter dropdown's option list.
+  const availableCoverageFrequencies = useMemo(() => {
+    const ids = new Set<number>();
+    let hasNullFrequency = false;
+    for (const r of reports) {
+      if (r.frequency_id != null) ids.add(r.frequency_id);
+      else hasNullFrequency = true;
+    }
+    return { ids: Array.from(ids).sort((a, b) => a - b), hasNullFrequency };
+  }, [reports]);
+
+  // Polylines to draw for the coverage overlay: resolves both ends of each
+  // edge against positionByCheckInId, skipping silently (no error, no
+  // console spam) when either station has no mappable location - per the
+  // roadmap's "degrade quietly" requirement. Two-way pairs (both A->B and
+  // B->A reported) are canonicalized to a single line per the unordered
+  // pair so a confirmed two-way path isn't drawn twice on top of itself.
+  const coverageLines = useMemo(() => {
+    if (!showCoverageOverlay || reports.length === 0) return [];
+
+    const filtered = reports.filter((r) => {
+      if (coverageFrequencyFilter === 'all') return true;
+      if (coverageFrequencyFilter === 'none') return r.frequency_id == null;
+      return r.frequency_id === coverageFrequencyFilter;
+    });
+
+    const allKeys = new Set(
+      filtered.map((r) => canHearEdgeKey(r.reporter_check_in_id, r.heard_check_in_id, r.frequency_id))
+    );
+    const drawnPairs = new Set<string>();
+    const lines: { key: string; positions: [number, number][]; twoWay: boolean }[] = [];
+
+    for (const r of filtered) {
+      const from = positionByCheckInId.get(r.reporter_check_in_id);
+      const to = positionByCheckInId.get(r.heard_check_in_id);
+      if (!from || !to) continue; // unmappable station on either end - skip silently
+
+      const reverseKey = canHearEdgeKey(r.heard_check_in_id, r.reporter_check_in_id, r.frequency_id);
+      const isTwoWay = allKeys.has(reverseKey);
+
+      if (isTwoWay) {
+        const pair = [r.reporter_check_in_id, r.heard_check_in_id].sort((a, b) => a - b);
+        const pairKey = `${pair[0]}-${pair[1]}-${r.frequency_id ?? 'none'}`;
+        if (drawnPairs.has(pairKey)) continue;
+        drawnPairs.add(pairKey);
+      }
+
+      lines.push({ key: `${r.id}`, positions: [from, to], twoWay: isTwoWay });
+    }
+
+    return lines;
+  }, [showCoverageOverlay, reports, positionByCheckInId, coverageFrequencyFilter]);
+
   // Loading / empty / map+legend content shared by the maximized, windowed,
   // and embedded (real popped-out window) render modes below - previously
   // duplicated verbatim between the maximized and windowed branches.
@@ -472,6 +583,20 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
               crossOrigin="anonymous"
             />
             <FitBounds positions={positions} disabled={isExporting} />
+            {/* "Can hear" coverage overlay (Phase 4) - drawn below the marker
+                pane per Leaflet's default pane z-order, so markers always
+                stay legible on top of any crossing lines. */}
+            {showCoverageOverlay && coverageLines.map((line) => (
+              <Polyline
+                key={line.key}
+                positions={line.positions}
+                pathOptions={
+                  line.twoWay
+                    ? { color: COVERAGE_TWO_WAY_COLOR, weight: 3, opacity: 0.85 }
+                    : { color: COVERAGE_ONE_WAY_COLOR, weight: 2, opacity: 0.75, dashArray: '6 6' }
+                }
+              />
+            ))}
             {mappedCheckIns.map((checkIn) => (
               checkIn.parsedLocation.lat !== 0 && checkIn.parsedLocation.lon !== 0 && (
                 <Marker
@@ -504,6 +629,61 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
               )
             ))}
           </MapContainer>
+          {/* "Can hear" coverage overlay toggle + frequency filter (Phase 4).
+              Only rendered when the parent passed canHearReports at all -
+              see canHearFeatureAvailable above. Positioned top-left so it
+              never collides with the Color Legend (bottom-right). */}
+          {canHearFeatureAvailable && (
+            <Box
+              sx={{
+                position: 'absolute',
+                top: 8,
+                left: 8,
+                backgroundColor: isDarkMode ? 'rgba(30, 30, 30, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+                borderRadius: 1,
+                px: 0.5,
+                py: 0.25,
+                boxShadow: 1,
+                zIndex: 1000,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+              }}
+            >
+              <Tooltip title={showCoverageOverlay ? 'Hide station coverage overlay' : 'Show station coverage overlay'}>
+                <IconButton
+                  size="small"
+                  onClick={() => setShowCoverageOverlay((v) => !v)}
+                  sx={{ p: 0.5, color: showCoverageOverlay ? COVERAGE_TWO_WAY_COLOR : (isDarkMode ? '#eee' : '#333') }}
+                >
+                  <HearingIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              {showCoverageOverlay && (
+                <FormControl size="small" variant="standard" sx={{ minWidth: 120 }}>
+                  <Select
+                    value={coverageFrequencyFilter === 'all' ? 'all' : coverageFrequencyFilter === 'none' ? 'none' : String(coverageFrequencyFilter)}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setCoverageFrequencyFilter(v === 'all' ? 'all' : v === 'none' ? 'none' : Number(v));
+                    }}
+                    disableUnderline
+                    sx={{ fontSize: '0.7rem', color: isDarkMode ? '#eee' : '#333' }}
+                  >
+                    <MenuItem value="all" sx={{ fontSize: '0.7rem' }}>All Frequencies</MenuItem>
+                    {availableCoverageFrequencies.hasNullFrequency && (
+                      <MenuItem value="none" sx={{ fontSize: '0.7rem' }}>No Frequency</MenuItem>
+                    )}
+                    {availableCoverageFrequencies.ids.map((id) => (
+                      <MenuItem key={id} value={String(id)} sx={{ fontSize: '0.7rem' }}>
+                        {frequencyLabels[id] || `Frequency #${id}`}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              )}
+            </Box>
+          )}
           {/* Color Legend */}
           <Box
             sx={{

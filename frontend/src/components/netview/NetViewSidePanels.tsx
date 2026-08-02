@@ -66,6 +66,10 @@ interface NetViewSidePanelsProps {
   mapMinimized: boolean;
   onMinimizeMap: () => void;
   onRestoreMap: () => void;
+  // "Can hear" coverage overlay data (Phase 4, see docs/ROADMAP.md) - passed
+  // through to the docked CheckInMap exactly as NetView.tsx passes it to its
+  // own floating CheckInMap instance, rather than re-fetching here.
+  canHearReports: any[];
 }
 
 const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
@@ -106,6 +110,7 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
   mapMinimized,
   onMinimizeMap,
   onRestoreMap,
+  canHearReports,
 }) => {
   const chatDocked = !chatDetached && !chatWindowOpen;
   const activityLogDocked = !activityLogDetached && !activityLogWindowOpen;
@@ -190,6 +195,10 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
           minimized={mapMinimized}
           onMinimize={onMinimizeMap}
           onRestore={onRestoreMap}
+          canHearReports={canHearReports}
+          frequencyLabels={Object.fromEntries(
+            (net?.frequencies || []).map((f: any) => [f.id, `${f.frequency || f.network || ''} ${f.mode || ''}`.trim()])
+          )}
         />
       ),
     });

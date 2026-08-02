@@ -17,6 +17,7 @@ import {
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import GroupIcon from '@mui/icons-material/Group';
+import HearingIcon from '@mui/icons-material/Hearing';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import PanToolIcon from '@mui/icons-material/PanTool';
 import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutline';
@@ -83,6 +84,12 @@ interface CheckInTableProps {
   handleSetActiveSpeaker: (checkInId: number | null) => void;
   handleDeleteCheckIn: (checkInId: number) => void;
   setProfileUserId: (userId: number | null) => void;
+  // "Can hear" propagation logging: whether the current user (NCS/Logger/Relay)
+  // may open the reporting dialog, which check-ins already have at least one
+  // report (for the row indicator), and the handler to open the dialog for a row.
+  canReportCanHear: boolean;
+  canHearReporterCheckInIds: number[];
+  onOpenCanHearDialog: (checkInId: number) => void;
 }
 
 const CheckInTable: React.FC<CheckInTableProps> = ({
@@ -127,6 +134,9 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
   handleSetActiveSpeaker,
   handleDeleteCheckIn,
   setProfileUserId,
+  canReportCanHear,
+  canHearReporterCheckInIds,
+  onOpenCanHearDialog,
 }) => {
   // Frozen (sticky) trailing column: Actions and the hide-duplicates/detach
   // icons share a single pinned column at the right edge so per-row controls
@@ -721,6 +731,19 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                         </>
                         )}
                         </>
+                        )}
+                        {/* "Can hear" reporting - gated independently of canManage/ownership
+                            above, since Relay staff can report without managing check-ins */}
+                        {net.propagation_logging_enabled && canReportCanHear && (net.status === 'active' || net.status === 'lobby') && checkIn.status !== 'checked_out' && (
+                          <IconButton
+                            size="small"
+                            onClick={() => onOpenCanHearDialog(checkIn.id)}
+                            color={canHearReporterCheckInIds.includes(checkIn.id) ? 'info' : 'default'}
+                            title="Who can this station hear?"
+                            sx={{ opacity: canHearReporterCheckInIds.includes(checkIn.id) ? 1 : 0.4 }}
+                          >
+                            <HearingIcon fontSize="small" />
+                          </IconButton>
                         )}
                       </TableCell>
                     </TableRow>

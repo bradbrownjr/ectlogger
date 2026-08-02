@@ -18,9 +18,11 @@ import Chat from '../components/Chat';
 import ActivityLog from '../components/ActivityLog';
 import CheckInMap from '../components/CheckInMap';
 import CheckInTable from '../components/netview/CheckInTable';
+import CanHearDialog from '../components/netview/CanHearDialog';
 import { getCheckInActions } from '../components/netview/checkInActions';
 import { getCheckInStatusHelpers } from '../components/netview/checkInStatusHelpers';
 import { CheckInFormState } from '../components/netview/CheckInFormDialog';
+import { canHearApi } from '../services/api';
 
 // NCS color palette for check-in row / frequency-chip coloring — duplicated
 // from NetView.tsx (a small static constant, not worth a shared module for).
@@ -61,6 +63,11 @@ const NetPaneWindow: React.FC = () => {
   const [inlineEditValues, setInlineEditValues] = useState<Partial<any>>({});
   const [inlineEditFocusField, setInlineEditFocusField] = useState<string | null>(null);
   const inlineEditRowRef = useRef<HTMLTableRowElement | null>(null);
+  // "Can hear" propagation logging: same shape as NetView.tsx - the check-in
+  // currently being reported for (dialog open when non-null) and the full
+  // report list for this net, refetched on mount and on can_hear_changed.
+  const [canHearDialogCheckInId, setCanHearDialogCheckInId] = useState<number | null>(null);
+  const [canHearReports, setCanHearReports] = useState<any[]>([]);
   const [checkInForm, setCheckInForm] = useState<CheckInFormState>({
     callsign: '',
     name: '',
@@ -90,6 +97,23 @@ const NetPaneWindow: React.FC = () => {
     document.title = net?.name ? `${label} — ${net.name}` : `${label} — ECTLogger`;
   }, [paneType, net?.name]);
 
+  // Fetches the full "can hear" report list for this net - see NetView.tsx's
+  // fetchCanHearReports for why this is always a full refetch, never a patch.
+  const fetchCanHearReports = async () => {
+    if (!netId) return;
+    try {
+      const response = await canHearApi.list(parseInt(netId));
+      setCanHearReports(response.data);
+    } catch (error) {
+      console.error('Failed to fetch can-hear reports:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchCanHearReports();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [netId]);
+
   // Own WebSocket connection — a popped-out window is a separate browsing
   // context and cannot share the opener tab's socket.
   const ws = useNetWebSocket({
@@ -99,6 +123,7 @@ const NetPaneWindow: React.FC = () => {
     fetchNet,
     fetchNetRoles,
     fetchNetStats,
+    fetchCanHearReports,
     setActiveSpeakerId,
     setCheckIns,
     setToastMessage,
@@ -117,6 +142,12 @@ const NetPaneWindow: React.FC = () => {
     }
     return map;
   }, [checkIns]);
+
+  // Check-in ids that already have at least one outgoing "can hear" report -
+  // must run before the early return below so hook count never changes.
+  const canHearReporterCheckInIds = useMemo(() => {
+    return Array.from(new Set(canHearReports.map((r: any) => r.reporter_check_in_id)));
+  }, [canHearReports]);
 
   if (!net) {
     return (
@@ -163,6 +194,10 @@ const NetPaneWindow: React.FC = () => {
           loggerUserIds={netRoles.filter((r: any) => r.role === 'LOGGER').map((r: any) => r.user_id)}
           relayUserIds={netRoles.filter((r: any) => r.role === 'Relay').map((r: any) => r.user_id)}
           embedded
+          canHearReports={canHearReports}
+          frequencyLabels={Object.fromEntries(
+            (net?.frequencies || []).map((f: any) => [f.id, `${f.frequency || f.network || ''} ${f.mode || ''}`.trim()])
+          )}
         />
       </Box>
     );
@@ -180,6 +215,14 @@ const NetPaneWindow: React.FC = () => {
   const isNCSOrLogger = userNetRole && ((userNetRole.role === 'NCS' && userNetRole.is_active !== false) || userNetRole.role === 'LOGGER');
   const canManage = isOwner || isAdmin || isNCS || !!net?.can_manage;
   const canManageCheckIns = canManage || isNCSOrLogger;
+
+  // Relay staff can't manage check-ins generally, but can report "can hear" -
+  // see NetView.tsx's identical derivation.
+  const isRelay = userNetRole?.role?.toUpperCase() === 'RELAY';
+  const canReportCanHear = canManageCheckIns || isRelay;
+  const canHearDialogCheckIn = canHearDialogCheckInId !== null
+    ? checkIns.find((ci: any) => ci.id === canHearDialogCheckInId) || null
+    : null;
 
   const ncsRoles = netRoles
     .filter((role: any) => role.role === 'NCS')
@@ -320,7 +363,26 @@ const NetPaneWindow: React.FC = () => {
         handleSetActiveSpeaker={handleSetActiveSpeaker}
         handleDeleteCheckIn={handleDeleteCheckIn}
         setProfileUserId={() => {}}
+        canReportCanHear={canReportCanHear}
+        canHearReporterCheckInIds={canHearReporterCheckInIds}
+        onOpenCanHearDialog={setCanHearDialogCheckInId}
       />
+
+      {/* "Who can this station hear?" dialog - same component NetView.tsx uses */}
+      {canHearDialogCheckIn && netId && (
+        <CanHearDialog
+          key={canHearDialogCheckIn.id}
+          open
+          onClose={() => setCanHearDialogCheckInId(null)}
+          netId={Number(netId)}
+          net={net}
+          reporterCheckIn={canHearDialogCheckIn}
+          allCheckIns={checkIns}
+          existingReports={canHearReports}
+          onSaved={() => setCanHearDialogCheckInId(null)}
+          onToast={setToastMessage}
+        />
+      )}
 
       {/* Legend */}
       <Box sx={{ p: 0.5, backgroundColor: 'action.hover', border: 1, borderColor: 'divider', borderTop: 0, flexShrink: 0 }}>

@@ -1,13 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, nullslast, and_
+from sqlalchemy.orm import aliased
 from sqlalchemy.exc import IntegrityError
 from typing import List, Optional
 from io import BytesIO
 from PIL import Image, ImageOps
 from app.database import get_db
-from app.models import User, UserRole, Contact, NetRole
-from app.schemas import UserResponse, UserUpdate, AdminUserCreate, CallsignLookupResponse, UserDirectoryEntry, UserPopupResponse
+from app.models import User, UserRole, Contact, NetRole, CanHearReport, CheckIn
+from app.schemas import UserResponse, UserUpdate, AdminUserCreate, CallsignLookupResponse, UserDirectoryEntry, UserPopupResponse, CoverageStationResponse
 from app.dependencies import get_current_user, get_current_user_optional, get_admin_user
 from app.utils import AVATAR_DIR
 
@@ -147,6 +148,94 @@ async def update_my_location(
         current_user.live_location_updated = None
     await db.commit()
     return {"status": "ok", "live_location": current_user.live_location}
+
+
+@router.get("/me/can-hear-coverage", response_model=List[CoverageStationResponse])
+async def get_my_can_hear_coverage(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Personal propagation coverage rollup (Phase 5 of the "Can hear"
+    inter-station propagation logging feature - see docs/ROADMAP.md
+    "Relaying & Propagation Mapping", "Last heard" and Phase 5 sections).
+
+    Returns, for every station the current user has personally reported
+    hearing while operating from home, a MAX(reported_at) "last heard"
+    rollup, a confirmation count (distinct nets), and the location tied to
+    the most recent report - the data the Profile page's Coverage map plots.
+
+    Privacy: this is scoped, by construction, to
+    CanHearReport.reported_by_user_id == current_user.id AND the reporter
+    check-in's user_id == current_user.id - i.e. only reports the caller
+    personally entered, about their own check-in. Because the query is
+    inherently scoped this way, no separate access-control layer is needed;
+    auth via get_current_user is the only gate. Do NOT widen this query to
+    "all reports for nets the user attended" - that would surface other
+    stations' can-hear reports the viewer did not personally make, which is
+    exactly the cross-station privacy leak the roadmap's Phase 5 "privacy
+    line" warns against.
+    """
+    ReporterCheckIn = aliased(CheckIn)
+    HeardCheckIn = aliased(CheckIn)
+
+    result = await db.execute(
+        select(
+            HeardCheckIn.callsign,
+            CanHearReport.net_id,
+            CanHearReport.reported_at,
+            HeardCheckIn.location,
+        )
+        .select_from(CanHearReport)
+        .join(ReporterCheckIn, CanHearReport.reporter_check_in_id == ReporterCheckIn.id)
+        .join(HeardCheckIn, CanHearReport.heard_check_in_id == HeardCheckIn.id)
+        .where(
+            CanHearReport.reported_by_user_id == current_user.id,
+            ReporterCheckIn.user_id == current_user.id,
+            # operating_position is freeSolo text seeded with "Home" /
+            # "Field Deployed" (see CanHearDialog.tsx's
+            # OPERATING_POSITION_OPTIONS), not an enum, so match loosely
+            # (case-insensitive substring) rather than requiring an exact
+            # "Home" string - catches typed variants like "home station"
+            # without matching "Field Deployed".
+            ReporterCheckIn.operating_position.ilike('%home%'),
+        )
+    )
+    rows = result.all()
+
+    # Roll up per heard callsign (not check-in id or user_id - see
+    # ROADMAP.md "Last heard": manually-logged stations have no user_id, and
+    # the same callsign appears in different check-in rows across different
+    # nets) in Python rather than via a SQL window function. The roadmap's
+    # own volume argument (a dense net tops out under 900 edges) means a
+    # single user's lifetime report count is small, so this is simpler and
+    # more portable than a window-function query, and matches this
+    # feature's "no separately-maintained aggregate table" philosophy.
+    by_callsign: dict = {}
+    for callsign, net_id, reported_at, location in rows:
+        entry = by_callsign.setdefault(callsign, {
+            "net_ids": set(),
+            "last_heard": reported_at,
+            "location": location,
+        })
+        entry["net_ids"].add(net_id)
+        # Location tracks whichever report is most recent - a station's
+        # location can vary across nets (e.g. a mobile station), so the map
+        # should reflect where they were most recently heard from.
+        if reported_at >= entry["last_heard"]:
+            entry["last_heard"] = reported_at
+            entry["location"] = location
+
+    stations = [
+        CoverageStationResponse(
+            callsign=callsign,
+            last_heard=data["last_heard"],
+            confirmation_count=len(data["net_ids"]),
+            location=data["location"],
+        )
+        for callsign, data in by_callsign.items()
+    ]
+    stations.sort(key=lambda s: s.last_heard, reverse=True)
+    return stations
 
 
 @router.get("", response_model=List[UserResponse])

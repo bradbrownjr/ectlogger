@@ -62,6 +62,9 @@ export const userApi = {
   getProfile: () => api.get('/users/me'),
   updateProfile: (data: any) => api.put('/users/me', data),
   updateLocation: (location: string) => api.put('/users/me/location', { location }),
+  // Phase 5 of "Can hear" propagation logging (see docs/ROADMAP.md) - the
+  // current user's personal coverage rollup for the Profile "Coverage" tab.
+  getCanHearCoverage: () => api.get('/users/me/can-hear-coverage'),
   listUsers: () => api.get('/users'),
   // Minimal directory of active users (id/callsign/name) — available to any
   // authenticated user, used to populate staff/rotation pickers without
@@ -110,6 +113,14 @@ export const checkInApi = {
     api.delete(`/check-ins/check-ins/${id}`),
   toggleHand: (id: number) =>
     api.post(`/check-ins/check-ins/${id}/toggle-hand`),
+};
+
+// "Can hear" propagation logging API
+export const canHearApi = {
+  list: (netId: number) =>
+    api.get(`/nets/${netId}/can-hear-reports`),
+  save: (netId: number, payload: { reporter_check_in_id: number; heard_check_in_ids: number[]; frequency_id?: number | null; operating_position?: string | null }) =>
+    api.put(`/nets/${netId}/can-hear-reports`, payload),
 };
 
 // Template API

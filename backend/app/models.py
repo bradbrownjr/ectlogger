@@ -121,6 +121,7 @@ class Net(Base):
     template_id = Column(Integer, ForeignKey("net_templates.id"), nullable=True)
     field_config = Column(Text, default='{"name": {"enabled": true, "required": false}, "location": {"enabled": true, "required": false}, "skywarn_number": {"enabled": false, "required": false}, "weather_observation": {"enabled": false, "required": false}, "power_source": {"enabled": false, "required": false}, "power": {"enabled": false, "required": false}, "feedback": {"enabled": false, "required": false}, "notes": {"enabled": false, "required": false}}')  # JSON config for check-in fields
     ics309_enabled = Column(Boolean, default=False)  # Generate ICS-309 format on close
+    propagation_logging_enabled = Column(Boolean, default=False)  # Enable "can hear" station-to-station coverage logging
     mobile_priority_sort = Column(Boolean, default=True)  # Promote mobile stations above chronological order
     chat_grace_period_minutes = Column(Integer, nullable=True)  # Minutes to keep chat open after close; null = disabled
     self_checkin_enabled = Column(Boolean, default=True)  # If False, only NCS/logger-entered check-ins are accepted
@@ -165,6 +166,7 @@ class Net(Base):
     chat_messages = relationship("ChatMessage", back_populates="net", cascade="all, delete-orphan")
     net_roles = relationship("NetRole", back_populates="net", cascade="all, delete-orphan")
     custom_field_values = relationship("CustomFieldValue", back_populates="net", cascade="all, delete-orphan")
+    can_hear_reports = relationship("CanHearReport", back_populates="net", cascade="all, delete-orphan")
 
 
 class NetTemplate(Base):
@@ -182,6 +184,7 @@ class NetTemplate(Base):
     field_config = Column(Text, default='{"name": {"enabled": true, "required": false}, "location": {"enabled": true, "required": false}, "skywarn_number": {"enabled": false, "required": false}, "weather_observation": {"enabled": false, "required": false}, "power_source": {"enabled": false, "required": false}, "power": {"enabled": false, "required": false}, "feedback": {"enabled": false, "required": false}, "notes": {"enabled": false, "required": false}}')
     is_active = Column(Boolean, default=True)
     ics309_enabled = Column(Boolean, default=False)  # Enable ICS-309 format for net close emails
+    propagation_logging_enabled = Column(Boolean, default=False)  # Seeds Net.propagation_logging_enabled for nets created from this template
     mobile_priority_sort = Column(Boolean, default=True)  # Promote mobile stations above chronological order
     chat_grace_period_minutes = Column(Integer, nullable=True)  # Minutes to keep chat open after close; null = disabled
     self_checkin_enabled = Column(Boolean, default=True)  # If False, nets from this schedule accept only NCS/logger-entered check-ins
@@ -309,7 +312,8 @@ class CheckIn(Base):
     parent_check_in_id = Column(Integer, ForeignKey("check_ins.id", ondelete="SET NULL"), nullable=True)
     checked_in_by_id = Column(Integer, ForeignKey("users.id"))  # Who logged this check-in
     hand_raised = Column(Boolean, default=False)  # Hand raised to indicate comments/questions
-    
+    operating_position = Column(String(50), nullable=True)  # Classifier for the reporting station, e.g. "Home"/"Field Deployed" (freeSolo, not an enum)
+
     checked_in_at = Column(DateTime(timezone=True), server_default=func.now())
     checked_out_at = Column(DateTime(timezone=True))
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -321,6 +325,41 @@ class CheckIn(Base):
     frequency = relationship("Frequency")
     parent_check_in = relationship("CheckIn", remote_side="CheckIn.id", foreign_keys=[parent_check_in_id])
     custom_values = relationship("CustomFieldValue", back_populates="check_in", cascade="all, delete-orphan")
+    can_hear_reports_as_reporter = relationship(
+        "CanHearReport", foreign_keys="CanHearReport.reporter_check_in_id",
+        back_populates="reporter_check_in", cascade="all, delete-orphan"
+    )
+    can_hear_reports_as_heard = relationship(
+        "CanHearReport", foreign_keys="CanHearReport.heard_check_in_id",
+        back_populates="heard_check_in", cascade="all, delete-orphan"
+    )
+
+
+class CanHearReport(Base):
+    """Directional 'can hear' propagation edge: reporter_check_in can hear heard_check_in.
+
+    One row per checked box in the "Who can this station hear?" dialog. See
+    docs/ROADMAP.md "Relaying & Propagation Mapping" for the full data model
+    rationale (directional edges, no header table, reconcile-on-save).
+    """
+    __tablename__ = "can_hear_reports"
+
+    id = Column(Integer, primary_key=True, index=True)
+    net_id = Column(Integer, ForeignKey("nets.id", ondelete="CASCADE"), nullable=False, index=True)
+    reporter_check_in_id = Column(Integer, ForeignKey("check_ins.id", ondelete="CASCADE"), nullable=False)
+    heard_check_in_id = Column(Integer, ForeignKey("check_ins.id", ondelete="CASCADE"), nullable=False, index=True)
+    frequency_id = Column(Integer, ForeignKey("frequencies.id"), nullable=True)
+    reported_by_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    reported_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint('reporter_check_in_id', 'heard_check_in_id', 'frequency_id', name='uq_can_hear_report'),
+    )
+
+    net = relationship("Net", back_populates="can_hear_reports")
+    reporter_check_in = relationship("CheckIn", foreign_keys=[reporter_check_in_id], back_populates="can_hear_reports_as_reporter")
+    heard_check_in = relationship("CheckIn", foreign_keys=[heard_check_in_id], back_populates="can_hear_reports_as_heard")
+    reported_by = relationship("User")
 
 
 class CustomField(Base):

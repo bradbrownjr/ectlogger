@@ -40,6 +40,7 @@ import {
   Dns as SystemLogIcon,
   Fullscreen as FullscreenIcon,
   Close as CloseIcon,
+  Hearing as HearingIcon,
 } from '@mui/icons-material';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -159,11 +160,12 @@ import {
   AreaChart,
   Area,
 } from 'recharts';
-import { netApi, statisticsApi, checkInApi, netRoleApi } from '../services/api';
+import { netApi, statisticsApi, checkInApi, netRoleApi, canHearApi } from '../services/api';
 import { chatApi, ChatMessage, formatChatMessageText } from '../api/chat';
 import { formatDateTime, formatTimeWithDate } from '../utils/dateUtils';
 import { useAuth } from '../contexts/AuthContext';
 import { exportElementToPdf } from '../utils/pdfExport';
+import CoverageReport, { CanHearReportEntry } from '../components/netview/CoverageReport';
 
 // ========== INTERFACES ==========
 
@@ -174,6 +176,7 @@ interface Net {
   status: string;
   owner_id: number;
   ics309_enabled?: boolean;
+  propagation_logging_enabled?: boolean;
   topic_of_week_enabled?: boolean;
   topic_of_week_prompt?: string;
   poll_enabled?: boolean;
@@ -264,6 +267,7 @@ const NetReport: React.FC = () => {
   const [topicResponses, setTopicResponses] = useState<TopicResponse[]>([]);
   const [pollQuestion, setPollQuestion] = useState<string | null>(null);
   const [pollResults, setPollResults] = useState<PollResult[]>([]);
+  const [canHearReports, setCanHearReports] = useState<CanHearReportEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
@@ -305,7 +309,7 @@ const NetReport: React.FC = () => {
         setError(null);
 
         // Fetch all data in parallel
-        const [netRes, statsRes, checkInsRes, chatRes, rolesRes, topicRes, pollRes] = await Promise.all([
+        const [netRes, statsRes, checkInsRes, chatRes, rolesRes, topicRes, pollRes, canHearRes] = await Promise.all([
           netApi.get(parseInt(netId)),
           statisticsApi.getNetStats(parseInt(netId)),
           checkInApi.list(parseInt(netId)),
@@ -313,6 +317,7 @@ const NetReport: React.FC = () => {
           netRoleApi.list(parseInt(netId)),
           netApi.getTopicResponses(parseInt(netId)),
           netApi.getPollResults(parseInt(netId)),
+          canHearApi.list(parseInt(netId)),
         ]);
 
         setNet(netRes.data);
@@ -324,6 +329,7 @@ const NetReport: React.FC = () => {
         setTopicResponses(topicRes.data.responses || []);
         setPollQuestion(pollRes.data.question || null);
         setPollResults(pollRes.data.results || []);
+        setCanHearReports(canHearRes.data || []);
       } catch (err: any) {
         console.error('Failed to fetch net report data:', err);
         setError(err.response?.data?.detail || 'Failed to load net report');
@@ -1433,6 +1439,26 @@ const NetReport: React.FC = () => {
                 </Grid>
               </Grid>
             </Paper>
+          </>
+        )}
+
+        {/* ========== SECTION 10: STATION COVERAGE (if propagation logging enabled) ========== */}
+        {/* Deliberately a separate section from ICS-309 above, not merged into
+            it - coverage reports are not radio traffic, so they don't belong
+            in a communications log format (see docs/ROADMAP.md Phase 3). */}
+        {net.propagation_logging_enabled && (
+          <>
+            <Typography variant="h6" sx={{ mt: 3, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <HearingIcon /> Station Coverage ({canHearReports.length} report{canHearReports.length !== 1 ? 's' : ''})
+            </Typography>
+
+            <Box sx={{ mb: 3 }}>
+              <CoverageReport
+                netId={net.id}
+                reports={canHearReports}
+                frequencyLabels={Object.fromEntries(net.frequencies.map(f => [f.id, getFrequencyLabel(f)]))}
+              />
+            </Box>
           </>
         )}
 

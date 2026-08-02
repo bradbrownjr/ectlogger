@@ -343,6 +343,7 @@ class NetBase(BaseModel):
     announcements: Optional[str] = Field(None, max_length=50000)
     field_config: Optional[dict] = None
     ics309_enabled: Optional[bool] = False
+    propagation_logging_enabled: Optional[bool] = False
     mobile_priority_sort: Optional[bool] = True
     chat_grace_period_minutes: Optional[int] = None
     self_checkin_enabled: Optional[bool] = True
@@ -373,6 +374,7 @@ class NetUpdate(BaseModel):
     frequency_ids: Optional[List[int]] = Field(None, max_length=50)
     field_config: Optional[dict] = None
     ics309_enabled: Optional[bool] = None
+    propagation_logging_enabled: Optional[bool] = None
     mobile_priority_sort: Optional[bool] = None
     chat_grace_period_minutes: Optional[int] = None
     self_checkin_enabled: Optional[bool] = None
@@ -412,6 +414,7 @@ class NetResponse(NetBase):
     active_frequency_id: Optional[int] = None
     field_config: Optional[dict] = None
     ics309_enabled: bool = False
+    propagation_logging_enabled: bool = False
     scheduled_start_time: Optional[datetime] = None
     started_at: Optional[datetime] = None
     closed_at: Optional[datetime] = None
@@ -449,6 +452,7 @@ class NetResponse(NetBase):
             'active_frequency_id': net.active_frequency_id,
             'field_config': json.loads(net.field_config) if net.field_config else None,
             'ics309_enabled': net.ics309_enabled or False,
+            'propagation_logging_enabled': net.propagation_logging_enabled or False,
             'mobile_priority_sort': net.mobile_priority_sort if net.mobile_priority_sort is not None else True,
             'chat_grace_period_minutes': net.chat_grace_period_minutes,
             'self_checkin_enabled': net.self_checkin_enabled if net.self_checkin_enabled is not None else True,
@@ -489,6 +493,7 @@ class NetTemplateBase(BaseModel):
     schedule_config: Optional[dict] = Field(default_factory=dict)  # {day_of_week, week_of_month, time}
     fifth_week_user_id: Optional[int] = None
     ics309_enabled: bool = False  # Enable ICS-309 format for net close emails
+    propagation_logging_enabled: bool = False  # Seeds propagation_logging_enabled for nets created from this template
     mobile_priority_sort: Optional[bool] = True
     chat_grace_period_minutes: Optional[int] = None
     self_checkin_enabled: Optional[bool] = True
@@ -522,6 +527,7 @@ class NetTemplateUpdate(BaseModel):
     fifth_week_user_id: Optional[int] = None
     owner_id: Optional[int] = None  # Allow changing the owner (admin only or current owner)
     ics309_enabled: Optional[bool] = None
+    propagation_logging_enabled: Optional[bool] = None
     mobile_priority_sort: Optional[bool] = None
     chat_grace_period_minutes: Optional[int] = None
     self_checkin_enabled: Optional[bool] = None
@@ -569,6 +575,7 @@ class NetTemplateResponse(NetTemplateBase):
             'schedule_type': template.schedule_type,
             'schedule_config': json.loads(template.schedule_config) if template.schedule_config else {},
             'ics309_enabled': template.ics309_enabled or False,
+            'propagation_logging_enabled': template.propagation_logging_enabled or False,
             'mobile_priority_sort': template.mobile_priority_sort if template.mobile_priority_sort is not None else True,
             'chat_grace_period_minutes': template.chat_grace_period_minutes,
             'self_checkin_enabled': template.self_checkin_enabled if template.self_checkin_enabled is not None else True,
@@ -683,10 +690,11 @@ class CheckInBase(BaseModel):
     feedback: Optional[str] = Field(None, max_length=1000)
     notes: Optional[str] = Field(None, max_length=2000)
     relayed_by: Optional[str] = Field(None, max_length=50)
+    operating_position: Optional[str] = Field(None, max_length=50)
     # Topic of the Week / Poll responses
     topic_response: Optional[str] = Field(None, max_length=2000)
     poll_response: Optional[str] = Field(None, max_length=255)
-    
+
     @field_validator('callsign')
     @classmethod
     def validate_callsign(cls, v: str) -> str:
@@ -730,6 +738,7 @@ class CheckInUpdate(BaseModel):
     feedback: Optional[str] = Field(None, max_length=1000)
     notes: Optional[str] = Field(None, max_length=2000)
     relayed_by: Optional[str] = Field(None, max_length=50)
+    operating_position: Optional[str] = Field(None, max_length=50)
     available_frequency_ids: Optional[List[int]] = None
     custom_fields: Optional[dict] = None
     # Topic of the Week / Poll responses
@@ -1349,6 +1358,49 @@ class TopicHistoryCreate(TopicHistoryBase):
 class TopicHistoryUpdate(BaseModel):
     topic: Optional[str] = Field(None, max_length=500)
     used_date: Optional[datetime] = None
+
+
+# ========== Can Hear (Station-to-Station Coverage) Schemas ==========
+
+class CanHearReportResponse(BaseModel):
+    id: int
+    net_id: int
+    reporter_check_in_id: int
+    heard_check_in_id: int
+    reporter_callsign: str
+    heard_callsign: str
+    frequency_id: Optional[int] = None
+    reported_by_user_id: Optional[int] = None
+    reported_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class CanHearReportSave(BaseModel):
+    reporter_check_in_id: int
+    heard_check_in_ids: List[int]
+    frequency_id: Optional[int] = None
+    operating_position: Optional[str] = Field(None, max_length=50)
+
+
+class CoverageStationResponse(BaseModel):
+    """Phase 5 personal coverage rollup entry (see docs/ROADMAP.md
+    "Relaying & Propagation Mapping", Profile map section). One row per
+    heard station, aggregated across all of the current user's own "can
+    hear" reports made while operating from home. last_heard is a
+    MAX(reported_at) rollup across every net the callsign was heard on, not
+    a single net's timestamp; confirmation_count is the number of distinct
+    nets it was confirmed on; location is the heard check-in's location
+    from whichever report is most recent (a station's location can vary
+    across nets, e.g. a mobile station)."""
+    callsign: str
+    last_heard: datetime
+    confirmation_count: int
+    location: Optional[str] = None
+
+    class Config:
+        from_attributes = True
 
 
 class TopicHistoryResponse(TopicHistoryBase):

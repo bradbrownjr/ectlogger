@@ -78,6 +78,7 @@ const CreateSchedule: React.FC = () => {
 
   // ---- ARES / EmComm features ----
   const [ics309Enabled, setIcs309Enabled] = useState(false);
+  const [propagationLoggingEnabled, setPropagationLoggingEnabled] = useState(false);
   const [mobilePrioritySort, setMobilePrioritySort] = useState(true);
   const [chatGracePeriodEnabled, setChatGracePeriodEnabled] = useState(false);
   const [chatGracePeriodMinutes, setChatGracePeriodMinutes] = useState(15);
@@ -194,6 +195,7 @@ const CreateSchedule: React.FC = () => {
       setInfoUrl(schedule.info_url || '');
       setScript(schedule.script || '');
       setIcs309Enabled(schedule.ics309_enabled || false);
+      setPropagationLoggingEnabled(schedule.propagation_logging_enabled || false);
       setMobilePrioritySort(schedule.mobile_priority_sort !== false);
       const grace = schedule.chat_grace_period_minutes;
       setChatGracePeriodEnabled(!!grace);
@@ -270,6 +272,7 @@ const CreateSchedule: React.FC = () => {
       schedule_config: scheduleConfig,
       fifth_week_user_id: fifthWeekUserId,
       ics309_enabled: ics309Enabled,
+      propagation_logging_enabled: propagationLoggingEnabled,
       mobile_priority_sort: mobilePrioritySort,
       chat_grace_period_minutes: chatGracePeriodEnabled ? chatGracePeriodMinutes : null,
       self_checkin_enabled: selfCheckinEnabled,
@@ -337,6 +340,7 @@ const CreateSchedule: React.FC = () => {
     name, setName, description, setDescription, infoUrl, setInfoUrl,
     script, setScript, announcements, setAnnouncements,
     ics309Enabled, setIcs309Enabled, mobilePrioritySort, setMobilePrioritySort,
+    propagationLoggingEnabled, setPropagationLoggingEnabled,
     chatGracePeriodEnabled, setChatGracePeriodEnabled,
     chatGracePeriodMinutes, setChatGracePeriodMinutes,
     selfCheckinEnabled, setSelfCheckinEnabled,

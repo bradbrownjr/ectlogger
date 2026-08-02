@@ -21,6 +21,7 @@ interface NetWebSocketDeps {
   fetchNet: () => void;
   fetchNetRoles: () => void;
   fetchNetStats: () => void;
+  fetchCanHearReports: () => void;
   setActiveSpeakerId: Dispatch<SetStateAction<number | null>>;
   setCheckIns: Dispatch<SetStateAction<any[]>>;
   setToastMessage: Dispatch<SetStateAction<string>>;
@@ -68,6 +69,7 @@ export function useNetWebSocket(deps: NetWebSocketDeps): WebSocket | null {
           fetchNet,
           fetchNetRoles,
           fetchNetStats,
+          fetchCanHearReports,
           setActiveSpeakerId,
           setCheckIns,
           setToastMessage,
@@ -156,6 +158,10 @@ export function useNetWebSocket(deps: NetWebSocketDeps): WebSocket | null {
           // net data so paused_at/total_paused_seconds stay in sync for
           // everyone connected, not just the client that triggered it.
           fetchNet();
+        } else if (message.type === 'can_hear_changed') {
+          // A save can insert/delete/touch a variable number of edges, so
+          // always refetch the full list rather than patching state locally.
+          fetchCanHearReports();
         }
       };
 

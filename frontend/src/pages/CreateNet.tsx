@@ -80,6 +80,7 @@ const CreateNet: React.FC = () => {
 
   // ---- Feature toggles ----
   const [ics309Enabled, setIcs309Enabled] = useState(false);
+  const [propagationLoggingEnabled, setPropagationLoggingEnabled] = useState(false);
   const [mobilePrioritySort, setMobilePrioritySort] = useState(true);
   const [chatGracePeriodEnabled, setChatGracePeriodEnabled] = useState(false);
   const [chatGracePeriodMinutes, setChatGracePeriodMinutes] = useState(15);
@@ -183,6 +184,7 @@ const CreateNet: React.FC = () => {
       setScript(net.script || '');
       setAnnouncements(net.announcements || '');
       setIcs309Enabled(net.ics309_enabled || false);
+      setPropagationLoggingEnabled(net.propagation_logging_enabled || false);
       setMobilePrioritySort(net.mobile_priority_sort !== false);
       const grace = net.chat_grace_period_minutes;
       setChatGracePeriodEnabled(!!grace);
@@ -274,6 +276,7 @@ const CreateNet: React.FC = () => {
         frequency_ids: selectedFrequencyIds,
         field_config: fieldConfig,
         ics309_enabled: ics309Enabled,
+        propagation_logging_enabled: propagationLoggingEnabled,
         mobile_priority_sort: mobilePrioritySort,
         chat_grace_period_minutes: chatGracePeriodEnabled ? chatGracePeriodMinutes : null,
         self_checkin_enabled: selfCheckinEnabled,
@@ -320,6 +323,7 @@ const CreateNet: React.FC = () => {
         frequency_ids: selectedFrequencyIds,
         field_config: fieldConfig,
         ics309_enabled: ics309Enabled,
+        propagation_logging_enabled: propagationLoggingEnabled,
         auto_lobby_minutes: autoLobbyEnabled ? autoLobbyMinutes : null,
         topic_of_week_enabled: topicOfWeekEnabled,
         topic_of_week_prompt: topicOfWeekPrompt || null,
@@ -371,6 +375,7 @@ const CreateNet: React.FC = () => {
     script, setScript,
     announcements, setAnnouncements,
     ics309Enabled, setIcs309Enabled,
+    propagationLoggingEnabled, setPropagationLoggingEnabled,
     mobilePrioritySort, setMobilePrioritySort,
     chatGracePeriodEnabled, setChatGracePeriodEnabled,
     chatGracePeriodMinutes, setChatGracePeriodMinutes,

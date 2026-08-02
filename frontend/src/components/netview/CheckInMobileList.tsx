@@ -14,6 +14,7 @@ import {
   useTheme,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
+import HearingIcon from '@mui/icons-material/Hearing';
 import UserAvatar from '../UserAvatar';
 import { formatTimeWithDate } from '../../utils/dateUtils';
 
@@ -50,6 +51,12 @@ interface CheckInMobileListProps {
   onRefreshCheckIns: () => Promise<any> | void;
   onDeleteCheckIn: (checkInId: number) => void;
   onShowProfile: (userId: number) => void;
+  // "Can hear" propagation logging: whether the current user (NCS/Logger/Relay)
+  // may open the reporting dialog, which check-ins already have at least one
+  // report (for the row indicator), and the handler to open the dialog for a row.
+  canReportCanHear: boolean;
+  canHearReporterCheckInIds: number[];
+  onOpenCanHearDialog: (checkInId: number) => void;
 }
 
 const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
@@ -76,6 +83,9 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
   onRefreshCheckIns,
   onDeleteCheckIn,
   onShowProfile,
+  canReportCanHear,
+  canHearReporterCheckInIds,
+  onOpenCanHearDialog,
 }) => {
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
@@ -149,7 +159,9 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
             {net?.poll_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Poll</TableCell>}
             {hasAnyRelayedBy && <TableCell sx={{ whiteSpace: 'nowrap' }}>Relayed By</TableCell>}
             <TableCell sx={{ whiteSpace: 'nowrap' }}>Time</TableCell>
-            {canManage && (
+            {/* Actions column also shows for Relay-only staff (canReportCanHear),
+                who can't manage check-ins but can report "can hear" edges */}
+            {(canManage || canReportCanHear) && (
               <TableCell
                 sx={{
                   whiteSpace: 'nowrap',
@@ -282,7 +294,7 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
                 {net?.poll_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.poll_response || ''}</TableCell>}
                 {hasAnyRelayedBy && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.relayed_by || ''}</TableCell>}
                 <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatTimeWithDate(checkIn.checked_in_at, user?.prefer_utc || false, net?.started_at)}</TableCell>
-                {canManage && (
+                {(canManage || canReportCanHear) && (
                   <TableCell
                     sx={{
                       whiteSpace: 'nowrap',
@@ -293,7 +305,20 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
                       boxShadow: stickyShadow,
                     }}
                   >
-                    <IconButton size="small" onClick={() => onDeleteCheckIn(checkIn.id)}><DeleteIcon fontSize="small" /></IconButton>
+                    {canManage && (
+                      <IconButton size="small" onClick={() => onDeleteCheckIn(checkIn.id)}><DeleteIcon fontSize="small" /></IconButton>
+                    )}
+                    {net.propagation_logging_enabled && canReportCanHear && (net.status === 'active' || net.status === 'lobby') && checkIn.status !== 'checked_out' && (
+                      <IconButton
+                        size="small"
+                        onClick={() => onOpenCanHearDialog(checkIn.id)}
+                        color={canHearReporterCheckInIds.includes(checkIn.id) ? 'info' : 'default'}
+                        title="Who can this station hear?"
+                        sx={{ opacity: canHearReporterCheckInIds.includes(checkIn.id) ? 1 : 0.4 }}
+                      >
+                        <HearingIcon fontSize="small" />
+                      </IconButton>
+                    )}
                   </TableCell>
                 )}
               </TableRow>

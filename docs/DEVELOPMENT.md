@@ -454,6 +454,7 @@ write. These are the authoritative events:
 | `net_status_change` | `routers/nets_core.py` (net closed) and `routers/nets_export.py` (net archived/unarchived) |
 | `net_pause_change` | `net_pause.py` |
 | `role_change` | `routers/nets_roles.py` |
+| `can_hear_changed` | `routers/can_hear.py` — a "who can this station hear?" report was saved |
 | `chat_message`, `chat_reaction`, `chat_image` | `routers/chat.py` |
 | `ping` | `main.py` keepalive |
 

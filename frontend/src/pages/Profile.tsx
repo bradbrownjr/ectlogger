@@ -11,12 +11,14 @@ import BarChartIcon from '@mui/icons-material/BarChart';
 import PersonIcon from '@mui/icons-material/Person';
 import SettingsIcon from '@mui/icons-material/Settings';
 import NotificationsIcon from '@mui/icons-material/Notifications';
+import MapIcon from '@mui/icons-material/Map';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import ProfileTab from '../components/profile/ProfileTab';
 import SettingsTab from '../components/profile/SettingsTab';
 import NotificationsTab from '../components/profile/NotificationsTab';
 import ActivityTab from '../components/profile/ActivityTab';
+import CoverageTab from '../components/profile/CoverageTab';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -81,7 +83,10 @@ const Profile: React.FC = () => {
     touchStartY.current = null;
     if (touchOnScrollable.current) return;
     if (Math.abs(deltaX) < 50 || Math.abs(deltaY) > Math.abs(deltaX)) return;
-    const next = deltaX < 0 ? Math.min(tabValue + 1, 2) : Math.max(tabValue - 1, 0);
+    // Clamp to the last tab index (4: Profile, Settings, Notifications,
+    // Activity, Coverage) - this was hardcoded to 2 and stale ever since the
+    // Activity tab (index 3) was added, making it unreachable by swipe.
+    const next = deltaX < 0 ? Math.min(tabValue + 1, 4) : Math.max(tabValue - 1, 0);
     setTabValue(next);
     setSearchParams(next > 0 ? { tab: String(next) } : {});
   };
@@ -171,6 +176,13 @@ const Profile: React.FC = () => {
               id="profile-tab-3"
               aria-controls="profile-tabpanel-3"
             />
+            <Tab
+              icon={<MapIcon />}
+              iconPosition="start"
+              label="Coverage"
+              id="profile-tab-4"
+              aria-controls="profile-tabpanel-4"
+            />
           </Tabs>
         </Box>
 
@@ -215,6 +227,11 @@ const Profile: React.FC = () => {
         {/* ========== Activity Tab ========== */}
         <TabPanel value={tabValue} index={3}>
           <ActivityTab />
+        </TabPanel>
+
+        {/* ========== Coverage Tab ========== */}
+        <TabPanel value={tabValue} index={4}>
+          <CoverageTab />
         </TabPanel>
       </Paper>
     </Container>

@@ -54,7 +54,7 @@ import {
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import { netApi, checkInApi, netRoleApi, templateApi } from '../services/api';
+import { netApi, checkInApi, netRoleApi, templateApi, canHearApi } from '../services/api';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useLocation } from '../contexts/LocationContext';
@@ -67,6 +67,8 @@ import ScheduleAnnouncements from '../components/ScheduleAnnouncements';
 import TopicHistory from '../components/TopicHistory';
 import FloatingWindow from '../components/FloatingWindow';
 import UserProfileDialog from '../components/UserProfileDialog';
+import CanHearDialog from '../components/netview/CanHearDialog';
+import CoverageReport from '../components/netview/CoverageReport';
 
 interface Frequency {
   id: number;
@@ -188,6 +190,12 @@ const NetView: React.FC = () => {
   const archiveHelp = useDialog();
   const archiveDeleteConfirm = useDialog();
   const [profileUserId, setProfileUserId] = useState<number | null>(null);
+  // "Can hear" propagation logging: the check-in currently being reported for
+  // (dialog open when non-null), and the full list of reports for this net.
+  // A save can insert/delete/touch a variable number of edges, so the WebSocket
+  // reaction is always a full refetch rather than a local patch (see fetchCanHearReports).
+  const [canHearDialogCheckInId, setCanHearDialogCheckInId] = useState<number | null>(null);
+  const [canHearReports, setCanHearReports] = useState<any[]>([]);
   const [subscribing, setSubscribing] = useState(false);
   const [startingNet, setStartingNet] = useState(false);
   const script = usePersistedDialog(STORAGE_KEYS.SCRIPT_OPEN);
@@ -295,6 +303,25 @@ const NetView: React.FC = () => {
     poll_response: '',
     status: 'checked_in',
   });
+
+  // Fetches the full "can hear" report list for this net. Called once on mount
+  // (below) and again whenever the can_hear_changed WebSocket message arrives -
+  // never patched locally, since a single save can insert/delete/touch an
+  // arbitrary number of edges at once.
+  const fetchCanHearReports = async () => {
+    if (!netId) return;
+    try {
+      const response = await canHearApi.list(parseInt(netId));
+      setCanHearReports(response.data);
+    } catch (error) {
+      console.error('Failed to fetch can-hear reports:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchCanHearReports();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [netId]);
 
   // Panel states are persisted automatically by useLocalStorage; no explicit persist effects needed.
 
@@ -664,6 +691,7 @@ const NetView: React.FC = () => {
     setCheckIns,
     setToastMessage,
     setHighlightCheckIn,
+    fetchCanHearReports,
   });
 
   const handleAssignRole = async () => {
@@ -1012,6 +1040,13 @@ const NetView: React.FC = () => {
     return map;
   }, [checkIns]);
 
+  // Check-in ids that already have at least one outgoing "can hear" report,
+  // for the ear icon's row indicator color. Must be above the early return
+  // below so hook count never changes between renders.
+  const canHearReporterCheckInIds = React.useMemo(() => {
+    return Array.from(new Set(canHearReports.map((r: any) => r.reporter_check_in_id)));
+  }, [canHearReports]);
+
   if (!net) {
     return <Container><Typography>Loading...</Typography></Container>;
   }
@@ -1032,6 +1067,18 @@ const NetView: React.FC = () => {
   // net.can_manage is also true for active template staff (set server-side).
   const canManage = isOwner || isAdmin || isNCS || !!net?.can_manage;
   const canManageCheckIns = canManage || isNCSOrLogger;
+
+  // Relay staff can't manage check-ins generally, but can record "can hear"
+  // reports (see propagation logging permission gate on the backend).
+  const isRelay = userNetRole?.role?.toUpperCase() === 'RELAY';
+  const canReportCanHear = canManageCheckIns || isRelay;
+
+  // The check-in the "Who can this station hear?" dialog is currently open
+  // for, resolved from the full (unfiltered) check-in list. Null when the
+  // dialog is closed or the check-in it was opened for has since been removed.
+  const canHearDialogCheckIn = canHearDialogCheckInId !== null
+    ? checkIns.find((ci: CheckIn) => ci.id === canHearDialogCheckInId) || null
+    : null;
 
   const canStartNet = canManage;
   
@@ -1441,6 +1488,9 @@ const NetView: React.FC = () => {
                 handleSetActiveSpeaker={handleSetActiveSpeaker}
                 handleDeleteCheckIn={handleDeleteCheckIn}
                 setProfileUserId={setProfileUserId}
+                canReportCanHear={canReportCanHear}
+                canHearReporterCheckInIds={canHearReporterCheckInIds}
+                onOpenCanHearDialog={setCanHearDialogCheckInId}
               />
             
             {/* ========== CHECK-IN LIST TABLE 2: Mobile View (xs only) ========== */}
@@ -1468,8 +1518,11 @@ const NetView: React.FC = () => {
               onRefreshCheckIns={fetchCheckIns}
               onDeleteCheckIn={handleDeleteCheckIn}
               onShowProfile={setProfileUserId}
+              canReportCanHear={canReportCanHear}
+              canHearReporterCheckInIds={canHearReporterCheckInIds}
+              onOpenCanHearDialog={setCanHearDialogCheckInId}
             />
-            
+
             {/* Legend - desktop only */}
             <Box sx={{ p: 0.5, backgroundColor: 'action.hover', border: 1, borderColor: 'divider', borderTop: 0, borderBottom: 0, flexShrink: 0, display: { xs: 'none', md: 'block' } }}>
               <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center' }}>
@@ -1554,7 +1607,24 @@ const NetView: React.FC = () => {
                 </Grid>
               </Box>
             )}
-            
+
+            {/* Station Coverage ("can hear" propagation) report - live during
+                and after the net, not just in the exported PDF. Gated on the
+                net-level toggle (Phase 2); shows for any status so NCS can
+                watch coverage build as reports come in, not only once closed. */}
+            {net.propagation_logging_enabled && (
+              <Box sx={{ border: 1, borderColor: 'divider', borderTop: 0, p: 2, backgroundColor: 'background.paper' }}>
+                <Typography variant="subtitle2" gutterBottom>📡 Station Coverage</Typography>
+                <CoverageReport
+                  netId={net.id}
+                  reports={canHearReports}
+                  frequencyLabels={Object.fromEntries(
+                    (net.frequencies || []).map((f: any) => [f.id, `${f.frequency || f.network || ''} ${f.mode || ''}`.trim()])
+                  )}
+                />
+              </Box>
+            )}
+
             {/* New check-in form - desktop only */}
             {(net.status === 'active' || net.status === 'lobby') && canManageCheckIns && (
               <Paper sx={{ border: 1, borderColor: 'divider', borderTop: 0, borderRadius: '0 0 4px 4px', p: 1, flexShrink: 0, display: { xs: 'none', md: 'block' } }}>
@@ -2162,6 +2232,7 @@ const NetView: React.FC = () => {
               mapMinimized={mapMinimized}
               onMinimizeMap={() => setMapMinimized(true)}
               onRestoreMap={() => setMapMinimized(false)}
+              canHearReports={canHearReports}
             />
           </Grid>
         )}
@@ -2225,6 +2296,9 @@ const NetView: React.FC = () => {
                 handleSetActiveSpeaker={handleSetActiveSpeaker}
                 handleDeleteCheckIn={handleDeleteCheckIn}
                 setProfileUserId={setProfileUserId}
+                canReportCanHear={canReportCanHear}
+                canHearReporterCheckInIds={canHearReporterCheckInIds}
+                onOpenCanHearDialog={setCanHearDialogCheckInId}
               />
               
               {/* Legend */}
@@ -2393,6 +2467,10 @@ const NetView: React.FC = () => {
         relayUserIds={relayUserIds}
         onPopOut={handlePopOutMap}
         onDock={isXlUp ? handleDockMap : undefined}
+        canHearReports={canHearReports}
+        frequencyLabels={Object.fromEntries(
+          (net?.frequencies || []).map((f: any) => [f.id, `${f.frequency || f.network || ''} ${f.mode || ''}`.trim()])
+        )}
       />
       )}
 
@@ -2484,6 +2562,22 @@ const NetView: React.FC = () => {
         netId={netId ? Number(netId) : undefined}
         onClose={() => setProfileUserId(null)}
       />
+
+      {/* ========== "WHO CAN THIS STATION HEAR?" COVERAGE REPORTING DIALOG ========== */}
+      {canHearDialogCheckIn && netId && (
+        <CanHearDialog
+          key={canHearDialogCheckIn.id}
+          open
+          onClose={() => setCanHearDialogCheckInId(null)}
+          netId={Number(netId)}
+          net={net}
+          reporterCheckIn={canHearDialogCheckIn}
+          allCheckIns={checkIns}
+          existingReports={canHearReports}
+          onSaved={() => setCanHearDialogCheckInId(null)}
+          onToast={setToastMessage}
+        />
+      )}
 
       <ArchiveDialogs
         netName={net?.name}

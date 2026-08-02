@@ -24,6 +24,7 @@ const BasicInfoTab: React.FC = () => {
     infoUrl, setInfoUrl,
     streamUrl, setStreamUrl,
     ics309Enabled, setIcs309Enabled,
+    propagationLoggingEnabled, setPropagationLoggingEnabled,
     mobilePrioritySort, setMobilePrioritySort,
     chatGracePeriodEnabled, setChatGracePeriodEnabled,
     chatGracePeriodMinutes, setChatGracePeriodMinutes,
@@ -281,6 +282,16 @@ const BasicInfoTab: React.FC = () => {
             />
             <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
               When enabled, net close emails will use the official ICS-309 format used by ARES, RACES, and EmComm organizations.
+            </Typography>
+          </Box>
+
+          <Box sx={{ mt: 2 }}>
+            <FormControlLabel
+              control={<Switch checked={propagationLoggingEnabled} onChange={(e) => setPropagationLoggingEnabled(e.target.checked)} />}
+              label="Enable Station-to-Station Coverage Logging"
+            />
+            <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
+              Adds a 'can hear' action to each check-in, letting NCS, Logger, and Relay record which stations can hear each other during this net.
             </Typography>
           </Box>
         </>

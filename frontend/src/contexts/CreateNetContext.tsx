@@ -30,6 +30,7 @@ export interface CreateNetContextValue {
 
   // ARES / EmComm features
   ics309Enabled: boolean; setIcs309Enabled: Dispatch<SetStateAction<boolean>>;
+  propagationLoggingEnabled: boolean; setPropagationLoggingEnabled: Dispatch<SetStateAction<boolean>>;
   mobilePrioritySort: boolean; setMobilePrioritySort: Dispatch<SetStateAction<boolean>>;
   chatGracePeriodEnabled: boolean; setChatGracePeriodEnabled: Dispatch<SetStateAction<boolean>>;
   chatGracePeriodMinutes: number; setChatGracePeriodMinutes: Dispatch<SetStateAction<number>>;

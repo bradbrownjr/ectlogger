@@ -1,10 +1,13 @@
 # Team Management Spec Draft (Back-Burner)
 
-Last updated: 2026-06-08
+Last updated: 2026-08-01
 
 This document is a structured draft spec for a future Team Management module. It is intentionally scoped as back-burner work while core web app stability and self-hosting priorities are completed.
 
-Related roadmap reference: [docs/ROADMAP.md](../ROADMAP.md)
+Related roadmap references:
+
+- [docs/ROADMAP.md](../ROADMAP.md) > Milestone 2 > Team Management Module — the module itself.
+- [docs/ROADMAP.md](../ROADMAP.md) > Milestone 1 > Relaying & Propagation Mapping — the per-net "can hear" capture that section 5.6 below builds on. That half ships without Teams.
 
 ## 1. Problem Statement
 
@@ -116,6 +119,50 @@ Goal: provide a secure, role-based team management experience integrated with ex
 - Support export formats needed for local coordinator workflows and ARES Form 2 preparation.
 - Define canonical report periods (monthly/quarterly/yearly) in later phase.
 
+### 5.6 Team Locations and Coverage Assessment
+
+This is the Teams-dependent half of the "can hear" inter-station propagation feature. The per-net capture side of that feature ships in Milestone 1 and does **not** wait on Teams. See [docs/ROADMAP.md](../ROADMAP.md) > Milestone 1 > Relaying & Propagation Mapping for the settled data model, the per-net reporting dialog, and the phase order. This section covers only what genuinely requires a team to exist.
+
+Context: teams support fixed locations (shelters, EOCs, hospitals, cooling centers, staging areas). A team manager needs to know, for each supported location, which other locations and which stations that location can reliably communicate with — and where the gaps are. This is the deliverable of a Coverage Assessment exercise, a common ARES/emcomm SET drill type, and today it is produced by hand from paper notes.
+
+#### Named locations
+
+- New `TeamLocation` entity: a place a team supports, owned by one team.
+- Fields: name, type (shelter/EOC/hospital/staging/other), address or coordinates, optional grid square, notes, active flag.
+- Coordinates reuse the existing location parsing already used by the check-in map (GPS, Maidenhead, UTM, MGRS, or geocoded address), so a location renders on a map with no new parsing work.
+- Address and access details are high-sensitivity data — see section 8 for classification and controls.
+
+#### Link from per-net reports
+
+- Milestone 1 stores a station's operating position on its check-in as a nullable free-text classifier (Home / Field Deployed / typed value).
+- Teams adds a nullable `team_location_id` foreign key on the check-in alongside it, plus a `fixed_location` classifier value. This is additive: no existing row is rewritten and no migration breaks.
+- Once available, the reporting dialog's operating-position dropdown is seeded with the team's named locations in addition to Home and Field Deployed.
+- A manager can backfill: map recurring free-text positions ("Windham EOC") onto the matching `TeamLocation` record. Backfill is manager-reviewed, never automatic string matching.
+
+#### Location-to-location coverage
+
+- `TeamLocationCoverage` is a **read-time rollup**, not a maintained table, consistent with the per-net-source-of-truth decision in the roadmap item. It answers: for a pair of locations, has any station operating from location A confirmed hearing a station operating from location B, on which frequency, how recently, and across how many nets.
+- Present confirmed two-way paths distinctly from one-way ones. Direction is never inferred — a one-way path is an operationally meaningful finding, not missing data.
+- Frequency scoping carries through: a repeater path and a simplex path between the same two locations are separate findings, and the simplex one is usually the one that matters for a drill.
+- Reconsider precompute only if a team-year coverage query becomes slow. Caching a rollup later does not change the source of truth.
+
+#### Manager-facing outputs
+
+- Per-location view: a map and list of the locations and stations that location can communicate with, with recency and confirmation count.
+- Team coverage map: all of the team's locations plus confirmed paths between them, filterable by frequency and date range.
+- Gap analysis: which supported locations have no confirmed path to the team's primary location, and which have only a one-way path.
+- Relay planning: which member stations sit on a confirmed path between two locations that have none directly, i.e. who can relay for whom.
+- Placement planning: where an additional station would close the most gaps.
+- Coverage Assessment export suitable for handing to an EC or attaching to a SET report, following the export conventions in section 5.5.
+
+#### Cross-team and mutual aid
+
+- Deliberately out of scope for the first Teams release. Sharing coverage data between teams raises the same consent and data-sovereignty questions as cross-instance federation (a stated non-goal in section 2), and should not be designed until single-team coverage has been used in a real drill.
+
+#### Note on personal coverage maps
+
+A user's own "stations I can hear from home" map is **not** part of this section. It needs only per-net reports and the home classifier, so it ships in Milestone 1 as the last phase of the roadmap item. Teams does not gate it and must not duplicate it.
+
 ## 6. Data Model Draft
 
 ### Core Entities
@@ -128,6 +175,7 @@ Goal: provide a secure, role-based team management experience integrated with ex
 - TeamCapabilityProfile
 - TeamAffiliation
 - TeamNetParticipationRollup
+- TeamLocation (see 5.6; TeamLocationCoverage is a read-time rollup, not a stored entity)
 
 ### Candidate Fields (from WSSM-ECT workflows)
 
@@ -179,6 +227,7 @@ This section is product/engineering guidance, not legal advice.
   - name, email, phone, training records
 - High sensitivity:
   - street address, building access indicators
+  - team location addresses and access details (5.6) — a roster of shelter and EOC addresses is more sensitive than any single member record, and its visibility should default to team managers
 
 ### Required Controls (baseline)
 
@@ -218,6 +267,7 @@ This section is product/engineering guidance, not legal advice.
   - net-to-team assignment and participation rollups
 - M3 Reporting:
   - coordinator and ARES-prep exports
+  - team locations and coverage assessment outputs (5.6), assuming the Milestone 1 per-net capture has shipped and produced usable data
 - M4 Hardening:
   - audit logs, retention/anonymization controls, UX polish
 
@@ -229,6 +279,9 @@ This section is product/engineering guidance, not legal advice.
 - How should multi-team membership affect reporting attribution when a user participates broadly?
 - What minimum retention policy is required operationally and legally for this deployment?
 - What report formats are mandatory for local EC workflows at launch?
+- Should team locations be visible to all team members or managers only by default (5.6)?
+- Can a location belong to more than one team, or does mutual aid require duplicate records?
+- How stale is too stale for a confirmed path to still count as coverage in a gap analysis?
 
 ## 12. Reference Links
 

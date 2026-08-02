@@ -136,6 +136,7 @@ async def create_template(
         schedule_type=template_data.schedule_type,
         schedule_config=schedule_config_json,
         ics309_enabled=template_data.ics309_enabled or False,
+        propagation_logging_enabled=template_data.propagation_logging_enabled or False,
         self_checkin_enabled=template_data.self_checkin_enabled if template_data.self_checkin_enabled is not None else True,
         auto_lobby_minutes=template_data.auto_lobby_minutes,
         topic_of_week_enabled=template_data.topic_of_week_enabled or False,
@@ -346,6 +347,8 @@ async def update_template(
             template.fifth_week_user_id = template_data.fifth_week_user_id
     if template_data.ics309_enabled is not None:
         template.ics309_enabled = template_data.ics309_enabled
+    if template_data.propagation_logging_enabled is not None:
+        template.propagation_logging_enabled = template_data.propagation_logging_enabled
     if template_data.mobile_priority_sort is not None:
         template.mobile_priority_sort = template_data.mobile_priority_sort
     if 'chat_grace_period_minutes' in template_data.model_fields_set:

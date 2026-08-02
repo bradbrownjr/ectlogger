@@ -52,6 +52,7 @@ async def create_net(
         status=NetStatus.DRAFT,
         field_config=json.dumps(net_data.field_config) if net_data.field_config else None,
         ics309_enabled=net_data.ics309_enabled or False,
+        propagation_logging_enabled=net_data.propagation_logging_enabled or False,
         mobile_priority_sort=net_data.mobile_priority_sort if net_data.mobile_priority_sort is not None else True,
         chat_grace_period_minutes=net_data.chat_grace_period_minutes,
         self_checkin_enabled=net_data.self_checkin_enabled if net_data.self_checkin_enabled is not None else True,
@@ -814,6 +815,23 @@ async def close_net(
     # once here — two recipients can have different display preferences.
     sorted_check_ins = sorted(net.check_ins, key=lambda x: x.checked_in_at)
 
+    # Coverage ("can hear") reports for this net, if the feature is enabled.
+    # Queried once (the edge list itself doesn't depend on recipient
+    # timezone) rather than per-tz like build_log_payload below - only each
+    # edge's reported_at formatting varies per recipient. Reuses the same
+    # net_id-scoped query shape as list_can_hear_reports in
+    # routers/can_hear.py; callsigns and frequency labels come from the
+    # check-in/frequency data already loaded for this net rather than a
+    # second round trip.
+    checkin_callsigns = {c.id: c.callsign for c in sorted_check_ins}
+    can_hear_reports = []
+    if net.propagation_logging_enabled:
+        from app.models import CanHearReport
+        can_hear_result = await db.execute(
+            select(CanHearReport).where(CanHearReport.net_id == net_id)
+        )
+        can_hear_reports = can_hear_result.scalars().all()
+
     def build_log_payload(tz):
         started_at = to_display_tz(net.started_at, tz)
         closed_at = to_display_tz(net.closed_at, tz)
@@ -856,9 +874,18 @@ async def close_net(
                 'message': msg.message
             })
 
+        coverage_edges_data = []
+        for report in can_hear_reports:
+            coverage_edges_data.append({
+                'reporter_callsign': checkin_callsigns.get(report.reporter_check_in_id, ''),
+                'heard_callsign': checkin_callsigns.get(report.heard_check_in_id, ''),
+                'frequency_label': format_freq(freq_map[report.frequency_id]) if report.frequency_id in freq_map else '',
+                'reported_at': format_time_for_net(to_display_tz(report.reported_at, tz), started_at, closed_at),
+            })
+
         started_at_str = started_at.strftime("%Y-%m-%d %H:%M:%S") if started_at else "N/A"
         closed_at_str = closed_at.strftime("%Y-%m-%d %H:%M:%S") if closed_at else "N/A"
-        return check_ins_data, chat_messages_data, started_at_str, closed_at_str
+        return check_ins_data, chat_messages_data, started_at_str, closed_at_str, coverage_edges_data
 
     # Cache built payloads by tz key so recipients sharing a display preference
     # (the common case: everyone on UTC/no-timezone-set) don't redo the work.
@@ -925,7 +952,7 @@ async def close_net(
             # Get unsubscribe token for compliance
             unsub_token = getattr(recipient, 'unsubscribe_token', None)
 
-            check_ins_data, chat_messages_data, started_at_str, closed_at_str = log_payload_for(
+            check_ins_data, chat_messages_data, started_at_str, closed_at_str, coverage_edges_data = log_payload_for(
                 resolve_display_tz(recipient)
             )
 
@@ -958,6 +985,8 @@ async def close_net(
                     topic_of_week_prompt=net.topic_of_week_prompt,
                     poll_enabled=net.poll_enabled,
                     poll_question=net.poll_question,
+                    propagation_logging_enabled=net.propagation_logging_enabled,
+                    coverage_edges=coverage_edges_data,
                     unsubscribe_token=unsub_token
                 )
         except Exception as e:

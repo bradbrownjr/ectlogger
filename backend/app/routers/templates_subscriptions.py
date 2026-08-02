@@ -258,6 +258,7 @@ async def create_net_from_template(
         field_config=template.field_config,
         status=NetStatus.DRAFT,
         ics309_enabled=template.ics309_enabled or False,
+        propagation_logging_enabled=template.propagation_logging_enabled or False,
         mobile_priority_sort=template.mobile_priority_sort if template.mobile_priority_sort is not None else True,
         chat_grace_period_minutes=template.chat_grace_period_minutes,
         self_checkin_enabled=template.self_checkin_enabled if template.self_checkin_enabled is not None else True,

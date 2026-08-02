@@ -24,6 +24,8 @@ async def send_net_log(
     topic_of_week_prompt: str = None,
     poll_enabled: bool = False,
     poll_question: str = None,
+    propagation_logging_enabled: bool = False,
+    coverage_edges: list = None,
     unsubscribe_token: str = None
 ):
     """Send net log after net is closed with check-ins table, CSV attachment, and chat log"""
@@ -47,7 +49,44 @@ async def send_net_log(
                 poll_counts[response] = poll_counts.get(response, 0) + 1
         # Sort by count descending
         poll_results = sorted(poll_counts.items(), key=lambda x: -x[1])
-    
+
+    # Build the coverage summary. Each edge is "reporter can hear heard" -
+    # a plain list of confirmed directional pairs is enough for an email
+    # summary (unlike the interactive report, no one-way/two-way styling is
+    # required). As optional polish, reciprocal pairs (both directions
+    # reported on the same frequency) collapse into a single "A <-> B" line
+    # rather than two separate rows, since a station re-confirming its own
+    # coverage picture doesn't need "A can hear B" and "B can hear A" printed
+    # as unrelated facts.
+    coverage_pairs = []
+    if propagation_logging_enabled and coverage_edges:
+        seen = set()
+        for edge in coverage_edges:
+            freq_label = edge.get('frequency_label') or ''
+            pair_key = (frozenset([edge['reporter_callsign'], edge['heard_callsign']]), freq_label)
+            if pair_key in seen:
+                continue
+            seen.add(pair_key)
+            reciprocal = next(
+                (e for e in coverage_edges
+                 if e['reporter_callsign'] == edge['heard_callsign']
+                 and e['heard_callsign'] == edge['reporter_callsign']
+                 and (e.get('frequency_label') or '') == freq_label),
+                None
+            )
+            if reciprocal:
+                coverage_pairs.append({
+                    'label': f"{edge['reporter_callsign']} ↔ {edge['heard_callsign']}",
+                    'frequency_label': freq_label,
+                    'reported_at': max(edge['reported_at'], reciprocal['reported_at']),
+                })
+            else:
+                coverage_pairs.append({
+                    'label': f"{edge['reporter_callsign']} can hear {edge['heard_callsign']}",
+                    'frequency_label': freq_label,
+                    'reported_at': edge['reported_at'],
+                })
+
     html_template = Template("""
     <!DOCTYPE html>
     <html>
@@ -100,6 +139,30 @@ async def send_net_log(
                 </div>
                 {% endfor %}
                 <p style="font-size: 12px; color: #666; margin-top: 10px;">Total responses: {{ total_poll_responses }}</p>
+            </div>
+            {% endif %}
+
+            {% if propagation_enabled and coverage_pairs %}
+            <div class="poll-section" style="background-color: #e3f2fd; border-left: 4px solid #1976d2;">
+                <h3>📡 Station Coverage ("Can Hear" Reports)</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Stations</th>
+                            <th>Frequency</th>
+                            <th>Reported</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pair in coverage_pairs %}
+                        <tr>
+                            <td>{{ pair.label }}</td>
+                            <td>{{ pair.frequency_label or '—' }}</td>
+                            <td>{{ pair.reported_at }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
             {% endif %}
 
@@ -181,6 +244,8 @@ async def send_net_log(
         poll_question=poll_question or "Poll",
         poll_results=poll_results,
         total_poll_responses=total_poll_responses,
+        propagation_enabled=propagation_logging_enabled,
+        coverage_pairs=coverage_pairs,
         unsubscribe_footer=get_unsubscribe_footer(unsubscribe_token)
     )
     
