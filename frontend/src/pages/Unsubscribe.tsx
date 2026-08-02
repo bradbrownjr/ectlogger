@@ -16,6 +16,7 @@ import {
   Undo as UndoIcon,
 } from '@mui/icons-material';
 import api from '../services/api';
+import { getErrorMessage } from '../utils/apiErrors';
 
 /**
  * Unsubscribe Page - Handles one-click email unsubscribe
@@ -58,7 +59,7 @@ export default function Unsubscribe() {
         if (error.response?.status === 404) {
           setMessage('Invalid or expired unsubscribe link.');
         } else {
-          setMessage(error.response?.data?.detail || 'Failed to unsubscribe. Please try again later.');
+          setMessage(getErrorMessage(error, 'Failed to unsubscribe. Please try again later.'));
         }
       }
     };
@@ -75,7 +76,7 @@ export default function Unsubscribe() {
       setStatus('resubscribed');
       setMessage('Your email notifications have been re-enabled.');
     } catch (error: any) {
-      setMessage(error.response?.data?.detail || 'Failed to re-subscribe. Please update your settings in your profile.');
+      setMessage(getErrorMessage(error, 'Failed to re-subscribe. Please update your settings in your profile.'));
     } finally {
       setResubscribing(false);
     }

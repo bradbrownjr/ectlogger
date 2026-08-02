@@ -28,6 +28,7 @@ import InfoIcon from '@mui/icons-material/Info';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
 import api from '../../services/api';
+import { getErrorMessage } from '../../utils/apiErrors';
 
 interface Fail2BanStatus {
   installed: boolean;
@@ -121,7 +122,7 @@ const AdminSecurityTab: React.FC<Props> = ({ showSnackbar }) => {
       showSnackbar(`IP ${ip} has been unbanned`, 'success');
       fetchSecurityInfo();
     } catch (error: any) {
-      const message = error.response?.data?.detail || 'Failed to unban IP';
+      const message = getErrorMessage(error, 'Failed to unban IP');
       showSnackbar(message, 'error');
     }
   };
@@ -132,7 +133,7 @@ const AdminSecurityTab: React.FC<Props> = ({ showSnackbar }) => {
       await api.put('/settings', scheduleSettings);
       showSnackbar('Schedule creation settings saved', 'success');
     } catch (error: any) {
-      const message = error.response?.data?.detail || 'Failed to save settings';
+      const message = getErrorMessage(error, 'Failed to save settings');
       showSnackbar(message, 'error');
     } finally {
       setScheduleSettingsSaving(false);
@@ -145,7 +146,7 @@ const AdminSecurityTab: React.FC<Props> = ({ showSnackbar }) => {
       await api.put('/settings', sessionSettings);
       showSnackbar('Session settings saved', 'success');
     } catch (error: any) {
-      const message = error.response?.data?.detail || 'Failed to save session settings';
+      const message = getErrorMessage(error, 'Failed to save session settings');
       showSnackbar(message, 'error');
     } finally {
       setSessionSettingsSaving(false);

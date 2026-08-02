@@ -18,6 +18,7 @@ import PersonIcon from '@mui/icons-material/Person';
 import DeleteIcon from '@mui/icons-material/Delete';
 import api from '../../services/api';
 import { useCreateNetContext, NetUser } from '../../contexts/CreateNetContext';
+import { getErrorMessage } from '../../utils/apiErrors';
 
 // ========== TAB 1: NET STAFF ==========
 // Manages NCS role assignments.
@@ -89,7 +90,7 @@ const NCSStaffTab: React.FC = () => {
       await fetchNetRoles();
       setSelectedUser(null);
     } catch (error: any) {
-      setNcsError(error.response?.data?.detail || 'Failed to add NCS');
+      setNcsError(getErrorMessage(error, 'Failed to add NCS'));
     }
   };
 
@@ -100,7 +101,7 @@ const NCSStaffTab: React.FC = () => {
       await api.delete(`/nets/${netId}/roles/${roleId}`);
       await fetchNetRoles();
     } catch (error: any) {
-      setNcsError(error.response?.data?.detail || 'Failed to remove NCS');
+      setNcsError(getErrorMessage(error, 'Failed to remove NCS'));
     }
   };
 

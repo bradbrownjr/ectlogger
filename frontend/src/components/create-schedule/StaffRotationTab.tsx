@@ -20,6 +20,7 @@ import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import { ncsRotationApi, templateStaffApi, templateApi } from '../../services/api';
+import { getErrorMessage } from '../../utils/apiErrors';
 import {
   useCreateScheduleContext,
   User,
@@ -131,7 +132,7 @@ const StaffRotationTab: React.FC = () => {
       setSelectedUserForStaff(null);
     } catch (error: any) {
       console.error('Failed to add staff:', error);
-      alert(error?.response?.data?.detail || 'Failed to add staff');
+      alert(getErrorMessage(error, 'Failed to add staff'));
     }
   };
 
@@ -179,7 +180,7 @@ const StaffRotationTab: React.FC = () => {
       await fetchRotationMembers();
     } catch (error: any) {
       console.error('Failed to build rotation from staff:', error);
-      alert(error?.response?.data?.detail || 'Failed to build rotation from staff');
+      alert(getErrorMessage(error, 'Failed to build rotation from staff'));
     }
   };
 

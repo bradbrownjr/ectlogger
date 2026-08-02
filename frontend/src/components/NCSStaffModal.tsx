@@ -665,12 +665,9 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
           // (backend rejects all subsequent adds the same way), so bail
           // early with a clean message rather than spamming N errors.
           if (err?.response?.status === 403) {
-            const detail = err?.response?.data?.detail;
             setPushStaffResult({
               severity: 'error',
-              message: typeof detail === 'string'
-                ? detail
-                : "You don\u2019t have permission to edit this schedule\u2019s staff.",
+              message: getErrorMessage(err, "You don\u2019t have permission to edit this schedule\u2019s staff."),
             });
             return;
           }
@@ -692,16 +689,15 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
       onUpdate?.();
     } catch (err: any) {
       const status = err?.response?.status;
-      const detail = err?.response?.data?.detail;
       if (status === 403) {
         setPushStaffResult({
           severity: 'error',
-          message: typeof detail === 'string' ? detail : "You don\u2019t have permission to edit this schedule\u2019s staff.",
+          message: getErrorMessage(err, "You don\u2019t have permission to edit this schedule\u2019s staff."),
         });
       } else {
         setPushStaffResult({
           severity: 'error',
-          message: typeof detail === 'string' ? detail : 'Failed to push staff to the schedule.',
+          message: getErrorMessage(err, 'Failed to push staff to the schedule.'),
         });
       }
     } finally {

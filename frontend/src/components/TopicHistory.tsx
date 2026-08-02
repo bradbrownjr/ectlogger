@@ -26,6 +26,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
 import api from '../services/api';
+import { getErrorMessage } from '../utils/apiErrors';
 
 const PAGE_SIZE = 25;
 
@@ -84,7 +85,7 @@ const TopicHistory: React.FC<TopicHistoryProps> = ({
       const response = await api.get(`/templates/${templateId}/topic-history`);
       setTopics(response.data);
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to load topic history');
+      setError(getErrorMessage(err, 'Failed to load topic history'));
     } finally {
       setLoading(false);
     }
@@ -111,7 +112,7 @@ const TopicHistory: React.FC<TopicHistoryProps> = ({
       setShowAddForm(false);
       await loadTopicHistory();
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to add topic');
+      setError(getErrorMessage(err, 'Failed to add topic'));
     } finally {
       setSaving(false);
     }
@@ -141,7 +142,7 @@ const TopicHistory: React.FC<TopicHistoryProps> = ({
       handleCancelEdit();
       await loadTopicHistory();
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to save topic');
+      setError(getErrorMessage(err, 'Failed to save topic'));
     } finally {
       setSaving(false);
     }
@@ -154,7 +155,7 @@ const TopicHistory: React.FC<TopicHistoryProps> = ({
       await api.delete(`/templates/${templateId}/topic-history/${id}`);
       await loadTopicHistory();
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to delete topic');
+      setError(getErrorMessage(err, 'Failed to delete topic'));
     }
   };
 

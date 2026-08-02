@@ -32,6 +32,7 @@ import ClearIcon from '@mui/icons-material/Clear';
 import useSortableTable from '../../hooks/useSortableTable';
 import { contactApi } from '../../services/api';
 import { formatDate } from '../../utils/dateUtils';
+import { getErrorMessage } from '../../utils/apiErrors';
 
 interface Contact {
   id: number;
@@ -189,7 +190,7 @@ const AdminContactsTab: React.FC<Props> = ({ showSnackbar, onUserCreated }) => {
       setInlineEditContactFocusField(null);
       fetchContacts();
     } catch (error: any) {
-      const message = error.response?.data?.detail || 'Failed to update contact';
+      const message = getErrorMessage(error, 'Failed to update contact');
       showSnackbar(message, 'error');
     }
   };
@@ -258,7 +259,7 @@ const AdminContactsTab: React.FC<Props> = ({ showSnackbar, onUserCreated }) => {
       setAddContactDialogOpen(false);
       fetchContacts();
     } catch (error: any) {
-      const message = error.response?.data?.detail || 'Failed to create contact';
+      const message = getErrorMessage(error, 'Failed to create contact');
       showSnackbar(message, 'error');
     } finally {
       setAddContactSaving(false);
@@ -279,7 +280,7 @@ const AdminContactsTab: React.FC<Props> = ({ showSnackbar, onUserCreated }) => {
       setContactToDelete(null);
       fetchContacts();
     } catch (error: any) {
-      const message = error.response?.data?.detail || 'Failed to delete contact';
+      const message = getErrorMessage(error, 'Failed to delete contact');
       showSnackbar(message, 'error');
     }
   };
@@ -304,7 +305,7 @@ const AdminContactsTab: React.FC<Props> = ({ showSnackbar, onUserCreated }) => {
       fetchContacts();
       onUserCreated?.();
     } catch (error: any) {
-      const message = error.response?.data?.detail || 'Failed to invite contact';
+      const message = getErrorMessage(error, 'Failed to invite contact');
       showSnackbar(message, 'error');
     }
   };

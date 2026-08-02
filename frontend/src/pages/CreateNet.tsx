@@ -22,6 +22,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { netApi, frequencyApi, userApi, templateApi } from '../services/api';
 import api from '../services/api';
+import { getErrorMessage } from '../utils/apiErrors';
 import { useAuth } from '../contexts/AuthContext';
 import { CreateNetContext, CreateNetContextValue, NetUser } from '../contexts/CreateNetContext';
 import { FrequencyItem } from '../components/forms/CommunicationPlanPanel';
@@ -305,7 +306,7 @@ const CreateNet: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Failed to save net:', error);
-      alert(error.response?.data?.detail || 'Failed to save net');
+      alert(getErrorMessage(error, 'Failed to save net'));
     }
   };
 
@@ -334,12 +335,11 @@ const CreateNet: React.FC = () => {
       showToast('Schedule updated. Future nets opened from this schedule will use these values.', 'success');
     } catch (error: any) {
       const status = error?.response?.status;
-      const detail = error?.response?.data?.detail;
       if (status === 403) {
-        showToast(typeof detail === 'string' ? detail : "You don't have permission to edit this schedule.", 'error');
+        showToast(getErrorMessage(error, "You don't have permission to edit this schedule."), 'error');
       } else {
         console.error('Failed to save to schedule:', error);
-        showToast(typeof detail === 'string' ? detail : 'Failed to save changes to the schedule.', 'error');
+        showToast(getErrorMessage(error, 'Failed to save changes to the schedule.'), 'error');
       }
     } finally {
       setSavingToSchedule(false);
@@ -358,7 +358,7 @@ const CreateNet: React.FC = () => {
       showToast('Net times updated', 'success');
     } catch (error: any) {
       console.error('Failed to update net times:', error);
-      showToast(error.response?.data?.detail || 'Failed to update net times', 'error');
+      showToast(getErrorMessage(error, 'Failed to update net times'), 'error');
     }
   };
 

@@ -17,6 +17,7 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import SaveIcon from '@mui/icons-material/Save';
 import { templateApi, frequencyApi, userApi, templateStaffApi } from '../services/api';
 import api from '../services/api';
+import { getErrorMessage } from '../utils/apiErrors';
 import { useAuth } from '../contexts/AuthContext';
 import BlockingAlert from '../components/BlockingAlert';
 import {
@@ -327,7 +328,7 @@ const CreateSchedule: React.FC = () => {
       console.error('Failed to save schedule:', error);
       setBlockingAlert({
         open: true,
-        message: error.response?.data?.detail || 'Failed to save Schedule',
+        message: getErrorMessage(error, 'Failed to save Schedule'),
         title: 'Cannot Create Schedule',
         severity: 'error',
       });

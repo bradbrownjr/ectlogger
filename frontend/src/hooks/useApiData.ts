@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { getErrorMessage } from '../utils/apiErrors';
 
 interface UseApiDataResult<T> {
   data: T | null;
@@ -39,8 +40,7 @@ function useApiData<T>(fetchFn: () => Promise<T>): UseApiDataResult<T> {
       const result = await fetchFnRef.current();
       setData(result);
     } catch (err: any) {
-      const msg: string =
-        err?.response?.data?.detail ?? err?.message ?? 'An error occurred';
+      const msg: string = getErrorMessage(err, err?.message ?? 'An error occurred');
       console.error('[useApiData]', msg, err);
       setError(msg);
     } finally {

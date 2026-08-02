@@ -14,6 +14,7 @@ import NotificationsIcon from '@mui/icons-material/Notifications';
 import MapIcon from '@mui/icons-material/Map';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
+import { getErrorMessage } from '../utils/apiErrors';
 import ProfileTab from '../components/profile/ProfileTab';
 import SettingsTab from '../components/profile/SettingsTab';
 import NotificationsTab from '../components/profile/NotificationsTab';
@@ -127,7 +128,7 @@ const Profile: React.FC = () => {
       
       setSuccess(true);
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to update profile');
+      setError(getErrorMessage(err, 'Failed to update profile'));
     } finally {
       setSaving(false);
     }

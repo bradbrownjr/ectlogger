@@ -17,6 +17,7 @@ import DarkModeIcon from '@mui/icons-material/DarkMode';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import api from '../../services/api';
+import { getErrorMessage } from '../../utils/apiErrors';
 import ThemeSwatchPicker from '../ThemeSwatchPicker';
 import AppLogo from '../AppLogo';
 import { useThemeMode } from '../../contexts/ThemeContext';
@@ -96,7 +97,7 @@ const AdminBrandingTab: React.FC<Props> = ({ showSnackbar }) => {
       setSystemDefaultTheme(selectedTheme);
       showSnackbar('System default theme updated', 'success');
     } catch (error: any) {
-      showSnackbar(error.response?.data?.detail || 'Failed to save theme', 'error');
+      showSnackbar(getErrorMessage(error, 'Failed to save theme'), 'error');
     } finally {
       setThemeSaving(false);
     }
@@ -108,7 +109,7 @@ const AdminBrandingTab: React.FC<Props> = ({ showSnackbar }) => {
       await api.put('/settings', { default_color_mode: defaultColorMode });
       showSnackbar('Default appearance updated. Applies only to visitors who have never toggled light/dark before.', 'success');
     } catch (error: any) {
-      showSnackbar(error.response?.data?.detail || 'Failed to save default appearance', 'error');
+      showSnackbar(getErrorMessage(error, 'Failed to save default appearance'), 'error');
     } finally {
       setAppearanceSaving(false);
     }
@@ -122,7 +123,7 @@ const AdminBrandingTab: React.FC<Props> = ({ showSnackbar }) => {
       setCustomTheme(payload);
       showSnackbar('Custom theme saved', 'success');
     } catch (error: any) {
-      showSnackbar(error.response?.data?.detail || 'Failed to save custom theme', 'error');
+      showSnackbar(getErrorMessage(error, 'Failed to save custom theme'), 'error');
     } finally {
       setCustomThemeSaving(false);
     }
@@ -138,7 +139,7 @@ const AdminBrandingTab: React.FC<Props> = ({ showSnackbar }) => {
       setCustomDark(DEFAULT_CUSTOM_VARIANT_DARK);
       showSnackbar('Custom theme cleared', 'success');
     } catch (error: any) {
-      showSnackbar(error.response?.data?.detail || 'Failed to clear custom theme', 'error');
+      showSnackbar(getErrorMessage(error, 'Failed to clear custom theme'), 'error');
     } finally {
       setCustomThemeSaving(false);
     }
@@ -159,7 +160,7 @@ const AdminBrandingTab: React.FC<Props> = ({ showSnackbar }) => {
       setCustomLogoUrl(res.data.custom_logo_url);
       showSnackbar('Logo uploaded', 'success');
     } catch (error: any) {
-      showSnackbar(error.response?.data?.detail || 'Failed to upload logo', 'error');
+      showSnackbar(getErrorMessage(error, 'Failed to upload logo'), 'error');
     } finally {
       setLogoUploading(false);
     }
@@ -172,7 +173,7 @@ const AdminBrandingTab: React.FC<Props> = ({ showSnackbar }) => {
       setCustomLogoUrl(null);
       showSnackbar('Reverted to the default logo', 'success');
     } catch (error: any) {
-      showSnackbar(error.response?.data?.detail || 'Failed to reset logo', 'error');
+      showSnackbar(getErrorMessage(error, 'Failed to reset logo'), 'error');
     } finally {
       setLogoUploading(false);
     }

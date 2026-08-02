@@ -163,6 +163,7 @@ import {
 import { netApi, statisticsApi, checkInApi, netRoleApi, canHearApi } from '../services/api';
 import { chatApi, ChatMessage, formatChatMessageText } from '../api/chat';
 import { formatDateTime, formatTimeWithDate } from '../utils/dateUtils';
+import { getErrorMessage } from '../utils/apiErrors';
 import { useAuth } from '../contexts/AuthContext';
 import { exportElementToPdf } from '../utils/pdfExport';
 import CoverageReport, { CanHearReportEntry } from '../components/netview/CoverageReport';
@@ -332,7 +333,7 @@ const NetReport: React.FC = () => {
         setCanHearReports(canHearRes.data || []);
       } catch (err: any) {
         console.error('Failed to fetch net report data:', err);
-        setError(err.response?.data?.detail || 'Failed to load net report');
+        setError(getErrorMessage(err, 'Failed to load net report'));
       } finally {
         setLoading(false);
       }

@@ -34,6 +34,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import useSortableTable from '../../hooks/useSortableTable';
 import { frequencyApi } from '../../services/api';
+import { getErrorMessage } from '../../utils/apiErrors';
 
 interface Frequency {
   id: number;
@@ -192,7 +193,7 @@ const AdminFrequenciesTab: React.FC<Props> = ({ showSnackbar }) => {
       fetchFrequencies();
     } catch (error: any) {
       console.error('Failed to save frequency:', error);
-      const message = error.response?.data?.detail || 'Failed to save frequency';
+      const message = getErrorMessage(error, 'Failed to save frequency');
       showSnackbar(message, 'error');
     } finally {
       setFrequencySaving(false);
@@ -215,7 +216,7 @@ const AdminFrequenciesTab: React.FC<Props> = ({ showSnackbar }) => {
       fetchFrequencies();
     } catch (error: any) {
       console.error('Failed to delete frequency:', error);
-      const message = error.response?.data?.detail || 'Failed to delete frequency';
+      const message = getErrorMessage(error, 'Failed to delete frequency');
       showSnackbar(message, 'error');
     }
   };

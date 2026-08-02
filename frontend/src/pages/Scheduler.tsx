@@ -61,6 +61,7 @@ import ClearIcon from '@mui/icons-material/Clear';
 import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
 import { templateApi, netApi as _netApi, ncsRotationApi } from '../services/api';
+import { getErrorMessage } from '../utils/apiErrors';
 import { useAuth } from '../contexts/AuthContext';
 import NCSStaffModal from '../components/NCSStaffModal';
 import ScheduleCard, { Schedule, computeNextOccurrence, formatSchedule } from '../components/scheduler/ScheduleCard';
@@ -147,7 +148,7 @@ const Scheduler: React.FC = () => {
       fetchSchedules(); // Refresh to update subscription status and subscriber count
     } catch (error: any) {
       console.error('Failed to subscribe:', error);
-      alert(error.response?.data?.detail || 'Failed to subscribe');
+      alert(getErrorMessage(error, 'Failed to subscribe'));
     }
   };
 
@@ -157,7 +158,7 @@ const Scheduler: React.FC = () => {
       fetchSchedules(); // Refresh to update subscription status and subscriber count
     } catch (error: any) {
       console.error('Failed to unsubscribe:', error);
-      alert(error.response?.data?.detail || 'Failed to unsubscribe');
+      alert(getErrorMessage(error, 'Failed to unsubscribe'));
     }
   };
 
@@ -167,7 +168,7 @@ const Scheduler: React.FC = () => {
       navigate(`/nets/${response.data.id}`);
     } catch (error: any) {
       console.error('Failed to create net from schedule:', error);
-      alert(error.response?.data?.detail || 'Failed to create net');
+      alert(getErrorMessage(error, 'Failed to create net'));
     }
   };
 
@@ -185,7 +186,7 @@ const Scheduler: React.FC = () => {
       fetchSchedules();
     } catch (error: any) {
       console.error('Failed to delete schedule:', error);
-      setMergeError(error.response?.data?.detail || 'Failed to delete schedule');
+      setMergeError(getErrorMessage(error, 'Failed to delete schedule'));
     } finally {
       setDeleteConfirmOpen(false);
       setScheduleToDelete(null);
@@ -240,7 +241,7 @@ const Scheduler: React.FC = () => {
       });
       setMergePreview(response.data);
     } catch (error: any) {
-      setMergeError(error.response?.data?.detail || 'Failed to load merge preview');
+      setMergeError(getErrorMessage(error, 'Failed to load merge preview'));
       setMergePreview(null);
     } finally {
       setMergeLoading(false);
@@ -274,7 +275,7 @@ const Scheduler: React.FC = () => {
       handleExitMergeMode();
       fetchSchedules();
     } catch (error: any) {
-      setMergeError(error.response?.data?.detail || 'Merge failed');
+      setMergeError(getErrorMessage(error, 'Merge failed'));
     } finally {
       setMergeLoading(false);
     }

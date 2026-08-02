@@ -63,6 +63,7 @@ import iconRetina from 'leaflet/dist/images/marker-icon-2x.png';
 import { statisticsApi, checkInApi } from '../services/api';
 import { parseLocation, geocodeAddress, ParsedLocation } from '../utils/locationParser';
 import { formatDateTime } from '../utils/dateUtils';
+import { getErrorMessage } from '../utils/apiErrors';
 import { useAuth } from '../contexts/AuthContext';
 import { exportElementToPdf } from '../utils/pdfExport';
 
@@ -231,7 +232,7 @@ const NetStatistics: React.FC = () => {
         setError(null);
       } catch (err: any) {
         console.error('Failed to fetch net statistics:', err);
-        setError(err.response?.data?.detail || 'Failed to load net statistics');
+        setError(getErrorMessage(err, 'Failed to load net statistics'));
       } finally {
         setLoading(false);
       }

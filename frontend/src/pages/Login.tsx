@@ -11,6 +11,7 @@ import {
   CircularProgress,
 } from '@mui/material';
 import { authApi } from '../services/api';
+import { getErrorMessage } from '../utils/apiErrors';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -37,7 +38,7 @@ const Login: React.FC = () => {
         setError('Cannot connect to server. Please ensure the backend is running and check your firewall/ad blocker settings.');
       } else if (err?.response?.status === 403) {
         // User is banned/deactivated
-        setError(err?.response?.data?.detail || 'Your account has been deactivated. Please contact an administrator.');
+        setError(getErrorMessage(err, 'Your account has been deactivated. Please contact an administrator.'));
       } else {
         setError('Failed to send magic link. Please check your ad blocker settings and try again.');
       }

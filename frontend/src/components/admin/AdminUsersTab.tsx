@@ -44,6 +44,7 @@ import useSortableTable from '../../hooks/useSortableTable';
 import api from '../../services/api';
 import { formatDateTime, formatDate } from '../../utils/dateUtils';
 import { displayCallsign } from '../../utils/userDisplay';
+import { getErrorMessage } from '../../utils/apiErrors';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface AdminUser {
@@ -335,7 +336,7 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
       fetchUsers();
     } catch (error: any) {
       console.error('Failed to create user:', error);
-      const message = error.response?.data?.detail || 'Failed to create user';
+      const message = getErrorMessage(error, 'Failed to create user');
       showSnackbar(message, 'error');
     } finally {
       setAddUserSaving(false);
@@ -358,7 +359,7 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
       showSnackbar(`Email sent to ${response.data.sent} users`, 'success');
     } catch (error: any) {
       console.error('Failed to send email:', error);
-      const message = error.response?.data?.detail || 'Failed to send email';
+      const message = getErrorMessage(error, 'Failed to send email');
       showSnackbar(message, 'error');
     } finally {
       setEmailSending(false);

@@ -55,6 +55,7 @@ import {
 } from 'recharts';
 import { statisticsApi, templateApi, netApi } from '../services/api';
 import { formatDateTime } from '../utils/dateUtils';
+import { getErrorMessage } from '../utils/apiErrors';
 import { useAuth } from '../contexts/AuthContext';
 import { exportElementToPdf } from '../utils/pdfExport';
 
@@ -289,7 +290,7 @@ const ScheduleStatistics: React.FC = () => {
       const resp = await templateApi.linkableNets(parseInt(templateId));
       setLinkableNets(resp.data);
     } catch (err: any) {
-      setLinkableError(err.response?.data?.detail || 'Failed to load linkable nets');
+      setLinkableError(getErrorMessage(err, 'Failed to load linkable nets'));
     } finally {
       setLinkableLoading(false);
     }
@@ -305,7 +306,7 @@ const ScheduleStatistics: React.FC = () => {
       setLinkSuccess('Net linked to this schedule.');
       await refetchStats();
     } catch (err: any) {
-      setLinkableError(err.response?.data?.detail || 'Failed to link net');
+      setLinkableError(getErrorMessage(err, 'Failed to link net'));
     } finally {
       setLinkSubmitting(false);
     }
@@ -322,7 +323,7 @@ const ScheduleStatistics: React.FC = () => {
         setError(null);
       } catch (err: any) {
         console.error('Failed to fetch schedule statistics:', err);
-        setError(err.response?.data?.detail || 'Failed to load schedule statistics');
+        setError(getErrorMessage(err, 'Failed to load schedule statistics'));
       } finally {
         setLoading(false);
       }

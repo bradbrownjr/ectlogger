@@ -12,6 +12,7 @@ import {
 } from '@mui/material';
 import BuildIcon from '@mui/icons-material/Build';
 import api from '../../services/api';
+import { getErrorMessage } from '../../utils/apiErrors';
 
 interface Props {
   showSnackbar: (message: string, severity: 'success' | 'error') => void;
@@ -59,7 +60,7 @@ const AdminMaintenanceTab: React.FC<Props> = ({ showSnackbar }) => {
       });
       showSnackbar('Maintenance banner settings saved', 'success');
     } catch (error: any) {
-      const message = error.response?.data?.detail || 'Failed to save maintenance banner settings';
+      const message = getErrorMessage(error, 'Failed to save maintenance banner settings');
       showSnackbar(message, 'error');
     } finally {
       setMaintenanceBannerSaving(false);

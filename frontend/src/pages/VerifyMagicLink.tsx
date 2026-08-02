@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Container, Typography, CircularProgress, Box, Button } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
 import { authApi } from '../services/api';
+import { getErrorMessage } from '../utils/apiErrors';
 
 const VerifyMagicLink: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -29,7 +30,7 @@ const VerifyMagicLink: React.FC = () => {
         navigate(redirect || '/dashboard');
       } catch (err: any) {
         console.error('[VERIFY] Magic link verification failed:', err.response?.data);
-        setError(err.response?.data?.detail || 'Invalid or expired magic link');
+        setError(getErrorMessage(err, 'Invalid or expired magic link'));
         setVerifying(false);
       }
     };

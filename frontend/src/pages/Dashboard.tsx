@@ -63,6 +63,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import { netApi } from '../services/api';
 import NCSStaffModal from '../components/NCSStaffModal';
 import api from '../services/api';
+import { getErrorMessage } from '../utils/apiErrors';
 import { useAuth } from '../contexts/AuthContext';
 import { formatDateTime } from '../utils/dateUtils';
 import NetCard, { Net, getStatusColor } from '../components/dashboard/NetCard';
@@ -228,7 +229,7 @@ const Dashboard: React.FC = () => {
       setSnackbar({ open: true, message: `"${net.name}" has been unarchived`, severity: 'success' });
     } catch (error: any) {
       console.error('Failed to unarchive net:', error);
-      const message = error.response?.data?.detail || 'Failed to unarchive net';
+      const message = getErrorMessage(error, 'Failed to unarchive net');
       setSnackbar({ open: true, message, severity: 'error' });
     }
   };
@@ -248,7 +249,7 @@ const Dashboard: React.FC = () => {
       setEmailForm({ subject: '', message: '' });
     } catch (error: any) {
       console.error('Failed to send email:', error);
-      const message = error.response?.data?.detail || 'Failed to send email';
+      const message = getErrorMessage(error, 'Failed to send email');
       setSnackbar({ open: true, message, severity: 'error' });
     } finally {
       setEmailSending(false);
@@ -1031,7 +1032,7 @@ const Dashboard: React.FC = () => {
                   setSnackbar({ open: true, message: `"${name}" closed and archived. The log was emailed to you.`, severity: 'success' });
                 } catch (error: any) {
                   console.error('Failed to close & archive net:', error);
-                  const message = error.response?.data?.detail || 'Failed to close and archive net';
+                  const message = getErrorMessage(error, 'Failed to close and archive net');
                   setSnackbar({ open: true, message, severity: 'error' });
                 }
               }}

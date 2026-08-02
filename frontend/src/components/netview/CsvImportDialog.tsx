@@ -19,6 +19,7 @@ import {
 } from '@mui/material';
 import DownloadIcon from '@mui/icons-material/Download';
 import api from '../../services/api';
+import { getErrorMessage } from '../../utils/apiErrors';
 
 // ========== CSV IMPORT DIALOG ==========
 // Self-contained modal for importing check-ins from a CSV file. Owns all of its
@@ -160,7 +161,7 @@ const CsvImportDialog: React.FC<CsvImportDialogProps> = ({
       }
     } catch (error: any) {
       console.error('Failed to import CSV:', error);
-      onToast(error.response?.data?.detail || 'Failed to import CSV');
+      onToast(getErrorMessage(error, 'Failed to import CSV'));
     } finally {
       setCsvImporting(false);
     }

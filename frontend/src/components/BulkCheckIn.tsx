@@ -15,6 +15,7 @@ import MinimizeIcon from '@mui/icons-material/Minimize';
 import CropSquareIcon from '@mui/icons-material/CropSquare';
 import { Rnd } from 'react-rnd';
 import { checkInApi } from '../services/api';
+import { getErrorMessage } from '../utils/apiErrors';
 
 interface FieldConfig {
   [key: string]: {
@@ -224,7 +225,7 @@ const BulkCheckIn: React.FC<BulkCheckInProps> = ({ open, onClose, netId, onCheck
         success++;
       } catch (error: any) {
         failed++;
-        const detail = error.response?.data?.detail || 'Unknown error';
+        const detail = getErrorMessage(error, 'Unknown error');
         errors.push(`${checkIn.callsign}: ${detail}`);
       }
     }

@@ -12,6 +12,7 @@ import {
 } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
+import { getErrorMessage } from '../utils/apiErrors';
 
 const ProfileSetupDialog: React.FC = () => {
   const { user, login } = useAuth();
@@ -47,7 +48,7 @@ const ProfileSetupDialog: React.FC = () => {
       
       setOpen(false);
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to update profile');
+      setError(getErrorMessage(err, 'Failed to update profile'));
     } finally {
       setSaving(false);
     }

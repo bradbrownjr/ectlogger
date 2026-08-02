@@ -37,6 +37,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import useSortableTable from '../../hooks/useSortableTable';
 import api from '../../services/api';
+import { getErrorMessage } from '../../utils/apiErrors';
 
 const FIELD_TYPES = [
   { value: 'text', label: 'Text (single line)' },
@@ -209,7 +210,7 @@ const AdminFieldsTab: React.FC<Props> = ({ showSnackbar }) => {
       fetchFields();
     } catch (error: any) {
       console.error('Failed to save field:', error);
-      const message = error.response?.data?.detail || 'Failed to save field';
+      const message = getErrorMessage(error, 'Failed to save field');
       showSnackbar(message, 'error');
     } finally {
       setFieldSaving(false);

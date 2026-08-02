@@ -18,6 +18,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
+import { getErrorMessage } from '../../utils/apiErrors';
 import UserAvatar from '../UserAvatar';
 
 // ========== PROFILE AVATAR SECTION ==========
@@ -90,7 +91,7 @@ const ProfileAvatarSection: React.FC = () => {
       const token = localStorage.getItem('token');
       if (token) await login(token);
     } catch (err: any) {
-      setAvatarError(err.response?.data?.detail || 'Upload failed.');
+      setAvatarError(getErrorMessage(err, 'Upload failed.'));
     } finally {
       setAvatarUploading(false);
       setImageSrc(null);
