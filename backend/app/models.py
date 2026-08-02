@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Text, Enum, Table, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Text, Enum, Table, UniqueConstraint, Index
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
@@ -55,6 +55,36 @@ class StationStatus(str, enum.Enum):
     ANNOUNCEMENTS = "announcements"
     MOBILE = "mobile"
     CHECKED_OUT = "checked_out"
+
+
+class FormDisposition(str, enum.Enum):
+    """Derived from the traffic log, never stored. Defined here so schemas and
+    query filters share one vocabulary."""
+    DRAFT = "draft"
+    PENDING = "pending"
+    RELAYED = "relayed"
+    DELIVERED = "delivered"
+    CANCELLED = "cancelled"
+
+
+class TrafficAction(str, enum.Enum):
+    ORIGINATED = "originated"
+    RECEIVED = "received"
+    RELAYED = "relayed"
+    DELIVERED = "delivered"
+    SERVICED = "serviced"
+    CANCELLED = "cancelled"
+
+
+class RelayMethod(str, enum.Enum):
+    VOICE_NET = "voice_net"
+    CW_NET = "cw_net"
+    DIGITAL_NET = "digital_net"
+    PHONE = "phone"
+    EMAIL = "email"
+    IN_PERSON = "in_person"
+    POSTAL = "postal"
+    OTHER = "other"
 
 
 class User(Base):
@@ -167,6 +197,7 @@ class Net(Base):
     net_roles = relationship("NetRole", back_populates="net", cascade="all, delete-orphan")
     custom_field_values = relationship("CustomFieldValue", back_populates="net", cascade="all, delete-orphan")
     can_hear_reports = relationship("CanHearReport", back_populates="net", cascade="all, delete-orphan")
+    forms = relationship("Form", back_populates="net")   # no cascade: traffic outlives the net
 
 
 class NetTemplate(Base):
@@ -360,6 +391,167 @@ class CanHearReport(Base):
     reporter_check_in = relationship("CheckIn", foreign_keys=[reporter_check_in_id], back_populates="can_hear_reports_as_reporter")
     heard_check_in = relationship("CheckIn", foreign_keys=[heard_check_in_id], back_populates="can_hear_reports_as_heard")
     reported_by = relationship("User")
+
+
+class FormDefinition(Base):
+    """A form type available on this instance. Builtins are seeded and upserted
+    from backend/app/traffic/definitions/*.json at startup, keyed on form_type.
+    Admins may enable/disable, reorder, and override labels; they may not change
+    a builtin's field set. See TRAFFIC-HANDLING-DESIGN.md D1."""
+    __tablename__ = "form_definitions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    form_type = Column(String(32), unique=True, index=True, nullable=False)   # "RADIOGRAM", "ICS213"
+    title = Column(String(120), nullable=False)                               # "ARRL Radiogram"
+    description = Column(Text)
+    version = Column(String(16), nullable=False)                              # "3.1", from manifest.json
+    output_format = Column(String(32), nullable=False, default='generic')     # "nts_radiogram" | "generic"
+    is_builtin = Column(Boolean, default=True)      # field set is code-owned and not editable
+    is_enabled = Column(Boolean, default=True)      # admin toggle, per instance
+    sort_order = Column(Integer, default=100)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    fields = relationship(
+        "FormDefinitionField",
+        back_populates="definition",
+        cascade="all, delete-orphan",
+        order_by="FormDefinitionField.sort_order",
+    )
+    forms = relationship("Form", back_populates="definition")
+
+
+class FormDefinitionField(Base):
+    """One row per field in a definition. Ported one-for-one from the .frm
+    field objects; this is the roadmap's FormField and it belongs on the
+    template side, not the value side."""
+    __tablename__ = "form_definition_fields"
+
+    id = Column(Integer, primary_key=True, index=True)
+    definition_id = Column(Integer, ForeignKey("form_definitions.id", ondelete="CASCADE"),
+                           nullable=False, index=True)
+    name = Column(String(64), nullable=False)        # "to_city_state" — stable key into Form.field_values
+    label = Column(String(120), nullable=False)      # admin-overridable display label
+    field_type = Column(String(20), nullable=False, default='text')  # text|textarea|choice|yesno
+    description = Column(Text)                       # admin-overridable helper text
+    help_text = Column(Text)                         # multi-line help (the HX code list)
+    is_required = Column(Boolean, default=False)
+    max_length = Column(Integer, nullable=True)
+    choices = Column(Text, nullable=True)            # JSON array for field_type == 'choice'
+    validator = Column(String(32), nullable=True)    # "callsign" | "us_zip" | "hhmm" | "city_state" | "phone" | "email" | "nts_number" | "hx_code"
+    default_now = Column(String(16), nullable=True)  # strftime format for auto-fill, e.g. "%H%M"
+    auto_fill = Column(String(32), nullable=True)    # "callsign" | "place_of_origin" | "signature"
+    nts_normalize = Column(Boolean, default=False)   # run normalize_nts_text + count_nts_check on this field
+    arl_enabled = Column(Boolean, default=False)     # offer the ARL numbered-message picker
+    sort_order = Column(Integer, default=100)
+
+    definition = relationship("FormDefinition", back_populates="fields")
+
+    __table_args__ = (
+        UniqueConstraint('definition_id', 'name', name='uq_form_definition_field_name'),
+    )
+
+
+class Form(Base):
+    """A submitted form instance (a piece of formal traffic). Values live in
+    field_values as JSON; the columns below are promoted because they are
+    filtered, sorted, or reported on. Disposition is NOT stored — it is derived
+    from traffic_log_entries. See TRAFFIC-HANDLING-DESIGN.md D2 and D7."""
+    __tablename__ = "forms"
+
+    id = Column(Integer, primary_key=True, index=True)
+    definition_id = Column(Integer, ForeignKey("form_definitions.id"), nullable=False)
+    form_type = Column(String(32), nullable=False, index=True)     # denormalized for cheap filtering
+    definition_version = Column(String(16), nullable=False)        # version in force at submit time
+
+    # Association — nullable so a form can be filed outside any net
+    net_id = Column(Integer, ForeignKey("nets.id", ondelete="SET NULL"), nullable=True, index=True)
+    created_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+
+    # All field values, keyed by FormDefinitionField.name. Includes "text_raw"
+    # (what the operator typed, pre-normalization) for radiograms.
+    field_values = Column(Text, nullable=False, default='{}')
+
+    # ---- Promoted columns (see D2) ----
+    subject = Column(String(255))                  # one-line list label, computed at write
+    addressee_display = Column(String(255))        # "JIM KUTSCH KY2D" / "PORTLAND ME"
+    message_number = Column(String(16), index=True)
+    precedence = Column(String(16), index=True)    # "R"|"W"|"P"|"E" for radiogram; ICS-213 word otherwise
+    handling = Column(String(32))                  # HX codes, e.g. "HXD" or "HXB48"
+    station_of_origin = Column(String(20), index=True)
+    check_count = Column(Integer, nullable=True)   # computed by count_nts_check, authoritative
+    check_stated = Column(Integer, nullable=True)  # what an imported text claimed; null when we originated
+    normalized_text = Column(Text)                 # post-normalize_nts_text body, authoritative for export
+
+    # ---- Derived-and-cached (single writer: app/traffic/log.py::append_entry) ----
+    held_by_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"),
+                             nullable=True, index=True)
+    held_since = Column(DateTime(timezone=True), nullable=True)
+    last_action = Column(Enum(TrafficAction), nullable=True)   # drives disposition without a join
+
+    filed_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    definition = relationship("FormDefinition", back_populates="forms")
+    net = relationship("Net", back_populates="forms")
+    created_by = relationship("User", foreign_keys=[created_by_id])
+    held_by = relationship("User", foreign_keys=[held_by_user_id])
+    log_entries = relationship(
+        "TrafficLogEntry",
+        back_populates="form",
+        cascade="all, delete-orphan",
+        order_by="TrafficLogEntry.sequence",
+    )
+
+    __table_args__ = (
+        Index('ix_forms_inbox', 'held_by_user_id', 'held_since'),
+        Index('ix_forms_net_filed', 'net_id', 'filed_at'),
+    )
+
+
+class TrafficLogEntry(Base):
+    """One hop in a form's chain of custody. Append-only; corrections are made by
+    appending, not rewriting. Disposition is derived from the newest non-SERVICED
+    entry. See TRAFFIC-HANDLING-DESIGN.md D7."""
+    __tablename__ = "traffic_log_entries"
+
+    id = Column(Integer, primary_key=True, index=True)
+    form_id = Column(Integer, ForeignKey("forms.id", ondelete="CASCADE"),
+                     nullable=False, index=True)
+    sequence = Column(Integer, nullable=False)          # 1-based position in the chain
+    action = Column(Enum(TrafficAction), nullable=False)
+
+    # How it moved. Null for ORIGINATED and for SERVICED annotations.
+    method = Column(Enum(RelayMethod), nullable=True)
+    method_note = Column(String(255), nullable=True)    # required when method == OTHER
+    path_name = Column(String(200), nullable=True)      # free text: "Pine Tree Net", "NTSD MPG"
+
+    # Who it went to. Free text is the common case; the FK is set only when the
+    # receiving operator is a known account on this instance, and is what moves
+    # the item into their inbox.
+    handed_to = Column(String(200), nullable=True)
+    handed_to_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"),
+                               nullable=True, index=True)
+
+    # Who asserted this entry. Distinguishes first-hand from second-hand records.
+    reported_by_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"),
+                                 nullable=True, index=True)
+    # The net this hop happened on, when it was an ECTLogger-logged net.
+    net_id = Column(Integer, ForeignKey("nets.id", ondelete="SET NULL"), nullable=True, index=True)
+
+    note = Column(Text, nullable=True)                  # free-form operator note
+    occurred_at = Column(DateTime(timezone=True), nullable=False)   # when it happened (operator-editable)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())  # when it was recorded
+
+    form = relationship("Form", back_populates="log_entries")
+    handed_to_user = relationship("User", foreign_keys=[handed_to_user_id])
+    reported_by = relationship("User", foreign_keys=[reported_by_user_id])
+    net = relationship("Net")
+
+    __table_args__ = (
+        UniqueConstraint('form_id', 'sequence', name='uq_traffic_log_form_sequence'),
+    )
 
 
 class CustomField(Base):

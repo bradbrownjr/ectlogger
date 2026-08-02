@@ -1,7 +1,7 @@
 from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 from typing import Optional, List, Literal
 from datetime import datetime
-from app.models import UserRole, NetStatus, StationStatus
+from app.models import UserRole, NetStatus, StationStatus, FormDisposition, TrafficAction, RelayMethod
 import re
 
 
@@ -1407,6 +1407,238 @@ class TopicHistoryResponse(TopicHistoryBase):
     id: int
     template_id: int
     net_id: Optional[int] = None
-    
+
     class Config:
         from_attributes = True
+
+
+# ========== Traffic (Assisted Traffic Handling & Forms) Schemas ==========
+# See docs/concepts/TRAFFIC-HANDLING-DESIGN.md sections 2 and 3.
+
+class FormDefinitionFieldResponse(BaseModel):
+    id: int
+    definition_id: int
+    name: str
+    label: str
+    field_type: str
+    description: Optional[str] = None
+    help_text: Optional[str] = None
+    is_required: bool
+    max_length: Optional[int] = None
+    choices: Optional[List[str]] = None
+    validator: Optional[str] = None
+    default_now: Optional[str] = None
+    auto_fill: Optional[str] = None
+    nts_normalize: bool
+    arl_enabled: bool
+    sort_order: int
+
+    class Config:
+        from_attributes = True
+
+    @classmethod
+    def from_orm(cls, field):
+        import json
+        return cls(
+            id=field.id,
+            definition_id=field.definition_id,
+            name=field.name,
+            label=field.label,
+            field_type=field.field_type,
+            description=field.description,
+            help_text=field.help_text,
+            is_required=field.is_required,
+            max_length=field.max_length,
+            choices=json.loads(field.choices) if field.choices else None,
+            validator=field.validator,
+            default_now=field.default_now,
+            auto_fill=field.auto_fill,
+            nts_normalize=field.nts_normalize,
+            arl_enabled=field.arl_enabled,
+            sort_order=field.sort_order,
+        )
+
+
+class FormDefinitionFieldOverride(BaseModel):
+    """One field's admin override within a FormDefinitionUpdate. Only label
+    and description may be overridden -- the field set of a builtin cannot
+    be changed (TRAFFIC-HANDLING-DESIGN.md D1)."""
+    id: int
+    label: Optional[str] = Field(None, min_length=1, max_length=120)
+    description: Optional[str] = None
+
+
+class FormDefinitionUpdate(BaseModel):
+    is_enabled: Optional[bool] = None
+    sort_order: Optional[int] = Field(None, ge=0)
+    field_overrides: Optional[List[FormDefinitionFieldOverride]] = None
+
+
+class FormDefinitionResponse(BaseModel):
+    id: int
+    form_type: str
+    title: str
+    description: Optional[str] = None
+    version: str
+    output_format: str
+    is_builtin: bool
+    is_enabled: bool
+    sort_order: int
+    fields: List[FormDefinitionFieldResponse] = Field(default_factory=list)
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+    @classmethod
+    def from_orm(cls, definition):
+        return cls(
+            id=definition.id,
+            form_type=definition.form_type,
+            title=definition.title,
+            description=definition.description,
+            version=definition.version,
+            output_format=definition.output_format,
+            is_builtin=definition.is_builtin,
+            is_enabled=definition.is_enabled,
+            sort_order=definition.sort_order,
+            fields=[FormDefinitionFieldResponse.from_orm(f) for f in definition.fields],
+            created_at=definition.created_at,
+            updated_at=definition.updated_at,
+        )
+
+
+class TrafficLogEntryCreate(BaseModel):
+    action: TrafficAction
+    method: Optional[RelayMethod] = None
+    method_note: Optional[str] = Field(None, max_length=255)
+    path_name: Optional[str] = Field(None, max_length=200)
+    handed_to: Optional[str] = Field(None, max_length=200)
+    handed_to_user_id: Optional[int] = None
+    net_id: Optional[int] = None
+    occurred_at: Optional[datetime] = None
+    note: Optional[str] = Field(None, max_length=2000)
+
+    @model_validator(mode='after')
+    def validate_method_note_required_for_other(self):
+        if self.method == RelayMethod.OTHER and not self.method_note:
+            raise ValueError('method_note is required when method is "other"')
+        return self
+
+
+class TrafficLogEntryResponse(BaseModel):
+    id: int
+    form_id: int
+    sequence: int
+    action: TrafficAction
+    method: Optional[RelayMethod] = None
+    method_note: Optional[str] = None
+    path_name: Optional[str] = None
+    handed_to: Optional[str] = None
+    handed_to_user_id: Optional[int] = None
+    reported_by_user_id: Optional[int] = None
+    net_id: Optional[int] = None
+    note: Optional[str] = None
+    occurred_at: datetime
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class FormCreate(BaseModel):
+    form_type: str = Field(..., max_length=32)
+    net_id: Optional[int] = None
+    field_values: dict = Field(default_factory=dict)
+    initial_log_entry: Optional[TrafficLogEntryCreate] = None
+
+    @field_validator('field_values')
+    @classmethod
+    def validate_field_values(cls, v: dict) -> dict:
+        if len(v) > 100:
+            raise ValueError('Maximum 100 field values allowed')
+        for key, value in v.items():
+            if not isinstance(key, str) or len(key) > 64:
+                raise ValueError('Field value keys must be strings with max 64 characters')
+            if isinstance(value, str) and len(value) > 10000:
+                raise ValueError('Field value strings must be max 10000 characters')
+        return v
+
+
+class FormUpdate(BaseModel):
+    field_values: Optional[dict] = None
+
+    @field_validator('field_values')
+    @classmethod
+    def validate_field_values(cls, v: Optional[dict]) -> Optional[dict]:
+        if v is None:
+            return v
+        if len(v) > 100:
+            raise ValueError('Maximum 100 field values allowed')
+        return v
+
+
+class FormResponse(BaseModel):
+    id: int
+    definition_id: int
+    form_type: str
+    definition_version: str
+    net_id: Optional[int] = None
+    created_by_id: Optional[int] = None
+    field_values: dict = Field(default_factory=dict)
+    subject: Optional[str] = None
+    addressee_display: Optional[str] = None
+    message_number: Optional[str] = None
+    precedence: Optional[str] = None
+    handling: Optional[str] = None
+    station_of_origin: Optional[str] = None
+    check_count: Optional[int] = None
+    check_stated: Optional[int] = None
+    normalized_text: Optional[str] = None
+    held_by_user_id: Optional[int] = None
+    held_since: Optional[datetime] = None
+    last_action: Optional[TrafficAction] = None
+    disposition: FormDisposition
+    filed_at: datetime
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+    @classmethod
+    def from_orm(cls, obj):
+        import json
+        from app.traffic.log import derive_disposition
+        field_values = obj.field_values
+        if isinstance(field_values, str):
+            try:
+                field_values = json.loads(field_values) if field_values else {}
+            except (json.JSONDecodeError, TypeError):
+                field_values = {}
+        return cls(
+            id=obj.id,
+            definition_id=obj.definition_id,
+            form_type=obj.form_type,
+            definition_version=obj.definition_version,
+            net_id=obj.net_id,
+            created_by_id=obj.created_by_id,
+            field_values=field_values,
+            subject=obj.subject,
+            addressee_display=obj.addressee_display,
+            message_number=obj.message_number,
+            precedence=obj.precedence,
+            handling=obj.handling,
+            station_of_origin=obj.station_of_origin,
+            check_count=obj.check_count,
+            check_stated=obj.check_stated,
+            normalized_text=obj.normalized_text,
+            held_by_user_id=obj.held_by_user_id,
+            held_since=obj.held_since,
+            last_action=obj.last_action,
+            disposition=derive_disposition(obj),
+            filed_at=obj.filed_at,
+            created_at=obj.created_at,
+            updated_at=obj.updated_at,
+        )
