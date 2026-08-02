@@ -323,7 +323,10 @@ Create a standardized script for NCS operators to follow:
 
 1. In the **Create Net** or **Create Schedule** form, go to the **Net Script** tab
 2. Enter your script using the formatting toolbar (headings, bold, lists, etc.)
-3. During the net, click the **📜 Script** button to open the script viewer
+3. Click **Preview** to check how the formatting will look before saving, then **Write** to keep editing
+4. During the net, click the **📜 Script** button to open the script viewer
+
+The same Write/Preview toggle is available while editing Notes and Announcements, both in these forms and from their toolbar buttons during an active net.
 
 The script viewer is a floating window that can be:
 - Resized and moved

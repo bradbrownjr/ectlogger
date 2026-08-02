@@ -14,6 +14,8 @@ All notable changes to ECTLogger are documented here.
 
 * **Net View: Start Net moved to the front of the toolbar** — On a draft or scheduled net, Start Net is now the very first button, ahead of Net Info and everything else, so it's not buried behind read-only actions.
 
+* **Editor: Markdown preview** — You can now toggle between Write and Preview while editing the net script, notes, or announcements, both in the net/schedule editor and in the floating dialogs, so you can check how your formatting will look before saving.
+
 ## Bug Fixes
 
 * **Entering invalid data no longer crashes the page** — A validation error, like a callsign that's too short, could previously take down the whole page instead of showing a normal error message. Fixed everywhere this could happen.

@@ -16,17 +16,18 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import PictureInPictureAltIcon from '@mui/icons-material/PictureInPictureAlt';
 import ViewSidebarIcon from '@mui/icons-material/ViewSidebar';
 import EditIcon from '@mui/icons-material/Edit';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import FormatBoldIcon from '@mui/icons-material/FormatBold';
 import FormatItalicIcon from '@mui/icons-material/FormatItalic';
 import LinkIcon from '@mui/icons-material/Link';
 import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
 import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
 import HorizontalRuleIcon from '@mui/icons-material/HorizontalRule';
+import ToggleButton from '@mui/material/ToggleButton';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import { Rnd } from 'react-rnd';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import remarkBreaks from 'remark-breaks';
 import { netApi } from '../services/api';
+import MarkdownRender from './shared/MarkdownRender';
 
 interface AnnouncementsProps {
   open: boolean;
@@ -54,19 +55,6 @@ interface AnnouncementsProps {
   onRestore?: () => void;
 }
 
-// CommonMark requires no whitespace adjacent to bold/italic delimiters.
-// Normalize trailing/leading spaces inside ** and * spans so hand-written
-// or pasted content (e.g. "**text **") renders correctly.
-function normalizeMarkdownDelimiters(text: string): string {
-  return text
-    .replace(/\*\*\s+(.*?)\s+\*\*/g, '**$1**')
-    .replace(/\*\*\s+(.*?)\*\*/g, '**$1**')
-    .replace(/\*\*(.*?)\s+\*\*/g, '**$1**')
-    .replace(/\*(?!\*)\s+(.*?)\s+\*(?!\*)/g, '*$1*')
-    .replace(/\*(?!\*)\s+(.*?)\*(?!\*)/g, '*$1*')
-    .replace(/\*(?!\*)(.*?)\s+\*(?!\*)/g, '*$1*');
-}
-
 const Announcements: React.FC<AnnouncementsProps> = ({
   open,
   onClose,
@@ -86,6 +74,7 @@ const Announcements: React.FC<AnnouncementsProps> = ({
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState(announcements);
   const [saving, setSaving] = useState(false);
+  const [previewing, setPreviewing] = useState(false);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
 
   const [windowState, setWindowState] = useState({
@@ -161,6 +150,7 @@ const Announcements: React.FC<AnnouncementsProps> = ({
       setEditValue(trimmed);
       onSaved?.(trimmed);
       setEditing(false);
+      setPreviewing(false);
     } catch {
       // leave edit mode open so user can retry
     } finally {
@@ -171,6 +161,7 @@ const Announcements: React.FC<AnnouncementsProps> = ({
   const handleCancel = () => {
     setEditValue(announcements);
     setEditing(false);
+    setPreviewing(false);
   };
 
   const handleOpenInNewTab = () => {
@@ -230,57 +221,62 @@ const Announcements: React.FC<AnnouncementsProps> = ({
     <Box sx={{ flex: 1, display: contentMinimized ? 'none' : 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {editing ? (
         <>
-          {/* Formatting toolbar */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, px: 1, py: 0.5, borderBottom: 1, borderColor: 'divider', flexShrink: 0 }}>
-            <Tooltip title="H1"><IconButton size="small" onClick={() => insertMarkdown('# ', '', 'Heading', true)} sx={{ fontWeight: 'bold', fontSize: '0.85rem' }}>H1</IconButton></Tooltip>
-            <Tooltip title="H2"><IconButton size="small" onClick={() => insertMarkdown('## ', '', 'Heading', true)} sx={{ fontWeight: 'bold', fontSize: '0.8rem' }}>H2</IconButton></Tooltip>
-            <Tooltip title="H3"><IconButton size="small" onClick={() => insertMarkdown('### ', '', 'Heading', true)} sx={{ fontWeight: 'bold', fontSize: '0.75rem' }}>H3</IconButton></Tooltip>
-            <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
-            <Tooltip title="Bold"><IconButton size="small" onClick={() => insertMarkdown('**', '**', 'bold text')}><FormatBoldIcon fontSize="small" /></IconButton></Tooltip>
-            <Tooltip title="Italic"><IconButton size="small" onClick={() => insertMarkdown('*', '*', 'italic text')}><FormatItalicIcon fontSize="small" /></IconButton></Tooltip>
-            <Tooltip title="Link"><IconButton size="small" onClick={insertLink}><LinkIcon fontSize="small" /></IconButton></Tooltip>
-            <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
-            <Tooltip title="Bullet list"><IconButton size="small" onClick={() => insertMarkdown('- ', '', 'List item', true)}><FormatListBulletedIcon fontSize="small" /></IconButton></Tooltip>
-            <Tooltip title="Numbered list"><IconButton size="small" onClick={() => insertMarkdown('1. ', '', 'List item', true)}><FormatListNumberedIcon fontSize="small" /></IconButton></Tooltip>
-            <Tooltip title="Divider"><IconButton size="small" onClick={() => insertMarkdown('\n---\n')}><HorizontalRuleIcon fontSize="small" /></IconButton></Tooltip>
+          {/* Formatting toolbar + Write/Preview toggle */}
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 0.5, px: 1, py: 0.5, borderBottom: 1, borderColor: 'divider', flexShrink: 0 }}>
+            {previewing ? <Box /> : (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <Tooltip title="H1"><IconButton size="small" onClick={() => insertMarkdown('# ', '', 'Heading', true)} sx={{ fontWeight: 'bold', fontSize: '0.85rem' }}>H1</IconButton></Tooltip>
+                <Tooltip title="H2"><IconButton size="small" onClick={() => insertMarkdown('## ', '', 'Heading', true)} sx={{ fontWeight: 'bold', fontSize: '0.8rem' }}>H2</IconButton></Tooltip>
+                <Tooltip title="H3"><IconButton size="small" onClick={() => insertMarkdown('### ', '', 'Heading', true)} sx={{ fontWeight: 'bold', fontSize: '0.75rem' }}>H3</IconButton></Tooltip>
+                <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
+                <Tooltip title="Bold"><IconButton size="small" onClick={() => insertMarkdown('**', '**', 'bold text')}><FormatBoldIcon fontSize="small" /></IconButton></Tooltip>
+                <Tooltip title="Italic"><IconButton size="small" onClick={() => insertMarkdown('*', '*', 'italic text')}><FormatItalicIcon fontSize="small" /></IconButton></Tooltip>
+                <Tooltip title="Link"><IconButton size="small" onClick={insertLink}><LinkIcon fontSize="small" /></IconButton></Tooltip>
+                <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
+                <Tooltip title="Bullet list"><IconButton size="small" onClick={() => insertMarkdown('- ', '', 'List item', true)}><FormatListBulletedIcon fontSize="small" /></IconButton></Tooltip>
+                <Tooltip title="Numbered list"><IconButton size="small" onClick={() => insertMarkdown('1. ', '', 'List item', true)}><FormatListNumberedIcon fontSize="small" /></IconButton></Tooltip>
+                <Tooltip title="Divider"><IconButton size="small" onClick={() => insertMarkdown('\n---\n')}><HorizontalRuleIcon fontSize="small" /></IconButton></Tooltip>
+              </Box>
+            )}
+            <ToggleButtonGroup size="small" exclusive value={previewing ? 'preview' : 'write'} onChange={(_e, v) => v && setPreviewing(v === 'preview')} sx={{ flexShrink: 0 }}>
+              <ToggleButton value="write" sx={{ px: 1, py: 0.25 }}><Tooltip title="Write"><EditIcon fontSize="small" /></Tooltip></ToggleButton>
+              <ToggleButton value="preview" sx={{ px: 1, py: 0.25 }}><Tooltip title="Preview"><VisibilityIcon fontSize="small" /></Tooltip></ToggleButton>
+            </ToggleButtonGroup>
           </Box>
-          {/* Editor - rows=1 (overridden to 100% height below) opts out of
-              MUI's autosize-to-content behavior, which has no cap and was
-              growing past the visible area with nothing to scroll it into
-              view - see textarea overflowY below. */}
-          <TextField
-            multiline
-            rows={1}
-            fullWidth
-            value={editValue}
-            onChange={e => setEditValue(e.target.value)}
-            inputRef={textAreaRef}
-            variant="outlined"
-            sx={{ flex: 1, '& .MuiInputBase-root': { height: '100%', alignItems: 'flex-start', fontFamily: 'monospace', fontSize: '0.85rem' }, '& .MuiOutlinedInput-notchedOutline': { border: 'none' }, '& textarea': { resize: 'none', height: '100% !important', overflowY: 'auto' } }}
-            InputProps={{ sx: { height: '100%' } }}
-          />
+          {previewing ? (
+            <Box sx={{ flex: 1, overflow: 'auto' }}>
+              <MarkdownRender
+                content={editValue}
+                emptyText="Nothing to preview yet."
+                variant="colored"
+                sx={{ p: 2, backgroundColor: 'background.paper' }}
+              />
+            </Box>
+          ) : (
+            /* Editor - rows=1 (overridden to 100% height below) opts out of
+               MUI's autosize-to-content behavior, which has no cap and was
+               growing past the visible area with nothing to scroll it into
+               view - see textarea overflowY below. */
+            <TextField
+              multiline
+              rows={1}
+              fullWidth
+              value={editValue}
+              onChange={e => setEditValue(e.target.value)}
+              inputRef={textAreaRef}
+              variant="outlined"
+              sx={{ flex: 1, '& .MuiInputBase-root': { height: '100%', alignItems: 'flex-start', fontFamily: 'monospace', fontSize: '0.85rem' }, '& .MuiOutlinedInput-notchedOutline': { border: 'none' }, '& textarea': { resize: 'none', height: '100% !important', overflowY: 'auto' } }}
+              InputProps={{ sx: { height: '100%' } }}
+            />
+          )}
         </>
       ) : (
-        <Box
-          sx={{
-            flex: 1, p: 2, overflowY: 'auto', backgroundColor: 'background.paper',
-            '& h1, & h2, & h3': { mt: 2, mb: 1, color: 'primary.main' },
-            '& h1:first-of-type, & h2:first-of-type, & h3:first-of-type': { mt: 0 },
-            '& ul, & ol': { pl: 3, my: 1 },
-            '& li': { my: 0.5 },
-            '& hr': { border: 'none', borderTop: '1px solid', borderColor: 'divider', my: 2 },
-            '& p': { my: 1 },
-            '& strong': { fontWeight: 'bold' },
-            '& em': { fontStyle: 'italic' },
-            '& a': { color: 'primary.main' },
-          }}
-        >
-          {announcements ? (
-            <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{normalizeMarkdownDelimiters(announcements)}</ReactMarkdown>
-          ) : (
-            <Typography color="text.secondary" sx={{ fontStyle: 'italic' }}>No notes have been added to this net.</Typography>
-          )}
-        </Box>
+        <MarkdownRender
+          content={announcements}
+          emptyText="No notes have been added to this net."
+          variant="colored"
+          sx={{ flex: 1, p: 2, overflowY: 'auto', backgroundColor: 'background.paper' }}
+        />
       )}
     </Box>
   );
@@ -290,7 +286,7 @@ const Announcements: React.FC<AnnouncementsProps> = ({
     <>
       {!editing && canEdit && (
         <Tooltip title="Edit announcements">
-          <IconButton size="small" onClick={() => { setEditValue(announcements); setEditing(true); }} sx={{ color: 'inherit' }}>
+          <IconButton size="small" onClick={() => { setEditValue(announcements); setEditing(true); setPreviewing(false); }} sx={{ color: 'inherit' }}>
             <EditIcon fontSize="small" />
           </IconButton>
         </Tooltip>

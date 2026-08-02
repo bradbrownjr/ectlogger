@@ -280,6 +280,37 @@ See Card Action Buttons below.
 
 ---
 
+## Markdown Write/Preview Toggle
+
+Net script, per-net notes, and schedule announcements are all markdown fields.
+Every editor for these fields (the Create Net / Create Schedule form panels, and
+the three floating net-view dialogs) offers a **Write / Preview** toggle so the
+rendered output can be checked before saving.
+
+- Rendering goes through the single shared component
+  `frontend/src/components/shared/MarkdownRender.tsx` — never inline a second
+  `ReactMarkdown` block. It wraps `react-markdown` + `remark-gfm` + `remark-breaks`
+  and the delimiter-normalizing helper, and exposes two heading-style `variant`s
+  (`bordered` for net script, `colored` for notes/announcements) matching the
+  styles already established in the dialogs.
+- The toggle is a `ToggleButtonGroup` (`size="small"`, `exclusive`), not a plain
+  `IconButton` — its two states must both stay visible so the current mode is
+  never ambiguous.
+  - In the roomy Create Net / Create Schedule form panels
+    (`NetScriptPanel.tsx`, `AnnouncementsPanel.tsx`), use text-labeled
+    `ToggleButton`s ("Write" / "Preview") positioned top-right of the panel.
+  - In the narrower floating dialogs (`NetScript.tsx`, `Announcements.tsx`,
+    `ScheduleAnnouncements.tsx`), use icon-only `ToggleButton`s (`EditIcon` /
+    `VisibilityIcon`, each wrapped in a `Tooltip`) inside the existing edit
+    toolbar row, since horizontal space is tighter there. The toggle only
+    appears while `editing` is true — Preview shows the live in-progress edit,
+    not the last-saved value.
+- Switching to Preview swaps out the formatting toolbar and textarea entirely
+  (not a side-by-side split) — this matches the space-constrained dialogs and
+  keeps behavior identical across all five editor locations.
+
+---
+
 ## Tabs
 
 ### Scrollable tabs (required pattern)

@@ -1,8 +1,8 @@
 {
-  "version": "2026.08.02",
+  "version": "2026.08.02b",
   "entries": [
     {
-      "version": "2026.08.02",
+      "version": "2026.08.02b",
       "date": "2026-08-02",
       "sections": [
         {
@@ -21,6 +21,10 @@
           "items": [
             {
               "text": "Net View: Start Net moved to the front of the toolbar — On a draft or scheduled net, Start Net is now the very first button, ahead of Net Info and everything else, so it's not buried behind read-only actions.",
+              "userImpact": true
+            },
+            {
+              "text": "Editor: Markdown preview — You can now toggle between Write and Preview while editing the net script, notes, or announcements, both in the net/schedule editor and in the floating dialogs, so you can check how your formatting will look before saving.",
               "userImpact": true
             }
           ]
