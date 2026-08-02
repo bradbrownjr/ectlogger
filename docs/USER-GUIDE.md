@@ -153,8 +153,11 @@ keeps its label and never disappears into the menu.
 
 The toolbar is split into two groups by a thin divider:
 
-- **Left — information.** Search, Map, Script, Announcements, Notes,
-  Topics, Stats, Website, and similar. These don't change anything.
+- **Left.** On a draft or scheduled net, **Start net** leads this group so
+  it's not buried behind read-only actions. Search, Map, **Coverage** (only
+  when Station-to-Station Coverage Logging is enabled for the net), Script,
+  Announcements, Notes, Topics, Stats, Website, and similar follow — these
+  don't change anything.
 - **Right — management.** Check in, Check out, Raise hand, Step away, and the
   staff controls for running and closing the net.
 
@@ -205,6 +208,7 @@ The Create Net form has five tabs to configure your net:
 - **Info URL** — Optional link to your club or organization's website
 - **Scheduled Start Time** — Optional. If set, a countdown timer displays before the net starts
 - **Enable ICS-309 format** — Use official FEMA communications log format for net closure emails
+- **Enable Station-to-Station Coverage Logging** — Adds an ear icon action to each check-in row, so NCS, Logger, and Relay can record which stations can hear each other during the net, not just who NCS hears. See "Station-to-Station Coverage Logging" below.
 - **Allow self check-in** — On by default. Turn off if you want only Net Control and logging staff to add check-ins, e.g. when stations checking in both by voice and by app is causing confusion during roll call. When off, the check-in button is hidden for regular participants; staff still check stations in from the check-in list.
 
 **Community Net Features** (optional):
@@ -563,6 +567,21 @@ Chat is useful for:
 - **Ctrl+Click** a frequency chip to filter the check-in list
 - NCS operators always remain visible regardless of filter
 - Click **Show All** to clear the filter
+
+### Station-to-Station Coverage Logging
+
+An ARES/EmComm feature for recording who can hear whom during a net, useful for coverage-assessment exercises (a common ARES/SKYWARN SET drill). Off by default — enable **Station-to-Station Coverage Logging** in the net's Basic Info tab to turn it on.
+
+Once enabled:
+
+1. Each check-in row gets an ear icon action, available to NCS, Logger, and Relay. Click it to open **"Who can this station hear?"**
+2. Check every other station the reporting station can hear on the currently selected frequency, and optionally set their operating position (Home, Field Deployed, or your own text). Save — the dialog reconciles the checked set, so unchecking a station removes that report.
+3. A **Coverage** button appears in the net toolbar, opening a **Station Coverage** panel alongside Chat, Activity Log, and the Check-In Map. It lists every reported connection, sortable by column, with one-way and two-way paths distinguished, and a filter to narrow the list to one callsign.
+4. Click a callsign in the Coverage panel to highlight just that station's connections (in the panel and on the map); click the highlighted callsign again, or use the **Clear highlight** button, to go back to the full list.
+5. A **Map** button in the Coverage panel's title bar opens the Check-In Map with its coverage overlay turned on, drawing the confirmed paths directly on the map. The overlay's own toggle lives in the map's top-right corner, alongside a frequency selector (shown only when the net has more than one frequency).
+6. The coverage results are included in the net's PDF report and closure email, and stay available after the net closes.
+
+Your Profile also gets a **Coverage** tab: a personal map of stations you've confirmed hearing from your Home operating position, aggregated across every net you've participated in, each labeled with when you last heard them.
 
 ### Community Net Features
 

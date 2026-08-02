@@ -156,39 +156,39 @@ The field describes the *reporting station*, not the pair, and a station has one
 
 **Visualization order: table first, map second, abstract graph probably never.** The per-net coverage table is what an NCS actually hands an EC after a drill, it needs no new dependencies, and it degrades to a text export. The map overlay is second because it is high value for low cost — `CheckInMap.tsx` already runs react-leaflet against parsed/geocoded check-in locations, so drawing paths is largely a matter of adding polylines and a toggle (stations whose location does not parse have no marker and therefore no line — degrade quietly, do not error). A node-link propagation graph is deliberately last and conditional: build it only if the map proves insufficient for reading relay chains, not on spec.
 
-**Phase 1 — Schema and API** *(not started)*
-- [ ] Migration: create `can_hear_reports` with the columns, unique key, and indexes above
-- [ ] Migration: add `operating_position` (nullable String) to `check_ins`
-- [ ] Migration: add `propagation_logging_enabled` (bool, default `false`) to `Net` and `NetTemplate`
-- [ ] Models, schemas, and a `routers/` endpoint set: list reports for a net, and a save-report call that reconciles the set for one (reporter, frequency) in a single transaction — insert new, delete unchecked, touch `reported_at` on ones that stay checked
-- [ ] Permission gate to NCS / Logger / Relay; reject self-edges and cross-net endpoints server-side; reject with 403 when the net's `propagation_logging_enabled` is off
-- [ ] Broadcast a `can_hear_changed` WebSocket message so every viewer of the net sees reports live (follow the server-originated type conventions in [`docs/DEVELOPMENT.md`](DEVELOPMENT.md))
+**Phase 1 — Schema and API** *(complete, shipped 2026-08-02)*
+- [x] Migration: create `can_hear_reports` with the columns, unique key, and indexes above
+- [x] Migration: add `operating_position` (nullable String) to `check_ins`
+- [x] Migration: add `propagation_logging_enabled` (bool, default `false`) to `Net` and `NetTemplate`
+- [x] Models, schemas, and a `routers/` endpoint set: list reports for a net, and a save-report call that reconciles the set for one (reporter, frequency) in a single transaction — insert new, delete unchecked, touch `reported_at` on ones that stay checked
+- [x] Permission gate to NCS / Logger / Relay; reject self-edges and cross-net endpoints server-side; reject with 403 when the net's `propagation_logging_enabled` is off
+- [x] Broadcast a `can_hear_changed` WebSocket message so every viewer of the net sees reports live (follow the server-originated type conventions in [`docs/DEVELOPMENT.md`](DEVELOPMENT.md))
 
-**Phase 2 — Ear icon and reporting dialog** *(not started)*
-- [ ] "Enable Station-to-Station Coverage Logging" toggle added to the ARES & EmComm Features section in Create Net / Create Schedule / Edit Net, off by default, seeded from the template on nets created from one
-- [ ] Ear action icon on the check-in row (unified desktop/detached table plus the mobile list), rendered only when the net's toggle is on, visually distinct from the Just Listening status
-- [ ] "Who can this station hear?" dialog: responsive 2–3 column checkbox grid of the other stations in the net, current reports pre-checked, checked-out stations sorted last
-- [ ] Frequency selector defaulting to the net's active frequency
-- [ ] Operating position freeSolo dropdown (Home / Field Deployed / typed value)
-- [ ] Row indicator showing a station has reports, so the logger can see coverage at a glance without opening dialogs
+**Phase 2 — Ear icon and reporting dialog** *(complete, shipped 2026-08-02)*
+- [x] "Enable Station-to-Station Coverage Logging" toggle added to the ARES & EmComm Features section in Create Net / Create Schedule / Edit Net, off by default, seeded from the template on nets created from one
+- [x] Ear action icon on the check-in row (unified desktop/detached table plus the mobile list), rendered only when the net's toggle is on, visually distinct from the Just Listening status
+- [x] "Who can this station hear?" dialog: responsive 2–3 column checkbox grid of the other stations in the net, current reports pre-checked, checked-out stations sorted last
+- [x] Frequency selector defaulting to the net's active frequency
+- [x] Operating position freeSolo dropdown (Home / Field Deployed / typed value)
+- [x] Row indicator showing a station has reports, so the logger can see coverage at a glance without opening dialogs
 
-**Phase 3 — Per-net coverage report** *(not started)*
-- [ ] A coverage view for the net listing, per station, who it hears and who reported hearing it, with one-way paths distinguished from confirmed two-way paths, each shown with its `reported_at` timestamp
-- [ ] Include the coverage summary in the net log, PDF report, and email summary, matching how other per-net data is surfaced
-- [ ] Decide whether coverage belongs on the ICS-309 export or stays a separate attachment (it is not radio traffic, so probably separate)
+**Phase 3 — Per-net coverage report** *(complete, shipped 2026-08-02)*
+- [x] A coverage view for the net listing, per station, who it hears and who reported hearing it, with one-way paths distinguished from confirmed two-way paths, each shown with its `reported_at` timestamp — shipped as a dockable **Station Coverage** side panel (matching Chat/Activity Log/Map: detach, pop-out, minimize), sortable by column, with a callsign filter and click-to-highlight, rather than the originally-sketched inline embed, which ate too much space above the check-in form
+- [x] Include the coverage summary in the net log, PDF report, and email summary, matching how other per-net data is surfaced
+- [x] Decide whether coverage belongs on the ICS-309 export or stays a separate attachment — kept separate, per the original lean
 
-**Phase 4 — Map overlay** *(not started)*
-- [ ] Toggleable propagation overlay on `CheckInMap` drawing a line per reported path, styled for one-way vs. two-way and filterable by frequency
-- [ ] Handle unmappable stations without breaking the overlay
+**Phase 4 — Map overlay** *(complete, shipped 2026-08-02)*
+- [x] Toggleable propagation overlay on `CheckInMap` drawing a line per reported path, styled for one-way vs. two-way and filterable by frequency — toggle control lives in the map's top-right corner (frequency selector to its left, shown only when the net has more than one frequency), and cross-links with the Coverage panel: a "show on map" button and click-to-highlight-a-callsign both drive the same overlay
+- [x] Handle unmappable stations without breaking the overlay — also falls back to a callsign-keyed position lookup so a station's line doesn't vanish when its specific check-in id (e.g. after a recheck) isn't in the currently-filtered check-in list
 
-**Phase 5 — Personal coverage map in Profile** *(not started)*
+**Phase 5 — Personal coverage map in Profile** *(complete, shipped 2026-08-02)*
 
-This ships in Milestone 1, not with Teams: it needs only the per-net reports, the `home` operating position, and the `user_id` already on check-ins. It is sequenced last because a personal map built from one net is noise — it needs a corpus before it means anything.
+This shipped in Milestone 1, not with Teams, exactly as planned.
 
-- [ ] Profile map of the stations a user has confirmed hearing from home, aggregated across their own reports over time
-- [ ] Restrict to reports where the viewer was the reporting station, and label each path with when it was last heard (see "Last heard" above) and how consistently it was confirmed
-- [ ] Each POI on the map is one heard station; on hover (desktop) / tap (mobile), show a tooltip with that station's **callsign** and its **last-heard date** (the `MAX(reported_at)` rollup, not a single net's timestamp) — this is the one piece of detail the map exists to answer at a glance, so it belongs in the tooltip itself, not behind a click-through
-- [ ] Settle the privacy line before building: the map necessarily surfaces other stations' callsigns and locations, which are already visible in the logs of the nets involved, but the aggregate view must not reach outside nets the viewer participated in
+- [x] Profile map of the stations a user has confirmed hearing from home, aggregated across their own reports over time
+- [x] Restrict to reports where the viewer was the reporting station, and label each path with when it was last heard (see "Last heard" above) and how consistently it was confirmed
+- [x] Each POI on the map is one heard station; on hover (desktop) / tap (mobile), show a tooltip with that station's **callsign** and its **last-heard date** (the `MAX(reported_at)` rollup, not a single net's timestamp)
+- [x] Settle the privacy line before building: the map necessarily surfaces other stations' callsigns and locations, which are already visible in the logs of the nets involved, but the aggregate view must not reach outside nets the viewer participated in — enforced by scoping the query to the viewer's own reports only
 
 **Deferred until the Teams module exists** *(Milestone 2 — not blocking any phase above)*
 
