@@ -9,20 +9,32 @@ old inline styles.
 """
 from __future__ import annotations
 
+import enum
 from typing import List, Optional
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import (
+    Form,
     Net,
     NetRole,
     NetTemplate,
     NCSRotationMember,
     TemplateStaff,
+    TrafficLogEntry,
     User,
     UserRole,
 )
+
+
+class FormPermissionResult(str, enum.Enum):
+    """Result of check_form_permission. APPEND_ONLY is distinct from DENIED
+    so a router can return 409 (the form is no longer a draft) rather than a
+    plain 403 for a manage attempt. See TRAFFIC-HANDLING-DESIGN.md D3."""
+    GRANTED = "granted"
+    DENIED = "denied"
+    APPEND_ONLY = "append_only"
 
 
 def is_admin(user: User) -> bool:
@@ -152,3 +164,58 @@ async def check_template_permission(
         return True
 
     return False
+
+
+async def check_form_permission(
+    db: AsyncSession,
+    form: Form,
+    user: User,
+    level: str,
+) -> FormPermissionResult:
+    """Return the access *user* has to *form* at *level* ("view" or "manage").
+
+    View grants access to: the submitter, the current holder, anyone named
+    reported_by_user_id/handed_to_user_id on any log entry for this form
+    (the chain of custody), that net's NCS/logger (when net_id is set), and
+    global admins.
+
+    Manage grants access to: the submitter or the net's NCS, but only while
+    the form is still a draft (no log entries). Once any log entry exists,
+    manage always resolves to APPEND_ONLY -- not DENIED -- so the caller can
+    return 409 rather than a plain 403; corrections are made by appending to
+    the chain, never by rewriting a message already passed on the air.
+
+    See TRAFFIC-HANDLING-DESIGN.md D3.
+    """
+    if level not in ("view", "manage"):
+        raise ValueError(f"Unknown permission level: {level!r}")
+
+    entries_result = await db.execute(
+        select(TrafficLogEntry).where(TrafficLogEntry.form_id == form.id)
+    )
+    entries = entries_result.scalars().all()
+
+    net = None
+    if form.net_id:
+        net_result = await db.execute(select(Net).where(Net.id == form.net_id))
+        net = net_result.scalar_one_or_none()
+
+    if level == "manage":
+        if entries:
+            return FormPermissionResult.APPEND_ONLY
+        if form.created_by_id == user.id or is_admin(user):
+            return FormPermissionResult.GRANTED
+        if net and await check_net_permission(db, net, user, required_roles=["ncs"]):
+            return FormPermissionResult.GRANTED
+        return FormPermissionResult.DENIED
+
+    # level == "view"
+    if form.created_by_id == user.id or is_admin(user):
+        return FormPermissionResult.GRANTED
+    if form.held_by_user_id == user.id:
+        return FormPermissionResult.GRANTED
+    if any(e.reported_by_user_id == user.id or e.handed_to_user_id == user.id for e in entries):
+        return FormPermissionResult.GRANTED
+    if net and await check_net_permission(db, net, user, required_roles=["ncs", "logger"]):
+        return FormPermissionResult.GRANTED
+    return FormPermissionResult.DENIED
