@@ -259,6 +259,16 @@ Users see a red badge on the info icon (lower-left) until they view the changelo
 - Production deploys via `git pull` - if repo is stale, wrong code gets deployed
 - Keeps full history of changes for rollback if needed
 
+### Long-Running Feature Branches (Substantial Roadmap Items)
+
+For a multi-phase roadmap feature (the kind with its own "Design questions to resolve" list and a multi-agent **Model:** line, e.g. Assisted Traffic Handling, MFA/TOTP, Teams), don't build directly on `main`:
+
+1. **Create a dedicated branch** (`feature/<short-name>`) off `main` for the whole feature. All phases of the feature land as commits on this branch.
+2. **Test on beta from the branch** until the feature is confirmed working there. Do not merge to `main` — and therefore never deploy to production — until beta confirms it.
+3. **Merge to `main` and deploy to production only once beta confirms it.** This is the same beta-before-prod discipline already used for regular changes, just held at the branch level instead of per-commit.
+4. **Changelog dates reflect the actual production release date, not the build date.** While work is happening on the feature branch (including on beta), do **not** add entries to `docs/CHANGELOG.md` or `frontend/src/changelog.json` yet. Write those entries when the branch is merged to `main` and deployed to production, dated (and versioned `YYYY.MM.DD`) for that actual deploy day — never backdated to whenever the commits were authored on the branch.
+5. **Bug fixes made to get the feature shippable are not separate changelog items.** Any bug fixed while developing or stabilizing the feature branch — whether it's a defect the feature branch introduced or a pre-existing bug found along the way — gets folded into normal development and is not logged as its own changelog entry once the feature ships. Only the feature's user-facing capability is logged. (This extends the existing "never log a defect we introduced and fixed before it reached users" changelog rule to cover incidental bug fixes generally, not just self-introduced ones, for the duration of a feature branch.)
+
 ## Deployment Environments
 
 ### Production (app.ectlogger.us)
