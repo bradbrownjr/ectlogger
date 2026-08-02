@@ -75,7 +75,10 @@ const CanHearDialog: React.FC<CanHearDialogProps> = ({
   const [checkedIds, setCheckedIds] = useState<Set<number>>(() =>
     deriveCheckedIds(existingReports, reporterCheckIn.id, net?.active_frequency_id ?? null)
   );
-  const [operatingPosition, setOperatingPosition] = useState<string>(reporterCheckIn.operating_position || '');
+  // Defaults to "Home" when the station has no operating position recorded
+  // yet - most stations reporting on a routine net are home stations, so
+  // this saves the common case a click rather than leaving the field blank.
+  const [operatingPosition, setOperatingPosition] = useState<string>(reporterCheckIn.operating_position || 'Home');
   const [saving, setSaving] = useState(false);
 
   // Changing the frequency re-derives which checkboxes are pre-checked, since
