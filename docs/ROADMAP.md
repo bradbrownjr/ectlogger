@@ -97,105 +97,6 @@ Design questions to resolve before implementation:
 
 This is a substantial multi-part feature: sequence the data model + Forms menu first, then on-net entry and email delivery, then the stats rollup.
 
-### Relaying & Propagation Mapping
-
-**✨ "Can hear" inter-station propagation logging** *(KC1UIX)*
-
-**Model:** Phase 1 (schema + API) **Sonnet with an Opus review gate on the migration** — the data model below is settled, but the pair table and its unique key become expensive to reverse the moment real net data exists, so the migration and the reconcile-on-save logic get a second read. Phases 2–5 are Sonnet: each adds one surface against a fixed schema. No phase here is Haiku-sized — every one either designs a query or introduces a new UI surface.
-
-During a net, NCS and operators need to log not just who NCS can hear, but which stations can hear each other. This data helps ARES teams assign local nets, identify relay chains, and plan for actual incident communications. The direct payoff is **Coverage Assessment** — a common ARES/emcomm SET (Simulated Emergency Test) drill type, where the deliverable is exactly this: a defensible picture of who can reach whom, and from where.
-
-The existing "Relay for stations NCS cannot hear" flag (`check_ins.relayed_by`) captures one direction of this after the fact. This feature captures the underlying propagation graph directly, per net, as it is reported on the air.
-
-**How it is captured (the UX this is specced against).**
-
-- An **ear icon action button** on each check-in row, deliberately distinct from the "Just Listening" *status* icon — one is an action the logger takes, the other is a state the station is in. Follow the toolbar icon color conventions in [`docs/DESIGN.md`](DESIGN.md) rather than picking a new color.
-- The icon opens a dialog titled **"Who can this station hear?"**, listing every *other* callsign checked into the net as a checkbox, in a responsive 2–3 column layout so a 25-station net fits without scrolling. Stations already reported are pre-checked; the dialog shows current state, and saving reconciles it.
-- Two single-value fields sit below the checkbox grid: the **frequency** the report applies to, and the reporting station's **operating position** (see below).
-- NCS, Logger, and Relay roles may record reports (the standard `check_net_permission(... required_roles=["ncs", "logger", "relay"])` gate). Reports are entered on behalf of the station as it reports verbally on the net. Letting a station self-report its own row is a plausible later addition — the schema already supports it, since every row records who entered it — but it is not in this scope.
-
-**Net-level toggle, off by default.** This is a specialized ARES/EmComm capability, not a general check-in feature, so it must not appear unless a manager turns it on for that net. Add `propagation_logging_enabled` (bool, default `false`) to both `Net` and `NetTemplate`, following the exact inheritance pattern already used for `ics309_enabled`: the template value seeds nets created from it, and the per-net value can be overridden afterward. Surface it as a new toggle inside the existing **"ARES & EmComm Features"** section of Create Net / Create Schedule / Edit Net (`components/create-net/BasicInfoTab.tsx`, `components/create-schedule/BasicInfoTab.tsx`), immediately below "Enable ICS-309 Communications Log format" — that section already exists precisely for this class of net-specific ARES/EmComm flag, so this is one more toggle in it, not a new section. Suggested label/subtext, matching the existing toggle's style: "Enable Station-to-Station Coverage Logging" / "Adds a 'can hear' action to each check-in, letting NCS, Logger, and Relay record which stations can hear each other during this net." When off, the ear icon does not render on any check-in row for that net, and the reporting endpoints reject with 403 rather than silently no-op.
-
-**Data model (settled — do not re-litigate during implementation).**
-
-A new `can_hear_reports` table. **Each checked box is its own row**, i.e. one directional edge per row, with the report metadata carried on the edge rather than in a separate report-header table:
-
-| Column | Type | Notes |
-|---|---|---|
-| `id` | int PK | |
-| `net_id` | FK `nets.id`, `ON DELETE CASCADE`, indexed | Denormalized (derivable from either check-in) so "all edges for this net" is one indexed read with no join |
-| `reporter_check_in_id` | FK `check_ins.id`, `ON DELETE CASCADE` | The station doing the hearing |
-| `heard_check_in_id` | FK `check_ins.id`, `ON DELETE CASCADE` | The station being heard |
-| `frequency_id` | FK `frequencies.id`, nullable | Which frequency the report applies to |
-| `reported_by_user_id` | FK `users.id` | The NCS/Logger/Relay operator who entered it |
-| `reported_at` | UTC datetime | |
-
-Unique key on `reporter_check_in_id, heard_check_in_id, frequency_id`. Indexes on `net_id` and on `heard_check_in_id` (the reverse question, "who reported hearing me", is asked as often as the forward one).
-
-Why this shape:
-
-- **Directional pairs, not a multi-select blob.** The dialog is a one-to-many *input* affordance; the underlying fact is many one-to-one directional edges. Every downstream consumer — coverage table, map polylines, relay-chain search, team rollups — is edge-shaped, so storing edges means no consumer has to unpack a JSON array. A row per edge also gets referential integrity and cascade deletes for free.
-- **No separate report-header row.** A header table would add a join to every query and buy nothing, because the dialog's semantics are *current state*, not an append-only event log. Saving reconciles the set for that (reporter, frequency): insert newly-checked edges, delete unchecked ones, and **touch `reported_at` to now on edges that stay checked** — a station re-confirmed on the same path three hours into a long net is a more current data point than the one it replaced, and last-heard tracking (below) depends on that touch happening. Unchecking is a correction, not history worth preserving; the net log already records that the net happened.
-- **Keyed on `check_ins.id`, not callsign or `users.id`.** A check-in is the per-net instance of a station and already carries its location, frequency, and status, so pinning the edge to it captures the conditions the report was made under. Manually-logged stations have no `user_id` (the column is nullable), so keying on user would silently drop them; keying on callsign strings would lose all of that context. Recheck dedup guarantees one check-in row per callsign per net, so edges survive rechecks without duplicating.
-- **Direction is never inferred.** An edge means "reporter can hear heard" and nothing more. Do **not** auto-create the reciprocal — a hilltop station hearing a handheld that cannot hear back is exactly the asymmetry this feature exists to record. Two-way paths are detected at read time when both edges exist, and should render differently from one-way ones (arrowhead vs. plain line).
-- **`frequency_id` exists because of David's use case.** In a combined repeater/simplex drill, everyone hears everyone on the repeater; the entire value is in the simplex picture. An edge with no frequency context cannot answer the question the drill was run to answer. Scoping is per *report*, not per checkbox, so the dialog stays one dropdown plus one checkbox grid. Default the selector to the net's currently-active frequency. It stays nullable because a net is not guaranteed to have any frequency defined — note that a NULL participates in no unique constraint on either SQLite or PostgreSQL, so the no-duplicate guarantee for unspecified-frequency reports has to be enforced in the service layer.
-- Do not confuse this with the existing `check_ins.available_frequencies` field, which records which of the *net's* frequencies a station can reach. That is station-to-resource; this is station-to-station. They are complementary and neither replaces the other.
-
-**Operating position ("Home" vs field-deployed) — where it lives and how it upgrades.**
-
-The field describes the *reporting station*, not the pair, and a station has one operating position per check-in (moving mid-net is a recheck). So it belongs on `check_ins`, as a new nullable `operating_position` column — putting it on the edge would duplicate one value across N rows and permit contradictions.
-
-- It is a **classifier, not a place.** `check_ins.location` already holds the place text and is what the map geocodes; do not create a parallel place field.
-- The dialog control is a fillable (freeSolo) dropdown seeded with **Home** and **Field Deployed**. Known values normalize to short tokens; anything typed is stored verbatim.
-- Use a plain `String`, **not** a SQLAlchemy `Enum` — enum columns are already flagged as a PostgreSQL porting landmine in the Database Migration Path item below, and this column is expected to grow a third value.
-- **Upgrade path when Teams ship:** add a nullable `team_location_id` FK to `check_ins` alongside the existing column, and a `fixed_location` classifier value. Purely additive; no existing row is rewritten and no migration breaks. A team manager can then map recurring free-text positions ("Windham EOC") onto named `TeamLocation` records as a backfill. This is the seam between the two milestones — see [`docs/concepts/TEAM-MANAGEMENT-NOTES.md`](concepts/TEAM-MANAGEMENT-NOTES.md) section 5.6.
-
-**Per-net storage, read-time aggregation.** Per-net (per-check-in) reports are the single source of truth; every aggregate view is a read-time rollup, with **no separately-maintained aggregate table**. Reasons: the volume does not justify precompute (a dense 30-station net tops out under 900 edges and realistically produces a few dozen; hundreds of nets stay well inside what SQLite handles); an aggregate table needs invalidation on every correction and deletion and buys nothing at that scale; and collapsing to a boolean destroys the information a coverage report actually wants, which is recency and consistency ("confirmed on 7 of the last 9 nets"), not "true". This also matches how `statistics_*.py` already computes rollups at read time rather than maintaining them. Revisit only if a team-scale coverage query becomes slow — caching a rollup later is additive and does not change the source of truth.
-
-**Last heard.** `reported_at` is the timestamp for a single edge in a single net; it is not by itself "when did X last hear Y," because a different net produces different `check_ins` rows and therefore a different edge. "Last heard" is a second read-time rollup on top of the same table: join each edge's `reporter_check_in_id` / `heard_check_in_id` back to `check_ins.callsign`, group by the callsign pair (and, where the caller cares, by `frequency_id`), and take `MAX(reported_at)`. Callsign, not `user_id`, is the grouping key so manually-logged stations (no account) still roll up correctly. Every coverage surface above should show this: the per-net coverage report (Phase 3) shows each edge's own `reported_at` since it has only one net's data; the Profile map (Phase 5) and the team coverage rollup ([`docs/concepts/TEAM-MANAGEMENT-NOTES.md`](concepts/TEAM-MANAGEMENT-NOTES.md) section 5.6) show the cross-net "last heard" and should visibly flag a path that hasn't been reconfirmed in a long time (e.g. "last heard 94 days ago") rather than presenting old and fresh confirmations identically — a coverage assessment is only as trustworthy as knowing which paths are stale.
-
-**Visualization order: table first, map second, abstract graph probably never.** The per-net coverage table is what an NCS actually hands an EC after a drill, it needs no new dependencies, and it degrades to a text export. The map overlay is second because it is high value for low cost — `CheckInMap.tsx` already runs react-leaflet against parsed/geocoded check-in locations, so drawing paths is largely a matter of adding polylines and a toggle (stations whose location does not parse have no marker and therefore no line — degrade quietly, do not error). A node-link propagation graph is deliberately last and conditional: build it only if the map proves insufficient for reading relay chains, not on spec.
-
-**Phase 1 — Schema and API** *(complete, shipped 2026-08-02)*
-- [x] Migration: create `can_hear_reports` with the columns, unique key, and indexes above
-- [x] Migration: add `operating_position` (nullable String) to `check_ins`
-- [x] Migration: add `propagation_logging_enabled` (bool, default `false`) to `Net` and `NetTemplate`
-- [x] Models, schemas, and a `routers/` endpoint set: list reports for a net, and a save-report call that reconciles the set for one (reporter, frequency) in a single transaction — insert new, delete unchecked, touch `reported_at` on ones that stay checked
-- [x] Permission gate to NCS / Logger / Relay; reject self-edges and cross-net endpoints server-side; reject with 403 when the net's `propagation_logging_enabled` is off
-- [x] Broadcast a `can_hear_changed` WebSocket message so every viewer of the net sees reports live (follow the server-originated type conventions in [`docs/DEVELOPMENT.md`](DEVELOPMENT.md))
-
-**Phase 2 — Ear icon and reporting dialog** *(complete, shipped 2026-08-02)*
-- [x] "Enable Station-to-Station Coverage Logging" toggle added to the ARES & EmComm Features section in Create Net / Create Schedule / Edit Net, off by default, seeded from the template on nets created from one
-- [x] Ear action icon on the check-in row (unified desktop/detached table plus the mobile list), rendered only when the net's toggle is on, visually distinct from the Just Listening status
-- [x] "Who can this station hear?" dialog: responsive 2–3 column checkbox grid of the other stations in the net, current reports pre-checked, checked-out stations sorted last
-- [x] Frequency selector defaulting to the net's active frequency
-- [x] Operating position freeSolo dropdown (Home / Field Deployed / typed value)
-- [x] Row indicator showing a station has reports, so the logger can see coverage at a glance without opening dialogs
-
-**Phase 3 — Per-net coverage report** *(complete, shipped 2026-08-02)*
-- [x] A coverage view for the net listing, per station, who it hears and who reported hearing it, with one-way paths distinguished from confirmed two-way paths, each shown with its `reported_at` timestamp — shipped as a dockable **Station Coverage** side panel (matching Chat/Activity Log/Map: detach, pop-out, minimize), sortable by column, with a callsign filter and click-to-highlight, rather than the originally-sketched inline embed, which ate too much space above the check-in form
-- [x] Include the coverage summary in the net log, PDF report, and email summary, matching how other per-net data is surfaced
-- [x] Decide whether coverage belongs on the ICS-309 export or stays a separate attachment — kept separate, per the original lean
-
-**Phase 4 — Map overlay** *(complete, shipped 2026-08-02)*
-- [x] Toggleable propagation overlay on `CheckInMap` drawing a line per reported path, styled for one-way vs. two-way and filterable by frequency — toggle control lives in the map's top-right corner (frequency selector to its left, shown only when the net has more than one frequency), and cross-links with the Coverage panel: a "show on map" button and click-to-highlight-a-callsign both drive the same overlay
-- [x] Handle unmappable stations without breaking the overlay — also falls back to a callsign-keyed position lookup so a station's line doesn't vanish when its specific check-in id (e.g. after a recheck) isn't in the currently-filtered check-in list
-
-**Phase 5 — Personal coverage map in Profile** *(complete, shipped 2026-08-02)*
-
-This shipped in Milestone 1, not with Teams, exactly as planned.
-
-- [x] Profile map of the stations a user has confirmed hearing from home, aggregated across their own reports over time
-- [x] Restrict to reports where the viewer was the reporting station, and label each path with when it was last heard (see "Last heard" above) and how consistently it was confirmed
-- [x] Each POI on the map is one heard station; on hover (desktop) / tap (mobile), show a tooltip with that station's **callsign** and its **last-heard date** (the `MAX(reported_at)` rollup, not a single net's timestamp)
-- [x] Settle the privacy line before building: the map necessarily surfaces other stations' callsigns and locations, which are already visible in the logs of the nets involved, but the aggregate view must not reach outside nets the viewer participated in — enforced by scoping the query to the viewer's own reports only
-
-**Deferred until the Teams module exists** *(Milestone 2 — not blocking any phase above)*
-
-Named team locations (shelters, EOCs, hospitals), location-to-location coverage relationships, team-wide coverage assessment reporting, and cross-team relay planning all require a `TeamLocation` entity that does not exist yet. Full spec: [`docs/concepts/TEAM-MANAGEMENT-NOTES.md`](concepts/TEAM-MANAGEMENT-NOTES.md) section 5.6. Nothing in Phases 1–5 should be delayed or reshaped to anticipate it — the `team_location_id` upgrade path above is the only accommodation needed.
-
-David's use case (YCECT combined repeater/simplex drills) drives the initial spec, and is the direct reason frequency scoping is in Phase 1 rather than deferred. Validate Phases 1–3 against a real combined drill before starting Phase 4.
-
 ### Supporter / Funding Integration
 
 **✨ Optional Ko-fi supporter integration, admin-configured per deployment** *(sustainability)*
@@ -353,7 +254,7 @@ Full spec and design notes: [`docs/concepts/TEAM-MANAGEMENT-NOTES.md`](concepts/
 
 Summary: a new **Teams** section (menu between Schedule and Stats) to replace spreadsheet-based ARES/SKYWARN team tracking with a role-controlled, self-service platform. Members manage their own profiles; team managers handle roster, approvals, and reporting. Net participation automatically rolls up to team records. Designed to facilitate ARES Form 2 and EMA hour reporting.
 
-Also carries the Teams-dependent half of the propagation feature above — named team locations (shelters, EOCs), location-to-location coverage, and Coverage Assessment reporting for team managers. See `TEAM-MANAGEMENT-NOTES.md` section 5.6; the per-net capture it builds on ships in Milestone 1 and is not blocked by this module.
+Also carries the Teams-dependent half of "can hear" station-to-station coverage logging (shipped 2026-08-02, see `CHANGELOG.md`) — named team locations (shelters, EOCs), location-to-location coverage, and Coverage Assessment reporting for team managers. See `TEAM-MANAGEMENT-NOTES.md` section 5.6; the per-net capture it builds on has already shipped and is not blocked by this module.
 
 Blocked on: core web app stability, self-hosting, and Docker packaging being in good shape first.
 

@@ -1,13 +1,13 @@
 # Team Management Spec Draft (Back-Burner)
 
-Last updated: 2026-08-01
+Last updated: 2026-08-02
 
 This document is a structured draft spec for a future Team Management module. It is intentionally scoped as back-burner work while core web app stability and self-hosting priorities are completed.
 
 Related roadmap references:
 
 - [docs/ROADMAP.md](../ROADMAP.md) > Milestone 2 > Team Management Module — the module itself.
-- [docs/ROADMAP.md](../ROADMAP.md) > Milestone 1 > Relaying & Propagation Mapping — the per-net "can hear" capture that section 5.6 below builds on. That half ships without Teams.
+- [docs/CHANGELOG.md](../CHANGELOG.md) (2026-08-02) — the per-net "can hear" station-to-station coverage logging that section 5.6 below builds on has already shipped; its roadmap entry was removed once complete, per this project's convention of dropping shipped items from ROADMAP.md rather than leaving them checked off in place.
 
 ## 1. Problem Statement
 
@@ -121,7 +121,7 @@ Goal: provide a secure, role-based team management experience integrated with ex
 
 ### 5.6 Team Locations and Coverage Assessment
 
-This is the Teams-dependent half of the "can hear" inter-station propagation feature. The per-net capture side of that feature ships in Milestone 1 and does **not** wait on Teams. See [docs/ROADMAP.md](../ROADMAP.md) > Milestone 1 > Relaying & Propagation Mapping for the settled data model, the per-net reporting dialog, and the phase order. This section covers only what genuinely requires a team to exist.
+This is the Teams-dependent half of the "can hear" inter-station propagation feature. The per-net capture side of that feature (station-to-station coverage logging: the reporting dialog, the Coverage panel, and the map overlay) shipped 2026-08-02 and did not wait on Teams — see `docs/CHANGELOG.md` for the release entry. Its settled data model (the `can_hear_reports` table, the `operating_position` classifier on check-ins, the `team_location_id` upgrade path below) lives in `backend/app/models.py` and `backend/app/routers/can_hear.py` now that it has shipped; it's no longer a separate roadmap entry. This section covers only what genuinely requires a team to exist.
 
 Context: teams support fixed locations (shelters, EOCs, hospitals, cooling centers, staging areas). A team manager needs to know, for each supported location, which other locations and which stations that location can reliably communicate with — and where the gaps are. This is the deliverable of a Coverage Assessment exercise, a common ARES/emcomm SET drill type, and today it is produced by hand from paper notes.
 
@@ -134,7 +134,7 @@ Context: teams support fixed locations (shelters, EOCs, hospitals, cooling cente
 
 #### Link from per-net reports
 
-- Milestone 1 stores a station's operating position on its check-in as a nullable free-text classifier (Home / Field Deployed / typed value).
+- The shipped feature stores a station's operating position on its check-in as a nullable free-text classifier (Home / Field Deployed / typed value).
 - Teams adds a nullable `team_location_id` foreign key on the check-in alongside it, plus a `fixed_location` classifier value. This is additive: no existing row is rewritten and no migration breaks.
 - Once available, the reporting dialog's operating-position dropdown is seeded with the team's named locations in addition to Home and Field Deployed.
 - A manager can backfill: map recurring free-text positions ("Windham EOC") onto the matching `TeamLocation` record. Backfill is manager-reviewed, never automatic string matching.
@@ -161,7 +161,7 @@ Context: teams support fixed locations (shelters, EOCs, hospitals, cooling cente
 
 #### Note on personal coverage maps
 
-A user's own "stations I can hear from home" map is **not** part of this section. It needs only per-net reports and the home classifier, so it ships in Milestone 1 as the last phase of the roadmap item. Teams does not gate it and must not duplicate it.
+A user's own "stations I can hear from home" map is **not** part of this section — it's the Profile → Coverage tab, and it already shipped alongside the rest of the per-net capture on 2026-08-02, needing only per-net reports and the home classifier. Teams does not gate it and must not duplicate it.
 
 ## 6. Data Model Draft
 
