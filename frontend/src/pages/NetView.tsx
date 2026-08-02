@@ -2249,7 +2249,6 @@ const NetView: React.FC = () => {
               coverageMinimized={coverageMinimized}
               onCloseCoverage={coverage.onClose}
               onUndockCoverage={handleDetachCoverage}
-              onAttachCoverage={handleAttachCoverage}
               handlePopOutCoverage={handlePopOutCoverage}
               handleFloatToWindowCoverage={handleFloatToWindowCoverage}
               onMinimizeCoverage={() => setCoverageMinimized(true)}

@@ -17,7 +17,12 @@ interface FloatingWindowProps {
   children: React.ReactNode;
   isDetached: boolean;
   onDetach?: () => void;
-  onAttach: () => void;
+  // Optional: renders the "dock back to main view" close icon. Omit for a
+  // panel that shouldn't offer re-docking while floating (e.g. an on-demand
+  // panel whose own inner header already provides a real "close/hide"
+  // action) - Chat/Activity Log always pass this since re-docking is their
+  // only way to fully hide themselves.
+  onAttach?: () => void;
   // Optional: lets a floated pane jump straight to a real popped-out window
   // without re-docking first. Only rendered when supplied.
   onPopOut?: () => void;
@@ -178,14 +183,16 @@ const FloatingWindow: React.FC<FloatingWindowProps> = ({
                 <OpenInNewIcon fontSize="small" />
               </IconButton>
             )}
-            <IconButton
-              size="small"
-              onClick={onAttach}
-              title="Dock back to main view"
-              sx={{ color: 'inherit', p: 0.25 }}
-            >
-              <CloseIcon fontSize="small" />
-            </IconButton>
+            {onAttach && (
+              <IconButton
+                size="small"
+                onClick={onAttach}
+                title="Dock back to main view"
+                sx={{ color: 'inherit', p: 0.25 }}
+              >
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            )}
           </Box>
         </Box>
 

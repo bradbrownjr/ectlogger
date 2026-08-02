@@ -83,7 +83,6 @@ interface NetViewSidePanelsProps {
   coverageMinimized: boolean;
   onCloseCoverage: () => void;
   onUndockCoverage: () => void;
-  onAttachCoverage: () => void;
   handlePopOutCoverage: () => void;
   handleFloatToWindowCoverage: () => void;
   onMinimizeCoverage: () => void;
@@ -142,7 +141,6 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
   coverageMinimized,
   onCloseCoverage,
   onUndockCoverage,
-  onAttachCoverage,
   handlePopOutCoverage,
   handleFloatToWindowCoverage,
   onMinimizeCoverage,
@@ -343,13 +341,15 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
 
       {/* Floating Station Coverage panel - on-demand like Map (needs
           coverageOpen true, not just "not docked"), unlike Chat/Activity Log
-          which are always present once opted into floating. */}
+          which are always present once opted into floating. No onAttach here
+          (unlike Chat/Activity Log): CoveragePanel's own inner header already
+          has a real "close" action (onClose, below), so a second "dock back"
+          button in FloatingWindow's outer bar would be redundant chrome. */}
       {coverageOpen && !coverageDocked && (net.status === 'active' || net.status === 'lobby' || net.status === 'closed' || net.status === 'archived') && (
         <FloatingWindow
           title="Station Coverage"
           isDetached={true}
           onDetach={onUndockCoverage}
-          onAttach={onAttachCoverage}
           onPopOut={handleFloatToWindowCoverage}
           defaultWidth={500}
           defaultHeight={450}
