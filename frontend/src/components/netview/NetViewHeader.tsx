@@ -361,6 +361,19 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
   // ===== INFO GROUP (read / view actions) =====
   const infoItems: ToolbarItemDef[] = [
     {
+      // Placed first (ahead of Net info and every other info-group item,
+      // not just management ones) so NCS sees it immediately on a
+      // draft/scheduled net rather than having to scan past read-only
+      // info actions to find the primary "start the net" action.
+      key: 'start-net', group: 'info', priority: 4,
+      visible: startingUpNet,
+      Icon: PlayArrowIcon, color: '#2e7d32', label: 'Start net',
+      tooltip: 'Start the net', onClick: onStartNetClick,
+      disabled: startingNet,
+      iconOverride: startingNet ? <CircularProgress size={16} sx={{ color: '#2e7d32' }} /> : undefined,
+      extraSx: highlightStartNet ? { animation: `${pulseAnimationGreen} 1s infinite` } : undefined,
+    },
+    {
       key: 'bulk', group: 'info', priority: 3,
       visible: isActiveOrLobby && checkInsCount > 0 && !!canManageCheckIns,
       Icon: FastForwardIcon, color: theme.palette.primary.main, label: 'Bulk add',
@@ -441,15 +454,6 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
 
   // ===== MANAGEMENT GROUP (state / participation-changing actions) =====
   const managementItems: ToolbarItemDef[] = [
-    {
-      key: 'start-net', group: 'management', priority: 4,
-      visible: startingUpNet,
-      Icon: PlayArrowIcon, color: '#2e7d32', label: 'Start net',
-      tooltip: 'Start the net', onClick: onStartNetClick,
-      disabled: startingNet,
-      iconOverride: startingNet ? <CircularProgress size={16} sx={{ color: '#2e7d32' }} /> : undefined,
-      extraSx: highlightStartNet ? { animation: `${pulseAnimationGreen} 1s infinite` } : undefined,
-    },
     {
       key: 'edit-net', group: 'management', priority: 3,
       visible: canManage && (isDraftOrScheduled || isActiveOrLobby),
@@ -657,6 +661,37 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
         </span>
       </Tooltip>
     );
+  };
+
+  // Shared by both the info-group and management-group render loops so the
+  // "start-net" special case (the topic/poll-config warning badge) applies
+  // no matter which group start-net currently belongs to.
+  const renderGroupItem = (item: ToolbarItemDef) => {
+    const mode = modes.get(item.key)!;
+    if (mode === 'overflow') return null;
+    if (item.key === 'start-net') {
+      return (
+        <React.Fragment key={item.key}>
+          {renderItem(item, mode)}
+          {needsTopicPollConfig() && (
+            <Tooltip title="Topic or poll question needs to be set before starting">
+              <IconButton
+                size="small"
+                onClick={onOpenTopicPollConfig}
+                sx={{
+                  p: 0.5,
+                  borderRadius: '50%',
+                  animation: `${shimmerYellow} 2s ease-in-out infinite`,
+                }}
+              >
+                <HelpOutlineIcon fontSize="small" sx={{ color: 'warning.dark' }} />
+              </IconButton>
+            </Tooltip>
+          )}
+        </React.Fragment>
+      );
+    }
+    return renderItem(item, mode);
   };
 
   // Renders both a labelled and an icon-only clone of every item (plus
@@ -936,10 +971,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
           borderBottom: `1px solid ${isDarkMode ? 'rgba(255,255,255,0.12)' : '#e4e6e9'}`,
         }}
       >
-        {infoVisible.map(item => {
-          const mode = modes.get(item.key)!;
-          return mode === 'overflow' ? null : renderItem(item, mode);
-        })}
+        {infoVisible.map(item => renderGroupItem(item))}
 
         {overflowItems.length > 0 && (
           <Tooltip title="More net information">
@@ -976,33 +1008,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
           <Box sx={{ width: '1px', height: 20, backgroundColor: isDarkMode ? 'rgba(255,255,255,0.16)' : '#dcdfe3', mx: 0.5, flex: '0 0 auto' }} />
         )}
 
-        {managementVisible.map(item => {
-          const mode = modes.get(item.key)!;
-          if (mode === 'overflow') return null;
-          if (item.key === 'start-net') {
-            return (
-              <React.Fragment key={item.key}>
-                {renderItem(item, mode)}
-                {needsTopicPollConfig() && (
-                  <Tooltip title="Topic or poll question needs to be set before starting">
-                    <IconButton
-                      size="small"
-                      onClick={onOpenTopicPollConfig}
-                      sx={{
-                        p: 0.5,
-                        borderRadius: '50%',
-                        animation: `${shimmerYellow} 2s ease-in-out infinite`,
-                      }}
-                    >
-                      <HelpOutlineIcon fontSize="small" sx={{ color: 'warning.dark' }} />
-                    </IconButton>
-                  </Tooltip>
-                )}
-              </React.Fragment>
-            );
-          }
-          return renderItem(item, mode);
-        })}
+        {managementVisible.map(item => renderGroupItem(item))}
       </Box>
 
       <Dialog open={stepAwayConfirmOpen} onClose={() => setStepAwayConfirmOpen(false)}>
