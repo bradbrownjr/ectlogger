@@ -132,6 +132,17 @@ interface CheckInMapProps {
   // "146.520 FM") - same shape/convention as CoverageReport's own
   // frequencyLabels prop, so callers can reuse the same lookup object.
   frequencyLabels?: Record<number, string>;
+  // Coverage overlay on/off - lifted out of local state (was
+  // `useState(false)` inside this component) so the new CoveragePanel's
+  // "show on map" button can turn it on from outside, and so both this map
+  // and the panel agree on the same on/off flag.
+  coverageOverlayOn: boolean;
+  onToggleCoverageOverlay: () => void;
+  // When set, coverageLines additionally filters to edges where either
+  // callsign case-insensitively includes this value - shared with
+  // CoveragePanel so clicking a callsign there highlights the same station's
+  // lines here (and vice versa via the toggle-to-clear behavior it owns).
+  highlightedCallsign?: string | null;
 }
 
 interface MappedCheckIn extends CheckIn {
@@ -158,17 +169,19 @@ const FitBounds: React.FC<{ positions: [number, number][]; disabled?: boolean }>
   return null;
 };
 
-const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netName, ncsUserIds = [], loggerUserIds = [], relayUserIds = [], embedded = false, onPopOut, onUndock, onDock, minimized: dockedMinimized = false, onMinimize: onDockedMinimize, onRestore: onDockedRestore, canHearReports, frequencyLabels = {} }) => {
+const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netName, ncsUserIds = [], loggerUserIds = [], relayUserIds = [], embedded = false, onPopOut, onUndock, onDock, minimized: dockedMinimized = false, onMinimize: onDockedMinimize, onRestore: onDockedRestore, canHearReports, frequencyLabels = {}, coverageOverlayOn, onToggleCoverageOverlay, highlightedCallsign }) => {
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
 
   const [mappedCheckIns, setMappedCheckIns] = useState<MappedCheckIn[]>([]);
   const [loading, setLoading] = useState(true);
   const [minimized, setMinimized] = useState(false);
-  // "Can hear" coverage overlay (Phase 4) - off by default, and the toggle
-  // itself only renders when the parent actually passed canHearReports
-  // (see canHearFeatureAvailable below), not merely when it's non-empty.
-  const [showCoverageOverlay, setShowCoverageOverlay] = useState(false);
+  // "Can hear" coverage overlay (Phase 4) - on/off is now a controlled prop
+  // (lifted to NetView.tsx, see coverageOverlayOn above) so the Coverage
+  // panel's "show on map" button can turn it on from outside. The toggle
+  // button itself still only renders when the parent actually passed
+  // canHearReports (see canHearFeatureAvailable below), not merely when
+  // it's non-empty.
   const [coverageFrequencyFilter, setCoverageFrequencyFilter] = useState<'all' | 'none' | number>('all');
   const [maximized, setMaximized] = useState(false);
   const [preMaximizeState, setPreMaximizeState] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
@@ -495,12 +508,14 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
   // B->A reported) are canonicalized to a single line per the unordered
   // pair so a confirmed two-way path isn't drawn twice on top of itself.
   const coverageLines = useMemo(() => {
-    if (!showCoverageOverlay || reports.length === 0) return [];
+    if (!coverageOverlayOn || reports.length === 0) return [];
 
+    const needle = highlightedCallsign?.toLowerCase();
     const filtered = reports.filter((r) => {
-      if (coverageFrequencyFilter === 'all') return true;
-      if (coverageFrequencyFilter === 'none') return r.frequency_id == null;
-      return r.frequency_id === coverageFrequencyFilter;
+      if (coverageFrequencyFilter === 'none' && r.frequency_id != null) return false;
+      if (typeof coverageFrequencyFilter === 'number' && r.frequency_id !== coverageFrequencyFilter) return false;
+      if (needle && !r.reporter_callsign.toLowerCase().includes(needle) && !r.heard_callsign.toLowerCase().includes(needle)) return false;
+      return true;
     });
 
     const allKeys = new Set(
@@ -528,7 +543,7 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
     }
 
     return lines;
-  }, [showCoverageOverlay, reports, positionByCheckInId, coverageFrequencyFilter]);
+  }, [coverageOverlayOn, reports, positionByCheckInId, coverageFrequencyFilter, highlightedCallsign]);
 
   // Loading / empty / map+legend content shared by the maximized, windowed,
   // and embedded (real popped-out window) render modes below - previously
@@ -586,7 +601,7 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
             {/* "Can hear" coverage overlay (Phase 4) - drawn below the marker
                 pane per Leaflet's default pane z-order, so markers always
                 stay legible on top of any crossing lines. */}
-            {showCoverageOverlay && coverageLines.map((line) => (
+            {coverageOverlayOn && coverageLines.map((line) => (
               <Polyline
                 key={line.key}
                 positions={line.positions}
@@ -631,14 +646,17 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
           </MapContainer>
           {/* "Can hear" coverage overlay toggle + frequency filter (Phase 4).
               Only rendered when the parent passed canHearReports at all -
-              see canHearFeatureAvailable above. Positioned top-left so it
-              never collides with the Color Legend (bottom-right). */}
+              see canHearFeatureAvailable above. Positioned top-RIGHT (moved
+              from top-left, which collided with Leaflet's default top-left
+              zoom control) - never collides with the Color Legend
+              (bottom-right) either. Frequency selector renders first
+              (visually to the left of the toggle button). */}
           {canHearFeatureAvailable && (
             <Box
               sx={{
                 position: 'absolute',
                 top: 8,
-                left: 8,
+                right: 8,
                 backgroundColor: isDarkMode ? 'rgba(30, 30, 30, 0.9)' : 'rgba(255, 255, 255, 0.9)',
                 borderRadius: 1,
                 px: 0.5,
@@ -650,16 +668,7 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
                 gap: 0.5,
               }}
             >
-              <Tooltip title={showCoverageOverlay ? 'Hide station coverage overlay' : 'Show station coverage overlay'}>
-                <IconButton
-                  size="small"
-                  onClick={() => setShowCoverageOverlay((v) => !v)}
-                  sx={{ p: 0.5, color: showCoverageOverlay ? COVERAGE_TWO_WAY_COLOR : (isDarkMode ? '#eee' : '#333') }}
-                >
-                  <HearingIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-              {showCoverageOverlay && (
+              {coverageOverlayOn && Object.keys(frequencyLabels).length > 1 && (
                 <FormControl size="small" variant="standard" sx={{ minWidth: 120 }}>
                   <Select
                     value={coverageFrequencyFilter === 'all' ? 'all' : coverageFrequencyFilter === 'none' ? 'none' : String(coverageFrequencyFilter)}
@@ -682,6 +691,15 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
                   </Select>
                 </FormControl>
               )}
+              <Tooltip title={coverageOverlayOn ? 'Hide station coverage overlay' : 'Show station coverage overlay'}>
+                <IconButton
+                  size="small"
+                  onClick={onToggleCoverageOverlay}
+                  sx={{ p: 0.5, color: coverageOverlayOn ? COVERAGE_TWO_WAY_COLOR : (isDarkMode ? '#eee' : '#333') }}
+                >
+                  <HearingIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
             </Box>
           )}
           {/* Color Legend */}

@@ -4,25 +4,30 @@ import FloatingWindow from '../FloatingWindow';
 import Chat from '../Chat';
 import ActivityLog from '../ActivityLog';
 import CheckInMap from '../CheckInMap';
+import CoveragePanel from './CoveragePanel';
 import ResizeHandle from '../ResizeHandle';
 import useResizableSplit from '../../hooks/useResizableSplit';
 import useLayoutTier from '../../hooks/useLayoutTier';
 import { STORAGE_KEYS } from '../../utils/localStorageKeys';
 
-// ========== NET VIEW SIDE PANELS (Chat + Activity Log + Map) ==========
-// The right-column Chat/Activity Log/Map stack, docked or detached. All
-// three detach independently of each other and of the check-in list. Each
+// ========== NET VIEW SIDE PANELS (Chat + Activity Log + Map + Coverage) ==========
+// The right-column Chat/Activity Log/Map/Coverage stack, docked or detached.
+// All four detach independently of each other and of the check-in list. Each
 // pane's docked Box renders only when that pane is actually docked/shown,
 // so the others expand to fill the freed space instead of the whole column
 // disappearing (or, if none are present, the column itself doesn't render).
 // The check-in list's own width (NetView.tsx) expands separately once
 // nothing is left in this column.
 //
-// Unlike Chat/Activity Log (always present once docked), Map is on-demand —
-// only opened via the toolbar — so it additionally needs mapOpen true, not
-// just mapDocked. Map's own minimize state lives inside CheckInMap itself
-// (not lifted here), so its flex share is always 1 rather than being part
-// of the chat/activityLog minimized cross-referencing below.
+// Unlike Chat/Activity Log (always present once docked), Map and Coverage
+// are on-demand — only opened via the toolbar — so they additionally need
+// mapOpen/coverageOpen true, not just mapDocked/coverageDocked. Map's own
+// minimize state lives inside CheckInMap itself (not lifted here), so its
+// flex share is always 1 rather than being part of the chat/activityLog
+// minimized cross-referencing below. Coverage's minimize state IS lifted
+// (coverageMinimized), same as Chat/Activity Log, since CoveragePanel is a
+// simple Chat-style chrome wrapper rather than CheckInMap's own multi-mode
+// (dialog/maximized/embedded) component.
 // Purely presentational — the parent owns all state and handlers.
 
 interface NetViewSidePanelsProps {
@@ -70,6 +75,27 @@ interface NetViewSidePanelsProps {
   // through to the docked CheckInMap exactly as NetView.tsx passes it to its
   // own floating CheckInMap instance, rather than re-fetching here.
   canHearReports: any[];
+  // Station Coverage side panel (Phase 3 chrome + Phase 4 map cross-link).
+  // On-demand like Map above (opened via the toolbar), so it also needs
+  // coverageOpen true, not just coverageDocked.
+  coverageOpen: boolean;
+  coverageDocked: boolean;
+  coverageMinimized: boolean;
+  onCloseCoverage: () => void;
+  onUndockCoverage: () => void;
+  onAttachCoverage: () => void;
+  handlePopOutCoverage: () => void;
+  handleFloatToWindowCoverage: () => void;
+  onMinimizeCoverage: () => void;
+  onRestoreCoverage: () => void;
+  // Shared with CheckInMap's coverage overlay - the same two pieces of
+  // state threaded to both the docked CheckInMap instance and CoveragePanel
+  // is what makes clicking a callsign in one reflect in the other.
+  coverageOverlayOn: boolean;
+  onToggleCoverageOverlay: () => void;
+  highlightedCallsign: string | null;
+  setHighlightedCallsign: (callsign: string | null) => void;
+  onShowCoverageOnMap: () => void;
 }
 
 const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
@@ -111,10 +137,31 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
   onMinimizeMap,
   onRestoreMap,
   canHearReports,
+  coverageOpen,
+  coverageDocked,
+  coverageMinimized,
+  onCloseCoverage,
+  onUndockCoverage,
+  onAttachCoverage,
+  handlePopOutCoverage,
+  handleFloatToWindowCoverage,
+  onMinimizeCoverage,
+  onRestoreCoverage,
+  coverageOverlayOn,
+  onToggleCoverageOverlay,
+  highlightedCallsign,
+  setHighlightedCallsign,
+  onShowCoverageOnMap,
 }) => {
   const chatDocked = !chatDetached && !chatWindowOpen;
   const activityLogDocked = !activityLogDetached && !activityLogWindowOpen;
   const showMap = mapOpen && mapDocked;
+  const showCoverageDocked = coverageOpen && coverageDocked;
+  // Frequency label lookup shared by the docked CheckInMap and CoveragePanel
+  // below - same shape/convention NetView.tsx's own instances build.
+  const frequencyLabels = Object.fromEntries(
+    (net?.frequencies || []).map((f: any) => [f.id, `${f.frequency || f.network || ''} ${f.mode || ''}`.trim()])
+  );
 
   const layoutTier = useLayoutTier();
   const { containerRef, getWeight, startDrag } = useResizableSplit(`${STORAGE_KEYS.RIGHT_PANELS_SPLIT}_${layoutTier}`, 'column');
@@ -196,9 +243,33 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
           onMinimize={onMinimizeMap}
           onRestore={onRestoreMap}
           canHearReports={canHearReports}
-          frequencyLabels={Object.fromEntries(
-            (net?.frequencies || []).map((f: any) => [f.id, `${f.frequency || f.network || ''} ${f.mode || ''}`.trim()])
-          )}
+          frequencyLabels={frequencyLabels}
+          coverageOverlayOn={coverageOverlayOn}
+          onToggleCoverageOverlay={onToggleCoverageOverlay}
+          highlightedCallsign={highlightedCallsign}
+        />
+      ),
+    });
+  }
+  if (showCoverageDocked) {
+    panes.push({
+      key: 'coverage',
+      minimized: coverageMinimized,
+      content: (
+        <CoveragePanel
+          netId={Number(netId)}
+          reports={canHearReports}
+          frequencyLabels={frequencyLabels}
+          showFrequencyColumn={(net?.frequencies || []).length > 1}
+          highlightedCallsign={highlightedCallsign}
+          onHighlightCallsign={setHighlightedCallsign}
+          onShowOnMap={onShowCoverageOnMap}
+          onClose={onCloseCoverage}
+          onDetach={onUndockCoverage}
+          onPopOut={handlePopOutCoverage}
+          minimized={coverageMinimized}
+          onMinimize={onMinimizeCoverage}
+          onRestore={onRestoreCoverage}
         />
       ),
     });
@@ -267,6 +338,35 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
           storageKey="activityLog"
         >
           <ActivityLog netId={Number(netId)} />
+        </FloatingWindow>
+      )}
+
+      {/* Floating Station Coverage panel - on-demand like Map (needs
+          coverageOpen true, not just "not docked"), unlike Chat/Activity Log
+          which are always present once opted into floating. */}
+      {coverageOpen && !coverageDocked && (net.status === 'active' || net.status === 'lobby' || net.status === 'closed' || net.status === 'archived') && (
+        <FloatingWindow
+          title="Station Coverage"
+          isDetached={true}
+          onDetach={onUndockCoverage}
+          onAttach={onAttachCoverage}
+          onPopOut={handleFloatToWindowCoverage}
+          defaultWidth={500}
+          defaultHeight={450}
+          minWidth={350}
+          minHeight={250}
+          storageKey="coverage"
+        >
+          <CoveragePanel
+            netId={Number(netId)}
+            reports={canHearReports}
+            frequencyLabels={frequencyLabels}
+            showFrequencyColumn={(net?.frequencies || []).length > 1}
+            highlightedCallsign={highlightedCallsign}
+            onHighlightCallsign={setHighlightedCallsign}
+            onShowOnMap={onShowCoverageOnMap}
+            onClose={onCloseCoverage}
+          />
         </FloatingWindow>
       )}
     </>

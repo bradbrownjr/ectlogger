@@ -17,6 +17,7 @@ import { useNetWebSocket } from '../hooks/useNetWebSocket';
 import Chat from '../components/Chat';
 import ActivityLog from '../components/ActivityLog';
 import CheckInMap from '../components/CheckInMap';
+import CoverageReport from '../components/netview/CoverageReport';
 import CheckInTable from '../components/netview/CheckInTable';
 import CanHearDialog from '../components/netview/CanHearDialog';
 import { getCheckInActions } from '../components/netview/checkInActions';
@@ -40,6 +41,7 @@ const PANE_LABELS: Record<string, string> = {
   'activity-log': 'Activity Log',
   'check-ins': 'Check-Ins',
   map: 'Map',
+  coverage: 'Station Coverage',
 };
 
 // Bare-bones page rendered inside a real popped-out browser window (see
@@ -68,6 +70,10 @@ const NetPaneWindow: React.FC = () => {
   // report list for this net, refetched on mount and on can_hear_changed.
   const [canHearDialogCheckInId, setCanHearDialogCheckInId] = useState<number | null>(null);
   const [canHearReports, setCanHearReports] = useState<any[]>([]);
+  // Coverage overlay on/off for the standalone popped-out map window - a
+  // plain local toggle since there's no Coverage panel in this isolated
+  // window to cross-link with (see CheckInMap.tsx's lifted-state comment).
+  const [mapCoverageOverlayOn, setMapCoverageOverlayOn] = useState(false);
   const [checkInForm, setCheckInForm] = useState<CheckInFormState>({
     callsign: '',
     name: '',
@@ -195,6 +201,23 @@ const NetPaneWindow: React.FC = () => {
           relayUserIds={netRoles.filter((r: any) => r.role === 'Relay').map((r: any) => r.user_id)}
           embedded
           canHearReports={canHearReports}
+          frequencyLabels={Object.fromEntries(
+            (net?.frequencies || []).map((f: any) => [f.id, `${f.frequency || f.network || ''} ${f.mode || ''}`.trim()])
+          )}
+          coverageOverlayOn={mapCoverageOverlayOn}
+          onToggleCoverageOverlay={() => setMapCoverageOverlayOn((v) => !v)}
+        />
+      </Box>
+    );
+  }
+
+  if (paneType === 'coverage') {
+    return (
+      <Box sx={{ height: '100vh', width: '100vw', p: 0.5, boxSizing: 'border-box', display: 'flex', flexDirection: 'column', overflow: 'auto' }}>
+        <CoverageReport
+          netId={Number(netId)}
+          reports={canHearReports}
+          showFrequencyColumn={(net.frequencies || []).length > 1}
           frequencyLabels={Object.fromEntries(
             (net?.frequencies || []).map((f: any) => [f.id, `${f.frequency || f.network || ''} ${f.mode || ''}`.trim()])
           )}

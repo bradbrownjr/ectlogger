@@ -44,6 +44,11 @@ export const STORAGE_KEYS = {
   ANNOUNCEMENTS_OPEN: 'dockedPanel_announcements_open',
   SCHEDULE_ANNOUNCEMENTS_OPEN: 'dockedPanel_scheduleAnnouncements_open',
   MAP_OPEN: 'dockedPanel_map_open',
+  // Station Coverage side panel (see CoveragePanel.tsx) - same convention as
+  // the MAP_* group above (on-demand pane, opened only via the toolbar).
+  COVERAGE_DOCKED: 'dockedPanel_coverage_docked',
+  COVERAGE_MINIMIZED: 'dockedPanel_coverage_minimized',
+  COVERAGE_OPEN: 'dockedPanel_coverage_open',
   // Resizable split weights (flex-grow ratios) - see useResizableSplit.ts.
   // Left/right panel stacks are vertical splits; the column split is
   // horizontal (left/center/right widths). Each is actually stored with a

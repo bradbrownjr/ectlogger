@@ -30,6 +30,7 @@ import UploadFileIcon from '@mui/icons-material/UploadFile';
 import ArchiveIcon from '@mui/icons-material/Archive';
 import UnarchiveIcon from '@mui/icons-material/Unarchive';
 import MapIcon from '@mui/icons-material/Map';
+import HearingIcon from '@mui/icons-material/Hearing';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import FastForwardIcon from '@mui/icons-material/FastForward';
@@ -202,6 +203,7 @@ interface NetViewHeaderProps {
   bulkCheckIn: UseDialogResult;
   search: UseDialogResult;
   map: UseDialogResult;
+  coverage: UseDialogResult;
   script: UseDialogResult;
   scheduleAnnouncements: UseDialogResult;
   announcements: UseDialogResult;
@@ -313,6 +315,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
   bulkCheckIn,
   search,
   map,
+  coverage,
   script,
   scheduleAnnouncements,
   announcements,
@@ -391,6 +394,16 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
       visible: checkInsCount > 0,
       Icon: MapIcon, color: theme.palette.primary.main, label: 'Map',
       tooltip: 'View check-in locations on map', onClick: map.onOpen,
+    },
+    {
+      // No other gate beyond the net-level toggle - matches the inline
+      // Station Coverage block this replaces, which showed for any status
+      // so NCS can watch coverage build as reports come in, not only once
+      // the net is closed.
+      key: 'coverage', group: 'info', priority: 2,
+      visible: net.propagation_logging_enabled,
+      Icon: HearingIcon, color: theme.palette.primary.main, label: 'Coverage',
+      tooltip: 'View station-to-station coverage reports', onClick: coverage.onOpen,
     },
     {
       key: 'audio', group: 'info', priority: 1,

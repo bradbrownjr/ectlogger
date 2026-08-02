@@ -69,7 +69,6 @@ import TopicHistory from '../components/TopicHistory';
 import FloatingWindow from '../components/FloatingWindow';
 import UserProfileDialog from '../components/UserProfileDialog';
 import CanHearDialog from '../components/netview/CanHearDialog';
-import CoverageReport from '../components/netview/CoverageReport';
 
 interface Frequency {
   id: number;
@@ -181,6 +180,7 @@ const NetView: React.FC = () => {
   const [mobileCheckInExpanded, setMobileCheckInExpanded] = useState(false);
   const frequencyDialog = useDialog();
   const map = usePersistedDialog(STORAGE_KEYS.MAP_OPEN);
+  const coverage = usePersistedDialog(STORAGE_KEYS.COVERAGE_OPEN);
   const bulkCheckIn = useDialog();
   const [hideDuplicates, setHideDuplicates] = useLocalStorage<boolean>(STORAGE_KEYS.CHECKIN_HIDE_DUPLICATES, false);
   const search = useDialog();
@@ -259,10 +259,12 @@ const NetView: React.FC = () => {
   const [announcementsDockedPref, setAnnouncementsDockedPref] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.ANNOUNCEMENTS_DOCKED, true);
   const [scheduleAnnouncementsDockedPref, setScheduleAnnouncementsDockedPref] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.SCHEDULE_ANNOUNCEMENTS_DOCKED, true);
   const [mapDockedPref, setMapDockedPref] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.MAP_DOCKED, true);
+  const [coverageDockedPref, setCoverageDockedPref] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.COVERAGE_DOCKED, true);
   const scriptDocked = scriptDockedPref && isXlUp;
   const announcementsDocked = announcementsDockedPref && isXlUp;
   const scheduleAnnouncementsDocked = scheduleAnnouncementsDockedPref && isXlUp;
   const mapDocked = mapDockedPref && isXlUp;
+  const coverageDocked = coverageDockedPref && isXlUp;
   const handleDockScript = () => setScriptDockedPref(true);
   const handleUndockScript = () => setScriptDockedPref(false);
   const handleDockAnnouncements = () => setAnnouncementsDockedPref(true);
@@ -271,12 +273,29 @@ const NetView: React.FC = () => {
   const handleUndockScheduleAnnouncements = () => setScheduleAnnouncementsDockedPref(false);
   const handleDockMap = () => setMapDockedPref(true);
   const handleUndockMap = () => setMapDockedPref(false);
+  const handleDetachCoverage = () => setCoverageDockedPref(false);
+  const handleAttachCoverage = () => setCoverageDockedPref(true);
   // Minimize state for the four docked-only panes above, persisted like
   // Chat/Activity Log's DOCKED_*_MINIMIZED keys.
   const [scriptMinimized, setScriptMinimized] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.SCRIPT_MINIMIZED, false);
   const [announcementsMinimized, setAnnouncementsMinimized] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.ANNOUNCEMENTS_MINIMIZED, false);
   const [scheduleAnnouncementsMinimized, setScheduleAnnouncementsMinimized] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.SCHEDULE_ANNOUNCEMENTS_MINIMIZED, false);
   const [mapMinimized, setMapMinimized] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.MAP_MINIMIZED, false);
+  const [coverageMinimized, setCoverageMinimized] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.COVERAGE_MINIMIZED, false);
+  // Phase 4 "can hear" coverage overlay on/off, and which callsign (if any)
+  // is currently highlighted/filtered - both lifted here (from CheckInMap's
+  // former local state) so the new Coverage panel and the map overlay can
+  // read/drive the same values (see docs for the cross-linking rationale).
+  const [coverageOverlayOn, setCoverageOverlayOn] = useState(false);
+  const [highlightedCallsign, setHighlightedCallsign] = useState<string | null>(null);
+  const handleToggleCoverageOverlay = () => setCoverageOverlayOn(v => !v);
+  // "Show on map" from the Coverage panel's title bar: reveal the map if
+  // it's closed, and ensure the overlay is on either way - an idempotent
+  // "make sure I can see this on the map" action, not a toggle.
+  const handleShowCoverageOnMap = () => {
+    if (!map.open) map.onOpen();
+    setCoverageOverlayOn(true);
+  };
   const [activityLogDetached, setActivityLogDetached] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.FLOATING_ACTIVITY_LOG, false);
   // Frequency filter state - allows filtering check-ins by selected frequencies
   const [filteredFrequencyIds, setFilteredFrequencyIds] = useState<number[]>([]);
@@ -647,16 +666,23 @@ const NetView: React.FC = () => {
     if (mapPopout.open()) map.onClose();
     else setToastMessage('Popup blocked — please allow popups for this site.');
   };
+  const coveragePopout = usePoppedOutWindow(`/nets/${netId}/pane/coverage`, `ectlogger-coverage-${netId}`, 'coverage', 700, 500);
+  const handlePopOutCoverage = () => {
+    if (coveragePopout.open()) coverage.onClose();
+    else setToastMessage('Popup blocked — please allow popups for this site.');
+  };
+  const handleFloatToWindowCoverage = () => { handleAttachCoverage(); handlePopOutCoverage(); };
   // Lets a pane jump directly from the in-page floating overlay to a real
   // window in one click, instead of re-docking first and then popping out.
   const handleFloatToWindowChat = () => { handleAttachChat(); handlePopOutChat(); };
   const handleFloatToWindowActivityLog = () => { handleAttachActivityLog(); handlePopOutActivityLog(); };
   const handleFloatToWindowCheckIns = () => { handleAttachCheckInList(); handlePopOutCheckIns(); };
   const showMapDocked = map.open && mapDocked;
-  // True once neither Chat, Activity Log, nor Map has anything docked —
-  // the side column disappears entirely in that case, so the check-in
-  // list should expand to fill it.
-  const sidePanelsEmpty = (chatDetached || chatPopout.isOpen) && (activityLogDetached || activityLogPopout.isOpen) && !showMapDocked;
+  const showCoverageDocked = coverage.open && coverageDocked;
+  // True once neither Chat, Activity Log, Map, nor Coverage has anything
+  // docked — the side column disappears entirely in that case, so the
+  // check-in list should expand to fill it.
+  const sidePanelsEmpty = (chatDetached || chatPopout.isOpen) && (activityLogDetached || activityLogPopout.isOpen) && !showMapDocked && !showCoverageDocked;
 
   const leftPanelsActive = (script.open && scriptDocked) || (announcements.open && announcementsDocked) || (scheduleAnnouncements.open && scheduleAnnouncementsDocked);
   const centerActive = !checkInListDetached && !checkInsPopout.isOpen;
@@ -1364,6 +1390,7 @@ const NetView: React.FC = () => {
         bulkCheckIn={bulkCheckIn}
         search={search}
         map={map}
+        coverage={coverage}
         script={script}
         scheduleAnnouncements={scheduleAnnouncements}
         announcements={announcements}
@@ -1606,23 +1633,6 @@ const NetView: React.FC = () => {
                     </Grid>
                   )}
                 </Grid>
-              </Box>
-            )}
-
-            {/* Station Coverage ("can hear" propagation) report - live during
-                and after the net, not just in the exported PDF. Gated on the
-                net-level toggle (Phase 2); shows for any status so NCS can
-                watch coverage build as reports come in, not only once closed. */}
-            {net.propagation_logging_enabled && (
-              <Box sx={{ border: 1, borderColor: 'divider', borderTop: 0, p: 2, backgroundColor: 'background.paper' }}>
-                <Typography variant="subtitle2" gutterBottom>📡 Station Coverage</Typography>
-                <CoverageReport
-                  netId={net.id}
-                  reports={canHearReports}
-                  frequencyLabels={Object.fromEntries(
-                    (net.frequencies || []).map((f: any) => [f.id, `${f.frequency || f.network || ''} ${f.mode || ''}`.trim()])
-                  )}
-                />
               </Box>
             )}
 
@@ -2234,6 +2244,21 @@ const NetView: React.FC = () => {
               onMinimizeMap={() => setMapMinimized(true)}
               onRestoreMap={() => setMapMinimized(false)}
               canHearReports={canHearReports}
+              coverageOpen={coverage.open}
+              coverageDocked={coverageDocked}
+              coverageMinimized={coverageMinimized}
+              onCloseCoverage={coverage.onClose}
+              onUndockCoverage={handleDetachCoverage}
+              onAttachCoverage={handleAttachCoverage}
+              handlePopOutCoverage={handlePopOutCoverage}
+              handleFloatToWindowCoverage={handleFloatToWindowCoverage}
+              onMinimizeCoverage={() => setCoverageMinimized(true)}
+              onRestoreCoverage={() => setCoverageMinimized(false)}
+              coverageOverlayOn={coverageOverlayOn}
+              onToggleCoverageOverlay={handleToggleCoverageOverlay}
+              highlightedCallsign={highlightedCallsign}
+              setHighlightedCallsign={setHighlightedCallsign}
+              onShowCoverageOnMap={handleShowCoverageOnMap}
             />
           </Grid>
         )}
@@ -2472,6 +2497,9 @@ const NetView: React.FC = () => {
         frequencyLabels={Object.fromEntries(
           (net?.frequencies || []).map((f: any) => [f.id, `${f.frequency || f.network || ''} ${f.mode || ''}`.trim()])
         )}
+        coverageOverlayOn={coverageOverlayOn}
+        onToggleCoverageOverlay={handleToggleCoverageOverlay}
+        highlightedCallsign={highlightedCallsign}
       />
       )}
 

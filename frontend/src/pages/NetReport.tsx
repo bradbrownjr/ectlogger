@@ -1458,6 +1458,7 @@ const NetReport: React.FC = () => {
                 netId={net.id}
                 reports={canHearReports}
                 frequencyLabels={Object.fromEntries(net.frequencies.map(f => [f.id, getFrequencyLabel(f)]))}
+                showFrequencyColumn={net.frequencies.length > 1}
               />
             </Box>
           </>
