@@ -4,6 +4,7 @@ import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
 import FormRenderer from './FormRenderer';
 import ArlMessagePicker from './ArlMessagePicker';
+import HxCodeField from './HxCodeField';
 import { FormDefinition } from '../../hooks/useFormDefinitions';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNtsAssist } from '../../hooks/useNtsAssist';
@@ -112,20 +113,19 @@ const RadiogramAssist: React.FC<RadiogramAssistProps> = ({ definition, values, o
     <Box>
       <FormRenderer definition={genericDefinition} values={values} onChange={onChange} errors={errors} disabled={disabled} />
 
-      {/* ========== HANDLING (HX) FIELD WITH HELP POPOVER ========== */}
+      {/* ========== HANDLING (HX) FIELD -- fixed set of 7 codes, so a dropdown, never free text ========== */}
       {handlingField && (
         <Box sx={{ mt: 2, display: 'flex', alignItems: 'flex-start', gap: 0.5 }}>
-          <TextField
-            fullWidth
-            label={handlingField.label}
-            value={values.handling ?? ''}
-            disabled={disabled}
-            required={handlingField.is_required}
-            error={Boolean(errors?.handling)}
-            helperText={errors?.handling || handlingField.description || undefined}
-            onChange={(e) => onChange('handling', e.target.value)}
-            inputProps={handlingField.max_length ? { maxLength: handlingField.max_length } : undefined}
-          />
+          <Box sx={{ flexGrow: 1 }}>
+            <HxCodeField
+              label={handlingField.label}
+              value={values.handling ?? ''}
+              onChange={(v) => onChange('handling', v)}
+              disabled={disabled}
+              required={handlingField.is_required}
+              error={errors?.handling}
+            />
+          </Box>
           {handlingField.help_text && (
             <>
               <IconButton
