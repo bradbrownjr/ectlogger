@@ -1,5 +1,6 @@
 import React from 'react';
 import { printPageStyle, gridTableStyle, cellStyle, labelCaptionStyle, formatFiledDate } from './printStyles';
+import { formatText5Words } from '../../../utils/ntsText';
 
 // ========== RadiogramPrintView ==========
 // A pixel-accurate replica of the ARRL Radiogram pad (the standard NTS
@@ -39,9 +40,10 @@ const RadiogramPrintView: React.FC<RadiogramPrintViewProps> = ({ id, form }) => 
   const toName = [v.to_name, v.to_callsign].filter(Boolean).join(' ');
   const toCityStateZip = [v.to_city_state, v.to_zip].filter(Boolean).join(' ');
 
-  const bodyLines = (form.normalized_text || v.text || '')
-    .split('\n')
-    .filter((line: string, i: number, arr: string[]) => !(i === arr.length - 1 && line === ''));
+  // Form.normalized_text is stored flat (no line breaks) -- the 5-word-per-line
+  // grouping is applied only at format time, same as the backend's plaintext
+  // export (app/traffic/nts_text.py::_format_text_5words).
+  const bodyLines = formatText5Words(form.normalized_text || v.text || '').split('\n').filter(Boolean);
   const messageLines = [...bodyLines];
   while (messageLines.length < MIN_MESSAGE_LINES) messageLines.push('');
 

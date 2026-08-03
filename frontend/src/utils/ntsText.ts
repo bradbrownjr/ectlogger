@@ -104,3 +104,20 @@ export function normalizeAndCount(text: string): [string, number] {
   const check = countNtsCheck(normalized);
   return [normalized, check];
 }
+
+/**
+ * Format already-normalized NTS text in groups of 5 words per line, matching
+ * the plaintext radiogram's body layout. Ported from
+ * backend/app/traffic/nts_text.py::_format_text_5words. Form.normalized_text
+ * is stored flat (no line breaks) -- this grouping is applied only at format
+ * time, by the backend's format_nts_radiogram and, here, by
+ * RadiogramPrintView.tsx's PDF export.
+ */
+export function formatText5Words(text: string): string {
+  const words = text.split(/\s+/).filter(Boolean);
+  const chunks: string[] = [];
+  for (let i = 0; i < words.length; i += 5) {
+    chunks.push(words.slice(i, i + 5).join(' '));
+  }
+  return chunks.join('\n');
+}
