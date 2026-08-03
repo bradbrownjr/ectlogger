@@ -140,7 +140,11 @@ const FitBounds: React.FC<{ positions: [number, number][] }> = ({ positions }) =
   useEffect(() => {
     if (positions.length > 0) {
       const bounds = L.latLngBounds(positions.map(p => L.latLng(p[0], p[1])));
-      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 10 });
+      // animate: false -- these are static report maps (scroll/zoom already
+      // disabled), and an animated pan risks the PDF export's html2canvas
+      // snapshot landing mid-transition, where marker/polyline layers can be
+      // captured at different points in the animation and appear misaligned.
+      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 10, animate: false });
     }
   }, [map, positions]);
 
