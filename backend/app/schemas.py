@@ -1776,3 +1776,12 @@ class ImportPreviewResponse(BaseModel):
     warnings: List[str] = Field(default_factory=list)
     unparsed_lines: List[str] = Field(default_factory=list)
     raw_text: Optional[str] = None
+
+
+class TrafficInboxResponse(BaseModel):
+    """GET /traffic/inbox: the caller's pending-held traffic, oldest first.
+    Backs both the navbar badge (count only) and the Profile "My Traffic" tab
+    and TrafficInbox.tsx (count + items). See TRAFFIC-HANDLING-DESIGN.md
+    section 2.5 -- the inbox is a query, not a table."""
+    count: int
+    items: List[FormResponse] = Field(default_factory=list)

@@ -1,8 +1,9 @@
 """
-Tests for the traffic_logged WebSocket broadcast (routers/traffic_forms.py::
-create_form). See TRAFFIC-HANDLING-DESIGN.md section 3.6: it fires only for
-a form filed on a net (net_id is set) -- a standalone form has no net
-connection group to notify. Follows the same patch("app.main.manager.
+Tests for the traffic_logged and traffic_log_changed WebSocket broadcasts
+(routers/traffic_forms.py::create_form and routers/traffic_log.py::
+append_log_entry). See TRAFFIC-HANDLING-DESIGN.md section 3.6: both fire
+only for a form filed on a net (net_id is set) -- a standalone form has no
+net connection group to notify. Follows the same patch("app.main.manager.
 broadcast", ...) pattern as test_chat.py.
 """
 from unittest.mock import AsyncMock, patch
@@ -57,6 +58,56 @@ async def test_traffic_logged_not_broadcast_for_standalone_form(client, db, owne
         resp = await client.post(
             "/api/traffic/forms",
             json={"form_type": "RADIOGRAM", "field_values": RADIOGRAM_VALUES},
+            headers=auth_headers(owner),
+        )
+        assert resp.status_code == 201
+        mock_broadcast.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_traffic_log_changed_broadcasts_when_net_id_set(client, db, owner):
+    await upsert_form_definitions(db)
+    net_resp = await client.post("/api/nets/", json={"name": "WS Traffic Log Net"}, headers=auth_headers(owner))
+    net_id = net_resp.json()["id"]
+
+    create_resp = await client.post(
+        "/api/traffic/forms",
+        json={"form_type": "RADIOGRAM", "net_id": net_id, "field_values": RADIOGRAM_VALUES},
+        headers=auth_headers(owner),
+    )
+    form_id = create_resp.json()["id"]
+
+    with patch("app.main.manager.broadcast", new_callable=AsyncMock) as mock_broadcast:
+        resp = await client.post(
+            f"/api/traffic/forms/{form_id}/log",
+            json={"action": "relayed", "handed_to": "W1AW"},
+            headers=auth_headers(owner),
+        )
+        assert resp.status_code == 201
+
+        mock_broadcast.assert_called_once()
+        payload, broadcast_net_id = mock_broadcast.call_args[0]
+        assert payload["type"] == "traffic_log_changed"
+        assert payload["data"]["net_id"] == net_id
+        assert payload["data"]["form_id"] == form_id
+        assert broadcast_net_id == net_id
+
+
+@pytest.mark.asyncio
+async def test_traffic_log_changed_not_broadcast_for_standalone_form(client, db, owner):
+    await upsert_form_definitions(db)
+
+    create_resp = await client.post(
+        "/api/traffic/forms",
+        json={"form_type": "RADIOGRAM", "field_values": RADIOGRAM_VALUES},
+        headers=auth_headers(owner),
+    )
+    form_id = create_resp.json()["id"]
+
+    with patch("app.main.manager.broadcast", new_callable=AsyncMock) as mock_broadcast:
+        resp = await client.post(
+            f"/api/traffic/forms/{form_id}/log",
+            json={"action": "relayed", "handed_to": "W1AW"},
             headers=auth_headers(owner),
         )
         assert resp.status_code == 201

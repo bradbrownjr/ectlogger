@@ -475,6 +475,7 @@ write. These are the authoritative events:
 | `can_hear_changed` | `routers/can_hear.py` — a "who can this station hear?" report was saved |
 | `chat_message`, `chat_reaction`, `chat_image` | `routers/chat.py` |
 | `traffic_logged` | `routers/traffic_forms.py` — a form was filed on this net (`net_id` set); the per-net Traffic panel refetches its list and summary. Only fires when the form has a net; a standalone form has no connection group to notify |
+| `traffic_log_changed` | `routers/traffic_log.py` — a chain-of-custody hop was appended to a form on this net (`net_id` set); the Traffic panel and the inbox badge refetch. Same not-fired-for-standalone-forms rule as `traffic_logged` |
 | `ping` | `main.py` keepalive |
 
 **Client-originated (relayed)** — the socket handler in `main.py` sanitizes whatever a

@@ -6,6 +6,7 @@ import {
   Box,
   Tabs,
   Tab,
+  Badge,
   Typography,
   Card,
   CardActionArea,
@@ -16,6 +17,7 @@ import {
   CircularProgress,
 } from '@mui/material';
 import ListAltIcon from '@mui/icons-material/ListAlt';
+import InboxIcon from '@mui/icons-material/Inbox';
 import AddIcon from '@mui/icons-material/Add';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -24,20 +26,22 @@ import { trafficApi } from '../services/api';
 import { getErrorMessage } from '../utils/apiErrors';
 import { useFormDefinitions, FormDefinition } from '../hooks/useFormDefinitions';
 import { useTrafficList } from '../hooks/useTrafficList';
+import useTrafficInbox from '../hooks/useTrafficInbox';
 import TrafficFilters from '../components/traffic/TrafficFilters';
 import TrafficTable from '../components/traffic/TrafficTable';
 import TrafficDetail from '../components/traffic/TrafficDetail';
+import TrafficInbox from '../components/traffic/TrafficInbox';
 import FormRenderer from '../components/traffic/FormRenderer';
 import RadiogramAssist from '../components/traffic/RadiogramAssist';
 import ImportPreview from '../components/traffic/ImportPreview';
 
 // ========== Traffic page ==========
-// The canonical Traffic section: Browse, New, and Import this phase (Inbox
-// and Definitions tabs are later phases -- the tab list is structured so
-// adding them is inserting an index, not restructuring). See
+// The canonical Traffic section: Browse, Inbox, New, and Import this phase
+// (Definitions is a later phase -- the tab list is structured so adding it is
+// inserting an index, not restructuring). See
 // docs/concepts/TRAFFIC-HANDLING-DESIGN.md section 4.2.
 
-const MAX_TAB_INDEX = 2; // Browse (0), New (1), Import (2) -- raise when Inbox/Definitions land
+const MAX_TAB_INDEX = 3; // Browse (0), Inbox (1), New (2), Import (3) -- raise when Definitions lands
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -54,8 +58,10 @@ function TabPanel({ children, value, index }: TabPanelProps) {
 }
 
 // ========== BROWSE TAB ==========
-const BrowseTab: React.FC<{ definitions: FormDefinition[]; onViewForm: (id: number) => void }> = ({ definitions, onViewForm }) => {
-  const { items, total, loading, error, filters, setFilters, page, setPage, pageSize } = useTrafficList();
+const BrowseTab: React.FC<{ definitions: FormDefinition[]; onViewForm: (id: number) => void; initialHeldByMe?: boolean }> = ({ definitions, onViewForm, initialHeldByMe }) => {
+  const { items, total, loading, error, filters, setFilters, page, setPage, pageSize } = useTrafficList(
+    initialHeldByMe ? { held_by_me: true } : undefined
+  );
   const { user } = useAuth();
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
 
@@ -181,8 +187,12 @@ const Traffic: React.FC = () => {
     return isNaN(tab) ? 0 : Math.min(tab, MAX_TAB_INDEX);
   });
   const { definitions, loading: definitionsLoading, error: definitionsError } = useFormDefinitions();
+  const { count: inboxCount } = useTrafficInbox();
 
   const viewingId = searchParams.get('id');
+  // Deep-link from Profile's "My Traffic" tab (TRAFFIC-HANDLING-DESIGN.md
+  // section 4.5): pre-filters the Browse tab to only what the caller holds.
+  const heldByMe = searchParams.get('held_by_me') === '1';
 
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
@@ -255,8 +265,19 @@ const Traffic: React.FC = () => {
             sx={{ '& .MuiTab-root': { minWidth: { xs: 80, sm: 120 }, px: { xs: 1.5, sm: 2 } } }}
           >
             <Tab icon={<ListAltIcon />} iconPosition="start" label="Browse" id="traffic-tab-0" aria-controls="traffic-tabpanel-0" />
-            <Tab icon={<AddIcon />} iconPosition="start" label="New" id="traffic-tab-1" aria-controls="traffic-tabpanel-1" />
-            <Tab icon={<UploadFileIcon />} iconPosition="start" label="Import" id="traffic-tab-2" aria-controls="traffic-tabpanel-2" />
+            <Tab
+              icon={
+                <Badge color="error" badgeContent={inboxCount} max={99}>
+                  <InboxIcon />
+                </Badge>
+              }
+              iconPosition="start"
+              label="Inbox"
+              id="traffic-tab-1"
+              aria-controls="traffic-tabpanel-1"
+            />
+            <Tab icon={<AddIcon />} iconPosition="start" label="New" id="traffic-tab-2" aria-controls="traffic-tabpanel-2" />
+            <Tab icon={<UploadFileIcon />} iconPosition="start" label="Import" id="traffic-tab-3" aria-controls="traffic-tabpanel-3" />
           </Tabs>
         </Box>
 
@@ -270,22 +291,27 @@ const Traffic: React.FC = () => {
           <>
             {/* ========== Browse Tab ========== */}
             <TabPanel value={tabValue} index={0}>
-              <BrowseTab definitions={definitions} onViewForm={handleViewForm} />
+              <BrowseTab definitions={definitions} onViewForm={handleViewForm} initialHeldByMe={heldByMe} />
+            </TabPanel>
+
+            {/* ========== Inbox Tab ========== */}
+            <TabPanel value={tabValue} index={1}>
+              <TrafficInbox />
             </TabPanel>
 
             {/* ========== New Tab ========== */}
-            <TabPanel value={tabValue} index={1}>
+            <TabPanel value={tabValue} index={2}>
               <NewTab definitions={definitions} onCreated={handleCreated} />
             </TabPanel>
 
             {/* ========== Import Tab ========== */}
-            <TabPanel value={tabValue} index={2}>
+            <TabPanel value={tabValue} index={3}>
               <ImportPreview
                 definitions={definitions}
                 onCreated={handleCreated}
                 onGoToNewTab={() => {
-                  setTabValue(1);
-                  setSearchParams({ tab: '1' });
+                  setTabValue(2);
+                  setSearchParams({ tab: '2' });
                 }}
               />
             </TabPanel>

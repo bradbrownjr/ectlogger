@@ -1,35 +1,24 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Box, Paper, Typography, Chip, Divider, CircularProgress, Alert, Grid, Button } from '@mui/material';
 import DescriptionIcon from '@mui/icons-material/Description';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import SendIcon from '@mui/icons-material/Send';
 import { trafficApi } from '../../services/api';
 import { getErrorMessage } from '../../utils/apiErrors';
 import { TrafficForm } from '../../hooks/useTrafficList';
 import { FormDefinition } from '../../hooks/useFormDefinitions';
-import { formatDateTime } from '../../utils/dateUtils';
+import TrafficLogTimeline, { TrafficLogEntry } from './TrafficLogTimeline';
+import RelayLogDialog from './RelayLogDialog';
 
 // ========== TrafficDetail ==========
-// Read view of a single form: field values, disposition, and a count/list of
-// log entries. Self-contained (fetches its own data from formId) since
-// nothing outside it reads this state -- see DEVELOPMENT.md's frontend
-// component-split pattern. The full chain-of-custody timeline UI
-// (TrafficLogTimeline.tsx) is a later phase; this phase shows entries as a
-// simple list.
-
-interface TrafficLogEntrySummary {
-  id: number;
-  sequence: number;
-  action: string;
-  method: string | null;
-  handed_to: string | null;
-  path_name: string | null;
-  note: string | null;
-  occurred_at: string;
-}
+// Read view of a single form: field values, disposition, the chain-of-custody
+// timeline, and the "Log a handoff" entry point. Self-contained (fetches its
+// own data from formId) since nothing outside it reads this state -- see
+// DEVELOPMENT.md's frontend component-split pattern.
 
 interface FormDetail extends TrafficForm {
   definition: FormDefinition;
-  log_entries: TrafficLogEntrySummary[];
+  log_entries: TrafficLogEntry[];
 }
 
 interface TrafficDetailProps {
@@ -41,11 +30,22 @@ const TrafficDetail: React.FC<TrafficDetailProps> = ({ formId }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [exportingFormat, setExportingFormat] = useState<'text' | 'pdf' | null>(null);
+  const [handoffOpen, setHandoffOpen] = useState(false);
+
+  const refetch = useCallback(() => {
+    setError(null);
+    return trafficApi.get(formId)
+      .then((res) => {
+        setForm(res.data);
+      })
+      .catch((err) => {
+        setError(getErrorMessage(err, 'Failed to load this traffic item'));
+      });
+  }, [formId]);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    setError(null);
     trafficApi.get(formId)
       .then((res) => {
         if (!cancelled) setForm(res.data);
@@ -60,6 +60,20 @@ const TrafficDetail: React.FC<TrafficDetailProps> = ({ formId }) => {
       cancelled = true;
     };
   }, [formId]);
+
+  // Refetch when the WebSocket relays a traffic_log_changed event for this
+  // form's net (dispatched as a window CustomEvent by useNetWebSocket.ts),
+  // so the timeline stays current if a hop is logged from another tab/client
+  // while this detail view is open.
+  useEffect(() => {
+    const handleTrafficLogChanged = (event: any) => {
+      if (event.detail?.form_id === formId) {
+        refetch();
+      }
+    };
+    window.addEventListener('trafficLogChanged', handleTrafficLogChanged);
+    return () => window.removeEventListener('trafficLogChanged', handleTrafficLogChanged);
+  }, [formId, refetch]);
 
   if (loading) {
     return (
@@ -140,25 +154,29 @@ const TrafficDetail: React.FC<TrafficDetailProps> = ({ formId }) => {
 
       <Divider sx={{ my: 2 }} />
 
-      <Typography variant="subtitle2" sx={{ mb: 1 }}>
-        Chain of custody ({form.log_entries.length})
-      </Typography>
-      {form.log_entries.length === 0 ? (
-        <Typography variant="body2" color="text.secondary">No log entries yet.</Typography>
-      ) : (
-        form.log_entries.map((entry) => (
-          <Box key={entry.id} sx={{ display: 'flex', alignItems: 'baseline', gap: 2, py: 0.5 }}>
-            <Typography variant="body2" color="text.secondary" sx={{ width: 140, flexShrink: 0 }}>
-              {formatDateTime(entry.occurred_at)}
-            </Typography>
-            <Typography variant="body2">
-              {entry.action}
-              {entry.handed_to ? ` — to ${entry.handed_to}` : ''}
-              {entry.path_name ? ` via ${entry.path_name}` : ''}
-              {entry.note ? ` (${entry.note})` : ''}
-            </Typography>
-          </Box>
-        ))
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+        <Typography variant="subtitle2">
+          Chain of custody ({form.log_entries.length})
+        </Typography>
+        <Button
+          size="small"
+          variant="outlined"
+          startIcon={<SendIcon />}
+          onClick={() => setHandoffOpen(true)}
+          sx={{ minHeight: 44 }}
+        >
+          Log Handoff
+        </Button>
+      </Box>
+      <TrafficLogTimeline entries={form.log_entries} formCreatedById={form.created_by_id} />
+
+      {handoffOpen && (
+        <RelayLogDialog
+          open
+          formId={form.id}
+          onClose={() => setHandoffOpen(false)}
+          onLogged={refetch}
+        />
       )}
     </Paper>
   );

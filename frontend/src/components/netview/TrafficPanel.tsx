@@ -90,9 +90,11 @@ const TrafficPanel: React.FC<TrafficPanelProps> = ({ netId, currentUserId, minim
     refetch();
   }, [refetch]);
 
-  // Refetch when the WebSocket relays a traffic_logged event for this net
-  // (dispatched as a window CustomEvent by useNetWebSocket.ts, matching the
-  // newChatMessage/chatReactionUpdate convention already used by Chat.tsx).
+  // Refetch when the WebSocket relays a traffic_logged or traffic_log_changed
+  // event for this net (dispatched as window CustomEvents by
+  // useNetWebSocket.ts, matching the newChatMessage/chatReactionUpdate
+  // convention already used by Chat.tsx). traffic_log_changed fires whenever
+  // a chain-of-custody hop is appended (disposition/holder may have moved).
   useEffect(() => {
     const handleTrafficLogged = (event: any) => {
       if (event.detail?.net_id === netId) {
@@ -100,7 +102,11 @@ const TrafficPanel: React.FC<TrafficPanelProps> = ({ netId, currentUserId, minim
       }
     };
     window.addEventListener('trafficLogged', handleTrafficLogged);
-    return () => window.removeEventListener('trafficLogged', handleTrafficLogged);
+    window.addEventListener('trafficLogChanged', handleTrafficLogged);
+    return () => {
+      window.removeEventListener('trafficLogged', handleTrafficLogged);
+      window.removeEventListener('trafficLogChanged', handleTrafficLogged);
+    };
   }, [netId, refetch]);
 
   const handleViewAll = () => {

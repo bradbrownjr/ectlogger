@@ -7,6 +7,7 @@ import {
   Typography,
   Button,
   Box,
+  Badge,
   Chip,
   IconButton,
   Drawer,
@@ -26,6 +27,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useThemeMode } from '../contexts/ThemeContext';
 import { useLocation } from '../contexts/LocationContext';
+import useTrafficInbox from '../hooks/useTrafficInbox';
 import UserAvatar from './UserAvatar';
 import FeedbackModal from './FeedbackModal';
 import AboutModal from './AboutModal';
@@ -156,6 +158,7 @@ const NavbarClock: React.FC<NavbarClockProps> = ({ compact = false }) => {
 const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const { user, logout, isAuthenticated, isActualAdmin, simulateRegularUser, toggleSimulateRegularUser } = useAuth();
+  const { count: trafficInboxCount } = useTrafficInbox();
   const { mode, toggleColorMode } = useThemeMode();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -291,7 +294,13 @@ const Navbar: React.FC = () => {
                     {navItems.map((item) => (
                       <ListItem key={item.path} disablePadding>
                         <ListItemButton onClick={() => handleNavigate(item.path)}>
-                          <ListItemIcon>{item.icon}</ListItemIcon>
+                          <ListItemIcon>
+                            {item.path === '/traffic' ? (
+                              <Badge color="error" badgeContent={trafficInboxCount} max={99}>
+                                {item.icon}
+                              </Badge>
+                            ) : item.icon}
+                          </ListItemIcon>
                           <ListItemText primary={item.label} />
                         </ListItemButton>
                       </ListItem>
@@ -384,7 +393,11 @@ const Navbar: React.FC = () => {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               {navItems.map((item) => (
                 <Button key={item.path} color="inherit" onClick={() => navigate(item.path)}>
-                  {item.label}
+                  {item.path === '/traffic' ? (
+                    <Badge color="error" badgeContent={trafficInboxCount} max={99}>
+                      {item.label}
+                    </Badge>
+                  ) : item.label}
                 </Button>
               ))}
 

@@ -170,6 +170,13 @@ export function useNetWebSocket(deps: NetWebSocketDeps): WebSocket | null {
           if (typeof window !== 'undefined' && window.dispatchEvent) {
             window.dispatchEvent(new CustomEvent('trafficLogged', { detail: message.data }));
           }
+        } else if (message.type === 'traffic_log_changed') {
+          // A chain-of-custody hop was appended to a form on this net.
+          // Same window-event relay as traffic_logged -- TrafficPanel.tsx,
+          // TrafficDetail.tsx, and useTrafficInbox.ts all listen for this.
+          if (typeof window !== 'undefined' && window.dispatchEvent) {
+            window.dispatchEvent(new CustomEvent('trafficLogChanged', { detail: message.data }));
+          }
         }
       };
 

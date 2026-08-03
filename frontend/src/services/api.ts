@@ -232,9 +232,9 @@ export const feedbackApi = {
 };
 
 // Traffic API (Assisted Traffic Handling & Forms — radiograms, ICS-213, etc.)
-// See docs/concepts/TRAFFIC-HANDLING-DESIGN.md sections 3.1-3.4 for this
-// phase's surface; the chain-of-custody log/reminder endpoints are later
-// phases.
+// See docs/concepts/TRAFFIC-HANDLING-DESIGN.md sections 3.1-3.4 for the form
+// CRUD/export/import surface and section 3.3 for the chain-of-custody log /
+// inbox surface. Reminder endpoints are a later phase.
 export const trafficApi = {
   // includeDisabled is admin-only (silently ignored server-side otherwise) --
   // used by AdminTrafficTab.tsx so a previously-disabled definition can be
@@ -259,6 +259,13 @@ export const trafficApi = {
   // creates a Form. The review screen hands the result to FormRenderer/
   // RadiogramAssist pre-filled; only the ordinary `create` above commits.
   importPreview: (text: string) => api.post('/traffic/import/preview', { text }),
+
+  // Chain-of-custody log (routers/traffic_log.py)
+  appendLogEntry: (formId: number, data: any) => api.post(`/traffic/forms/${formId}/log`, data),
+  listLogEntries: (formId: number) => api.get(`/traffic/forms/${formId}/log`),
+  deleteLogEntry: (formId: number, entryId: number) =>
+    api.delete(`/traffic/forms/${formId}/log/${entryId}`),
+  getInbox: () => api.get('/traffic/inbox'),
 };
 
 // Contact API (station contacts from check-in history)
