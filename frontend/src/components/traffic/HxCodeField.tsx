@@ -1,11 +1,17 @@
 import React from 'react';
-import { Box, FormControl, FormHelperText, InputLabel, MenuItem, Select, SelectChangeEvent, TextField, Typography } from '@mui/material';
+import { Box, MenuItem, TextField, Typography } from '@mui/material';
 
 // ========== HxCodeField ==========
 // ARRL/NTS handling instructions are a fixed set of seven codes -- there is
 // no valid answer outside HXA-HXG, so this is a dropdown, never free text
 // (see docs/DESIGN.md "Form fields with a fixed set of valid answers").
 // Three codes (HXA/HXB/HXF) carry a numeric parameter; the rest don't.
+//
+// Built on TextField's `select` mode (matching FormRenderer.tsx's choice/
+// yesno fields) rather than a raw <Select>+<InputLabel> -- TextField wires
+// the label's shrink state to the outline's notch internally, which a
+// hand-composed Select does not do automatically when displayEmpty is set,
+// and that mismatch is what caused the label to overlap the "None" text.
 
 interface HxCode {
   code: string;
@@ -47,9 +53,8 @@ const HxCodeField: React.FC<HxCodeFieldProps> = ({ label, value, onChange, disab
   const { code, param } = parseValue(value);
   const selected = HX_CODES.find((h) => h.code === code);
 
-  const handleCodeChange = (e: SelectChangeEvent) => {
-    const newCode = e.target.value;
-    onChange(newCode || '');
+  const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onChange(e.target.value || '');
   };
 
   const handleParamChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -60,16 +65,24 @@ const HxCodeField: React.FC<HxCodeFieldProps> = ({ label, value, onChange, disab
   return (
     <Box>
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
-        <FormControl sx={{ minWidth: 240, flex: '1 1 240px' }} disabled={disabled} required={required} error={Boolean(error)}>
-          <InputLabel id="hx-code-label">{label}</InputLabel>
-          <Select labelId="hx-code-label" label={label} value={code} onChange={handleCodeChange} displayEmpty>
-            <MenuItem value=""><em>None</em></MenuItem>
-            {HX_CODES.map((h) => (
-              <MenuItem key={h.code} value={h.code}>{h.label}</MenuItem>
-            ))}
-          </Select>
-          {error && <FormHelperText>{error}</FormHelperText>}
-        </FormControl>
+        <TextField
+          select
+          label={label}
+          value={code}
+          onChange={handleCodeChange}
+          disabled={disabled}
+          required={required}
+          error={Boolean(error)}
+          helperText={error || undefined}
+          SelectProps={{ displayEmpty: true }}
+          InputLabelProps={{ shrink: true }}
+          sx={{ minWidth: 240, flex: '1 1 240px' }}
+        >
+          <MenuItem value=""><em>None</em></MenuItem>
+          {HX_CODES.map((h) => (
+            <MenuItem key={h.code} value={h.code}>{h.label}</MenuItem>
+          ))}
+        </TextField>
         {selected?.hasParam && (
           <TextField
             label={selected.paramLabel}
