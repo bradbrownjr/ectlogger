@@ -238,6 +238,7 @@ export const trafficApi = {
   listDefinitions: () => api.get('/traffic/definitions'),
   getDefinition: (formType: string) => api.get(`/traffic/definitions/${formType}`),
   updateDefinition: (id: number, data: any) => api.put(`/traffic/definitions/${id}`, data),
+  listArlMessages: () => api.get('/traffic/arl-messages'),
 
   create: (data: any) => api.post('/traffic/forms', data),
   list: (params?: any) => api.get('/traffic/forms', { params }),

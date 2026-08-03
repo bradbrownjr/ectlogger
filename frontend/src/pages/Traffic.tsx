@@ -27,6 +27,7 @@ import TrafficFilters from '../components/traffic/TrafficFilters';
 import TrafficTable from '../components/traffic/TrafficTable';
 import TrafficDetail from '../components/traffic/TrafficDetail';
 import FormRenderer from '../components/traffic/FormRenderer';
+import RadiogramAssist from '../components/traffic/RadiogramAssist';
 
 // ========== Traffic page ==========
 // The canonical Traffic section: Browse and New this phase (Inbox, Import,
@@ -147,7 +148,14 @@ const NewTab: React.FC<{ definitions: FormDefinition[]; onCreated: (id: number) 
       </Button>
       <Typography variant="h6" sx={{ mb: 2 }}>{selected.title}</Typography>
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-      <FormRenderer definition={selected} values={values} onChange={handleChange} disabled={saving} />
+      {/* RADIOGRAM gets the NTS-assisted layer (normalization preview, check
+          counter, ARL picker, HX help, auto-fill); every other form type
+          keeps using the bare generic renderer. */}
+      {selected.form_type === 'RADIOGRAM' ? (
+        <RadiogramAssist definition={selected} values={values} onChange={handleChange} disabled={saving} />
+      ) : (
+        <FormRenderer definition={selected} values={values} onChange={handleChange} disabled={saving} />
+      )}
       <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
         <Button
           variant="contained"

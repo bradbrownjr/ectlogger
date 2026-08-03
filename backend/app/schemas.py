@@ -1509,6 +1509,19 @@ class FormDefinitionResponse(BaseModel):
         )
 
 
+class ArlMessageResponse(BaseModel):
+    """One entry of the ARL numbered-message catalog, for the ArlMessagePicker.
+
+    Static reference data (not DB-backed), so this mirrors the JSON shape in
+    app/traffic/definitions/arl_messages.json directly rather than an ORM row.
+    """
+    num: int
+    word: str
+    group: str
+    text: str
+    blanks: List[str] = Field(default_factory=list)
+
+
 class TrafficLogEntryCreate(BaseModel):
     action: TrafficAction
     method: Optional[RelayMethod] = None

@@ -7,7 +7,8 @@ from typing import List
 from app.database import get_db
 from app.dependencies import get_admin_user, get_current_user
 from app.models import FormDefinition, FormDefinitionField, User
-from app.schemas import FormDefinitionResponse, FormDefinitionUpdate
+from app.schemas import ArlMessageResponse, FormDefinitionResponse, FormDefinitionUpdate
+from app.traffic.arl import get_arl_messages
 
 router = APIRouter(tags=["traffic-definitions"])
 
@@ -27,6 +28,19 @@ async def list_form_definitions(
     )
     definitions = result.scalars().all()
     return [FormDefinitionResponse.from_orm(d) for d in definitions]
+
+
+@router.get("/arl-messages", response_model=List[ArlMessageResponse])
+async def list_arl_messages(
+    current_user: User = Depends(get_current_user),
+):
+    """The ARL numbered-message catalog for the radiogram ArlMessagePicker.
+
+    Static reference data, cached in-process by app/traffic/arl.py -- no DB
+    query needed. Route is declared before /definitions/{form_type} so
+    "arl-messages" is never captured as a form_type path parameter.
+    """
+    return get_arl_messages()
 
 
 @router.get("/definitions/{form_type}", response_model=FormDefinitionResponse)
