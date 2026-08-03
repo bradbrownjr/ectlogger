@@ -2,7 +2,7 @@
   "form_type": "ICS213",
   "title": "ICS-213 General Message Form",
   "description": "General message form for emergency and non-emergency communications. Based on the Incident Command System ICS-213 form used for tactical communications.",
-  "output_format": "generic",
+  "output_format": "ics213",
   "fields": [
     {
       "name": "incident_name",

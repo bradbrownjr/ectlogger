@@ -5,15 +5,10 @@ reminder service, and the ICS-309 exporter should call get_formatter()/
 format_form()/parse_any() rather than inspecting Form.form_type or
 FormDefinition.output_format directly.
 
-Note on the current mapping: RADIOGRAM's definition sets
-output_format="nts_radiogram", but ICS213's sets output_format="generic"
-(see backend/app/traffic/definitions/*.json). "generic" is therefore, today,
-1:1 with ICS213's specific field layout rather than a truly type-agnostic
-renderer -- if a second output_format="generic" definition is ever added with
-a different field set, this registry can no longer tell the two apart. That
-is a pre-existing naming choice in the seed data (out of scope for this
-phase to change unilaterally); flagged here for the roadmap owner to
-consider giving ICS213 its own output_format value in a later phase.
+ICS213 has its own output_format ("ics213"), distinct from "generic", so a
+future truly type-agnostic admin-authored definition (D1, D6) can use
+output_format="generic" without colliding with ICS213's specific field
+layout and formatter.
 """
 from __future__ import annotations
 
@@ -27,12 +22,12 @@ ParseFn = Callable[[str], Dict[str, Any]]
 
 FORMATTERS: Dict[str, Tuple[FormatFn, ParseFn]] = {
     'nts_radiogram': (format_nts_radiogram, parse_nts_radiogram),
-    'generic': (format_ics213, parse_ics213),
+    'ics213': (format_ics213, parse_ics213),
 }
 
 # Detection order for parse_any, per TRAFFIC-HANDLING-DESIGN.md D5: try the
 # radiogram's unambiguous preamble shape first, then ICS-213 label matching.
-_DETECTION_ORDER = ('nts_radiogram', 'generic')
+_DETECTION_ORDER = ('nts_radiogram', 'ics213')
 
 
 def get_formatter(output_format: str) -> Tuple[FormatFn, ParseFn]:

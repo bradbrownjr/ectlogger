@@ -274,8 +274,8 @@ async def test_formatters_registry_dispatches_by_output_format(client, db, owner
     await upsert_form_definitions(db)
 
     assert get_formatter("nts_radiogram") == (format_nts_radiogram, parse_nts_radiogram)
-    assert get_formatter("generic") == (format_ics213, parse_ics213)
-    assert set(FORMATTERS.keys()) == {"nts_radiogram", "generic"}
+    assert get_formatter("ics213") == (format_ics213, parse_ics213)
+    assert set(FORMATTERS.keys()) == {"nts_radiogram", "ics213"}
 
     with pytest.raises(KeyError):
         get_formatter("does_not_exist")
