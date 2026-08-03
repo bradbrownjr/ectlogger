@@ -632,7 +632,6 @@ const NetView: React.FC = () => {
   const handleAttachCheckInList = () => setCheckInListDetached(false);
   const handleDetachChat = () => setChatDetached(true);
   const handleAttachChat = () => setChatDetached(false);
-  const handleDetachActivityLog = () => setActivityLogDetached(true);
   const handleAttachActivityLog = () => setActivityLogDetached(false);
 
   // Pop Chat / Activity Log / Check-In List out into a real, separate
@@ -1465,7 +1464,6 @@ const NetView: React.FC = () => {
               <FloatingWindow
                 title="Check-in List"
                 isDetached={false}
-                onDetach={handleDetachCheckInList}
                 onAttach={handleAttachCheckInList}
                 onPopOut={handlePopOutCheckIns}
                 defaultWidth={900}
@@ -2226,7 +2224,6 @@ const NetView: React.FC = () => {
               handleAttachChat={handleAttachChat}
               handleDetachChat={handleDetachChat}
               handleAttachActivityLog={handleAttachActivityLog}
-              handleDetachActivityLog={handleDetachActivityLog}
               handlePopOutChat={handlePopOutChat}
               handlePopOutActivityLog={handlePopOutActivityLog}
               handleFloatToWindowChat={handleFloatToWindowChat}
@@ -2249,7 +2246,7 @@ const NetView: React.FC = () => {
               coverageMinimized={coverageMinimized}
               onCloseCoverage={coverage.onClose}
               onUndockCoverage={handleDetachCoverage}
-              onAttachCoverage={handleAttachCoverage}
+              onAttachCoverage={isXlUp ? handleAttachCoverage : undefined}
               handlePopOutCoverage={handlePopOutCoverage}
               handleFloatToWindowCoverage={handleFloatToWindowCoverage}
               onMinimizeCoverage={() => setCoverageMinimized(true)}
@@ -2268,7 +2265,6 @@ const NetView: React.FC = () => {
           <FloatingWindow
             title="Check-in List"
             isDetached={true}
-            onDetach={handleDetachCheckInList}
             onAttach={handleAttachCheckInList}
             onPopOut={handleFloatToWindowCheckIns}
             defaultWidth={1300}

@@ -10,19 +10,23 @@ import CloseIcon from '@mui/icons-material/Close';
 import MinimizeIcon from '@mui/icons-material/Minimize';
 import CropSquareIcon from '@mui/icons-material/CropSquare';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import ViewSidebarIcon from '@mui/icons-material/ViewSidebar';
 import { isNetViewLayoutRemembered } from '../utils/localStorageKeys';
 
 interface FloatingWindowProps {
   title: string;
   children: React.ReactNode;
   isDetached: boolean;
-  onDetach?: () => void;
-  // Optional: renders the "dock back to main view" close icon. Omit for a
-  // panel that shouldn't offer re-docking while floating (e.g. an on-demand
-  // panel whose own inner header already provides a real "close/hide"
-  // action) - Chat/Activity Log always pass this since re-docking is their
-  // only way to fully hide themselves.
+  // Optional: renders a "Dock to layout" icon (matching CheckInMap.tsx's own
+  // floating chrome), distinct from onClose below. Chat/Activity Log always
+  // pass this since they have no separate open/closed state -- docking back
+  // is their only "put this away" action. On-demand panels like Coverage
+  // pass both this and onClose, same as CheckInMap's onDock+onClose.
   onAttach?: () => void;
+  // Optional: renders the real Close icon (hides the panel entirely). Only
+  // on-demand panels with their own open/closed state need this -- Chat/
+  // Activity Log have no "closed" state to return to, so they omit it.
+  onClose?: () => void;
   // Optional: lets a floated pane jump straight to a real popped-out window
   // without re-docking first. Only rendered when supplied.
   onPopOut?: () => void;
@@ -45,6 +49,7 @@ const FloatingWindow: React.FC<FloatingWindowProps> = ({
   children,
   isDetached,
   onAttach,
+  onClose,
   onPopOut,
   defaultWidth = 500,
   defaultHeight = 400,
@@ -162,8 +167,13 @@ const FloatingWindow: React.FC<FloatingWindowProps> = ({
             {title}
           </Typography>
           {/* Close is always the rightmost icon (common window-chrome
-              convention: minimize, [actions], close-last). Pop-out sits
-              just before it. */}
+              convention: minimize, [actions], close-last), matching
+              CheckInMap.tsx's own floating chrome. Dock (onAttach) and
+              Close (onClose) are two distinct actions, never conflated --
+              docking back does not hide an on-demand panel like Coverage
+              (its docked pane only renders when the viewport is wide
+              enough), so a floating panel with no real onClose would have
+              no way to be dismissed at all. */}
           <Box sx={{ display: 'flex', gap: 0.5 }}>
             <IconButton
               size="small"
@@ -187,7 +197,17 @@ const FloatingWindow: React.FC<FloatingWindowProps> = ({
               <IconButton
                 size="small"
                 onClick={onAttach}
-                title="Dock back to main view"
+                title="Dock to layout"
+                sx={{ color: 'inherit', p: 0.25 }}
+              >
+                <ViewSidebarIcon fontSize="small" />
+              </IconButton>
+            )}
+            {onClose && (
+              <IconButton
+                size="small"
+                onClick={onClose}
+                title="Close"
                 sx={{ color: 'inherit', p: 0.25 }}
               >
                 <CloseIcon fontSize="small" />
