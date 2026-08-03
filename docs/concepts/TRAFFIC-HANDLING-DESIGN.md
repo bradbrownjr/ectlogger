@@ -750,7 +750,7 @@ knows a message moved is whoever moved it, and that is often not the submitter.
 
 | Method | Path | Auth | Purpose |
 |---|---|---|---|
-| GET | `/traffic/forms/{id}/export` | view perm | `?format=text` returns the RRI/NTS plaintext (ported formatter); `?format=pdf` returns a printable form, matching the existing ICS-309 `StreamingResponse` idiom in `nets_export.py`. |
+| GET | `/traffic/forms/{id}/export` | view perm | `?format=text` (the only format) returns the RRI/NTS plaintext (ported formatter). **Revision (2026-08-03):** the printable PDF used to be generated here too (a reportlab monospace text dump) but is gone — see section 4.6's note on `RadiogramPrintView.tsx`/`ICS213PrintView.tsx`. |
 | POST | `/traffic/import/preview` | user | **Stateless parse only, writes nothing** (D5). Returns detected `form_type`, per-field `value`/`source`/`confidence`, `unparsed_lines`, and `warnings`. |
 
 **No email-send endpoint.** A `POST /traffic/forms/{id}/email` "send it for me" convenience
@@ -842,8 +842,9 @@ Deep-link query params drive the pre-filtered entry points: `/traffic?net_id=123
 | `TrafficLogTimeline.tsx` | Append-only chain of custody as a vertical timeline. First-hand vs second-hand entries are visually distinguished. |
 | `RelayLogDialog.tsx` | Append a hop: action, method (enum select), path name (free text), handed-to (free text with account autocomplete), occurred-at, note. |
 | `TrafficInbox.tsx` | Pending list with age emphasis and the "Log handoff" CTA. |
-| `ImportPreview.tsx` | The parse-review screen: per-field confidence, warnings (especially the check mismatch), unparsed lines, and a Confirm that hands off to `FormRenderer`. |
+| `ImportPreview.tsx` | The parse-review screen: per-field confidence, warnings (especially the check mismatch), unparsed lines, and a Confirm that hands off to `FormRenderer`. Paste or drag-and-drop a text file onto the same box (2026-08-03) — both populate the same `text` state; there is no separate upload path. |
 | `TrafficPanel.tsx` | The embeddable per-net panel. Reused verbatim by NetView. |
+| `print/RadiogramPrintView.tsx`, `print/ICS213PrintView.tsx`, `print/ICS309PrintView.tsx` | Form-accurate print layouts (real box/rule grids matching the ARRL Radiogram pad and FEMA ICS-213/309 forms), added 2026-08-03. See section 4.6. |
 
 ### 4.4 `hooks/`
 
@@ -878,8 +879,35 @@ Deep-link query params drive the pre-filtered entry points: `/traffic?net_id=123
 
 - `utils/ntsText.ts` — the TypeScript port of `normalize_nts_text` and `count_nts_check`,
   used only for the live preview.
-- `utils/trafficPdf.ts` — printable form export, following `utils/pdfExport.ts`.
 - `services/api.ts` — a `trafficApi` method group for every endpoint in section 3.
+
+**Revision (2026-08-03) — form-accurate PDF export.** The originally planned `utils/trafficPdf.ts`
+(a shared printable-export helper, implying a backend-rendered PDF per section 3.4) never
+shipped in that shape. Instead, once the reportlab monospace text dump turned out to look
+nothing like a real radiogram or ICS-213 pad, PDF export moved entirely client-side:
+
+- `components/traffic/print/RadiogramPrintView.tsx` and `ICS213PrintView.tsx` are pixel-accurate
+  replicas of the real ARRL Radiogram pad and FEMA ICS-213 form (box grids, rules, and all),
+  built from the same `field_values`/promoted columns `TrafficDetail.tsx` already has. Delivery
+  -confirmation and signature blocks the operator doesn't fill electronically (the radiogram's
+  "THIS RADIO MESSAGE WAS RECEIVED AT"/REC'D-SENT strip; ICS-213 blocks 8-10, Approved
+  by/Reply/Replied by) print blank and ruled, exactly as they'd appear on a hand-filled paper
+  copy, rather than being invented or omitted.
+- `components/traffic/print/ICS309PrintView.tsx` is the equivalent replica of FEMA's ICS-309
+  Communications Log, fed by a new `?format=json` option on `GET /nets/{id}/export/ics309`
+  (`Ics309LogResponse` in `schemas.py`) that returns the exact same header info and log rows the
+  CSV already wrote — both formats now come from one shared builder,
+  `nets_export.py::_build_ics309_data()`, so they can never diverge. This view is used both by a
+  standalone "ICS-309 PDF" button on NetView (beside the existing CSV download) and inside the
+  full NetReport PDF, replacing that page's own rough approximation — one accurate rendering,
+  not two.
+- All three views are captured with the same `html2canvas` + `jsPDF` pipeline every other PDF
+  export in the app already uses (`utils/pdfExport.ts`'s `exportElementToPdf`), mounted
+  off-screen (not `display:none` — `html2canvas` needs the element laid out) rather than shown
+  in the UI, matching the app's existing per-type bespoke-component pattern (`RadiogramAssist.tsx`
+  already exists alongside the generic `FormRenderer`).
+- The backend PDF branch of `traffic_export.py::export_form` (and its `reportlab` dependency)
+  was removed as dead code once nothing called it any more.
 
 ---
 

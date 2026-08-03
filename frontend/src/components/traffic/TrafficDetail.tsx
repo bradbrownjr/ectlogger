@@ -5,10 +5,13 @@ import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import SendIcon from '@mui/icons-material/Send';
 import { trafficApi } from '../../services/api';
 import { getErrorMessage } from '../../utils/apiErrors';
+import { exportElementToPdf } from '../../utils/pdfExport';
 import { TrafficForm } from '../../hooks/useTrafficList';
 import { FormDefinition } from '../../hooks/useFormDefinitions';
 import TrafficLogTimeline, { TrafficLogEntry } from './TrafficLogTimeline';
 import RelayLogDialog from './RelayLogDialog';
+import RadiogramPrintView from './print/RadiogramPrintView';
+import ICS213PrintView from './print/ICS213PrintView';
 
 // ========== TrafficDetail ==========
 // Read view of a single form: field values, disposition, the chain-of-custody
@@ -87,18 +90,27 @@ const TrafficDetail: React.FC<TrafficDetailProps> = ({ formId }) => {
     return <Alert severity="error">{error || 'Traffic item not found'}</Alert>;
   }
 
-  // Downloads the export as a file, following the same blob-response idiom
-  // as NetView.tsx's handleExportICS309/handleExportCSV (Content-Disposition
-  // filename is set server-side by traffic_export.py).
+  const printViewId = `traffic-print-view-${form.id}`;
+
+  // Text still downloads the server-rendered plaintext file (traffic_export.py),
+  // following the same blob-response idiom as NetView.tsx's handleExportCSV. PDF
+  // instead captures the off-screen RadiogramPrintView/ICS213PrintView below via
+  // the same html2canvas+jsPDF pipeline every other PDF export in the app uses
+  // (utils/pdfExport.ts) -- see TRAFFIC-HANDLING-DESIGN.md section 4.5.
   const handleExport = async (exportFormat: 'text' | 'pdf') => {
     setExportingFormat(exportFormat);
     try {
-      const response = await trafficApi.exportForm(form.id, exportFormat);
+      if (exportFormat === 'pdf') {
+        await exportElementToPdf(printViewId, {
+          filename: `${form.form_type}_${form.message_number || form.id}`,
+        });
+        return;
+      }
+      const response = await trafficApi.exportForm(form.id, 'text');
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      const extension = exportFormat === 'text' ? 'txt' : 'pdf';
-      link.setAttribute('download', `${form.form_type}_${form.message_number || form.id}.${extension}`);
+      link.setAttribute('download', `${form.form_type}_${form.message_number || form.id}.txt`);
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -178,6 +190,18 @@ const TrafficDetail: React.FC<TrafficDetailProps> = ({ formId }) => {
           onLogged={refetch}
         />
       )}
+
+      {/* Off-screen form-accurate print view, captured by handleExport('pdf') above.
+          Always mounted (not conditional on the export click) so exportElementToPdf
+          finds it in the DOM the moment the button is pressed -- positioned off
+          canvas rather than display:none since html2canvas needs it laid out. */}
+      <Box sx={{ position: 'fixed', top: 0, left: -9999, width: 0, height: 0, overflow: 'hidden' }}>
+        {form.form_type === 'RADIOGRAM' ? (
+          <RadiogramPrintView id={printViewId} form={form} />
+        ) : form.form_type === 'ICS213' ? (
+          <ICS213PrintView id={printViewId} form={form} />
+        ) : null}
+      </Box>
     </Paper>
   );
 };

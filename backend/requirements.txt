@@ -40,5 +40,3 @@ Pillow>=10.0.0
 # Rate Limiting
 slowapi>=0.1.9
 
-# PDF Export
-reportlab>=4.0.0

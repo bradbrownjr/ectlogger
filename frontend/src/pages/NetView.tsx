@@ -57,6 +57,8 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { netApi, checkInApi, netRoleApi, templateApi, canHearApi } from '../services/api';
 import api from '../services/api';
+import { exportElementToPdf } from '../utils/pdfExport';
+import ICS309PrintView, { Ics309LogData } from '../components/traffic/print/ICS309PrintView';
 import { useAuth } from '../contexts/AuthContext';
 import { useLocation } from '../contexts/LocationContext';
 import CheckInMap from '../components/CheckInMap';
@@ -950,7 +952,7 @@ const NetView: React.FC = () => {
       const response = await api.get(`/nets/${netId}/export/ics309`, {
         responseType: 'blob',
       });
-      
+
       // Create download link
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
@@ -964,6 +966,31 @@ const NetView: React.FC = () => {
       console.error('Failed to export ICS-309:', error);
     }
   };
+
+  // Form-accurate ICS-309 PDF, via ICS309PrintView + utils/pdfExport.ts (same
+  // pipeline as TrafficDetail.tsx's radiogram/ICS-213 PDFs). Unlike those, the
+  // data isn't already on the page -- fetch it, mount the off-screen print
+  // view below, then export it once the effect confirms it painted.
+  const [ics309PrintData, setIcs309PrintData] = useState<Ics309LogData | null>(null);
+
+  const handleExportICS309Pdf = async () => {
+    try {
+      const response = await netApi.getIcs309Log(Number(netId));
+      setIcs309PrintData(response.data);
+    } catch (error) {
+      console.error('Failed to export ICS-309 PDF:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (!ics309PrintData) return;
+    exportElementToPdf('ics309-print-view', {
+      filename: `ICS309_${net?.name.replace(/ /g, '_') || 'net'}`,
+    })
+      .catch((error) => console.error('Failed to export ICS-309 PDF:', error))
+      .finally(() => setIcs309PrintData(null));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ics309PrintData]);
 
   // State for archive undo functionality
   const [pendingArchive, setPendingArchive] = React.useState<boolean>(false);
@@ -1423,10 +1450,20 @@ const NetView: React.FC = () => {
         onGoLive={handleGoLive}
         onExportCSV={handleExportCSV}
         onExportICS309={handleExportICS309}
+        onExportICS309Pdf={handleExportICS309Pdf}
         onArchive={handleArchive}
         onUnarchive={handleUnarchive}
         onDelete={handleDelete}
       />
+
+      {/* Off-screen form-accurate ICS-309 print view, mounted only while
+          handleExportICS309Pdf's fetch is resolving/exporting -- see the
+          effect above that captures it via exportElementToPdf. */}
+      {ics309PrintData && (
+        <Box sx={{ position: 'fixed', top: 0, left: -9999, width: 0, height: 0, overflow: 'hidden' }}>
+          <ICS309PrintView id="ics309-print-view" data={ics309PrintData} />
+        </Box>
+      )}
 
       {/* Persistent banner while no NCS is actively present — see app/net_pause.py */}
       {!!net.paused_at && (

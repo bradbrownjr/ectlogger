@@ -86,6 +86,7 @@ const ImportPreview: React.FC<ImportPreviewProps> = ({ definitions, onCreated, o
   const [parsing, setParsing] = useState(false);
   const [parseError, setParseError] = useState<string | null>(null);
   const [result, setResult] = useState<ImportResult | null>(null);
+  const [dragOver, setDragOver] = useState(false);
 
   const [values, setValues] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
@@ -128,6 +129,17 @@ const ImportPreview: React.FC<ImportPreviewProps> = ({ definitions, onCreated, o
     setValues((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Reads a dropped file's contents into the paste box, same destination as
+  // typing/pasting. No client-side type/size gate beyond the browser's own
+  // read -- the existing Parse call already surfaces the backend's 32 KB
+  // cap and empty-input rejection via parseError.
+  const handleFileDrop = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = () => setText(String(reader.result ?? ''));
+    reader.onerror = () => setParseError('Could not read that file.');
+    reader.readAsText(file);
+  };
+
   const handleSubmit = async () => {
     if (!matchedDefinition) return;
     setSaving(true);
@@ -147,19 +159,44 @@ const ImportPreview: React.FC<ImportPreviewProps> = ({ definitions, onCreated, o
     return (
       <Box>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Paste the plaintext of a radiogram or ICS-213 message as it was copied off the air, and
-          the parser will fill in what it can. Nothing is saved until you review and confirm.
+          Paste the plaintext of a radiogram or ICS-213 message as it was copied off the air, or
+          drag a text file onto the box below, and the parser will fill in what it can. Nothing is
+          saved until you review and confirm.
         </Typography>
-        <TextField
-          fullWidth
-          multiline
-          minRows={10}
-          placeholder={'NR 123 R HXG KC1JMH 6 PORTLAND ME 1432 JAN 05\nJIM KUTSCH KY2D\n...'}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          sx={{ fontFamily: 'monospace' }}
-          inputProps={{ style: { fontFamily: 'monospace' } }}
-        />
+        <Box
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragOver(true);
+          }}
+          onDragLeave={(e) => {
+            e.preventDefault();
+            setDragOver(false);
+          }}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDragOver(false);
+            const file = e.dataTransfer?.files?.[0];
+            if (file) handleFileDrop(file);
+          }}
+          sx={{
+            position: 'relative',
+            borderRadius: 1,
+            outline: dragOver ? '2px dashed' : 'none',
+            outlineColor: 'primary.main',
+            outlineOffset: 2,
+          }}
+        >
+          <TextField
+            fullWidth
+            multiline
+            minRows={10}
+            placeholder={'NR 123 R HXG KC1JMH 6 PORTLAND ME 1432 JAN 05\nJIM KUTSCH KY2D\n...\n\nOr drag a text file here'}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            sx={{ fontFamily: 'monospace' }}
+            inputProps={{ style: { fontFamily: 'monospace' } }}
+          />
+        </Box>
         {parseError && <Alert severity="error" sx={{ mt: 2 }}>{parseError}</Alert>}
         <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
           <Button

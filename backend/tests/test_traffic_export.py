@@ -1,8 +1,9 @@
 """
 Tests for GET /traffic/forms/{id}/export (routers/traffic_export.py). See
-TRAFFIC-HANDLING-DESIGN.md section 3.4: text format is the ported RRI/NTS
-plaintext (formatters.format_form), pdf is a printable rendering of the same
-text, and there is no email-send endpoint anywhere in this router.
+TRAFFIC-HANDLING-DESIGN.md section 3.4: text is the only export format (the
+ported RRI/NTS plaintext, formatters.format_form) -- the printable PDF is now
+rendered client-side by RadiogramPrintView.tsx/ICS213PrintView.tsx -- and
+there is no email-send endpoint anywhere in this router.
 """
 import pytest
 from sqlalchemy import select
@@ -69,25 +70,12 @@ async def test_export_defaults_to_text_format(client, db, owner):
 
 
 @pytest.mark.asyncio
-async def test_export_pdf_returns_pdf_content_type(client, db, owner):
-    await upsert_form_definitions(db)
-    form_id = await _create_form(client, owner)
-
-    resp = await client.get(
-        f"/api/traffic/forms/{form_id}/export", params={"format": "pdf"}, headers=auth_headers(owner)
-    )
-    assert resp.status_code == 200
-    assert resp.headers["content-type"] == "application/pdf"
-    assert resp.content[:5] == b"%PDF-"
-
-
-@pytest.mark.asyncio
 async def test_export_rejects_unknown_format(client, db, owner):
     await upsert_form_definitions(db)
     form_id = await _create_form(client, owner)
 
     resp = await client.get(
-        f"/api/traffic/forms/{form_id}/export", params={"format": "docx"}, headers=auth_headers(owner)
+        f"/api/traffic/forms/{form_id}/export", params={"format": "pdf"}, headers=auth_headers(owner)
     )
     assert resp.status_code == 400
 

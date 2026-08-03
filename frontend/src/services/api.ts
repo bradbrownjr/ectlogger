@@ -99,6 +99,10 @@ export const netApi = {
     api.put(`/nets/${netId}/template`, { template_id: templateId }),
   getTopicResponses: (id: number) => api.get(`/nets/${id}/topic-responses`),
   getPollResults: (id: number) => api.get(`/nets/${id}/poll-results`),
+  // Structured (non-CSV) ICS-309 log, for ICS309PrintView's form-accurate PDF.
+  // Draws from the same _build_ics309_data() as the CSV download so the two
+  // never diverge -- see routers/nets_export.py.
+  getIcs309Log: (id: number) => api.get(`/nets/${id}/export/ics309`, { params: { format: 'json' } }),
 };
 
 // Check-in API
@@ -252,8 +256,10 @@ export const trafficApi = {
   get: (id: number) => api.get(`/traffic/forms/${id}`),
   update: (id: number, data: any) => api.patch(`/traffic/forms/${id}`, data),
   delete: (id: number) => api.delete(`/traffic/forms/${id}`),
-  // responseType 'blob' since this returns a file download (plaintext or PDF), not JSON.
-  exportForm: (id: number, format: 'text' | 'pdf') =>
+  // responseType 'blob' since this returns a plaintext file download. The
+  // printable PDF is rendered client-side now (RadiogramPrintView.tsx /
+  // ICS213PrintView.tsx + utils/pdfExport.ts), not a server format option.
+  exportForm: (id: number, format: 'text' = 'text') =>
     api.get(`/traffic/forms/${id}/export`, { params: { format }, responseType: 'blob' }),
   // Stateless parse-only preview (TRAFFIC-HANDLING-DESIGN.md D5) -- never
   // creates a Form. The review screen hands the result to FormRenderer/

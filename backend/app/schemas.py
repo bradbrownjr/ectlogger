@@ -1785,3 +1785,28 @@ class TrafficInboxResponse(BaseModel):
     section 2.5 -- the inbox is a query, not a table."""
     count: int
     items: List[FormResponse] = Field(default_factory=list)
+
+
+class Ics309LogEntryResponse(BaseModel):
+    """One row of the ICS-309 Communications Log table -- same shape the CSV
+    exporter has always written (routers/nets_export.py), just structured
+    instead of comma-joined."""
+    time: str
+    from_station: str
+    to_station: str
+    message: str
+
+
+class Ics309LogResponse(BaseModel):
+    """GET /nets/{id}/export/ics309?format=json: the same header info and log
+    rows the CSV export writes, structured for the frontend's ICS309PrintView
+    so both formats render from one query (nets_export.py::_build_ics309_data)
+    instead of two divergent implementations."""
+    incident_name: str
+    operational_period_from: Optional[str] = None
+    operational_period_to: Optional[str] = None
+    radio_operator: str
+    channel: str
+    entries: List[Ics309LogEntryResponse] = Field(default_factory=list)
+    prepared_by: str
+    prepared_at: Optional[str] = None

@@ -83,6 +83,47 @@ async def test_ics309_export_includes_traffic_rows_when_enabled(client, db, owne
 
 
 @pytest.mark.asyncio
+async def test_ics309_export_json_matches_csv_content(client, db, owner):
+    """?format=json (consumed by the frontend's ICS309PrintView PDF) draws
+    from the same _build_ics309_data() as the CSV, so the two formats must
+    never diverge -- same entries, same privacy guarantee."""
+    await upsert_form_definitions(db)
+    net = Net(name="ICS309 JSON Net", owner_id=owner.id, ics309_enabled=True)
+    db.add(net)
+    await db.commit()
+    await db.refresh(net)
+
+    await _create_form_via_api(client, owner, net_id=net.id)
+
+    resp = await client.get(
+        f"/api/nets/{net.id}/export/ics309", params={"format": "json"}, headers=auth_headers(owner)
+    )
+    assert resp.status_code == 200
+    assert resp.headers["content-type"].startswith("application/json")
+    data = resp.json()
+
+    assert data["incident_name"] == "ICS309 JSON Net"
+    assert len(data["entries"]) == 1
+    entry = data["entries"][0]
+    assert "NR 21" in entry["message"]
+    assert SECRET_BODY_MARKER not in entry["message"]
+
+
+@pytest.mark.asyncio
+async def test_ics309_export_rejects_unknown_format(client, db, owner):
+    await upsert_form_definitions(db)
+    net = Net(name="ICS309 Bad Format Net", owner_id=owner.id)
+    db.add(net)
+    await db.commit()
+    await db.refresh(net)
+
+    resp = await client.get(
+        f"/api/nets/{net.id}/export/ics309", params={"format": "xml"}, headers=auth_headers(owner)
+    )
+    assert resp.status_code == 400
+
+
+@pytest.mark.asyncio
 async def test_ics309_export_never_includes_message_body(client, db, owner):
     """The hard privacy rule: even with traffic rows present, the body text
     (Form.field_values / normalized_text) must never appear in the ICS-309
