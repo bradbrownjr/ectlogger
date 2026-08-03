@@ -54,7 +54,6 @@ interface NetViewSidePanelsProps {
   handleAttachChat: () => void;
   handleDetachChat: () => void;
   handleAttachActivityLog: () => void;
-  handleDetachActivityLog: () => void;
   handlePopOutChat: () => void;
   handlePopOutActivityLog: () => void;
   handleFloatToWindowChat: () => void;
@@ -84,7 +83,10 @@ interface NetViewSidePanelsProps {
   coverageMinimized: boolean;
   onCloseCoverage: () => void;
   onUndockCoverage: () => void;
-  onAttachCoverage: () => void;
+  // Undefined below xl (matching Map's onDock gating in NetView.tsx) since
+  // coverageDocked can never become true there -- omitting it hides a dead
+  // "Dock to layout" button rather than rendering one that's a no-op.
+  onAttachCoverage?: () => void;
   handlePopOutCoverage: () => void;
   handleFloatToWindowCoverage: () => void;
   onMinimizeCoverage: () => void;
@@ -129,7 +131,6 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
   handleAttachChat,
   handleDetachChat,
   handleAttachActivityLog,
-  handleDetachActivityLog,
   handlePopOutChat,
   handlePopOutActivityLog,
   handleFloatToWindowChat,
@@ -338,7 +339,6 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
         <FloatingWindow
           title="Chat"
           isDetached={true}
-          onDetach={handleDetachChat}
           onAttach={handleAttachChat}
           onPopOut={handleFloatToWindowChat}
           defaultWidth={450}
@@ -358,7 +358,6 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
         <FloatingWindow
           title="Activity Log"
           isDetached={true}
-          onDetach={handleDetachActivityLog}
           onAttach={handleAttachActivityLog}
           onPopOut={handleFloatToWindowActivityLog}
           defaultWidth={450}
@@ -373,18 +372,17 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
 
       {/* Floating Station Coverage panel - on-demand like Map (needs
           coverageOpen true, not just "not docked"), unlike Chat/Activity Log
-          which are always present once opted into floating. FloatingWindow's
-          outer bar supplies the "dock back" action here (onAttach), matching
-          Chat/Activity Log's convention exactly - so CoveragePanel's own
-          inner header omits onClose while floating (it stays wired only on
-          the docked instance below, where there's no outer chrome and it's
-          the only way to fully hide the panel). */}
+          which are always present once opted into floating and so have no
+          separate "closed" state. onAttachCoverage (dock, only meaningful
+          on xl+ viewports -- NetView.tsx gates it on isXlUp same as Map's
+          onDock) and onCloseCoverage (real close, always available) are two
+          distinct actions -- see FloatingWindow.tsx's onAttach/onClose. */}
       {coverageOpen && !coverageDocked && (net.status === 'active' || net.status === 'lobby' || net.status === 'closed' || net.status === 'archived') && (
         <FloatingWindow
           title="Station Coverage"
           isDetached={true}
-          onDetach={onUndockCoverage}
           onAttach={onAttachCoverage}
+          onClose={onCloseCoverage}
           onPopOut={handleFloatToWindowCoverage}
           defaultWidth={500}
           defaultHeight={450}
