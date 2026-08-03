@@ -174,6 +174,20 @@ export const exportToPdf = async (
     // without mutating the on-screen UI.
     if (captureMode === 'clone') {
       clone = element.cloneNode(true) as HTMLElement;
+
+      // cloneNode() copies a <canvas> element's attributes but never its
+      // drawn pixel content -- the clone starts blank. Anything rendered to
+      // canvas (e.g. a Leaflet map using preferCanvas for its vector layer)
+      // would otherwise capture as empty. Canvases appear in the same
+      // document order in both trees, so pairing by index is reliable.
+      const originalCanvases = element.querySelectorAll('canvas');
+      const clonedCanvases = clone.querySelectorAll('canvas');
+      originalCanvases.forEach((sourceCanvas, i) => {
+        const targetCanvas = clonedCanvases[i];
+        const ctx = targetCanvas?.getContext('2d');
+        if (ctx) ctx.drawImage(sourceCanvas, 0, 0);
+      });
+
       clone.style.position = 'absolute';
       clone.style.left = '-9999px';
       clone.style.top = '0';
