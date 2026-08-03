@@ -680,14 +680,19 @@ Generate a comprehensive multi-page PDF report for closed or archived nets:
 2. **View Report** — Review the report page with all sections displayed
 3. **Export** — Click **Export PDF** to download the report
 
-**Report Sections** (each on its own page):
+**Report Sections:**
 
 - **ECTLogger Header** — Branded title with site URL for attribution
 - **Net Info** — Name, description, frequencies, NCS operators, start/end times, duration
 - **Statistics Summary** — Cards showing total check-ins, unique operators, rechecks, duration; plus charts for status breakdown and check-ins by frequency
+- **Check-in Map** — Every check-in with a parseable location plotted on a map, color-coded by status (shown only when at least one check-in has a mappable location)
 - **Check-in Log** — Complete table of all check-ins with time, callsign, name, location, status, frequency, and notes
+- **Topic of Week** — Responses to the net's discussion topic (only if enabled for the net)
+- **Poll Results** — Tallied results of the net's poll (only if enabled for the net)
 - **Chat Log** — All user messages (system messages excluded) with timestamps
+- **System Log** — Automated status-change and system chat entries
 - **ICS-309** — Official communications log format (only if ICS-309 is enabled for the net)
+- **Station Coverage** — The sortable "can hear" report table (only if Station-to-Station Coverage Logging is enabled for the net). Toggle **Include per-station maps** to add one map per reporting station, showing that station's pin plus every station it reported hearing — connected by amber lines for confirmed two-way paths and gray dashed lines for one-way reports, with every pin labeled by callsign. Off by default since it can add many pages to a large net's report.
 
 The PDF is ideal for after-action reports, club records, or emergency management documentation.
 

@@ -10,6 +10,8 @@ All notable changes to ECTLogger are documented here.
 
 * **Net View: Station-to-station coverage logging** — NCS, Logger, and Relay can now record which stations can hear each other during a net, not just who NCS hears. Turn it on per net under ARES & EmComm Features, then use the new ear icon on a check-in row to log who that station can hear. A new Coverage panel (alongside Chat, Activity Log, and the Check-In Map) shows the results as a sortable, filterable table, and an overlay on the Check-In Map draws the confirmed one-way and two-way paths — click a callsign in either place to see just that station's connections. This is the coverage-assessment picture ARES and SKYWARN drills need, without the paper notes. Your Profile also gets a personal map of stations you've confirmed hearing from home, each labeled with when you last heard them.
 
+* **Net Report: Per-station coverage maps** — When Station-to-Station Coverage Logging is on, the net report can now include a map for each reporting station showing who it heard, with every pin labeled by callsign, so an after-action report can show propagation station-by-station instead of just as a table. Off by default via a switch on the report's Station Coverage section, since it can add many pages to a large net's report.
+
 ## Improvements
 
 * **Net View: Start Net moved to the front of the toolbar** — On a draft or scheduled net, Start Net is now the very first button, ahead of Net Info and everything else, so it's not buried behind read-only actions.
