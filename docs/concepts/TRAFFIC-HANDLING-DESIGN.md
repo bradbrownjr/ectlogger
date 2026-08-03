@@ -32,8 +32,10 @@ Practical consequences that shaped the design:
   `export`, `remind`.
 - The relay/delivery log records **what the operator says happened on the air**. ECTLogger
   is a witness, not a transport.
-- The one place this constraint is genuinely at risk is "email delivery" (section 6,
-  Stage B) — see Risk R7.
+- An ECTLogger-sent "send it for me" email was considered for Stage B and **rejected** by
+  the roadmap author (2026-08-03) precisely because it was the one place this constraint was
+  genuinely at risk — see Risk R7 (resolved). Stage B only ever *records* that an operator
+  delivered a piece of traffic by email; it never sends the traffic itself.
 
 ---
 
@@ -639,7 +641,6 @@ class TrafficReminderLog(Base):
 | `net_templates` | `traffic_enabled` | `Boolean, default=True` | Seeds the net value, matching `ics309_enabled` / `propagation_logging_enabled`. |
 | `net_templates` | `traffic_escalation_digest` | `Boolean, default=False` | Opt-in weekly stale-traffic digest to the schedule's manager (D4). |
 | `app_settings` | `traffic_reminder_enabled` | `Boolean, default=True` | Instance master switch for the reminder service. |
-| `app_settings` | `traffic_email_delivery_enabled` | `Boolean, default=False` | Instance opt-in for the "send it for me" convenience (Risk R7). Off by default. |
 
 All follow the AppSettings singleton pattern in DEVELOPMENT.md (column, then
 `AppSettingsResponse`/`AppSettingsUpdate`, then `_build_settings_response()` and the
@@ -751,7 +752,13 @@ knows a message moved is whoever moved it, and that is often not the submitter.
 |---|---|---|---|
 | GET | `/traffic/forms/{id}/export` | view perm | `?format=text` returns the RRI/NTS plaintext (ported formatter); `?format=pdf` returns a printable form, matching the existing ICS-309 `StreamingResponse` idiom in `nets_export.py`. |
 | POST | `/traffic/import/preview` | user | **Stateless parse only, writes nothing** (D5). Returns detected `form_type`, per-field `value`/`source`/`confidence`, `unparsed_lines`, and `warnings`. |
-| POST | `/traffic/forms/{id}/email` | view perm | Email a rendered copy. Gated on `app_settings.traffic_email_delivery_enabled`. See Risk R7 before building. |
+
+**No email-send endpoint.** A `POST /traffic/forms/{id}/email` "send it for me" convenience
+was designed here and then explicitly rejected by the roadmap author (2026-08-03, resolving
+Risk R7): ECTLogger never sends the traffic itself, by email or otherwise. Emailing an
+addressee is logged the same way every other delivery method is — as a `traffic_log.py`
+entry with `method = RelayMethod.EMAIL` — after the operator sends it themselves through
+their own email client.
 
 ### 3.5 Integration into existing surfaces (no new endpoints)
 
@@ -869,43 +876,32 @@ Deep-link query params drive the pre-filtered entry points: `/traffic?net_id=123
 
 ---
 
-## 5. BLOCKER — question mark: QUERY or INT?
+## 5. RESOLVED — question mark is QUERY, not INT
 
-**This must be answered by a human NTS/RRI authority before the text formatter ships to
-production. Do not guess, and do not let an implementation agent pick one.**
-
-The two sources disagree:
+**Formerly a blocker; closed 2026-08-03.** The two sources disagreed:
 
 - `http://www.ws1sm.com/Message-Handling.html` (Wireless Society of Southern Maine) states a
   question mark is sent as the prosign **QUERY**.
 - `bpq-apps`'s `normalize_nts_text` — reviewed and approved by ARRL Digital Section Manager
   Jim KY2D — substitutes **INT** (`apps/forms.py` line 1358).
 
-Both cannot be right for the same convention. Plausible explanations include a
-Winlink-versus-classic-NTS difference, or one source simply being dated. Neither can be
-settled by reading code or web pages; it needs confirmation from Jim KY2D or another NTS/RRI
-authority. Getting it wrong produces radiograms that read wrong to every experienced traffic
-handler who receives one, which is the exact credibility this feature depends on.
+**The roadmap author (KC1JMH), WSSM club secretary and Cumberland County ARES EC, confirmed
+QUERY is correct.** `backend/app/traffic/nts_text.py`'s `NTS_SUBSTITUTIONS` table and
+`backend/tests/test_nts_text.py`'s pinned vectors have been updated accordingly; the
+`bpq-apps` reference itself is the outlier here and is not being changed (it isn't ours to
+change), only ECTLogger's port of it.
 
-**Design mitigation — the substitution table is one editable structure, not logic spread
-through a function.** `backend/app/traffic/nts_text.py` exposes the whole punctuation and
-prosign table as a single module-level ordered tuple, and `normalize_nts_text` is a loop over
-it:
+**Why this was easy to fix once answered.** The substitution table was designed as one
+editable structure, not logic spread through a function, specifically so this answer would
+be a one-line change plus its test vector rather than a hunt through the codebase:
 
 ```python
-# The complete NTS punctuation / prosign substitution table, in application order.
-# Order matters: digit-separator handling must run before generic punctuation.
-# Ported verbatim from bpq-apps apps/forms.py::normalize_nts_text.
 NTS_SUBSTITUTIONS = (
     (r'(\d)[.:/](\d)', r'\1R\2',  "decimal / fraction / time colon between digits -> R"),
     (r"'",             '',        "apostrophe dropped"),
     (r'&',             ' AND ',   "ampersand -> AND"),
     (r'@',             ' AT ',    "at-sign -> AT"),
-    # >>> UNCONFIRMED <<< ws1sm.com says QUERY, bpq-apps (ARRL-approved) says INT.
-    # See docs/concepts/TRAFFIC-HANDLING-DESIGN.md section 5. Changing the answer
-    # is this one string plus its test vector. Do not ship to production until
-    # an NTS/RRI authority confirms.
-    (r'\?',            ' INT ',   "question mark -> INT or QUERY (UNRESOLVED)"),
+    (r'\?',            ' QUERY ', "question mark -> QUERY"),
     (r'[()]',          ' ',       "parentheses dropped"),
     (r'(\w)\s*-\s*(\w)', r'\1 X \2', "hyphen between words -> X"),
     (r'-',             ' ',       "remaining hyphens -> space"),
@@ -913,14 +909,7 @@ NTS_SUBSTITUTIONS = (
 )
 ```
 
-Additionally, `backend/tests/test_nts_text.py` pins roughly twenty known-good normalizations
-taken from the reference implementation's behavior, **including the question-mark case**, so
-that flipping the answer is a visible, reviewed, one-line change with a matching test-vector
-edit rather than a silent behavior drift. The same vectors are consumed by the frontend test
-suite (Risk R1).
-
-**Gate:** Stage B (section 6) must not deploy to production until this is closed. Beta
-deployment for UX testing is fine; the blocker is about what goes out on the air.
+No further gate on Stage B's production deploy for this item.
 
 ### 5.1 Second, smaller discrepancy found in the reference itself — resolve during the port
 
@@ -1009,8 +998,9 @@ Every phase ends with the DEVELOPMENT.md checks green: `pytest`, `npm run typech
 
 ### Stage B — On-net entry and email delivery
 
-**Blocked on section 5.** Do not deploy Stage B to production until the QUERY/INT question is
-answered. Beta is fine.
+Section 5's blocker is resolved (QUERY confirmed); no remaining gate on production deploy.
+`GET /traffic/nets/{net_id}/forms` already shipped in Stage A's Phase 3 — Phase 5 task 3
+below is done, listed only for sequencing context.
 
 **Phase 4 — Assisted radiogram entry (Sonnet, with Haiku for 4a)**
 
@@ -1022,17 +1012,21 @@ answered. Beta is fine.
   `station_of_origin` / `place_of_origin` / `filed_time`, ARL picker with blank filling.
 - 4c **(Sonnet)** — `GET /traffic/arl-messages` and `app/traffic/arl.py`.
 
-**Phase 5 — Per-net entry, export, and email (Sonnet)**
+**Phase 5 — Per-net entry and export (Sonnet)**
 
 1. `nets.traffic_enabled` and the two `net_templates` columns, migration `054_`.
 2. `TrafficPanel.tsx` and the NetView side-panel registration, matching the Chat panel pattern.
-3. `GET /traffic/nets/{net_id}/forms` and `/summary`.
+3. ~~`GET /traffic/nets/{net_id}/forms` and `/summary`~~ — the forms list endpoint already
+   shipped in Stage A Phase 3; only `/summary` (counts by disposition plus the outstanding/
+   stale count for the manager badge) is new here.
 4. `traffic_export.py`: plaintext export and PDF export.
-5. `POST /traffic/forms/{id}/email`, gated on `app_settings.traffic_email_delivery_enabled`
-   (default false), following `app/email/` module conventions. **Read Risk R7 before starting
-   this task.**
-6. WebSocket `traffic_logged`; update the DEVELOPMENT.md table and the copilot-instructions
+5. WebSocket `traffic_logged`; update the DEVELOPMENT.md table and the copilot-instructions
    type list.
+
+**No email-send task.** The "send it for me" endpoint originally planned here was rejected
+by the roadmap author (Risk R7, resolved) — see section 3.4. Emailing an addressee is logged
+via the ordinary relay/delivery log (`RelayMethod.EMAIL`, Phase 6) after the operator sends it
+themselves; nothing in this phase sends anything.
 
 ### Stage C — Inbox, reminder loop, and stats rollup
 
@@ -1139,19 +1133,15 @@ hatch is `output_format = 'generic'` admin-authored definitions in a later phase
 formatter is coupled to and which therefore cannot produce a wrong radiogram. Revisit only if
 real demand appears.
 
-**R7 — "Email delivery" is the one place the positioning constraint is genuinely at risk.**
-The roadmap's Stage B says "on-net entry and email delivery". Read literally against the
-positioning constraint ("never describe this as sending or delivering a message via
-ECTLogger"), an ECTLogger-sent email is the closest this feature comes to being a transport.
-The reading this design adopts: emailing the **addressee** is the last hop, the delivery
-itself, and is a recognized delivery method (`RelayMethod.EMAIL`) — not ECTLogger carrying a
-message between operators. The conservative design that follows from that:
-`app_settings.traffic_email_delivery_enabled` defaults to **false** so a self-hoster opts in;
-the UI's primary action is "record that you delivered this by email" with "send it for me" as
-a secondary convenience; and the email is sent on the operator's explicit action with the
-operator's callsign as the delivering station in the body. **Confirm this interpretation with
-the roadmap author before Phase 5 task 5.** If it is wrong, drop the endpoint entirely; every
-other part of Stage B stands without it.
+**R7 — RESOLVED (2026-08-03): no ECTLogger-sent email, ever.**
+The roadmap's Stage B said "on-net entry and email delivery", and a "send it for me"
+convenience endpoint was designed and then put to the roadmap author, since an
+ECTLogger-sent email was the closest this feature came to being a transport — a direct
+conflict with the positioning constraint. The author rejected it outright. Emailing an
+addressee is logged the same way every other delivery method is: the operator sends it
+themselves through their own email client, then records it via the ordinary relay/delivery
+log with `method = RelayMethod.EMAIL`. No `app_settings.traffic_email_delivery_enabled`
+column, no email-sending endpoint, no `app/email/traffic.py` module for this purpose.
 
 **R8 — `components/forms/` already exists and means something else.**
 It is the shared CreateNet/CreateSchedule panel directory. Traffic UI goes in
@@ -1177,17 +1167,23 @@ working the same message.
 
 ## 8. Open questions for the human
 
-1. **QUERY or INT for a question mark?** (section 5) — blocks Stage B production deploy.
-2. Is the broader cross-net visibility rule acceptable, or must visibility be scoped per log
-   entry? (R4)
-3. Retention, anonymization, and at-rest encryption posture for addressee PII. (R5)
-4. Is the "email the addressee" reading of the roadmap's "email delivery" correct, or should
-   that endpoint be dropped? (R7)
-5. Should the default reminder ladder (24 h / 72 h / 7 d for routine) be instance-configurable
+**Resolved (2026-08-03):**
+
+1. ~~QUERY or INT for a question mark?~~ **QUERY**, confirmed by the roadmap author. Section 5.
+2. ~~Is the broader cross-net visibility rule acceptable?~~ **Yes**, accepted as designed. R4.
+3. ~~Retention/anonymization/encryption posture for addressee PII?~~ **Ship v1 as plain
+   JSON-in-Text storage**, matching `CheckIn.custom_fields`; revisit as a separate roadmap
+   item later, not a Stage A/B blocker. R5.
+4. ~~Is "email the addressee" the right reading of "email delivery," or should the endpoint
+   be dropped?~~ **Dropped entirely.** No ECTLogger-sent email of any kind. R7.
+
+**Still open:**
+
+1. Should the default reminder ladder (24 h / 72 h / 7 d for routine) be instance-configurable
    in `app_settings`, or is a fixed ladder with per-precedence scaling sufficient for v1?
-6. Does `arl_messages.json` (87 entries) match ARRL's current `Numbered_Radiograms_FSD_3.pdf`
+2. Does `arl_messages.json` (87 entries) match ARRL's current `Numbered_Radiograms_FSD_3.pdf`
    in both coverage and wording? (section 5.2)
-7. Where does Traffic sit in the navbar once Teams ships — the Teams notes call for Teams
+3. Where does Traffic sit in the navbar once Teams ships — the Teams notes call for Teams
    between Schedule and Stats, and this document places Traffic there too.
 
 ---

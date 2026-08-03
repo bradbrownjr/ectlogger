@@ -53,23 +53,24 @@ from app.traffic.nts_text import (
         # Trailing hyphen is stripped as trailing punctuation before any
         # substitution runs (leading regex strips [.,!?;:\s]+ at end of string).
         ("Ends with dash-", "ENDS WITH DASH"),
-        # Trailing question mark is stripped the same way, before the ? -> INT
-        # substitution ever sees it, so no trailing INT prosign remains either.
+        # Trailing question mark is stripped the same way, before the ? -> QUERY
+        # substitution ever sees it, so no trailing QUERY prosign remains either.
         ("Ends with question?", "ENDS WITH QUESTION"),
         # Multiple internal spaces collapse to one.
         ("Multiple   spaces   here", "MULTIPLE SPACES HERE"),
         # Pure-digit strings are left as one token by normalize_nts_text (word
         # splitting into 5-digit groups is count_nts_check's job, not this one's).
         ("12345 units delivered", "12345 UNITS DELIVERED"),
-        # The question-mark case. Currently substitutes to " INT " per the
-        # ARRL-approved bpq-apps reference. THIS IS UNCONFIRMED — see
-        # docs/concepts/TRAFFIC-HANDLING-DESIGN.md section 5. If a human
-        # NTS/RRI authority confirms QUERY instead, update NTS_SUBSTITUTIONS
-        # and this vector together.
+        # The question-mark case. Confirmed QUERY (not bpq-apps's INT) by the
+        # roadmap author — see docs/concepts/TRAFFIC-HANDLING-DESIGN.md section 5.
+        # This vector's "?" is trailing and gets stripped before the substitution
+        # table runs, so it doesn't exercise the QUERY rule itself (see the
+        # mid-sentence vector below for that); it's here to confirm a trailing
+        # question mark still doesn't leave a stray "TEST QUERY".
         ("Is this a test?", "IS THIS A TEST"),
         # Mid-sentence question mark (not stripped as trailing) does produce
-        # the INT prosign.
-        ("What time is it? Reply soon", "WHAT TIME IS IT INT REPLY SOON"),
+        # the QUERY prosign.
+        ("What time is it? Reply soon", "WHAT TIME IS IT QUERY REPLY SOON"),
         # Combination vector: colon-terminal, decimal-digit, ampersand,
         # parentheses, standalone hyphen, comma, and mid-sentence question
         # mark all in one string.

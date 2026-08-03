@@ -3,10 +3,11 @@
 Ported from bpq-apps apps/forms.py (normalize_nts_text, count_nts_check, and
 the smaller encode/format/sanitize helpers), which was reviewed and approved
 by ARRL Digital Section Manager Jim KY2D. See
-docs/concepts/TRAFFIC-HANDLING-DESIGN.md section 5 for the one open question
-(QUERY vs INT) and section 5.1 for a bug in the reference's fallback path
-(counting raw text instead of normalized text) that this port deliberately
-does not reproduce — always call normalize_and_count, which normalizes first.
+docs/concepts/TRAFFIC-HANDLING-DESIGN.md section 5 for the now-resolved
+QUERY-vs-INT question (confirmed: QUERY) and section 5.1 for a bug in the
+reference's fallback path (counting raw text instead of normalized text)
+that this port deliberately does not reproduce — always call
+normalize_and_count, which normalizes first.
 """
 
 import re
@@ -21,11 +22,8 @@ NTS_SUBSTITUTIONS: Tuple[Tuple[str, str, str], ...] = (
     (r"'", '', "apostrophe dropped"),
     (r'&', ' AND ', "ampersand -> AND"),
     (r'@', ' AT ', "at-sign -> AT"),
-    # >>> UNCONFIRMED <<< ws1sm.com says QUERY, bpq-apps (ARRL-approved) says INT.
-    # See docs/concepts/TRAFFIC-HANDLING-DESIGN.md section 5. Changing the answer
-    # is this one string plus its test vector. Do not ship to production until
-    # an NTS/RRI authority confirms.
-    (r'\?', ' INT ', "question mark -> INT or QUERY (UNRESOLVED)"),
+    # Confirmed QUERY (not bpq-apps's INT) per docs/concepts/TRAFFIC-HANDLING-DESIGN.md section 5.
+    (r'\?', ' QUERY ', "question mark -> QUERY"),
     (r'[()]', ' ', "parentheses dropped"),
     (r'(\w)\s*-\s*(\w)', r'\1 X \2', "hyphen between words -> X"),
     (r'-', ' ', "remaining hyphens -> space"),
@@ -37,7 +35,7 @@ def normalize_nts_text(text: str) -> str:
     """Apply ARRL NTS prosign encoding to message text.
 
     Matches Winlink fixpunct() behavior:
-      , ! ;     -> X    |  ? -> INT  |  & -> AND  |  ' -> dropped
+      , ! ;     -> X    |  ? -> QUERY  |  & -> AND  |  ' -> dropped
       d.d d/d d:d -> R  |  hyphen between words -> X
     Trailing punctuation and prosigns are stripped.
     """
@@ -50,7 +48,7 @@ def normalize_nts_text(text: str) -> str:
     t = re.sub(r' {2,}', ' ', t).strip()
     # Strip trailing prosign words (no standalone meaning at end)
     words = t.split()
-    while words and words[-1] in ('X', 'INT'):
+    while words and words[-1] in ('X', 'QUERY'):
         words.pop()
     return ' '.join(words)
 

@@ -56,7 +56,7 @@ async def test_create_then_read_round_trip_normalizes_and_computes_check(client,
     assert created["check_count"] is not None
     assert created["check_count"] > 0
     assert created["normalized_text"]
-    assert "INT" in created["normalized_text"]  # "?" -> INT substitution
+    assert "QUERY" in created["normalized_text"]  # "?" -> QUERY substitution
     assert created["field_values"]["text_raw"] == RADIOGRAM_VALUES["text"]
     assert created["field_values"]["text"] == created["normalized_text"]
 
