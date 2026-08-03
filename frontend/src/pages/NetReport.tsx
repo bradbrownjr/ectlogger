@@ -21,7 +21,6 @@ import {
   IconButton,
   CircularProgress,
   Alert,
-  Divider,
   useTheme,
   Tooltip,
   Dialog,
@@ -176,6 +175,7 @@ import { getErrorMessage } from '../utils/apiErrors';
 import { useAuth } from '../contexts/AuthContext';
 import { exportElementToPdf } from '../utils/pdfExport';
 import CoverageReport, { CanHearReportEntry } from '../components/netview/CoverageReport';
+import ICS309PrintView, { Ics309LogData } from '../components/traffic/print/ICS309PrintView';
 
 // ========== INTERFACES ==========
 
@@ -278,6 +278,7 @@ const NetReport: React.FC = () => {
   const [pollQuestion, setPollQuestion] = useState<string | null>(null);
   const [pollResults, setPollResults] = useState<PollResult[]>([]);
   const [canHearReports, setCanHearReports] = useState<CanHearReportEntry[]>([]);
+  const [ics309LogData, setIcs309LogData] = useState<Ics309LogData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
@@ -322,7 +323,7 @@ const NetReport: React.FC = () => {
         setError(null);
 
         // Fetch all data in parallel
-        const [netRes, statsRes, checkInsRes, chatRes, rolesRes, topicRes, pollRes, canHearRes] = await Promise.all([
+        const [netRes, statsRes, checkInsRes, chatRes, rolesRes, topicRes, pollRes, canHearRes, ics309Res] = await Promise.all([
           netApi.get(parseInt(netId)),
           statisticsApi.getNetStats(parseInt(netId)),
           checkInApi.list(parseInt(netId)),
@@ -331,6 +332,7 @@ const NetReport: React.FC = () => {
           netApi.getTopicResponses(parseInt(netId)),
           netApi.getPollResults(parseInt(netId)),
           canHearApi.list(parseInt(netId)),
+          netApi.getIcs309Log(parseInt(netId)),
         ]);
 
         setNet(netRes.data);
@@ -343,6 +345,7 @@ const NetReport: React.FC = () => {
         setPollQuestion(pollRes.data.question || null);
         setPollResults(pollRes.data.results || []);
         setCanHearReports(canHearRes.data || []);
+        setIcs309LogData(ics309Res.data);
       } catch (err: any) {
         console.error('Failed to fetch net report data:', err);
         setError(getErrorMessage(err, 'Failed to load net report'));
@@ -692,6 +695,24 @@ const NetReport: React.FC = () => {
           View Net
         </Button>
       </Box>
+
+      {/* Report-wide options live at the top, not buried next to the section
+          they affect further down the page, so a user scanning the report
+          before scrolling can see this choice exists. */}
+      {net.propagation_logging_enabled && canHearReports.length > 0 && !exporting && (
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+          <FormControlLabel
+            control={
+              <Switch
+                size="small"
+                checked={includeCoverageMaps}
+                onChange={(e) => setIncludeCoverageMaps(e.target.checked)}
+              />
+            }
+            label={<Typography variant="body2">Include per-station coverage maps</Typography>}
+          />
+        </Box>
+      )}
 
       {/* ========== PDF CONTENT WRAPPER ========== */}
       {/* Force light mode styling for print-friendly PDF export */}
@@ -1419,82 +1440,19 @@ const NetReport: React.FC = () => {
         )}
 
         {/* ========== SECTION 9: ICS-309 FORMAT (if enabled) ========== */}
-        {net.ics309_enabled && (
+        {/* Same ICS309PrintView used by NetView's standalone "ICS-309 PDF"
+            button, fed by the same GET .../export/ics309?format=json data --
+            one accurate rendering of this form, not a second approximation
+            built from checkIns/net directly. See TRAFFIC-HANDLING-DESIGN.md
+            section 4.5. */}
+        {net.ics309_enabled && ics309LogData && (
           <>
             <Typography variant="h6" sx={{ mt: 3, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
               <Assignment /> ICS-309 Communications Log
             </Typography>
-            
-            <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
-              {/* ICS-309 Header */}
-              <Grid container spacing={2} sx={{ mb: 2 }}>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="body2"><strong>1. Incident Name:</strong> {net.name}</Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="body2">
-                    <strong>2. Operational Period:</strong> {stats.started_at ? formatDateTime(stats.started_at, true) : '—'} to {stats.closed_at ? formatDateTime(stats.closed_at, true) : '—'}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="body2">
-                    <strong>3. Radio Operator Name/Position:</strong> {ncsOperators.map(r => displayCallsign(r) || r.name).join(', ') || 'N/A'}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="body2">
-                    <strong>4. Radio Channel:</strong> {net.frequencies.map(f => getFrequencyLabel(f)).join(', ') || 'N/A'}
-                  </Typography>
-                </Grid>
-              </Grid>
 
-              <Divider sx={{ my: 2 }} />
-
-              {/* ICS-309 Log Entries */}
-              <TableContainer sx={{ overflowX: 'auto' }}>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow sx={{ backgroundColor: theme.palette.action.hover }}>
-                      <TableCell sx={{ fontWeight: 'bold' }}>Time</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold' }}>From (Station)</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold' }}>To</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold' }}>Subject/Message</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {checkIns.map((checkIn) => (
-                      <TableRow key={checkIn.id}>
-                        <TableCell sx={{ whiteSpace: 'nowrap', fontSize: '0.75rem' }}>
-                          {formatTimeWithDate(checkIn.checked_in_at, true)}
-                        </TableCell>
-                        <TableCell>
-                          {checkIn.callsign}
-                          {checkIn.relayed_by && ` (via ${checkIn.relayed_by})`}
-                        </TableCell>
-                        <TableCell>Net Control</TableCell>
-                        <TableCell>
-                          {checkIn.is_recheck ? 'Re-check' : 'Check-in'}
-                          {checkIn.name ? ` - ${checkIn.name}` : ''}
-                          {checkIn.location ? ` @ ${checkIn.location}` : ''}
-                          {checkIn.notes ? ` - ${checkIn.notes}` : ''}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-
-              <Divider sx={{ my: 2 }} />
-
-              {/* ICS-309 Footer */}
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="body2"><strong>5. Prepared by:</strong> ECTLogger</Typography>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="body2"><strong>Date/Time:</strong> {formatDateTime(new Date().toISOString(), true)}</Typography>
-                </Grid>
-              </Grid>
+            <Paper variant="outlined" sx={{ p: 2, mb: 3, overflowX: 'auto' }}>
+              <ICS309PrintView id="net-report-ics309-view" data={ics309LogData} />
             </Paper>
           </>
         )}
@@ -1553,7 +1511,10 @@ const NetReport: React.FC = () => {
 
                     return (
                       <Grid item xs={12} md={6} key={station.reporterCheckInId}>
-                        <Paper variant="outlined" sx={{ overflow: 'hidden' }}>
+                        {/* data-pdf-avoid-break: utils/pdfExport.ts keeps a page
+                            cut from ever landing inside this card, which would
+                            otherwise print as two useless half-map images. */}
+                        <Paper variant="outlined" sx={{ overflow: 'hidden' }} data-pdf-avoid-break="true">
                           <Box sx={{ p: 1, borderBottom: `1px solid ${theme.palette.divider}` }}>
                             <Typography variant="caption" fontWeight="medium">
                               {station.reporterCallsign} heard {station.heard.length} station{station.heard.length !== 1 ? 's' : ''}

@@ -734,6 +734,43 @@ Click **Export PDF** in the page header to download a printable report. The repo
 
 Use this for after-action reporting, club records, or emergency management documentation that needs to show participation trends across many nets.
 
+## Assisted Traffic Handling
+
+ECTLogger helps you fill out and keep a record of formal traffic (ARRL radiograms and ICS-213 messages) that you originate, relay, or deliver over a real net, by phone, in person, or by mail. ECTLogger never sends or transports the message itself — it is a witness and a record-keeper, not a relay.
+
+### Filing a Radiogram or ICS-213
+
+Open **Traffic** from the navigation bar (or the Traffic panel on an active net's page), choose **New**, and pick a form type:
+
+- **Radiogram** — the assist layer normalizes your text for NTS transmission as you type, keeps a live word-count check, and offers the ARL numbered-message picker for standard messages (welfare checks, holiday greetings, etc.).
+- **ICS-213** — a general message form used for ARES/ICS operations.
+
+Fields like your callsign, place of origin, and filing time are auto-filled from your profile where possible. Submitting the form logs it as either **originated** (you wrote it) or **received** (you copied it from another station), which starts its chain of custody.
+
+### Importing a message you copied off the air
+
+If you already have the plaintext of a radiogram or ICS-213 message — copied down by hand, relayed from another station, or saved from packet — choose **Import** instead of **New**. Paste the text in, or drag a text file onto the box, and the parser fills in what it can recognize, flagging anything low-confidence (like a stated check that doesn't match the recomputed word count) for you to double-check before saving. Nothing is saved until you review and confirm the parsed fields.
+
+### Logging what happens next
+
+Every piece of traffic has a chain of custody: a timeline of who touched it and what they did (originated, received, relayed, delivered, serviced, or cancelled). As you relay or deliver a message, log the handoff so the chain stays accurate — this is what lets a net's NCS or logger answer "what happened to that message?" after the net closes, and it's what keeps your **inbox** honest: a piece of traffic you're still holding stays visible there until you log that it moved on.
+
+### Your Traffic Inbox
+
+The **Traffic** section's **Inbox** tab shows everything you're currently holding, oldest first. Check it after a net closes — pending traffic doesn't go away just because the net did.
+
+### Who can see a piece of traffic
+
+Only the submitter, the current holder, anyone else in its chain of custody, that net's NCS/logger, and admins can view a given piece of traffic. Ordinary check-ins on the net do not grant access to its traffic. This matters because welfare traffic can carry a private individual's name, address, and phone number.
+
+### Exporting
+
+From a piece of traffic's detail view, **Export** gives you the plaintext (for reading over the air or filing) or a printable PDF laid out like the real paper form — the ARRL Radiogram pad or the FEMA ICS-213 General Message form, boxes and rules included — ready to file or hand to the addressee. Fields ECTLogger doesn't collect (like a delivery-confirmation signature) print blank and ruled, the same as they'd appear on a hand-filled paper copy. On a net with **ICS-309 enabled**, traffic handled during that net also appears as metadata-only rows (message number, precedence, addressee, handling station) on the net's ICS-309 Communications Log, including its own form-accurate PDF — the message text itself is never included in that export.
+
+### Traffic in your statistics
+
+Your Profile's **Activity** tab, a net's statistics page, and the platform-wide Statistics page each show a **Traffic Handled** count, broken out by what you did with it (originated, relayed, delivered, etc.). Your Profile's Activity tab also shows **Traffic Pending** — everything currently sitting in your inbox, unresolved. Click either tile to drill into the list.
+
 ## Tips & Tricks
 
 ### Keyboard Shortcuts
@@ -833,6 +870,7 @@ Both columns are blank for users the badge doesn't apply to, and both are sortab
 ### Additional Admin Features
 
 - **Contacts** — View and manage station contacts auto-populated from check-in history. Fix names, add emails, send invites to create user accounts. Contact data auto-fills when NCS enters a callsign during check-in.
+- **Traffic** — Enable or disable form types (Radiogram, ICS-213), reorder them, override field labels, and set the delivery-reminder switches for Assisted Traffic Handling.
 - **Check-In Fields** — Configure default check-in form fields
 - **Frequency Library** — Manage shared frequency presets
 - **Security** — View fail2ban status and recent authentication events

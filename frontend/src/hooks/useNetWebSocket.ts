@@ -162,6 +162,21 @@ export function useNetWebSocket(deps: NetWebSocketDeps): WebSocket | null {
           // A save can insert/delete/touch a variable number of edges, so
           // always refetch the full list rather than patching state locally.
           fetchCanHearReports();
+        } else if (message.type === 'traffic_logged') {
+          // A form was filed on this net. Relayed as a window event (rather
+          // than fetched here directly) since the Traffic side panel isn't
+          // known to this hook, matching the newChatMessage/chatReactionUpdate
+          // convention Chat.tsx already uses.
+          if (typeof window !== 'undefined' && window.dispatchEvent) {
+            window.dispatchEvent(new CustomEvent('trafficLogged', { detail: message.data }));
+          }
+        } else if (message.type === 'traffic_log_changed') {
+          // A chain-of-custody hop was appended to a form on this net.
+          // Same window-event relay as traffic_logged -- TrafficPanel.tsx,
+          // TrafficDetail.tsx, and useTrafficInbox.ts all listen for this.
+          if (typeof window !== 'undefined' && window.dispatchEvent) {
+            window.dispatchEvent(new CustomEvent('trafficLogChanged', { detail: message.data }));
+          }
         }
       };
 

@@ -9,6 +9,8 @@ Implementation lives in:
   email/reminders.py     — send_ncs_reminder, send_subscriber_reminder, send_staff_reminder
   email/net_logs.py      — send_net_log, send_ics309_log
   email/digest.py        — send_feedback_email, send_whats_new_email
+  email/traffic.py       — send_traffic_reminder, send_traffic_hxb_final_notice,
+                            send_traffic_stale_digest
 """
 from app.email.auth import send_magic_link
 from app.email.base import (
@@ -29,6 +31,11 @@ from app.email.reminders import (
     send_ncs_reminder,
     send_staff_reminder,
     send_subscriber_reminder,
+)
+from app.email.traffic import (
+    send_traffic_hxb_final_notice,
+    send_traffic_reminder,
+    send_traffic_stale_digest,
 )
 
 
@@ -51,3 +58,6 @@ class EmailService:
     send_ics309_log = staticmethod(send_ics309_log)
     send_feedback_email = staticmethod(send_feedback_email)
     send_whats_new_email = staticmethod(send_whats_new_email)
+    send_traffic_reminder = staticmethod(send_traffic_reminder)
+    send_traffic_hxb_final_notice = staticmethod(send_traffic_hxb_final_notice)
+    send_traffic_stale_digest = staticmethod(send_traffic_stale_digest)

@@ -4,7 +4,7 @@ import json
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,7 +14,7 @@ from app.database import get_db
 from app.dependencies import get_current_user
 from app.models import CheckIn, Net, NetRole, NetStatus, User, net_frequencies
 from app.permissions import check_net_lifecycle_permission, check_net_permission
-from app.schemas import NetResponse
+from app.schemas import Ics309LogResponse, NetResponse
 from app.services.csv_import import (
     CsvImportConfig,
     ZoneInfo,
@@ -22,6 +22,12 @@ from app.services.csv_import import (
     build_frequency_token_map,
     decode_csv_bytes,
     process_csv_rows,
+)
+from app.traffic.ics309 import (
+    format_traffic_ics309_message,
+    get_net_traffic_log_entries,
+    traffic_from_station,
+    traffic_to_station,
 )
 from app.utils import display_callsign, format_time_for_net, resolve_display_tz, to_display_tz
 
@@ -234,30 +240,12 @@ async def import_net_csv(
     }
 
 
-@router.get("/{net_id}/export/ics309")
-async def export_net_ics309(
-    net_id: int,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-):
-    """Export net as ICS-309 Communications Log CSV"""
-    # Get net with check-ins, frequencies, and owner
-    result = await db.execute(
-        select(Net).options(
-            selectinload(Net.frequencies),
-            selectinload(Net.check_ins).selectinload(CheckIn.frequency),
-            selectinload(Net.owner)
-        ).where(Net.id == net_id)
-    )
-    net = result.scalar_one_or_none()
-    
-    if not net:
-        raise HTTPException(status_code=404, detail="Net not found")
-    
-    # Check permissions - anyone can export a net they have access to
-    if not await check_net_permission(db, net, current_user):
-        raise HTTPException(status_code=403, detail="Not authorized to export this net")
-    
+async def _build_ics309_data(db: AsyncSession, net: Net, current_user: User) -> dict:
+    """Single source of truth for the ICS-309 Communications Log content --
+    header fields plus the merged/sorted check-in + chat + traffic log rows.
+    Shared by export_net_ics309's csv and json formats (and, via the json
+    format, by the frontend's ICS309PrintView PDF) so there is exactly one
+    place that assembles this log, not one per output format."""
     # Helper to format frequency
     def format_freq(freq):
         if freq.frequency:
@@ -265,30 +253,28 @@ async def export_net_ics309(
         elif freq.network:
             return f"{freq.network} TG{freq.talkgroup or ''}"
         return ""
-    
-    # Format frequencies list
+
     freq_strings = [format_freq(f) for f in net.frequencies]
     freq_list = ", ".join(freq_strings) if freq_strings else "Multiple"
-    
+
     # Get NCS info — prefer the most recently assigned NCS role; fall back to owner.
     ncs_role_result = await db.execute(
         select(User.callsign, User.name)
         .join(NetRole, NetRole.user_id == User.id)
-        .where(NetRole.net_id == net_id, NetRole.role == "NCS")
+        .where(NetRole.net_id == net.id, NetRole.role == "NCS")
         .order_by(NetRole.assigned_at.desc())
         .limit(1)
     )
     ncs_role_row = ncs_role_result.first()
     ncs_callsign = ncs_role_row[0] if ncs_role_row else (display_callsign(net.owner) if net.owner else "Unknown")
     ncs_name = ncs_role_row[1] if ncs_role_row else (net.owner.name or display_callsign(net.owner) if net.owner else "Unknown")
-    
+
     # Display times in the requesting user's timezone preference (falls back to
     # UTC if they prefer UTC or haven't got a timezone on file yet)
     tz = resolve_display_tz(current_user)
     display_started_at = to_display_tz(net.started_at, tz)
     display_closed_at = to_display_tz(net.closed_at, tz)
 
-    # Format times
     started_at = display_started_at.strftime("%Y-%m-%d %H:%M:%S") if display_started_at else "N/A"
     closed_at = display_closed_at.strftime("%Y-%m-%d %H:%M:%S") if display_closed_at else "N/A"
 
@@ -297,7 +283,7 @@ async def export_net_ics309(
     chat_result = await db.execute(
         select(ChatMessage)
         .options(selectinload(ChatMessage.user))
-        .where(ChatMessage.net_id == net_id)
+        .where(ChatMessage.net_id == net.id)
         .order_by(ChatMessage.created_at.asc())
     )
     chat_messages = chat_result.scalars().all()
@@ -327,41 +313,105 @@ async def export_net_ics309(
                 'to_station': 'NET',
                 'message': msg.message
             })
-    
-    # Sort by time
+
+    # Add Assisted Traffic Handling rows -- metadata only, never the message
+    # body (Form.field_values / normalized_text). Only surfaced on the
+    # ICS-309 format itself, gated on the net's ics309_enabled toggle so a
+    # net that never opted into ICS-309 doesn't leak traffic metadata into
+    # this export either. See TRAFFIC-HANDLING-DESIGN.md D3's "ICS-309
+    # consequence" and app/traffic/ics309.py.
+    if net.ics309_enabled:
+        traffic_entries = await get_net_traffic_log_entries(db, net.id)
+        for entry in traffic_entries:
+            log_entries.append({
+                'time': format_time_for_net(to_display_tz(entry.occurred_at, tz), display_started_at, display_closed_at),
+                'from_station': traffic_from_station(entry.form, entry),
+                'to_station': traffic_to_station(entry),
+                'message': format_traffic_ics309_message(entry.form, entry),
+            })
+
     log_entries.sort(key=lambda x: x.get('time', ''))
-    
+
+    return {
+        'incident_name': net.name,
+        'operational_period_from': started_at,
+        'operational_period_to': closed_at,
+        'radio_operator': f"{ncs_name} / {ncs_callsign}",
+        'channel': freq_list,
+        'entries': log_entries,
+        'prepared_by': "ECTLogger - Automated Log",
+        'prepared_at': closed_at,
+        'display_started_at': display_started_at,
+    }
+
+
+@router.get("/{net_id}/export/ics309")
+async def export_net_ics309(
+    net_id: int,
+    format: str = Query("csv"),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Export net as an ICS-309 Communications Log: CSV (?format=csv, the
+    default, for spreadsheet/filing use) or structured JSON (?format=json,
+    consumed by the frontend's ICS309PrintView for a form-accurate PDF)."""
+    if format not in ("csv", "json"):
+        raise HTTPException(status_code=400, detail="format must be 'csv' or 'json'")
+
+    # Get net with check-ins, frequencies, and owner
+    result = await db.execute(
+        select(Net).options(
+            selectinload(Net.frequencies),
+            selectinload(Net.check_ins).selectinload(CheckIn.frequency),
+            selectinload(Net.owner)
+        ).where(Net.id == net_id)
+    )
+    net = result.scalar_one_or_none()
+
+    if not net:
+        raise HTTPException(status_code=404, detail="Net not found")
+
+    # Check permissions - anyone can export a net they have access to
+    if not await check_net_permission(db, net, current_user):
+        raise HTTPException(status_code=403, detail="Not authorized to export this net")
+
+    data = await _build_ics309_data(db, net, current_user)
+
+    if format == "json":
+        return Ics309LogResponse(**{k: v for k, v in data.items() if k != 'display_started_at'})
+
     # Create ICS-309 CSV
     output = io.StringIO()
     writer = csv.writer(output)
-    
+
     # ICS-309 header info
     writer.writerow(["ICS-309 COMMUNICATIONS LOG"])
     writer.writerow([""])
-    writer.writerow(["1. Incident Name:", net.name])
-    writer.writerow(["2. Operational Period:", f"{started_at} to {closed_at}"])
-    writer.writerow(["3. Radio Operator:", f"{ncs_name} / {ncs_callsign}"])
-    writer.writerow(["4. Channel/Frequency:", freq_list])
+    writer.writerow(["1. Incident Name:", data['incident_name']])
+    writer.writerow(["2. Operational Period:", f"{data['operational_period_from']} to {data['operational_period_to']}"])
+    writer.writerow(["3. Radio Operator:", data['radio_operator']])
+    writer.writerow(["4. Channel/Frequency:", data['channel']])
     writer.writerow([""])
     writer.writerow(["TIME", "FROM", "TO", "SUBJECT/MESSAGE"])
-    
-    for entry in log_entries:
+
+    for entry in data['entries']:
         writer.writerow([
             entry.get('time', ''),
             entry.get('from_station', ''),
             entry.get('to_station', ''),
             entry.get('message', '')
         ])
-    
+
     writer.writerow([""])
-    writer.writerow(["9. Prepared By:", "ECTLogger - Automated Log"])
-    writer.writerow(["10. Date/Time:", closed_at])
-    
+    writer.writerow(["9. Prepared By:", data['prepared_by']])
+    writer.writerow(["10. Date/Time:", data['prepared_at']])
+
     # Prepare response
     output.seek(0)
+    display_started_at = data['display_started_at']
     date_str = display_started_at.strftime('%Y%m%d') if display_started_at else 'draft'
     filename = f"ICS309_{net.name.replace(' ', '_')}_{date_str}.csv"
-    
+
     return StreamingResponse(
         iter([output.getvalue()]),
         media_type="text/csv",

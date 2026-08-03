@@ -86,7 +86,8 @@ const Profile: React.FC = () => {
     if (Math.abs(deltaX) < 50 || Math.abs(deltaY) > Math.abs(deltaX)) return;
     // Clamp to the last tab index (4: Profile, Settings, Notifications,
     // Activity, Coverage) - this was hardcoded to 2 and stale ever since the
-    // Activity tab (index 3) was added, making it unreachable by swipe.
+    // Activity tab (index 3) was added, making it unreachable by swipe; keep
+    // raising it as tabs are added.
     const next = deltaX < 0 ? Math.min(tabValue + 1, 4) : Math.max(tabValue - 1, 0);
     setTabValue(next);
     setSearchParams(next > 0 ? { tab: String(next) } : {});

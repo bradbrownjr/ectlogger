@@ -53,6 +53,32 @@ Common failure modes to avoid:
 - Spacing that varies between similar card types
 - Action buttons that appear at different vertical positions across pages
 
+### Fixed-answer fields require a dropdown, radio group, or select — never free text
+
+If a field's valid answers come from a known, closed list — and no other answer would
+ever be correct — the input must be a `<Select>`/dropdown, a radio group, or an
+autocomplete constrained to that list. It must never be a plain `TextField` backed only
+by an advisory validator or a help-text popover explaining the valid values.
+
+A validator that flags a bad value after the fact, or a "?" / help icon that shows the
+operator what they're supposed to type, are not substitutes for a constrained input —
+they let a typo or an invalid value through in the first place. This matters most where
+the value feeds a machine-readable protocol or a downstream export: a mistyped code can
+produce output that reads as wrong (or fails silently) for every recipient, which is a
+correctness bug wearing a UI costume.
+
+Example: the ARRL Radiogram's HX handling-instructions field (`HxCodeField.tsx`,
+`RadiogramAssist.tsx`) has exactly seven valid codes (HXA–HXG); it was originally a free
+`TextField` with a `validator: "hx_code"` and a help popover listing the codes as
+reference text. That is exactly the pattern this rule forbids — it was replaced with a
+dropdown of the seven codes (plus an inline numeric field for the three that take a
+parameter). The general rule, not just this one field, is what to apply going forward.
+
+This does not apply to fields where free text is genuinely open-ended (a name, a note, a
+message body) or where the "valid" set is unbounded/local (e.g. a net/path name — see
+`RelayMethod`'s `path_name` in the traffic-handling design, which is deliberately free
+text because every deployment's local nets differ).
+
 ### Branding
 
 The application name is **ECTLogger** — no spaces, camel-cased. Always paired with the logo when rendered as a heading or in the nav bar; never the logo alone, never the name alone in primary headings.

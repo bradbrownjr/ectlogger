@@ -57,6 +57,8 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { netApi, checkInApi, netRoleApi, templateApi, canHearApi } from '../services/api';
 import api from '../services/api';
+import { exportElementToPdf } from '../utils/pdfExport';
+import ICS309PrintView, { Ics309LogData } from '../components/traffic/print/ICS309PrintView';
 import { useAuth } from '../contexts/AuthContext';
 import { useLocation } from '../contexts/LocationContext';
 import CheckInMap from '../components/CheckInMap';
@@ -282,6 +284,7 @@ const NetView: React.FC = () => {
   const [scheduleAnnouncementsMinimized, setScheduleAnnouncementsMinimized] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.SCHEDULE_ANNOUNCEMENTS_MINIMIZED, false);
   const [mapMinimized, setMapMinimized] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.MAP_MINIMIZED, false);
   const [coverageMinimized, setCoverageMinimized] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.COVERAGE_MINIMIZED, false);
+  const [trafficMinimized, setTrafficMinimized] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.TRAFFIC_MINIMIZED, false);
   // Phase 4 "can hear" coverage overlay on/off, and which callsign (if any)
   // is currently highlighted/filtered - both lifted here (from CheckInMap's
   // former local state) so the new Coverage panel and the map overlay can
@@ -678,10 +681,23 @@ const NetView: React.FC = () => {
   const handleFloatToWindowCheckIns = () => { handleAttachCheckInList(); handlePopOutCheckIns(); };
   const showMapDocked = map.open && mapDocked;
   const showCoverageDocked = coverage.open && coverageDocked;
-  // True once neither Chat, Activity Log, Map, nor Coverage has anything
-  // docked — the side column disappears entirely in that case, so the
-  // check-in list should expand to fill it.
-  const sidePanelsEmpty = (chatDetached || chatPopout.isOpen) && (activityLogDetached || activityLogPopout.isOpen) && !showMapDocked && !showCoverageDocked;
+  // Traffic panel visibility: net.traffic_enabled AND that net's NCS/logger/
+  // owner/admin (TRAFFIC-HANDLING-DESIGN.md D3 rule 4), computed here (ahead
+  // of the `if (!net) return` guard below) rather than reusing
+  // canManageCheckIns, which is computed after that guard. Mirrors
+  // canManageCheckIns's own boolean exactly -- see that computation further
+  // down for the canonical version.
+  const userTrafficRole = netRoles.find((role: any) => role.user_id === user?.id);
+  const canViewNetTraffic = user?.id === net?.owner_id
+    || user?.role === 'admin'
+    || !!net?.can_manage
+    || (userTrafficRole?.role === 'NCS' && userTrafficRole?.is_active !== false)
+    || userTrafficRole?.role === 'LOGGER';
+  const showTraffic = !!net?.traffic_enabled && !!canViewNetTraffic;
+  // True once neither Chat, Activity Log, Map, Coverage, nor Traffic has
+  // anything docked — the side column disappears entirely in that case, so
+  // the check-in list should expand to fill it.
+  const sidePanelsEmpty = (chatDetached || chatPopout.isOpen) && (activityLogDetached || activityLogPopout.isOpen) && !showMapDocked && !showCoverageDocked && !showTraffic;
 
   const leftPanelsActive = (script.open && scriptDocked) || (announcements.open && announcementsDocked) || (scheduleAnnouncements.open && scheduleAnnouncementsDocked);
   const centerActive = !checkInListDetached && !checkInsPopout.isOpen;
@@ -935,7 +951,7 @@ const NetView: React.FC = () => {
       const response = await api.get(`/nets/${netId}/export/ics309`, {
         responseType: 'blob',
       });
-      
+
       // Create download link
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
@@ -949,6 +965,31 @@ const NetView: React.FC = () => {
       console.error('Failed to export ICS-309:', error);
     }
   };
+
+  // Form-accurate ICS-309 PDF, via ICS309PrintView + utils/pdfExport.ts (same
+  // pipeline as TrafficDetail.tsx's radiogram/ICS-213 PDFs). Unlike those, the
+  // data isn't already on the page -- fetch it, mount the off-screen print
+  // view below, then export it once the effect confirms it painted.
+  const [ics309PrintData, setIcs309PrintData] = useState<Ics309LogData | null>(null);
+
+  const handleExportICS309Pdf = async () => {
+    try {
+      const response = await netApi.getIcs309Log(Number(netId));
+      setIcs309PrintData(response.data);
+    } catch (error) {
+      console.error('Failed to export ICS-309 PDF:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (!ics309PrintData) return;
+    exportElementToPdf('ics309-print-view', {
+      filename: `ICS309_${net?.name.replace(/ /g, '_') || 'net'}`,
+    })
+      .catch((error) => console.error('Failed to export ICS-309 PDF:', error))
+      .finally(() => setIcs309PrintData(null));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ics309PrintData]);
 
   // State for archive undo functionality
   const [pendingArchive, setPendingArchive] = React.useState<boolean>(false);
@@ -1408,10 +1449,20 @@ const NetView: React.FC = () => {
         onGoLive={handleGoLive}
         onExportCSV={handleExportCSV}
         onExportICS309={handleExportICS309}
+        onExportICS309Pdf={handleExportICS309Pdf}
         onArchive={handleArchive}
         onUnarchive={handleUnarchive}
         onDelete={handleDelete}
       />
+
+      {/* Off-screen form-accurate ICS-309 print view, mounted only while
+          handleExportICS309Pdf's fetch is resolving/exporting -- see the
+          effect above that captures it via exportElementToPdf. */}
+      {ics309PrintData && (
+        <Box sx={{ position: 'fixed', top: 0, left: -9999, width: 0, height: 0, overflow: 'hidden' }}>
+          <ICS309PrintView id="ics309-print-view" data={ics309PrintData} />
+        </Box>
+      )}
 
       {/* Persistent banner while no NCS is actively present — see app/net_pause.py */}
       {!!net.paused_at && (
@@ -2256,6 +2307,11 @@ const NetView: React.FC = () => {
               highlightedCallsign={highlightedCallsign}
               setHighlightedCallsign={setHighlightedCallsign}
               onShowCoverageOnMap={handleShowCoverageOnMap}
+              currentUserId={user?.id}
+              showTraffic={showTraffic}
+              trafficMinimized={trafficMinimized}
+              onMinimizeTraffic={() => setTrafficMinimized(true)}
+              onRestoreTraffic={() => setTrafficMinimized(false)}
             />
           </Grid>
         )}

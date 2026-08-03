@@ -6,12 +6,14 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from app.config import settings
-from app.database import init_db
-from app.routers import auth, users, nets, check_ins, frequencies, templates, chat, ncs_rotation, security, statistics, geocode, contacts, feedback, can_hear
+from app.database import init_db, AsyncSessionLocal
+from app.routers import auth, users, nets, check_ins, frequencies, templates, chat, ncs_rotation, security, statistics, geocode, contacts, feedback, can_hear, traffic
 from app.routers import settings as app_settings_router
 from app.security import sanitize_html
 from app.ncs_reminder_service import ncs_reminder_service
 from app.whats_new_service import whats_new_service
+from app.traffic_reminder_service import traffic_reminder_service
+from app.traffic.definitions import upsert_form_definitions
 from typing import Dict, List
 import asyncio
 import json
@@ -42,17 +44,21 @@ def _is_primary_process() -> bool:
 async def lifespan(_app: FastAPI):
     """Startup and shutdown lifecycle for the FastAPI application."""
     await init_db()
+    async with AsyncSessionLocal() as db:
+        await upsert_form_definitions(db)
     asyncio.create_task(_ws_heartbeat_loop())
     if _is_primary_process():
         # Only the primary process (port 8001) runs background services to
         # prevent duplicate emails from the secondary localhost process.
         await ncs_reminder_service.start()
         await whats_new_service.start()
+        await traffic_reminder_service.start()
     else:
         print("Secondary process (port 9999): background services skipped.")
     yield
     await ncs_reminder_service.stop()
     await whats_new_service.stop()
+    await traffic_reminder_service.stop()
 
 
 # Initialize rate limiter
@@ -123,6 +129,7 @@ app.include_router(geocode.router, prefix="/api")
 app.include_router(contacts.router, prefix="/api")
 app.include_router(feedback.router, prefix="/api")
 app.include_router(can_hear.router, prefix="/api")
+app.include_router(traffic.router, prefix="/api")
 
 # Serve uploaded chat images from backend/data/chat_images
 chat_images_dir = Path(__file__).resolve().parents[1] / "data" / "chat_images"

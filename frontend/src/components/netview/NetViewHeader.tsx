@@ -224,6 +224,7 @@ interface NetViewHeaderProps {
   onGoLive: () => void;
   onExportCSV: () => void;
   onExportICS309: () => void;
+  onExportICS309Pdf: () => void;
   onArchive: () => void;
   onUnarchive: () => void;
   onDelete: () => void;
@@ -334,6 +335,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
   onGoLive,
   onExportCSV,
   onExportICS309,
+  onExportICS309Pdf,
   onArchive,
   onUnarchive,
   onDelete,
@@ -563,6 +565,12 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
       visible: isClosedOrArchived,
       Icon: DescriptionIcon, color: '#009688', label: 'ICS-309',
       tooltip: 'Download ICS-309 Communications Log', onClick: onExportICS309,
+    },
+    {
+      key: 'ics309-pdf', group: 'management', priority: 2,
+      visible: isClosedOrArchived,
+      Icon: PictureAsPdfIcon, color: '#009688', label: 'ICS-309 PDF',
+      tooltip: 'Download a form-accurate ICS-309 Communications Log PDF', onClick: onExportICS309Pdf,
     },
     {
       key: 'report', group: 'management', priority: 2,

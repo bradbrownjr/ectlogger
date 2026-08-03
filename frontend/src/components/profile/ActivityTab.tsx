@@ -24,6 +24,7 @@ import { displayCallsign } from '../../utils/userDisplay';
 import { useAuth } from '../../contexts/AuthContext';
 import { exportElementToPdf } from '../../utils/pdfExport';
 import { useUserStats } from '../../hooks/useUserStats';
+import useTrafficInbox from '../../hooks/useTrafficInbox';
 import DrillDownTable from './DrillDownTable';
 
 // ========== ACTIVITY TAB ==========
@@ -34,12 +35,18 @@ import DrillDownTable from './DrillDownTable';
 
 const DRILL_PAGE_SIZE = 25;
 
-type StatCardKey = 'total_check_ins' | 'nets_joined' | 'as_ncs' | 'last_30_days';
+type StatCardKey = 'total_check_ins' | 'nets_joined' | 'as_ncs' | 'last_30_days' | 'traffic_handled' | 'traffic_pending';
 
 const ActivityTab: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { userStats, statsLoading } = useUserStats();
+  // "Traffic Pending" reuses the same GET /traffic/inbox data as the Navbar
+  // badge (via useTrafficInbox) rather than a parallel backend stat -- the
+  // inbox query already is "pending traffic held by this user" (see
+  // TRAFFIC-HANDLING-DESIGN.md section 2.5 and the 2026-08-03 revision note
+  // in section 4.5).
+  const { items: pendingItems } = useTrafficInbox();
 
   const [netDrillDown, setNetDrillDown] = useState<{ title: string; nets: any[] } | null>(null);
   const [activeStatCard, setActiveStatCard] = useState<StatCardKey | null>(null);
@@ -91,6 +98,25 @@ const ActivityTab: React.FC = () => {
             (a, b) => new Date(b.last_check_in).getTime() - new Date(a.last_check_in).getTime()
           ),
         columns: ['net', 'date', 'check_ins'],
+      };
+    }
+    if (activeStatCard === 'traffic_handled') {
+      const traffic: any[] = userStats.traffic_handled_list ?? [];
+      return {
+        label: 'Traffic you\'ve handled (originated, relayed, or delivered)',
+        rows: [...traffic].sort(
+          (a, b) => new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime()
+        ),
+        columns: ['net', 'date'],
+      };
+    }
+    if (activeStatCard === 'traffic_pending') {
+      return {
+        label: 'Traffic you\'re currently holding (not yet relayed or delivered)',
+        rows: [...pendingItems].sort(
+          (a, b) => new Date(a.held_since ?? a.filed_at).getTime() - new Date(b.held_since ?? b.filed_at).getTime()
+        ),
+        columns: ['net', 'date'],
       };
     }
     return null;
@@ -147,6 +173,11 @@ const ActivityTab: React.FC = () => {
   }
 
   const dd = getStatCardDrillDown();
+  // Both traffic stat cards drill down into the Traffic section (not a net
+  // page) and repurpose DrillDownRow.net_id as the row's own identifier --
+  // "item"/"View traffic" wording and the row-shape branch below both key
+  // off this rather than checking each traffic key individually.
+  const isTrafficStat = activeStatCard === 'traffic_handled' || activeStatCard === 'traffic_pending';
 
   return (
     <>
@@ -170,6 +201,14 @@ const ActivityTab: React.FC = () => {
             { key: 'nets_joined', value: userStats.nets_participated, label: 'Nets Joined' },
             { key: 'as_ncs', value: userStats.nets_as_ncs, label: 'As NCS' },
             { key: 'last_30_days', value: userStats.last_30_days_check_ins, label: 'Last 30 Days' },
+            // Assisted Traffic Handling tiles — each shown only once it has something to
+            // report, matching the other conditional tiles' pattern above.
+            ...(userStats.traffic_handled > 0
+              ? [{ key: 'traffic_handled' as const, value: userStats.traffic_handled, label: 'Traffic Handled' }]
+              : []),
+            ...(pendingItems.length > 0
+              ? [{ key: 'traffic_pending' as const, value: pendingItems.length, label: 'Traffic Pending' }]
+              : []),
           ] as const).map(({ key, value, label }) => (
             <Grid item xs={6} sm={3} key={key}>
               <Card
@@ -202,23 +241,45 @@ const ActivityTab: React.FC = () => {
               </Tooltip>
               <Typography variant="subtitle2">{dd.label}</Typography>
               <Typography variant="caption" color="text.secondary">
-                ({dd.rows.length} net{dd.rows.length !== 1 ? 's' : ''})
+                ({dd.rows.length} {isTrafficStat ? 'item' : 'net'}{dd.rows.length !== 1 ? 's' : ''})
               </Typography>
             </Box>
             <DrillDownTable
-              rows={dd.rows.map((row: any) => ({
-                net_id: row.net_id,
-                net_name: row.net_name,
-                date: row.started_at ?? row.last_check_in,
-                check_in_count: row.check_in_count,
-              }))}
+              rows={dd.rows.map((row: any) => (
+                isTrafficStat
+                  // Traffic rows repurpose DrillDownRow.net_id as the row's own
+                  // identifier (form_id) rather than a real net -- the "View"
+                  // button deep-links into the Traffic section, not a net page.
+                  // A standalone form (net_id null) falls back to the form
+                  // type/number as its label instead of a net name. Pending
+                  // rows come straight off GET /traffic/inbox (TrafficForm
+                  // shape: id/subject/held_since), not the handled-list's
+                  // form_id/net_name/occurred_at shape -- fall back through
+                  // both.
+                  ? {
+                      net_id: row.form_id ?? row.id,
+                      net_name: row.net_name ?? row.subject ?? `${row.form_type}${row.message_number ? ` NR ${row.message_number}` : ''}`,
+                      date: row.occurred_at ?? row.held_since ?? row.filed_at,
+                    }
+                  : {
+                      net_id: row.net_id,
+                      net_name: row.net_name,
+                      date: row.started_at ?? row.last_check_in,
+                      check_in_count: row.check_in_count,
+                    }
+              ))}
               showNetName
               showCheckIns={dd.columns.includes('check_ins')}
               page={drillDownPage}
               onPageChange={setDrillDownPage}
               pageSize={DRILL_PAGE_SIZE}
               emptyMessage="No records found."
-              onView={(netId) => navigate(`/nets/${netId}`)}
+              onView={(id) =>
+                isTrafficStat
+                  ? navigate(`/traffic?id=${id}`)
+                  : navigate(`/nets/${id}`)
+              }
+              viewLabel={isTrafficStat ? 'View traffic' : 'View net'}
             />
           </Box>
         )}

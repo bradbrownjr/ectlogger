@@ -24,6 +24,7 @@ import NetStatistics from './pages/NetStatistics';
 import NetReport from './pages/NetReport';
 import ScheduleStatistics from './pages/ScheduleStatistics';
 import Unsubscribe from './pages/Unsubscribe';
+import Traffic from './pages/Traffic';
 import Navbar from './components/Navbar';
 import ProfileSetupDialog from './components/ProfileSetupDialog';
 import ChangelogNotification from './components/ChangelogNotification';
@@ -141,6 +142,14 @@ const AppRoutes: React.FC = () => {
             element={
               <PrivateRoute>
                 <Profile />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/traffic"
+            element={
+              <PrivateRoute>
+                <Traffic />
               </PrivateRoute>
             }
           />

@@ -99,6 +99,10 @@ export const netApi = {
     api.put(`/nets/${netId}/template`, { template_id: templateId }),
   getTopicResponses: (id: number) => api.get(`/nets/${id}/topic-responses`),
   getPollResults: (id: number) => api.get(`/nets/${id}/poll-results`),
+  // Structured (non-CSV) ICS-309 log, for ICS309PrintView's form-accurate PDF.
+  // Draws from the same _build_ics309_data() as the CSV download so the two
+  // never diverge -- see routers/nets_export.py.
+  getIcs309Log: (id: number) => api.get(`/nets/${id}/export/ics309`, { params: { format: 'json' } }),
 };
 
 // Check-in API
@@ -229,6 +233,45 @@ export const netRoleApi = {
 export const feedbackApi = {
   submit: (data: { type: 'bug' | 'feature'; subject: string; body: string }) =>
     api.post('/feedback', data),
+};
+
+// Traffic API (Assisted Traffic Handling & Forms — radiograms, ICS-213, etc.)
+// See docs/concepts/TRAFFIC-HANDLING-DESIGN.md sections 3.1-3.4 for the form
+// CRUD/export/import surface and section 3.3 for the chain-of-custody log /
+// inbox surface. Reminder endpoints are a later phase.
+export const trafficApi = {
+  // includeDisabled is admin-only (silently ignored server-side otherwise) --
+  // used by AdminTrafficTab.tsx so a previously-disabled definition can be
+  // found again and re-enabled.
+  listDefinitions: (includeDisabled?: boolean) =>
+    api.get('/traffic/definitions', { params: includeDisabled ? { include_disabled: true } : undefined }),
+  getDefinition: (formType: string) => api.get(`/traffic/definitions/${formType}`),
+  updateDefinition: (id: number, data: any) => api.put(`/traffic/definitions/${id}`, data),
+  listArlMessages: () => api.get('/traffic/arl-messages'),
+
+  create: (data: any) => api.post('/traffic/forms', data),
+  list: (params?: any) => api.get('/traffic/forms', { params }),
+  listForNet: (netId: number, params?: any) => api.get(`/traffic/nets/${netId}/forms`, { params }),
+  summary: (netId: number) => api.get(`/traffic/nets/${netId}/summary`),
+  get: (id: number) => api.get(`/traffic/forms/${id}`),
+  update: (id: number, data: any) => api.patch(`/traffic/forms/${id}`, data),
+  delete: (id: number) => api.delete(`/traffic/forms/${id}`),
+  // responseType 'blob' since this returns a plaintext file download. The
+  // printable PDF is rendered client-side now (RadiogramPrintView.tsx /
+  // ICS213PrintView.tsx + utils/pdfExport.ts), not a server format option.
+  exportForm: (id: number, format: 'text' = 'text') =>
+    api.get(`/traffic/forms/${id}/export`, { params: { format }, responseType: 'blob' }),
+  // Stateless parse-only preview (TRAFFIC-HANDLING-DESIGN.md D5) -- never
+  // creates a Form. The review screen hands the result to FormRenderer/
+  // RadiogramAssist pre-filled; only the ordinary `create` above commits.
+  importPreview: (text: string) => api.post('/traffic/import/preview', { text }),
+
+  // Chain-of-custody log (routers/traffic_log.py)
+  appendLogEntry: (formId: number, data: any) => api.post(`/traffic/forms/${formId}/log`, data),
+  listLogEntries: (formId: number) => api.get(`/traffic/forms/${formId}/log`),
+  deleteLogEntry: (formId: number, entryId: number) =>
+    api.delete(`/traffic/forms/${formId}/log/${entryId}`),
+  getInbox: () => api.get('/traffic/inbox'),
 };
 
 // Contact API (station contacts from check-in history)

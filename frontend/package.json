@@ -36,13 +36,15 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "typescript": "^5.3.3",
     "typescript-eslint": "^8.62.1",
-    "vite": "^5.0.11"
+    "vite": "^5.0.11",
+    "vitest": "^1.0.4"
   },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint src",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest"
   }
 }

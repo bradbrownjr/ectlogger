@@ -1,0 +1,92 @@
+{
+  "form_type": "ICS213",
+  "title": "ICS-213 General Message Form",
+  "description": "General message form for emergency and non-emergency communications. Based on the Incident Command System ICS-213 form used for tactical communications.",
+  "output_format": "ics213",
+  "fields": [
+    {
+      "name": "incident_name",
+      "label": "Incident/Event Name",
+      "field_type": "text",
+      "is_required": false,
+      "max_length": 100,
+      "description": "Name of the incident or event (if applicable)",
+      "sort_order": 10
+    },
+    {
+      "name": "to_name",
+      "label": "To (Name)",
+      "field_type": "text",
+      "is_required": true,
+      "max_length": 100,
+      "description": "Name of the primary recipient",
+      "sort_order": 20
+    },
+    {
+      "name": "to_position",
+      "label": "To (Position/Title)",
+      "field_type": "text",
+      "is_required": false,
+      "max_length": 100,
+      "description": "Position or title of the recipient",
+      "sort_order": 30
+    },
+    {
+      "name": "from_name",
+      "label": "From (Name)",
+      "field_type": "text",
+      "is_required": true,
+      "max_length": 100,
+      "auto_fill": "signature",
+      "description": "Your name",
+      "sort_order": 40
+    },
+    {
+      "name": "from_position",
+      "label": "From (Position/Title)",
+      "field_type": "text",
+      "is_required": false,
+      "max_length": 100,
+      "description": "Your position or title",
+      "sort_order": 50
+    },
+    {
+      "name": "subject",
+      "label": "Subject",
+      "field_type": "text",
+      "is_required": true,
+      "max_length": 200,
+      "description": "Brief subject line for the message",
+      "sort_order": 60
+    },
+    {
+      "name": "message",
+      "label": "Message",
+      "field_type": "textarea",
+      "is_required": true,
+      "description": "The message content",
+      "sort_order": 70
+    },
+    {
+      "name": "priority",
+      "label": "Priority",
+      "field_type": "choice",
+      "is_required": true,
+      "choices": [
+        "Routine",
+        "Urgent",
+        "Emergency"
+      ],
+      "description": "Message priority level",
+      "sort_order": 80
+    },
+    {
+      "name": "reply_requested",
+      "label": "Reply Requested",
+      "field_type": "yesno",
+      "is_required": true,
+      "description": "Do you need a reply to this message?",
+      "sort_order": 90
+    }
+  ]
+}

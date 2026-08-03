@@ -1,0 +1,78 @@
+[
+  {
+    "raw": "This is a test.",
+    "expected_normalized": "THIS IS A TEST"
+  },
+  {
+    "raw": "Wow! Great, right; okay: sure",
+    "expected_normalized": "WOW X GREAT X RIGHT X OKAY X SURE"
+  },
+  {
+    "raw": "The freq is 146.52 tonight",
+    "expected_normalized": "THE FREQ IS 146R52 TONIGHT"
+  },
+  {
+    "raw": "Meet at 14:30 hours",
+    "expected_normalized": "MEET AT 14R30 HOURS"
+  },
+  {
+    "raw": "Fractions like 1/2 cup",
+    "expected_normalized": "FRACTIONS LIKE 1R2 CUP"
+  },
+  {
+    "raw": "Mom & Dad are fine",
+    "expected_normalized": "MOM AND DAD ARE FINE"
+  },
+  {
+    "raw": "Contact me at foo@example.com please",
+    "expected_normalized": "CONTACT ME AT FOO AT EXAMPLE X COM PLEASE"
+  },
+  {
+    "raw": "Well (maybe) not",
+    "expected_normalized": "WELL MAYBE NOT"
+  },
+  {
+    "raw": "Well-known station",
+    "expected_normalized": "WELL X KNOWN STATION"
+  },
+  {
+    "raw": "Free - standing pole",
+    "expected_normalized": "FREE X STANDING POLE"
+  },
+  {
+    "raw": "Don't stop believing",
+    "expected_normalized": "DONT STOP BELIEVING"
+  },
+  {
+    "raw": "Rock-n-roll station #5, right?",
+    "expected_normalized": "ROCK X N ROLL STATION #5 X RIGHT"
+  },
+  {
+    "raw": "Ends with dash-",
+    "expected_normalized": "ENDS WITH DASH"
+  },
+  {
+    "raw": "Ends with question?",
+    "expected_normalized": "ENDS WITH QUESTION"
+  },
+  {
+    "raw": "Multiple   spaces   here",
+    "expected_normalized": "MULTIPLE SPACES HERE"
+  },
+  {
+    "raw": "12345 units delivered",
+    "expected_normalized": "12345 UNITS DELIVERED"
+  },
+  {
+    "raw": "Is this a test?",
+    "expected_normalized": "IS THIS A TEST"
+  },
+  {
+    "raw": "What time is it? Reply soon",
+    "expected_normalized": "WHAT TIME IS IT QUERY REPLY SOON"
+  },
+  {
+    "raw": "Combo: cost is 12.5 & (extra) - stuff, right?",
+    "expected_normalized": "COMBO X COST IS 12R5 AND EXTRA X STUFF X RIGHT"
+  }
+]

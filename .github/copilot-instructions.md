@@ -53,7 +53,7 @@ It covers: file structure, migration template, AppSettings singleton pattern, de
 ### WebSocket (`main.py`)
 - Endpoint: `WS /ws/nets/{net_id}?token=<jwt>`
 - `ConnectionManager` tracks connections per net, broadcasts to all clients
-- Server-originated types (a route handler calls `manager.broadcast` after a DB write): `status_change`, `check_in_deleted`, `hand_raised_changed`, `net_started`, `net_lobby_opened`, `net_status_change`, `net_pause_change`, `role_change`, `chat_message`, `chat_reaction`, `chat_image`, `ping`
+- Server-originated types (a route handler calls `manager.broadcast` after a DB write): `status_change`, `check_in_deleted`, `hand_raised_changed`, `net_started`, `net_lobby_opened`, `net_status_change`, `net_pause_change`, `role_change`, `can_hear_changed`, `chat_message`, `chat_reaction`, `chat_image`, `traffic_logged`, `traffic_log_changed`, `ping`
 - Client-originated types relayed verbatim by `main.py` (the server neither generates nor validates these): `check_in`, `active_speaker`, `active_frequency`
 - Frontend connects when viewing active net, receives real-time updates
 - Full table with emitting file per type: [`docs/DEVELOPMENT.md`](../docs/DEVELOPMENT.md) "WebSocket"
@@ -470,5 +470,5 @@ split patterns themselves.
 | Admin panel (6 tabs) | `frontend/src/pages/Admin.tsx` + `components/admin/*Tab.tsx` | Users, settings, feature flags, maintenance banner, Ko-fi config, changelog |
 | Auth (magic link + OAuth → JWT) | `backend/app/routers/auth.py`, `app/auth.py`; `backend/app/email/auth.py` | `create_magic_link_token`, `create_access_token` |
 | Email notifications (net lifecycle, reminders, logs) | `backend/app/email_service.py` (facade) + `app/email/{base,auth,net_lifecycle,reminders,net_logs,digest}.py` | `EmailService` facade class |
-| WebSocket real-time updates | `backend/app/main.py::ConnectionManager`; `frontend/src/hooks/useNetWebSocket.ts` | Server-originated: `status_change`, `check_in_deleted`, `hand_raised_changed`, `net_started`/`net_lobby_opened`, `net_status_change`, `net_pause_change`, `role_change`, `chat_message`/`chat_reaction`/`chat_image`, `ping`. Client-relayed: `check_in`, `active_speaker`, `active_frequency` |
+| WebSocket real-time updates | `backend/app/main.py::ConnectionManager`; `frontend/src/hooks/useNetWebSocket.ts` | Server-originated: `status_change`, `check_in_deleted`, `hand_raised_changed`, `net_started`/`net_lobby_opened`, `net_status_change`, `net_pause_change`, `role_change`, `can_hear_changed`, `chat_message`/`chat_reaction`/`chat_image`, `traffic_logged`, `traffic_log_changed`, `ping`. Client-relayed: `check_in`, `active_speaker`, `active_frequency` |
 | Permission checks (owner/admin/co-manager/staff) | `backend/app/permissions.py` | `check_net_permission`, `check_template_permission` — used across nets/templates/check-ins routers |

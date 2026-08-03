@@ -186,10 +186,12 @@ export const exportToPdf = async (
       captureElement = clone;
     }
 
-    // Collect avoid-break element positions (table rows) so we can cut
-    // between rows instead of through them.
+    // Collect avoid-break element positions (table rows, plus anything a
+    // caller opts in with data-pdf-avoid-break, e.g. a map card that would
+    // otherwise render as two useless half-images if a page cut landed
+    // inside it) so we can cut between them instead of through them.
     const captureRect = captureElement.getBoundingClientRect();
-    const avoidEls = captureElement.querySelectorAll('tr') as NodeListOf<HTMLElement>;
+    const avoidEls = captureElement.querySelectorAll('tr, [data-pdf-avoid-break]') as NodeListOf<HTMLElement>;
     // We'll compute scaled positions after we know the scale factor
     const avoidElsArr = Array.from(avoidEls);
 

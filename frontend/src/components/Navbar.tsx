@@ -7,6 +7,7 @@ import {
   Typography,
   Button,
   Box,
+  Badge,
   Chip,
   IconButton,
   Drawer,
@@ -26,6 +27,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useThemeMode } from '../contexts/ThemeContext';
 import { useLocation } from '../contexts/LocationContext';
+import useTrafficInbox from '../hooks/useTrafficInbox';
 import UserAvatar from './UserAvatar';
 import FeedbackModal from './FeedbackModal';
 import AboutModal from './AboutModal';
@@ -37,6 +39,7 @@ import Brightness7Icon from '@mui/icons-material/Brightness7';
 import MenuIcon from '@mui/icons-material/Menu';
 import RadioIcon from '@mui/icons-material/Radio';
 import EventIcon from '@mui/icons-material/Event';
+import MailIcon from '@mui/icons-material/Mail';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import PersonIcon from '@mui/icons-material/Person';
@@ -155,6 +158,7 @@ const NavbarClock: React.FC<NavbarClockProps> = ({ compact = false }) => {
 const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const { user, logout, isAuthenticated, isActualAdmin, simulateRegularUser, toggleSimulateRegularUser } = useAuth();
+  const { count: trafficInboxCount } = useTrafficInbox();
   const { mode, toggleColorMode } = useThemeMode();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -208,6 +212,7 @@ const Navbar: React.FC = () => {
   const navItems = [
     { label: 'Nets', path: '/dashboard', icon: <RadioIcon /> },
     { label: 'Schedule', path: '/scheduler', icon: <EventIcon /> },
+    { label: 'Traffic', path: '/traffic', icon: <MailIcon /> },
     { label: 'Stats', path: '/statistics', icon: <BarChartIcon /> },
   ];
 
@@ -289,7 +294,13 @@ const Navbar: React.FC = () => {
                     {navItems.map((item) => (
                       <ListItem key={item.path} disablePadding>
                         <ListItemButton onClick={() => handleNavigate(item.path)}>
-                          <ListItemIcon>{item.icon}</ListItemIcon>
+                          <ListItemIcon>
+                            {item.path === '/traffic' ? (
+                              <Badge color="error" badgeContent={trafficInboxCount} max={99}>
+                                {item.icon}
+                              </Badge>
+                            ) : item.icon}
+                          </ListItemIcon>
                           <ListItemText primary={item.label} />
                         </ListItemButton>
                       </ListItem>
@@ -382,7 +393,11 @@ const Navbar: React.FC = () => {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               {navItems.map((item) => (
                 <Button key={item.path} color="inherit" onClick={() => navigate(item.path)}>
-                  {item.label}
+                  {item.path === '/traffic' ? (
+                    <Badge color="error" badgeContent={trafficInboxCount} max={99}>
+                      {item.label}
+                    </Badge>
+                  ) : item.label}
                 </Button>
               ))}
 

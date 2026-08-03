@@ -1,0 +1,163 @@
+{
+  "form_type": "RADIOGRAM",
+  "title": "ARRL Radiogram",
+  "description": "Standard ARRL radiogram for the National Traffic System (NTS).",
+  "output_format": "nts_radiogram",
+  "fields": [
+    {
+      "name": "number",
+      "label": "Message Number",
+      "field_type": "text",
+      "is_required": true,
+      "max_length": 10,
+      "validator": "nts_number",
+      "description": "Sequential message number from your station",
+      "sort_order": 10
+    },
+    {
+      "name": "precedence",
+      "label": "Precedence",
+      "field_type": "choice",
+      "is_required": true,
+      "choices": [
+        "R - Routine",
+        "W - Welfare",
+        "P - Priority",
+        "E - Emergency"
+      ],
+      "description": "Message precedence level",
+      "sort_order": 20
+    },
+    {
+      "name": "handling",
+      "label": "HX (Handling Instructions)",
+      "field_type": "text",
+      "is_required": false,
+      "max_length": 50,
+      "validator": "hx_code",
+      "description": "Optional handling instructions (HXA, HXB, etc.) or ? for list",
+      "help_text": "HXA(n) Collect delivery authorized within n miles\nHXB(n) Cancel if not delivered within n hours; notify origin\nHXC    Report delivery date/time to originating station\nHXD    Report relay and delivery chain to originating station\nHXE    Get reply from addressee; originate reply message back\nHXF(n) Hold delivery until date n\nHXG    No toll delivery; cancel and notify origin if cost required",
+      "sort_order": 30
+    },
+    {
+      "name": "station_of_origin",
+      "label": "Station of Origin",
+      "field_type": "text",
+      "is_required": true,
+      "max_length": 20,
+      "validator": "callsign",
+      "auto_fill": "callsign",
+      "description": "Callsign of originating station",
+      "sort_order": 40
+    },
+    {
+      "name": "place_of_origin",
+      "label": "Place of Origin",
+      "field_type": "text",
+      "is_required": true,
+      "max_length": 50,
+      "validator": "city_state",
+      "auto_fill": "place_of_origin",
+      "description": "City and state of origin",
+      "sort_order": 50
+    },
+    {
+      "name": "to_name",
+      "label": "To (Name)",
+      "field_type": "text",
+      "is_required": true,
+      "max_length": 100,
+      "description": "Recipient's name only — callsign goes in the next field",
+      "sort_order": 60
+    },
+    {
+      "name": "to_callsign",
+      "label": "To (Callsign, if ham)",
+      "field_type": "text",
+      "is_required": false,
+      "max_length": 20,
+      "validator": "callsign",
+      "description": "Recipient's callsign if addressee is a ham (leave blank if not a ham)",
+      "sort_order": 70
+    },
+    {
+      "name": "to_address",
+      "label": "To (Address)",
+      "field_type": "text",
+      "is_required": true,
+      "max_length": 100,
+      "description": "Street address",
+      "sort_order": 80
+    },
+    {
+      "name": "to_city_state",
+      "label": "To (City, State)",
+      "field_type": "text",
+      "is_required": true,
+      "max_length": 100,
+      "validator": "city_state",
+      "description": "City and state",
+      "sort_order": 90
+    },
+    {
+      "name": "to_zip",
+      "label": "To (ZIP Code)",
+      "field_type": "text",
+      "is_required": true,
+      "max_length": 10,
+      "validator": "us_zip",
+      "description": "Destination ZIP code — used for NTS routing",
+      "sort_order": 100
+    },
+    {
+      "name": "to_phone",
+      "label": "To (Phone)",
+      "field_type": "text",
+      "is_required": false,
+      "max_length": 20,
+      "validator": "phone",
+      "description": "Phone number (optional)",
+      "sort_order": 110
+    },
+    {
+      "name": "to_email",
+      "label": "To (Email)",
+      "field_type": "text",
+      "is_required": false,
+      "max_length": 100,
+      "validator": "email",
+      "description": "Recipient email address (optional)",
+      "sort_order": 120
+    },
+    {
+      "name": "text",
+      "label": "Message Type",
+      "field_type": "textarea",
+      "is_required": true,
+      "arl_enabled": true,
+      "nts_normalize": true,
+      "sort_order": 130
+    },
+    {
+      "name": "signature",
+      "label": "Signature",
+      "field_type": "text",
+      "is_required": true,
+      "max_length": 100,
+      "auto_fill": "signature",
+      "description": "Sender's name or signature",
+      "sort_order": 140
+    },
+    {
+      "name": "filed_time",
+      "label": "Time Filed (UTC, HHMM)",
+      "field_type": "text",
+      "is_required": false,
+      "max_length": 6,
+      "validator": "hhmm",
+      "default_now": "%H%M",
+      "description": "UTC time message is filed (auto-filled with current time)",
+      "sort_order": 150
+    }
+  ]
+}
