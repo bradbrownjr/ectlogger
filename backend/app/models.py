@@ -107,6 +107,7 @@ class User(Base):
     notify_net_reminder = Column(Boolean, default=False)  # Reminder 1 hour before subscribed net
     notify_ics309 = Column(Boolean, default=False)  # Send ICS-309 format instead of standard log
     notify_whats_new = Column(Boolean, default=False)  # Daily 8 AM digest of new platform features (off by default)
+    notify_traffic_reminder = Column(Boolean, default=True)  # Escalating reminder ladder for traffic you're holding too long (D4). On by default -- an operational obligation, not a passive preference.
     timezone = Column(String(64), nullable=True)  # IANA timezone (e.g. "America/New_York") used to schedule per-user emails. Falls back to PST when unset.
     unsubscribe_token = Column(String(64), unique=True, index=True, nullable=True)  # Token for one-click email unsubscribe
     show_activity_in_chat = Column(Boolean, default=True)  # Show check-in/out activity in chat
@@ -218,6 +219,7 @@ class NetTemplate(Base):
     ics309_enabled = Column(Boolean, default=False)  # Enable ICS-309 format for net close emails
     propagation_logging_enabled = Column(Boolean, default=False)  # Seeds Net.propagation_logging_enabled for nets created from this template
     traffic_enabled = Column(Boolean, default=True)  # Seeds Net.traffic_enabled for nets created from this template
+    traffic_escalation_digest = Column(Boolean, default=False)  # Opt-in weekly stale-traffic digest to this template's manager (D4). Off by default -- a badge in the traffic panel is the default escalation path; this is for groups that need active chasing.
     mobile_priority_sort = Column(Boolean, default=True)  # Promote mobile stations above chronological order
     chat_grace_period_minutes = Column(Integer, nullable=True)  # Minutes to keep chat open after close; null = disabled
     self_checkin_enabled = Column(Boolean, default=True)  # If False, nets from this schedule accept only NCS/logger-entered check-ins
@@ -556,6 +558,33 @@ class TrafficLogEntry(Base):
     )
 
 
+class TrafficReminderLog(Base):
+    """Dedup log for the traffic reminder ladder (D4).
+
+    Modeled directly on WhatsNewSendLog's cross-process atomic-insert lock:
+    the UniqueConstraint(form_id, user_id, stage) is what prevents two
+    processes/ticks from sending the same reminder stage to the same holder
+    twice. Whichever process INSERTs first wins; the second gets an
+    IntegrityError and skips the send. See
+    docs/concepts/TRAFFIC-HANDLING-DESIGN.md D4 and
+    app/traffic_reminder_service.py.
+    """
+    __tablename__ = "traffic_reminder_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    form_id = Column(Integer, ForeignKey("forms.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    stage = Column(Integer, nullable=False)   # 1-based ladder stage (or HXB override stage)
+    sent_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    form = relationship("Form")
+    user = relationship("User")
+
+    __table_args__ = (
+        UniqueConstraint('form_id', 'user_id', 'stage', name='uq_traffic_reminder_log_form_user_stage'),
+    )
+
+
 class CustomField(Base):
     __tablename__ = "custom_fields"
 
@@ -813,5 +842,8 @@ class AppSettings(Base):
     # When set, banner is only active within this window (null = always active when enabled)
     maintenance_banner_scheduled_start = Column(DateTime(timezone=True), nullable=True)
     maintenance_banner_scheduled_end = Column(DateTime(timezone=True), nullable=True)
+
+    # Assisted Traffic Handling
+    traffic_reminder_enabled = Column(Boolean, default=True)  # Master switch for the precedence-scaled reminder ladder (D4)
 
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

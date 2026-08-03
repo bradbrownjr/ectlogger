@@ -12,6 +12,7 @@ from app.routers import settings as app_settings_router
 from app.security import sanitize_html
 from app.ncs_reminder_service import ncs_reminder_service
 from app.whats_new_service import whats_new_service
+from app.traffic_reminder_service import traffic_reminder_service
 from app.traffic.definitions import upsert_form_definitions
 from typing import Dict, List
 import asyncio
@@ -51,11 +52,13 @@ async def lifespan(_app: FastAPI):
         # prevent duplicate emails from the secondary localhost process.
         await ncs_reminder_service.start()
         await whats_new_service.start()
+        await traffic_reminder_service.start()
     else:
         print("Secondary process (port 9999): background services skipped.")
     yield
     await ncs_reminder_service.stop()
     await whats_new_service.stop()
+    await traffic_reminder_service.stop()
 
 
 # Initialize rate limiter
