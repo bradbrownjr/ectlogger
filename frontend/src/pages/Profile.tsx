@@ -12,7 +12,6 @@ import PersonIcon from '@mui/icons-material/Person';
 import SettingsIcon from '@mui/icons-material/Settings';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import MapIcon from '@mui/icons-material/Map';
-import MailIcon from '@mui/icons-material/Mail';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import { getErrorMessage } from '../utils/apiErrors';
@@ -21,7 +20,6 @@ import SettingsTab from '../components/profile/SettingsTab';
 import NotificationsTab from '../components/profile/NotificationsTab';
 import ActivityTab from '../components/profile/ActivityTab';
 import CoverageTab from '../components/profile/CoverageTab';
-import TrafficTab from '../components/profile/TrafficTab';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -86,11 +84,11 @@ const Profile: React.FC = () => {
     touchStartY.current = null;
     if (touchOnScrollable.current) return;
     if (Math.abs(deltaX) < 50 || Math.abs(deltaY) > Math.abs(deltaX)) return;
-    // Clamp to the last tab index (5: Profile, Settings, Notifications,
-    // Activity, Coverage, Traffic) - this was hardcoded to 2 and stale ever
-    // since the Activity tab (index 3) was added, making it unreachable by
-    // swipe; keep raising it as tabs are added.
-    const next = deltaX < 0 ? Math.min(tabValue + 1, 5) : Math.max(tabValue - 1, 0);
+    // Clamp to the last tab index (4: Profile, Settings, Notifications,
+    // Activity, Coverage) - this was hardcoded to 2 and stale ever since the
+    // Activity tab (index 3) was added, making it unreachable by swipe; keep
+    // raising it as tabs are added.
+    const next = deltaX < 0 ? Math.min(tabValue + 1, 4) : Math.max(tabValue - 1, 0);
     setTabValue(next);
     setSearchParams(next > 0 ? { tab: String(next) } : {});
   };
@@ -187,13 +185,6 @@ const Profile: React.FC = () => {
               id="profile-tab-4"
               aria-controls="profile-tabpanel-4"
             />
-            <Tab
-              icon={<MailIcon />}
-              iconPosition="start"
-              label="Traffic"
-              id="profile-tab-5"
-              aria-controls="profile-tabpanel-5"
-            />
           </Tabs>
         </Box>
 
@@ -243,11 +234,6 @@ const Profile: React.FC = () => {
         {/* ========== Coverage Tab ========== */}
         <TabPanel value={tabValue} index={4}>
           <CoverageTab />
-        </TabPanel>
-
-        {/* ========== Traffic Tab ("My Traffic") ========== */}
-        <TabPanel value={tabValue} index={5}>
-          <TrafficTab />
         </TabPanel>
       </Paper>
     </Container>

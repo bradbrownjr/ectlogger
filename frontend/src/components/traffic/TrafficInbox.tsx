@@ -17,9 +17,8 @@ import RelayLogDialog from './RelayLogDialog';
 // The caller's pending-held traffic (GET /traffic/inbox), oldest first, each
 // row showing age since it landed in the caller's inbox and a "Log handoff"
 // button that opens RelayLogDialog. Self-contained (fetches its own data via
-// useTrafficInbox, matching TrafficDetail.tsx's self-fetch pattern) so it can
-// be reused verbatim by both the Traffic page's Inbox tab and, in a
-// shortened form, Profile's "My Traffic" tab.
+// useTrafficInbox, matching TrafficDetail.tsx's self-fetch pattern), used by
+// the Traffic page's Inbox tab.
 // See docs/concepts/TRAFFIC-HANDLING-DESIGN.md sections 2.5 and 4.3.
 
 function formatAge(isoDate: string | null): string {

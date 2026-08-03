@@ -860,12 +860,19 @@ Deep-link query params drive the pre-filtered entry points: `/traffic?net_id=123
   pattern as the embedded Chat panel, rendering `TrafficPanel.tsx` scoped to `net_id`, with a
   "View all in Traffic" deep-link. Shown only when `net.traffic_enabled`. No browse/search UI
   here.
-- **Profile** — a new `components/profile/TrafficTab.tsx` ("My Traffic"): inbox count, a short
-  list, and a deep-link to `/traffic?held_by_me=1`. No browse/search UI here either.
 - **Admin** — `components/admin/AdminTrafficTab.tsx`, modeled closely on `AdminFieldsTab.tsx`:
   enable/disable definitions, reorder, override labels, and set the instance reminder switches.
-- **Statistics / NetStatistics / Profile Activity** — "Traffic handled" tiles plus a `traffic`
-  drill-down reusing `DrillDownTable`.
+- **Statistics / NetStatistics / Profile Activity** — "Traffic Handled" and "Traffic Pending"
+  tiles on the existing Profile **Activity** tab, each with its own `DrillDownTable` drill-down
+  (deep-linking each row to `/traffic?id={form_id}`). **Revision (2026-08-03):** a separate
+  Profile "My Traffic" tab (`components/profile/TrafficTab.tsx`) shipped in Phase 6 and was then
+  removed — with a full Traffic section carrying its own Inbox tab and a "mine" filter, a second
+  standalone inbox view in Profile was redundant. "Traffic Pending" reuses the existing
+  `GET /traffic/inbox` data (via `useTrafficInbox()`) rather than adding a parallel
+  `traffic_pending`/`traffic_pending_list` stat on the backend, since the inbox query already
+  *is* "pending traffic held by this user" (section 2.5) — a second server-side computation of
+  the same set would be exactly the kind of duplication D2/R1 already argue against elsewhere in
+  this design.
 
 ### 4.6 `utils/` and `services/`
 
@@ -1035,7 +1042,8 @@ themselves; nothing in this phase sends anything.
 1. `traffic_log.py` router: append, list, admin delete-last, `GET /traffic/inbox`.
 2. `TrafficLogTimeline.tsx`, `RelayLogDialog.tsx`, `TrafficInbox.tsx`, `useTrafficInbox.ts`,
    navbar badge.
-3. `components/profile/TrafficTab.tsx` ("My Traffic"), deep-linking only.
+3. ~~`components/profile/TrafficTab.tsx` ("My Traffic")~~ — shipped here, then removed
+   2026-08-03 in favor of a "Traffic Pending" tile on Profile's Activity tab (see section 4.5).
 4. WebSocket `traffic_log_changed`.
 5. Tests: full chain across all six actions with the derived disposition asserted at each
    step; inbox membership transitions (RECEIVED in, RELAYED-to-known moves, RELAYED-to-unknown

@@ -190,8 +190,8 @@ const Traffic: React.FC = () => {
   const { count: inboxCount } = useTrafficInbox();
 
   const viewingId = searchParams.get('id');
-  // Deep-link from Profile's "My Traffic" tab (TRAFFIC-HANDLING-DESIGN.md
-  // section 4.5): pre-filters the Browse tab to only what the caller holds.
+  // held_by_me pre-filters the Browse tab to only what the caller holds
+  // (TRAFFIC-HANDLING-DESIGN.md section 4.5).
   const heldByMe = searchParams.get('held_by_me') === '1';
 
   const touchStartX = useRef<number | null>(null);
