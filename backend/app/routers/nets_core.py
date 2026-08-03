@@ -53,6 +53,7 @@ async def create_net(
         field_config=json.dumps(net_data.field_config) if net_data.field_config else None,
         ics309_enabled=net_data.ics309_enabled or False,
         propagation_logging_enabled=net_data.propagation_logging_enabled or False,
+        traffic_enabled=net_data.traffic_enabled if net_data.traffic_enabled is not None else True,
         mobile_priority_sort=net_data.mobile_priority_sort if net_data.mobile_priority_sort is not None else True,
         chat_grace_period_minutes=net_data.chat_grace_period_minutes,
         self_checkin_enabled=net_data.self_checkin_enabled if net_data.self_checkin_enabled is not None else True,

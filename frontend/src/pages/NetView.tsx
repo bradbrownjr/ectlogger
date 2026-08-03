@@ -282,6 +282,7 @@ const NetView: React.FC = () => {
   const [scheduleAnnouncementsMinimized, setScheduleAnnouncementsMinimized] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.SCHEDULE_ANNOUNCEMENTS_MINIMIZED, false);
   const [mapMinimized, setMapMinimized] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.MAP_MINIMIZED, false);
   const [coverageMinimized, setCoverageMinimized] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.COVERAGE_MINIMIZED, false);
+  const [trafficMinimized, setTrafficMinimized] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.TRAFFIC_MINIMIZED, false);
   // Phase 4 "can hear" coverage overlay on/off, and which callsign (if any)
   // is currently highlighted/filtered - both lifted here (from CheckInMap's
   // former local state) so the new Coverage panel and the map overlay can
@@ -679,10 +680,23 @@ const NetView: React.FC = () => {
   const handleFloatToWindowCheckIns = () => { handleAttachCheckInList(); handlePopOutCheckIns(); };
   const showMapDocked = map.open && mapDocked;
   const showCoverageDocked = coverage.open && coverageDocked;
-  // True once neither Chat, Activity Log, Map, nor Coverage has anything
-  // docked — the side column disappears entirely in that case, so the
-  // check-in list should expand to fill it.
-  const sidePanelsEmpty = (chatDetached || chatPopout.isOpen) && (activityLogDetached || activityLogPopout.isOpen) && !showMapDocked && !showCoverageDocked;
+  // Traffic panel visibility: net.traffic_enabled AND that net's NCS/logger/
+  // owner/admin (TRAFFIC-HANDLING-DESIGN.md D3 rule 4), computed here (ahead
+  // of the `if (!net) return` guard below) rather than reusing
+  // canManageCheckIns, which is computed after that guard. Mirrors
+  // canManageCheckIns's own boolean exactly -- see that computation further
+  // down for the canonical version.
+  const userTrafficRole = netRoles.find((role: any) => role.user_id === user?.id);
+  const canViewNetTraffic = user?.id === net?.owner_id
+    || user?.role === 'admin'
+    || !!net?.can_manage
+    || (userTrafficRole?.role === 'NCS' && userTrafficRole?.is_active !== false)
+    || userTrafficRole?.role === 'LOGGER';
+  const showTraffic = !!net?.traffic_enabled && !!canViewNetTraffic;
+  // True once neither Chat, Activity Log, Map, Coverage, nor Traffic has
+  // anything docked — the side column disappears entirely in that case, so
+  // the check-in list should expand to fill it.
+  const sidePanelsEmpty = (chatDetached || chatPopout.isOpen) && (activityLogDetached || activityLogPopout.isOpen) && !showMapDocked && !showCoverageDocked && !showTraffic;
 
   const leftPanelsActive = (script.open && scriptDocked) || (announcements.open && announcementsDocked) || (scheduleAnnouncements.open && scheduleAnnouncementsDocked);
   const centerActive = !checkInListDetached && !checkInsPopout.isOpen;
@@ -2259,6 +2273,11 @@ const NetView: React.FC = () => {
               highlightedCallsign={highlightedCallsign}
               setHighlightedCallsign={setHighlightedCallsign}
               onShowCoverageOnMap={handleShowCoverageOnMap}
+              currentUserId={user?.id}
+              showTraffic={showTraffic}
+              trafficMinimized={trafficMinimized}
+              onMinimizeTraffic={() => setTrafficMinimized(true)}
+              onRestoreTraffic={() => setTrafficMinimized(false)}
             />
           </Grid>
         )}

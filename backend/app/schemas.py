@@ -344,6 +344,7 @@ class NetBase(BaseModel):
     field_config: Optional[dict] = None
     ics309_enabled: Optional[bool] = False
     propagation_logging_enabled: Optional[bool] = False
+    traffic_enabled: Optional[bool] = True
     mobile_priority_sort: Optional[bool] = True
     chat_grace_period_minutes: Optional[int] = None
     self_checkin_enabled: Optional[bool] = True
@@ -375,6 +376,7 @@ class NetUpdate(BaseModel):
     field_config: Optional[dict] = None
     ics309_enabled: Optional[bool] = None
     propagation_logging_enabled: Optional[bool] = None
+    traffic_enabled: Optional[bool] = None
     mobile_priority_sort: Optional[bool] = None
     chat_grace_period_minutes: Optional[int] = None
     self_checkin_enabled: Optional[bool] = None
@@ -415,6 +417,7 @@ class NetResponse(NetBase):
     field_config: Optional[dict] = None
     ics309_enabled: bool = False
     propagation_logging_enabled: bool = False
+    traffic_enabled: bool = True
     scheduled_start_time: Optional[datetime] = None
     started_at: Optional[datetime] = None
     closed_at: Optional[datetime] = None
@@ -453,6 +456,7 @@ class NetResponse(NetBase):
             'field_config': json.loads(net.field_config) if net.field_config else None,
             'ics309_enabled': net.ics309_enabled or False,
             'propagation_logging_enabled': net.propagation_logging_enabled or False,
+            'traffic_enabled': net.traffic_enabled if net.traffic_enabled is not None else True,
             'mobile_priority_sort': net.mobile_priority_sort if net.mobile_priority_sort is not None else True,
             'chat_grace_period_minutes': net.chat_grace_period_minutes,
             'self_checkin_enabled': net.self_checkin_enabled if net.self_checkin_enabled is not None else True,
@@ -494,6 +498,7 @@ class NetTemplateBase(BaseModel):
     fifth_week_user_id: Optional[int] = None
     ics309_enabled: bool = False  # Enable ICS-309 format for net close emails
     propagation_logging_enabled: bool = False  # Seeds propagation_logging_enabled for nets created from this template
+    traffic_enabled: bool = True  # Seeds traffic_enabled for nets created from this template
     mobile_priority_sort: Optional[bool] = True
     chat_grace_period_minutes: Optional[int] = None
     self_checkin_enabled: Optional[bool] = True
@@ -528,6 +533,7 @@ class NetTemplateUpdate(BaseModel):
     owner_id: Optional[int] = None  # Allow changing the owner (admin only or current owner)
     ics309_enabled: Optional[bool] = None
     propagation_logging_enabled: Optional[bool] = None
+    traffic_enabled: Optional[bool] = None
     mobile_priority_sort: Optional[bool] = None
     chat_grace_period_minutes: Optional[int] = None
     self_checkin_enabled: Optional[bool] = None
@@ -576,6 +582,7 @@ class NetTemplateResponse(NetTemplateBase):
             'schedule_config': json.loads(template.schedule_config) if template.schedule_config else {},
             'ics309_enabled': template.ics309_enabled or False,
             'propagation_logging_enabled': template.propagation_logging_enabled or False,
+            'traffic_enabled': template.traffic_enabled if template.traffic_enabled is not None else True,
             'mobile_priority_sort': template.mobile_priority_sort if template.mobile_priority_sort is not None else True,
             'chat_grace_period_minutes': template.chat_grace_period_minutes,
             'self_checkin_enabled': template.self_checkin_enabled if template.self_checkin_enabled is not None else True,
@@ -1683,3 +1690,19 @@ class FormDetailResponse(FormResponse):
             definition=FormDefinitionResponse.from_orm(obj.definition),
             log_entries=[TrafficLogEntryResponse.from_orm(e) for e in entries],
         )
+
+
+class TrafficSummaryResponse(BaseModel):
+    """GET /traffic/nets/{net_id}/summary: counts by derived disposition plus
+    a simple outstanding/stale count for the per-net traffic panel's summary
+    strip and the manager badge. `outstanding` is currently a fixed
+    24-hour-held placeholder -- Stage C's reminder service will supersede it
+    with the real precedence-scaled staleness ladder (see
+    TRAFFIC-HANDLING-DESIGN.md D4)."""
+    net_id: int
+    draft: int = 0
+    pending: int = 0
+    relayed: int = 0
+    delivered: int = 0
+    cancelled: int = 0
+    outstanding: int = 0

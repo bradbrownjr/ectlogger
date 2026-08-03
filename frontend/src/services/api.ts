@@ -232,8 +232,9 @@ export const feedbackApi = {
 };
 
 // Traffic API (Assisted Traffic Handling & Forms — radiograms, ICS-213, etc.)
-// See docs/concepts/TRAFFIC-HANDLING-DESIGN.md sections 3.1-3.2 for this
-// phase's surface; log/export/import/reminder endpoints are later phases.
+// See docs/concepts/TRAFFIC-HANDLING-DESIGN.md sections 3.1-3.4 for this
+// phase's surface; the chain-of-custody log/import/reminder endpoints are
+// later phases.
 export const trafficApi = {
   listDefinitions: () => api.get('/traffic/definitions'),
   getDefinition: (formType: string) => api.get(`/traffic/definitions/${formType}`),
@@ -243,9 +244,13 @@ export const trafficApi = {
   create: (data: any) => api.post('/traffic/forms', data),
   list: (params?: any) => api.get('/traffic/forms', { params }),
   listForNet: (netId: number, params?: any) => api.get(`/traffic/nets/${netId}/forms`, { params }),
+  summary: (netId: number) => api.get(`/traffic/nets/${netId}/summary`),
   get: (id: number) => api.get(`/traffic/forms/${id}`),
   update: (id: number, data: any) => api.patch(`/traffic/forms/${id}`, data),
   delete: (id: number) => api.delete(`/traffic/forms/${id}`),
+  // responseType 'blob' since this returns a file download (plaintext or PDF), not JSON.
+  exportForm: (id: number, format: 'text' | 'pdf') =>
+    api.get(`/traffic/forms/${id}/export`, { params: { format }, responseType: 'blob' }),
 };
 
 // Contact API (station contacts from check-in history)

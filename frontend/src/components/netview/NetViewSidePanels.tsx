@@ -5,6 +5,7 @@ import Chat from '../Chat';
 import ActivityLog from '../ActivityLog';
 import CheckInMap from '../CheckInMap';
 import CoveragePanel from './CoveragePanel';
+import TrafficPanel from './TrafficPanel';
 import ResizeHandle from '../ResizeHandle';
 import useResizableSplit from '../../hooks/useResizableSplit';
 import useLayoutTier from '../../hooks/useLayoutTier';
@@ -96,6 +97,15 @@ interface NetViewSidePanelsProps {
   highlightedCallsign: string | null;
   setHighlightedCallsign: (callsign: string | null) => void;
   onShowCoverageOnMap: () => void;
+  // Traffic side panel (Assisted Traffic Handling & Forms, Stage B Phase 5).
+  // Always docked (no on-demand open toggle) once both conditions hold --
+  // net.traffic_enabled and the viewer being that net's NCS/logger/owner/
+  // admin, per TRAFFIC-HANDLING-DESIGN.md D3 rule 4 and section 4.5.
+  currentUserId?: number;
+  showTraffic: boolean;
+  trafficMinimized: boolean;
+  onMinimizeTraffic: () => void;
+  onRestoreTraffic: () => void;
 }
 
 const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
@@ -152,6 +162,11 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
   highlightedCallsign,
   setHighlightedCallsign,
   onShowCoverageOnMap,
+  currentUserId,
+  showTraffic,
+  trafficMinimized,
+  onMinimizeTraffic,
+  onRestoreTraffic,
 }) => {
   const chatDocked = !chatDetached && !chatWindowOpen;
   const activityLogDocked = !activityLogDetached && !activityLogWindowOpen;
@@ -270,6 +285,21 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
           minimized={coverageMinimized}
           onMinimize={onMinimizeCoverage}
           onRestore={onRestoreCoverage}
+        />
+      ),
+    });
+  }
+  if (showTraffic) {
+    panes.push({
+      key: 'traffic',
+      minimized: trafficMinimized,
+      content: (
+        <TrafficPanel
+          netId={Number(netId)}
+          currentUserId={currentUserId}
+          minimized={trafficMinimized}
+          onMinimize={onMinimizeTraffic}
+          onRestore={onRestoreTraffic}
         />
       ),
     });

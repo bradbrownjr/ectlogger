@@ -1,4 +1,5 @@
 import json
+from datetime import datetime, timedelta
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -10,12 +11,25 @@ from app.database import get_db
 from app.dependencies import get_current_user
 from app.models import Form, FormDefinition, FormDisposition, Net, TrafficAction, TrafficLogEntry, User
 from app.permissions import FormPermissionResult, check_form_permission, check_net_permission, is_admin
-from app.schemas import FormCreate, FormDetailResponse, FormListResponse, FormResponse, FormUpdate
+from app.schemas import (
+    FormCreate,
+    FormDetailResponse,
+    FormListResponse,
+    FormResponse,
+    FormUpdate,
+    TrafficSummaryResponse,
+)
 from app.traffic.log import append_entry
 from app.traffic.promote import compute_promoted_fields
 from app.traffic.visibility import form_visibility_clause
 
 router = APIRouter(tags=["traffic-forms"])
+
+# Stage C's reminder service (TRAFFIC-HANDLING-DESIGN.md D4) will replace this
+# fixed threshold with the real precedence-scaled staleness ladder. Until that
+# lands, "outstanding" on the per-net summary is a simple placeholder: a
+# pending form held 24+ hours by its current holder.
+_STALE_THRESHOLD = timedelta(hours=24)
 
 _FORM_DETAIL_OPTIONS = (
     selectinload(Form.definition).selectinload(FormDefinition.fields),
@@ -113,7 +127,27 @@ async def create_form(
     result = await db.execute(
         select(Form).options(*_FORM_DETAIL_OPTIONS).where(Form.id == form.id)
     )
-    return FormDetailResponse.from_orm(result.scalar_one())
+    created_form = result.scalar_one()
+    response = FormDetailResponse.from_orm(created_form)
+
+    # Notify the net's traffic panel that a new form was filed, so it can
+    # refetch (see TRAFFIC-HANDLING-DESIGN.md section 3.6). Only forms filed
+    # on a net have anyone listening on that net's WebSocket group; a
+    # standalone form (net_id is None) has no group to notify.
+    if created_form.net_id is not None:
+        from app.main import manager
+        await manager.broadcast({
+            "type": "traffic_logged",
+            "data": {
+                "form_id": created_form.id,
+                "net_id": created_form.net_id,
+                "form_type": created_form.form_type,
+                "message_number": created_form.message_number,
+            },
+            "timestamp": datetime.utcnow().isoformat()
+        }, created_form.net_id)
+
+    return response
 
 
 @router.get("/forms", response_model=FormListResponse)
@@ -207,6 +241,49 @@ async def list_net_forms(
     )
     forms = result.scalars().all()
     return FormListResponse(items=[FormResponse.from_orm(f) for f in forms], total=total)
+
+
+@router.get("/nets/{net_id}/summary", response_model=TrafficSummaryResponse)
+async def get_net_traffic_summary(
+    net_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Counts by derived disposition for the per-net traffic panel's summary
+    strip, plus a simple outstanding/stale count for the manager badge. Same
+    visibility gate as GET /traffic/nets/{net_id}/forms (that net's
+    NCS/logger/owner/admin, TRAFFIC-HANDLING-DESIGN.md D3 rule 4)."""
+    net_result = await db.execute(select(Net).where(Net.id == net_id))
+    net = net_result.scalar_one_or_none()
+    if not net:
+        raise HTTPException(status_code=404, detail="Net not found")
+    if not await check_net_permission(db, net, current_user, required_roles=["ncs", "logger"]):
+        raise HTTPException(status_code=403, detail="Not authorized to view this net's traffic")
+
+    counts = {}
+    for disposition in FormDisposition:
+        clause = _disposition_clause(disposition)
+        count_query = select(func.count()).select_from(Form).where(Form.net_id == net_id, clause)
+        counts[disposition] = (await db.execute(count_query)).scalar() or 0
+
+    stale_cutoff = datetime.utcnow() - _STALE_THRESHOLD
+    outstanding_query = select(func.count()).select_from(Form).where(
+        Form.net_id == net_id,
+        _disposition_clause(FormDisposition.PENDING),
+        Form.held_since.isnot(None),
+        Form.held_since <= stale_cutoff,
+    )
+    outstanding = (await db.execute(outstanding_query)).scalar() or 0
+
+    return TrafficSummaryResponse(
+        net_id=net_id,
+        draft=counts[FormDisposition.DRAFT],
+        pending=counts[FormDisposition.PENDING],
+        relayed=counts[FormDisposition.RELAYED],
+        delivered=counts[FormDisposition.DELIVERED],
+        cancelled=counts[FormDisposition.CANCELLED],
+        outstanding=outstanding,
+    )
 
 
 @router.get("/forms/{form_id}", response_model=FormDetailResponse)

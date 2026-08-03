@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Paper, Typography, Chip, Divider, CircularProgress, Alert, Grid } from '@mui/material';
+import { Box, Paper, Typography, Chip, Divider, CircularProgress, Alert, Grid, Button } from '@mui/material';
+import DescriptionIcon from '@mui/icons-material/Description';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import { trafficApi } from '../../services/api';
 import { getErrorMessage } from '../../utils/apiErrors';
 import { TrafficForm } from '../../hooks/useTrafficList';
@@ -38,6 +40,7 @@ const TrafficDetail: React.FC<TrafficDetailProps> = ({ formId }) => {
   const [form, setForm] = useState<FormDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [exportingFormat, setExportingFormat] = useState<'text' | 'pdf' | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -70,13 +73,58 @@ const TrafficDetail: React.FC<TrafficDetailProps> = ({ formId }) => {
     return <Alert severity="error">{error || 'Traffic item not found'}</Alert>;
   }
 
+  // Downloads the export as a file, following the same blob-response idiom
+  // as NetView.tsx's handleExportICS309/handleExportCSV (Content-Disposition
+  // filename is set server-side by traffic_export.py).
+  const handleExport = async (exportFormat: 'text' | 'pdf') => {
+    setExportingFormat(exportFormat);
+    try {
+      const response = await trafficApi.exportForm(form.id, exportFormat);
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      const extension = exportFormat === 'text' ? 'txt' : 'pdf';
+      link.setAttribute('download', `${form.form_type}_${form.message_number || form.id}.${extension}`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(`Failed to export traffic form as ${exportFormat}:`, err);
+    } finally {
+      setExportingFormat(null);
+    }
+  };
+
   return (
     <Paper sx={{ p: { xs: 2, sm: 3 } }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1, mb: 2 }}>
         <Typography variant="h6">
           {form.definition.title}{form.message_number ? ` — NR ${form.message_number}` : ''}
         </Typography>
-        <Chip label={form.disposition} size="small" />
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+          <Chip label={form.disposition} size="small" />
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={exportingFormat === 'text' ? <CircularProgress size={14} /> : <DescriptionIcon />}
+            disabled={exportingFormat !== null}
+            onClick={() => handleExport('text')}
+            sx={{ minHeight: 44 }}
+          >
+            Text
+          </Button>
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={exportingFormat === 'pdf' ? <CircularProgress size={14} /> : <PictureAsPdfIcon />}
+            disabled={exportingFormat !== null}
+            onClick={() => handleExport('pdf')}
+            sx={{ minHeight: 44 }}
+          >
+            PDF
+          </Button>
+        </Box>
       </Box>
 
       <Grid container spacing={2} sx={{ mb: 2 }}>

@@ -152,6 +152,7 @@ class Net(Base):
     field_config = Column(Text, default='{"name": {"enabled": true, "required": false}, "location": {"enabled": true, "required": false}, "skywarn_number": {"enabled": false, "required": false}, "weather_observation": {"enabled": false, "required": false}, "power_source": {"enabled": false, "required": false}, "power": {"enabled": false, "required": false}, "feedback": {"enabled": false, "required": false}, "notes": {"enabled": false, "required": false}}')  # JSON config for check-in fields
     ics309_enabled = Column(Boolean, default=False)  # Generate ICS-309 format on close
     propagation_logging_enabled = Column(Boolean, default=False)  # Enable "can hear" station-to-station coverage logging
+    traffic_enabled = Column(Boolean, default=True)  # Show the per-net Traffic side panel (Assisted Traffic Handling)
     mobile_priority_sort = Column(Boolean, default=True)  # Promote mobile stations above chronological order
     chat_grace_period_minutes = Column(Integer, nullable=True)  # Minutes to keep chat open after close; null = disabled
     self_checkin_enabled = Column(Boolean, default=True)  # If False, only NCS/logger-entered check-ins are accepted
@@ -216,6 +217,7 @@ class NetTemplate(Base):
     is_active = Column(Boolean, default=True)
     ics309_enabled = Column(Boolean, default=False)  # Enable ICS-309 format for net close emails
     propagation_logging_enabled = Column(Boolean, default=False)  # Seeds Net.propagation_logging_enabled for nets created from this template
+    traffic_enabled = Column(Boolean, default=True)  # Seeds Net.traffic_enabled for nets created from this template
     mobile_priority_sort = Column(Boolean, default=True)  # Promote mobile stations above chronological order
     chat_grace_period_minutes = Column(Integer, nullable=True)  # Minutes to keep chat open after close; null = disabled
     self_checkin_enabled = Column(Boolean, default=True)  # If False, nets from this schedule accept only NCS/logger-entered check-ins
