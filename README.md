@@ -72,7 +72,9 @@ ECT and SKYWARN nets often move between frequencies to meet participants where t
 ### Assisted Traffic Handling
 
 - **📨 Radiogram & ICS-213 filing** — Fill out an ARRL radiogram or ICS-213 form with live NTS text normalization, word-count checking, and an ARL numbered-message picker, all from the net's Traffic panel or the standalone Traffic section
+- **📋 Paste or drop to import** — Paste the plaintext of a message copied off the air, or drag a text file onto the box, and the parser pre-fills a new form for you to review and confirm
 - **📬 Traffic inbox & chain of custody** — Every hop (originated, received, relayed, delivered, serviced, cancelled) is logged against the message, so a net's NCS/logger can see the delivery status of everything logged during their net
+- **🖨️ Form-accurate PDF export** — Printable PDFs replicate the real ARRL Radiogram pad and FEMA ICS-213/ICS-309 forms, boxes and rules included, ready to file or hand to the addressee
 - **🔒 Privacy by design** — Traffic is visible only to the submitter, current holder, anyone in its chain of custody, that net's NCS/logger, and admins; message bodies never appear on ICS-309 exports, only metadata (message number, precedence, addressee, handling station)
 
 ### Analytics & Reporting
