@@ -696,6 +696,24 @@ const NetReport: React.FC = () => {
         </Button>
       </Box>
 
+      {/* Report-wide options live at the top, not buried next to the section
+          they affect further down the page, so a user scanning the report
+          before scrolling can see this choice exists. */}
+      {net.propagation_logging_enabled && canHearReports.length > 0 && !exporting && (
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+          <FormControlLabel
+            control={
+              <Switch
+                size="small"
+                checked={includeCoverageMaps}
+                onChange={(e) => setIncludeCoverageMaps(e.target.checked)}
+              />
+            }
+            label={<Typography variant="body2">Include per-station coverage maps</Typography>}
+          />
+        </Box>
+      )}
+
       {/* ========== PDF CONTENT WRAPPER ========== */}
       {/* Force light mode styling for print-friendly PDF export */}
       <Box 
@@ -1445,24 +1463,9 @@ const NetReport: React.FC = () => {
             in a communications log format (see docs/ROADMAP.md Phase 3). */}
         {net.propagation_logging_enabled && (
           <>
-            <Box sx={{ mt: 3, mb: 2, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
-              <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <HearingIcon /> Station Coverage ({canHearReports.length} report{canHearReports.length !== 1 ? 's' : ''})
-              </Typography>
-              {canHearReports.length > 0 && !exporting && (
-                <FormControlLabel
-                  sx={{ ml: 'auto', mr: 0 }}
-                  control={
-                    <Switch
-                      size="small"
-                      checked={includeCoverageMaps}
-                      onChange={(e) => setIncludeCoverageMaps(e.target.checked)}
-                    />
-                  }
-                  label={<Typography variant="body2">Include per-station maps</Typography>}
-                />
-              )}
-            </Box>
+            <Typography variant="h6" sx={{ mt: 3, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <HearingIcon /> Station Coverage ({canHearReports.length} report{canHearReports.length !== 1 ? 's' : ''})
+            </Typography>
 
             <Box sx={{ mb: 3 }}>
               <CoverageReport
@@ -1493,7 +1496,10 @@ const NetReport: React.FC = () => {
 
                     return (
                       <Grid item xs={12} md={6} key={station.reporterCheckInId}>
-                        <Paper variant="outlined" sx={{ overflow: 'hidden' }}>
+                        {/* data-pdf-avoid-break: utils/pdfExport.ts keeps a page
+                            cut from ever landing inside this card, which would
+                            otherwise print as two useless half-map images. */}
+                        <Paper variant="outlined" sx={{ overflow: 'hidden' }} data-pdf-avoid-break="true">
                           <Box sx={{ p: 1, borderBottom: `1px solid ${theme.palette.divider}` }}>
                             <Typography variant="caption" fontWeight="medium">
                               {station.reporterCallsign} heard {station.heard.length} station{station.heard.length !== 1 ? 's' : ''}
