@@ -1537,6 +1537,7 @@ const NetReport: React.FC = () => {
                                 zoom={6}
                                 style={{ height: '100%', width: '100%' }}
                                 scrollWheelZoom={false}
+                                preferCanvas
                               >
                                 <TileLayer attribution={tileAttribution} url={tileUrl} />
                                 <FitBounds positions={positions} />
