@@ -26,6 +26,8 @@ import {
   Dialog,
   AppBar,
   Toolbar,
+  Switch,
+  FormControlLabel,
 } from '@mui/material';
 import {
   ArrowBack,
@@ -41,7 +43,7 @@ import {
   Close as CloseIcon,
   Hearing as HearingIcon,
 } from '@mui/icons-material';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, Tooltip as LeafletTooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { parseLocation, geocodeAddress, ParsedLocation } from '../utils/locationParser';
@@ -144,6 +146,13 @@ const FitBounds: React.FC<{ positions: [number, number][] }> = ({ positions }) =
 
   return null;
 };
+
+// Coverage line colors - matches the live overlay in CheckInMap.tsx (kept as
+// a local copy rather than a cross-import; this file already duplicates the
+// rest of its Leaflet marker/popup setup independently of CheckInMap.tsx).
+const COVERAGE_TWO_WAY_COLOR = '#ffab00'; // amber - confirmed both directions
+const COVERAGE_ONE_WAY_COLOR = '#616161'; // neutral gray - reported one direction only
+
 import {
   BarChart,
   Bar,
@@ -274,6 +283,9 @@ const NetReport: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
+  // Opt-in, view-time only (not persisted) - per-station coverage maps make
+  // an already-long report substantially longer, so they're off by default.
+  const [includeCoverageMaps, setIncludeCoverageMaps] = useState(false);
 
   // Always use OSM light tiles in the report — this is a print/export document
   // and dark tiles are unreadable on white paper regardless of app UI mode.
@@ -508,6 +520,50 @@ const NetReport: React.FC = () => {
     const pts = mappedCheckIns.map(m => ({ lat: m.parsedLocation.lat, lon: m.parsedLocation.lon }));
     return computeDualMapData(pts);
   }, [mappedCheckIns]);
+
+  // One entry per station that filed at least one "can hear" report as
+  // reporter, with the list of stations it heard. Stations that were only
+  // ever heard (never reported hearing anyone themselves) don't get their
+  // own map - there's nothing to plot from their side.
+  const stationCoverageMaps = useMemo(() => {
+    if (canHearReports.length === 0) return [];
+
+    const positionByCheckInId = new Map<number, [number, number]>();
+    for (const m of mappedCheckIns) {
+      if (m.parsedLocation.lat !== 0 || m.parsedLocation.lon !== 0) {
+        positionByCheckInId.set(m.checkIn.id, [m.parsedLocation.lat, m.parsedLocation.lon]);
+      }
+    }
+
+    // Two-way detection mirrors CheckInMap.tsx's coverageLines logic: a pair
+    // is two-way when both directions were independently reported.
+    const allEdgeKeys = new Set(
+      canHearReports.map((r) => `${r.reporter_check_in_id}-${r.heard_check_in_id}-${r.frequency_id ?? 'none'}`)
+    );
+
+    const byReporter = new Map<number, { callsign: string; reports: CanHearReportEntry[] }>();
+    for (const r of canHearReports) {
+      const entry = byReporter.get(r.reporter_check_in_id);
+      if (entry) entry.reports.push(r);
+      else byReporter.set(r.reporter_check_in_id, { callsign: r.reporter_callsign, reports: [r] });
+    }
+
+    const result = Array.from(byReporter.entries()).map(([reporterCheckInId, { callsign, reports }]) => ({
+      reporterCheckInId,
+      reporterCallsign: callsign,
+      reporterPosition: positionByCheckInId.get(reporterCheckInId) ?? null,
+      heard: reports.map((r) => ({
+        reportId: r.id,
+        checkInId: r.heard_check_in_id,
+        callsign: r.heard_callsign,
+        position: positionByCheckInId.get(r.heard_check_in_id) ?? null,
+        twoWay: allEdgeKeys.has(`${r.heard_check_in_id}-${r.reporter_check_in_id}-${r.frequency_id ?? 'none'}`),
+      })),
+    }));
+
+    result.sort((a, b) => a.reporterCallsign.localeCompare(b.reporterCallsign));
+    return result;
+  }, [canHearReports, mappedCheckIns]);
 
   // Binned check-in activity: counts per adaptive time window, capped at last check-in
   const { timelineData, binSize } = useMemo(() => {
@@ -1389,9 +1445,24 @@ const NetReport: React.FC = () => {
             in a communications log format (see docs/ROADMAP.md Phase 3). */}
         {net.propagation_logging_enabled && (
           <>
-            <Typography variant="h6" sx={{ mt: 3, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-              <HearingIcon /> Station Coverage ({canHearReports.length} report{canHearReports.length !== 1 ? 's' : ''})
-            </Typography>
+            <Box sx={{ mt: 3, mb: 2, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
+              <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <HearingIcon /> Station Coverage ({canHearReports.length} report{canHearReports.length !== 1 ? 's' : ''})
+              </Typography>
+              {canHearReports.length > 0 && !exporting && (
+                <FormControlLabel
+                  sx={{ ml: 'auto', mr: 0 }}
+                  control={
+                    <Switch
+                      size="small"
+                      checked={includeCoverageMaps}
+                      onChange={(e) => setIncludeCoverageMaps(e.target.checked)}
+                    />
+                  }
+                  label={<Typography variant="body2">Include per-station maps</Typography>}
+                />
+              )}
+            </Box>
 
             <Box sx={{ mb: 3 }}>
               <CoverageReport
@@ -1401,6 +1472,82 @@ const NetReport: React.FC = () => {
                 showFrequencyColumn={net.frequencies.length > 1}
               />
             </Box>
+
+            {/* ---- Per-station coverage maps (opt-in) ----
+                One small map per reporting station, showing that station's
+                pin plus every station it reported hearing, connected by
+                lines (amber = confirmed two-way, gray dashed = one-way).
+                Pin labels are permanent Leaflet tooltips, not click popups,
+                so they survive the html2canvas PDF snapshot. */}
+            {includeCoverageMaps && stationCoverageMaps.length > 0 && (
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="subtitle1" fontWeight="medium" sx={{ mb: 1 }}>
+                  Per-Station Coverage Maps
+                </Typography>
+                <Grid container spacing={2}>
+                  {stationCoverageMaps.map((station) => {
+                    const mappableHeard = station.heard.filter((h) => h.position !== null);
+                    const positions: [number, number][] = station.reporterPosition
+                      ? [station.reporterPosition, ...mappableHeard.map((h) => h.position as [number, number])]
+                      : [];
+
+                    return (
+                      <Grid item xs={12} md={6} key={station.reporterCheckInId}>
+                        <Paper variant="outlined" sx={{ overflow: 'hidden' }}>
+                          <Box sx={{ p: 1, borderBottom: `1px solid ${theme.palette.divider}` }}>
+                            <Typography variant="caption" fontWeight="medium">
+                              {station.reporterCallsign} heard {station.heard.length} station{station.heard.length !== 1 ? 's' : ''}
+                            </Typography>
+                          </Box>
+                          {!station.reporterPosition || positions.length < 2 ? (
+                            <Box sx={{ p: 2 }}>
+                              <Typography variant="body2" color="text.secondary">
+                                Not enough location data to plot this station's coverage.
+                              </Typography>
+                            </Box>
+                          ) : (
+                            <Box sx={{ height: 280, width: '100%' }}>
+                              <MapContainer
+                                center={station.reporterPosition}
+                                zoom={6}
+                                style={{ height: '100%', width: '100%' }}
+                                scrollWheelZoom={false}
+                              >
+                                <TileLayer attribution={tileAttribution} url={tileUrl} />
+                                <FitBounds positions={positions} />
+                                {mappableHeard.map((h) => (
+                                  <Polyline
+                                    key={h.reportId}
+                                    positions={[station.reporterPosition as [number, number], h.position as [number, number]]}
+                                    pathOptions={
+                                      h.twoWay
+                                        ? { color: COVERAGE_TWO_WAY_COLOR, weight: 3, opacity: 0.85 }
+                                        : { color: COVERAGE_ONE_WAY_COLOR, weight: 2, opacity: 0.75, dashArray: '6 6' }
+                                    }
+                                  />
+                                ))}
+                                <Marker position={station.reporterPosition} icon={createColoredIcon(theme.palette.primary.main)}>
+                                  <LeafletTooltip permanent direction="top" offset={[0, -28]} opacity={1}>
+                                    {station.reporterCallsign}
+                                  </LeafletTooltip>
+                                </Marker>
+                                {mappableHeard.map((h) => (
+                                  <Marker key={h.checkInId} position={h.position as [number, number]} icon={createColoredIcon(theme.palette.grey[600])}>
+                                    <LeafletTooltip permanent direction="top" offset={[0, -28]} opacity={1}>
+                                      {h.callsign}
+                                    </LeafletTooltip>
+                                  </Marker>
+                                ))}
+                              </MapContainer>
+                            </Box>
+                          )}
+                        </Paper>
+                      </Grid>
+                    );
+                  })}
+                </Grid>
+              </Box>
+            )}
           </>
         )}
 

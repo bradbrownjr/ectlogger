@@ -58,7 +58,7 @@ The responsive interface works beautifully on any device — from a phone in the
 - **🗺️ Station Mapping** — View check-in locations on OpenStreetMap
 - **🌐 Multiple Formats** — Town & state, GPS, Maidenhead, UTM, MGRS coordinate support in Location check-in field
 - **📍 Location Awareness** — Auto-fill Maidenhead grid square from browser location, if enabled by the end user
-- **📡 Station-to-Station Coverage Logging** — Optional per-net feature letting NCS, Logger, and Relay record which stations can hear each other, producing a sortable coverage report and a map overlay of confirmed one-way and two-way paths — the coverage-assessment picture ARES and SKYWARN drills need. Includes a personal "stations you can hear from home" map on your Profile.
+- **📡 Station-to-Station Coverage Logging** — Optional per-net feature letting NCS, Logger, and Relay record which stations can hear each other, producing a sortable coverage report and a map overlay of confirmed one-way and two-way paths — the coverage-assessment picture ARES and SKYWARN drills need. Includes a personal "stations you can hear from home" map on your Profile, and an optional per-station coverage map in the net's PDF report.
 
 ### Multi-Frequency Net Support
 
