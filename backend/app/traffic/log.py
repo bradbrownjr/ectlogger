@@ -7,7 +7,7 @@ and R2/R10 (the denormalization safety properties and the sequence race).
 """
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Iterable, Optional, Union
 
 from sqlalchemy import func, select
@@ -15,6 +15,12 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import Form, FormDisposition, RelayMethod, TrafficAction, TrafficLogEntry
+
+# Stage C's reminder service (TRAFFIC-HANDLING-DESIGN.md D4) will replace this
+# fixed threshold with the real precedence-scaled staleness ladder. Until that
+# lands, "outstanding" on the per-net summary is a simple placeholder: a
+# pending form held 24+ hours by its current holder.
+_STALE_THRESHOLD = timedelta(hours=24)
 
 
 def derive_disposition(form_or_entries: Union[Form, Iterable[TrafficLogEntry]]) -> FormDisposition:
@@ -157,3 +163,61 @@ async def recompute_form_cache(db: AsyncSession, form: Form) -> None:
         form.last_action = last.action
 
     await db.commit()
+
+
+def disposition_filter_clause(disposition: FormDisposition):
+    """Translate a derived FormDisposition into a filter on the cached
+    Form.last_action column. Correct because last_action is always the most
+    recent *non-SERVICED* action (see _apply_cache_update above), which is
+    exactly what derive_disposition inspects.
+
+    Shared by routers/traffic_forms.py::get_net_traffic_summary and
+    compute_net_traffic_counts below, so the disposition->filter mapping
+    lives in exactly one place.
+    """
+    if disposition == FormDisposition.DRAFT:
+        return Form.last_action.is_(None)
+    if disposition == FormDisposition.PENDING:
+        return Form.last_action.in_([TrafficAction.ORIGINATED, TrafficAction.RECEIVED])
+    if disposition == FormDisposition.RELAYED:
+        return Form.last_action == TrafficAction.RELAYED
+    if disposition == FormDisposition.DELIVERED:
+        return Form.last_action == TrafficAction.DELIVERED
+    if disposition == FormDisposition.CANCELLED:
+        return Form.last_action == TrafficAction.CANCELLED
+    return None
+
+
+async def compute_net_traffic_counts(db: AsyncSession, net_id: int) -> dict:
+    """Counts by derived disposition for *net_id*, plus the outstanding/stale
+    placeholder count. Returns a plain dict (not a schema) so this can be
+    called from both an API router (routers/traffic_forms.py::
+    get_net_traffic_summary) and a background/service context (routers/
+    nets_core.py::close_net's net-close summary email) without a router
+    depending on another router, and without the net-close summary
+    reimplementing this query -- see TRAFFIC-HANDLING-DESIGN.md section 3.5.
+    """
+    counts: dict[FormDisposition, int] = {}
+    for disposition in FormDisposition:
+        clause = disposition_filter_clause(disposition)
+        count_query = select(func.count()).select_from(Form).where(Form.net_id == net_id, clause)
+        counts[disposition] = (await db.execute(count_query)).scalar() or 0
+
+    stale_cutoff = datetime.utcnow() - _STALE_THRESHOLD
+    outstanding_query = select(func.count()).select_from(Form).where(
+        Form.net_id == net_id,
+        disposition_filter_clause(FormDisposition.PENDING),
+        Form.held_since.isnot(None),
+        Form.held_since <= stale_cutoff,
+    )
+    outstanding = (await db.execute(outstanding_query)).scalar() or 0
+
+    return {
+        "net_id": net_id,
+        "draft": counts[FormDisposition.DRAFT],
+        "pending": counts[FormDisposition.PENDING],
+        "relayed": counts[FormDisposition.RELAYED],
+        "delivered": counts[FormDisposition.DELIVERED],
+        "cancelled": counts[FormDisposition.CANCELLED],
+        "outstanding": outstanding,
+    }

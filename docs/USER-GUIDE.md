@@ -729,6 +729,39 @@ Click **Export PDF** in the page header to download a printable report. The repo
 
 Use this for after-action reporting, club records, or emergency management documentation that needs to show participation trends across many nets.
 
+## Assisted Traffic Handling
+
+ECTLogger helps you fill out and keep a record of formal traffic (ARRL radiograms and ICS-213 messages) that you originate, relay, or deliver over a real net, by phone, in person, or by mail. ECTLogger never sends or transports the message itself — it is a witness and a record-keeper, not a relay.
+
+### Filing a Radiogram or ICS-213
+
+Open **Traffic** from the navigation bar (or the Traffic panel on an active net's page), choose **New**, and pick a form type:
+
+- **Radiogram** — the assist layer normalizes your text for NTS transmission as you type, keeps a live word-count check, and offers the ARL numbered-message picker for standard messages (welfare checks, holiday greetings, etc.).
+- **ICS-213** — a general message form used for ARES/ICS operations.
+
+Fields like your callsign, place of origin, and filing time are auto-filled from your profile where possible. Submitting the form logs it as either **originated** (you wrote it) or **received** (you copied it from another station), which starts its chain of custody.
+
+### Logging what happens next
+
+Every piece of traffic has a chain of custody: a timeline of who touched it and what they did (originated, received, relayed, delivered, serviced, or cancelled). As you relay or deliver a message, log the handoff so the chain stays accurate — this is what lets a net's NCS or logger answer "what happened to that message?" after the net closes, and it's what keeps your **inbox** honest: a piece of traffic you're still holding stays visible there until you log that it moved on.
+
+### Your Traffic Inbox
+
+The **Traffic** section's **Inbox** tab shows everything you're currently holding, oldest first. Check it after a net closes — pending traffic doesn't go away just because the net did.
+
+### Who can see a piece of traffic
+
+Only the submitter, the current holder, anyone else in its chain of custody, that net's NCS/logger, and admins can view a given piece of traffic. Ordinary check-ins on the net do not grant access to its traffic. This matters because welfare traffic can carry a private individual's name, address, and phone number.
+
+### Exporting
+
+From a piece of traffic's detail view, **Export** gives you the plaintext (for reading over the air or filing) or a printable PDF of the form. On a net with **ICS-309 enabled**, traffic handled during that net also appears as metadata-only rows (message number, precedence, addressee, handling station) on the net's ICS-309 Communications Log — the message text itself is never included in that export.
+
+### Traffic in your statistics
+
+Your Profile's **Activity** tab, a net's statistics page, and the platform-wide Statistics page each show a **Traffic Handled** count, broken out by what you did with it (originated, relayed, delivered, etc.). Click the tile on your Profile to drill into the list.
+
 ## Tips & Tricks
 
 ### Keyboard Shortcuts

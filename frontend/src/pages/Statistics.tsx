@@ -28,6 +28,7 @@ import {
   DateRange,
   CalendarMonth,
   PictureAsPdf,
+  Mail as MailIcon,
 } from '@mui/icons-material';
 import {
   LineChart,
@@ -64,6 +65,11 @@ interface GlobalStats {
   check_ins_last_24h: number;
   check_ins_last_7_days: number;
   avg_check_ins_per_net: number;
+  // Assisted Traffic Handling: distinct forms with any log entry
+  // platform-wide, broken out by action. See
+  // TRAFFIC-HANDLING-DESIGN.md section 3.5.
+  traffic_handled: number;
+  traffic_by_action: Record<string, number>;
   nets_per_day: TimeSeriesDataPoint[];
   nets_per_week: TimeSeriesDataPoint[];
   check_ins_per_day: TimeSeriesDataPoint[];
@@ -290,6 +296,18 @@ const Statistics: React.FC = () => {
             color={theme.palette.secondary.main}
           />
         </Grid>
+        {/* Assisted Traffic Handling tile — only shown once there's any platform-wide */}
+        {stats.traffic_handled > 0 && (
+          <Grid item xs={6} sm={4} md={2}>
+            <StatCard
+              title="Traffic Handled"
+              value={stats.traffic_handled}
+              subtitle="Radiograms & forms"
+              icon={<MailIcon sx={{ fontSize: 32 }} />}
+              color={theme.palette.error.main}
+            />
+          </Grid>
+        )}
       </Grid>
 
       {/* Recent Activity Cards */}

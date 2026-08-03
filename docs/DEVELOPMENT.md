@@ -22,12 +22,28 @@ ectlogger/
 │   │   ├── whats_new_service.py     # Background "What's New" digest scheduler
 │   │   ├── logger.py            # Structured application logger
 │   │   ├── utils.py             # Shared utility functions
+│   │   ├── traffic/              # Assisted Traffic Handling domain logic (not a router —
+│   │   │                         # reused by the traffic routers, ICS-309 export, and stats)
+│   │   │   ├── definitions.py    # Startup upsert of form_definitions from definitions/*.json
+│   │   │   ├── definitions/      # manifest.json, radiogram.json, ics213.json, arl_messages.json
+│   │   │   ├── nts_text.py       # normalize_nts_text, count_nts_check (NTS_SUBSTITUTIONS)
+│   │   │   ├── radiogram.py, ics213.py, formatters.py  # per-form-type formatting/parsing
+│   │   │   ├── arl.py            # ARL numbered-message catalog loader
+│   │   │   ├── promote.py        # Form.field_values -> promoted columns (subject, precedence, ...)
+│   │   │   ├── log.py            # append_entry (chain-of-custody), derive_disposition,
+│   │   │   │                     #   compute_net_traffic_counts (shared by the summary endpoint
+│   │   │   │                     #   and the net-close email)
+│   │   │   ├── visibility.py     # form_visibility_clause — the D3 visibility WHERE clause
+│   │   │   └── ics309.py         # Metadata-only ICS-309 row builder (never the message body)
 │   │   └── routers/             # See "Backend router-split (facade) pattern" below
 │   │       ├── auth.py, users.py, check_ins.py, frequencies.py, chat.py,
 │   │       │   settings.py, ncs_rotation.py, ncs_schedule.py, security.py,
 │   │       │   geocode.py, contacts.py, feedback.py   # single-file routers
 │   │       ├── nets.py            # facade — includes nets_{core,polls,export,roles}
 │   │       ├── templates.py       # facade — includes templates_{core,merge,subscriptions,topics}
+│   │       ├── traffic.py         # facade — includes traffic_{definitions,forms,export}
+│   │       │                      # (traffic_log.py — chain-of-custody append endpoint,
+│   │       │                      # inbox, import, reminders — is a later phase, not registered yet)
 │   │       └── statistics.py      # facade — includes statistics_{global,net,user,geo}
 │   ├── migrations/              # Sequentially numbered Python migration scripts (sqlite3 direct)
 │   │                             # — see "Migration content guidelines" in migrations/README.md
@@ -42,9 +58,11 @@ ectlogger/
 │   │   │   ├── dashboard/        # Dashboard.tsx's extracted pieces (NetCard, ...)
 │   │   │   ├── forms/            # Shared form panels (used by CreateNet + CreateSchedule)
 │   │   │   ├── ncs-staff/        # NCSStaffModal.tsx's extracted tab components
-│   │   │   ├── netview/          # NetView.tsx's extracted dialogs/panels/tables
+│   │   │   ├── netview/          # NetView.tsx's extracted dialogs/panels/tables, incl. TrafficPanel.tsx
 │   │   │   ├── profile/          # Profile.tsx's extracted tab components
-│   │   │   └── scheduler/        # Scheduler.tsx's extracted pieces (ScheduleCard, ...)
+│   │   │   ├── scheduler/        # Scheduler.tsx's extracted pieces (ScheduleCard, ...)
+│   │   │   └── traffic/          # pages/Traffic.tsx's extracted components (FormRenderer,
+│   │   │                         # RadiogramAssist, TrafficTable, TrafficDetail, ...)
 │   │   ├── hooks/                # useLocalStorage, useDialog, useApiData, useSortableTable,
 │   │   │                         # useFavorites, useNetData, useNetWebSocket, useUserStats
 │   │   ├── contexts/             # React contexts (AuthContext, ThemeContext, LocationContext)

@@ -38,6 +38,11 @@ interface DrillDownTableProps {
   pageSize: number;
   emptyMessage: string;
   onView: (netId: number, event: React.MouseEvent) => void;
+  /** Tooltip/label for the row action button. Defaults to "View net" for the
+   * original net-drill-down callers; a caller repurposing net_id as some
+   * other row identifier (e.g. the traffic drill-down using it as form_id)
+   * should override this so the tooltip doesn't say "net". */
+  viewLabel?: string;
 }
 
 const DrillDownTable: React.FC<DrillDownTableProps> = ({
@@ -49,6 +54,7 @@ const DrillDownTable: React.FC<DrillDownTableProps> = ({
   pageSize,
   emptyMessage,
   onView,
+  viewLabel = 'View net',
 }) => {
   if (rows.length === 0) {
     return (
@@ -83,7 +89,7 @@ const DrillDownTable: React.FC<DrillDownTableProps> = ({
                 </TableCell>
                 {showCheckIns && <TableCell align="right">{row.check_in_count}</TableCell>}
                 <TableCell align="right">
-                  <Tooltip title="View net">
+                  <Tooltip title={viewLabel}>
                     <IconButton
                       size="small"
                       onClick={(e) => onView(row.net_id, e)}

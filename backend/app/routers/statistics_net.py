@@ -8,7 +8,7 @@ from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.dependencies import get_current_user_optional
-from app.models import CheckIn, Net, NetRole, NetTemplate, User
+from app.models import CheckIn, Net, NetRole, NetTemplate, TrafficLogEntry, User
 from app.schemas import (
     NetStatsResponse,
     TimeSeriesDataPoint,
@@ -148,7 +148,26 @@ async def get_net_statistics(
         if checkin.frequency:
             freq_label = checkin.frequency.frequency or checkin.frequency.network or "Unknown"
             freq_counts[freq_label] = freq_counts.get(freq_label, 0) + 1
-    
+
+    # Assisted Traffic Handling: distinct forms with any traffic_log_entries
+    # row whose own net_id is this net -- the hop happened during this net's
+    # session, regardless of which net the Form itself was filed on (see
+    # TRAFFIC-HANDLING-DESIGN.md R4), broken out by action. Matches the same
+    # net_id-scoped query used to build this net's ICS-309 rows
+    # (app/traffic/ics309.py::get_net_traffic_log_entries).
+    traffic_entries_result = await db.execute(
+        select(TrafficLogEntry.action, TrafficLogEntry.form_id)
+        .where(TrafficLogEntry.net_id == net_id)
+    )
+    traffic_by_action_forms: dict = {}
+    all_traffic_form_ids: set = set()
+    for action, form_id in traffic_entries_result.all():
+        action_key = action.value if hasattr(action, "value") else str(action)
+        traffic_by_action_forms.setdefault(action_key, set()).add(form_id)
+        all_traffic_form_ids.add(form_id)
+    traffic_by_action = {action: len(form_ids) for action, form_ids in traffic_by_action_forms.items()}
+    traffic_handled = len(all_traffic_form_ids)
+
     return NetStatsResponse(
         net_id=net_id,
         net_name=net.name,
@@ -165,6 +184,8 @@ async def get_net_statistics(
         top_operators=top_operators,
         check_ins_by_frequency=freq_counts,
         frequency_count=len(net.frequencies),
+        traffic_handled=traffic_handled,
+        traffic_by_action=traffic_by_action,
     )
 
 

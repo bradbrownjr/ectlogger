@@ -69,12 +69,18 @@ ECT and SKYWARN nets often move between frequencies to meet participants where t
 - **Per-station frequency tracking** - Each station can check or re-check into more than one operating frequency
 - **Real-time frequency change notifications** - Freqency changes are updated to all users in real-time
 
+### Assisted Traffic Handling
+
+- **📨 Radiogram & ICS-213 filing** — Fill out an ARRL radiogram or ICS-213 form with live NTS text normalization, word-count checking, and an ARL numbered-message picker, all from the net's Traffic panel or the standalone Traffic section
+- **📬 Traffic inbox & chain of custody** — Every hop (originated, received, relayed, delivered, serviced, cancelled) is logged against the message, so a net's NCS/logger can see the delivery status of everything logged during their net
+- **🔒 Privacy by design** — Traffic is visible only to the submitter, current holder, anyone in its chain of custody, that net's NCS/logger, and admins; message bodies never appear on ICS-309 exports, only metadata (message number, precedence, addressee, handling station)
+
 ### Analytics & Reporting
 
-- **📧 Emailed net closure reports** - Net participants can receive chat logs, check-in logs, topic answers, and poll results
+- **📧 Emailed net closure reports** - Net participants can receive chat logs, check-in logs, topic answers, poll results, and a traffic-handled summary
 - **📥 CSV check-in import** - Closed/archived nets can import CSV logs from paper or external software, with row-level validation and clear errors
-- **📃 ICS-309 Communications Log** - For ARES and ECT nets, ICS-309 documents can be downloaded and emailed from closed nets
-- **📈 Statistics & Analytics** — Track participation trends, operator activity, and net performance with interactive charts
+- **📃 ICS-309 Communications Log** - For ARES and ECT nets, ICS-309 documents can be downloaded and emailed from closed nets, including traffic-handling metadata rows when the net has that feature enabled
+- **📈 Statistics & Analytics** — Track participation trends, operator activity, net performance, and traffic handled (broken out by originated/relayed/delivered/etc.) with interactive charts
 - **🏆 Schedule Statistics & Leaderboards** — Per-schedule reporting with time-window filters (30d / 90d / 1y / all-time) and leaderboards for Check-ins, NCS, Logger, and Relay roles, plus a net history log with NCS callsigns
 - **📄 Net Report (PDF)** — Generate comprehensive multi-page PDF reports for closed nets including statistics, check-in logs, chat, and ICS-309 sections
 - **📄 Schedule Report (PDF)** — Export a schedule's stats, all four leaderboards, and net history as a single printable PDF

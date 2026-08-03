@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.dependencies import get_current_user_optional
-from app.models import CheckIn, Net, NetStatus, User
+from app.models import CheckIn, Net, NetStatus, TrafficLogEntry, User
 from app.schemas import (
     GlobalStatsResponse,
     TimeSeriesDataPoint,
@@ -110,7 +110,22 @@ async def get_global_statistics(
         )).where(Net.status.in_([NetStatus.CLOSED, NetStatus.ARCHIVED]))
     )
     avg_check_ins_per_net = round(avg_checkins_result.scalar() or 0, 1)
-    
+
+    # Assisted Traffic Handling: distinct forms with any traffic_log_entries
+    # row platform-wide, broken out by action (see
+    # TRAFFIC-HANDLING-DESIGN.md section 3.5).
+    traffic_entries_result = await db.execute(
+        select(TrafficLogEntry.action, TrafficLogEntry.form_id)
+    )
+    traffic_by_action_forms: dict = {}
+    all_traffic_form_ids: set = set()
+    for action, form_id in traffic_entries_result.all():
+        action_key = action.value if hasattr(action, "value") else str(action)
+        traffic_by_action_forms.setdefault(action_key, set()).add(form_id)
+        all_traffic_form_ids.add(form_id)
+    traffic_by_action = {action: len(form_ids) for action, form_ids in traffic_by_action_forms.items()}
+    traffic_handled = len(all_traffic_form_ids)
+
     # Time series: Nets per day for last 30 days
     nets_per_day = await _get_nets_per_day(db, 30)
     
@@ -135,6 +150,8 @@ async def get_global_statistics(
         check_ins_last_24h=check_ins_last_24h,
         check_ins_last_7_days=check_ins_last_7_days,
         avg_check_ins_per_net=avg_check_ins_per_net,
+        traffic_handled=traffic_handled,
+        traffic_by_action=traffic_by_action,
         nets_per_day=nets_per_day,
         nets_per_week=nets_per_week,
         check_ins_per_day=check_ins_per_day,

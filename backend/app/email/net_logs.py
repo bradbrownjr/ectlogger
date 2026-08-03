@@ -26,9 +26,17 @@ async def send_net_log(
     poll_question: str = None,
     propagation_logging_enabled: bool = False,
     coverage_edges: list = None,
+    traffic_enabled: bool = False,
+    traffic_summary: dict = None,
     unsubscribe_token: str = None
 ):
-    """Send net log after net is closed with check-ins table, CSV attachment, and chat log"""
+    """Send net log after net is closed with check-ins table, CSV attachment, and chat log.
+
+    traffic_summary: the dict returned by app.traffic.log.compute_net_traffic_counts
+    (draft/pending/relayed/delivered/cancelled/outstanding), rendered as a
+    counts-only summary box -- never message content. See
+    TRAFFIC-HANDLING-DESIGN.md section 3.5 ("Net log / PDF / close email").
+    """
     
     # Parse field_config to determine which fields are enabled
     fc = field_config or {}
@@ -166,6 +174,21 @@ async def send_net_log(
             </div>
             {% endif %}
 
+            {% if traffic_enabled and traffic_summary and traffic_total %}
+            <div class="poll-section" style="background-color: #fce4ec; border-left: 4px solid #c2185b;">
+                <h3>📨 Traffic Handled</h3>
+                <p>
+                    <strong>{{ traffic_summary.pending }}</strong> pending,
+                    <strong>{{ traffic_summary.relayed }}</strong> relayed,
+                    <strong>{{ traffic_summary.delivered }}</strong> delivered,
+                    <strong>{{ traffic_summary.cancelled }}</strong> cancelled
+                    {% if traffic_summary.outstanding %}
+                    &mdash; <strong>{{ traffic_summary.outstanding }}</strong> outstanding (held 24h+)
+                    {% endif %}
+                </p>
+            </div>
+            {% endif %}
+
             <h3>Check-ins</h3>
             <table>
                 <thead>
@@ -246,6 +269,9 @@ async def send_net_log(
         total_poll_responses=total_poll_responses,
         propagation_enabled=propagation_logging_enabled,
         coverage_pairs=coverage_pairs,
+        traffic_enabled=traffic_enabled,
+        traffic_summary=traffic_summary,
+        traffic_total=sum(traffic_summary.values()) if traffic_summary else 0,
         unsubscribe_footer=get_unsubscribe_footer(unsubscribe_token)
     )
     
@@ -361,19 +387,28 @@ async def send_net_log(
         )
 
 async def send_ics309_log(
-    email: str, 
-    net_name: str, 
-    net_description: str, 
-    ncs_name: str, 
+    email: str,
+    net_name: str,
+    net_description: str,
+    ncs_name: str,
     ncs_callsign: str,
-    check_ins: list, 
-    started_at: str, 
-    closed_at: str, 
+    check_ins: list,
+    started_at: str,
+    closed_at: str,
     chat_messages: list = None,
     frequencies: list = None,
+    traffic_log_rows: list = None,
     unsubscribe_token: str = None
 ):
-    """Send ICS-309 Communications Log format after net is closed"""
+    """Send ICS-309 Communications Log format after net is closed.
+
+    traffic_log_rows: pre-built {time, from_station, to_station, message}
+    dicts for this net's Assisted Traffic Handling activity (see
+    app/traffic/ics309.py). Metadata only -- the caller must never build
+    these from Form.field_values/normalized_text (the message body); see
+    TRAFFIC-HANDLING-DESIGN.md D3. Callers should only pass this when the
+    net has ics309_enabled set.
+    """
     
     # Format frequencies for display
     freq_list = ", ".join(frequencies) if frequencies else "Multiple"
@@ -537,7 +572,12 @@ async def send_ics309_log(
                     'to_station': 'NET',
                     'message': msg.get('message', '')
                 })
-    
+
+    # Add Assisted Traffic Handling rows, pre-built by the caller from
+    # app/traffic/ics309.py -- metadata only, body never included (D3).
+    if traffic_log_rows:
+        log_entries.extend(traffic_log_rows)
+
     # Sort all entries by time
     log_entries.sort(key=lambda x: x.get('time', ''))
     

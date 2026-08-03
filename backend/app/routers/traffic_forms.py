@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -19,17 +19,11 @@ from app.schemas import (
     FormUpdate,
     TrafficSummaryResponse,
 )
-from app.traffic.log import append_entry
+from app.traffic.log import append_entry, compute_net_traffic_counts, disposition_filter_clause
 from app.traffic.promote import compute_promoted_fields
 from app.traffic.visibility import form_visibility_clause
 
 router = APIRouter(tags=["traffic-forms"])
-
-# Stage C's reminder service (TRAFFIC-HANDLING-DESIGN.md D4) will replace this
-# fixed threshold with the real precedence-scaled staleness ladder. Until that
-# lands, "outstanding" on the per-net summary is a simple placeholder: a
-# pending form held 24+ hours by its current holder.
-_STALE_THRESHOLD = timedelta(hours=24)
 
 _FORM_DETAIL_OPTIONS = (
     selectinload(Form.definition).selectinload(FormDefinition.fields),
@@ -38,21 +32,10 @@ _FORM_DETAIL_OPTIONS = (
 
 
 def _disposition_clause(disposition: FormDisposition):
-    """Translate a derived FormDisposition into a filter on the cached
-    Form.last_action column. Correct because last_action is always the most
-    recent *non-SERVICED* action (see app/traffic/log.py::_apply_cache_update),
-    which is exactly what derive_disposition inspects."""
-    if disposition == FormDisposition.DRAFT:
-        return Form.last_action.is_(None)
-    if disposition == FormDisposition.PENDING:
-        return Form.last_action.in_([TrafficAction.ORIGINATED, TrafficAction.RECEIVED])
-    if disposition == FormDisposition.RELAYED:
-        return Form.last_action == TrafficAction.RELAYED
-    if disposition == FormDisposition.DELIVERED:
-        return Form.last_action == TrafficAction.DELIVERED
-    if disposition == FormDisposition.CANCELLED:
-        return Form.last_action == TrafficAction.CANCELLED
-    return None
+    """Thin alias kept for readability at call sites in this file; the real
+    implementation is shared with the net-close summary email, see
+    app/traffic/log.py::disposition_filter_clause."""
+    return disposition_filter_clause(disposition)
 
 
 @router.post("/forms", response_model=FormDetailResponse, status_code=status.HTTP_201_CREATED)
@@ -260,30 +243,7 @@ async def get_net_traffic_summary(
     if not await check_net_permission(db, net, current_user, required_roles=["ncs", "logger"]):
         raise HTTPException(status_code=403, detail="Not authorized to view this net's traffic")
 
-    counts = {}
-    for disposition in FormDisposition:
-        clause = _disposition_clause(disposition)
-        count_query = select(func.count()).select_from(Form).where(Form.net_id == net_id, clause)
-        counts[disposition] = (await db.execute(count_query)).scalar() or 0
-
-    stale_cutoff = datetime.utcnow() - _STALE_THRESHOLD
-    outstanding_query = select(func.count()).select_from(Form).where(
-        Form.net_id == net_id,
-        _disposition_clause(FormDisposition.PENDING),
-        Form.held_since.isnot(None),
-        Form.held_since <= stale_cutoff,
-    )
-    outstanding = (await db.execute(outstanding_query)).scalar() or 0
-
-    return TrafficSummaryResponse(
-        net_id=net_id,
-        draft=counts[FormDisposition.DRAFT],
-        pending=counts[FormDisposition.PENDING],
-        relayed=counts[FormDisposition.RELAYED],
-        delivered=counts[FormDisposition.DELIVERED],
-        cancelled=counts[FormDisposition.CANCELLED],
-        outstanding=outstanding,
-    )
+    return TrafficSummaryResponse(**await compute_net_traffic_counts(db, net_id))
 
 
 @router.get("/forms/{form_id}", response_model=FormDetailResponse)

@@ -23,6 +23,12 @@ from app.services.csv_import import (
     decode_csv_bytes,
     process_csv_rows,
 )
+from app.traffic.ics309 import (
+    format_traffic_ics309_message,
+    get_net_traffic_log_entries,
+    traffic_from_station,
+    traffic_to_station,
+)
 from app.utils import display_callsign, format_time_for_net, resolve_display_tz, to_display_tz
 
 router = APIRouter()
@@ -327,7 +333,23 @@ async def export_net_ics309(
                 'to_station': 'NET',
                 'message': msg.message
             })
-    
+
+    # Add Assisted Traffic Handling rows -- metadata only, never the message
+    # body (Form.field_values / normalized_text). Only surfaced on the
+    # ICS-309 format itself, gated on the net's ics309_enabled toggle so a
+    # net that never opted into ICS-309 doesn't leak traffic metadata into
+    # this export either. See TRAFFIC-HANDLING-DESIGN.md D3's "ICS-309
+    # consequence" and app/traffic/ics309.py.
+    if net.ics309_enabled:
+        traffic_entries = await get_net_traffic_log_entries(db, net_id)
+        for entry in traffic_entries:
+            log_entries.append({
+                'time': format_time_for_net(to_display_tz(entry.occurred_at, tz), display_started_at, display_closed_at),
+                'from_station': traffic_from_station(entry.form, entry),
+                'to_station': traffic_to_station(entry),
+                'message': format_traffic_ics309_message(entry.form, entry),
+            })
+
     # Sort by time
     log_entries.sort(key=lambda x: x.get('time', ''))
     

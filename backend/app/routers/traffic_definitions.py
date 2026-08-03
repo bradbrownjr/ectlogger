@@ -7,6 +7,7 @@ from typing import List
 from app.database import get_db
 from app.dependencies import get_admin_user, get_current_user
 from app.models import FormDefinition, FormDefinitionField, User
+from app.permissions import is_admin
 from app.schemas import ArlMessageResponse, FormDefinitionResponse, FormDefinitionUpdate
 from app.traffic.arl import get_arl_messages
 
@@ -15,17 +16,23 @@ router = APIRouter(tags=["traffic-definitions"])
 
 @router.get("/definitions", response_model=List[FormDefinitionResponse])
 async def list_form_definitions(
+    include_disabled: bool = False,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Enabled form definitions with their field lists, for the type picker
-    and the generic renderer."""
-    result = await db.execute(
-        select(FormDefinition)
-        .options(selectinload(FormDefinition.fields))
-        .where(FormDefinition.is_enabled == True)
-        .order_by(FormDefinition.sort_order, FormDefinition.title)
-    )
+    and the generic renderer.
+
+    include_disabled is admin-only (silently ignored for non-admins, same
+    as the rest of this endpoint being open to any authenticated user) --
+    it's how AdminTrafficTab.tsx lists every definition, including ones an
+    admin previously disabled, so they can be re-enabled.
+    """
+    query = select(FormDefinition).options(selectinload(FormDefinition.fields))
+    if not (include_disabled and is_admin(current_user)):
+        query = query.where(FormDefinition.is_enabled == True)
+    query = query.order_by(FormDefinition.sort_order, FormDefinition.title)
+    result = await db.execute(query)
     definitions = result.scalars().all()
     return [FormDefinitionResponse.from_orm(d) for d in definitions]
 

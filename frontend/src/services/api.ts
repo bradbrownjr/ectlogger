@@ -236,7 +236,11 @@ export const feedbackApi = {
 // phase's surface; the chain-of-custody log/reminder endpoints are later
 // phases.
 export const trafficApi = {
-  listDefinitions: () => api.get('/traffic/definitions'),
+  // includeDisabled is admin-only (silently ignored server-side otherwise) --
+  // used by AdminTrafficTab.tsx so a previously-disabled definition can be
+  // found again and re-enabled.
+  listDefinitions: (includeDisabled?: boolean) =>
+    api.get('/traffic/definitions', { params: includeDisabled ? { include_disabled: true } : undefined }),
   getDefinition: (formType: string) => api.get(`/traffic/definitions/${formType}`),
   updateDefinition: (id: number, data: any) => api.put(`/traffic/definitions/${id}`, data),
   listArlMessages: () => api.get('/traffic/arl-messages'),

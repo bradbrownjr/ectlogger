@@ -38,6 +38,7 @@ import {
   Assessment,
   Fullscreen as FullscreenIcon,
   Close as CloseIcon,
+  Mail as MailIcon,
 } from '@mui/icons-material';
 import {
   BarChart,
@@ -158,6 +159,11 @@ interface NetStats {
   top_operators: TopOperator[];
   check_ins_by_frequency: Record<string, number>;
   frequency_count: number;
+  // Assisted Traffic Handling: distinct forms with any log entry whose own
+  // net_id is this net, broken out by action. See
+  // TRAFFIC-HANDLING-DESIGN.md section 3.5.
+  traffic_handled: number;
+  traffic_by_action: Record<string, number>;
 }
 
 // Individual check-in record (for location map)
@@ -504,6 +510,22 @@ const NetStatistics: React.FC = () => {
             </CardContent>
           </Card>
         </Grid>
+        {/* Assisted Traffic Handling tile — only shown when this net has any */}
+        {stats.traffic_handled > 0 && (
+          <Grid item xs={6} sm={3}>
+            <Card>
+              <CardContent sx={{ textAlign: 'center' }}>
+                <MailIcon color="error" sx={{ fontSize: 32 }} />
+                <Typography variant="h4" fontWeight="bold">
+                  {stats.traffic_handled}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Traffic Handled
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        )}
       </Grid>
 
       <Grid container spacing={3}>

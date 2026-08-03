@@ -8,13 +8,14 @@ from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.dependencies import get_current_user, get_current_user_optional
-from app.models import CheckIn, Net, NetStatus, User
+from app.models import CheckIn, Form, Net, NetStatus, TrafficLogEntry, User
 from app.schemas import (
     CheckInsByNet,
     FrequentNetStats,
     NcsNetEntry,
     NetParticipation,
     TimeSeriesDataPoint,
+    TrafficHandledEntry,
     UserStatsResponse,
 )
 
@@ -61,13 +62,57 @@ def _ensure_tz_aware(dt: datetime) -> datetime:
     return dt
 
 
+async def _get_traffic_handled(db: AsyncSession, user: User):
+    """Distinct forms where this user has any traffic_log_entries row,
+    broken out by action, plus the drill-down list (one row per form, using
+    that form's most recent entry by this user). Unlike check-ins, log
+    entries carry a real reported_by_user_id FK, so no callsign matching is
+    needed. See TRAFFIC-HANDLING-DESIGN.md section 3.5.
+    """
+    result = await db.execute(
+        select(TrafficLogEntry)
+        .options(selectinload(TrafficLogEntry.form).selectinload(Form.net))
+        .where(TrafficLogEntry.reported_by_user_id == user.id)
+        .order_by(TrafficLogEntry.occurred_at.desc())
+    )
+    entries = result.scalars().all()
+
+    by_action_forms: dict = {}
+    latest_entry_by_form: dict = {}
+    for entry in entries:
+        action_key = entry.action.value if hasattr(entry.action, "value") else str(entry.action)
+        by_action_forms.setdefault(action_key, set()).add(entry.form_id)
+        # entries are ordered newest-first, so the first one seen per form is its most recent.
+        latest_entry_by_form.setdefault(entry.form_id, entry)
+
+    traffic_by_action = {action: len(form_ids) for action, form_ids in by_action_forms.items()}
+
+    traffic_handled_list = [
+        TrafficHandledEntry(
+            form_id=entry.form_id,
+            net_id=entry.form.net_id if entry.form else None,
+            net_name=entry.form.net.name if entry.form and entry.form.net else None,
+            form_type=entry.form.form_type if entry.form else "",
+            message_number=entry.form.message_number if entry.form else None,
+            action=entry.action,
+            occurred_at=entry.occurred_at,
+        )
+        for entry in latest_entry_by_form.values()
+    ]
+    traffic_handled_list.sort(key=lambda e: e.occurred_at, reverse=True)
+
+    return len(latest_entry_by_form), traffic_by_action, traffic_handled_list
+
+
 async def _get_user_statistics(db: AsyncSession, user: User) -> UserStatsResponse:
     """Helper to build user statistics."""
     import json
-    
+
     now = datetime.now(timezone.utc)
     last_30d = now - timedelta(days=30)
-    
+
+    traffic_handled, traffic_by_action, traffic_handled_list = await _get_traffic_handled(db, user)
+
     # Get all callsigns for this user (current, additional aliases, and previous)
     user_callsigns = [user.callsign] if user.callsign else []
     if user.gmrs_callsign:
@@ -82,7 +127,7 @@ async def _get_user_statistics(db: AsyncSession, user: User) -> UserStatsRespons
         user_callsigns.extend(previous)
     except:
         pass
-    
+
     if not user_callsigns:
         return UserStatsResponse(
             user_id=user.id,
@@ -97,8 +142,11 @@ async def _get_user_statistics(db: AsyncSession, user: User) -> UserStatsRespons
             favorite_nets=[],
             frequent_nets=[],
             nets_as_ncs_list=[],
+            traffic_handled=traffic_handled,
+            traffic_by_action=traffic_by_action,
+            traffic_handled_list=traffic_handled_list,
         )
-    
+
     # Get all check-ins by this user's callsigns
     check_ins_result = await db.execute(
         select(CheckIn)
@@ -247,6 +295,9 @@ async def _get_user_statistics(db: AsyncSession, user: User) -> UserStatsRespons
         favorite_nets=favorite_nets,
         frequent_nets=frequent_nets[:10],
         nets_as_ncs_list=nets_as_ncs_list,
+        traffic_handled=traffic_handled,
+        traffic_by_action=traffic_by_action,
+        traffic_handled_list=traffic_handled_list,
     )
 
 

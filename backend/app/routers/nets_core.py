@@ -31,6 +31,13 @@ from app.schemas import (
     NetUpdate,
     public_display_name,
 )
+from app.traffic.ics309 import (
+    format_traffic_ics309_message,
+    get_net_traffic_log_entries,
+    traffic_from_station,
+    traffic_to_station,
+)
+from app.traffic.log import compute_net_traffic_counts
 from app.utils import display_callsign, format_time_for_net, resolve_display_tz, to_display_tz
 
 router = APIRouter()
@@ -833,6 +840,19 @@ async def close_net(
         )
         can_hear_reports = can_hear_result.scalars().all()
 
+    # Assisted Traffic Handling: log entries and summary counts for this net.
+    # Entries are only needed for the ICS-309 attachment (metadata rows,
+    # gated on net.ics309_enabled -- see TRAFFIC-HANDLING-DESIGN.md D3's
+    # "ICS-309 consequence"); the summary counts are shown in the plain
+    # net-log email whenever the net has the traffic panel enabled at all.
+    # Queried once, like can_hear_reports above, since neither depends on
+    # recipient timezone.
+    traffic_log_entries_for_ics309 = []
+    if net.ics309_enabled:
+        traffic_log_entries_for_ics309 = await get_net_traffic_log_entries(db, net_id)
+
+    traffic_summary = await compute_net_traffic_counts(db, net_id) if net.traffic_enabled else None
+
     def build_log_payload(tz):
         started_at = to_display_tz(net.started_at, tz)
         closed_at = to_display_tz(net.closed_at, tz)
@@ -884,9 +904,19 @@ async def close_net(
                 'reported_at': format_time_for_net(to_display_tz(report.reported_at, tz), started_at, closed_at),
             })
 
+        traffic_rows_data = [
+            {
+                'time': format_time_for_net(to_display_tz(entry.occurred_at, tz), started_at, closed_at),
+                'from_station': traffic_from_station(entry.form, entry),
+                'to_station': traffic_to_station(entry),
+                'message': format_traffic_ics309_message(entry.form, entry),
+            }
+            for entry in traffic_log_entries_for_ics309
+        ]
+
         started_at_str = started_at.strftime("%Y-%m-%d %H:%M:%S") if started_at else "N/A"
         closed_at_str = closed_at.strftime("%Y-%m-%d %H:%M:%S") if closed_at else "N/A"
-        return check_ins_data, chat_messages_data, started_at_str, closed_at_str, coverage_edges_data
+        return check_ins_data, chat_messages_data, started_at_str, closed_at_str, coverage_edges_data, traffic_rows_data
 
     # Cache built payloads by tz key so recipients sharing a display preference
     # (the common case: everyone on UTC/no-timezone-set) don't redo the work.
@@ -953,7 +983,7 @@ async def close_net(
             # Get unsubscribe token for compliance
             unsub_token = getattr(recipient, 'unsubscribe_token', None)
 
-            check_ins_data, chat_messages_data, started_at_str, closed_at_str, coverage_edges_data = log_payload_for(
+            check_ins_data, chat_messages_data, started_at_str, closed_at_str, coverage_edges_data, traffic_rows_data = log_payload_for(
                 resolve_display_tz(recipient)
             )
 
@@ -969,6 +999,7 @@ async def close_net(
                     closed_at=closed_at_str,
                     chat_messages=chat_messages_data if chat_messages_data else None,
                     frequencies=freq_strings,
+                    traffic_log_rows=traffic_rows_data if traffic_rows_data else None,
                     unsubscribe_token=unsub_token
                 )
             else:
@@ -988,6 +1019,8 @@ async def close_net(
                     poll_question=net.poll_question,
                     propagation_logging_enabled=net.propagation_logging_enabled,
                     coverage_edges=coverage_edges_data,
+                    traffic_enabled=net.traffic_enabled,
+                    traffic_summary=traffic_summary,
                     unsubscribe_token=unsub_token
                 )
         except Exception as e:

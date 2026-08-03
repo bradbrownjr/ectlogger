@@ -1267,6 +1267,21 @@ class CheckInsByNet(BaseModel):
     count: int
 
 
+class TrafficHandledEntry(BaseModel):
+    """One row of a user's "traffic handled" drill-down (see ActivityTab.tsx's
+    traffic drill-down, following the same DrillDownTable contract as
+    nets_as_ncs_list). One row per distinct form the user has any
+    traffic_log_entries row on, with the most recent action they logged for
+    it. Never carries the message body -- only promoted Form columns."""
+    form_id: int
+    net_id: Optional[int] = None
+    net_name: Optional[str] = None
+    form_type: str
+    message_number: Optional[str] = None
+    action: TrafficAction
+    occurred_at: datetime
+
+
 class GlobalStatsResponse(BaseModel):
     """Global platform statistics"""
     # Totals
@@ -1274,7 +1289,7 @@ class GlobalStatsResponse(BaseModel):
     total_check_ins: int
     total_users: int
     unique_operators: int
-    
+
     # Current activity
     active_nets: int
     nets_last_24h: int
@@ -1282,10 +1297,16 @@ class GlobalStatsResponse(BaseModel):
     nets_last_30_days: int
     check_ins_last_24h: int
     check_ins_last_7_days: int
-    
+
     # Averages
     avg_check_ins_per_net: float
-    
+
+    # Assisted Traffic Handling: distinct forms with any traffic_log_entries
+    # row, platform-wide, broken out by action (see
+    # TRAFFIC-HANDLING-DESIGN.md section 3.5).
+    traffic_handled: int = 0
+    traffic_by_action: dict = Field(default_factory=dict)
+
     # Time series for charts
     nets_per_day: List[TimeSeriesDataPoint]  # Last 30 days
     nets_per_week: List[TimeSeriesDataPoint]  # Last 6 months
@@ -1317,6 +1338,12 @@ class NetStatsResponse(BaseModel):
     check_ins_by_frequency: dict  # {"146.520 MHz": 10, "Wires-X Room 12345": 5}
     frequency_count: int = 0  # Total frequencies in the net's Communications Plan
 
+    # Assisted Traffic Handling: distinct forms with any traffic_log_entries
+    # row whose own net_id is this net (the hop happened during this net's
+    # session -- see TRAFFIC-HANDLING-DESIGN.md R4), broken out by action.
+    traffic_handled: int = 0
+    traffic_by_action: dict = Field(default_factory=dict)  # {"originated": 2, "relayed": 1, ...}
+
 
 class FrequentNetStats(BaseModel):
     """Statistics about a user's participation in a recurring net"""
@@ -1347,6 +1374,14 @@ class UserStatsResponse(BaseModel):
     # New field for recurring net participation
     frequent_nets: List[FrequentNetStats] = []  # Recurring nets with participation rates
     nets_as_ncs_list: List[NcsNetEntry] = []  # Nets where user ran as NCS
+
+    # Assisted Traffic Handling: distinct forms with any traffic_log_entries
+    # row reported by this user, broken out by action (originated/relayed/
+    # delivered/etc.), plus the drill-down list. See
+    # TRAFFIC-HANDLING-DESIGN.md section 3.5.
+    traffic_handled: int = 0
+    traffic_by_action: dict = Field(default_factory=dict)
+    traffic_handled_list: List[TrafficHandledEntry] = []
 
 
 

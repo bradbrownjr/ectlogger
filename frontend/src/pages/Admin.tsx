@@ -15,6 +15,7 @@ import RadioIcon from '@mui/icons-material/Radio';
 import SecurityIcon from '@mui/icons-material/Security';
 import BuildIcon from '@mui/icons-material/Build';
 import BrandingWatermarkIcon from '@mui/icons-material/BrandingWatermark';
+import MailIcon from '@mui/icons-material/Mail';
 import { useAuth } from '../contexts/AuthContext';
 import AdminUsersTab from '../components/admin/AdminUsersTab';
 import AdminContactsTab from '../components/admin/AdminContactsTab';
@@ -23,6 +24,7 @@ import AdminFrequenciesTab from '../components/admin/AdminFrequenciesTab';
 import AdminSecurityTab from '../components/admin/AdminSecurityTab';
 import AdminMaintenanceTab from '../components/admin/AdminMaintenanceTab';
 import AdminBrandingTab from '../components/admin/AdminBrandingTab';
+import AdminTrafficTab from '../components/admin/AdminTrafficTab';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -97,7 +99,7 @@ const Admin: React.FC = () => {
     // Only trigger if horizontal swipe is dominant (more X than Y) and long enough
     if (Math.abs(deltaX) < 50 || Math.abs(deltaX) < Math.abs(deltaY)) return;
     setTabValue((prev) => {
-      if (deltaX < 0) return Math.min(prev + 1, 6);
+      if (deltaX < 0) return Math.min(prev + 1, 7);
       return Math.max(prev - 1, 0);
     });
   };
@@ -131,6 +133,7 @@ const Admin: React.FC = () => {
           <Tab label="Security" id="admin-tab-4" aria-controls="admin-tabpanel-4" icon={<SecurityIcon />} iconPosition="start" />
           <Tab label="Maintenance" id="admin-tab-5" aria-controls="admin-tabpanel-5" icon={<BuildIcon />} iconPosition="start" />
           <Tab label="Branding" id="admin-tab-6" aria-controls="admin-tabpanel-6" icon={<BrandingWatermarkIcon />} iconPosition="start" />
+          <Tab label="Traffic" id="admin-tab-7" aria-controls="admin-tabpanel-7" icon={<MailIcon />} iconPosition="start" />
         </Tabs>
 
         {/* ========== TAB 0: USERS ========== */}
@@ -169,6 +172,11 @@ const Admin: React.FC = () => {
         {/* ========== TAB 6: BRANDING ========== */}
         <TabPanel value={tabValue} index={6}>
           <AdminBrandingTab showSnackbar={showSnackbar} />
+        </TabPanel>
+
+        {/* ========== TAB 7: TRAFFIC (Assisted Traffic Handling & Forms) ========== */}
+        <TabPanel value={tabValue} index={7}>
+          <AdminTrafficTab showSnackbar={showSnackbar} />
         </TabPanel>
       </Paper>
 
