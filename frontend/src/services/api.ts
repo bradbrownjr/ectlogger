@@ -233,8 +233,8 @@ export const feedbackApi = {
 
 // Traffic API (Assisted Traffic Handling & Forms — radiograms, ICS-213, etc.)
 // See docs/concepts/TRAFFIC-HANDLING-DESIGN.md sections 3.1-3.4 for this
-// phase's surface; the chain-of-custody log/import/reminder endpoints are
-// later phases.
+// phase's surface; the chain-of-custody log/reminder endpoints are later
+// phases.
 export const trafficApi = {
   listDefinitions: () => api.get('/traffic/definitions'),
   getDefinition: (formType: string) => api.get(`/traffic/definitions/${formType}`),
@@ -251,6 +251,10 @@ export const trafficApi = {
   // responseType 'blob' since this returns a file download (plaintext or PDF), not JSON.
   exportForm: (id: number, format: 'text' | 'pdf') =>
     api.get(`/traffic/forms/${id}/export`, { params: { format }, responseType: 'blob' }),
+  // Stateless parse-only preview (TRAFFIC-HANDLING-DESIGN.md D5) -- never
+  // creates a Form. The review screen hands the result to FormRenderer/
+  // RadiogramAssist pre-filled; only the ordinary `create` above commits.
+  importPreview: (text: string) => api.post('/traffic/import/preview', { text }),
 };
 
 // Contact API (station contacts from check-in history)

@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
-from typing import Optional, List, Literal
+from typing import Optional, List, Literal, Dict, Any, Union
 from datetime import datetime
 from app.models import UserRole, NetStatus, StationStatus, FormDisposition, TrafficAction, RelayMethod
 import re
@@ -1706,3 +1706,38 @@ class TrafficSummaryResponse(BaseModel):
     delivered: int = 0
     cancelled: int = 0
     outstanding: int = 0
+
+
+class ImportPreviewRequest(BaseModel):
+    """POST /traffic/import/preview body. Stateless parse-only per
+    TRAFFIC-HANDLING-DESIGN.md D5 -- this request never causes a write.
+    max_length here is a blunt outer safety net against absurdly large
+    payloads; the authoritative 32 KB cap (measured in UTF-8 bytes, not
+    characters) and the empty-input rejection both live in
+    app/traffic/formatters.py::parse_any() and its underlying parsers, whose
+    ValueError the router turns into the actual 400 response."""
+    text: str = Field(..., max_length=200_000)
+
+
+class ImportFieldResult(BaseModel):
+    """One field of a parse_any() result. Mirrors parse_nts_radiogram's and
+    parse_ics213's per-field dict shape exactly (see
+    TRAFFIC-HANDLING-DESIGN.md D5): value/source/confidence."""
+    value: Optional[Union[str, int]] = None
+    source: Literal['bt_block', 'heuristic', 'label_match', 'unparsed']
+    confidence: Literal['high', 'low']
+
+
+class ImportPreviewResponse(BaseModel):
+    """POST /traffic/import/preview response -- a light reshape of whatever
+    app/traffic/formatters.py::parse_any() returns, not a transformation of
+    its semantics. check_stated/check_count are radiogram-only (None for
+    ICS-213 and unknown); raw_text is only populated for form_type ==
+    "unknown", so nothing the operator pasted is lost."""
+    form_type: str
+    fields: Dict[str, ImportFieldResult] = Field(default_factory=dict)
+    check_stated: Optional[int] = None
+    check_count: Optional[int] = None
+    warnings: List[str] = Field(default_factory=list)
+    unparsed_lines: List[str] = Field(default_factory=list)
+    raw_text: Optional[str] = None

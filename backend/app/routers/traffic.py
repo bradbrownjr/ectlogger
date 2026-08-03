@@ -6,9 +6,10 @@ Routes live in:
   traffic_definitions.py — form definition catalog (list, get, admin update)
   traffic_forms.py       — form instance CRUD, visibility-scoped listing, and
                             the per-net summary
-  traffic_export.py      — plaintext/PDF export for a single form
+  traffic_export.py      — plaintext/PDF export for a single form, plus the
+                            stateless POST /traffic/import/preview parser
 
-traffic_log.py (chain-of-custody log, import) is a later phase and is not
+traffic_log.py (chain-of-custody log) is a later phase and is not
 registered here yet.
 """
 from fastapi import APIRouter

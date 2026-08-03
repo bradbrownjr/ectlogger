@@ -17,6 +17,7 @@ import {
 } from '@mui/material';
 import ListAltIcon from '@mui/icons-material/ListAlt';
 import AddIcon from '@mui/icons-material/Add';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useAuth } from '../contexts/AuthContext';
 import { trafficApi } from '../services/api';
@@ -28,14 +29,15 @@ import TrafficTable from '../components/traffic/TrafficTable';
 import TrafficDetail from '../components/traffic/TrafficDetail';
 import FormRenderer from '../components/traffic/FormRenderer';
 import RadiogramAssist from '../components/traffic/RadiogramAssist';
+import ImportPreview from '../components/traffic/ImportPreview';
 
 // ========== Traffic page ==========
-// The canonical Traffic section: Browse and New this phase (Inbox, Import,
+// The canonical Traffic section: Browse, New, and Import this phase (Inbox
 // and Definitions tabs are later phases -- the tab list is structured so
 // adding them is inserting an index, not restructuring). See
 // docs/concepts/TRAFFIC-HANDLING-DESIGN.md section 4.2.
 
-const MAX_TAB_INDEX = 1; // Browse (0), New (1) -- raise when Inbox/Import/Definitions land
+const MAX_TAB_INDEX = 2; // Browse (0), New (1), Import (2) -- raise when Inbox/Definitions land
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -254,6 +256,7 @@ const Traffic: React.FC = () => {
           >
             <Tab icon={<ListAltIcon />} iconPosition="start" label="Browse" id="traffic-tab-0" aria-controls="traffic-tabpanel-0" />
             <Tab icon={<AddIcon />} iconPosition="start" label="New" id="traffic-tab-1" aria-controls="traffic-tabpanel-1" />
+            <Tab icon={<UploadFileIcon />} iconPosition="start" label="Import" id="traffic-tab-2" aria-controls="traffic-tabpanel-2" />
           </Tabs>
         </Box>
 
@@ -273,6 +276,18 @@ const Traffic: React.FC = () => {
             {/* ========== New Tab ========== */}
             <TabPanel value={tabValue} index={1}>
               <NewTab definitions={definitions} onCreated={handleCreated} />
+            </TabPanel>
+
+            {/* ========== Import Tab ========== */}
+            <TabPanel value={tabValue} index={2}>
+              <ImportPreview
+                definitions={definitions}
+                onCreated={handleCreated}
+                onGoToNewTab={() => {
+                  setTabValue(1);
+                  setSearchParams({ tab: '1' });
+                }}
+              />
             </TabPanel>
           </>
         )}

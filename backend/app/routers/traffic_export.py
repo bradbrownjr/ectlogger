@@ -1,6 +1,10 @@
 """
 Export endpoints for a single form: plaintext (the ported RRI/NTS/ICS-213
-formatter) and a printable PDF. See TRAFFIC-HANDLING-DESIGN.md section 3.4.
+formatter) and a printable PDF. Also the stateless import-preview endpoint --
+grouped here rather than in its own router because section 3.4 of the design
+doc places both under this file's table, and both are read-only operations
+on the same formatter layer (export renders a Form to text; import parses
+text back into fields). See TRAFFIC-HANDLING-DESIGN.md section 3.4.
 
 No email-send endpoint exists here or anywhere else in this phase. A "send
 it for me" convenience was designed and then explicitly rejected by the
@@ -24,7 +28,8 @@ from app.database import get_db
 from app.dependencies import get_current_user
 from app.models import Form, User
 from app.permissions import FormPermissionResult, check_form_permission
-from app.traffic.formatters import format_form
+from app.schemas import ImportPreviewRequest, ImportPreviewResponse
+from app.traffic.formatters import format_form, parse_any
 
 router = APIRouter(tags=["traffic-export"])
 
@@ -108,3 +113,28 @@ async def export_form(
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{_export_filename(form, "pdf")}"'},
     )
+
+
+@router.post("/import/preview", response_model=ImportPreviewResponse)
+async def import_preview(
+    data: ImportPreviewRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """Stateless parse-only preview of pasted/uploaded traffic text
+    (TRAFFIC-HANDLING-DESIGN.md D5 and section 3.4). Any authenticated user
+    may call this -- no permission check beyond auth, because it writes
+    nothing to the database under any input. formatters.parse_any() is the
+    only parsing entry point (per its own docstring, the registry is the
+    only place allowed to branch on form type); this handler does nothing
+    but call it and translate its one hard-failure case (empty or
+    oversized input) into a 400.
+
+    The operator reviews the result in ImportPreview.tsx and, if satisfied,
+    confirms into the ordinary FormRenderer/RadiogramAssist pre-filled --
+    the real POST /traffic/forms is the only thing that ever commits.
+    """
+    try:
+        result = parse_any(data.text)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return ImportPreviewResponse(**result)
