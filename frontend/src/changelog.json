@@ -1,6 +1,48 @@
 {
-  "version": "2026.08.02c",
+  "version": "2026.08.03",
   "entries": [
+    {
+      "version": "2026.08.03",
+      "date": "2026-08-03",
+      "sections": [
+        {
+          "title": "New Features",
+          "type": "feature",
+          "items": [
+            {
+              "text": "Traffic: Assisted traffic handling — File and track formal traffic (ARRL radiograms and ICS-213 general messages) from a net's Traffic panel or the standalone Traffic section. Every hop — originated, received, relayed, delivered, serviced, cancelled — is logged so you always know what happened to a message, and your personal inbox keeps anything you're still holding visible until you log that it moved on. Only the submitter, current holder, chain of custody, that net's NCS/logger, and admins can see a given piece of traffic, since it can carry a private individual's name, address, and phone number.",
+              "userImpact": true
+            },
+            {
+              "text": "Traffic: Paste or drop to import — Already have a message copied down by hand or relayed from packet? Paste the plaintext in, or drag a text file onto the box, and the parser pre-fills a new form for you to review before saving — no need to re-type every field.",
+              "userImpact": true
+            },
+            {
+              "text": "Traffic: Form-accurate PDF export — Printable PDFs now look like the real paper forms — the ARRL Radiogram pad and FEMA ICS-213 General Message form, boxes and rules included — ready to file or hand to the addressee, instead of a plain text dump.",
+              "userImpact": true
+            },
+            {
+              "text": "ICS-309: Traffic Handling integration — Nets with ICS-309 enabled now show formal traffic hops as metadata rows on the Communications Log, including its own form-accurate PDF export, so a net's formal traffic appears alongside the rest of its logged activity — the message text itself is never included.",
+              "userImpact": true
+            },
+            {
+              "text": "Profile: Traffic stats — Your Activity tab now shows Traffic Handled and Traffic Pending counts, each with a drill-down list of the underlying messages.",
+              "userImpact": true
+            }
+          ]
+        },
+        {
+          "title": "Bug Fixes",
+          "type": "bugfix",
+          "items": [
+            {
+              "text": "Net View: Station Coverage close button — The floating Station Coverage window's close (X) button was actually wired to \"dock back to main view,\" which had no effect on most screens, leaving the window stuck open. It now closes the window like the X anywhere else does.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.08.02c",
       "date": "2026-08-02",
