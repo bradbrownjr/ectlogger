@@ -266,6 +266,18 @@ export const trafficApi = {
   // RadiogramAssist pre-filled; only the ordinary `create` above commits.
   importPreview: (text: string) => api.post('/traffic/import/preview', { text }),
 
+  // Define a new, reusable RRI strip type from a pasted example
+  // (routers/traffic_strip_templates.py). tokenizeStripTemplate is stateless
+  // (D5 shape, like importPreview above); createStripTemplate atomically
+  // defines the type and files the first Form from the labeled values.
+  tokenizeStripTemplate: (text: string) => api.post('/traffic/strip-templates/tokenize', { text }),
+  createStripTemplate: (data: {
+    form_type: string;
+    title: string;
+    net_id?: number;
+    fields: { label: string; starts_new_section: boolean; value: string }[];
+  }) => api.post('/traffic/strip-templates', data),
+
   // Chain-of-custody log (routers/traffic_log.py)
   appendLogEntry: (formId: number, data: any) => api.post(`/traffic/forms/${formId}/log`, data),
   listLogEntries: (formId: number) => api.get(`/traffic/forms/${formId}/log`),

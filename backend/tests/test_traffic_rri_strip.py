@@ -19,7 +19,7 @@ from app.models import Form, Net, TrafficAction
 from app.traffic.definitions import upsert_form_definitions
 from app.traffic.formatters import format_form, parse_any
 from app.traffic.log import append_entry
-from app.traffic.rri_strip import format_rri_strip_raw, make_nts_safe, parse_rri_strip
+from app.traffic.rri_strip import format_rri_strip_raw, make_nts_safe, parse_rri_strip, tokenize_strip
 
 WXOBS_VALUES = {
     "call_sign": "W1ABC",
@@ -230,3 +230,121 @@ async def test_export_rri_strips_endpoint_requires_net_permission(client, db, ow
 
     resp = await client.get(f"/api/nets/{net.id}/export/rri-strips", headers=auth_headers(other))
     assert resp.status_code == 403
+
+
+# ========== "define fields from a pasted example" (dynamically-defined strip types) ==========
+# See routers/traffic_strip_templates.py. "RI" is Request for Information --
+# defining a strip's fields once, so every station's answer shares the same
+# structure, is the actual RRI mechanism this increment adds.
+
+SITREP_EXAMPLE = "SITREP/04-08-2026/1830/PORTLAND ME/BRIDGE OUT ON RT 4//"
+
+
+def test_tokenize_strip_splits_example_into_labelable_tokens():
+    result = tokenize_strip(SITREP_EXAMPLE)
+    assert result["suggested_form_type"] == "SITREP"
+    assert [t["value"] for t in result["tokens"]] == [
+        "04-08-2026", "1830", "PORTLAND ME", "BRIDGE OUT ON RT 4",
+    ]
+    assert all(t["starts_new_section"] is False for t in result["tokens"])
+
+
+def test_tokenize_strip_marks_section_break_after_blank_token():
+    result = tokenize_strip("SITREP/A/B/ /C/D//")
+    assert [t["starts_new_section"] for t in result["tokens"]] == [False, False, True, False]
+
+
+def test_tokenize_strip_rejects_empty_input():
+    with pytest.raises(ValueError):
+        tokenize_strip("   ")
+
+
+@pytest.mark.asyncio
+async def test_tokenize_endpoint_returns_ordered_tokens(client, owner):
+    resp = await client.post(
+        "/api/traffic/strip-templates/tokenize",
+        json={"text": SITREP_EXAMPLE},
+        headers=auth_headers(owner),
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["suggested_form_type"] == "SITREP"
+    assert len(body["tokens"]) == 4
+
+
+@pytest.mark.asyncio
+async def test_create_strip_template_defines_type_and_files_first_form(client, db, owner):
+    await upsert_form_definitions(db)
+    resp = await client.post(
+        "/api/traffic/strip-templates",
+        json={
+            "form_type": "sitrep",
+            "title": "Situation Report",
+            "fields": [
+                {"label": "Date", "starts_new_section": False, "value": "04-08-2026"},
+                {"label": "Time", "starts_new_section": False, "value": "1830"},
+                {"label": "Location", "starts_new_section": True, "value": "Portland ME"},
+                {"label": "Status", "starts_new_section": False, "value": "Bridge out on RT 4"},
+            ],
+        },
+        headers=auth_headers(owner),
+    )
+    assert resp.status_code == 201, resp.text
+    body = resp.json()
+
+    # form_type normalized to uppercase.
+    assert body["form_type"] == "SITREP"
+    assert body["definition"]["title"] == "Situation Report"
+    assert body["definition"]["is_builtin"] is False
+    assert [f["name"] for f in body["definition"]["fields"]] == ["date", "time", "location", "status"]
+    assert body["definition"]["fields"][2]["starts_new_section"] is True
+
+    # The pasted example's own values became the first Form, in RRI's
+    # canonical string, section break included, no NTS substitution applied.
+    assert body["normalized_text"] == "SITREP/04-08-2026/1830/ /PORTLAND ME/BRIDGE OUT ON RT 4//"
+
+    # A second station can now answer the SAME defined type through the
+    # ordinary create-form endpoint -- no special-casing needed.
+    answer_resp = await client.post(
+        "/api/traffic/forms",
+        json={
+            "form_type": "SITREP",
+            "field_values": {
+                "date": "04-08-2026", "time": "1845", "location": "Route 4 north",
+                "status": "Detour in place",
+            },
+        },
+        headers=auth_headers(owner),
+    )
+    assert answer_resp.status_code == 201, answer_resp.text
+    assert answer_resp.json()["normalized_text"] == "SITREP/04-08-2026/1845/ /ROUTE 4 NORTH/DETOUR IN PLACE//"
+
+
+@pytest.mark.asyncio
+async def test_create_strip_template_rejects_duplicate_form_type(client, db, owner):
+    await upsert_form_definitions(db)
+    resp = await client.post(
+        "/api/traffic/strip-templates",
+        json={"form_type": "WXOBS", "title": "Duplicate", "fields": [{"label": "X", "value": "1"}]},
+        headers=auth_headers(owner),
+    )
+    assert resp.status_code == 409
+
+
+@pytest.mark.asyncio
+async def test_create_strip_template_dedupes_colliding_field_labels(client, owner):
+    resp = await client.post(
+        "/api/traffic/strip-templates",
+        json={
+            "form_type": "DUPTEST",
+            "title": "Duplicate Label Test",
+            "fields": [
+                {"label": "Status", "value": "A"},
+                {"label": "Status", "value": "B"},
+            ],
+        },
+        headers=auth_headers(owner),
+    )
+    assert resp.status_code == 201, resp.text
+    names = [f["name"] for f in resp.json()["definition"]["fields"]]
+    assert names == ["status", "status_2"]

@@ -447,6 +447,7 @@ class FormDefinitionField(Base):
     auto_fill = Column(String(32), nullable=True)    # "callsign" | "place_of_origin" | "signature"
     nts_normalize = Column(Boolean, default=False)   # run normalize_nts_text + count_nts_check on this field
     arl_enabled = Column(Boolean, default=False)     # offer the ARL numbered-message picker
+    starts_new_section = Column(Boolean, default=False)  # RRI "/ /" break before this field (dynamic strip types only)
     sort_order = Column(Integer, default=100)
 
     definition = relationship("FormDefinition", back_populates="fields")

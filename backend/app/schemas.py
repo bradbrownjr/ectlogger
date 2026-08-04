@@ -1473,6 +1473,7 @@ class FormDefinitionFieldResponse(BaseModel):
     auto_fill: Optional[str] = None
     nts_normalize: bool
     arl_enabled: bool
+    starts_new_section: bool
     sort_order: int
 
     class Config:
@@ -1497,6 +1498,7 @@ class FormDefinitionFieldResponse(BaseModel):
             auto_fill=field.auto_fill,
             nts_normalize=field.nts_normalize,
             arl_enabled=field.arl_enabled,
+            starts_new_section=field.starts_new_section,
             sort_order=field.sort_order,
         )
 
@@ -1776,6 +1778,52 @@ class ImportPreviewResponse(BaseModel):
     warnings: List[str] = Field(default_factory=list)
     unparsed_lines: List[str] = Field(default_factory=list)
     raw_text: Optional[str] = None
+
+
+class StripTemplateTokenizeRequest(BaseModel):
+    text: str = Field(..., min_length=1, max_length=32000)
+
+
+class StripTemplateToken(BaseModel):
+    """One field-to-be-labeled from a pasted RRI strip example. Mirrors
+    app/traffic/rri_strip.py::tokenize_strip's dict shape."""
+    value: str
+    starts_new_section: bool
+
+
+class StripTemplateTokenizeResponse(BaseModel):
+    """POST /traffic/strip-templates/tokenize -- stateless, writes nothing
+    (D5 shape, like ImportPreviewResponse). suggested_form_type is the
+    paste's leading slash-token (RRI's own strip keyword convention, e.g.
+    "SITREP"), offered as a starting point for the form_type field on
+    StripTemplateCreate -- the operator can still change it."""
+    suggested_form_type: str
+    tokens: List[StripTemplateToken] = Field(default_factory=list)
+
+
+class StripTemplateFieldCreate(BaseModel):
+    label: str = Field(..., min_length=1, max_length=120)
+    starts_new_section: bool = False
+    value: str = Field(default="", max_length=10000)
+
+
+class StripTemplateCreate(BaseModel):
+    """POST /traffic/strip-templates: define a new, reusable RRI strip type
+    from a labeled set of fields, and file the first Form from their values
+    in the same call. See routers/traffic_strip_templates.py."""
+    form_type: str = Field(..., min_length=1, max_length=32)
+    title: str = Field(..., min_length=1, max_length=120)
+    net_id: Optional[int] = None
+    fields: List[StripTemplateFieldCreate]
+
+    @field_validator('fields')
+    @classmethod
+    def validate_fields(cls, v: List[StripTemplateFieldCreate]) -> List[StripTemplateFieldCreate]:
+        if not v:
+            raise ValueError('at least one field is required')
+        if len(v) > 100:
+            raise ValueError('maximum 100 fields allowed')
+        return v
 
 
 class TrafficInboxResponse(BaseModel):

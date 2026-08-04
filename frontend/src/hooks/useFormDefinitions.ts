@@ -59,6 +59,15 @@ function fetchDefinitions(): Promise<FormDefinition[]> {
   return inFlight;
 }
 
+// Clears the module-level cache so a newly-defined RRI strip type
+// (traffic_strip_templates.py) shows up in the New tab's picker on the next
+// fetchDefinitions() call, without a page reload. Callers still need to
+// trigger a refetch themselves (e.g. re-mount, or a state bump) -- this only
+// invalidates the cache, it doesn't push new data to already-rendered hooks.
+export function invalidateFormDefinitionsCache(): void {
+  cachedDefinitions = null;
+}
+
 export function useFormDefinitions() {
   const [definitions, setDefinitions] = useState<FormDefinition[]>(cachedDefinitions ?? []);
   const [loading, setLoading] = useState(!cachedDefinitions);

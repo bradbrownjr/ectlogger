@@ -10,6 +10,9 @@ Routes live in:
                             and the caller's delivery inbox
   traffic_export.py      — plaintext/PDF export for a single form, plus the
                             stateless POST /traffic/import/preview parser
+  traffic_strip_templates.py — define a new, reusable RRI strip type from a
+                            pasted example (POST /traffic/strip-templates and
+                            its stateless .../tokenize preview)
 """
 from fastapi import APIRouter
 
@@ -17,9 +20,11 @@ from app.routers.traffic_definitions import router as traffic_definitions_router
 from app.routers.traffic_export import router as traffic_export_router
 from app.routers.traffic_forms import router as traffic_forms_router
 from app.routers.traffic_log import router as traffic_log_router
+from app.routers.traffic_strip_templates import router as traffic_strip_templates_router
 
 router = APIRouter(prefix="/traffic", tags=["traffic"])
 router.include_router(traffic_definitions_router)
 router.include_router(traffic_forms_router)
 router.include_router(traffic_log_router)
 router.include_router(traffic_export_router)
+router.include_router(traffic_strip_templates_router)

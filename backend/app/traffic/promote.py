@@ -19,17 +19,21 @@ from app.traffic.rri_strip import format_rri_strip, format_rri_strip_raw
 
 
 class _FieldValuesOnly:
-    """Minimal form_type/field_values shim for format_rri_strip(_raw), which
-    only ever reads those two attributes -- unlike format_nts_radiogram/
+    """Minimal form_type/field_values/definition shim for format_rri_strip(_raw),
+    which only ever reads those three attributes -- unlike format_nts_radiogram/
     format_ics213, which read other promoted columns (message_number,
     precedence, filed_at, ...) that don't exist yet at this point in the
     create/edit flow. Scoping the below to just the rri_strip output formats
     avoids that chicken-and-egg problem rather than trying to generalize to
-    every formatter."""
+    every formatter. `definition` is the real FormDefinition already passed
+    into compute_promoted_fields (no extra query) -- format_rri_strip's
+    dynamic-type fallback reads its `.fields` for a form_type outside
+    _STRIP_SPECS."""
 
-    def __init__(self, form_type: str, field_values: dict):
+    def __init__(self, form_type: str, field_values: dict, definition: FormDefinition):
         self.form_type = form_type
         self.field_values = field_values
+        self.definition = definition
 
 
 def compute_promoted_fields(definition: FormDefinition, field_values: dict) -> Tuple[dict, dict]:
@@ -93,9 +97,9 @@ def compute_promoted_fields(definition: FormDefinition, field_values: dict) -> T
     # output_formats only -- see _FieldValuesOnly's docstring for why this
     # can't be generalized to every formatter.
     if definition.output_format == "rri_strip":
-        normalized_text = format_rri_strip(_FieldValuesOnly(definition.form_type, values))
+        normalized_text = format_rri_strip(_FieldValuesOnly(definition.form_type, values, definition))
     elif definition.output_format == "rri_strip_raw":
-        normalized_text = format_rri_strip_raw(_FieldValuesOnly(definition.form_type, values))
+        normalized_text = format_rri_strip_raw(_FieldValuesOnly(definition.form_type, values, definition))
 
     promoted = {
         "subject": subject,

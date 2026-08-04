@@ -94,6 +94,32 @@ spreadsheet, not relayed via NTS, so that substitution (`rri_strip.py::make_nts_
 **never** applied to the canonical text/`normalized_text`/default export. It's opt-in only, on
 the new net-scoped bulk export — see the 3.4/3.5 revision notes below.
 
+**Revision (2026-08-04) — the "later phase" arrives, scoped to RRI strips.** "RI" in RRI's own
+strip family literally stands for Request for Information: someone defines a strip's field
+structure once, and every respondent answers the same fields so the data consolidates — RRI's
+own Response Creator tool has "a form for the creation of new RI strips" for exactly this. The
+raw-text `RRI_STRIP_OTHER` catch-all above couldn't do that (no field structure at all), so
+`routers/traffic_strip_templates.py` adds `POST /traffic/strip-templates`: any authenticated user
+pastes a filled example, labels each `/`-delimited token (a new `POST
+/traffic/strip-templates/tokenize` stateless preview splits it into ordered value tokens plus
+where its `/ /` section breaks fell, for the labeling UI), and submitting creates a real
+`FormDefinition` (`is_builtin=False`, `output_format='rri_strip'`) plus that example's own Form as
+its first entry — one call. This is deliberately narrower than "admin-authored generic
+definitions": only the RRI strip shape (ordered fields, optional section breaks), and any
+authenticated user rather than admin-only, matching the existing rule that anyone can
+originate/receive traffic. A new `form_definition_fields.starts_new_section` boolean (migration
+055) records each field's section-break position for `rri_strip.py`'s new data-driven fallback
+(`_dynamic_sections()`) — only consulted for form_types outside the hardcoded `_STRIP_SPECS`;
+WXOBS/GYX-CAR-SKYWARN keep their pinned layout in Python, unaffected. A dynamic type's own
+`form_type` doubles as its wire keyword (the name the user picks *is* the leading slash-token),
+unlike GYX-CAR-SKYWARN where those deliberately differ. Once defined, the type behaves exactly
+like a builtin one everywhere else (New tab picker, `FormRenderer`, `RRIStripPrintView.tsx`,
+ICS-309, visibility, permissions) — by construction, that's the whole point of D1's
+name-convention-based/data-driven design. **Explicit non-goal:** `parse_any()`/Import's
+paste-and-detect flow does *not* recognize a dynamic type's canonical string on a later paste —
+that would require the currently-pure-function parser to become DB-aware. Answers to a dynamic
+type are filed through the ordinary New tab instead, once it exists.
+
 ### D2 — Radiogram modeled as: generic JSON value storage plus promoted columns, with a dedicated formatter module
 
 **Decision.** Three tables, not one:
@@ -784,6 +810,13 @@ receiving stations actually use this data (pasted straight into a spreadsheet); 
 applies `rri_strip.py::make_nts_safe`'s minus→M substitution, an explicit opt-in for the rare
 case of relaying strip content inside a Radiogram/ICS-213 body over voice/CW. Same permission
 rule as CSV/ICS-309: `check_net_permission(db, net, current_user)`, anyone with net access.
+
+**Revision (2026-08-04) — `traffic_strip_templates.py`.** New router (registered in
+`routers/traffic.py`'s facade alongside the other four): `POST /traffic/strip-templates/tokenize`
+(stateless, D5 shape) and `POST /traffic/strip-templates` (creates a `FormDefinition` +
+`FormDefinitionField` rows + the first `Form`, atomically, reusing `compute_promoted_fields` and
+`append_entry` exactly like `traffic_forms.py::create_form`). See D1's revision note above for
+the full "define fields from a pasted example" design.
 
 **No email-send endpoint.** A `POST /traffic/forms/{id}/email` "send it for me" convenience
 was designed here and then explicitly rejected by the roadmap author (2026-08-03, resolving

@@ -754,6 +754,10 @@ Fields like your callsign, place of origin, and filing time are auto-filled from
 
 If you already have the plaintext of a radiogram, ICS-213 message, or RRI strip — copied down by hand, relayed from another station, or saved from packet — choose **Import** instead of **New**. Paste the text in, or drag a text file onto the box, and the parser fills in what it can recognize, flagging anything low-confidence (like a stated check that doesn't match the recomputed word count) for you to double-check before saving. Anything the parser doesn't recognize as one of the built-in types is still saved as a general RRI strip, exactly as pasted, rather than being discarded. Nothing is saved until you review and confirm the parsed fields.
 
+### Defining your own RRI strip type
+
+"RI" in RRI's own strip family stands for Request for Information: someone defines a strip's fields once, and everyone who answers it fills in the same fields, so the reports line up. If you paste an example that isn't recognized as one of the built-in types, the Import review screen offers **Define fields for a new strip type** alongside the option to save it as a general strip. Name each piece of the pasted example (the parser splits it on the same "/" delimiters RRI uses) and mark where a natural section break falls, give the type a short code and a title, and save — this creates a real, reusable strip type that appears in the **New** tab for everyone from then on, exactly like WXOBS or GYX-CAR SKYWARN. Use it on a net or a drill: file the first report yourself when you define it, then have every other station file their own answer against that same type from the **New** tab.
+
 ### Logging what happens next
 
 Every piece of traffic has a chain of custody: a timeline of who touched it and what they did (originated, received, relayed, delivered, serviced, or cancelled). As you relay or deliver a message, log the handoff so the chain stays accurate — this is what lets a net's NCS or logger answer "what happened to that message?" after the net closes, and it's what keeps your **inbox** honest: a piece of traffic you're still holding stays visible there until you log that it moved on.
@@ -877,7 +881,7 @@ Both columns are blank for users the badge doesn't apply to, and both are sortab
 ### Additional Admin Features
 
 - **Contacts** — View and manage station contacts auto-populated from check-in history. Fix names, add emails, send invites to create user accounts. Contact data auto-fills when NCS enters a callsign during check-in.
-- **Traffic** — Enable or disable form types (Radiogram, ICS-213, WXOBS, GYX-CAR SKYWARN, RRI Strip (General)), reorder them, override field labels, and set the delivery-reminder switches for Assisted Traffic Handling.
+- **Traffic** — Enable or disable form types (Radiogram, ICS-213, WXOBS, GYX-CAR SKYWARN, RRI Strip (General), and any strip type users have defined from Import), reorder them, override field labels, and set the delivery-reminder switches for Assisted Traffic Handling.
 - **Check-In Fields** — Configure default check-in form fields
 - **Frequency Library** — Manage shared frequency presets
 - **Security** — View fail2ban status and recent authentication events
