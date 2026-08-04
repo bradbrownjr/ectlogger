@@ -12,7 +12,8 @@ from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.dependencies import get_current_user
-from app.models import CheckIn, Net, NetRole, NetStatus, User, net_frequencies
+from app.models import CheckIn, FormDefinition, Net, NetRole, NetStatus, User, net_frequencies
+from app.models import Form as TrafficFormModel
 from app.permissions import check_net_lifecycle_permission, check_net_permission
 from app.schemas import Ics309LogResponse, NetResponse
 from app.services.csv_import import (
@@ -23,12 +24,14 @@ from app.services.csv_import import (
     decode_csv_bytes,
     process_csv_rows,
 )
+from app.traffic.formatters import format_form
 from app.traffic.ics309 import (
     format_traffic_ics309_message,
     get_net_traffic_log_entries,
     traffic_from_station,
     traffic_to_station,
 )
+from app.traffic.rri_strip import make_nts_safe
 from app.utils import display_callsign, format_time_for_net, resolve_display_tz, to_display_tz
 
 router = APIRouter()
@@ -415,6 +418,64 @@ async def export_net_ics309(
     return StreamingResponse(
         iter([output.getvalue()]),
         media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
+@router.get("/{net_id}/export/rri-strips")
+async def export_net_rri_strips(
+    net_id: int,
+    format: str = Query("raw"),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Export this net's RRI strip traffic (WXOBS, GYX-CAR-SKYWARN, and any
+    general RRI strip) as one line per report, oldest first -- built for
+    pasting straight into a spreadsheet or Winlink template, matching how
+    receiving stations actually use this data (see
+    TRAFFIC-HANDLING-DESIGN.md's RRI strip section).
+
+    ?format=raw (default) returns each report's canonical string unmodified.
+    ?format=radiogram_safe applies RRI's minus->M substitution so the content
+    can be safely relayed inside a Radiogram/ICS-213 body over voice/CW --
+    an explicit opt-in, never the default, since this traffic is normally
+    pasted straight into a spreadsheet rather than relayed via NTS.
+
+    Filtered on FormDefinition.output_format rather than a hardcoded list of
+    form_types, so any future RRI strip type is included automatically.
+    """
+    if format not in ("raw", "radiogram_safe"):
+        raise HTTPException(status_code=400, detail="format must be 'raw' or 'radiogram_safe'")
+
+    net_result = await db.execute(select(Net).where(Net.id == net_id))
+    net = net_result.scalar_one_or_none()
+    if not net:
+        raise HTTPException(status_code=404, detail="Net not found")
+
+    if not await check_net_permission(db, net, current_user):
+        raise HTTPException(status_code=403, detail="Not authorized to export this net")
+
+    forms_result = await db.execute(
+        select(TrafficFormModel)
+        .join(FormDefinition, TrafficFormModel.definition_id == FormDefinition.id)
+        .options(selectinload(TrafficFormModel.definition))
+        .where(
+            TrafficFormModel.net_id == net_id,
+            FormDefinition.output_format.in_(("rri_strip", "rri_strip_raw")),
+        )
+        .order_by(TrafficFormModel.filed_at)
+    )
+    forms = forms_result.scalars().all()
+
+    lines = [format_form(form) for form in forms]
+    if format == "radiogram_safe":
+        lines = [make_nts_safe(line) for line in lines]
+
+    filename = f"RRI_Strips_{net.name.replace(' ', '_')}_{format}.txt"
+
+    return StreamingResponse(
+        iter(['\n'.join(lines)]),
+        media_type="text/plain",
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
 

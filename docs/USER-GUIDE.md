@@ -736,20 +736,23 @@ Use this for after-action reporting, club records, or emergency management docum
 
 ## Assisted Traffic Handling
 
-ECTLogger helps you fill out and keep a record of formal traffic (ARRL radiograms and ICS-213 messages) that you originate, relay, or deliver over a real net, by phone, in person, or by mail. ECTLogger never sends or transports the message itself — it is a witness and a record-keeper, not a relay.
+ECTLogger helps you fill out and keep a record of formal traffic (ARRL radiograms, ICS-213 messages, and Radio Relay International weather/RI strips) that you originate, relay, or deliver over a real net, by phone, in person, or by mail. ECTLogger never sends or transports the message itself — it is a witness and a record-keeper, not a relay.
 
-### Filing a Radiogram or ICS-213
+### Filing a Radiogram, ICS-213, or RRI strip
 
 Open **Traffic** from the navigation bar (or the Traffic panel on an active net's page), choose **New**, and pick a form type:
 
 - **Radiogram** — the assist layer normalizes your text for NTS transmission as you type, keeps a live word-count check, and offers the ARL numbered-message picker for standard messages (welfare checks, holiday greetings, etc.).
 - **ICS-213** — a general message form used for ARES/ICS operations.
+- **WXOBS** — Radio Relay International's standardized weather observation strip, for reporting spotter observations to a served agency.
+- **GYX-CAR SKYWARN** — the Maine/New Hampshire regional variant of WXOBS, formatted to paste directly into the GYX/CAR SKYWARN spreadsheet.
+- **RRI Strip (General)** — paste the raw text of any other RRI strip (SITREP, OPRED, or anything else without a dedicated form here yet) and it's saved and tracked exactly as pasted.
 
 Fields like your callsign, place of origin, and filing time are auto-filled from your profile where possible. Submitting the form logs it as either **originated** (you wrote it) or **received** (you copied it from another station), which starts its chain of custody.
 
 ### Importing a message you copied off the air
 
-If you already have the plaintext of a radiogram or ICS-213 message — copied down by hand, relayed from another station, or saved from packet — choose **Import** instead of **New**. Paste the text in, or drag a text file onto the box, and the parser fills in what it can recognize, flagging anything low-confidence (like a stated check that doesn't match the recomputed word count) for you to double-check before saving. Nothing is saved until you review and confirm the parsed fields.
+If you already have the plaintext of a radiogram, ICS-213 message, or RRI strip — copied down by hand, relayed from another station, or saved from packet — choose **Import** instead of **New**. Paste the text in, or drag a text file onto the box, and the parser fills in what it can recognize, flagging anything low-confidence (like a stated check that doesn't match the recomputed word count) for you to double-check before saving. Anything the parser doesn't recognize as one of the built-in types is still saved as a general RRI strip, exactly as pasted, rather than being discarded. Nothing is saved until you review and confirm the parsed fields.
 
 ### Logging what happens next
 
@@ -765,7 +768,11 @@ Only the submitter, the current holder, anyone else in its chain of custody, tha
 
 ### Exporting
 
-From a piece of traffic's detail view, **Export** gives you the plaintext (for reading over the air or filing) or a printable PDF laid out like the real paper form — the ARRL Radiogram pad or the FEMA ICS-213 General Message form, boxes and rules included — ready to file or hand to the addressee. Fields ECTLogger doesn't collect (like a delivery-confirmation signature) print blank and ruled, the same as they'd appear on a hand-filled paper copy. On a net with **ICS-309 enabled**, traffic handled during that net also appears as metadata-only rows (message number, precedence, addressee, handling station) on the net's ICS-309 Communications Log, including its own form-accurate PDF — the message text itself is never included in that export.
+From a piece of traffic's detail view, **Export** gives you the plaintext (for reading over the air or filing) or a printable PDF. For a Radiogram or ICS-213, that PDF is laid out like the real paper form — the ARRL Radiogram pad or the FEMA ICS-213 General Message form, boxes and rules included — ready to file or hand to the addressee, with fields ECTLogger doesn't collect (like a delivery-confirmation signature) printing blank and ruled, the same as they'd appear on a hand-filled paper copy. For a WXOBS, GYX-CAR SKYWARN, or general RRI strip, the PDF shows the exact strip text alongside a readable field list. On a net with **ICS-309 enabled**, traffic handled during that net also appears as metadata-only rows (message number, precedence, addressee, handling station) on the net's ICS-309 Communications Log, including its own form-accurate PDF — the message text itself is never included in that export.
+
+### Exporting weather/RRI strips for a served agency
+
+A net's Traffic panel has its own **Export** button for just the WXOBS/GYX-CAR SKYWARN/general RRI strip reports filed on that net — one line per report, oldest first, ready to paste into a spreadsheet or Winlink template the way a served agency actually expects to receive it. Choose **Raw (as filed)** for that normal case. Choose **Radiogram-safe (for NTS/CW relay)** only if you need to relay this content inside an actual Radiogram or ICS-213 message over voice or CW — it substitutes a minus sign for the letter M so a negative temperature survives standard NTS transmission, which the raw export deliberately does not do.
 
 ### Traffic in your statistics
 
@@ -870,7 +877,7 @@ Both columns are blank for users the badge doesn't apply to, and both are sortab
 ### Additional Admin Features
 
 - **Contacts** — View and manage station contacts auto-populated from check-in history. Fix names, add emails, send invites to create user accounts. Contact data auto-fills when NCS enters a callsign during check-in.
-- **Traffic** — Enable or disable form types (Radiogram, ICS-213), reorder them, override field labels, and set the delivery-reminder switches for Assisted Traffic Handling.
+- **Traffic** — Enable or disable form types (Radiogram, ICS-213, WXOBS, GYX-CAR SKYWARN, RRI Strip (General)), reorder them, override field labels, and set the delivery-reminder switches for Assisted Traffic Handling.
 - **Check-In Fields** — Configure default check-in form fields
 - **Frequency Library** — Manage shared frequency presets
 - **Security** — View fail2ban status and recent authentication events

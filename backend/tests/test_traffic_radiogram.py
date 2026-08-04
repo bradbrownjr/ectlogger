@@ -225,8 +225,12 @@ def test_parse_unparseable_input_never_raises():
     assert result2["form_type"] == "unknown"
     assert result2["raw_text"] == garbage
 
+    # parse_any falls all the way through to rri_strip_raw's catch-all
+    # (deliberately last in _DETECTION_ORDER), which preserves any non-empty
+    # input as a general RRI strip rather than dead-ending at "unknown" --
+    # see test_traffic_rri_strip.py for that parser's own tests.
     result3 = parse_any(garbage)
-    assert result3["form_type"] == "unknown"
+    assert result3["form_type"] == "RRI_STRIP_OTHER"
 
 
 def test_parse_empty_and_oversized_input_raises():
@@ -275,7 +279,7 @@ async def test_formatters_registry_dispatches_by_output_format(client, db, owner
 
     assert get_formatter("nts_radiogram") == (format_nts_radiogram, parse_nts_radiogram)
     assert get_formatter("ics213") == (format_ics213, parse_ics213)
-    assert set(FORMATTERS.keys()) == {"nts_radiogram", "ics213"}
+    assert set(FORMATTERS.keys()) == {"nts_radiogram", "ics213", "rri_strip", "rri_strip_raw"}
 
     with pytest.raises(KeyError):
         get_formatter("does_not_exist")

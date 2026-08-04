@@ -77,6 +77,23 @@ wholly new form type is deferred to a later phase and is only ever permitted for
 **Consequence.** A definition change ships in a release, not a config edit. Accepted — see
 Risk R6.
 
+**Revision (2026-08-04) — RRI strips, the first real test of this extensibility.** Added three
+builtin definitions for Radio Relay International's "RI strip" family (a fixed-field,
+slash-delimited short-form message, distinct from the free-text Radiogram/ICS-213 shape):
+`wxobs.json` (form_type `WXOBS`, the generic weather-observation strip), `gyx_car_skywarn.json`
+(form_type `GYX-CAR-SKYWARN`, the ME/NH-specific regional variant), and
+`rri_strip_general.json` (form_type `RRI_STRIP_OTHER`, a paste-and-save catch-all for any strip
+type without a dedicated field schema yet — SITREP, OPRED, or anything else RRI publishes).
+Two new `output_format` values back these: `rri_strip` (WXOBS, GYX-CAR-SKYWARN — a hardcoded
+per-type section/field-order table in `app/traffic/rri_strip.py`, the same "hardcode the known
+shape in the formatter module" pattern `radiogram.py`/`ics213.py` already use) and
+`rri_strip_raw` (RRI_STRIP_OTHER — renders/parses the pasted `strip_text` verbatim). Important:
+RRI's own docs describe a minus→M / decimal→R substitution for embedding strip content inside a
+Radiogram/ICS-213 body over voice/CW — but WX/RRI traffic is normally pasted straight into a
+spreadsheet, not relayed via NTS, so that substitution (`rri_strip.py::make_nts_safe`) is
+**never** applied to the canonical text/`normalized_text`/default export. It's opt-in only, on
+the new net-scoped bulk export — see the 3.4/3.5 revision notes below.
+
 ### D2 — Radiogram modeled as: generic JSON value storage plus promoted columns, with a dedicated formatter module
 
 **Decision.** Three tables, not one:
@@ -698,6 +715,7 @@ backend/app/traffic/
 ├── nts_text.py        # normalize_nts_text, count_nts_check, NTS_SUBSTITUTIONS (section 5)
 ├── radiogram.py       # format_nts_radiogram, parse_nts_radiogram, preamble build
 ├── ics213.py          # format/parse for the second form type
+├── rri_strip.py       # format/parse for WXOBS, GYX-CAR-SKYWARN, RRI_STRIP_OTHER; make_nts_safe (2026-08-04)
 ├── formatters.py      # output_format -> module registry; the only place that branches on form type
 ├── definitions.py     # startup upsert from definitions/*.json
 ├── log.py             # append_entry (the single writer of the cached fields), derive_disposition
@@ -706,6 +724,9 @@ backend/app/traffic/
     ├── manifest.json
     ├── radiogram.json
     ├── ics213.json
+    ├── wxobs.json               # 2026-08-04
+    ├── gyx_car_skywarn.json     # 2026-08-04
+    ├── rri_strip_general.json   # 2026-08-04
     └── arl_messages.json
 ```
 
@@ -752,6 +773,17 @@ knows a message moved is whoever moved it, and that is often not the submitter.
 |---|---|---|---|
 | GET | `/traffic/forms/{id}/export` | view perm | `?format=text` (the only format) returns the RRI/NTS plaintext (ported formatter). **Revision (2026-08-03):** the printable PDF used to be generated here too (a reportlab monospace text dump) but is gone — see section 4.6's note on `RadiogramPrintView.tsx`/`ICS213PrintView.tsx`. |
 | POST | `/traffic/import/preview` | user | **Stateless parse only, writes nothing** (D5). Returns detected `form_type`, per-field `value`/`source`/`confidence`, `unparsed_lines`, and `warnings`. |
+
+**Revision (2026-08-04) — net-scoped bulk RRI strip export.** `GET /nets/{net_id}/export/rri-strips`
+(`routers/nets_export.py`, alongside the pre-existing `/export/csv` and `/export/ics309`, not
+`traffic_export.py` since it's net-scoped like those two) returns every RRI-strip-family `Form`
+on that net — filtered on `FormDefinition.output_format IN ('rri_strip', 'rri_strip_raw')`, so a
+future strip type is included automatically with no endpoint change — as one line per report,
+oldest first. `?format=raw` (default) is each report's canonical string unmodified, matching how
+receiving stations actually use this data (pasted straight into a spreadsheet); `?format=radiogram_safe`
+applies `rri_strip.py::make_nts_safe`'s minus→M substitution, an explicit opt-in for the rare
+case of relaying strip content inside a Radiogram/ICS-213 body over voice/CW. Same permission
+rule as CSV/ICS-309: `check_net_permission(db, net, current_user)`, anyone with net access.
 
 **No email-send endpoint.** A `POST /traffic/forms/{id}/email` "send it for me" convenience
 was designed here and then explicitly rejected by the roadmap author (2026-08-03, resolving
@@ -845,6 +877,7 @@ Deep-link query params drive the pre-filtered entry points: `/traffic?net_id=123
 | `ImportPreview.tsx` | The parse-review screen: per-field confidence, warnings (especially the check mismatch), unparsed lines, and a Confirm that hands off to `FormRenderer`. Paste or drag-and-drop a text file onto the same box (2026-08-03) — both populate the same `text` state; there is no separate upload path. |
 | `TrafficPanel.tsx` | The embeddable per-net panel. Reused verbatim by NetView. |
 | `print/RadiogramPrintView.tsx`, `print/ICS213PrintView.tsx`, `print/ICS309PrintView.tsx` | Form-accurate print layouts (real box/rule grids matching the ARRL Radiogram pad and FEMA ICS-213/309 forms), added 2026-08-03. See section 4.6. |
+| `print/RRIStripPrintView.tsx` | Shared print view for WXOBS/GYX-CAR-SKYWARN/RRI_STRIP_OTHER (canonical string + generic field grid, not a box/rule replica), added 2026-08-04. See section 4.6. |
 
 ### 4.4 `hooks/`
 
@@ -908,6 +941,13 @@ nothing like a real radiogram or ICS-213 pad, PDF export moved entirely client-s
   already exists alongside the generic `FormRenderer`).
 - The backend PDF branch of `traffic_export.py::export_form` (and its `reportlab` dependency)
   was removed as dead code once nothing called it any more.
+
+**Revision (2026-08-04) — `RRIStripPrintView.tsx`.** Unlike Radiogram/ICS-213/ICS-309, RRI
+strips (WXOBS, GYX-CAR-SKYWARN, RRI_STRIP_OTHER) aren't paper forms to replicate box-for-box —
+they're a Winlink template's field dump — so one shared component covers all three types instead
+of one bespoke view each: the canonical string (`form.normalized_text`) in monospace (exactly
+what pastes into RRI's tooling), then a labeled field grid driven generically by
+`form.definition.fields`, needing no per-type branching.
 
 ---
 

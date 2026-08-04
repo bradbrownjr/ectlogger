@@ -159,9 +159,11 @@ const ImportPreview: React.FC<ImportPreviewProps> = ({ definitions, onCreated, o
     return (
       <Box>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Paste the plaintext of a radiogram or ICS-213 message as it was copied off the air, or
-          drag a text file onto the box below, and the parser will fill in what it can. Nothing is
-          saved until you review and confirm.
+          Paste the plaintext of a radiogram, ICS-213 message, or RRI strip (WXOBS, GYX-CAR
+          SKYWARN, or any other) as it was copied off the air, or drag a text file onto the box
+          below, and the parser will fill in what it can. Anything it doesn't recognize is still
+          saved as a general RRI strip, exactly as pasted. Nothing is saved until you review and
+          confirm.
         </Typography>
         <Box
           onDragOver={(e) => {
@@ -225,10 +227,11 @@ const ImportPreview: React.FC<ImportPreviewProps> = ({ definitions, onCreated, o
           Start over
         </Button>
 
-        {result.form_type === 'unknown' ? (
+        {result.form_type === 'unknown' || !matchedDefinition ? (
           <Alert severity="warning" sx={{ mb: 2 }}>
-            Could not recognize this as a radiogram or ICS-213 message. Nothing was lost — your
-            original text is preserved below. You can enter it manually on the New tab instead.
+            Could not recognize this as a radiogram, ICS-213, or RRI strip message, or that form
+            type isn't available. Nothing was lost — your original text is preserved below. You
+            can enter it manually on the New tab instead.
           </Alert>
         ) : (
           <Typography variant="subtitle1" sx={{ mb: 1 }}>

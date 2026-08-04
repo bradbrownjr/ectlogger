@@ -164,7 +164,11 @@ async def test_import_preview_check_mismatch_warns_without_failing(client, owner
 
 
 @pytest.mark.asyncio
-async def test_import_preview_unparseable_garbage_returns_unknown_not_500(client, owner):
+async def test_import_preview_unparseable_garbage_saved_as_general_rri_strip_not_500(client, owner):
+    """Garbage that doesn't match radiogram/ICS-213/a known RRI strip keyword
+    no longer dead-ends at form_type == 'unknown' -- rri_strip_raw's catch-all
+    (last in _DETECTION_ORDER) preserves it verbatim as a general RRI strip
+    instead, never a 500."""
     resp = await client.post(
         "/api/traffic/import/preview",
         json={"text": GARBAGE_TEXT},
@@ -173,9 +177,8 @@ async def test_import_preview_unparseable_garbage_returns_unknown_not_500(client
     assert resp.status_code == 200
     body = resp.json()
 
-    assert body["form_type"] == "unknown"
-    assert body["raw_text"] == GARBAGE_TEXT
-    assert body["fields"] == {}
+    assert body["form_type"] == "RRI_STRIP_OTHER"
+    assert body["fields"]["strip_text"]["value"] == GARBAGE_TEXT.strip()
 
 
 @pytest.mark.asyncio

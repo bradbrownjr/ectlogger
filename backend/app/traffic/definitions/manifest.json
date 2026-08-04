@@ -1,5 +1,8 @@
 {
   "radiogram.json": "3.1",
   "ics213.json": "1.0",
+  "wxobs.json": "1.0",
+  "gyx_car_skywarn.json": "1.0",
+  "rri_strip_general.json": "1.0",
   "arl_messages.json": "data"
 }

@@ -5,6 +5,8 @@ import {
   Chip,
   CircularProgress,
   IconButton,
+  Menu,
+  MenuItem,
   Paper,
   Table,
   TableCell,
@@ -16,7 +18,8 @@ import MinimizeIcon from '@mui/icons-material/Minimize';
 import CropSquareIcon from '@mui/icons-material/CropSquare';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import LaunchIcon from '@mui/icons-material/Launch';
-import { trafficApi } from '../../services/api';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import api, { trafficApi } from '../../services/api';
 import { getErrorMessage } from '../../utils/apiErrors';
 import TrafficTable from '../traffic/TrafficTable';
 import TrafficDetail from '../traffic/TrafficDetail';
@@ -113,6 +116,35 @@ const TrafficPanel: React.FC<TrafficPanelProps> = ({ netId, currentUserId, minim
     navigate(`/traffic?net_id=${netId}`);
   };
 
+  // ========== RRI/WX STRIP EXPORT ==========
+  // One line per WXOBS/GYX-CAR-SKYWARN/general-RRI-strip report on this net,
+  // built for pasting straight into a spreadsheet -- the "raw" choice
+  // matches what a receiving station actually does with this data; the
+  // "radiogram-safe" choice is only for the rare case of relaying it inside
+  // a Radiogram/ICS-213 body over voice/CW. See
+  // routers/nets_export.py::export_net_rri_strips.
+  const [exportMenuAnchor, setExportMenuAnchor] = useState<HTMLElement | null>(null);
+
+  const handleExportRRIStrips = async (format: 'raw' | 'radiogram_safe') => {
+    setExportMenuAnchor(null);
+    try {
+      const response = await api.get(`/nets/${netId}/export/rri-strips`, {
+        params: { format },
+        responseType: 'blob',
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `RRI_Strips_net${netId}_${format}.txt`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Failed to export RRI strips:', err);
+    }
+  };
+
   return (
     <Paper
       sx={{
@@ -135,6 +167,26 @@ const TrafficPanel: React.FC<TrafficPanelProps> = ({ netId, currentUserId, minim
                     Traffic
                   </Box>
                   <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
+                    <IconButton
+                      size="small"
+                      onClick={(e) => setExportMenuAnchor(e.currentTarget)}
+                      title="Export RRI/WX strips"
+                      sx={{ p: 0.25 }}
+                    >
+                      <FileDownloadIcon sx={{ fontSize: 14 }} />
+                    </IconButton>
+                    <Menu
+                      anchorEl={exportMenuAnchor}
+                      open={Boolean(exportMenuAnchor)}
+                      onClose={() => setExportMenuAnchor(null)}
+                    >
+                      <MenuItem onClick={() => handleExportRRIStrips('raw')} sx={{ minHeight: 44 }}>
+                        Raw (as filed)
+                      </MenuItem>
+                      <MenuItem onClick={() => handleExportRRIStrips('radiogram_safe')} sx={{ minHeight: 44 }}>
+                        Radiogram-safe (for NTS/CW relay)
+                      </MenuItem>
+                    </Menu>
                     <IconButton size="small" onClick={handleViewAll} title="View all in Traffic" sx={{ p: 0.25 }}>
                       <LaunchIcon sx={{ fontSize: 14 }} />
                     </IconButton>

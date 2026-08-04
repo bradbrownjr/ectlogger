@@ -1,0 +1,36 @@
+{
+  "form_type": "RRI_STRIP_OTHER",
+  "title": "RRI Strip (General)",
+  "description": "Paste the raw text of any Radio Relay International strip that doesn't have a dedicated form here yet (SITREP, OPRED, an agency-specific variant, etc). Saved exactly as pasted and tracked through the same chain-of-custody log as any other traffic.",
+  "output_format": "rri_strip_raw",
+  "fields": [
+    {
+      "name": "subject",
+      "label": "Label",
+      "field_type": "text",
+      "is_required": true,
+      "max_length": 100,
+      "description": "Short label to identify this strip in lists, e.g. \"SITREP - Route 4 bridge closure\"",
+      "sort_order": 10
+    },
+    {
+      "name": "call_sign",
+      "label": "Call Sign",
+      "field_type": "text",
+      "is_required": true,
+      "max_length": 20,
+      "validator": "callsign",
+      "auto_fill": "callsign",
+      "description": "Reporting station's callsign",
+      "sort_order": 20
+    },
+    {
+      "name": "strip_text",
+      "label": "Strip Text",
+      "field_type": "textarea",
+      "is_required": true,
+      "description": "The raw strip text, exactly as received",
+      "sort_order": 30
+    }
+  ]
+}

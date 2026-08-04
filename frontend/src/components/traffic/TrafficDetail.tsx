@@ -12,6 +12,9 @@ import TrafficLogTimeline, { TrafficLogEntry } from './TrafficLogTimeline';
 import RelayLogDialog from './RelayLogDialog';
 import RadiogramPrintView from './print/RadiogramPrintView';
 import ICS213PrintView from './print/ICS213PrintView';
+import RRIStripPrintView from './print/RRIStripPrintView';
+
+const RRI_STRIP_FORM_TYPES = ['WXOBS', 'GYX-CAR-SKYWARN', 'RRI_STRIP_OTHER'];
 
 // ========== TrafficDetail ==========
 // Read view of a single form: field values, disposition, the chain-of-custody
@@ -200,6 +203,8 @@ const TrafficDetail: React.FC<TrafficDetailProps> = ({ formId }) => {
           <RadiogramPrintView id={printViewId} form={form} />
         ) : form.form_type === 'ICS213' ? (
           <ICS213PrintView id={printViewId} form={form} />
+        ) : RRI_STRIP_FORM_TYPES.includes(form.form_type) ? (
+          <RRIStripPrintView id={printViewId} form={form} />
         ) : null}
       </Box>
     </Paper>
