@@ -350,6 +350,29 @@ Per-instance `placement="top"` / `placement="right"` overrides (the check-in
 status legend, `CheckInTable.tsx`'s status icons) are unaffected — an
 explicit `placement` always wins over the theme default, as normal.
 
+**Menu/Select dropdowns need the same zoom fix, via a different mechanism.**
+Reported: opening the Traffic panel's Export menu on a short screen placed it
+in the middle of the page instead of under its button — the exact same
+double-scaling bug as above (`anchorEl.getBoundingClientRect()` is already
+zoomed; writing that number onto another descendant of the zoomed body
+zooms it again), but hitting `<Menu>`/`<Select>`, which are built on MUI's
+`Popover`, not `Popper`. Popover's positioning math
+(`Popover.js::getPositioningStyle`) is a private calculation with no
+modifier pipeline — nothing to intercept before the wrong value lands in
+the DOM, unlike Tooltip. `utils/zoomAwarePopovers.ts`'s
+`watchZoomAwarePopovers()` corrects it after the fact instead, via a
+`MutationObserver` watching for `.MuiPopover-paper` elements (Menu's own
+class plus Select's dropdown, which is also Popover-based) and dividing
+their `top`/`left` by the current zoom the same way the Tooltip modifier
+does its own output, re-applying on every subsequent reposition (scroll,
+resize, reopen). Started and stopped inside NetView's existing zoom effect
+— the only page this zoom ever applies to — rather than run for the app's
+whole lifetime, so the observer's cost isn't paid on pages that can never
+be zoomed.
+
+This is the one deliberate exception to "fix the theme default, don't patch
+the DOM" above: Popover genuinely leaves no other way in.
+
 ---
 
 ## Markdown Write/Preview Toggle

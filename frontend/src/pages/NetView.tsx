@@ -72,6 +72,7 @@ import FloatingWindow from '../components/FloatingWindow';
 import UserProfileDialog from '../components/UserProfileDialog';
 import CanHearDialog from '../components/netview/CanHearDialog';
 import FileTrafficDialog from '../components/netview/FileTrafficDialog';
+import { watchZoomAwarePopovers } from '../utils/zoomAwarePopovers';
 
 interface Frequency {
   id: number;
@@ -385,10 +386,17 @@ const NetView: React.FC = () => {
     };
     applyZoom();
     window.addEventListener('resize', applyZoom);
+    // Menu/Select dropdowns (MUI Popover-family) need the same zoom
+    // compensation Tooltips get in App.tsx, but Popover has no modifier
+    // pipeline to hook into -- see zoomAwarePopovers.ts. Scoped to this
+    // effect's own lifetime so the MutationObserver only runs while a net
+    // (the only place this zoom applies) is actually being viewed.
+    const stopWatchingPopovers = watchZoomAwarePopovers();
     return () => {
       window.removeEventListener('resize', applyZoom);
       (document.body.style as any).zoom = '1';
       document.documentElement.style.removeProperty('--ect-app-h');
+      stopWatchingPopovers();
     };
   }, []);
 
