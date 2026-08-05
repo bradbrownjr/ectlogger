@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Chip,
@@ -92,7 +91,6 @@ const TrafficPanel: React.FC<TrafficPanelProps> = ({
   onMinimize,
   onRestore,
 }) => {
-  const navigate = useNavigate();
   const [items, setItems] = useState<TrafficForm[]>([]);
   const [summary, setSummary] = useState<TrafficSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -164,16 +162,22 @@ const TrafficPanel: React.FC<TrafficPanelProps> = ({
     };
   }, [netId, refetch]);
 
+  // Opens in a new tab rather than navigating this one -- clicking it from
+  // an active net shouldn't cost the operator their place on the net page.
   const handleViewAll = () => {
-    navigate(`/traffic?net_id=${netId}`);
+    window.open(`/traffic?net_id=${netId}`, '_blank', 'noopener');
   };
 
-  // ========== RRI/WX STRIP EXPORT ==========
-  // One line per WXOBS/GYX-CAR-SKYWARN/general-RRI-strip report on this net,
-  // built for pasting straight into a spreadsheet -- the "raw" choice
-  // matches what a receiving station actually does with this data; the
-  // "radiogram-safe" choice is only for the rare case of relaying it inside
-  // a Radiogram/ICS-213 body over voice/CW. See
+  // ========== TRAFFIC EXPORT ==========
+  // Labeled "Export traffic" regardless of what's actually on the net --
+  // the endpoint only ever produces WXOBS/GYX-CAR-SKYWARN/RRI-strip lines
+  // (one per report, for pasting into a spreadsheet), so a net running only
+  // Radiograms downloads an empty file. That gap (no export exists yet for
+  // Radiogram/ICS-213 chain-of-custody data) is real but out of scope here;
+  // the fix in scope is not mislabeling the button about content it can't
+  // produce either way. "Raw" matches what a receiving station actually does
+  // with this data; "radiogram-safe" is only for the rare case of relaying
+  // it inside a Radiogram/ICS-213 body over voice/CW. See
   // routers/nets_export.py::export_net_rri_strips.
   const [exportMenuAnchor, setExportMenuAnchor] = useState<HTMLElement | null>(null);
 
@@ -218,7 +222,12 @@ const TrafficPanel: React.FC<TrafficPanelProps> = ({
                   <Box component="span" sx={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     Traffic
                   </Box>
-                  <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
+                  {/* overflowX: auto is defensive -- the Paper this table sits
+                      in clips (overflow: hidden) rather than scrolls, so on a
+                      narrow docked panel with this many icons, without this
+                      the rightmost ones (Minimize/Close) would be unreachable
+                      rather than merely hidden-until-resize. */}
+                  <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, flexShrink: 0, overflowX: 'auto', maxWidth: '100%' }}>
                     <IconButton
                       size="small"
                       onClick={() => setComposeOpen(true)}
@@ -230,7 +239,7 @@ const TrafficPanel: React.FC<TrafficPanelProps> = ({
                     <IconButton
                       size="small"
                       onClick={(e) => setExportMenuAnchor(e.currentTarget)}
-                      title="Export RRI/WX strips"
+                      title="Export traffic"
                       sx={{ p: 0.25 }}
                     >
                       <FileDownloadIcon sx={{ fontSize: 14 }} />
@@ -342,7 +351,12 @@ const TrafficPanel: React.FC<TrafficPanelProps> = ({
           real room. Closing refetches so the new item shows in the list
           immediately even if the WebSocket event is missed. */}
       <Dialog open={composeOpen} onClose={() => setComposeOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle>File traffic</DialogTitle>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+          File traffic
+          <IconButton onClick={() => setComposeOpen(false)} title="Close" size="small">
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </DialogTitle>
         <DialogContent dividers>
           <TrafficComposer
             definitions={definitions}

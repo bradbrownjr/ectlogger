@@ -49,6 +49,17 @@ import { useFormDefinitions, FormDefinition } from '../../hooks/useFormDefinitio
 const isStripDefinition = (d: FormDefinition) =>
   d.output_format === 'rri_strip' || d.output_format === 'rri_strip_raw';
 
+// A NARROWER filter for the "Strip type" picker specifically: only types
+// with real named fields (WXOBS, GYX-CAR-SKYWARN, anything defined via
+// "Parse and name the fields"). RRI_STRIP_OTHER (output_format
+// 'rri_strip_raw') is deliberately excluded here even though it counts as a
+// strip definition above -- it's the raw catch-all with generic Label/Call
+// Sign/Strip Text fields, not named RI answer fields, so pointing a net at
+// it as "the strip type this net collects" defeats the entire point of this
+// setting: staff would see the catch-all form instead of the origin
+// strip's actual fields.
+const isNamedStripDefinition = (d: FormDefinition) => d.output_format === 'rri_strip';
+
 interface DefineToken {
   value: string;
   starts_new_section: boolean;
@@ -156,11 +167,15 @@ const TrafficSettingsPanel: React.FC<TrafficSettingsPanelProps> = ({
     }
   };
 
-  const stripDefinitions = definitions.filter(isStripDefinition);
   // Only surface the strip section once the net actually accepts a strip --
-  // a Radiogram-only net has no use for it.
+  // a Radiogram-only net has no use for it. Uses the broader isStripDefinition
+  // (includes RRI_STRIP_OTHER) since a net that only takes the raw catch-all
+  // can still use the origin-strip paste box below.
   const acceptsAStrip =
-    trafficFormTypes.length === 0 || stripDefinitions.some((d) => trafficFormTypes.includes(d.form_type));
+    trafficFormTypes.length === 0 || definitions.some((d) => isStripDefinition(d) && trafficFormTypes.includes(d.form_type));
+  // The "Strip type" dropdown itself uses the narrower filter -- see
+  // isNamedStripDefinition's comment above.
+  const namedStripDefinitions = definitions.filter(isNamedStripDefinition);
 
   return (
     <>
@@ -214,8 +229,9 @@ const TrafficSettingsPanel: React.FC<TrafficSettingsPanelProps> = ({
                   </Typography>
                   <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1.5 }}>
                     On an RRI net or drill, every station answers the same originating strip. Pick
-                    the strip type staff should collect, or paste the originating strip below so the
-                    fields are laid out for them.
+                    an already-defined strip type staff should collect (its own fields show when
+                    filing), or paste the originating strip below to lay out its fields for staff --
+                    labeling those fields there is what turns it into a pickable type here.
                   </Typography>
 
                   <FormControl size="small" sx={{ minWidth: 260, mb: 2 }}>
@@ -227,9 +243,9 @@ const TrafficSettingsPanel: React.FC<TrafficSettingsPanelProps> = ({
                       onChange={(e) => setTrafficStripFormType(e.target.value)}
                     >
                       <MenuItem value="">
-                        <em>None</em>
+                        <em>None -- use the pasted strip below</em>
                       </MenuItem>
-                      {stripDefinitions.map((d) => (
+                      {namedStripDefinitions.map((d) => (
                         <MenuItem key={d.form_type} value={d.form_type}>
                           {d.title}
                         </MenuItem>

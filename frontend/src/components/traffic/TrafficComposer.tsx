@@ -67,6 +67,16 @@ const TrafficComposer: React.FC<TrafficComposerProps> = ({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // ---- "Paste the full response strip" (structured strip types only) ----
+  // A station reporting over the air often reads back the whole strip in one
+  // breath rather than field by field. Rather than making the operator
+  // re-type each value into its own box, let them paste the complete strip
+  // and have it split across the same named fields FormRenderer shows.
+  const [pasteResponseOpen, setPasteResponseOpen] = useState(false);
+  const [pasteResponseText, setPasteResponseText] = useState('');
+  const [pasteResponseBusy, setPasteResponseBusy] = useState(false);
+  const [pasteResponseError, setPasteResponseError] = useState<string | null>(null);
+
   // ---- Ad-hoc strip mode (net has a pasted origin strip, no defined type) ----
   // Filed as RRI_STRIP_OTHER, whose definition requires a label and a
   // callsign alongside the raw text -- so both are collected here rather
@@ -101,6 +111,37 @@ const TrafficComposer: React.FC<TrafficComposerProps> = ({
 
   const handleChange = (name: string, value: string) => {
     setValues((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // Splits a pasted strip on the same "/" delimiters RRI uses and assigns
+  // each token, in order, to the selected type's fields (already sorted by
+  // sort_order by the API) -- the same positional convention
+  // rri_strip.py::format_rri_strip uses to build the string in the first
+  // place, just run in reverse. tokenizeStripTemplate is stateless.
+  const handleFillFromPastedResponse = async () => {
+    if (!selected) return;
+    setPasteResponseBusy(true);
+    setPasteResponseError(null);
+    try {
+      const resp = await trafficApi.tokenizeStripTemplate(pasteResponseText);
+      const tokens: { value: string }[] = resp.data.tokens;
+      const filled: Record<string, string> = {};
+      selected.fields.forEach((field, index) => {
+        if (index < tokens.length) filled[field.name] = tokens[index].value;
+      });
+      setValues((prev) => ({ ...prev, ...filled }));
+      if (tokens.length !== selected.fields.length) {
+        setPasteResponseError(
+          `Filled ${Math.min(tokens.length, selected.fields.length)} of ${selected.fields.length} fields -- the pasted strip had ${tokens.length} value${tokens.length === 1 ? '' : 's'}. Check the rest by hand.`
+        );
+      } else {
+        setPasteResponseOpen(false);
+      }
+    } catch (err) {
+      setPasteResponseError(getErrorMessage(err, 'Could not read that as a strip'));
+    } finally {
+      setPasteResponseBusy(false);
+    }
   };
 
   const handleSubmit = async () => {
@@ -264,6 +305,60 @@ const TrafficComposer: React.FC<TrafficComposerProps> = ({
       ) : (
         <FormRenderer definition={selected} values={values} onChange={handleChange} disabled={saving} />
       )}
+
+      {/* ========== PASTE THE FULL RESPONSE STRIP ========== */}
+      {/* Only for structured strip types (real named fields, not the
+          RRI_STRIP_OTHER raw catch-all, which already has nothing but a
+          single free-text box). A station reporting over the air often reads
+          the whole strip back in one breath -- this fills every field above
+          from that instead of making the operator split it out by hand. */}
+      {selected.output_format === 'rri_strip' && (
+        <Box sx={{ mt: 3 }}>
+          {!pasteResponseOpen ? (
+            <Button type="button" size="small" onClick={() => setPasteResponseOpen(true)} sx={{ minHeight: 44 }}>
+              Or paste the full response strip
+            </Button>
+          ) : (
+            <Box sx={{ p: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}>
+              <Typography variant="body2" sx={{ mb: 1 }}>
+                Paste the strip exactly as reported over the air -- it fills the fields above.
+              </Typography>
+              {pasteResponseError && <Alert severity="warning" sx={{ mb: 1 }}>{pasteResponseError}</Alert>}
+              <TextField
+                fullWidth
+                multiline
+                rows={2}
+                size="small"
+                value={pasteResponseText}
+                onChange={(e) => setPasteResponseText(e.target.value)}
+                placeholder={`${selected.form_type}/.../.../.../ /...//`}
+                sx={{ '& .MuiInputBase-root': { fontFamily: 'monospace' } }}
+              />
+              <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                <Button
+                  type="button"
+                  variant="contained"
+                  size="small"
+                  disabled={pasteResponseBusy || !pasteResponseText.trim()}
+                  onClick={handleFillFromPastedResponse}
+                  sx={{ minHeight: 44 }}
+                >
+                  {pasteResponseBusy ? 'Filling...' : 'Fill fields'}
+                </Button>
+                <Button
+                  type="button"
+                  size="small"
+                  onClick={() => { setPasteResponseOpen(false); setPasteResponseError(null); }}
+                  sx={{ minHeight: 44 }}
+                >
+                  Cancel
+                </Button>
+              </Box>
+            </Box>
+          )}
+        </Box>
+      )}
+
       <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
         <Button
           variant="contained"
