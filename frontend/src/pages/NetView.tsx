@@ -248,14 +248,20 @@ const NetView: React.FC = () => {
   const setEffectiveActivityLogMinimized = isMobileLayout ? setMobileActivityLogMinimized : setActivityLogMinimized;
 
   // Ultrawide layout: Script, Notes, and Schedule Announcements dock to a
-  // new left column, Map docks to the bottom of the right column, below
-  // Activity Log. The dock option itself (and the docked rendering) only
+  // NEW LEFT column. The dock option itself (and the docked rendering) only
   // appears once the viewport is xl-wide - below that, docking is not
-  // offered at all (see the "Width gating" decision) and these four stay
+  // offered at all (see the "Width gating" decision) and these three stay
   // purely on-demand floating dialogs like they've always been. Default to
   // docked (true) at xl+ so a first-time ultrawide user sees them land in
   // the layout immediately, matching Chat/Activity Log's default-docked
   // behavior, rather than defaulting to floating like a narrower screen.
+  //
+  // The xl gate is a LEFT-column-only rule. Map, Coverage, and Traffic dock
+  // to the EXISTING right column, alongside Chat and Activity Log, which
+  // have never needed an xl gate -- the two-column layout (check-ins +
+  // right) already works from md up (see isMdUp below), so gating these
+  // three to xl was reserved width the right column never actually needed.
+  // See DESIGN.md "Docked Pane Width Gating".
   const isXlUp = useMediaQuery(theme.breakpoints.up('xl'));
   // Column widths become resizable as soon as two of the three slots can sit
   // side by side, which starts at the md breakpoint (left only ever joins
@@ -273,9 +279,10 @@ const NetView: React.FC = () => {
   const scriptDocked = scriptDockedPref && isXlUp;
   const announcementsDocked = announcementsDockedPref && isXlUp;
   const scheduleAnnouncementsDocked = scheduleAnnouncementsDockedPref && isXlUp;
-  const mapDocked = mapDockedPref && isXlUp;
-  const coverageDocked = coverageDockedPref && isXlUp;
-  const trafficDocked = trafficDockedPref && isXlUp;
+  // Right column - no xl gate, matching Chat/Activity Log (see above).
+  const mapDocked = mapDockedPref;
+  const coverageDocked = coverageDockedPref;
+  const trafficDocked = trafficDockedPref;
   const handleDockScript = () => setScriptDockedPref(true);
   const handleUndockScript = () => setScriptDockedPref(false);
   const handleDockAnnouncements = () => setAnnouncementsDockedPref(true);
@@ -2323,7 +2330,7 @@ const NetView: React.FC = () => {
               coverageMinimized={coverageMinimized}
               onCloseCoverage={coverage.onClose}
               onUndockCoverage={handleDetachCoverage}
-              onAttachCoverage={isXlUp ? handleAttachCoverage : undefined}
+              onAttachCoverage={handleAttachCoverage}
               handlePopOutCoverage={handlePopOutCoverage}
               handleFloatToWindowCoverage={handleFloatToWindowCoverage}
               onMinimizeCoverage={() => setCoverageMinimized(true)}
@@ -2341,7 +2348,7 @@ const NetView: React.FC = () => {
               onCloseTraffic={traffic.onClose}
               onComposeTraffic={() => setFileTrafficOpen(true)}
               onUndockTraffic={handleDetachTraffic}
-              onAttachTraffic={isXlUp ? handleAttachTraffic : undefined}
+              onAttachTraffic={handleAttachTraffic}
               handlePopOutTraffic={handlePopOutTraffic}
               handleFloatToWindowTraffic={handleFloatToWindowTraffic}
               onMinimizeTraffic={() => setTrafficMinimized(true)}
@@ -2586,7 +2593,7 @@ const NetView: React.FC = () => {
         loggerUserIds={loggerUserIds}
         relayUserIds={relayUserIds}
         onPopOut={handlePopOutMap}
-        onDock={isXlUp ? handleDockMap : undefined}
+        onDock={handleDockMap}
         canHearReports={canHearReports}
         frequencyLabels={Object.fromEntries(
           (net?.frequencies || []).map((f: any) => [f.id, `${f.frequency || f.network || ''} ${f.mode || ''}`.trim()])

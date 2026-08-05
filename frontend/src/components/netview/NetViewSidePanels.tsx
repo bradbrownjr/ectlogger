@@ -11,14 +11,19 @@ import useResizableSplit from '../../hooks/useResizableSplit';
 import useLayoutTier from '../../hooks/useLayoutTier';
 import { STORAGE_KEYS } from '../../utils/localStorageKeys';
 
-// ========== NET VIEW SIDE PANELS (Chat + Activity Log + Map + Coverage) ==========
-// The right-column Chat/Activity Log/Map/Coverage stack, docked or detached.
-// All four detach independently of each other and of the check-in list. Each
-// pane's docked Box renders only when that pane is actually docked/shown,
-// so the others expand to fill the freed space instead of the whole column
-// disappearing (or, if none are present, the column itself doesn't render).
-// The check-in list's own width (NetView.tsx) expands separately once
-// nothing is left in this column.
+// ========== NET VIEW SIDE PANELS (Chat + Map + Coverage + Traffic + Activity Log) ==========
+// The right-column stack, docked or detached. All five detach independently
+// of each other and of the check-in list. Each pane's docked Box renders
+// only when that pane is actually docked/shown, so the others expand to
+// fill the freed space instead of the whole column disappearing (or, if
+// none are present, the column itself doesn't render). The check-in list's
+// own width (NetView.tsx) expands separately once nothing is left in this
+// column.
+//
+// Stacking order is fixed: Chat, then whichever of Map/Coverage/Traffic are
+// open, then Activity Log LAST — see the `panes.push` calls below. Activity
+// Log is always the bottom-most pane so it stays in a predictable place
+// regardless of which on-demand panels happen to be open that session.
 //
 // Unlike Chat/Activity Log (always present once docked), Map and Coverage
 // are on-demand — only opened via the toolbar — so they additionally need
@@ -58,7 +63,8 @@ interface NetViewSidePanelsProps {
   handlePopOutActivityLog: () => void;
   handleFloatToWindowChat: () => void;
   handleFloatToWindowActivityLog: () => void;
-  // Map (ultrawide docking only — see NetView.tsx's xl-gating)
+  // Map (right column, on-demand — no width gate; see DESIGN.md "Docked
+  // Pane Width Gating")
   mapOpen: boolean;
   mapDocked: boolean;
   filteredCheckIns: any[];
@@ -83,10 +89,7 @@ interface NetViewSidePanelsProps {
   coverageMinimized: boolean;
   onCloseCoverage: () => void;
   onUndockCoverage: () => void;
-  // Undefined below xl (matching Map's onDock gating in NetView.tsx) since
-  // coverageDocked can never become true there -- omitting it hides a dead
-  // "Dock to layout" button rather than rendering one that's a no-op.
-  onAttachCoverage?: () => void;
+  onAttachCoverage: () => void;
   handlePopOutCoverage: () => void;
   handleFloatToWindowCoverage: () => void;
   onMinimizeCoverage: () => void;
@@ -113,9 +116,7 @@ interface NetViewSidePanelsProps {
   // floating TrafficPanel get it, since either can be the one on screen.
   onComposeTraffic: () => void;
   onUndockTraffic: () => void;
-  // Undefined below xl, matching Map/Coverage -- trafficDocked can never
-  // become true there, so omitting it hides a dead "Dock to layout" button.
-  onAttachTraffic?: () => void;
+  onAttachTraffic: () => void;
   handlePopOutTraffic: () => void;
   handleFloatToWindowTraffic: () => void;
   onMinimizeTraffic: () => void;
@@ -236,29 +237,6 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
       ),
     });
   }
-  if (activityLogDocked) {
-    panes.push({
-      key: 'activityLog',
-      minimized: activityLogMinimized,
-      content: (
-        <FloatingWindow
-          title="Activity Log"
-          isDetached={false}
-          onAttach={() => {}}
-          defaultWidth={450}
-          defaultHeight={500}
-          minWidth={300}
-          minHeight={250}
-          storageKey="activityLog"
-        >
-          <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            <ActivityLog netId={Number(netId)}
-                minimized={activityLogMinimized} onMinimize={() => setActivityLogMinimized(true)} onRestore={() => setActivityLogMinimized(false)} onDetach={() => setActivityLogDetached(true)} onPopOut={handlePopOutActivityLog} />
-          </Box>
-        </FloatingWindow>
-      ),
-    });
-  }
   if (showMap) {
     panes.push({
       key: 'map',
@@ -329,14 +307,43 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
       ),
     });
   }
+  // Activity Log is pushed LAST regardless of which on-demand panels above
+  // are open, so it always renders at the bottom of the stack. It's the
+  // net's running record — the one pane an NCS expects to find in the same
+  // place every time, rather than shuffled by whichever panels happen to be
+  // open. See DESIGN.md "Docked Pane Stacking Order".
+  if (activityLogDocked) {
+    panes.push({
+      key: 'activityLog',
+      minimized: activityLogMinimized,
+      content: (
+        <FloatingWindow
+          title="Activity Log"
+          isDetached={false}
+          onAttach={() => {}}
+          defaultWidth={450}
+          defaultHeight={500}
+          minWidth={300}
+          minHeight={250}
+          storageKey="activityLog"
+        >
+          <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <ActivityLog netId={Number(netId)}
+                minimized={activityLogMinimized} onMinimize={() => setActivityLogMinimized(true)} onRestore={() => setActivityLogMinimized(false)} onDetach={() => setActivityLogDetached(true)} onPopOut={handlePopOutActivityLog} />
+          </Box>
+        </FloatingWindow>
+      ),
+    });
+  }
 
   return (
     <>
-      {/* Right column: Chat + Activity Log + Map stacked vertically. Each
-          pane renders only when it's docked/shown, so the others expand
-          into the freed space instead of the whole column disappearing.
-          Drag handles between expanded panes let the split be resized;
-          see useResizableSplit.ts. */}
+      {/* Right column, stacked vertically in `panes` order (Chat, then
+          Map/Coverage/Traffic, then Activity Log last — see the push calls
+          above). Each pane renders only when it's docked/shown, so the
+          others expand into the freed space instead of the whole column
+          disappearing. Drag handles between expanded panes let the split be
+          resized; see useResizableSplit.ts. */}
       {panes.length > 0 && (
       <Grid item xs={12} md={width} ref={containerRef} data-pane-key="right" style={columnStyle} sx={{ pl: { md: 0.25 }, display: 'flex', flexDirection: 'column', gap: 0.25, minHeight: { xs: 300, md: 0 }, height: { xs: 'auto', md: '100%' } }}>
         {panes.map((pane, idx) => (
@@ -397,10 +404,10 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
       {/* Floating Station Coverage panel - on-demand like Map (needs
           coverageOpen true, not just "not docked"), unlike Chat/Activity Log
           which are always present once opted into floating and so have no
-          separate "closed" state. onAttachCoverage (dock, only meaningful
-          on xl+ viewports -- NetView.tsx gates it on isXlUp same as Map's
-          onDock) and onCloseCoverage (real close, always available) are two
-          distinct actions -- see FloatingWindow.tsx's onAttach/onClose. */}
+          separate "closed" state. onAttachCoverage (dock, available at any
+          width -- see DESIGN.md "Docked Pane Width Gating") and
+          onCloseCoverage (real close, always available) are two distinct
+          actions -- see FloatingWindow.tsx's onAttach/onClose. */}
       {coverageOpen && !coverageDocked && (net.status === 'active' || net.status === 'lobby' || net.status === 'closed' || net.status === 'archived') && (
         <FloatingWindow
           title="Station Coverage"
