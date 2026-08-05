@@ -175,7 +175,12 @@ const NetPaneWindow: React.FC = () => {
           netId={Number(netId)}
           netStartedAt={net.started_at}
           netStatus={net.status}
-          canManage={!!net.can_manage}
+          // user?.role (from useAuth(), already masked by simulateRegularUser)
+          // plus net.is_owner_or_ncs (never carries the admin bypass) --
+          // NOT net.can_manage, which does and would leak a simulating
+          // admin's real access back in. Matches the canManage formula
+          // further down this file and in NetView.tsx.
+          canManage={user?.role === 'admin' || !!net.is_owner_or_ncs}
           chatGracePeriodMinutes={net.chat_grace_period_minutes ?? undefined}
           closedAt={net.closed_at}
         />
@@ -263,7 +268,11 @@ const NetPaneWindow: React.FC = () => {
   const isAssignedNCS = userNetRole?.role === 'NCS';
   const isNCS = isAssignedNCS && userNetRole?.is_active !== false;
   const isNCSOrLogger = userNetRole && ((userNetRole.role === 'NCS' && userNetRole.is_active !== false) || userNetRole.role === 'LOGGER');
-  const canManage = isOwner || isAdmin || isNCS || !!net?.can_manage;
+  // net.is_owner_or_ncs, not net.can_manage -- see NetView.tsx's identical
+  // canManage computation for the full explanation (can_manage carries an
+  // admin bypass computed from the real/unmasked identity, which leaks
+  // through simulateRegularUser's "View as Regular User" mode).
+  const canManage = isOwner || isAdmin || isNCS || !!net?.is_owner_or_ncs;
   const canManageCheckIns = canManage || isNCSOrLogger;
 
   // Relay staff can't manage check-ins generally, but can report "can hear" -

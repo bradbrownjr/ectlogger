@@ -91,7 +91,7 @@ const Scheduler: React.FC = () => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [scheduleToDelete, setScheduleToDelete] = useState<Schedule | null>(null);
   const navigate = useNavigate();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, simulateRegularUser } = useAuth();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   // Sort order persists on the account so it follows the user across devices
@@ -195,6 +195,16 @@ const Scheduler: React.FC = () => {
 
   const isOwner = (schedule: Schedule) => user?.id === schedule.owner_id;
   const isAdmin = user?.role === 'admin';
+  // In admin simulation mode, use the non-admin permission flag so buttons
+  // reflect what a real user would see -- same reasoning and pattern as
+  // Dashboard.tsx's own canManage(net). schedule.can_manage/can_create_net
+  // are computed server-side from the REAL/unmasked identity and so stay
+  // true for an admin using "View as Regular User" regardless of the
+  // toggle; schedule.is_owner_or_staff never carries that bypass. Both
+  // server fields are literally the same permission (can_create_net is set
+  // equal to can_manage in templates_core.py), so one helper covers both.
+  const canManageSchedule = (schedule: Schedule) =>
+    simulateRegularUser ? (schedule.is_owner_or_staff ?? false) : (schedule.can_manage ?? false);
 
   // ========== MERGE MODE HELPERS ==========
   /** Can the current user merge this template? (admin or owner only) */
@@ -357,11 +367,17 @@ const Scheduler: React.FC = () => {
             />
           )}
           <ScheduleCard
-              schedule={schedule}
+              // can_create_net overridden here rather than left raw: this is
+              // the ONE field ScheduleCard reads directly off `schedule`
+              // rather than via an explicit prop (see its own "Create Net"
+              // button gate), so it needs the same masking canManage below
+              // gets, or a simulating admin's "Create net now" button would
+              // stay visible/enabled off the server's real (unmasked) value.
+              schedule={{ ...schedule, can_create_net: canManageSchedule(schedule) }}
               favorites={favorites}
               onToggleFavorite={toggleFavorite}
               isAuthenticated={isAuthenticated}
-              canManage={!!(schedule.can_manage || isAdmin)}
+              canManage={!!(canManageSchedule(schedule) || isAdmin)}
               isOwnerOrAdmin={isOwner(schedule) || isAdmin}
               onCreateNet={() => handleCreateNetFromSchedule(schedule.id)}
               onOpenRotationModal={() => handleOpenRotationModal(schedule)}
@@ -460,7 +476,7 @@ const Scheduler: React.FC = () => {
                 <Chip label={schedule.subscriber_count} size="small" variant="outlined" />
               </TableCell>
               <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
-                {schedule.can_create_net && (
+                {canManageSchedule(schedule) && (
                   <Tooltip title="Create net now (skip auto-schedule)">
                     <IconButton size="small" color="success" onClick={() => handleCreateNetFromSchedule(schedule.id)}>
                       <PlayArrowIcon fontSize="small" />
@@ -492,7 +508,7 @@ const Scheduler: React.FC = () => {
                     </Tooltip>
                   )
                 )}
-                {(schedule.can_manage || isAdmin) && (
+                {(canManageSchedule(schedule) || isAdmin) && (
                   <>
                     <Tooltip title="Edit">
                       <IconButton size="small" onClick={() => navigate(`/scheduler/${schedule.id}/edit`)}>

@@ -77,6 +77,77 @@ async def test_create_net_from_template_404_for_missing_template(client, owner):
     assert resp.status_code == 404
 
 
+# ---------------------------------------------------------------------------
+# is_owner_or_staff — reported bug: an admin using the frontend's "View as
+# Regular User" simulation could still create/edit a net or schedule they
+# weren't actually staff of, because the simulation only fakes `role` in
+# the browser's own state — it never touches the JWT a request actually
+# authenticates with, so every existing can_manage/can_create_net field
+# (computed via check_template_permission, which is admin-bypassable)
+# stayed true for a real admin regardless of what the UI showed them.
+# is_owner_or_staff is the non-admin-bypassable twin these tests confirm:
+# true for genuine owner/staff/rotation access, false for an admin with no
+# such access to that specific template — letting the frontend correctly
+# hide controls while simulating even though can_manage stays true.
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_get_template_is_owner_or_staff_true_for_actual_owner(client, db, owner):
+    template = await _make_template(db, owner.id)
+
+    resp = await client.get(f"/api/templates/{template.id}", headers=auth_headers(owner))
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["can_manage"] is True
+    assert data["is_owner_or_staff"] is True
+
+
+@pytest.mark.asyncio
+async def test_get_template_can_manage_true_but_is_owner_or_staff_false_for_admin(client, db, owner, admin):
+    """The exact bug: an admin with no real relationship to this template
+    gets can_manage=True (the admin-bypass field the app already used
+    everywhere) but must get is_owner_or_staff=False, so the frontend can
+    tell the two apart while simulating a regular user."""
+    template = await _make_template(db, owner.id)
+
+    resp = await client.get(f"/api/templates/{template.id}", headers=auth_headers(admin))
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["can_manage"] is True
+    assert data["is_owner_or_staff"] is False
+
+
+@pytest.mark.asyncio
+async def test_get_template_is_owner_or_staff_false_for_unrelated_user(client, db, owner, other):
+    template = await _make_template(db, owner.id)
+
+    resp = await client.get(f"/api/templates/{template.id}", headers=auth_headers(other))
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["can_manage"] is False
+    assert data["is_owner_or_staff"] is False
+
+
+@pytest.mark.asyncio
+async def test_list_templates_is_owner_or_staff_matches_get_template(client, db, owner, admin):
+    """Same field, computed inline in the list endpoint rather than reused
+    from get_template's code path -- covered separately since a duplicated
+    computation is exactly the kind of place these two could drift apart."""
+    await _make_template(db, owner.id)
+
+    resp = await client.get("/api/templates/", headers=auth_headers(admin))
+
+    assert resp.status_code == 200
+    templates = resp.json()
+    assert len(templates) >= 1
+    for tmpl in templates:
+        assert tmpl["can_manage"] is True
+        assert tmpl["is_owner_or_staff"] is False
+
+
 @pytest.mark.asyncio
 async def test_create_net_from_template_accepts_scheduled_start_time_override(client, db, owner):
     """A one-time schedule has no recurrence to compute a start time from, so the

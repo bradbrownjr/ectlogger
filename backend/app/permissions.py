@@ -121,24 +121,28 @@ async def check_net_lifecycle_permission(
     return False
 
 
-async def check_template_permission(
+async def check_template_staff_access(
     db: AsyncSession, template: NetTemplate, user: User
 ) -> bool:
-    """Return True when the user may manage *template*.
+    """Return True when *user* has non-admin management access to
+    *template* (owner, active staff, or active NCS rotation member) --
+    exactly what check_template_permission grants, MINUS the admin blanket
+    bypass.
 
-    Grants access to:
-    - The template owner
-    - Any global admin
-    - Any active staff member for this template
-    - Any active NCS rotation member for this template
-
-    This is the canonical implementation; the previous copies in
-    routers/templates.py and routers/ncs_rotation.py are removed.
-    The ncs_rotation.py copy had a silent bug: it compared
-    ``user.role == 'admin'`` (enum vs string, always False) instead of
-    ``user.role == UserRole.ADMIN``.
+    Exposed separately (rather than inlined into check_template_permission
+    below) so routers can report it on NetTemplateResponse as
+    is_owner_or_staff, the template equivalent of nets_core.py's
+    is_owner_or_ncs. Both exist for the same reason: a real admin's actual
+    API calls always succeed via the admin bypass no matter what the
+    frontend's "View as Regular User" toggle (AuthContext.tsx's
+    simulateRegularUser) shows them, since that toggle never touches the
+    JWT/identity a request authenticates with -- it only fakes `role` in
+    the client's own state. For the frontend to correctly hide/disable a
+    control while simulating, it needs each response to separately state
+    what a genuinely non-admin version of this same user could do, rather
+    than the admin-inclusive can_manage/can_create_net fields alone.
     """
-    if template.owner_id == user.id or is_admin(user):
+    if template.owner_id == user.id:
         return True
 
     # Active staff members (includes co-managers)
@@ -164,6 +168,28 @@ async def check_template_permission(
         return True
 
     return False
+
+
+async def check_template_permission(
+    db: AsyncSession, template: NetTemplate, user: User
+) -> bool:
+    """Return True when the user may manage *template*.
+
+    Grants access to:
+    - The template owner
+    - Any global admin
+    - Any active staff member for this template
+    - Any active NCS rotation member for this template
+
+    This is the canonical implementation; the previous copies in
+    routers/templates.py and routers/ncs_rotation.py are removed.
+    The ncs_rotation.py copy had a silent bug: it compared
+    ``user.role == 'admin'`` (enum vs string, always False) instead of
+    ``user.role == UserRole.ADMIN``.
+    """
+    if is_admin(user):
+        return True
+    return await check_template_staff_access(db, template, user)
 
 
 async def check_form_permission(

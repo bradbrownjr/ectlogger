@@ -20,7 +20,7 @@ from app.models import (
     UserRole,
     net_template_frequencies,
 )
-from app.permissions import check_template_permission
+from app.permissions import check_template_permission, check_template_staff_access
 from app.schemas import (
     NetTemplateCreate,
     NetTemplateResponse,
@@ -174,8 +174,14 @@ async def create_template(
         .where(NetTemplate.id == template.id)
     )
     template = result.scalar_one()
-    
-    return NetTemplateResponse.from_orm(template, subscriber_count=0, is_subscribed=False, can_manage=True, can_create_net=True)
+
+    # can_manage/can_create_net are unconditionally True here -- reaching
+    # this point already required create-eligibility above. is_owner_or_staff
+    # is computed for real, though: owner_id can be reassigned to a
+    # different user via template_data.owner_id above, in which case the
+    # creator themselves is not actually that template's owner or staff.
+    is_owner_or_staff = await check_template_staff_access(db, template, current_user)
+    return NetTemplateResponse.from_orm(template, subscriber_count=0, is_subscribed=False, can_manage=True, can_create_net=True, is_owner_or_staff=is_owner_or_staff)
 
 
 @router.get("/", response_model=List[NetTemplateResponse])
@@ -228,6 +234,7 @@ async def list_templates(
         # Check if current user is subscribed (guests are never subscribed)
         is_subscribed = False
         can_manage = False
+        is_owner_or_staff = False
         if current_user:
             subscription_result = await db.execute(
                 select(NetTemplateSubscription)
@@ -237,18 +244,22 @@ async def list_templates(
                 )
             )
             is_subscribed = subscription_result.scalar_one_or_none() is not None
-            
+
             # Check if user can manage (owner, admin, or NCS rotation member)
             can_manage = await check_template_permission(db, template, current_user)
-        
+            # Same, minus the admin bypass -- see check_template_staff_access's
+            # docstring for why the frontend needs this reported separately.
+            is_owner_or_staff = await check_template_staff_access(db, template, current_user)
+
         template_responses.append(NetTemplateResponse.from_orm(
-            template, 
+            template,
             subscriber_count=subscriber_count,
             is_subscribed=is_subscribed,
             owner_callsign=template.owner.callsign if template.owner else None,
             owner_name=public_display_name(template.owner.name if template.owner else None, current_user is not None),
             can_manage=can_manage,
-            can_create_net=can_manage  # Same permission - owner, admin, or NCS staff
+            can_create_net=can_manage,  # Same permission - owner, admin, or NCS staff
+            is_owner_or_staff=is_owner_or_staff
         ))
     
     return template_responses
@@ -293,8 +304,9 @@ async def get_template(
     
     # Check if user can manage
     can_manage = await check_template_permission(db, template, current_user)
-    
-    return NetTemplateResponse.from_orm(template, subscriber_count=subscriber_count, is_subscribed=is_subscribed, can_manage=can_manage, can_create_net=can_manage)
+    is_owner_or_staff = await check_template_staff_access(db, template, current_user)
+
+    return NetTemplateResponse.from_orm(template, subscriber_count=subscriber_count, is_subscribed=is_subscribed, can_manage=can_manage, can_create_net=can_manage, is_owner_or_staff=is_owner_or_staff)
 
 
 @router.put("/{template_id}", response_model=NetTemplateResponse)
@@ -447,8 +459,14 @@ async def update_template(
         )
     )
     is_subscribed = subscription_result.scalar_one_or_none() is not None
-    
-    return NetTemplateResponse.from_orm(template, subscriber_count=subscriber_count, is_subscribed=is_subscribed, can_manage=True, can_create_net=True)
+
+    # can_manage/can_create_net are unconditionally True -- the permission
+    # check above already required it to reach here, and that check is
+    # admin-bypassable, so is_owner_or_staff still needs computing for real
+    # rather than assumed true (an admin editing a template they aren't
+    # actually owner/staff of is exactly the case this field exists for).
+    is_owner_or_staff = await check_template_staff_access(db, template, current_user)
+    return NetTemplateResponse.from_orm(template, subscriber_count=subscriber_count, is_subscribed=is_subscribed, can_manage=True, can_create_net=True, is_owner_or_staff=is_owner_or_staff)
 
 
 @router.delete("/{template_id}", status_code=status.HTTP_204_NO_CONTENT)

@@ -180,7 +180,14 @@ const CreateNet: React.FC = () => {
       // config fields (rotation, custom fields, ICS-309 settings) that
       // aren't meant for standard/guest visitors — direct-URL access is
       // blocked the same way the toolbar button is hidden from them.
-      if (isInfoMode && !net.can_manage) {
+      // user?.role (from useAuth(), already masked by simulateRegularUser)
+      // plus net.is_owner_or_ncs (never carries the admin bypass) -- NOT
+      // net.can_manage alone, which is computed from the real/unmasked
+      // identity and so stays true for an admin using "View as Regular
+      // User" regardless of that toggle. A real (non-simulating) admin
+      // still passes via the explicit role check, same as everywhere else
+      // this pattern appears.
+      if (isInfoMode && user?.role !== 'admin' && !net.is_owner_or_ncs) {
         navigate(`/nets/${netId}`, { replace: true });
         return;
       }

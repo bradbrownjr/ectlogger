@@ -45,6 +45,60 @@ async def test_get_net_by_id(client, owner):
     assert resp.json()["id"] == net_id
 
 
+# ---------------------------------------------------------------------------
+# is_owner_or_ncs — reported bug: an admin using the frontend's "View as
+# Regular User" simulation could still create/edit a net or schedule they
+# weren't actually staff of. The simulation only fakes `role` in the
+# browser's own state; it never touches the JWT a request authenticates
+# with, so can_manage (admin-bypassable) stayed true for a real admin
+# regardless of what the UI showed them, and several NetView.tsx/
+# NetPaneWindow.tsx/CreateNet.tsx computations read can_manage directly
+# instead of the already-existing is_owner_or_ncs field meant for exactly
+# this. These tests pin is_owner_or_ncs's own backend behavior (it was
+# already implemented, just under-used on the frontend) so a future change
+# can't quietly reintroduce the gap the fields are supposed to close.
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_get_net_can_manage_true_but_is_owner_or_ncs_false_for_admin(client, owner, admin):
+    create = await client.post("/api/nets/", json={"name": "Admin Sim Net"}, headers=auth_headers(owner))
+    net_id = create.json()["id"]
+
+    resp = await client.get(f"/api/nets/{net_id}", headers=auth_headers(admin))
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["can_manage"] is True
+    assert data["is_owner_or_ncs"] is False
+
+
+@pytest.mark.asyncio
+async def test_get_net_is_owner_or_ncs_true_for_actual_owner(client, owner):
+    create = await client.post("/api/nets/", json={"name": "Owner's Net"}, headers=auth_headers(owner))
+    net_id = create.json()["id"]
+
+    resp = await client.get(f"/api/nets/{net_id}", headers=auth_headers(owner))
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["can_manage"] is True
+    assert data["is_owner_or_ncs"] is True
+
+
+@pytest.mark.asyncio
+async def test_list_nets_is_owner_or_ncs_matches_get_net(client, owner, admin):
+    await client.post("/api/nets/", json={"name": "List Net"}, headers=auth_headers(owner))
+
+    resp = await client.get("/api/nets/", headers=auth_headers(admin))
+
+    assert resp.status_code == 200
+    nets = resp.json()
+    assert len(nets) >= 1
+    for net in nets:
+        assert net["can_manage"] is True
+        assert net["is_owner_or_ncs"] is False
+
+
 @pytest.mark.asyncio
 async def test_start_net_goes_active(client, owner):
     # No scheduled_start_time → goes straight to ACTIVE

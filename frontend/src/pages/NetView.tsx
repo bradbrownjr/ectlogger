@@ -433,14 +433,18 @@ const NetView: React.FC = () => {
   }, [net?.id]); // Only depend on net.id to run once
 
   // Auto-open lobby when ?open_lobby=1 is present (from staff reminder email button).
-  // Fires once after the net and user permissions are loaded. Uses net.can_manage
-  // (server-computed, includes template staff) so the check resolves correctly
-  // without a forward reference to canStartNet.
+  // Fires once after the net and user permissions are loaded. Uses
+  // net.is_owner_or_ncs (server-computed, includes template staff, but NOT
+  // the admin blanket bypass net.can_manage carries) so a simulating admin
+  // (AuthContext.tsx's simulateRegularUser) is correctly excluded here just
+  // like a real non-staff user would be -- the separate isOwnerOrAdmin term
+  // below still covers real owner/admin access via the already-masked
+  // user.role.
   useEffect(() => {
     if (!net || !user) return;
     if (searchParams.get('open_lobby') !== '1') return;
     if (net.status !== 'draft' && net.status !== 'scheduled') return;
-    const serverSaysCanManage = !!net.can_manage;
+    const serverSaysCanManage = !!net.is_owner_or_ncs;
     const isOwnerOrAdmin = net.owner_id === user.id || user.role === 'admin';
     if (!serverSaysCanManage && !isOwnerOrAdmin) return;
 
@@ -448,7 +452,7 @@ const NetView: React.FC = () => {
     setSearchParams(prev => { prev.delete('open_lobby'); return prev; }, { replace: true });
     handleStartNet();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [net?.id, net?.can_manage, user?.id]); // Re-check when server permissions arrive
+  }, [net?.id, net?.is_owner_or_ncs, user?.id]); // Re-check when server permissions arrive
 
   // Auto-open the check-in dialog when ?check_in=1 is present (from the reminder
   // and net-starting email buttons).
@@ -464,13 +468,13 @@ const NetView: React.FC = () => {
     // case too (see the self_checkin_enabled check in NetViewHeader.tsx).
     // Duplicates the canManageCheckIns test inline (declared later) for the same
     // null-safety reason the check-in prompt effect below does.
-    const isStaffForNet = user.id === net.owner_id || user.role === 'admin' || net.can_manage
+    const isStaffForNet = user.id === net.owner_id || user.role === 'admin' || net.is_owner_or_ncs
       || netRoles.some((r: any) => r.user_id === user.id && (r.role === 'NCS' || r.role === 'LOGGER') && r.is_active !== false);
     if (net.self_checkin_enabled === false && !isStaffForNet) return;
 
     handleOpenCheckIn();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [net?.id, net?.can_manage, net?.self_checkin_enabled, user?.id, netRoles]);
+  }, [net?.id, net?.is_owner_or_ncs, net?.self_checkin_enabled, user?.id, netRoles]);
 
   // Countdown and duration timer effect - updates every second
   useEffect(() => {
@@ -615,7 +619,7 @@ const NetView: React.FC = () => {
     // Self check-in may be disabled for this net — staff still check in via manage forms.
     // Duplicates the canManageCheckIns test (declared later, post-null-check) since this
     // effect runs before that guard and must stay null-safe.
-    const isStaffForNet = user?.id === net.owner_id || user?.role === 'admin' || net.can_manage
+    const isStaffForNet = user?.id === net.owner_id || user?.role === 'admin' || net.is_owner_or_ncs
       || netRoles.some((r: any) => r.user_id === user?.id && (r.role === 'NCS' || r.role === 'LOGGER') && r.is_active !== false);
     if (net.self_checkin_enabled === false && !isStaffForNet) return;
     const alreadyCheckedIn = checkIns.some(
@@ -629,13 +633,17 @@ const NetView: React.FC = () => {
     }
   }, [net?.status, isAuthenticated, checkIns, user?.id, netRoles]);
 
-  // Show archive reminder once per page load for closed nets when viewed by a manager or staff member
+  // Show archive reminder once per page load for closed nets when viewed by a manager or staff member.
+  // user?.role (masked by simulateRegularUser) covers a real admin here,
+  // same as everywhere else this pattern appears -- net.is_owner_or_ncs
+  // alone would incorrectly hide this from a genuine, non-simulating admin too.
   useEffect(() => {
-    if (net?.status === 'closed' && net?.can_manage && !archiveReminderShownRef.current) {
+    const canManageThisNet = user?.role === 'admin' || !!net?.is_owner_or_ncs;
+    if (net?.status === 'closed' && canManageThisNet && !archiveReminderShownRef.current) {
       archiveReminderShownRef.current = true;
       archiveReminder.onOpen();
     }
-  }, [net?.status, net?.can_manage]);
+  }, [net?.status, net?.is_owner_or_ncs, user?.role]);
 
   // Tracks the net's previously-seen status so the effect below can tell a live
   // status transition (someone just archived it) apart from simply loading a
@@ -725,7 +733,7 @@ const NetView: React.FC = () => {
   const userTrafficRole = netRoles.find((role: any) => role.user_id === user?.id);
   const canViewNetTraffic = user?.id === net?.owner_id
     || user?.role === 'admin'
-    || !!net?.can_manage
+    || !!net?.is_owner_or_ncs
     || (userTrafficRole?.role === 'NCS' && userTrafficRole?.is_active !== false)
     || userTrafficRole?.role === 'LOGGER';
   // Whether the toolbar even offers Traffic. The pane itself is on-demand
@@ -1170,8 +1178,17 @@ const NetView: React.FC = () => {
   const isNCSOrLogger = userNetRole && (userNetRole.role === 'NCS' && userNetRole.is_active !== false || userNetRole.role === 'LOGGER');
   
   // NCS users can manage the net (edit settings, close, etc.) - they're co-owners.
-  // net.can_manage is also true for active template staff (set server-side).
-  const canManage = isOwner || isAdmin || isNCS || !!net?.can_manage;
+  // net.is_owner_or_ncs is also true for active template staff (set
+  // server-side) -- NOT net.can_manage, which additionally carries the
+  // admin blanket bypass. That bypass is real for a genuine admin (isAdmin,
+  // computed just above from the already-masked user.role, covers that
+  // case on its own), but net.can_manage is computed server-side from the
+  // REAL/unmasked identity, so it stays true for an admin using "View as
+  // Regular User" (AuthContext.tsx's simulateRegularUser) regardless of
+  // that toggle -- reported: an admin could still edit/close/archive/
+  // delete nets they weren't actually staff of while simulating, because
+  // this exact OR chain let net.can_manage leak the bypass back in.
+  const canManage = isOwner || isAdmin || isNCS || !!net?.is_owner_or_ncs;
   const canManageCheckIns = canManage || isNCSOrLogger;
 
   // Relay staff can't manage check-ins generally, but can record "can hear"
