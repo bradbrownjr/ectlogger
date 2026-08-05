@@ -46,10 +46,18 @@ interface TrafficComposerProps {
   onCreated: (id: number) => void;
   netId?: number;
   allowedFormTypes?: string[] | null;
-  // The net's stored originating strip, if it has one and no defined strip
-  // type. Renders positional fields from that example instead of a type the
-  // operator would otherwise have to invent on the spot.
-  stripTemplate?: string | null;
+  // The net's nominated strip type (nets.traffic_strip_form_type) -- resolved
+  // against `definitions` below rather than trusted as-is, since it's a bare
+  // form_type string that can point at nothing (a disabled/deleted type) or,
+  // briefly during 2026-08-05, at RRI_STRIP_OTHER itself (a settings-UI bug,
+  // since fixed -- see migration 057). Only a match with output_format
+  // 'rri_strip' counts as "a real defined type"; anything else falls back to
+  // stripTemplateRaw below exactly as if this were never set.
+  stripFormType?: string | null;
+  // The net's stored originating strip text, used when stripFormType doesn't
+  // resolve to a real type. Renders positional fields from that example
+  // instead of a type the operator would otherwise have to invent on the spot.
+  stripTemplateRaw?: string | null;
   // Label shown above the picker, e.g. which net this will be filed against.
   contextLabel?: string;
 }
@@ -59,7 +67,8 @@ const TrafficComposer: React.FC<TrafficComposerProps> = ({
   onCreated,
   netId,
   allowedFormTypes,
-  stripTemplate,
+  stripFormType,
+  stripTemplateRaw,
   contextLabel,
 }) => {
   const [selected, setSelected] = useState<FormDefinition | null>(null);
@@ -77,6 +86,16 @@ const TrafficComposer: React.FC<TrafficComposerProps> = ({
   const [pasteResponseBusy, setPasteResponseBusy] = useState(false);
   const [pasteResponseError, setPasteResponseError] = useState<string | null>(null);
 
+  // A net's stripFormType only counts as "a real defined type" if it
+  // resolves to a structured (output_format 'rri_strip') definition -- a
+  // stale value pointing at a since-disabled type, or (2026-08-05, see
+  // migration 057) the raw RRI_STRIP_OTHER catch-all itself, falls straight
+  // through to the ad-hoc pasted-template mode below exactly as if
+  // stripFormType had never been set.
+  const resolvedStripDefinition = stripFormType
+    ? definitions.find((d) => d.form_type === stripFormType && d.output_format === 'rri_strip')
+    : undefined;
+
   // ---- Ad-hoc strip mode (net has a pasted origin strip, no defined type) ----
   // Filed as RRI_STRIP_OTHER, whose definition requires a label and a
   // callsign alongside the raw text -- so both are collected here rather
@@ -86,15 +105,20 @@ const TrafficComposer: React.FC<TrafficComposerProps> = ({
   const [stripCallSign, setStripCallSign] = useState('');
   const [stripLabel, setStripLabel] = useState('');
 
+  // Only tokenize the raw template when no real defined type resolved --
+  // otherwise the "Answer this net's strip" shortcut below routes straight
+  // into the defined type's own FormRenderer instead.
+  const effectiveStripTemplate = resolvedStripDefinition ? null : stripTemplateRaw;
+
   useEffect(() => {
-    if (!stripTemplate || !stripTemplate.trim()) {
+    if (!effectiveStripTemplate || !effectiveStripTemplate.trim()) {
       setStripFields(null);
       return;
     }
     let cancelled = false;
     // Tokenizing is stateless (writes nothing) -- it's only being used here to
     // learn how many fields the net's example strip has.
-    trafficApi.tokenizeStripTemplate(stripTemplate)
+    trafficApi.tokenizeStripTemplate(effectiveStripTemplate)
       .then((resp) => {
         if (cancelled) return;
         const tokens = resp.data.tokens.map((t: any) => t.value);
@@ -107,7 +131,7 @@ const TrafficComposer: React.FC<TrafficComposerProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [stripTemplate]);
+  }, [effectiveStripTemplate]);
 
   const handleChange = (name: string, value: string) => {
     setValues((prev) => ({ ...prev, [name]: value }));
@@ -191,7 +215,17 @@ const TrafficComposer: React.FC<TrafficComposerProps> = ({
     }
   };
 
-  const pickable = applyAllowedTypes(definitions, allowedFormTypes);
+  // The net's nominated strip type is always reachable regardless of the
+  // accepted-types restriction -- a net that says "this is the strip I
+  // collect" meant it, even if nobody separately checked its box under
+  // "Traffic this net takes."
+  const pickable = (() => {
+    const base = applyAllowedTypes(definitions, allowedFormTypes);
+    if (!resolvedStripDefinition || base.some((d) => d.form_type === resolvedStripDefinition.form_type)) {
+      return base;
+    }
+    return [resolvedStripDefinition, ...base];
+  })();
 
   // ========== TYPE PICKER ==========
   if (!selected) {
@@ -204,8 +238,29 @@ const TrafficComposer: React.FC<TrafficComposerProps> = ({
         )}
 
         {/* Answering the net's own originating strip — offered first, since on
-            an RRI net or drill this is the thing most reports will be. */}
-        {stripFields && stripFields.length > 0 && (
+            an RRI net or drill this is the thing most reports will be.
+            resolvedStripDefinition takes priority: it has real named fields
+            (via FormRenderer, same as picking its card below), where the
+            ad-hoc box only ever has anonymous "Field 1, Field 2..." inputs
+            since a raw pasted template alone doesn't carry field names. */}
+        {resolvedStripDefinition ? (
+          <Box sx={{ mb: 3, p: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}>
+            <Typography variant="subtitle1" gutterBottom>
+              Answer this net's strip
+            </Typography>
+            <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
+              This net collects {resolvedStripDefinition.title}.
+            </Typography>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => setSelected(resolvedStripDefinition)}
+              sx={{ minHeight: 44 }}
+            >
+              Answer with {resolvedStripDefinition.title}
+            </Button>
+          </Box>
+        ) : stripFields && stripFields.length > 0 && (
           <Box sx={{ mb: 3, p: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}>
             <Typography variant="subtitle1" gutterBottom>
               Answer this net's strip

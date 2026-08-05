@@ -85,7 +85,7 @@ const TrafficTable: React.FC<TrafficTableProps> = ({ items, currentUserId, onRow
         <TableHead>
           <TableRow>
             {columns.map((col) => (
-              <TableCell key={col.field}>
+              <TableCell key={col.field} sx={{ whiteSpace: 'nowrap' }}>
                 <TableSortLabel
                   active={sortField === col.field}
                   direction={sortField === col.field ? sortDirection : 'asc'}
@@ -95,7 +95,7 @@ const TrafficTable: React.FC<TrafficTableProps> = ({ items, currentUserId, onRow
                 </TableSortLabel>
               </TableCell>
             ))}
-            <TableCell>Held By</TableCell>
+            <TableCell sx={{ whiteSpace: 'nowrap' }}>Held By</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>

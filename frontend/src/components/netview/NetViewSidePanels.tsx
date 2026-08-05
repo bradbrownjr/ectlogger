@@ -432,8 +432,13 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
           onAttach={onAttachTraffic}
           onClose={onCloseTraffic}
           onPopOut={handleFloatToWindowTraffic}
-          defaultWidth={520}
-          defaultHeight={500}
+          // Wide enough by default to fit TrafficTable's seven columns
+          // (Number, Precedence, Type, Addressee, Disposition, Age, Held By)
+          // without wrapping the header text or needing horizontal scroll --
+          // Coverage/Map's narrower defaults suit their leaner tables, not
+          // this one.
+          defaultWidth={900}
+          defaultHeight={550}
           minWidth={350}
           minHeight={250}
           storageKey="traffic"

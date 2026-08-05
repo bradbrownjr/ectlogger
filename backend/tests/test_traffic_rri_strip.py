@@ -178,7 +178,10 @@ def test_make_nts_safe_substitutes_minus_for_m_only():
 
 
 @pytest.mark.asyncio
-async def test_export_rri_strips_endpoint_raw_and_radiogram_safe(client, db, owner):
+async def test_export_net_traffic_endpoint_raw_and_radiogram_safe(client, db, owner):
+    """Covers every form type on the net, not just RRI/WX strips -- a
+    Radiogram-only net downloading a blank file (this endpoint's original,
+    strip-only scope) was the actual bug the "Export traffic" button surfaced."""
     await upsert_form_definitions(db)
     net = Net(name="RRI Strip Export Net", owner_id=owner.id)
     db.add(net)
@@ -187,8 +190,6 @@ async def test_export_rri_strips_endpoint_raw_and_radiogram_safe(client, db, own
 
     await _create_form(client, owner, "WXOBS", WXOBS_VALUES, net_id=net.id)
     await _create_form(client, owner, "RRI_STRIP_OTHER", RRI_STRIP_OTHER_VALUES, net_id=net.id)
-    # A radiogram on the same net must NOT appear in this export -- it's not
-    # an RRI strip output_format.
     await client.post(
         "/api/traffic/forms",
         json={
@@ -205,11 +206,11 @@ async def test_export_rri_strips_endpoint_raw_and_radiogram_safe(client, db, own
 
     raw_resp = await client.get(f"/api/nets/{net.id}/export/rri-strips?format=raw", headers=auth_headers(owner))
     assert raw_resp.status_code == 200
-    raw_lines = raw_resp.text.strip("\n").split("\n")
-    assert len(raw_lines) == 2
-    assert any(line.startswith("WXOBS/") and "-5" in line for line in raw_lines)
-    assert any(line == RRI_STRIP_OTHER_VALUES["strip_text"] for line in raw_lines)
-    assert not any(line.startswith("NR ") for line in raw_lines)
+    raw_text = raw_resp.text
+    assert "WXOBS/" in raw_text and "-5" in raw_text
+    assert RRI_STRIP_OTHER_VALUES["strip_text"] in raw_text
+    # The Radiogram now appears too -- this is the fix under test.
+    assert "NR 1 R" in raw_text
 
     safe_resp = await client.get(
         f"/api/nets/{net.id}/export/rri-strips?format=radiogram_safe", headers=auth_headers(owner)

@@ -12,7 +12,7 @@ from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.dependencies import get_current_user
-from app.models import CheckIn, FormDefinition, Net, NetRole, NetStatus, User, net_frequencies
+from app.models import CheckIn, Net, NetRole, NetStatus, User, net_frequencies
 from app.models import Form as TrafficFormModel
 from app.permissions import check_net_lifecycle_permission, check_net_permission
 from app.schemas import Ics309LogResponse, NetResponse
@@ -429,20 +429,23 @@ async def export_net_rri_strips(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """Export this net's RRI strip traffic (WXOBS, GYX-CAR-SKYWARN, and any
-    general RRI strip) as one line per report, oldest first -- built for
-    pasting straight into a spreadsheet or Winlink template, matching how
-    receiving stations actually use this data (see
-    TRAFFIC-HANDLING-DESIGN.md's RRI strip section).
+    """Export this net's traffic as one line per report, oldest first --
+    built for pasting straight into a spreadsheet or Winlink template,
+    matching how receiving stations actually use RRI/WX strip data (see
+    TRAFFIC-HANDLING-DESIGN.md's RRI strip section). Every form type is
+    included via format_form()'s own per-type dispatch (Radiogram/ICS-213
+    canonical text alongside RRI/WX strip lines), not just strip types --
+    a net that mostly runs Radiograms downloading an empty file (this
+    endpoint's original scope, from before the panel's "Export traffic"
+    button was net-content-agnostic) was the actual bug this generalizes.
 
     ?format=raw (default) returns each report's canonical string unmodified.
-    ?format=radiogram_safe applies RRI's minus->M substitution so the content
-    can be safely relayed inside a Radiogram/ICS-213 body over voice/CW --
-    an explicit opt-in, never the default, since this traffic is normally
-    pasted straight into a spreadsheet rather than relayed via NTS.
-
-    Filtered on FormDefinition.output_format rather than a hardcoded list of
-    form_types, so any future RRI strip type is included automatically.
+    ?format=radiogram_safe applies RRI's minus->M substitution so RRI/WX
+    strip content can be safely relayed inside a Radiogram/ICS-213 body over
+    voice/CW -- an explicit opt-in, never the default, since this traffic is
+    normally pasted straight into a spreadsheet rather than relayed via NTS.
+    Applying it to already-Radiogram/ICS-213 lines is a harmless no-op in
+    the near-totality of cases (it only touches a literal "-<digit>" run).
     """
     if format not in ("raw", "radiogram_safe"):
         raise HTTPException(status_code=400, detail="format must be 'raw' or 'radiogram_safe'")
@@ -457,12 +460,8 @@ async def export_net_rri_strips(
 
     forms_result = await db.execute(
         select(TrafficFormModel)
-        .join(FormDefinition, TrafficFormModel.definition_id == FormDefinition.id)
         .options(selectinload(TrafficFormModel.definition))
-        .where(
-            TrafficFormModel.net_id == net_id,
-            FormDefinition.output_format.in_(("rri_strip", "rri_strip_raw")),
-        )
+        .where(TrafficFormModel.net_id == net_id)
         .order_by(TrafficFormModel.filed_at)
     )
     forms = forms_result.scalars().all()
@@ -471,7 +470,7 @@ async def export_net_rri_strips(
     if format == "radiogram_safe":
         lines = [make_nts_safe(line) for line in lines]
 
-    filename = f"RRI_Strips_{net.name.replace(' ', '_')}_{format}.txt"
+    filename = f"Traffic_{net.name.replace(' ', '_')}_{format}.txt"
 
     return StreamingResponse(
         iter(['\n'.join(lines)]),

@@ -248,7 +248,8 @@ const Traffic: React.FC = () => {
                 onCreated={handleCreated}
                 netId={netId}
                 allowedFormTypes={netContext?.traffic_form_types}
-                stripTemplate={netContext?.traffic_strip_form_type ? null : netContext?.traffic_strip_template}
+                stripFormType={netContext?.traffic_strip_form_type}
+                stripTemplateRaw={netContext?.traffic_strip_template}
                 contextLabel={netContext ? `Filing for ${netContext.name}` : undefined}
               />
             </TabPanel>

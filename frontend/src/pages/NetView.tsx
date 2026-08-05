@@ -679,7 +679,10 @@ const NetView: React.FC = () => {
     else setToastMessage('Popup blocked — please allow popups for this site.');
   };
   const handleFloatToWindowCoverage = () => { handleAttachCoverage(); handlePopOutCoverage(); };
-  const trafficPopout = usePoppedOutWindow(`/nets/${netId}/pane/traffic`, `ectlogger-traffic-${netId}`, 'traffic', 700, 600);
+  // Wide enough by default to fit TrafficTable's seven columns without
+  // wrapping headers or scrolling -- matches the floating window's default
+  // in NetViewSidePanels.tsx.
+  const trafficPopout = usePoppedOutWindow(`/nets/${netId}/pane/traffic`, `ectlogger-traffic-${netId}`, 'traffic', 950, 650);
   const handlePopOutTraffic = () => {
     if (trafficPopout.open()) traffic.onClose();
     else setToastMessage('Popup blocked — please allow popups for this site.');

@@ -169,19 +169,18 @@ const TrafficPanel: React.FC<TrafficPanelProps> = ({
   };
 
   // ========== TRAFFIC EXPORT ==========
-  // Labeled "Export traffic" regardless of what's actually on the net --
-  // the endpoint only ever produces WXOBS/GYX-CAR-SKYWARN/RRI-strip lines
-  // (one per report, for pasting into a spreadsheet), so a net running only
-  // Radiograms downloads an empty file. That gap (no export exists yet for
-  // Radiogram/ICS-213 chain-of-custody data) is real but out of scope here;
-  // the fix in scope is not mislabeling the button about content it can't
-  // produce either way. "Raw" matches what a receiving station actually does
-  // with this data; "radiogram-safe" is only for the rare case of relaying
-  // it inside a Radiogram/ICS-213 body over voice/CW. See
+  // One line per report on the net, oldest first -- every form type via
+  // format_form()'s own per-type dispatch, not just RRI/WX strips (that was
+  // this endpoint's original scope, and left a Radiogram-only net downloading
+  // an empty file under the generic "Export traffic" label). "Raw" matches
+  // what a receiving station actually does with RRI/WX strip data;
+  // "radiogram-safe" is only for the rare case of relaying that content
+  // inside a Radiogram/ICS-213 body over voice/CW -- a no-op on lines that
+  // are already Radiogram/ICS-213 text. See
   // routers/nets_export.py::export_net_rri_strips.
   const [exportMenuAnchor, setExportMenuAnchor] = useState<HTMLElement | null>(null);
 
-  const handleExportRRIStrips = async (format: 'raw' | 'radiogram_safe') => {
+  const handleExportTraffic = async (format: 'raw' | 'radiogram_safe') => {
     setExportMenuAnchor(null);
     try {
       const response = await api.get(`/nets/${netId}/export/rri-strips`, {
@@ -191,13 +190,13 @@ const TrafficPanel: React.FC<TrafficPanelProps> = ({
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `RRI_Strips_net${netId}_${format}.txt`);
+      link.setAttribute('download', `Traffic_net${netId}_${format}.txt`);
       document.body.appendChild(link);
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      console.error('Failed to export RRI strips:', err);
+      console.error('Failed to export traffic:', err);
     }
   };
 
@@ -249,10 +248,10 @@ const TrafficPanel: React.FC<TrafficPanelProps> = ({
                       open={Boolean(exportMenuAnchor)}
                       onClose={() => setExportMenuAnchor(null)}
                     >
-                      <MenuItem onClick={() => handleExportRRIStrips('raw')} sx={{ minHeight: 44 }}>
+                      <MenuItem onClick={() => handleExportTraffic('raw')} sx={{ minHeight: 44 }}>
                         Raw (as filed)
                       </MenuItem>
-                      <MenuItem onClick={() => handleExportRRIStrips('radiogram_safe')} sx={{ minHeight: 44 }}>
+                      <MenuItem onClick={() => handleExportTraffic('radiogram_safe')} sx={{ minHeight: 44 }}>
                         Radiogram-safe (for NTS/CW relay)
                       </MenuItem>
                     </Menu>
@@ -362,10 +361,11 @@ const TrafficPanel: React.FC<TrafficPanelProps> = ({
             definitions={definitions}
             netId={netId}
             allowedFormTypes={net?.traffic_form_types}
-            // Only offer the ad-hoc positional strip when the net hasn't
-            // pointed at a real defined type -- otherwise the named fields
-            // from that type are strictly better.
-            stripTemplate={net?.traffic_strip_form_type ? null : net?.traffic_strip_template}
+            // TrafficComposer resolves whether stripFormType actually points
+            // at a real structured type; stripTemplateRaw is only used as a
+            // fallback when it doesn't.
+            stripFormType={net?.traffic_strip_form_type}
+            stripTemplateRaw={net?.traffic_strip_template}
             contextLabel={net ? `Filing for ${net.name}` : undefined}
             onCreated={(id) => {
               setComposeOpen(false);
