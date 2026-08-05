@@ -162,7 +162,18 @@ const FitBounds: React.FC<{ positions: [number, number][]; disabled?: boolean }>
     if (positions.length > 0 && !disabled && !hasFitRef.current) {
       hasFitRef.current = true;
       const bounds = L.latLngBounds(positions.map(p => L.latLng(p[0], p[1])));
-      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 12 });
+      // A flat 50px padding on each side assumes the container has at
+      // least ~100px of room; a cramped docked pane (many sibling panels
+      // open, or a small window) can leave far less. Padding that exceeds
+      // half the container's own size gives fitBounds a negative usable
+      // area to fit into, which produces a degenerate view -- confirmed on
+      // beta, where a squeezed 89px-tall map left most coverage-overlay
+      // lines projecting to a single degenerate point instead of drawing.
+      // Scale padding down (never below 8px) to whatever the container can
+      // actually spare, rather than assuming it's always roomy.
+      const size = map.getSize();
+      const padding = Math.max(8, Math.min(50, size.x / 4, size.y / 4));
+      map.fitBounds(bounds, { padding: [padding, padding], maxZoom: 12 });
     }
   }, [map, positions, disabled]);
 
