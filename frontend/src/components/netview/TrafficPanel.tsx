@@ -210,7 +210,9 @@ const TrafficPanel: React.FC<TrafficPanelProps> = ({
     setExportMenuAnchor(null);
     setExportingPdf(true);
     try {
-      const listRes = await trafficApi.listForNet(netId, { limit: 500 });
+      // 200 is the endpoint's own cap (schemas enforce le=200); asking for
+      // more is a 422, not a larger page.
+      const listRes = await trafficApi.listForNet(netId, { limit: 200 });
       const details = await Promise.all(
         listRes.data.items.map((item: TrafficForm) => trafficApi.get(item.id).then((r) => r.data))
       );
