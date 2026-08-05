@@ -185,9 +185,20 @@ const TrafficComposer: React.FC<TrafficComposerProps> = ({
   // With exactly one option there is nothing to choose -- go straight to the
   // form instead of making the operator click through a single card.
   const autoSelected = options.length === 1;
+  const optionKeys = options.map((o) => o.key).join('|');
   useEffect(() => {
-    if (autoSelected && selectedKey === null) setSelectedKey(options[0].key);
-  }, [autoSelected, options, selectedKey]);
+    // The option list changes shape once the net's origin strip finishes
+    // tokenizing (the synthetic strip option replaces the raw catch-all), so
+    // a key chosen before that lands can go stale. Re-resolve on every change
+    // rather than only when nothing is selected, or the dialog falls back to
+    // the picker with a single card the operator has to click anyway.
+    const stillValid = selectedKey !== null && options.some((o) => o.key === selectedKey);
+    if (stillValid) return;
+    setSelectedKey(autoSelected ? options[0].key : null);
+    // optionKeys (not `options`) as the dep: the array is rebuilt every
+    // render, so depending on it directly would loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [optionKeys, autoSelected, selectedKey]);
 
   const selected = options.find((o) => o.key === selectedKey) ?? null;
 
