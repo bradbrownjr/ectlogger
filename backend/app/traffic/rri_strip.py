@@ -104,6 +104,20 @@ def _dynamic_sections(definition) -> List[List[str]]:
     return [s for s in sections if s]
 
 
+def strip_layout(form_type: str, definition) -> Tuple[str, List[List[str]]]:
+    """The wire layout of a strip type: its leading keyword and its sections.
+
+    The single source of truth for "what does this strip look like on the
+    air" -- used by format_rri_strip below to build the canonical string, and
+    published on FormDefinitionResponse (schemas.py) so the composer can show
+    the operator that same string live as they type, without a round trip per
+    keystroke and without duplicating this table in TypeScript.
+    """
+    if form_type in _STRIP_SPECS:
+        return _STRIP_SPECS[form_type]
+    return form_type, _dynamic_sections(definition)
+
+
 # ========== format_rri_strip / parse_rri_strip ==========
 
 def format_rri_strip(form) -> str:
@@ -120,10 +134,7 @@ def format_rri_strip(form) -> str:
     wire keyword (the type name an operator picks *is* the leading token,
     unlike GYX-CAR-SKYWARN where those deliberately differ)."""
     values = _field_values(form)
-    if form.form_type in _STRIP_SPECS:
-        keyword, sections = _STRIP_SPECS[form.form_type]
-    else:
-        keyword, sections = form.form_type, _dynamic_sections(form.definition)
+    keyword, sections = strip_layout(form.form_type, form.definition)
 
     section_strs = [
         '/'.join((str(values.get(name)).upper() if values.get(name) else '') for name in section)

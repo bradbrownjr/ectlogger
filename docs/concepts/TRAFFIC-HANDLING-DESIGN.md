@@ -708,11 +708,37 @@ above. Two deliberate choices:
 
 The strip type and the raw strip template are two answers to the same question
 ("what fields does an answering station enter?") and are both supported: a net
-either points at a defined type (named fields, reusable, exports and prints with
-real labels) or stores the originating strip verbatim (positional Field 1..N,
-filed as `RRI_STRIP_OTHER`). The settings panel's paste box is also the entry
-point for promoting the latter into the former, via
-`POST /traffic/strip-templates` with `file_first_form=false`.
+either points at a defined type (reusable, exports and prints with real labels)
+or stores the originating strip verbatim and files answers as
+`RRI_STRIP_OTHER`. In the raw case the field names come from the origin strip
+itself — in RRI's "RI" (Request for Information) convention each
+slash-delimited token of an originating strip *is* the name of a field, so
+`ETO/CALL SIGN/CITY/...` defines fields labelled CALL SIGN, CITY, and so on.
+The settings panel's paste box is also the entry point for promoting the raw
+strip into a defined type, via `POST /traffic/strip-templates` with
+`file_first_form=false`.
+
+**Filing a strip: fields and wire text are equal, live-linked inputs.**
+`TrafficComposer.tsx` shows the labelled fields *and* the canonical
+slash-delimited strip together, permanently — not the strip behind a "paste
+instead" link. Typing in the fields rewrites the strip as you go; pasting a
+strip a station read over the air fills the fields from it (on demand, and
+automatically when a defined type is filed). Both directions live in
+`frontend/src/utils/rriStrip.ts` and mirror `format_rri_strip` /
+`parse_rri_strip` exactly, including preserving a blank token for an
+unanswered field so later values never shift onto the wrong label.
+
+That mirroring needs the strip's wire layout — its leading keyword and where
+its `/ /` section breaks fall — on the client. Rather than duplicate RRI's
+layout table in TypeScript, `rri_strip.strip_layout()` is the one source for
+both, and `FormDefinitionResponse` publishes what it returns as
+`strip_keyword` plus per-field `starts_new_section`. This matters for the two
+pinned builtins: WXOBS and GYX-CAR-SKYWARN keep their layout in Python
+(`_STRIP_SPECS`), so their stored `starts_new_section` flags are all false and
+their keyword is not always the form_type (GYX-CAR-SKYWARN transmits as
+`GYX-CAR WEATHER`). The response stamps the real layout on; for a dynamically
+defined type it is a no-op, since the layout came from those flags to begin
+with.
 
 All follow the AppSettings singleton pattern in DEVELOPMENT.md (column, then
 `AppSettingsResponse`/`AppSettingsUpdate`, then `_build_settings_response()` and the

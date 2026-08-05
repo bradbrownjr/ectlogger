@@ -13,6 +13,7 @@ import AddIcon from '@mui/icons-material/Add';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { trafficApi } from '../../services/api';
 import { getErrorMessage } from '../../utils/apiErrors';
+import { composeStripText, splitStripText, StripSlot } from '../../utils/rriStrip';
 import { FormDefinition } from '../../hooks/useFormDefinitions';
 import FormRenderer from './FormRenderer';
 import RadiogramAssist from './RadiogramAssist';
@@ -93,14 +94,16 @@ const TrafficComposer: React.FC<TrafficComposerProps> = ({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // ---- "Paste the full response strip" (structured strip types only) ----
-  // A station reporting over the air often reads back the whole strip in one
-  // breath rather than field by field, so let them paste it and have it
-  // split across the same fields shown above.
-  const [pasteResponseOpen, setPasteResponseOpen] = useState(false);
-  const [pasteResponseText, setPasteResponseText] = useState('');
-  const [pasteResponseBusy, setPasteResponseBusy] = useState(false);
-  const [pasteResponseError, setPasteResponseError] = useState<string | null>(null);
+  // ---- The full strip, shown alongside the fields (strip types only) ----
+  // Two ways into the same message: fill the fields and watch the strip
+  // build itself, or paste the strip as a station read it over the air. The
+  // box is always visible so both are equally obvious.
+  //
+  // Null means "showing the strip composed from the fields above"; a string
+  // means the operator typed or pasted over it, and that text wins until
+  // they fill the fields from it or edit a field again.
+  const [stripOverride, setStripOverride] = useState<string | null>(null);
+  const [stripWarnings, setStripWarnings] = useState<string[]>([]);
 
   // ---- The net's origin strip, tokenized into field names ----
   const [stripKeyword, setStripKeyword] = useState('');
@@ -202,8 +205,59 @@ const TrafficComposer: React.FC<TrafficComposerProps> = ({
 
   const selected = options.find((o) => o.key === selectedKey) ?? null;
 
+  // ========== THE SELECTED OPTION'S WIRE LAYOUT ==========
+  // Non-null only for something that goes on the air as an RRI strip -- a
+  // Radiogram or ICS-213 has no strip box at all. Keyword and section breaks
+  // come from the backend (FormDefinition.strip_keyword /
+  // fields[].starts_new_section, both filled by rri_strip.strip_layout), so
+  // the text built here is the text format_rri_strip() would produce.
+  const stripLayout: { keyword: string; slots: StripSlot[]; uppercase: boolean } | null = (() => {
+    if (!selected) return null;
+    if (selected.kind === 'netStrip') {
+      return {
+        keyword: selected.keyword,
+        slots: selected.tokens.map((t) => ({ name: t.value, startsNewSection: t.starts_new_section })),
+        // A net's raw origin strip is filed verbatim as RRI_STRIP_OTHER
+        // text, so it is not upper-cased on the way in the way a defined
+        // type's values are.
+        uppercase: false,
+      };
+    }
+    if (selected.definition.output_format !== 'rri_strip') return null;
+    const ordered = [...selected.definition.fields].sort((a, b) => a.sort_order - b.sort_order);
+    return {
+      keyword: selected.definition.strip_keyword || selected.definition.form_type,
+      slots: ordered.map((f) => ({ name: f.name, startsNewSection: f.starts_new_section })),
+      uppercase: true,
+    };
+  })();
+
+  // The values that feed the strip, in field order, from whichever half of
+  // the composer the selected option uses.
+  const stripSlotValues: string[] = stripLayout
+    ? (selected?.kind === 'netStrip'
+      ? stripLayout.slots.map((_slot, index) => stripValues[index] ?? '')
+      : stripLayout.slots.map((slot) => values[slot.name] ?? ''))
+    : [];
+
+  const composedStripText = stripLayout
+    ? composeStripText(stripLayout.keyword, stripLayout.slots, stripSlotValues, stripLayout.uppercase)
+    : '';
+  const stripText = stripOverride ?? composedStripText;
+
+  // Editing a field puts the strip box back under the fields' control --
+  // otherwise it would sit there showing a pasted strip that no longer
+  // matches what is about to be filed.
   const handleChange = (name: string, value: string) => {
     setValues((prev) => ({ ...prev, [name]: value }));
+    setStripOverride(null);
+    setStripWarnings([]);
+  };
+
+  const handleStripValueChange = (index: number, value: string) => {
+    setStripValues((prev) => prev.map((v, i) => (i === index ? value : v)));
+    setStripOverride(null);
+    setStripWarnings([]);
   };
 
   const resetAfterCreate = () => {
@@ -211,48 +265,32 @@ const TrafficComposer: React.FC<TrafficComposerProps> = ({
     setStripValues((netStripTokens || []).map(() => ''));
     setStripCallSign('');
     setStripLabel('');
-    setPasteResponseOpen(false);
-    setPasteResponseText('');
+    setStripOverride(null);
+    setStripWarnings([]);
     // Keep the single auto-selected option selected; otherwise return to the
     // picker so the next item can be a different type.
     if (!autoSelected) setSelectedKey(null);
   };
 
-  // Splits a pasted strip on the same "/" delimiters RRI uses and assigns
-  // each token, in order, to the selected type's fields -- the same
-  // positional convention rri_strip.py::format_rri_strip uses to build the
-  // string, run in reverse.
-  const handleFillFromPastedResponse = async () => {
-    if (!selected) return;
-    setPasteResponseBusy(true);
-    setPasteResponseError(null);
-    try {
-      const resp = await trafficApi.tokenizeStripTemplate(pasteResponseText);
-      const tokens: StripToken[] = resp.data.tokens;
-      const targetCount = selected.kind === 'netStrip' ? selected.tokens.length : selected.definition.fields.length;
-
-      if (selected.kind === 'netStrip') {
-        setStripValues((prev) => prev.map((v, i) => (i < tokens.length ? tokens[i].value : v)));
-      } else {
-        const filled: Record<string, string> = {};
-        selected.definition.fields.forEach((field, index) => {
-          if (index < tokens.length) filled[field.name] = tokens[index].value;
-        });
-        setValues((prev) => ({ ...prev, ...filled }));
-      }
-
-      if (tokens.length !== targetCount) {
-        setPasteResponseError(
-          `Filled ${Math.min(tokens.length, targetCount)} of ${targetCount} fields -- the pasted strip had ${tokens.length} value${tokens.length === 1 ? '' : 's'}. Check the rest by hand.`
-        );
-      } else {
-        setPasteResponseOpen(false);
-      }
-    } catch (err) {
-      setPasteResponseError(getErrorMessage(err, 'Could not read that as a strip'));
-    } finally {
-      setPasteResponseBusy(false);
+  // Splits the strip in the box back across the fields above, positionally,
+  // preserving blanks so an unanswered field mid-strip doesn't shift every
+  // later value onto the wrong label.
+  const handleFillFieldsFromStrip = () => {
+    if (!stripLayout || !selected) return;
+    const { values: parsed, warnings } = splitStripText(stripText, stripLayout.keyword, stripLayout.slots);
+    if (selected.kind === 'netStrip') {
+      setStripValues(parsed);
+    } else {
+      setValues((prev) => {
+        const next = { ...prev };
+        stripLayout.slots.forEach((slot, index) => { next[slot.name] = parsed[index]; });
+        return next;
+      });
     }
+    setStripWarnings(warnings);
+    // Back under the fields' control, so the box now shows the canonical
+    // rendering of what was just filled in.
+    setStripOverride(null);
   };
 
   const handleSubmit = async () => {
@@ -260,10 +298,19 @@ const TrafficComposer: React.FC<TrafficComposerProps> = ({
     setSaving(true);
     setError(null);
     try {
+      // A strip pasted but never pushed into the fields still files -- the
+      // box is an equal way in, not a staging area the operator can forget
+      // to apply.
+      let fieldValues = values;
+      if (stripLayout && stripOverride !== null && stripOverride.trim()) {
+        const { values: parsed } = splitStripText(stripOverride, stripLayout.keyword, stripLayout.slots);
+        fieldValues = { ...values };
+        stripLayout.slots.forEach((slot, index) => { fieldValues[slot.name] = parsed[index]; });
+      }
       const resp = await trafficApi.create({
         form_type: selected.definition.form_type,
         net_id: netId,
-        field_values: values,
+        field_values: fieldValues,
       });
       onCreated(resp.data.id);
       resetAfterCreate();
@@ -274,28 +321,23 @@ const TrafficComposer: React.FC<TrafficComposerProps> = ({
     }
   };
 
-  // Files the net's origin-strip answer as a general RRI strip, rebuilding
-  // RRI's canonical slash-delimited string: the leading keyword, each value
-  // in order, and an empty token wherever the origin strip had a "/ /"
-  // section break -- so the stored text round-trips to the same shape the
-  // originating station sent.
+  // Files the net's origin-strip answer as a general RRI strip. Whatever the
+  // strip box shows is what gets stored: normally the canonical string
+  // composed from the fields above (keyword, each value in order, an empty
+  // token at every "/ /" section break), or a pasted strip verbatim, since
+  // preserving text exactly as sent is the whole point of the catch-all type.
   const handleSubmitStrip = async () => {
     if (!selected || selected.kind !== 'netStrip') return;
     setSaving(true);
     setError(null);
     try {
-      const parts: string[] = selected.keyword ? [selected.keyword] : [];
-      selected.tokens.forEach((token, index) => {
-        if (token.starts_new_section) parts.push(' ');
-        parts.push(stripValues[index] ?? '');
-      });
       const resp = await trafficApi.create({
         form_type: 'RRI_STRIP_OTHER',
         net_id: netId,
         field_values: {
           subject: stripLabel.trim() || `${selected.keyword || 'Strip'} from ${stripCallSign.trim().toUpperCase()}`,
           call_sign: stripCallSign.trim().toUpperCase(),
-          strip_text: `${parts.join('/')}//`,
+          strip_text: stripText,
         },
       });
       onCreated(resp.data.id);
@@ -337,49 +379,54 @@ const TrafficComposer: React.FC<TrafficComposerProps> = ({
     );
   }
 
-  const pasteBox = (
-    <Box sx={{ mt: 3 }}>
-      {!pasteResponseOpen ? (
-        <Button type="button" size="small" onClick={() => setPasteResponseOpen(true)} sx={{ minHeight: 44 }}>
-          Or paste the full response strip
+  // ========== FULL STRIP BOX ==========
+  // Always visible for anything that goes on the air as a strip, because it
+  // is a second, equal way to enter the same message -- not an optional
+  // extra hidden behind a link. Typing in the fields above rewrites it live;
+  // pasting into it and pressing "Fill fields above" goes the other way.
+  const stripBox = stripLayout && (
+    <Box sx={{ mt: 3, p: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}>
+      {stripWarnings.map((warning, index) => (
+        <Alert key={index} severity="warning" sx={{ mb: 1 }}>{warning}</Alert>
+      ))}
+      <TextField
+        fullWidth
+        multiline
+        minRows={2}
+        size="small"
+        label="Full strip"
+        helperText={
+          selected.kind === 'netStrip'
+            ? 'Built from the fields above as you type. You can also paste the strip exactly as it was sent and log it as-is, or press "Fill fields above" to split it into the fields.'
+            : 'Built from the fields above as you type. You can also paste the strip exactly as it was sent -- it is split back into the fields when you file it, or now with "Fill fields above".'
+        }
+        value={stripText}
+        onChange={(e) => { setStripOverride(e.target.value); setStripWarnings([]); }}
+        sx={{ '& .MuiInputBase-root': { fontFamily: 'monospace' } }}
+      />
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1 }}>
+        <Button
+          type="button"
+          variant="outlined"
+          size="small"
+          disabled={!stripText.replace(/[/ ]/g, '').trim()}
+          onClick={handleFillFieldsFromStrip}
+          sx={{ minHeight: 44 }}
+        >
+          Fill fields above
         </Button>
-      ) : (
-        <Box sx={{ p: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}>
-          <Typography variant="body2" sx={{ mb: 1 }}>
-            Paste the strip exactly as reported over the air -- it fills the fields above.
-          </Typography>
-          {pasteResponseError && <Alert severity="warning" sx={{ mb: 1 }}>{pasteResponseError}</Alert>}
-          <TextField
-            fullWidth
-            multiline
-            rows={2}
+        {/* Only meaningful while the box is holding text of its own. */}
+        {stripOverride !== null && (
+          <Button
+            type="button"
             size="small"
-            value={pasteResponseText}
-            onChange={(e) => setPasteResponseText(e.target.value)}
-            sx={{ '& .MuiInputBase-root': { fontFamily: 'monospace' } }}
-          />
-          <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
-            <Button
-              type="button"
-              variant="contained"
-              size="small"
-              disabled={pasteResponseBusy || !pasteResponseText.trim()}
-              onClick={handleFillFromPastedResponse}
-              sx={{ minHeight: 44 }}
-            >
-              {pasteResponseBusy ? 'Filling...' : 'Fill fields'}
-            </Button>
-            <Button
-              type="button"
-              size="small"
-              onClick={() => { setPasteResponseOpen(false); setPasteResponseError(null); }}
-              sx={{ minHeight: 44 }}
-            >
-              Cancel
-            </Button>
-          </Box>
-        </Box>
-      )}
+            onClick={() => { setStripOverride(null); setStripWarnings([]); }}
+            sx={{ minHeight: 44 }}
+          >
+            Rebuild from fields
+          </Button>
+        )}
+      </Box>
     </Box>
   );
 
@@ -441,20 +488,20 @@ const TrafficComposer: React.FC<TrafficComposerProps> = ({
             // The token IS the field name (RRI "RI" template convention).
             label={token.value}
             value={stripValues[index] ?? ''}
-            onChange={(e) =>
-              setStripValues((prev) => prev.map((v, i) => (i === index ? e.target.value : v)))
-            }
+            onChange={(e) => handleStripValueChange(index, e.target.value)}
           />
         ))}
 
-        {pasteBox}
+        {stripBox}
 
         <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
           <Button
             variant="contained"
             startIcon={<AddIcon />}
             onClick={handleSubmitStrip}
-            disabled={saving || !stripCallSign.trim() || stripValues.every((v) => !v.trim())}
+            // Either half of the composer can carry the content: the fields,
+            // or a strip pasted straight into the box.
+            disabled={saving || !stripCallSign.trim() || (stripValues.every((v) => !v.trim()) && stripOverride === null)}
             sx={{ minHeight: 44 }}
           >
             {saving ? 'Logging...' : 'Log strip'}
@@ -477,8 +524,9 @@ const TrafficComposer: React.FC<TrafficComposerProps> = ({
         <FormRenderer definition={selected.definition} values={values} onChange={handleChange} disabled={saving} />
       )}
 
-      {/* Structured strip types can also be filled from a pasted readback. */}
-      {selected.definition.output_format === 'rri_strip' && pasteBox}
+      {/* Strip types show their wire text alongside the fields, either of
+          which the operator may use. Radiogram/ICS-213 have no strip form. */}
+      {stripBox}
 
       <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
         <Button

@@ -761,6 +761,8 @@ The form types are:
 
 Fields like your callsign, place of origin, and filing time are auto-filled from your profile where possible. Submitting the form logs it as either **originated** (you wrote it) or **received** (you copied it from another station), which starts its chain of custody.
 
+On any strip form you get both ways of entering the same report, side by side and always visible: the named fields, and the **Full strip** box holding the single slash-delimited line that goes on the air. Fill in the fields and the strip builds itself as you type. Or, when a station reads the whole strip back in one breath, paste it into the box — press **Fill fields above** to see it split across the fields, or just file it and it's split for you. A blank field mid-strip stays blank rather than pulling the values after it out of line, and you're told if the pasted strip was short or had more values than the form expects.
+
 ### Importing a message you copied off the air
 
 If you already have the plaintext of a radiogram, ICS-213 message, or RRI strip — copied down by hand, relayed from another station, or saved from packet — choose **Import** instead of **New**. Paste the text in, or drag a text file onto the box, and the parser fills in what it can recognize, flagging anything low-confidence (like a stated check that doesn't match the recomputed word count) for you to double-check before saving. Anything the parser doesn't recognize as one of the built-in types is still saved as a general RRI strip, exactly as pasted, rather than being discarded. Nothing is saved until you review and confirm the parsed fields.
@@ -785,9 +787,14 @@ Only the submitter, the current holder, anyone else in its chain of custody, tha
 
 From a piece of traffic's detail view, **Export** gives you the plaintext (for reading over the air or filing) or a printable PDF. For a Radiogram or ICS-213, that PDF is laid out like the real paper form — the ARRL Radiogram pad or the FEMA ICS-213 General Message form, boxes and rules included — ready to file or hand to the addressee, with fields ECTLogger doesn't collect (like a delivery-confirmation signature) printing blank and ruled, the same as they'd appear on a hand-filled paper copy. For a WXOBS, GYX-CAR SKYWARN, or general RRI strip, the PDF shows the exact strip text alongside a readable field list. On a net with **ICS-309 enabled**, traffic handled during that net also appears as metadata-only rows (message number, precedence, addressee, handling station) on the net's ICS-309 Communications Log, including its own form-accurate PDF — the message text itself is never included in that export.
 
-### Exporting weather/RRI strips for a served agency
+### Exporting a whole net's traffic
 
-A net's Traffic panel has its own **Export** button for just the WXOBS/GYX-CAR SKYWARN/general RRI strip reports filed on that net — one line per report, oldest first, ready to paste into a spreadsheet or Winlink template the way a served agency actually expects to receive it. Choose **Raw (as filed)** for that normal case. Choose **Radiogram-safe (for NTS/CW relay)** only if you need to relay this content inside an actual Radiogram or ICS-213 message over voice or CW — it substitutes a minus sign for the letter M so a negative temperature survives standard NTS transmission, which the raw export deliberately does not do.
+A net's Traffic panel has its own **Export** button covering every message filed on that net, in two forms:
+
+- **Text** — one line per message, oldest first, ready to paste into a spreadsheet, a Winlink template, or an email to a served agency. Strip reports come out as the exact slash-delimited line RRI expects; radiograms and ICS-213s come out as their plaintext.
+- **PDF (printable forms)** — every message on the net laid out like its real paper form (the ARRL Radiogram pad, the FEMA ICS-213, the strip layout), several to a page, with no message ever split across a page break. This is the one to print for a served agency or a paper file at the end of an operation.
+
+In the text export, a minus sign in a strip's numeric field (a below-zero temperature, most often) is written as the letter **M**, which is RRI's own notation for its strip fields. Radiogram and ICS-213 text is never touched this way — NTS spells a hyphen out as "DASH" there, and a hyphen in a street address or route number has to survive as typed.
 
 ### Traffic in your statistics
 

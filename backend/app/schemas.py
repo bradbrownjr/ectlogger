@@ -1572,6 +1572,12 @@ class FormDefinitionResponse(BaseModel):
     is_builtin: bool
     is_enabled: bool
     sort_order: int
+    # RRI strip types only (null on every other output_format): the leading
+    # keyword of the canonical slash-delimited string. Usually the form_type
+    # itself, but not always -- GYX-CAR-SKYWARN goes on the air as
+    # "GYX-CAR WEATHER". Published so the composer can build the same string
+    # rri_strip.format_rri_strip() will.
+    strip_keyword: Optional[str] = None
     fields: List[FormDefinitionFieldResponse] = Field(default_factory=list)
     created_at: datetime
     updated_at: Optional[datetime] = None
@@ -1581,6 +1587,24 @@ class FormDefinitionResponse(BaseModel):
 
     @classmethod
     def from_orm(cls, definition):
+        fields = [FormDefinitionFieldResponse.from_orm(f) for f in definition.fields]
+        strip_keyword = None
+        if definition.output_format == 'rri_strip':
+            from app.traffic.rri_strip import strip_layout
+            strip_keyword, sections = strip_layout(definition.form_type, definition)
+            # A pinned builtin (WXOBS, GYX-CAR-SKYWARN) keeps its "/ /"
+            # section breaks in Python, not in form_definition_fields, so the
+            # stored starts_new_section flags are all False and would render a
+            # strip with no section breaks. Stamp the real layout onto the
+            # response instead of shipping a wrong one; for a dynamically
+            # defined type this is a no-op, since the layout came from those
+            # same flags.
+            section_starts = set()
+            for section in sections[1:]:
+                if section:
+                    section_starts.add(section[0])
+            for field in fields:
+                field.starts_new_section = field.name in section_starts
         return cls(
             id=definition.id,
             form_type=definition.form_type,
@@ -1591,7 +1615,8 @@ class FormDefinitionResponse(BaseModel):
             is_builtin=definition.is_builtin,
             is_enabled=definition.is_enabled,
             sort_order=definition.sort_order,
-            fields=[FormDefinitionFieldResponse.from_orm(f) for f in definition.fields],
+            strip_keyword=strip_keyword,
+            fields=fields,
             created_at=definition.created_at,
             updated_at=definition.updated_at,
         )
