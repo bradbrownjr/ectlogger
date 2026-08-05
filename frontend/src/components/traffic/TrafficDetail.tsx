@@ -14,8 +14,6 @@ import RadiogramPrintView from './print/RadiogramPrintView';
 import ICS213PrintView from './print/ICS213PrintView';
 import RRIStripPrintView from './print/RRIStripPrintView';
 
-const RRI_STRIP_FORM_TYPES = ['WXOBS', 'GYX-CAR-SKYWARN', 'RRI_STRIP_OTHER'];
-
 // ========== TrafficDetail ==========
 // Read view of a single form: field values, disposition, the chain-of-custody
 // timeline, and the "Log a handoff" entry point. Self-contained (fetches its
@@ -203,7 +201,11 @@ const TrafficDetail: React.FC<TrafficDetailProps> = ({ formId }) => {
           <RadiogramPrintView id={printViewId} form={form} />
         ) : form.form_type === 'ICS213' ? (
           <ICS213PrintView id={printViewId} form={form} />
-        ) : RRI_STRIP_FORM_TYPES.includes(form.form_type) ? (
+        ) : form.definition.output_format === 'rri_strip' || form.definition.output_format === 'rri_strip_raw' ? (
+          // Covers WXOBS/GYX-CAR-SKYWARN/RRI_STRIP_OTHER *and* any strip type
+          // defined at runtime via traffic_strip_templates.py -- checking
+          // output_format instead of a hardcoded form_type list is what makes
+          // a dynamically-defined type "just work" here with no further change.
           <RRIStripPrintView id={printViewId} form={form} />
         ) : null}
       </Box>
