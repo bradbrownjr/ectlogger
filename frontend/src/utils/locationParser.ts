@@ -212,11 +212,7 @@ export function parseLocation(location: string): ParsedLocation | null {
   return null;
 }
 
-/**
- * Geocode an address using our backend proxy to Nominatim (OpenStreetMap).
- * The proxy handles CORS issues and rate limiting.
- */
-export async function geocodeAddress(address: string): Promise<{ lat: number; lon: number } | null> {
+async function geocodeOnce(address: string): Promise<{ lat: number; lon: number } | null> {
   try {
     const response = await fetch(
       `/api/geocode?q=${encodeURIComponent(address)}`
@@ -233,6 +229,34 @@ export async function geocodeAddress(address: string): Promise<{ lat: number; lo
     }
   } catch (error) {
     console.error('Geocoding error:', error);
+  }
+
+  return null;
+}
+
+/**
+ * Geocode an address using our backend proxy to Nominatim (OpenStreetMap).
+ * The proxy handles CORS issues and rate limiting.
+ *
+ * Falls back to progressively less specific comma-separated segments when
+ * the full address doesn't resolve. Confirmed on production net 56:
+ * "County Rd, Shapliegh, ME" geocoded to nothing (Nominatim doesn't have
+ * that rural road as a named entity), even though "Shapliegh, ME" alone
+ * resolves fine -- the reporting station otherwise never mapped at all,
+ * which is worse than an approximate town-level pin for a station whose
+ * actual coverage still matters for the overlay. Never falls back past two
+ * remaining segments (normally "City, State"), so a bad address can't
+ * degrade all the way down to a single bare state/country pin.
+ */
+export async function geocodeAddress(address: string): Promise<{ lat: number; lon: number } | null> {
+  const direct = await geocodeOnce(address);
+  if (direct) return direct;
+
+  const segments = address.split(',').map(s => s.trim()).filter(Boolean);
+  for (let drop = 1; drop <= segments.length - 2; drop++) {
+    const fallback = segments.slice(drop).join(', ');
+    const result = await geocodeOnce(fallback);
+    if (result) return result;
   }
 
   return null;
