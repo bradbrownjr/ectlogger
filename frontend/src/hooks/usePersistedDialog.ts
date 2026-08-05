@@ -11,7 +11,8 @@ function usePersistedDialog(storageKey: string): UseDialogResult {
   const [open, setOpen] = useNetViewLayoutStorage<boolean>(storageKey, false);
   const onOpen = useCallback(() => setOpen(true), [setOpen]);
   const onClose = useCallback(() => setOpen(false), [setOpen]);
-  return { open, onOpen, onClose };
+  const onToggle = useCallback(() => setOpen(!open), [setOpen, open]);
+  return { open, onOpen, onClose, onToggle };
 }
 
 export default usePersistedDialog;

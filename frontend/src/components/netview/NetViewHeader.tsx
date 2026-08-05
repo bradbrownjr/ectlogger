@@ -403,7 +403,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
       key: 'map', group: 'info', priority: 3,
       visible: checkInsCount > 0,
       Icon: MapIcon, color: theme.palette.primary.main, label: 'Map',
-      tooltip: 'View check-in locations on map', onClick: map.onOpen,
+      tooltip: 'View check-in locations on map', onClick: map.onToggle,
     },
     {
       // No other gate beyond the net-level toggle - matches the inline
@@ -413,7 +413,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
       key: 'coverage', group: 'info', priority: 2,
       visible: net.propagation_logging_enabled,
       Icon: HearingIcon, color: theme.palette.primary.main, label: 'Coverage',
-      tooltip: 'View station-to-station coverage reports', onClick: coverage.onOpen,
+      tooltip: 'View station-to-station coverage reports', onClick: coverage.onToggle,
     },
     {
       // Same "watch it build as it happens" rationale as coverage above: the
@@ -424,7 +424,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
       key: 'traffic', group: 'info', priority: 2,
       visible: canViewTraffic,
       Icon: MailIcon, color: theme.palette.primary.main, label: 'Traffic',
-      tooltip: 'View and file traffic for this net', onClick: traffic.onOpen,
+      tooltip: 'View and file traffic for this net', onClick: traffic.onToggle,
     },
     {
       key: 'audio', group: 'info', priority: 1,
@@ -436,19 +436,19 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
       key: 'script', group: 'info', priority: 2,
       visible: checkInsCount > 0 && !!net.script,
       Icon: ArticleIcon, color: neutralIconColor, label: 'Script',
-      tooltip: 'View net script', onClick: () => script.onOpen(),
+      tooltip: 'View net script', onClick: () => script.onToggle(),
     },
     {
       key: 'schedule-announcements', group: 'info', priority: 2,
       visible: checkInsCount > 0 && !!net.template_id,
       Icon: CampaignIcon, color: neutralIconColor, label: 'Announcements',
-      tooltip: 'View schedule announcements', onClick: () => scheduleAnnouncements.onOpen(),
+      tooltip: 'View schedule announcements', onClick: () => scheduleAnnouncements.onToggle(),
     },
     {
       key: 'notes', group: 'info', priority: 2,
       visible: checkInsCount > 0,
       Icon: SpeakerNotesIcon, color: neutralIconColor, label: 'Notes',
-      tooltip: 'View net notes', onClick: () => announcements.onOpen(),
+      tooltip: 'View net notes', onClick: () => announcements.onToggle(),
     },
     {
       key: 'topics', group: 'info', priority: 2,
