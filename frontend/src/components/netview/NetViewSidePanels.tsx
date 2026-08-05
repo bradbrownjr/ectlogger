@@ -201,7 +201,22 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
   );
 
   const layoutTier = useLayoutTier();
-  const { containerRef, getWeight, startDrag } = useResizableSplit(`${STORAGE_KEYS.RIGHT_PANELS_SPLIT}_${layoutTier}`, 'column');
+  const { containerRef, getWeight, hasExplicitWeight, startDrag } = useResizableSplit(`${STORAGE_KEYS.RIGHT_PANELS_SPLIT}_${layoutTier}`, 'column');
+  // Chat (and Activity Log, when expanded) legitimately want to grow into
+  // whatever height the column has -- a scrolling conversation/log looks
+  // right filling the space. Traffic's list does not: with only a handful
+  // of items it has nothing to grow INTO, and forcing it to fill an equal
+  // flex-grow share left a slab of blank space below its table with nothing
+  // else in the panel to explain it. Until a user deliberately drags it
+  // bigger (hasExplicitWeight becomes true and it re-joins the normal
+  // weighted pool below), Traffic sizes to its own content and leaves any
+  // surplus column height to Chat, same as it would for a plain web page
+  // that doesn't fill a tall viewport.
+  const paneFlex = (key: string, minimized: boolean): string => {
+    if (minimized) return '0 0 auto';
+    if (key === 'traffic' && !hasExplicitWeight('traffic')) return '0 1 auto';
+    return `${getWeight(key)} 1 0px`;
+  };
 
   // Ordered list of the panes actually rendered this pass, so a
   // ResizeHandle is only inserted between two panes that are genuinely
@@ -354,7 +369,7 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
             <Box data-pane-key={pane.key} sx={{
               display: 'flex',
               flexDirection: 'column',
-              flex: pane.minimized ? '0 0 auto' : `${getWeight(pane.key)} 1 0px`,
+              flex: paneFlex(pane.key, pane.minimized),
               minHeight: pane.minimized ? 'auto' : 0,
               overflow: 'hidden',
             }}>
