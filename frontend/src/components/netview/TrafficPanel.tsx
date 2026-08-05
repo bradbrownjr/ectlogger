@@ -5,6 +5,9 @@ import {
   Chip,
   CircularProgress,
   IconButton,
+  Dialog,
+  DialogContent,
+  DialogTitle,
   Menu,
   MenuItem,
   Paper,
@@ -17,13 +20,23 @@ import {
 import MinimizeIcon from '@mui/icons-material/Minimize';
 import CropSquareIcon from '@mui/icons-material/CropSquare';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import LaunchIcon from '@mui/icons-material/Launch';
+import AddIcon from '@mui/icons-material/Add';
+// "View all in Traffic" uses the Traffic section's own Browse-tab icon.
+// It must NOT be LaunchIcon -- that is the same glyph as OpenInNewIcon, which
+// means "pop out to a window" in every other panel, so using it here made a
+// navigation link look like a pop-out.
+import ListAltIcon from '@mui/icons-material/ListAlt';
+import PictureInPictureAltIcon from '@mui/icons-material/PictureInPictureAlt';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import CloseIcon from '@mui/icons-material/Close';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
-import api, { trafficApi } from '../../services/api';
+import api, { netApi, trafficApi } from '../../services/api';
 import { getErrorMessage } from '../../utils/apiErrors';
 import TrafficTable from '../traffic/TrafficTable';
 import TrafficDetail from '../traffic/TrafficDetail';
+import TrafficComposer from '../traffic/TrafficComposer';
 import { TrafficForm } from '../../hooks/useTrafficList';
+import { useFormDefinitions } from '../../hooks/useFormDefinitions';
 
 // ========== TRAFFIC SIDE PANEL (per-net) ==========
 // A thin net-scoped wrapper around TrafficTable/TrafficDetail (Stage A), fed
@@ -32,11 +45,10 @@ import { TrafficForm } from '../../hooks/useTrafficList';
 // -- that stays in the canonical /traffic section (Traffic.tsx); "View all
 // in Traffic" deep-links there. See TRAFFIC-HANDLING-DESIGN.md section 4.5.
 //
-// Header chrome (title row, minimize toggle) follows CoveragePanel.tsx's
-// "simple Chat-style chrome wrapper" pattern rather than the full
-// detach/pop-out-to-window machinery Chat/Activity Log/Coverage carry --
-// this panel is always docked once net.traffic_enabled is on, with no
-// on-demand open/close toggle, so that extra chrome isn't load-bearing yet.
+// Header chrome follows CoveragePanel.tsx exactly -- close, detach to a
+// floating overlay, pop out to a real window, minimize -- because this panel
+// is on-demand in the same way: the toolbar's Traffic button opens it, and it
+// is not force-docked just because the net has traffic handling turned on.
 
 interface TrafficSummary {
   net_id: number;
@@ -59,18 +71,58 @@ const DISPOSITION_COLOR: Record<string, 'default' | 'warning' | 'info' | 'succes
 interface TrafficPanelProps {
   netId: number;
   currentUserId?: number;
+  // On-demand panel needs a real close, unlike FloatingWindow's own close
+  // icon which only re-docks. onDetach/onPopOut are docked-mode only -- in
+  // floating mode FloatingWindow supplies its own, same as CoveragePanel.
+  onClose?: () => void;
+  onDetach?: () => void;
+  onPopOut?: () => void;
   minimized?: boolean;
   onMinimize?: () => void;
   onRestore?: () => void;
 }
 
-const TrafficPanel: React.FC<TrafficPanelProps> = ({ netId, currentUserId, minimized, onMinimize, onRestore }) => {
+const TrafficPanel: React.FC<TrafficPanelProps> = ({
+  netId,
+  currentUserId,
+  onClose,
+  onDetach,
+  onPopOut,
+  minimized,
+  onMinimize,
+  onRestore,
+}) => {
   const navigate = useNavigate();
   const [items, setItems] = useState<TrafficForm[]>([]);
   const [summary, setSummary] = useState<TrafficSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedFormId, setSelectedFormId] = useState<number | null>(null);
+
+  // ========== FILE TRAFFIC ON THIS NET ==========
+  // The reason the panel exists: logging what's passed on the air, attached
+  // to this net. TrafficComposer is the same component the Traffic section's
+  // New tab uses -- the only difference here is that netId is supplied, which
+  // is what makes the form belong to the net (FormCreate.net_id).
+  const [composeOpen, setComposeOpen] = useState(false);
+  const { definitions } = useFormDefinitions();
+  const [net, setNet] = useState<any | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    netApi.get(netId)
+      .then((res) => {
+        if (!cancelled) setNet(res.data);
+      })
+      .catch(() => {
+        // Only used for the net's optional traffic restrictions -- without it
+        // the composer just offers every form type.
+        if (!cancelled) setNet(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [netId]);
 
   const refetch = useCallback(async () => {
     setLoading(true);
@@ -169,6 +221,14 @@ const TrafficPanel: React.FC<TrafficPanelProps> = ({ netId, currentUserId, minim
                   <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
                     <IconButton
                       size="small"
+                      onClick={() => setComposeOpen(true)}
+                      title="File traffic on this net"
+                      sx={{ p: 0.25 }}
+                    >
+                      <AddIcon sx={{ fontSize: 14 }} />
+                    </IconButton>
+                    <IconButton
+                      size="small"
                       onClick={(e) => setExportMenuAnchor(e.currentTarget)}
                       title="Export RRI/WX strips"
                       sx={{ p: 0.25 }}
@@ -188,8 +248,18 @@ const TrafficPanel: React.FC<TrafficPanelProps> = ({ netId, currentUserId, minim
                       </MenuItem>
                     </Menu>
                     <IconButton size="small" onClick={handleViewAll} title="View all in Traffic" sx={{ p: 0.25 }}>
-                      <LaunchIcon sx={{ fontSize: 14 }} />
+                      <ListAltIcon sx={{ fontSize: 14 }} />
                     </IconButton>
+                    {onDetach && (
+                      <IconButton size="small" onClick={onDetach} title="Detach panel" sx={{ p: 0.25 }}>
+                        <PictureInPictureAltIcon sx={{ fontSize: 14 }} />
+                      </IconButton>
+                    )}
+                    {onPopOut && (
+                      <IconButton size="small" onClick={onPopOut} title="Open in new window" sx={{ p: 0.25 }}>
+                        <OpenInNewIcon sx={{ fontSize: 14 }} />
+                      </IconButton>
+                    )}
                     {(onMinimize || onRestore) && (
                       <IconButton
                         size="small"
@@ -200,6 +270,11 @@ const TrafficPanel: React.FC<TrafficPanelProps> = ({ netId, currentUserId, minim
                         {minimized
                           ? <CropSquareIcon sx={{ fontSize: 14 }} />
                           : <MinimizeIcon sx={{ fontSize: 14 }} />}
+                      </IconButton>
+                    )}
+                    {onClose && (
+                      <IconButton size="small" onClick={onClose} title="Close" sx={{ p: 0.25 }}>
+                        <CloseIcon sx={{ fontSize: 14 }} />
                       </IconButton>
                     )}
                   </Box>
@@ -260,6 +335,32 @@ const TrafficPanel: React.FC<TrafficPanelProps> = ({ netId, currentUserId, minim
           )}
         </Box>
       )}
+
+      {/* ========== FILE TRAFFIC DIALOG ========== */}
+      {/* Deliberately a dialog rather than an inline mode: the panel is often
+          narrow and docked beside the check-in list, and a Radiogram needs
+          real room. Closing refetches so the new item shows in the list
+          immediately even if the WebSocket event is missed. */}
+      <Dialog open={composeOpen} onClose={() => setComposeOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle>File traffic</DialogTitle>
+        <DialogContent dividers>
+          <TrafficComposer
+            definitions={definitions}
+            netId={netId}
+            allowedFormTypes={net?.traffic_form_types}
+            // Only offer the ad-hoc positional strip when the net hasn't
+            // pointed at a real defined type -- otherwise the named fields
+            // from that type are strictly better.
+            stripTemplate={net?.traffic_strip_form_type ? null : net?.traffic_strip_template}
+            contextLabel={net ? `Filing for ${net.name}` : undefined}
+            onCreated={(id) => {
+              setComposeOpen(false);
+              refetch();
+              setSelectedFormId(id);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
     </Paper>
   );
 };

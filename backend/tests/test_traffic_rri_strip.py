@@ -293,7 +293,7 @@ async def test_create_strip_template_defines_type_and_files_first_form(client, d
     body = resp.json()
 
     # form_type normalized to uppercase.
-    assert body["form_type"] == "SITREP"
+    assert body["form"]["form_type"] == "SITREP"
     assert body["definition"]["title"] == "Situation Report"
     assert body["definition"]["is_builtin"] is False
     assert [f["name"] for f in body["definition"]["fields"]] == ["date", "time", "location", "status"]
@@ -301,7 +301,7 @@ async def test_create_strip_template_defines_type_and_files_first_form(client, d
 
     # The pasted example's own values became the first Form, in RRI's
     # canonical string, section break included, no NTS substitution applied.
-    assert body["normalized_text"] == "SITREP/04-08-2026/1830/ /PORTLAND ME/BRIDGE OUT ON RT 4//"
+    assert body["form"]["normalized_text"] == "SITREP/04-08-2026/1830/ /PORTLAND ME/BRIDGE OUT ON RT 4//"
 
     # A second station can now answer the SAME defined type through the
     # ordinary create-form endpoint -- no special-casing needed.
@@ -348,3 +348,37 @@ async def test_create_strip_template_dedupes_colliding_field_labels(client, owne
     assert resp.status_code == 201, resp.text
     names = [f["name"] for f in resp.json()["definition"]["fields"]]
     assert names == ["status", "status_2"]
+
+
+@pytest.mark.asyncio
+async def test_create_strip_template_can_define_type_without_filing_a_form(client, owner):
+    """Net settings (TrafficSettingsPanel.tsx) defines a strip type up front so
+    the net knows what fields to collect -- filing a form of placeholder values
+    at that moment would be noise, so file_first_form=False skips it."""
+    resp = await client.post(
+        "/api/traffic/strip-templates",
+        json={
+            "form_type": "DRILLCHK",
+            "title": "Drill Check-In",
+            "file_first_form": False,
+            "fields": [
+                {"label": "Time", "value": ""},
+                {"label": "Callsign", "value": ""},
+            ],
+        },
+        headers=auth_headers(owner),
+    )
+    assert resp.status_code == 201, resp.text
+    body = resp.json()
+    assert body["form"] is None
+    assert body["definition"]["form_type"] == "DRILLCHK"
+    assert [f["label"] for f in body["definition"]["fields"]] == ["Time", "Callsign"]
+
+    # The type is real and immediately usable -- nothing about skipping the
+    # first form leaves it half-created.
+    listed = await client.get("/api/traffic/definitions", headers=auth_headers(owner))
+    assert "DRILLCHK" in [d["form_type"] for d in listed.json()]
+
+    # ...and no traffic was filed as a side effect.
+    forms = await client.get("/api/traffic/forms", headers=auth_headers(owner))
+    assert forms.json()["items"] == []

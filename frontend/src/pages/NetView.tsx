@@ -183,6 +183,7 @@ const NetView: React.FC = () => {
   const frequencyDialog = useDialog();
   const map = usePersistedDialog(STORAGE_KEYS.MAP_OPEN);
   const coverage = usePersistedDialog(STORAGE_KEYS.COVERAGE_OPEN);
+  const traffic = usePersistedDialog(STORAGE_KEYS.TRAFFIC_OPEN);
   const bulkCheckIn = useDialog();
   const [hideDuplicates, setHideDuplicates] = useLocalStorage<boolean>(STORAGE_KEYS.CHECKIN_HIDE_DUPLICATES, false);
   const search = useDialog();
@@ -262,11 +263,13 @@ const NetView: React.FC = () => {
   const [scheduleAnnouncementsDockedPref, setScheduleAnnouncementsDockedPref] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.SCHEDULE_ANNOUNCEMENTS_DOCKED, true);
   const [mapDockedPref, setMapDockedPref] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.MAP_DOCKED, true);
   const [coverageDockedPref, setCoverageDockedPref] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.COVERAGE_DOCKED, true);
+  const [trafficDockedPref, setTrafficDockedPref] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.TRAFFIC_DOCKED, true);
   const scriptDocked = scriptDockedPref && isXlUp;
   const announcementsDocked = announcementsDockedPref && isXlUp;
   const scheduleAnnouncementsDocked = scheduleAnnouncementsDockedPref && isXlUp;
   const mapDocked = mapDockedPref && isXlUp;
   const coverageDocked = coverageDockedPref && isXlUp;
+  const trafficDocked = trafficDockedPref && isXlUp;
   const handleDockScript = () => setScriptDockedPref(true);
   const handleUndockScript = () => setScriptDockedPref(false);
   const handleDockAnnouncements = () => setAnnouncementsDockedPref(true);
@@ -277,6 +280,8 @@ const NetView: React.FC = () => {
   const handleUndockMap = () => setMapDockedPref(false);
   const handleDetachCoverage = () => setCoverageDockedPref(false);
   const handleAttachCoverage = () => setCoverageDockedPref(true);
+  const handleDetachTraffic = () => setTrafficDockedPref(false);
+  const handleAttachTraffic = () => setTrafficDockedPref(true);
   // Minimize state for the four docked-only panes above, persisted like
   // Chat/Activity Log's DOCKED_*_MINIMIZED keys.
   const [scriptMinimized, setScriptMinimized] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.SCRIPT_MINIMIZED, false);
@@ -674,6 +679,12 @@ const NetView: React.FC = () => {
     else setToastMessage('Popup blocked — please allow popups for this site.');
   };
   const handleFloatToWindowCoverage = () => { handleAttachCoverage(); handlePopOutCoverage(); };
+  const trafficPopout = usePoppedOutWindow(`/nets/${netId}/pane/traffic`, `ectlogger-traffic-${netId}`, 'traffic', 700, 600);
+  const handlePopOutTraffic = () => {
+    if (trafficPopout.open()) traffic.onClose();
+    else setToastMessage('Popup blocked — please allow popups for this site.');
+  };
+  const handleFloatToWindowTraffic = () => { handleAttachTraffic(); handlePopOutTraffic(); };
   // Lets a pane jump directly from the in-page floating overlay to a real
   // window in one click, instead of re-docking first and then popping out.
   const handleFloatToWindowChat = () => { handleAttachChat(); handlePopOutChat(); };
@@ -693,7 +704,11 @@ const NetView: React.FC = () => {
     || !!net?.can_manage
     || (userTrafficRole?.role === 'NCS' && userTrafficRole?.is_active !== false)
     || userTrafficRole?.role === 'LOGGER';
-  const showTraffic = !!net?.traffic_enabled && !!canViewNetTraffic;
+  // Whether the toolbar even offers Traffic. The pane itself is on-demand
+  // from there (traffic.open), like Map and Coverage -- it is no longer
+  // force-docked whenever the net has traffic turned on.
+  const canOpenTraffic = !!net?.traffic_enabled && !!canViewNetTraffic;
+  const showTraffic = canOpenTraffic && traffic.open && trafficDocked;
   // True once neither Chat, Activity Log, Map, Coverage, nor Traffic has
   // anything docked — the side column disappears entirely in that case, so
   // the check-in list should expand to fill it.
@@ -1431,6 +1446,8 @@ const NetView: React.FC = () => {
         search={search}
         map={map}
         coverage={coverage}
+        traffic={traffic}
+        canViewTraffic={canOpenTraffic}
         script={script}
         scheduleAnnouncements={scheduleAnnouncements}
         announcements={announcements}
@@ -2309,7 +2326,14 @@ const NetView: React.FC = () => {
               onShowCoverageOnMap={handleShowCoverageOnMap}
               currentUserId={user?.id}
               showTraffic={showTraffic}
+              trafficOpen={canOpenTraffic && traffic.open}
+              trafficDocked={trafficDocked}
               trafficMinimized={trafficMinimized}
+              onCloseTraffic={traffic.onClose}
+              onUndockTraffic={handleDetachTraffic}
+              onAttachTraffic={isXlUp ? handleAttachTraffic : undefined}
+              handlePopOutTraffic={handlePopOutTraffic}
+              handleFloatToWindowTraffic={handleFloatToWindowTraffic}
               onMinimizeTraffic={() => setTrafficMinimized(true)}
               onRestoreTraffic={() => setTrafficMinimized(false)}
             />

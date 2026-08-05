@@ -86,6 +86,11 @@ export interface CreateScheduleContextValue {
   // ARES / EmComm features
   ics309Enabled: boolean; setIcs309Enabled: Dispatch<SetStateAction<boolean>>;
   propagationLoggingEnabled: boolean; setPropagationLoggingEnabled: Dispatch<SetStateAction<boolean>>;
+  // Assisted Traffic Handling settings -- see components/forms/TrafficSettingsPanel.tsx
+  trafficEnabled: boolean; setTrafficEnabled: Dispatch<SetStateAction<boolean>>;
+  trafficFormTypes: string[]; setTrafficFormTypes: Dispatch<SetStateAction<string[]>>;
+  trafficStripFormType: string; setTrafficStripFormType: Dispatch<SetStateAction<string>>;
+  trafficStripTemplate: string; setTrafficStripTemplate: Dispatch<SetStateAction<string>>;
   mobilePrioritySort: boolean; setMobilePrioritySort: Dispatch<SetStateAction<boolean>>;
   chatGracePeriodEnabled: boolean; setChatGracePeriodEnabled: Dispatch<SetStateAction<boolean>>;
   chatGracePeriodMinutes: number; setChatGracePeriodMinutes: Dispatch<SetStateAction<number>>;

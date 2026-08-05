@@ -51,6 +51,10 @@ interface ImportPreviewProps {
   definitions: FormDefinition[];
   onCreated: (id: number) => void;
   onGoToNewTab: () => void;
+  // Set when importing from a net's context (?net_id= on the Traffic page),
+  // so an imported message or a strip type defined from it belongs to that
+  // net rather than being filed unaffiliated.
+  netId?: number;
 }
 
 type Stage = 'paste' | 'review' | 'edit' | 'define';
@@ -89,7 +93,7 @@ function valuesFromParseResult(definition: FormDefinition, result: ImportResult)
   return values;
 }
 
-const ImportPreview: React.FC<ImportPreviewProps> = ({ definitions, onCreated, onGoToNewTab }) => {
+const ImportPreview: React.FC<ImportPreviewProps> = ({ definitions, onCreated, onGoToNewTab, netId }) => {
   const [stage, setStage] = useState<Stage>('paste');
   const [text, setText] = useState('');
   const [parsing, setParsing] = useState(false);
@@ -185,6 +189,7 @@ const ImportPreview: React.FC<ImportPreviewProps> = ({ definitions, onCreated, o
       const resp = await trafficApi.createStripTemplate({
         form_type: defineFormType,
         title: defineTitle,
+        net_id: netId,
         fields: defineTokens.map((t) => ({
           label: t.label,
           starts_new_section: t.starts_new_section,
@@ -192,7 +197,9 @@ const ImportPreview: React.FC<ImportPreviewProps> = ({ definitions, onCreated, o
         })),
       });
       invalidateFormDefinitionsCache();
-      onCreated(resp.data.id);
+      // file_first_form defaults true here -- we're defining the type FROM a
+      // real received strip, so resp.data.form is the report just filed.
+      onCreated(resp.data.form.id);
     } catch (err) {
       setDefineError(getErrorMessage(err, 'Failed to define this strip type'));
     } finally {
@@ -220,7 +227,7 @@ const ImportPreview: React.FC<ImportPreviewProps> = ({ definitions, onCreated, o
     setSaving(true);
     setSaveError(null);
     try {
-      const resp = await trafficApi.create({ form_type: matchedDefinition.form_type, field_values: values });
+      const resp = await trafficApi.create({ form_type: matchedDefinition.form_type, net_id: netId, field_values: values });
       onCreated(resp.data.id);
     } catch (err) {
       setSaveError(getErrorMessage(err, 'Failed to create this traffic item'));

@@ -18,6 +18,7 @@ import Chat from '../components/Chat';
 import ActivityLog from '../components/ActivityLog';
 import CheckInMap from '../components/CheckInMap';
 import CoverageReport from '../components/netview/CoverageReport';
+import TrafficPanel from '../components/netview/TrafficPanel';
 import CheckInTable from '../components/netview/CheckInTable';
 import CanHearDialog from '../components/netview/CanHearDialog';
 import { getCheckInActions } from '../components/netview/checkInActions';
@@ -42,6 +43,7 @@ const PANE_LABELS: Record<string, string> = {
   'check-ins': 'Check-Ins',
   map: 'Map',
   coverage: 'Station Coverage',
+  traffic: 'Traffic',
 };
 
 // Bare-bones page rendered inside a real popped-out browser window (see
@@ -222,6 +224,16 @@ const NetPaneWindow: React.FC = () => {
             (net?.frequencies || []).map((f: any) => [f.id, `${f.frequency || f.network || ''} ${f.mode || ''}`.trim()])
           )}
         />
+      </Box>
+    );
+  }
+
+  if (paneType === 'traffic') {
+    return (
+      <Box sx={{ height: '100vh', width: '100vw', p: 0.5, boxSizing: 'border-box', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {/* No chrome props: in a real window there is nothing to close to,
+            detach from, or minimize into — the window controls do that. */}
+        <TrafficPanel netId={Number(netId)} currentUserId={user?.id} />
       </Box>
     );
   }

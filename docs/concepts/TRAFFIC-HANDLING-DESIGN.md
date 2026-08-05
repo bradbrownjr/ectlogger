@@ -680,10 +680,39 @@ class TrafficReminderLog(Base):
 | Table | Column | Type / default | Purpose |
 |---|---|---|---|
 | `users` | `notify_traffic_reminder` | `Boolean, default=True` | Per-user opt-out of the delivery reminder ladder. Defaults on, unlike the digest. |
-| `nets` | `traffic_enabled` | `Boolean, default=True` | Per-net switch for the traffic panel. On by default; a chatty SKYWARN net can hide it. |
-| `net_templates` | `traffic_enabled` | `Boolean, default=True` | Seeds the net value, matching `ics309_enabled` / `propagation_logging_enabled`. |
+| `nets` | `traffic_enabled` | `Boolean, default=False` | Per-net switch for the Traffic toolbar button and panel. **Revised 2026-08-05** — was `default=True`; see the note below. |
+| `nets` | `traffic_form_types` | `Text, nullable` | JSON array of `form_type` codes this net takes. Null/empty = every enabled definition. |
+| `nets` | `traffic_strip_form_type` | `String(32), nullable` | The RRI/WX strip type this net collects answers for. |
+| `nets` | `traffic_strip_template` | `Text, nullable` | A raw pasted originating strip, for a net that wants the fields laid out without formally defining a type. |
+| `net_templates` | `traffic_enabled` | `Boolean, default=False` | Seeds the net value, matching `ics309_enabled` / `propagation_logging_enabled`. |
+| `net_templates` | `traffic_form_types` / `traffic_strip_form_type` / `traffic_strip_template` | same as `nets` | Seed the three per-net traffic settings. |
 | `net_templates` | `traffic_escalation_digest` | `Boolean, default=False` | Opt-in weekly stale-traffic digest to the schedule's manager (D4). |
 | `app_settings` | `traffic_reminder_enabled` | `Boolean, default=True` | Instance master switch for the reminder service. |
+
+**Revision (2026-08-05) — per-net traffic configuration.** The original
+`traffic_enabled` column shipped with no UI to change it, so it sat pinned at
+`True` for every net. It is now an actual setting in the shared
+`components/forms/TrafficSettingsPanel.tsx` (rendered in both the Net and the
+Schedule editors' "ARES & EmComm Features" block), joined by the three columns
+above. Two deliberate choices:
+
+- **Opt-in for new nets, unchanged for existing ones.** The SQLAlchemy default
+  flipped to `False`, which only affects newly inserted rows — nets created
+  before the toggle existed keep their stored `True` and do not lose the panel.
+  Migration `056_` adds columns only; it does not backfill.
+- **`traffic_form_types` filters pickers, it does not gate the API.**
+  `POST /traffic/forms` still accepts a type outside the list, so a legitimate
+  off-list message during an incident is never rejected because nobody stopped
+  to edit net settings. `TrafficComposer.tsx` also falls back to showing every
+  type if a stale restriction would otherwise leave the picker empty.
+
+The strip type and the raw strip template are two answers to the same question
+("what fields does an answering station enter?") and are both supported: a net
+either points at a defined type (named fields, reusable, exports and prints with
+real labels) or stores the originating strip verbatim (positional Field 1..N,
+filed as `RRI_STRIP_OTHER`). The settings panel's paste box is also the entry
+point for promoting the latter into the former, via
+`POST /traffic/strip-templates` with `file_first_form=false`.
 
 All follow the AppSettings singleton pattern in DEVELOPMENT.md (column, then
 `AppSettingsResponse`/`AppSettingsUpdate`, then `_build_settings_response()` and the
@@ -700,6 +729,10 @@ Latest existing migration is `051_add_propagation_logging_enabled.py`. New work 
 - `053_add_traffic_reminder_log.py` — `traffic_reminder_logs`, `users.notify_traffic_reminder`.
 - `054_add_traffic_settings.py` — `nets.traffic_enabled`, `net_templates.traffic_enabled`,
   `net_templates.traffic_escalation_digest`, and the two `app_settings` columns.
+- `055_add_rri_section_break.py` — `form_definition_fields.starts_new_section`, backing
+  dynamically-defined RRI strip types.
+- `056_add_net_traffic_config.py` — `traffic_form_types`, `traffic_strip_form_type`, and
+  `traffic_strip_template` on both `nets` and `net_templates` (see §2.7's revision note).
 
 Per `backend/migrations/README.md`, these carry schema only. Definition **content** is
 seeded by the startup upsert in `app/traffic/definitions.py`, never by a migration, so a
@@ -923,10 +956,32 @@ Deep-link query params drive the pre-filtered entry points: `/traffic?net_id=123
 
 ### 4.5 Integrations into existing pages
 
-- **NetView** — a new Traffic side panel registered in `NetViewSidePanels.tsx`, the same
-  pattern as the embedded Chat panel, rendering `TrafficPanel.tsx` scoped to `net_id`, with a
-  "View all in Traffic" deep-link. Shown only when `net.traffic_enabled`. No browse/search UI
-  here.
+- **NetView** — a Traffic side panel registered in `NetViewSidePanels.tsx`, rendering
+  `TrafficPanel.tsx` scoped to `net_id`, with a "View all in Traffic" deep-link. No
+  browse/search UI here.
+
+  **Revision (2026-08-05) — the panel is on-demand, not always docked.** As first built it
+  was force-docked whenever `net.traffic_enabled` held, with no toolbar entry, no close, no
+  detach, and no pop-out — the only side panel missing the standard chrome. It now mirrors
+  **Coverage** exactly: a `MailIcon` **Traffic** button in `NetViewHeader.tsx`'s Information
+  group opens it (`usePersistedDialog(STORAGE_KEYS.TRAFFIC_OPEN)`), and the panel carries
+  close / detach-to-overlay / pop-out-to-window / minimize, with a `traffic` pane type in
+  `NetPaneWindow.tsx` behind `/nets/{netId}/pane/traffic`. The envelope matches what
+  `Navbar.tsx` already uses for the Traffic section. `net.traffic_enabled` plus the D3 rule 4
+  permission check now decides whether the *button* exists, not whether the pane is stuck open.
+
+  The panel's "View all in Traffic" icon is `ListAltIcon` (the Traffic section's own Browse-tab
+  icon). It must **never** be `LaunchIcon`: that is the same glyph MUI renders for
+  `OpenInNewIcon`, which means "pop out to a new window" in every other panel, so using it for
+  a navigation link made the two indistinguishable.
+
+  **Filing from a net.** `TrafficPanel.tsx` has an `AddIcon` action opening a dialog around the
+  shared `components/traffic/TrafficComposer.tsx` (extracted from the Traffic section's New
+  tab, so the picker/renderer/submit trio exists once). This closes a real gap: before it,
+  *nothing in the app ever sent `FormCreate.net_id`* — not the New tab, not Import, not the
+  strip-template flow — so every form filed was unaffiliated and a net's panel stayed empty no
+  matter how much traffic was logged. `Traffic.tsx` now also honors the `?net_id=` param its
+  own deep-link passes, threading it into both the composer and `ImportPreview.tsx`.
 - **Admin** — `components/admin/AdminTrafficTab.tsx`, modeled closely on `AdminFieldsTab.tsx`:
   enable/disable definitions, reorder, override labels, and set the instance reminder switches.
 - **Statistics / NetStatistics / Profile Activity** — "Traffic Handled" and "Traffic Pending"

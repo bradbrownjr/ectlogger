@@ -99,13 +99,22 @@ interface NetViewSidePanelsProps {
   highlightedCallsign: string | null;
   setHighlightedCallsign: (callsign: string | null) => void;
   onShowCoverageOnMap: () => void;
-  // Traffic side panel (Assisted Traffic Handling & Forms, Stage B Phase 5).
-  // Always docked (no on-demand open toggle) once both conditions hold --
-  // net.traffic_enabled and the viewer being that net's NCS/logger/owner/
-  // admin, per TRAFFIC-HANDLING-DESIGN.md D3 rule 4 and section 4.5.
+  // Traffic side panel (Assisted Traffic Handling & Forms). On-demand like
+  // Map/Coverage above -- opened from the toolbar's Traffic button, which
+  // itself only exists when net.traffic_enabled and the viewer is that net's
+  // NCS/logger/owner/admin (TRAFFIC-HANDLING-DESIGN.md D3 rule 4).
   currentUserId?: number;
   showTraffic: boolean;
+  trafficOpen: boolean;
+  trafficDocked: boolean;
   trafficMinimized: boolean;
+  onCloseTraffic: () => void;
+  onUndockTraffic: () => void;
+  // Undefined below xl, matching Map/Coverage -- trafficDocked can never
+  // become true there, so omitting it hides a dead "Dock to layout" button.
+  onAttachTraffic?: () => void;
+  handlePopOutTraffic: () => void;
+  handleFloatToWindowTraffic: () => void;
   onMinimizeTraffic: () => void;
   onRestoreTraffic: () => void;
 }
@@ -165,7 +174,14 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
   onShowCoverageOnMap,
   currentUserId,
   showTraffic,
+  trafficOpen,
+  trafficDocked,
   trafficMinimized,
+  onCloseTraffic,
+  onUndockTraffic,
+  onAttachTraffic,
+  handlePopOutTraffic,
+  handleFloatToWindowTraffic,
   onMinimizeTraffic,
   onRestoreTraffic,
 }) => {
@@ -298,6 +314,9 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
         <TrafficPanel
           netId={Number(netId)}
           currentUserId={currentUserId}
+          onClose={onCloseTraffic}
+          onDetach={onUndockTraffic}
+          onPopOut={handlePopOutTraffic}
           minimized={trafficMinimized}
           onMinimize={onMinimizeTraffic}
           onRestore={onRestoreTraffic}
@@ -399,6 +418,27 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
             onHighlightCallsign={setHighlightedCallsign}
             onShowOnMap={onShowCoverageOnMap}
           />
+        </FloatingWindow>
+      )}
+
+      {/* Floating Traffic panel - same on-demand shape as Coverage above.
+          Unlike Coverage, no net-status gate: traffic filed on a closed or
+          archived net still needs viewing and handing off afterwards, which
+          is the whole point of the chain of custody. */}
+      {trafficOpen && !trafficDocked && (
+        <FloatingWindow
+          title="Traffic"
+          isDetached={true}
+          onAttach={onAttachTraffic}
+          onClose={onCloseTraffic}
+          onPopOut={handleFloatToWindowTraffic}
+          defaultWidth={520}
+          defaultHeight={500}
+          minWidth={350}
+          minHeight={250}
+          storageKey="traffic"
+        >
+          <TrafficPanel netId={Number(netId)} currentUserId={currentUserId} />
         </FloatingWindow>
       )}
     </>

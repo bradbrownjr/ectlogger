@@ -60,7 +60,10 @@ async def create_net(
         field_config=json.dumps(net_data.field_config) if net_data.field_config else None,
         ics309_enabled=net_data.ics309_enabled or False,
         propagation_logging_enabled=net_data.propagation_logging_enabled or False,
-        traffic_enabled=net_data.traffic_enabled if net_data.traffic_enabled is not None else True,
+        traffic_enabled=net_data.traffic_enabled or False,
+        traffic_form_types=json.dumps(net_data.traffic_form_types) if net_data.traffic_form_types else None,
+        traffic_strip_form_type=net_data.traffic_strip_form_type,
+        traffic_strip_template=net_data.traffic_strip_template,
         mobile_priority_sort=net_data.mobile_priority_sort if net_data.mobile_priority_sort is not None else True,
         chat_grace_period_minutes=net_data.chat_grace_period_minutes,
         self_checkin_enabled=net_data.self_checkin_enabled if net_data.self_checkin_enabled is not None else True,
@@ -378,8 +381,12 @@ async def update_net(
     import json
     update_data = net_update.dict(exclude_unset=True, exclude={'frequency_ids'})
     for field, value in update_data.items():
-        if field == 'field_config' and value is not None:
-            setattr(net, field, json.dumps(value))
+        # Both of these travel the API as real JSON (dict / list of form_type
+        # codes) but live in TEXT columns -- see schemas._parse_traffic_form_types
+        # for the read side. An explicit empty list means "no restriction",
+        # which is the same as null, so it's stored as null.
+        if field in ('field_config', 'traffic_form_types') and value is not None:
+            setattr(net, field, json.dumps(value) if value else None)
         else:
             setattr(net, field, value)
     

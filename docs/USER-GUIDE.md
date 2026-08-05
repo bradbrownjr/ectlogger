@@ -738,9 +738,20 @@ Use this for after-action reporting, club records, or emergency management docum
 
 ECTLogger helps you fill out and keep a record of formal traffic (ARRL radiograms, ICS-213 messages, and Radio Relay International weather/RI strips) that you originate, relay, or deliver over a real net, by phone, in person, or by mail. ECTLogger never sends or transports the message itself — it is a witness and a record-keeper, not a relay.
 
+### Turning traffic handling on for a net
+
+Traffic handling is off until you turn it on. In the net's (or the schedule's) settings, under **ARES & EmComm Features**, switch on **Enable Assisted Traffic Handling**. That adds a **Traffic** button — an envelope — to the net's toolbar for the net manager, NCS, and Logger. Clicking it opens the net's traffic panel, which you can close, detach, pop out into its own window, or minimize like Chat, the Activity Log, or Station Coverage. Turning it on in a schedule means every net opened from that schedule starts with it on.
+
+Two optional settings go with it:
+
+- **Traffic this net takes** — tick the form types your staff should be offered. Leave everything unticked to offer all of them. This narrows what the picker shows; it never blocks anything unusual that comes up on the air.
+- **RRI / weather strip fields** — on an RRI net or drill, every station answers the same originating strip. Either pick a strip type staff should collect, or paste the originating strip into the box so its fields are laid out for them in the same order. If you paste one, **Parse and name the fields** lets you name each piece and save it as a reusable strip type you can pick on any future net.
+
 ### Filing a Radiogram, ICS-213, or RRI strip
 
-Open **Traffic** from the navigation bar (or the Traffic panel on an active net's page), choose **New**, and pick a form type:
+Open **Traffic** from the navigation bar, choose **New**, and pick a form type. To log traffic passed on a specific net, use the **+** button in that net's Traffic panel instead — that way the message is attached to the net, so it shows in the net's panel, its strip export, and its ICS-309 log. Filing from the Traffic section on its own is for traffic that isn't tied to a particular net.
+
+The form types are:
 
 - **Radiogram** — the assist layer normalizes your text for NTS transmission as you type, keeps a live word-count check, and offers the ARL numbered-message picker for standard messages (welfare checks, holiday greetings, etc.).
 - **ICS-213** — a general message form used for ARES/ICS operations.
@@ -756,7 +767,7 @@ If you already have the plaintext of a radiogram, ICS-213 message, or RRI strip 
 
 ### Defining your own RRI strip type
 
-"RI" in RRI's own strip family stands for Request for Information: someone defines a strip's fields once, and everyone who answers it fills in the same fields, so the reports line up. If you paste an example that isn't recognized as one of the built-in types, the Import review screen offers **Define fields for a new strip type** alongside the option to save it as a general strip. Name each piece of the pasted example (the parser splits it on the same "/" delimiters RRI uses) and mark where a natural section break falls, give the type a short code and a title, and save — this creates a real, reusable strip type that appears in the **New** tab for everyone from then on, exactly like WXOBS or GYX-CAR SKYWARN. Use it on a net or a drill: file the first report yourself when you define it, then have every other station file their own answer against that same type from the **New** tab.
+"RI" in RRI's own strip family stands for Request for Information: someone defines a strip's fields once, and everyone who answers it fills in the same fields, so the reports line up. If you paste an example that isn't recognized as one of the built-in types, the Import review screen offers **Define fields for a new strip type** alongside the option to save it as a general strip. Name each piece of the pasted example (the parser splits it on the same "/" delimiters RRI uses) and mark where a natural section break falls, give the type a short code and a title, and save — this creates a real, reusable strip type that appears in the **New** tab for everyone from then on, exactly like WXOBS or GYX-CAR SKYWARN. Use it on a net or a drill: file the first report yourself when you define it, then have every other station file their own answer against that same type from the **New** tab. You can also define a type ahead of time from a net's or a schedule's settings (see "Turning traffic handling on for a net" above) — there it just creates the type, without filing a report.
 
 ### Logging what happens next
 

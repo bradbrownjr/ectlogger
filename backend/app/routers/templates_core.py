@@ -137,7 +137,10 @@ async def create_template(
         schedule_config=schedule_config_json,
         ics309_enabled=template_data.ics309_enabled or False,
         propagation_logging_enabled=template_data.propagation_logging_enabled or False,
-        traffic_enabled=template_data.traffic_enabled if template_data.traffic_enabled is not None else True,
+        traffic_enabled=template_data.traffic_enabled or False,
+        traffic_form_types=json.dumps(template_data.traffic_form_types) if template_data.traffic_form_types else None,
+        traffic_strip_form_type=template_data.traffic_strip_form_type,
+        traffic_strip_template=template_data.traffic_strip_template,
         self_checkin_enabled=template_data.self_checkin_enabled if template_data.self_checkin_enabled is not None else True,
         auto_lobby_minutes=template_data.auto_lobby_minutes,
         topic_of_week_enabled=template_data.topic_of_week_enabled or False,
@@ -352,6 +355,16 @@ async def update_template(
         template.propagation_logging_enabled = template_data.propagation_logging_enabled
     if template_data.traffic_enabled is not None:
         template.traffic_enabled = template_data.traffic_enabled
+    # model_fields_set for all three: clearing a restriction (null/empty list)
+    # or clearing a stored strip template are meaningful edits, not "unset".
+    if 'traffic_form_types' in template_data.model_fields_set:
+        template.traffic_form_types = (
+            json.dumps(template_data.traffic_form_types) if template_data.traffic_form_types else None
+        )
+    if 'traffic_strip_form_type' in template_data.model_fields_set:
+        template.traffic_strip_form_type = template_data.traffic_strip_form_type
+    if 'traffic_strip_template' in template_data.model_fields_set:
+        template.traffic_strip_template = template_data.traffic_strip_template
     if template_data.mobile_priority_sort is not None:
         template.mobile_priority_sort = template_data.mobile_priority_sort
     if 'chat_grace_period_minutes' in template_data.model_fields_set:

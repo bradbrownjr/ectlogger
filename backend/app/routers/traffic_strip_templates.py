@@ -33,8 +33,10 @@ from app.database import get_db
 from app.dependencies import get_current_user
 from app.models import Form, FormDefinition, FormDefinitionField, Net, TrafficAction, User
 from app.schemas import (
+    FormDefinitionResponse,
     FormDetailResponse,
     StripTemplateCreate,
+    StripTemplateCreateResponse,
     StripTemplateTokenizeRequest,
     StripTemplateTokenizeResponse,
 )
@@ -85,18 +87,18 @@ async def tokenize_strip_template(
     return StripTemplateTokenizeResponse(**result)
 
 
-@router.post("/strip-templates", response_model=FormDetailResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/strip-templates", response_model=StripTemplateCreateResponse, status_code=status.HTTP_201_CREATED)
 async def create_strip_template(
     data: StripTemplateCreate,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new FormDefinition (is_builtin=False, output_format='rri_strip')
-    from the operator's labeled fields, then file the first Form from their
-    values -- one atomic call, same create/promote/log-entry path
-    traffic_forms.py::create_form uses so this type behaves identically to a
-    builtin one from here on (visibility, permissions, ICS-309, export, print
-    view all already form-type-agnostic)."""
+    from the operator's labeled fields, and (unless file_first_form=False) file
+    the first Form from their values -- one atomic call, same
+    create/promote/log-entry path traffic_forms.py::create_form uses so this
+    type behaves identically to a builtin one from here on (visibility,
+    permissions, ICS-309, export, print view all already form-type-agnostic)."""
     form_type = _normalize_form_type(data.form_type)
     if not form_type:
         raise HTTPException(status_code=400, detail="form_type must contain at least one letter or digit")
@@ -142,6 +144,21 @@ async def create_strip_template(
 
     await db.flush()  # definition.id + definition.fields populated for compute_promoted_fields below
 
+    # Defining the type without filing anything: commit explicitly (the filing
+    # path below gets its commit from append_entry) and reload with fields
+    # eagerly loaded, since the lazy relationship would raise in async context.
+    if not data.file_first_form:
+        await db.commit()
+        definition_result = await db.execute(
+            select(FormDefinition)
+            .options(selectinload(FormDefinition.fields))
+            .where(FormDefinition.id == definition.id)
+        )
+        return StripTemplateCreateResponse(
+            definition=FormDefinitionResponse.from_orm(definition_result.scalar_one()),
+            form=None,
+        )
+
     promoted, values = compute_promoted_fields(definition, field_values)
 
     form = Form(
@@ -168,7 +185,10 @@ async def create_strip_template(
         .where(Form.id == form.id)
     )
     created_form = result.scalar_one()
-    response = FormDetailResponse.from_orm(created_form)
+    response = StripTemplateCreateResponse(
+        definition=FormDefinitionResponse.from_orm(created_form.definition),
+        form=FormDetailResponse.from_orm(created_form),
+    )
 
     if created_form.net_id is not None:
         from app.main import manager

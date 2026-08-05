@@ -469,9 +469,13 @@ label is currently shown.
 Two groups, separated by a `1px × 20px` vertical divider (shown whenever both
 groups have at least one visible item):
 
-**Information group** (left) — Bulk add, Search, Map, Audio, Stats, Script,
-Announcements, Notes, Topics, Website, Net info, Import, then the `More`
-button for whatever didn't fit. Topics opens a read-only prior-topics list to
+**Information group** (left) — Bulk add, Search, Map, Coverage, Traffic, Audio,
+Stats, Script, Announcements, Notes, Topics, Website, Net info, Import, then the
+`More` button for whatever didn't fit. Traffic (`MailIcon`, the same envelope the
+navbar uses for the Traffic section) opens the per-net traffic panel; it is an
+Information item because the pane is a view of the net's traffic, with filing
+happening in a dialog inside it — the same reasoning that puts Coverage here
+despite its reporting action. Topics opens a read-only prior-topics list to
 everyone (with a new-tab link to the originating net for each entry, so
 browsing history doesn't lose your place in the currently-open net); the
 "Add Historical Topic" control inside that dialog is staff-only

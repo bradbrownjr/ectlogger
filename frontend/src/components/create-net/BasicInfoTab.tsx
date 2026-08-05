@@ -12,6 +12,7 @@ import {
   Button,
 } from '@mui/material';
 import { useCreateNetContext } from '../../contexts/CreateNetContext';
+import TrafficSettingsPanel from '../forms/TrafficSettingsPanel';
 
 // ========== TAB 0: BASIC INFO ==========
 // Net name, description, URLs, stream URL, scheduled start time,
@@ -25,6 +26,10 @@ const BasicInfoTab: React.FC = () => {
     streamUrl, setStreamUrl,
     ics309Enabled, setIcs309Enabled,
     propagationLoggingEnabled, setPropagationLoggingEnabled,
+    trafficEnabled, setTrafficEnabled,
+    trafficFormTypes, setTrafficFormTypes,
+    trafficStripFormType, setTrafficStripFormType,
+    trafficStripTemplate, setTrafficStripTemplate,
     mobilePrioritySort, setMobilePrioritySort,
     chatGracePeriodEnabled, setChatGracePeriodEnabled,
     chatGracePeriodMinutes, setChatGracePeriodMinutes,
@@ -294,6 +299,19 @@ const BasicInfoTab: React.FC = () => {
               Adds a 'can hear' action to each check-in, letting NCS, Logger, and Relay record which stations can hear each other during this net.
             </Typography>
           </Box>
+
+          {/* Assisted Traffic Handling — shared with the Schedule editor */}
+          <TrafficSettingsPanel
+            scope="net"
+            trafficEnabled={trafficEnabled}
+            setTrafficEnabled={setTrafficEnabled}
+            trafficFormTypes={trafficFormTypes}
+            setTrafficFormTypes={setTrafficFormTypes}
+            trafficStripFormType={trafficStripFormType}
+            setTrafficStripFormType={setTrafficStripFormType}
+            trafficStripTemplate={trafficStripTemplate}
+            setTrafficStripTemplate={setTrafficStripTemplate}
+          />
         </>
       )}
     </>
