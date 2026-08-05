@@ -169,6 +169,31 @@ const FitBounds: React.FC<{ positions: [number, number][]; disabled?: boolean }>
   return null;
 };
 
+// Keeps Leaflet's internal pixel projection in sync with its container's
+// actual rendered size. Leaflet has no way to know its container resized
+// unless told -- and this map's container resizes for reasons that have
+// nothing to do with the map itself: NetView's short-viewport CSS zoom
+// (applied/changed after the map has already mounted), a docked pane
+// gaining or losing width as a sibling panel opens/closes or gets
+// drag-resized, or a FloatingWindow being resized by hand. Without this,
+// anything projected AFTER such a resize -- notably the coverage overlay's
+// Polylines, which only exist once the operator toggles the overlay on,
+// well after initial mount -- gets positioned against Leaflet's stale,
+// pre-resize size instead of the real one (reported: most coverage lines
+// missing/degenerate, only the one drawn before the resize came out right).
+const InvalidateSizeOnResize: React.FC = () => {
+  const map = useMap();
+
+  useEffect(() => {
+    const container = map.getContainer();
+    const observer = new ResizeObserver(() => map.invalidateSize());
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [map]);
+
+  return null;
+};
+
 const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netName, ncsUserIds = [], loggerUserIds = [], relayUserIds = [], embedded = false, onPopOut, onUndock, onDock, minimized: dockedMinimized = false, onMinimize: onDockedMinimize, onRestore: onDockedRestore, canHearReports, frequencyLabels = {}, coverageOverlayOn, onToggleCoverageOverlay, highlightedCallsign }) => {
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
@@ -617,6 +642,7 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
               crossOrigin="anonymous"
             />
             <FitBounds positions={positions} disabled={isExporting} />
+            <InvalidateSizeOnResize />
             {/* "Can hear" coverage overlay (Phase 4) - drawn below the marker
                 pane per Leaflet's default pane z-order, so markers always
                 stay legible on top of any crossing lines. */}
