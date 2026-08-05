@@ -4,6 +4,18 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# August 5, 2026
+
+## New Features
+
+* **Traffic: Weather and RRI strips** — File Radio Relay International's WXOBS weather observation strip, the GYX-CAR SKYWARN regional variant, or paste any other RRI strip as a general entry. Don't see your area's strip? Paste a filled-in example, name each field, and it becomes a real, reusable type available to everyone from then on, the same as the built-in ones. Filing shows the named fields and the exact strip text side by side and keeps them in sync as you type, so you can also just paste a strip a station reads back over the air and have it split across the fields.
+
+* **Traffic: File and track traffic from inside a net** — A new Traffic button in the net toolbar opens a panel showing that net's traffic, with the same detach, pop-out, and minimize controls as every other net panel. Filing traffic from here attaches it to that net, so it shows up in the net's own Traffic panel, its export, and its ICS-309 log — filing from the standalone Traffic section is still there for traffic that isn't tied to a particular net. Net settings can now say which form types a net accepts and pin the WX/RRI strip type (or paste an origin strip on the spot) so operators see the right fields without guessing.
+
+* **Traffic: Export a whole net's traffic** — The Traffic panel's Export button now covers everything filed on that net in one go: plain text (one line per report, ready for a spreadsheet or a Winlink template) or a printable PDF with every message laid out like its real paper form — the ARRL Radiogram pad, the FEMA ICS-213, or the strip layout — several to a page, with no message ever split across a page break.
+
+---
+
 # August 3, 2026
 
 ## New Features
