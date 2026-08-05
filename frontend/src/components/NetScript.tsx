@@ -27,6 +27,7 @@ import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import { Rnd } from 'react-rnd';
 import { templateApi } from '../services/api';
+import useEditDraft from '../hooks/useEditDraft';
 import MarkdownRender from './shared/MarkdownRender';
 
 interface NetScriptProps {
@@ -73,8 +74,13 @@ const NetScript: React.FC<NetScriptProps> = ({
   onRestore: onDockedRestore,
 }) => {
   const [minimized, setMinimized] = useState(false);
-  const [editing, setEditing] = useState(false);
-  const [editValue, setEditValue] = useState(script);
+  // Keyed on the template, since that is what the script is saved against,
+  // and the docked and floating copies of this panel are never mounted at
+  // the same time.
+  const { editing, setEditing, editValue, setEditValue } = useEditDraft(
+    templateId ? `net-script:${templateId}` : null,
+    script
+  );
   const [saving, setSaving] = useState(false);
   const [previewing, setPreviewing] = useState(false);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);

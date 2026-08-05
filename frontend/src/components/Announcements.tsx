@@ -28,6 +28,7 @@ import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import { Rnd } from 'react-rnd';
 import { netApi } from '../services/api';
 import MarkdownRender from './shared/MarkdownRender';
+import useEditDraft from '../hooks/useEditDraft';
 
 interface AnnouncementsProps {
   open: boolean;
@@ -71,8 +72,10 @@ const Announcements: React.FC<AnnouncementsProps> = ({
   onRestore: onDockedRestore,
 }) => {
   const [minimized, setMinimized] = useState(false);
-  const [editing, setEditing] = useState(false);
-  const [editValue, setEditValue] = useState(announcements);
+  const { editing, setEditing, editValue, setEditValue } = useEditDraft(
+    netId ? `net-announcements:${netId}` : null,
+    announcements
+  );
   const [saving, setSaving] = useState(false);
   const [previewing, setPreviewing] = useState(false);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
