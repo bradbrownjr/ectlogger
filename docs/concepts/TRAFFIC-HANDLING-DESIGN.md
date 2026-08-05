@@ -1001,9 +1001,17 @@ Deep-link query params drive the pre-filtered entry points: `/traffic?net_id=123
   `OpenInNewIcon`, which means "pop out to a new window" in every other panel, so using it for
   a navigation link made the two indistinguishable.
 
-  **Filing from a net.** `TrafficPanel.tsx` has an `AddIcon` action opening a dialog around the
-  shared `components/traffic/TrafficComposer.tsx` (extracted from the Traffic section's New
-  tab, so the picker/renderer/submit trio exists once). This closes a real gap: before it,
+  **Filing from a net.** `TrafficPanel.tsx` has an `AddIcon` action that asks its host page to
+  open `components/netview/FileTrafficDialog.tsx`, a dialog around the shared
+  `components/traffic/TrafficComposer.tsx` (extracted from the Traffic section's New tab, so
+  the picker/renderer/submit trio exists once). The dialog is mounted by **NetView /
+  NetPaneWindow, never by the panel** — the docked and floating copies of the panel are
+  different subtrees, so crossing the xl breakpoint on a resize unmounts one and would take an
+  open dialog, and a half-typed radiogram, with it. Filing reports back via a
+  `netTrafficFiled` window event rather than a callback, since the panel may be a sibling, a
+  floating window, or closed. See DESIGN.md "Side-Panel Dialogs Belong to the Page, Not the
+  Panel" for the general rule and the `useEditDraft` counterpart for inline editors.
+  This closes a real gap: before it,
   *nothing in the app ever sent `FormCreate.net_id`* — not the New tab, not Import, not the
   strip-template flow — so every form filed was unaffiliated and a net's panel stayed empty no
   matter how much traffic was logged. `Traffic.tsx` now also honors the `?net_id=` param its

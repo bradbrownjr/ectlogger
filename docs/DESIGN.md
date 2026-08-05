@@ -558,6 +558,41 @@ context, matching the approved design handoff).
 
 ---
 
+## Side-Panel Dialogs Belong to the Page, Not the Panel
+
+A dialog opened from a side panel (Traffic, Coverage, Map, Script,
+Announcements) must be **mounted by the host page** — `NetView.tsx` or
+`NetPaneWindow.tsx` — with the panel receiving only a callback that opens it.
+`CheckInFormDialog`, `CanHearDialog`, `RoleAssignmentDialog`, and
+`FileTrafficDialog` all follow this; none of them is mounted inside a panel.
+
+The reason is structural, not stylistic. Every one of these panels renders
+**twice** in the tree — a docked copy inside its column and a floating copy
+in a `FloatingWindow` — chosen by `dockedPref && isXlUp`. That switch is
+automatic, so an ordinary window resize (or plugging a laptop into a
+projector) crosses the breakpoint, unmounts one subtree, and mounts the
+other. Anything the panel owned goes with it. A compose dialog owned by the
+Traffic panel took a half-typed radiogram with it every time.
+
+Two rules follow:
+
+1. **Dialog state lives on the page.** The panel gets `onCompose`-style
+   props. A host that mounts no dialog should not render the button at all,
+   rather than rendering one that does nothing.
+2. **Report results by event, not by callback.** The panel that opened a
+   dialog may be a sibling, a floating window, or closed by the time the
+   dialog finishes. Dispatch a `CustomEvent` on `window` the way
+   `useNetWebSocket.ts` already does (`trafficLogged`, `newChatMessage`), and
+   let whichever instance is mounted pick it up.
+
+For in-place editing inside a panel — the Script and Announcements editors —
+there is no dialog to hoist, so the buffer is mirrored into `sessionStorage`
+by `useEditDraft.ts` instead, and cleared the moment editing ends. Any new
+panel with an inline editor should use that hook rather than a bare
+`useState` pair.
+
+---
+
 ## Card Grids
 
 Use CSS Grid with `auto-fit` instead of MUI `Grid container/item` for card layouts.
