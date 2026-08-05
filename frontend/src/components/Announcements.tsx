@@ -354,7 +354,8 @@ const Announcements: React.FC<AnnouncementsProps> = ({
       }}
       minWidth={300}
       minHeight={minimized ? 48 : 200}
-      bounds="window"
+      // "body", not "window" -- see FloatingWindow.tsx's `bounds` comment.
+      bounds="body"
       dragHandleClassName="drag-handle"
       disableDragging={false}
       enableResizing={!minimized}

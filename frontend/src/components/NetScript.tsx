@@ -360,7 +360,8 @@ const NetScript: React.FC<NetScriptProps> = ({
       }}
       minWidth={300}
       minHeight={minimized ? 48 : 200}
-      bounds="window"
+      // "body", not "window" -- see FloatingWindow.tsx's `bounds` comment.
+      bounds="body"
       dragHandleClassName="drag-handle"
       enableResizing={!minimized}
       style={{ zIndex: 1300 }}

@@ -110,11 +110,16 @@ const BulkCheckIn: React.FC<BulkCheckInProps> = ({ open, onClose, netId, onCheck
     return examples.join('; ');
   };
 
-  // Window position and size state
+  // Window position and size state. document.body.offsetWidth, not
+  // window.innerWidth -- this Rnd's own position/width are LOCAL pixel
+  // units (the space its `bounds="body"` below also uses), while
+  // window.innerWidth is TRUE/visual viewport pixels; the two only match
+  // outside NetView's short-viewport zoom. See FloatingWindow.tsx's
+  // `bounds` comment for the full explanation.
   const [windowState, setWindowState] = useState({
-    x: Math.max(0, window.innerWidth - 720),
+    x: Math.max(0, document.body.offsetWidth - 720),
     y: 100,
-    width: Math.min(680, window.innerWidth - 16),
+    width: Math.min(680, document.body.offsetWidth - 16),
     height: minimized ? 48 : 340,
   });
 
@@ -267,9 +272,10 @@ const BulkCheckIn: React.FC<BulkCheckInProps> = ({ open, onClose, netId, onCheck
             y: position.y,
           });
         }}
-        minWidth={Math.min(500, window.innerWidth - 16)}
+        minWidth={Math.min(500, document.body.offsetWidth - 16)}
         minHeight={minimized ? 48 : 280}
-        bounds="window"
+        // "body", not "window" -- see FloatingWindow.tsx's `bounds` comment.
+        bounds="body"
         dragHandleClassName="drag-handle"
         enableResizing={!minimized}
         style={{ zIndex: 1300 }}

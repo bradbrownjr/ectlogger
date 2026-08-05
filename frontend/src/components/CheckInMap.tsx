@@ -321,7 +321,11 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
     ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
     : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
-  // Window position and size state - responsive for mobile
+  // Window position and size state - responsive for mobile.
+  // isMobile intentionally still reads window.innerWidth (a real layout
+  // breakpoint check, not a coordinate) -- only the position/size math
+  // below needs the local-vs-visual distinction, see the Rnd's `bounds`
+  // comment further down.
   const isMobile = window.innerWidth < 768;
   const [windowState, setWindowState] = useState(() => {
     if (isMobile) {
@@ -329,27 +333,39 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
       return {
         x: 10,
         y: 60,
-        width: Math.min(window.innerWidth - 20, 700),
-        height: Math.min(window.innerHeight - 120, 500),
+        width: Math.min(document.body.offsetWidth - 20, 700),
+        height: Math.min(document.body.offsetHeight - 120, 500),
       };
     }
     return {
-      x: Math.max(20, window.innerWidth - 720),
+      x: Math.max(20, document.body.offsetWidth - 720),
       y: 100,
       width: 700,
       height: 500,
     };
   });
 
-  // Keep window within viewport bounds on resize
+  // Keep window within viewport bounds on resize. document.body.offsetWidth/
+  // offsetHeight, not window.innerWidth/innerHeight -- windowState.x/y/width/
+  // height are LOCAL pixel units (the same space this component's own Rnd
+  // below renders in), while window.innerWidth/innerHeight are TRUE/visual
+  // viewport pixels. NetView.tsx's short-viewport zoom inflates local units
+  // by 1/zoom relative to visual ones, so comparing local state directly
+  // against window.innerWidth clamped the window well short of the real
+  // edge -- confirmed by direct measurement (document.body.offsetWidth 1000
+  // vs window.innerWidth 800 at zoom 0.8) and reported as "can't drag the
+  // map any further down or right." See the Rnd's `bounds="body"` below for
+  // the matching fix to the live drag/resize limit itself -- this effect
+  // only handles the window being resized AFTER the fact, not the drag
+  // itself, which react-rnd clamps internally via `bounds`.
   useEffect(() => {
     const handleResize = () => {
       setWindowState(prev => ({
         ...prev,
-        x: Math.max(0, Math.min(prev.x, window.innerWidth - 100)),
-        y: Math.max(0, Math.min(prev.y, window.innerHeight - 50)),
-        width: Math.min(prev.width, window.innerWidth - 20),
-        height: Math.min(prev.height, window.innerHeight - 100),
+        x: Math.max(0, Math.min(prev.x, document.body.offsetWidth - 100)),
+        y: Math.max(0, Math.min(prev.y, document.body.offsetHeight - 50)),
+        width: Math.min(prev.width, document.body.offsetWidth - 20),
+        height: Math.min(prev.height, document.body.offsetHeight - 100),
       }));
     };
     window.addEventListener('resize', handleResize);
@@ -991,7 +1007,16 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
       }}
       minWidth={isMobile ? 280 : 400}
       minHeight={minimized ? 48 : 300}
-      bounds="window"
+      // "body", not "window" -- see FloatingWindow.tsx's identical fix and
+      // comment for the full explanation. Short version: react-rnd's
+      // "window" bounds mode compares this component's LOCAL-unit
+      // windowState against window.innerWidth/innerHeight (TRUE/visual
+      // pixels), undercounting the real drag/resize limit under NetView's
+      // zoom by exactly the zoom factor. "body" mode compares against
+      // document.body.offsetWidth/offsetHeight instead, which are in the
+      // same LOCAL units as windowState -- zoom-safe, and numerically
+      // identical to "window" mode everywhere zoom is 1.
+      bounds="body"
       dragHandleClassName="drag-handle"
       enableResizing={!minimized}
       style={{ zIndex: 1300 }}

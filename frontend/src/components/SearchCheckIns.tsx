@@ -32,9 +32,10 @@ const SearchCheckIns: React.FC<SearchCheckInsProps> = ({
 }) => {
   const [minimized, setMinimized] = useState(false);
 
-  // Window position and size state
+  // Window position and size state. document.body.offsetWidth, not
+  // window.innerWidth -- see FloatingWindow.tsx's `bounds` comment.
   const [windowState, setWindowState] = useState({
-    x: Math.max(50, window.innerWidth - 450),
+    x: Math.max(50, document.body.offsetWidth - 450),
     y: 60,
     width: 400,
     height: minimized ? 48 : 140,
@@ -67,7 +68,7 @@ const SearchCheckIns: React.FC<SearchCheckInsProps> = ({
       }}
       minWidth={300}
       minHeight={minimized ? 48 : 120}
-      bounds="window"
+      bounds="body"
       dragHandleClassName="drag-handle"
       enableResizing={!minimized}
       style={{ zIndex: 1300 }}
