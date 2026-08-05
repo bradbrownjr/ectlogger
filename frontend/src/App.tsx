@@ -105,6 +105,18 @@ const getDesignTokens = (mode: PaletteMode, themeKey: string, customTheme: Theme
               // *position* to fit inside that sliver of a container instead
               // of the actual screen squeezed it back up over the anchor.
               { name: 'preventOverflow', options: { altAxis: true, padding: 8, boundary: 'viewport' } },
+              // NetView.tsx applies a CSS `zoom` to <body> on short
+              // viewports to fit the logging panel without scrolling.
+              // Popper.js positions by default via
+              // `transform: translate3d(...)`, and its GPU-accelerated path
+              // does its own scale bookkeeping that only understands CSS
+              // `transform`-based scaling, not the non-standard `zoom`
+              // property -- under zoom it computed a correct *unzoomed*
+              // offset but the browser then re-scaled that transform by the
+              // zoom factor on top, landing the tooltip nearly on the anchor
+              // instead of below it. `top`/`left` positioning is ordinary
+              // box-model layout, which `zoom` scales correctly on its own.
+              { name: 'computeStyles', options: { gpuAcceleration: false } },
             ],
           },
         },
