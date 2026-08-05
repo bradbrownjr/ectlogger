@@ -69,6 +69,39 @@ const getDesignTokens = (mode: PaletteMode, themeKey: string, customTheme: Theme
         },
       },
     },
+    // Applies everywhere (toolbars included) rather than per-instance, since
+    // every tooltip in this app is a short instructional label with nothing
+    // worth hovering into -- so there is no cost to the two changes below,
+    // app-wide:
+    //
+    // 1. disableInteractive sets pointer-events:none on the tooltip popper
+    //    (MUI's own mechanism -- see Tooltip.js's popperInteractive style).
+    //    Without it, pointer-events default to 'auto', so a tooltip sitting
+    //    over a neighboring element (dense toolbars pack icon buttons only
+    //    26px tall, see DESIGN.md) intercepts the click: the cursor becomes
+    //    a text I-beam over the tooltip's own text, and the button
+    //    underneath never receives the click. With it, the popper is
+    //    click-through no matter what it happens to be sitting on top of.
+    // 2. `flip` disabled and `preventOverflow`'s altAxis enabled pins every
+    //    tooltip below its anchor (never flipped above it, which would cover
+    //    the toolbar row itself) and slides it left/right to stay inside the
+    //    viewport instead of running off the left or right edge of the
+    //    screen -- Popper's preventOverflow only guards the placement's own
+    //    axis (vertical, for "bottom") unless altAxis is turned on.
+    MuiTooltip: {
+      defaultProps: {
+        placement: 'bottom' as const,
+        disableInteractive: true,
+        PopperProps: {
+          popperOptions: {
+            modifiers: [
+              { name: 'flip', enabled: false },
+              { name: 'preventOverflow', options: { altAxis: true, padding: 8 } },
+            ],
+          },
+        },
+      },
+    },
   },
   };
 };
