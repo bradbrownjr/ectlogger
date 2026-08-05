@@ -107,16 +107,39 @@ const getDesignTokens = (mode: PaletteMode, themeKey: string, customTheme: Theme
               { name: 'preventOverflow', options: { altAxis: true, padding: 8, boundary: 'viewport' } },
               // NetView.tsx applies a CSS `zoom` to <body> on short
               // viewports to fit the logging panel without scrolling.
-              // Popper.js positions by default via
-              // `transform: translate3d(...)`, and its GPU-accelerated path
-              // does its own scale bookkeeping that only understands CSS
-              // `transform`-based scaling, not the non-standard `zoom`
-              // property -- under zoom it computed a correct *unzoomed*
-              // offset but the browser then re-scaled that transform by the
-              // zoom factor on top, landing the tooltip nearly on the anchor
-              // instead of below it. `top`/`left` positioning is ordinary
-              // box-model layout, which `zoom` scales correctly on its own.
+              // getBoundingClientRect() on the anchor already reflects that
+              // zoom (it reports real rendered/visual pixels), so Popper's
+              // math -- entirely built on getBoundingClientRect -- computes
+              // an offset in visual pixels. But the popper element is ALSO
+              // a descendant of the zoomed <body> (Tooltip portals there),
+              // so writing that visual-pixel offset straight into its
+              // `top`/`left` gets scaled DOWN by zoom a second time when the
+              // browser paints it -- Popper has no notion of `zoom` (only of
+              // CSS `transform` scales, which it does compensate for) and
+              // divides for exactly one context, not two. `top: 118px`
+              // painted inside a zoom:0.8 body renders at 94.4px, landing
+              // the tooltip almost on top of its own anchor. The
+              // compensateZoom modifier below undoes that second scaling by
+              // dividing the popper's own top/left back up before it's
+              // written, so it lands where the (already-zoomed) anchor
+              // measurement says it should.
               { name: 'computeStyles', options: { gpuAcceleration: false } },
+              {
+                name: 'compensateZoom',
+                enabled: true,
+                phase: 'beforeWrite',
+                requires: ['computeStyles'],
+                fn: ({ state }: any) => {
+                  const zoom = parseFloat(document.body.style.zoom) || 1;
+                  if (zoom === 1) return;
+                  const styles = state.styles.popper;
+                  (['top', 'left', 'right', 'bottom'] as const).forEach((prop) => {
+                    if (typeof styles[prop] === 'string' && styles[prop].endsWith('px')) {
+                      styles[prop] = `${parseFloat(styles[prop]) / zoom}px`;
+                    }
+                  });
+                },
+              },
             ],
           },
         },
