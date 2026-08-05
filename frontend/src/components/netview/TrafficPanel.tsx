@@ -4,9 +4,6 @@ import {
   Chip,
   CircularProgress,
   IconButton,
-  Dialog,
-  DialogContent,
-  DialogTitle,
   Menu,
   MenuItem,
   Paper,
@@ -29,15 +26,13 @@ import PictureInPictureAltIcon from '@mui/icons-material/PictureInPictureAlt';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import CloseIcon from '@mui/icons-material/Close';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
-import api, { netApi, trafficApi } from '../../services/api';
+import api, { trafficApi } from '../../services/api';
 import { getErrorMessage } from '../../utils/apiErrors';
 import TrafficTable from '../traffic/TrafficTable';
 import TrafficDetail from '../traffic/TrafficDetail';
-import TrafficComposer from '../traffic/TrafficComposer';
 import NetTrafficPrintBundle from '../traffic/print/NetTrafficPrintBundle';
 import { exportElementToPdf } from '../../utils/pdfExport';
 import { TrafficForm } from '../../hooks/useTrafficList';
-import { useFormDefinitions } from '../../hooks/useFormDefinitions';
 
 // ========== TRAFFIC SIDE PANEL (per-net) ==========
 // A thin net-scoped wrapper around TrafficTable/TrafficDetail (Stage A), fed
@@ -50,6 +45,11 @@ import { useFormDefinitions } from '../../hooks/useFormDefinitions';
 // floating overlay, pop out to a real window, minimize -- because this panel
 // is on-demand in the same way: the toolbar's Traffic button opens it, and it
 // is not force-docked just because the net has traffic handling turned on.
+//
+// The "+" only asks its host to open FileTrafficDialog; that dialog belongs
+// to the page, not to this panel, because this panel is remounted whenever
+// it moves between the docked column and a floating window. See
+// FileTrafficDialog.tsx.
 
 interface TrafficSummary {
   net_id: number;
@@ -72,6 +72,10 @@ const DISPOSITION_COLOR: Record<string, 'default' | 'warning' | 'info' | 'succes
 interface TrafficPanelProps {
   netId: number;
   currentUserId?: number;
+  // Opens the host page's FileTrafficDialog. The dialog is not mounted here
+  // on purpose (see FileTrafficDialog.tsx), so a host that doesn't offer one
+  // simply gets no "+" button rather than a button that does nothing.
+  onCompose?: () => void;
   // On-demand panel needs a real close, unlike FloatingWindow's own close
   // icon which only re-docks. onDetach/onPopOut are docked-mode only -- in
   // floating mode FloatingWindow supplies its own, same as CoveragePanel.
@@ -86,6 +90,7 @@ interface TrafficPanelProps {
 const TrafficPanel: React.FC<TrafficPanelProps> = ({
   netId,
   currentUserId,
+  onCompose,
   onClose,
   onDetach,
   onPopOut,
@@ -98,31 +103,6 @@ const TrafficPanel: React.FC<TrafficPanelProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedFormId, setSelectedFormId] = useState<number | null>(null);
-
-  // ========== FILE TRAFFIC ON THIS NET ==========
-  // The reason the panel exists: logging what's passed on the air, attached
-  // to this net. TrafficComposer is the same component the Traffic section's
-  // New tab uses -- the only difference here is that netId is supplied, which
-  // is what makes the form belong to the net (FormCreate.net_id).
-  const [composeOpen, setComposeOpen] = useState(false);
-  const { definitions } = useFormDefinitions();
-  const [net, setNet] = useState<any | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    netApi.get(netId)
-      .then((res) => {
-        if (!cancelled) setNet(res.data);
-      })
-      .catch(() => {
-        // Only used for the net's optional traffic restrictions -- without it
-        // the composer just offers every form type.
-        if (!cancelled) setNet(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [netId]);
 
   const refetch = useCallback(async () => {
     setLoading(true);
@@ -156,11 +136,23 @@ const TrafficPanel: React.FC<TrafficPanelProps> = ({
         refetch();
       }
     };
+    // Filed from this browser, by the host page's FileTrafficDialog: refetch
+    // and open what was just filed. Kept separate from the WebSocket events
+    // above deliberately -- jumping to a detail view is right for traffic the
+    // operator just entered, and wrong for traffic another station filed
+    // while they were reading something else.
+    const handleFiledLocally = (event: any) => {
+      if (event.detail?.net_id !== netId) return;
+      refetch();
+      if (event.detail?.form_id) setSelectedFormId(event.detail.form_id);
+    };
     window.addEventListener('trafficLogged', handleTrafficLogged);
     window.addEventListener('trafficLogChanged', handleTrafficLogged);
+    window.addEventListener('netTrafficFiled', handleFiledLocally);
     return () => {
       window.removeEventListener('trafficLogged', handleTrafficLogged);
       window.removeEventListener('trafficLogChanged', handleTrafficLogged);
+      window.removeEventListener('netTrafficFiled', handleFiledLocally);
     };
   }, [netId, refetch]);
 
@@ -279,14 +271,16 @@ const TrafficPanel: React.FC<TrafficPanelProps> = ({
                       the rightmost ones (Minimize/Close) would be unreachable
                       rather than merely hidden-until-resize. */}
                   <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, flexShrink: 0, overflowX: 'auto', maxWidth: '100%' }}>
-                    <IconButton
-                      size="small"
-                      onClick={() => setComposeOpen(true)}
-                      title="File traffic on this net"
-                      sx={{ p: 0.25 }}
-                    >
-                      <AddIcon sx={{ fontSize: 14 }} />
-                    </IconButton>
+                    {onCompose && (
+                      <IconButton
+                        size="small"
+                        onClick={onCompose}
+                        title="File traffic on this net"
+                        sx={{ p: 0.25 }}
+                      >
+                        <AddIcon sx={{ fontSize: 14 }} />
+                      </IconButton>
+                    )}
                     <IconButton
                       size="small"
                       onClick={(e) => setExportMenuAnchor(e.currentTarget)}
@@ -404,38 +398,6 @@ const TrafficPanel: React.FC<TrafficPanelProps> = ({
           <NetTrafficPrintBundle id="net-traffic-print-bundle" forms={pdfForms} />
         </Box>
       )}
-
-      {/* ========== FILE TRAFFIC DIALOG ========== */}
-      {/* Deliberately a dialog rather than an inline mode: the panel is often
-          narrow and docked beside the check-in list, and a Radiogram needs
-          real room. Closing refetches so the new item shows in the list
-          immediately even if the WebSocket event is missed. */}
-      <Dialog open={composeOpen} onClose={() => setComposeOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
-          File traffic
-          <IconButton onClick={() => setComposeOpen(false)} title="Close" size="small">
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent dividers>
-          <TrafficComposer
-            definitions={definitions}
-            netId={netId}
-            allowedFormTypes={net?.traffic_form_types}
-            // TrafficComposer resolves whether stripFormType actually points
-            // at a real structured type; stripTemplateRaw is only used as a
-            // fallback when it doesn't.
-            stripFormType={net?.traffic_strip_form_type}
-            stripTemplateRaw={net?.traffic_strip_template}
-            contextLabel={net ? `Filing for ${net.name}` : undefined}
-            onCreated={(id) => {
-              setComposeOpen(false);
-              refetch();
-              setSelectedFormId(id);
-            }}
-          />
-        </DialogContent>
-      </Dialog>
     </Paper>
   );
 };

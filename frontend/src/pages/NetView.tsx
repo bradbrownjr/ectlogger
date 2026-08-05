@@ -71,6 +71,7 @@ import TopicHistory from '../components/TopicHistory';
 import FloatingWindow from '../components/FloatingWindow';
 import UserProfileDialog from '../components/UserProfileDialog';
 import CanHearDialog from '../components/netview/CanHearDialog';
+import FileTrafficDialog from '../components/netview/FileTrafficDialog';
 
 interface Frequency {
   id: number;
@@ -184,6 +185,11 @@ const NetView: React.FC = () => {
   const map = usePersistedDialog(STORAGE_KEYS.MAP_OPEN);
   const coverage = usePersistedDialog(STORAGE_KEYS.COVERAGE_OPEN);
   const traffic = usePersistedDialog(STORAGE_KEYS.TRAFFIC_OPEN);
+  // Composing traffic for this net. Page-level, like every other net dialog:
+  // the Traffic panel that opens it is remounted when it moves between the
+  // docked column and a floating window, and a dialog owned by the panel
+  // would be destroyed mid-radiogram. See FileTrafficDialog.tsx.
+  const [fileTrafficOpen, setFileTrafficOpen] = useState(false);
   const bulkCheckIn = useDialog();
   const [hideDuplicates, setHideDuplicates] = useLocalStorage<boolean>(STORAGE_KEYS.CHECKIN_HIDE_DUPLICATES, false);
   const search = useDialog();
@@ -2333,6 +2339,7 @@ const NetView: React.FC = () => {
               trafficDocked={trafficDocked}
               trafficMinimized={trafficMinimized}
               onCloseTraffic={traffic.onClose}
+              onComposeTraffic={() => setFileTrafficOpen(true)}
               onUndockTraffic={handleDetachTraffic}
               onAttachTraffic={isXlUp ? handleAttachTraffic : undefined}
               handlePopOutTraffic={handlePopOutTraffic}
@@ -2529,6 +2536,14 @@ const NetView: React.FC = () => {
         availableFrequencyIds={checkInForm.available_frequency_ids}
         onAvailableFrequencyIdsChange={(ids) => setCheckInForm({ ...checkInForm, available_frequency_ids: ids })}
         formatFrequency={formatFrequencyDisplay}
+      />
+
+      {/* File Traffic Dialog - net-scoped traffic composer */}
+      <FileTrafficDialog
+        netId={Number(netId)}
+        net={net}
+        open={fileTrafficOpen}
+        onClose={() => setFileTrafficOpen(false)}
       />
 
       {/* Role Management Dialog */}

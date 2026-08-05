@@ -109,6 +109,9 @@ interface NetViewSidePanelsProps {
   trafficDocked: boolean;
   trafficMinimized: boolean;
   onCloseTraffic: () => void;
+  // Opens NetView's page-level FileTrafficDialog. Both the docked and the
+  // floating TrafficPanel get it, since either can be the one on screen.
+  onComposeTraffic: () => void;
   onUndockTraffic: () => void;
   // Undefined below xl, matching Map/Coverage -- trafficDocked can never
   // become true there, so omitting it hides a dead "Dock to layout" button.
@@ -178,6 +181,7 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
   trafficDocked,
   trafficMinimized,
   onCloseTraffic,
+  onComposeTraffic,
   onUndockTraffic,
   onAttachTraffic,
   handlePopOutTraffic,
@@ -314,6 +318,7 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
         <TrafficPanel
           netId={Number(netId)}
           currentUserId={currentUserId}
+          onCompose={onComposeTraffic}
           onClose={onCloseTraffic}
           onDetach={onUndockTraffic}
           onPopOut={handlePopOutTraffic}
@@ -443,7 +448,7 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
           minHeight={250}
           storageKey="traffic"
         >
-          <TrafficPanel netId={Number(netId)} currentUserId={currentUserId} />
+          <TrafficPanel netId={Number(netId)} currentUserId={currentUserId} onCompose={onComposeTraffic} />
         </FloatingWindow>
       )}
     </>
