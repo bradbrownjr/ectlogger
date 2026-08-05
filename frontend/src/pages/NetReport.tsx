@@ -178,6 +178,7 @@ import { formatDateTime, formatTimeWithDate } from '../utils/dateUtils';
 import { getErrorMessage } from '../utils/apiErrors';
 import { useAuth } from '../contexts/AuthContext';
 import { exportElementToPdf } from '../utils/pdfExport';
+import { computeCheckInTimeline } from '../utils/checkInTimeline';
 import CoverageReport, { CanHearReportEntry } from '../components/netview/CoverageReport';
 import ICS309PrintView, { Ics309LogData } from '../components/traffic/print/ICS309PrintView';
 
@@ -569,34 +570,15 @@ const NetReport: React.FC = () => {
     return result;
   }, [canHearReports, mappedCheckIns]);
 
-  // Binned check-in activity: counts per adaptive time window, capped at last check-in
-  const { timelineData, binSize } = useMemo(() => {
-    const empty = { timelineData: [] as { label: string; count: number }[], binSize: 5 };
-    if (!stats?.check_ins_timeline || stats.check_ins_timeline.length < 2) return empty;
-
-    const parse = (lbl: string) => parseInt(lbl.replace('+', '').replace('m', ''), 10);
-    const minutes = stats.check_ins_timeline.map(pt => parse(pt.label)).filter(n => !isNaN(n));
-    const maxMinutes = Math.max(...minutes);
-
-    const bin = maxMinutes < 30 ? 2 : maxMinutes < 120 ? 5 : maxMinutes < 300 ? 10 : 15;
-    const numBins = Math.ceil(maxMinutes / bin) + 1;
-    const bins = new Array(numBins).fill(0);
-    for (const m of minutes) {
-      const idx = Math.floor(m / bin);
-      if (idx < numBins) bins[idx]++;
-    }
-
-    // Drop trailing empty bins (net left open after last check-in)
-    let last = bins.length - 1;
-    while (last > 0 && bins[last] === 0) last--;
-
-    const data = bins.slice(0, last + 1).map((count, i) => ({
-      label: `+${i * bin}m`,
-      count,
-    }));
-
-    return { timelineData: data, binSize: bin };
-  }, [stats]);
+  // Binned check-in activity: counts per adaptive time window, capped at last check-in.
+  // See utils/checkInTimeline.ts -- this was an exact duplicate of
+  // NetStatistics.tsx's own copy, including the negative-minutes bug that
+  // crashed this page ("RangeError: Invalid array length") on production
+  // net 56 after the same fix had already landed in NetStatistics.tsx.
+  const { timelineData, binSize } = useMemo(
+    () => computeCheckInTimeline(stats?.check_ins_timeline),
+    [stats]
+  );
 
   // ========== LOADING & ERROR STATES ==========
 
