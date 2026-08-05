@@ -425,7 +425,6 @@ async def export_net_ics309(
 @router.get("/{net_id}/export/rri-strips")
 async def export_net_rri_strips(
     net_id: int,
-    format: str = Query("raw"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -434,22 +433,19 @@ async def export_net_rri_strips(
     matching how receiving stations actually use RRI/WX strip data (see
     TRAFFIC-HANDLING-DESIGN.md's RRI strip section). Every form type is
     included via format_form()'s own per-type dispatch (Radiogram/ICS-213
-    canonical text alongside RRI/WX strip lines), not just strip types --
-    a net that mostly runs Radiograms downloading an empty file (this
-    endpoint's original scope, from before the panel's "Export traffic"
-    button was net-content-agnostic) was the actual bug this generalizes.
+    canonical text alongside RRI/WX strip lines), not just strip types.
 
-    ?format=raw (default) returns each report's canonical string unmodified.
-    ?format=radiogram_safe applies RRI's minus->M substitution so RRI/WX
-    strip content can be safely relayed inside a Radiogram/ICS-213 body over
-    voice/CW -- an explicit opt-in, never the default, since this traffic is
-    normally pasted straight into a spreadsheet rather than relayed via NTS.
-    Applying it to already-Radiogram/ICS-213 lines is a harmless no-op in
-    the near-totality of cases (it only touches a literal "-<digit>" run).
+    RRI's minus->M substitution is applied to strip lines unconditionally
+    and is NOT offered as a choice, because "M" is simply how a negative
+    number is written in an RRI strip -- the strip specs say so in the field
+    definition itself ("TEMP DEG F (### M=MINUS)"), so an operator following
+    the form would never enter a literal "-5" in the first place. This just
+    normalizes the case where they did. It is deliberately NOT applied to
+    Radiogram/ICS-213 lines: "M" is not a general NTS proword for a minus
+    sign (ordinary radiogram text spells a hyphen out as "DASH" -- see
+    app/traffic/nts_text.py), and blanket-substituting would corrupt
+    legitimate hyphenated free text like a route number.
     """
-    if format not in ("raw", "radiogram_safe"):
-        raise HTTPException(status_code=400, detail="format must be 'raw' or 'radiogram_safe'")
-
     net_result = await db.execute(select(Net).where(Net.id == net_id))
     net = net_result.scalar_one_or_none()
     if not net:
@@ -466,11 +462,14 @@ async def export_net_rri_strips(
     )
     forms = forms_result.scalars().all()
 
-    lines = [format_form(form) for form in forms]
-    if format == "radiogram_safe":
-        lines = [make_nts_safe(line) for line in lines]
+    lines = []
+    for form in forms:
+        line = format_form(form)
+        if form.definition.output_format in ("rri_strip", "rri_strip_raw"):
+            line = make_nts_safe(line)
+        lines.append(line)
 
-    filename = f"Traffic_{net.name.replace(' ', '_')}_{format}.txt"
+    filename = f"Traffic_{net.name.replace(' ', '_')}.txt"
 
     return StreamingResponse(
         iter(['\n'.join(lines)]),

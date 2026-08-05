@@ -34,6 +34,8 @@ import { getErrorMessage } from '../../utils/apiErrors';
 import TrafficTable from '../traffic/TrafficTable';
 import TrafficDetail from '../traffic/TrafficDetail';
 import TrafficComposer from '../traffic/TrafficComposer';
+import NetTrafficPrintBundle from '../traffic/print/NetTrafficPrintBundle';
+import { exportElementToPdf } from '../../utils/pdfExport';
 import { TrafficForm } from '../../hooks/useTrafficList';
 import { useFormDefinitions } from '../../hooks/useFormDefinitions';
 
@@ -169,28 +171,28 @@ const TrafficPanel: React.FC<TrafficPanelProps> = ({
   };
 
   // ========== TRAFFIC EXPORT ==========
-  // One line per report on the net, oldest first -- every form type via
-  // format_form()'s own per-type dispatch, not just RRI/WX strips (that was
-  // this endpoint's original scope, and left a Radiogram-only net downloading
-  // an empty file under the generic "Export traffic" label). "Raw" matches
-  // what a receiving station actually does with RRI/WX strip data;
-  // "radiogram-safe" is only for the rare case of relaying that content
-  // inside a Radiogram/ICS-213 body over voice/CW -- a no-op on lines that
-  // are already Radiogram/ICS-213 text. See
+  // Two genuinely different outputs, not two encodings of one:
+  //   Text -- one line per report, for pasting into a spreadsheet or a
+  //           Winlink template. Every form type, via format_form()'s own
+  //           per-type dispatch.
+  //   PDF  -- every report rendered as its real form (Radiogram pad,
+  //           ICS-213, strip layout), for filing or handing off on paper.
+  // There is deliberately no raw/radiogram-safe choice: "M" for a negative
+  // number is how an RRI strip is written per its own field spec, so the
+  // server applies it to strip lines unconditionally -- see
   // routers/nets_export.py::export_net_rri_strips.
   const [exportMenuAnchor, setExportMenuAnchor] = useState<HTMLElement | null>(null);
+  const [pdfForms, setPdfForms] = useState<any[] | null>(null);
+  const [exportingPdf, setExportingPdf] = useState(false);
 
-  const handleExportTraffic = async (format: 'raw' | 'radiogram_safe') => {
+  const handleExportText = async () => {
     setExportMenuAnchor(null);
     try {
-      const response = await api.get(`/nets/${netId}/export/rri-strips`, {
-        params: { format },
-        responseType: 'blob',
-      });
+      const response = await api.get(`/nets/${netId}/export/rri-strips`, { responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `Traffic_net${netId}_${format}.txt`);
+      link.setAttribute('download', `Traffic_net${netId}.txt`);
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -199,6 +201,54 @@ const TrafficPanel: React.FC<TrafficPanelProps> = ({
       console.error('Failed to export traffic:', err);
     }
   };
+
+  // The list endpoint returns summary rows without a `definition`, which the
+  // print views need -- so fetch each form's detail, mount the bundle
+  // off-screen, then capture it. Mounting is a state change, so the capture
+  // has to wait for the render (the effect below), not run inline here.
+  const handleExportPdf = async () => {
+    setExportMenuAnchor(null);
+    setExportingPdf(true);
+    try {
+      const listRes = await trafficApi.listForNet(netId, { limit: 500 });
+      const details = await Promise.all(
+        listRes.data.items.map((item: TrafficForm) => trafficApi.get(item.id).then((r) => r.data))
+      );
+      if (details.length === 0) {
+        setExportingPdf(false);
+        return;
+      }
+      setPdfForms(details);
+    } catch (err) {
+      console.error('Failed to build the traffic PDF:', err);
+      setExportingPdf(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!pdfForms) return;
+    let cancelled = false;
+    // One frame for the off-screen bundle to lay out before html2canvas
+    // reads it -- capturing a not-yet-laid-out element yields a blank page.
+    const timer = setTimeout(async () => {
+      try {
+        await exportElementToPdf('net-traffic-print-bundle', {
+          filename: `Traffic_net${netId}`,
+        });
+      } catch (err) {
+        console.error('Failed to export the traffic PDF:', err);
+      } finally {
+        if (!cancelled) {
+          setPdfForms(null);
+          setExportingPdf(false);
+        }
+      }
+    }, 150);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [pdfForms, netId]);
 
   return (
     <Paper
@@ -248,11 +298,11 @@ const TrafficPanel: React.FC<TrafficPanelProps> = ({
                       open={Boolean(exportMenuAnchor)}
                       onClose={() => setExportMenuAnchor(null)}
                     >
-                      <MenuItem onClick={() => handleExportTraffic('raw')} sx={{ minHeight: 44 }}>
-                        Raw (as filed)
+                      <MenuItem onClick={handleExportText} sx={{ minHeight: 44 }}>
+                        Text (one line per report)
                       </MenuItem>
-                      <MenuItem onClick={() => handleExportTraffic('radiogram_safe')} sx={{ minHeight: 44 }}>
-                        Radiogram-safe (for NTS/CW relay)
+                      <MenuItem onClick={handleExportPdf} disabled={exportingPdf} sx={{ minHeight: 44 }}>
+                        {exportingPdf ? 'Building PDF...' : 'PDF (printable forms)'}
                       </MenuItem>
                     </Menu>
                     <IconButton size="small" onClick={handleViewAll} title="View all in Traffic" sx={{ p: 0.25 }}>
@@ -341,6 +391,15 @@ const TrafficPanel: React.FC<TrafficPanelProps> = ({
               )}
             </>
           )}
+        </Box>
+      )}
+
+      {/* Off-screen print bundle, mounted only while a PDF export is in
+          flight. Positioned off canvas rather than display:none, since
+          html2canvas needs it actually laid out to capture it. */}
+      {pdfForms && (
+        <Box sx={{ position: 'fixed', top: 0, left: -99999, width: 800, overflow: 'hidden' }}>
+          <NetTrafficPrintBundle id="net-traffic-print-bundle" forms={pdfForms} />
         </Box>
       )}
 

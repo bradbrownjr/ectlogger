@@ -178,10 +178,14 @@ def test_make_nts_safe_substitutes_minus_for_m_only():
 
 
 @pytest.mark.asyncio
-async def test_export_net_traffic_endpoint_raw_and_radiogram_safe(client, db, owner):
+async def test_export_net_traffic_covers_every_form_type(client, db, owner):
     """Covers every form type on the net, not just RRI/WX strips -- a
     Radiogram-only net downloading a blank file (this endpoint's original,
-    strip-only scope) was the actual bug the "Export traffic" button surfaced."""
+    strip-only scope) was the actual bug the "Export traffic" button surfaced.
+
+    There is only one output format now: "M" is how a negative number is
+    written in an RRI strip per the strip spec itself, not an opt-in relay
+    transform, so it's applied to strip lines unconditionally."""
     await upsert_form_definitions(db)
     net = Net(name="RRI Strip Export Net", owner_id=owner.id)
     db.add(net)
@@ -204,20 +208,15 @@ async def test_export_net_traffic_endpoint_raw_and_radiogram_safe(client, db, ow
         headers=auth_headers(owner),
     )
 
-    raw_resp = await client.get(f"/api/nets/{net.id}/export/rri-strips?format=raw", headers=auth_headers(owner))
-    assert raw_resp.status_code == 200
-    raw_text = raw_resp.text
-    assert "WXOBS/" in raw_text and "-5" in raw_text
-    assert RRI_STRIP_OTHER_VALUES["strip_text"] in raw_text
-    # The Radiogram now appears too -- this is the fix under test.
-    assert "NR 1 R" in raw_text
-
-    safe_resp = await client.get(
-        f"/api/nets/{net.id}/export/rri-strips?format=radiogram_safe", headers=auth_headers(owner)
-    )
-    assert safe_resp.status_code == 200
-    safe_lines = safe_resp.text.strip("\n").split("\n")
-    assert any("M5" in line and "-5" not in line for line in safe_lines)
+    resp = await client.get(f"/api/nets/{net.id}/export/rri-strips", headers=auth_headers(owner))
+    assert resp.status_code == 200
+    text = resp.text
+    assert "WXOBS/" in text
+    # Every form type appears -- this is the generalization under test.
+    assert "NR 1 R" in text
+    # Strip lines are M-normalized (the WXOBS fixture carries a -5 temp).
+    strip_line = next(line for line in text.split("\n") if line.startswith("WXOBS/"))
+    assert "M5" in strip_line and "-5" not in strip_line
 
 
 @pytest.mark.asyncio
