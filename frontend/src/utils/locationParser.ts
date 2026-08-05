@@ -188,6 +188,22 @@ export function parseLocation(location: string): ParsedLocation | null {
   const mgrs = parseMGRS(trimmed);
   if (mgrs) return mgrs;
 
+  // A Maidenhead grid square given alongside a readable place name --
+  // "KENNEBUNK FN43SI" is a common ham-radio convention (city name plus a
+  // precise grid), not caught above since parseMaidenhead requires the
+  // ENTIRE string to be just the grid. Check each whitespace-separated
+  // token: the grid pattern (letters-digits[-letters[-digits]], six or
+  // eight characters in a very specific shape) essentially never collides
+  // with an ordinary word, so a false match here isn't a real risk.
+  // Confirmed missing on production: this exact station never mapped,
+  // fell through to geocoding "KENNEBUNK FN43SI" as a literal address
+  // (which fails), and since it was the reporting station in nearly every
+  // coverage report, no coverage line involving it could ever be drawn.
+  for (const token of trimmed.split(/\s+/)) {
+    const embeddedGrid = parseMaidenhead(token);
+    if (embeddedGrid) return { ...embeddedGrid, original: trimmed };
+  }
+
   // Check if it looks like an address (will need geocoding)
   if (looksLikeAddress(trimmed)) {
     return { lat: 0, lon: 0, type: 'address', original: trimmed };
