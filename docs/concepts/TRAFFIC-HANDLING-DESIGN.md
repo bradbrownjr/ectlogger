@@ -1006,7 +1006,7 @@ Deep-link query params drive the pre-filtered entry points: `/traffic?net_id=123
   `components/traffic/TrafficComposer.tsx` (extracted from the Traffic section's New tab, so
   the picker/renderer/submit trio exists once). The dialog is mounted by **NetView /
   NetPaneWindow, never by the panel** — the docked and floating copies of the panel are
-  different subtrees, so crossing the xl breakpoint on a resize unmounts one and would take an
+  different subtrees, so switching between docked and floating (a resize, or an attach/detach click) unmounts one and would take an
   open dialog, and a half-typed radiogram, with it. Filing reports back via a
   `netTrafficFiled` window event rather than a callback, since the panel may be a sibling, a
   floating window, or closed. See DESIGN.md "Side-Panel Dialogs Belong to the Page, Not the
