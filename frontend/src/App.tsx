@@ -96,7 +96,15 @@ const getDesignTokens = (mode: PaletteMode, themeKey: string, customTheme: Theme
           popperOptions: {
             modifiers: [
               { name: 'flip', enabled: false },
-              { name: 'preventOverflow', options: { altAxis: true, padding: 8 } },
+              // boundary must be the viewport, not Popper's own default of
+              // "clippingParents": the toolbars this targets clip their own
+              // overflow (NetViewHeader's collapse ladder, TrafficPanel's
+              // icon row) to a container barely taller than the button row,
+              // and a MUI Tooltip portals to document.body -- it already
+              // renders outside that clipping visually, so constraining its
+              // *position* to fit inside that sliver of a container instead
+              // of the actual screen squeezed it back up over the anchor.
+              { name: 'preventOverflow', options: { altAxis: true, padding: 8, boundary: 'viewport' } },
             ],
           },
         },
