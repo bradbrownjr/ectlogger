@@ -282,6 +282,27 @@ For a multi-phase roadmap feature (the kind with its own "Design questions to re
   - `/usr/bin/systemctl restart ectlogger`
   - `/usr/bin/systemctl is-active ectlogger`
   - `/usr/bin/systemctl status ectlogger`
+- **Pre-deploy safety check (required, every time)**: a production deploy restarts the backend,
+  which drops in-flight WebSocket connections and briefly interrupts the API — never do this
+  while a net is live or while a real user is actively on the site. Before touching production
+  (merging to `main` with intent to deploy, or restarting the service), check both:
+  ```bash
+  ssh ectlogger@app.ectlogger.us "cd ~/ectlogger && python3 -c \"
+  import sqlite3
+  conn = sqlite3.connect('backend/ectlogger.db')
+  cur = conn.cursor()
+  cur.execute(\\\"SELECT id, name, status FROM nets WHERE status IN ('active','lobby')\\\")
+  print('Active/lobby nets:', cur.fetchall())
+  cur.execute(\\\"SELECT callsign, last_active FROM users WHERE last_active > datetime('now', '-15 minutes') AND callsign != 'KC1JMH' ORDER BY last_active DESC\\\")
+  print('Users active in last 15 min (excluding the developer):', cur.fetchall())
+  \""
+  ```
+  `KC1JMH` is the developer's own account — its activity is this workflow running, not a real
+  user, so it's excluded from the user-activity check (it's still caught by the active-net check
+  if it's actually running a net). If the net query returns any rows, or the user query returns
+  anyone else, hold off — deploy to beta only and confirm timing with the user before touching
+  prod. This applies even to changes that were already approved/tested; approval to ship isn't
+  approval to ship at any specific moment.
 - **Deploy from GitHub**:
   ```bash
   # 1. Pull latest from GitHub

@@ -49,10 +49,13 @@ export const STORAGE_KEYS = {
   COVERAGE_DOCKED: 'dockedPanel_coverage_docked',
   COVERAGE_MINIMIZED: 'dockedPanel_coverage_minimized',
   COVERAGE_OPEN: 'dockedPanel_coverage_open',
-  // Traffic side panel (see TrafficPanel.tsx) - always docked once
-  // net.traffic_enabled and permission both hold, so unlike Coverage above
-  // there is no on-demand "open" toggle, only a minimize state.
+  // Traffic side panel (see TrafficPanel.tsx) - on-demand, opened from the
+  // toolbar's Traffic button, exactly like Coverage above. net.traffic_enabled
+  // and permission decide whether that button exists at all; these keys only
+  // remember what the operator did with the pane.
+  TRAFFIC_DOCKED: 'dockedPanel_traffic_docked',
   TRAFFIC_MINIMIZED: 'dockedPanel_traffic_minimized',
+  TRAFFIC_OPEN: 'dockedPanel_traffic_open',
   // Resizable split weights (flex-grow ratios) - see useResizableSplit.ts.
   // Left/right panel stacks are vertical splits; the column split is
   // horizontal (left/center/right widths). Each is actually stored with a

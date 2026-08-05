@@ -1,0 +1,172 @@
+{
+  "form_type": "WXOBS",
+  "title": "RRI WXOBS Weather Observation",
+  "description": "Radio Relay International's standardized weather observation strip. Renders as the canonical slash-delimited string used by RRI's Winlink template and SKYWARN spreadsheet tooling.",
+  "output_format": "rri_strip",
+  "fields": [
+    {
+      "name": "call_sign",
+      "label": "Call Sign",
+      "field_type": "text",
+      "is_required": true,
+      "max_length": 20,
+      "validator": "callsign",
+      "auto_fill": "callsign",
+      "description": "Reporting station's callsign",
+      "sort_order": 10
+    },
+    {
+      "name": "skywarn_id",
+      "label": "SKYWARN ID",
+      "field_type": "text",
+      "is_required": false,
+      "max_length": 20,
+      "description": "SKYWARN spotter ID, or NA if not a registered spotter",
+      "sort_order": 20
+    },
+    {
+      "name": "city",
+      "label": "City",
+      "field_type": "text",
+      "is_required": true,
+      "max_length": 50,
+      "sort_order": 30
+    },
+    {
+      "name": "state",
+      "label": "State",
+      "field_type": "text",
+      "is_required": true,
+      "max_length": 2,
+      "description": "Two-letter state abbreviation",
+      "sort_order": 40
+    },
+    {
+      "name": "mgrs",
+      "label": "MGRS",
+      "field_type": "text",
+      "is_required": false,
+      "max_length": 20,
+      "description": "Military Grid Reference System coordinate, if known",
+      "sort_order": 50
+    },
+    {
+      "name": "nws_cwa",
+      "label": "NWS CWA",
+      "field_type": "text",
+      "is_required": false,
+      "max_length": 10,
+      "description": "National Weather Service County Warning Area, or NA",
+      "sort_order": 60
+    },
+    {
+      "name": "observation_time",
+      "label": "Observation Time (Z)",
+      "field_type": "text",
+      "is_required": true,
+      "max_length": 8,
+      "default_now": "%d%H%MZ",
+      "description": "DDHHMMZ, auto-filled with the current UTC time",
+      "sort_order": 70
+    },
+    {
+      "name": "wind_dir",
+      "label": "Wind Direction",
+      "field_type": "text",
+      "is_required": false,
+      "max_length": 3,
+      "description": "Three-letter compass direction, e.g. NW",
+      "sort_order": 80
+    },
+    {
+      "name": "wind_speed",
+      "label": "Average Speed (MPH)",
+      "field_type": "text",
+      "is_required": false,
+      "max_length": 3,
+      "sort_order": 90
+    },
+    {
+      "name": "wind_gusts",
+      "label": "Gusts (MPH)",
+      "field_type": "text",
+      "is_required": false,
+      "max_length": 3,
+      "sort_order": 100
+    },
+    {
+      "name": "clouds",
+      "label": "Clouds",
+      "field_type": "choice",
+      "is_required": false,
+      "choices": ["CLR", "FEW", "SKT", "CB", "OVC", "TCU"],
+      "sort_order": 110
+    },
+    {
+      "name": "temp",
+      "label": "Temperature (F)",
+      "field_type": "text",
+      "is_required": false,
+      "max_length": 4,
+      "description": "Degrees Fahrenheit, e.g. 68 or -5",
+      "sort_order": 120
+    },
+    {
+      "name": "barometer",
+      "label": "Barometer (mb)",
+      "field_type": "text",
+      "is_required": false,
+      "max_length": 8,
+      "sort_order": 130
+    },
+    {
+      "name": "barometer_trend",
+      "label": "Barometer 3hr Trend",
+      "field_type": "choice",
+      "is_required": false,
+      "choices": ["R", "S", "F"],
+      "help_text": "R Rising\nS Steady\nF Falling",
+      "sort_order": 140
+    },
+    {
+      "name": "precip_type",
+      "label": "Precipitation Type",
+      "field_type": "choice",
+      "is_required": false,
+      "choices": ["RA", "SN", "SL", "PL", "GR", "NONE"],
+      "help_text": "RA Rain\nSN Snow\nSL Sleet\nPL Ice Pellets\nGR Hail\nNONE None",
+      "sort_order": 150
+    },
+    {
+      "name": "precip_current",
+      "label": "Current Precip (in)",
+      "field_type": "text",
+      "is_required": false,
+      "max_length": 8,
+      "sort_order": 160
+    },
+    {
+      "name": "precip_storm_total",
+      "label": "Storm Total Precip (in)",
+      "field_type": "text",
+      "is_required": false,
+      "max_length": 8,
+      "sort_order": 170
+    },
+    {
+      "name": "precip_liquid_equiv",
+      "label": "Liquid Equivalent Precip (in)",
+      "field_type": "text",
+      "is_required": false,
+      "max_length": 8,
+      "sort_order": 180
+    },
+    {
+      "name": "comments",
+      "label": "Comments / Damage",
+      "field_type": "textarea",
+      "is_required": false,
+      "sort_order": 190
+    }
+  ]
+}

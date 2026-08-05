@@ -71,6 +71,8 @@ import TopicHistory from '../components/TopicHistory';
 import FloatingWindow from '../components/FloatingWindow';
 import UserProfileDialog from '../components/UserProfileDialog';
 import CanHearDialog from '../components/netview/CanHearDialog';
+import FileTrafficDialog from '../components/netview/FileTrafficDialog';
+import { watchZoomAwarePopovers } from '../utils/zoomAwarePopovers';
 
 interface Frequency {
   id: number;
@@ -183,6 +185,12 @@ const NetView: React.FC = () => {
   const frequencyDialog = useDialog();
   const map = usePersistedDialog(STORAGE_KEYS.MAP_OPEN);
   const coverage = usePersistedDialog(STORAGE_KEYS.COVERAGE_OPEN);
+  const traffic = usePersistedDialog(STORAGE_KEYS.TRAFFIC_OPEN);
+  // Composing traffic for this net. Page-level, like every other net dialog:
+  // the Traffic panel that opens it is remounted when it moves between the
+  // docked column and a floating window, and a dialog owned by the panel
+  // would be destroyed mid-radiogram. See FileTrafficDialog.tsx.
+  const [fileTrafficOpen, setFileTrafficOpen] = useState(false);
   const bulkCheckIn = useDialog();
   const [hideDuplicates, setHideDuplicates] = useLocalStorage<boolean>(STORAGE_KEYS.CHECKIN_HIDE_DUPLICATES, false);
   const search = useDialog();
@@ -241,14 +249,20 @@ const NetView: React.FC = () => {
   const setEffectiveActivityLogMinimized = isMobileLayout ? setMobileActivityLogMinimized : setActivityLogMinimized;
 
   // Ultrawide layout: Script, Notes, and Schedule Announcements dock to a
-  // new left column, Map docks to the bottom of the right column, below
-  // Activity Log. The dock option itself (and the docked rendering) only
+  // NEW LEFT column. The dock option itself (and the docked rendering) only
   // appears once the viewport is xl-wide - below that, docking is not
-  // offered at all (see the "Width gating" decision) and these four stay
+  // offered at all (see the "Width gating" decision) and these three stay
   // purely on-demand floating dialogs like they've always been. Default to
   // docked (true) at xl+ so a first-time ultrawide user sees them land in
   // the layout immediately, matching Chat/Activity Log's default-docked
   // behavior, rather than defaulting to floating like a narrower screen.
+  //
+  // The xl gate is a LEFT-column-only rule. Map, Coverage, and Traffic dock
+  // to the EXISTING right column, alongside Chat and Activity Log, which
+  // have never needed an xl gate -- the two-column layout (check-ins +
+  // right) already works from md up (see isMdUp below), so gating these
+  // three to xl was reserved width the right column never actually needed.
+  // See DESIGN.md "Docked Pane Width Gating".
   const isXlUp = useMediaQuery(theme.breakpoints.up('xl'));
   // Column widths become resizable as soon as two of the three slots can sit
   // side by side, which starts at the md breakpoint (left only ever joins
@@ -262,11 +276,14 @@ const NetView: React.FC = () => {
   const [scheduleAnnouncementsDockedPref, setScheduleAnnouncementsDockedPref] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.SCHEDULE_ANNOUNCEMENTS_DOCKED, true);
   const [mapDockedPref, setMapDockedPref] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.MAP_DOCKED, true);
   const [coverageDockedPref, setCoverageDockedPref] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.COVERAGE_DOCKED, true);
+  const [trafficDockedPref, setTrafficDockedPref] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.TRAFFIC_DOCKED, true);
   const scriptDocked = scriptDockedPref && isXlUp;
   const announcementsDocked = announcementsDockedPref && isXlUp;
   const scheduleAnnouncementsDocked = scheduleAnnouncementsDockedPref && isXlUp;
-  const mapDocked = mapDockedPref && isXlUp;
-  const coverageDocked = coverageDockedPref && isXlUp;
+  // Right column - no xl gate, matching Chat/Activity Log (see above).
+  const mapDocked = mapDockedPref;
+  const coverageDocked = coverageDockedPref;
+  const trafficDocked = trafficDockedPref;
   const handleDockScript = () => setScriptDockedPref(true);
   const handleUndockScript = () => setScriptDockedPref(false);
   const handleDockAnnouncements = () => setAnnouncementsDockedPref(true);
@@ -277,6 +294,8 @@ const NetView: React.FC = () => {
   const handleUndockMap = () => setMapDockedPref(false);
   const handleDetachCoverage = () => setCoverageDockedPref(false);
   const handleAttachCoverage = () => setCoverageDockedPref(true);
+  const handleDetachTraffic = () => setTrafficDockedPref(false);
+  const handleAttachTraffic = () => setTrafficDockedPref(true);
   // Minimize state for the four docked-only panes above, persisted like
   // Chat/Activity Log's DOCKED_*_MINIMIZED keys.
   const [scriptMinimized, setScriptMinimized] = useNetViewLayoutStorage<boolean>(STORAGE_KEYS.SCRIPT_MINIMIZED, false);
@@ -367,10 +386,17 @@ const NetView: React.FC = () => {
     };
     applyZoom();
     window.addEventListener('resize', applyZoom);
+    // Menu/Select dropdowns (MUI Popover-family) need the same zoom
+    // compensation Tooltips get in App.tsx, but Popover has no modifier
+    // pipeline to hook into -- see zoomAwarePopovers.ts. Scoped to this
+    // effect's own lifetime so the MutationObserver only runs while a net
+    // (the only place this zoom applies) is actually being viewed.
+    const stopWatchingPopovers = watchZoomAwarePopovers();
     return () => {
       window.removeEventListener('resize', applyZoom);
       (document.body.style as any).zoom = '1';
       document.documentElement.style.removeProperty('--ect-app-h');
+      stopWatchingPopovers();
     };
   }, []);
 
@@ -674,6 +700,15 @@ const NetView: React.FC = () => {
     else setToastMessage('Popup blocked — please allow popups for this site.');
   };
   const handleFloatToWindowCoverage = () => { handleAttachCoverage(); handlePopOutCoverage(); };
+  // Wide enough by default to fit TrafficTable's seven columns without
+  // wrapping headers or scrolling -- matches the floating window's default
+  // in NetViewSidePanels.tsx.
+  const trafficPopout = usePoppedOutWindow(`/nets/${netId}/pane/traffic`, `ectlogger-traffic-${netId}`, 'traffic', 950, 650);
+  const handlePopOutTraffic = () => {
+    if (trafficPopout.open()) traffic.onClose();
+    else setToastMessage('Popup blocked — please allow popups for this site.');
+  };
+  const handleFloatToWindowTraffic = () => { handleAttachTraffic(); handlePopOutTraffic(); };
   // Lets a pane jump directly from the in-page floating overlay to a real
   // window in one click, instead of re-docking first and then popping out.
   const handleFloatToWindowChat = () => { handleAttachChat(); handlePopOutChat(); };
@@ -693,7 +728,11 @@ const NetView: React.FC = () => {
     || !!net?.can_manage
     || (userTrafficRole?.role === 'NCS' && userTrafficRole?.is_active !== false)
     || userTrafficRole?.role === 'LOGGER';
-  const showTraffic = !!net?.traffic_enabled && !!canViewNetTraffic;
+  // Whether the toolbar even offers Traffic. The pane itself is on-demand
+  // from there (traffic.open), like Map and Coverage -- it is no longer
+  // force-docked whenever the net has traffic turned on.
+  const canOpenTraffic = !!net?.traffic_enabled && !!canViewNetTraffic;
+  const showTraffic = canOpenTraffic && traffic.open && trafficDocked;
   // True once neither Chat, Activity Log, Map, Coverage, nor Traffic has
   // anything docked — the side column disappears entirely in that case, so
   // the check-in list should expand to fill it.
@@ -1431,6 +1470,8 @@ const NetView: React.FC = () => {
         search={search}
         map={map}
         coverage={coverage}
+        traffic={traffic}
+        canViewTraffic={canOpenTraffic}
         script={script}
         scheduleAnnouncements={scheduleAnnouncements}
         announcements={announcements}
@@ -2297,7 +2338,7 @@ const NetView: React.FC = () => {
               coverageMinimized={coverageMinimized}
               onCloseCoverage={coverage.onClose}
               onUndockCoverage={handleDetachCoverage}
-              onAttachCoverage={isXlUp ? handleAttachCoverage : undefined}
+              onAttachCoverage={handleAttachCoverage}
               handlePopOutCoverage={handlePopOutCoverage}
               handleFloatToWindowCoverage={handleFloatToWindowCoverage}
               onMinimizeCoverage={() => setCoverageMinimized(true)}
@@ -2309,7 +2350,15 @@ const NetView: React.FC = () => {
               onShowCoverageOnMap={handleShowCoverageOnMap}
               currentUserId={user?.id}
               showTraffic={showTraffic}
+              trafficOpen={canOpenTraffic && traffic.open}
+              trafficDocked={trafficDocked}
               trafficMinimized={trafficMinimized}
+              onCloseTraffic={traffic.onClose}
+              onComposeTraffic={() => setFileTrafficOpen(true)}
+              onUndockTraffic={handleDetachTraffic}
+              onAttachTraffic={handleAttachTraffic}
+              handlePopOutTraffic={handlePopOutTraffic}
+              handleFloatToWindowTraffic={handleFloatToWindowTraffic}
               onMinimizeTraffic={() => setTrafficMinimized(true)}
               onRestoreTraffic={() => setTrafficMinimized(false)}
             />
@@ -2504,6 +2553,14 @@ const NetView: React.FC = () => {
         formatFrequency={formatFrequencyDisplay}
       />
 
+      {/* File Traffic Dialog - net-scoped traffic composer */}
+      <FileTrafficDialog
+        netId={Number(netId)}
+        net={net}
+        open={fileTrafficOpen}
+        onClose={() => setFileTrafficOpen(false)}
+      />
+
       {/* Role Management Dialog */}
       <RoleAssignmentDialog
         dialog={roleDialog}
@@ -2544,7 +2601,7 @@ const NetView: React.FC = () => {
         loggerUserIds={loggerUserIds}
         relayUserIds={relayUserIds}
         onPopOut={handlePopOutMap}
-        onDock={isXlUp ? handleDockMap : undefined}
+        onDock={handleDockMap}
         canHearReports={canHearReports}
         frequencyLabels={Object.fromEntries(
           (net?.frequencies || []).map((f: any) => [f.id, `${f.frequency || f.network || ''} ${f.mode || ''}`.trim()])

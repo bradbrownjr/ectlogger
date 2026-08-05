@@ -151,6 +151,14 @@ class NCSReminderService:
                 status=NetStatus.SCHEDULED,
                 ics309_enabled=template.ics309_enabled or False,
                 propagation_logging_enabled=template.propagation_logging_enabled or False,
+                # The traffic settings were previously left off this copy list, so
+                # an auto-created scheduled net silently fell back to the column
+                # default instead of honoring its schedule -- matching what
+                # create_net_from_template already does for the manual path.
+                traffic_enabled=template.traffic_enabled or False,
+                traffic_form_types=template.traffic_form_types,
+                traffic_strip_form_type=template.traffic_strip_form_type,
+                traffic_strip_template=template.traffic_strip_template,
                 self_checkin_enabled=template.self_checkin_enabled if template.self_checkin_enabled is not None else True,
                 # Copied forward so the NCS can turn auto-lobby off for this one
                 # occurrence without editing the schedule.

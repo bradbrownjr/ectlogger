@@ -736,20 +736,40 @@ Use this for after-action reporting, club records, or emergency management docum
 
 ## Assisted Traffic Handling
 
-ECTLogger helps you fill out and keep a record of formal traffic (ARRL radiograms and ICS-213 messages) that you originate, relay, or deliver over a real net, by phone, in person, or by mail. ECTLogger never sends or transports the message itself — it is a witness and a record-keeper, not a relay.
+ECTLogger helps you fill out and keep a record of formal traffic (ARRL radiograms, ICS-213 messages, and Radio Relay International weather/RI strips) that you originate, relay, or deliver over a real net, by phone, in person, or by mail. ECTLogger never sends or transports the message itself — it is a witness and a record-keeper, not a relay.
 
-### Filing a Radiogram or ICS-213
+### Turning traffic handling on for a net
 
-Open **Traffic** from the navigation bar (or the Traffic panel on an active net's page), choose **New**, and pick a form type:
+Traffic handling is off until you turn it on. In the net's (or the schedule's) settings, under **ARES & EmComm Features**, switch on **Enable Assisted Traffic Handling**. That adds a **Traffic** button — an envelope — to the net's toolbar for the net manager, NCS, and Logger. Clicking it opens the net's traffic panel, which you can close, detach, pop out into its own window, or minimize like Chat, the Activity Log, or Station Coverage. Turning it on in a schedule means every net opened from that schedule starts with it on.
+
+Two optional settings go with it:
+
+- **Traffic this net takes** — tick the form types your staff should be offered. Leave everything unticked to offer all of them. This narrows what the picker shows; it never blocks anything unusual that comes up on the air.
+- **RRI / weather strip fields** — on an RRI net or drill, every station answers the same originating strip. Either pick a strip type staff should collect, or paste the originating strip into the box so its fields are laid out for them in the same order. If you paste one, **Parse and name the fields** lets you name each piece and save it as a reusable strip type you can pick on any future net.
+
+### Filing a Radiogram, ICS-213, or RRI strip
+
+Open **Traffic** from the navigation bar, choose **New**, and pick a form type. To log traffic passed on a specific net, use the **+** button in that net's Traffic panel instead — that way the message is attached to the net, so it shows in the net's panel, its strip export, and its ICS-309 log. Filing from the Traffic section on its own is for traffic that isn't tied to a particular net.
+
+The form types are:
 
 - **Radiogram** — the assist layer normalizes your text for NTS transmission as you type, keeps a live word-count check, and offers the ARL numbered-message picker for standard messages (welfare checks, holiday greetings, etc.).
 - **ICS-213** — a general message form used for ARES/ICS operations.
+- **WXOBS** — Radio Relay International's standardized weather observation strip, for reporting spotter observations to a served agency.
+- **GYX-CAR SKYWARN** — the Maine/New Hampshire regional variant of WXOBS, formatted to paste directly into the GYX/CAR SKYWARN spreadsheet.
+- **RRI Strip (General)** — paste the raw text of any other RRI strip (SITREP, OPRED, or anything else without a dedicated form here yet) and it's saved and tracked exactly as pasted.
 
 Fields like your callsign, place of origin, and filing time are auto-filled from your profile where possible. Submitting the form logs it as either **originated** (you wrote it) or **received** (you copied it from another station), which starts its chain of custody.
 
+On any strip form you get both ways of entering the same report, side by side and always visible: the named fields, and the **Full strip** box holding the single slash-delimited line that goes on the air. Fill in the fields and the strip builds itself as you type. Or, when a station reads the whole strip back in one breath, paste it into the box — press **Fill fields above** to see it split across the fields, or just file it and it's split for you. A blank field mid-strip stays blank rather than pulling the values after it out of line, and you're told if the pasted strip was short or had more values than the form expects.
+
 ### Importing a message you copied off the air
 
-If you already have the plaintext of a radiogram or ICS-213 message — copied down by hand, relayed from another station, or saved from packet — choose **Import** instead of **New**. Paste the text in, or drag a text file onto the box, and the parser fills in what it can recognize, flagging anything low-confidence (like a stated check that doesn't match the recomputed word count) for you to double-check before saving. Nothing is saved until you review and confirm the parsed fields.
+If you already have the plaintext of a radiogram, ICS-213 message, or RRI strip — copied down by hand, relayed from another station, or saved from packet — choose **Import** instead of **New**. Paste the text in, or drag a text file onto the box, and the parser fills in what it can recognize, flagging anything low-confidence (like a stated check that doesn't match the recomputed word count) for you to double-check before saving. Anything the parser doesn't recognize as one of the built-in types is still saved as a general RRI strip, exactly as pasted, rather than being discarded. Nothing is saved until you review and confirm the parsed fields.
+
+### Defining your own RRI strip type
+
+"RI" in RRI's own strip family stands for Request for Information: someone defines a strip's fields once, and everyone who answers it fills in the same fields, so the reports line up. If you paste an example that isn't recognized as one of the built-in types, the Import review screen offers **Define fields for a new strip type** alongside the option to save it as a general strip. Name each piece of the pasted example (the parser splits it on the same "/" delimiters RRI uses) and mark where a natural section break falls, give the type a short code and a title, and save — this creates a real, reusable strip type that appears in the **New** tab for everyone from then on, exactly like WXOBS or GYX-CAR SKYWARN. Use it on a net or a drill: file the first report yourself when you define it, then have every other station file their own answer against that same type from the **New** tab. You can also define a type ahead of time from a net's or a schedule's settings (see "Turning traffic handling on for a net" above) — there it just creates the type, without filing a report.
 
 ### Logging what happens next
 
@@ -765,7 +785,16 @@ Only the submitter, the current holder, anyone else in its chain of custody, tha
 
 ### Exporting
 
-From a piece of traffic's detail view, **Export** gives you the plaintext (for reading over the air or filing) or a printable PDF laid out like the real paper form — the ARRL Radiogram pad or the FEMA ICS-213 General Message form, boxes and rules included — ready to file or hand to the addressee. Fields ECTLogger doesn't collect (like a delivery-confirmation signature) print blank and ruled, the same as they'd appear on a hand-filled paper copy. On a net with **ICS-309 enabled**, traffic handled during that net also appears as metadata-only rows (message number, precedence, addressee, handling station) on the net's ICS-309 Communications Log, including its own form-accurate PDF — the message text itself is never included in that export.
+From a piece of traffic's detail view, **Export** gives you the plaintext (for reading over the air or filing) or a printable PDF. For a Radiogram or ICS-213, that PDF is laid out like the real paper form — the ARRL Radiogram pad or the FEMA ICS-213 General Message form, boxes and rules included — ready to file or hand to the addressee, with fields ECTLogger doesn't collect (like a delivery-confirmation signature) printing blank and ruled, the same as they'd appear on a hand-filled paper copy. For a WXOBS, GYX-CAR SKYWARN, or general RRI strip, the PDF shows the exact strip text alongside a readable field list. On a net with **ICS-309 enabled**, traffic handled during that net also appears as metadata-only rows (message number, precedence, addressee, handling station) on the net's ICS-309 Communications Log, including its own form-accurate PDF — the message text itself is never included in that export.
+
+### Exporting a whole net's traffic
+
+A net's Traffic panel has its own **Export** button covering every message filed on that net, in two forms:
+
+- **Text** — one line per message, oldest first, ready to paste into a spreadsheet, a Winlink template, or an email to a served agency. Strip reports come out as the exact slash-delimited line RRI expects; radiograms and ICS-213s come out as their plaintext.
+- **PDF (printable forms)** — every message on the net laid out like its real paper form (the ARRL Radiogram pad, the FEMA ICS-213, the strip layout), several to a page, with no message ever split across a page break. This is the one to print for a served agency or a paper file at the end of an operation.
+
+In the text export, a minus sign in a strip's numeric field (a below-zero temperature, most often) is written as the letter **M**, which is RRI's own notation for its strip fields. Radiogram and ICS-213 text is never touched this way — NTS spells a hyphen out as "DASH" there, and a hyphen in a street address or route number has to survive as typed.
 
 ### Traffic in your statistics
 
@@ -870,7 +899,7 @@ Both columns are blank for users the badge doesn't apply to, and both are sortab
 ### Additional Admin Features
 
 - **Contacts** — View and manage station contacts auto-populated from check-in history. Fix names, add emails, send invites to create user accounts. Contact data auto-fills when NCS enters a callsign during check-in.
-- **Traffic** — Enable or disable form types (Radiogram, ICS-213), reorder them, override field labels, and set the delivery-reminder switches for Assisted Traffic Handling.
+- **Traffic** — Enable or disable form types (Radiogram, ICS-213, WXOBS, GYX-CAR SKYWARN, RRI Strip (General), and any strip type users have defined from Import), reorder them, override field labels, and set the delivery-reminder switches for Assisted Traffic Handling.
 - **Check-In Fields** — Configure default check-in form fields
 - **Frequency Library** — Manage shared frequency presets
 - **Security** — View fail2ban status and recent authentication events

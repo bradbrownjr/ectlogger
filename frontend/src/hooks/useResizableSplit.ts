@@ -23,6 +23,12 @@ export function useResizableSplit(storageKey: string, direction: SplitDirection)
   // fallback lets a caller seed the starting ratio (e.g. the existing fixed
   // 3/6/3 column split) instead of always defaulting to an equal 1:1 share.
   const getWeight = (key: string, fallback = 1): number => weights[key] ?? fallback;
+  // Distinguishes "the user has never touched this pane's size" from "it
+  // resolved to the fallback value" -- a caller can use this to give an
+  // untouched pane content-hugging sizing instead of an equal flex-grow
+  // share, while still respecting a real drag the moment one happens (see
+  // NetViewSidePanels.tsx's traffic pane).
+  const hasExplicitWeight = (key: string): boolean => weights[key] !== undefined;
 
   const startDrag = (keyA: string, keyB: string, fallbackA = 1, fallbackB = 1) => (e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
@@ -66,7 +72,7 @@ export function useResizableSplit(storageKey: string, direction: SplitDirection)
     window.addEventListener('touchend', stopDrag);
   };
 
-  return { containerRef, getWeight, startDrag };
+  return { containerRef, getWeight, hasExplicitWeight, startDrag };
 }
 
 export default useResizableSplit;

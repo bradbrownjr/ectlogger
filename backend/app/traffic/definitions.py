@@ -93,6 +93,7 @@ async def upsert_form_definitions(db: AsyncSession) -> None:
                     auto_fill=field_spec.get("auto_fill"),
                     nts_normalize=field_spec.get("nts_normalize", False),
                     arl_enabled=field_spec.get("arl_enabled", False),
+                    starts_new_section=field_spec.get("starts_new_section", False),
                     sort_order=field_spec.get("sort_order", 100),
                 ))
             else:
@@ -106,6 +107,7 @@ async def upsert_form_definitions(db: AsyncSession) -> None:
                 existing.auto_fill = field_spec.get("auto_fill")
                 existing.nts_normalize = field_spec.get("nts_normalize", False)
                 existing.arl_enabled = field_spec.get("arl_enabled", False)
+                existing.starts_new_section = field_spec.get("starts_new_section", False)
                 # label, description, sort_order are admin-owned once set -- never touched here.
 
     await db.commit()

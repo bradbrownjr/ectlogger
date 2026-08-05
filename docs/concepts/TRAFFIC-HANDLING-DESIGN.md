@@ -77,6 +77,49 @@ wholly new form type is deferred to a later phase and is only ever permitted for
 **Consequence.** A definition change ships in a release, not a config edit. Accepted — see
 Risk R6.
 
+**Revision (2026-08-04) — RRI strips, the first real test of this extensibility.** Added three
+builtin definitions for Radio Relay International's "RI strip" family (a fixed-field,
+slash-delimited short-form message, distinct from the free-text Radiogram/ICS-213 shape):
+`wxobs.json` (form_type `WXOBS`, the generic weather-observation strip), `gyx_car_skywarn.json`
+(form_type `GYX-CAR-SKYWARN`, the ME/NH-specific regional variant), and
+`rri_strip_general.json` (form_type `RRI_STRIP_OTHER`, a paste-and-save catch-all for any strip
+type without a dedicated field schema yet — SITREP, OPRED, or anything else RRI publishes).
+Two new `output_format` values back these: `rri_strip` (WXOBS, GYX-CAR-SKYWARN — a hardcoded
+per-type section/field-order table in `app/traffic/rri_strip.py`, the same "hardcode the known
+shape in the formatter module" pattern `radiogram.py`/`ics213.py` already use) and
+`rri_strip_raw` (RRI_STRIP_OTHER — renders/parses the pasted `strip_text` verbatim). Important:
+RRI's own docs describe a minus→M / decimal→R substitution for embedding strip content inside a
+Radiogram/ICS-213 body over voice/CW — but WX/RRI traffic is normally pasted straight into a
+spreadsheet, not relayed via NTS, so that substitution (`rri_strip.py::make_nts_safe`) is
+**never** applied to the canonical text/`normalized_text`/default export. It's opt-in only, on
+the new net-scoped bulk export — see the 3.4/3.5 revision notes below.
+
+**Revision (2026-08-04) — the "later phase" arrives, scoped to RRI strips.** "RI" in RRI's own
+strip family literally stands for Request for Information: someone defines a strip's field
+structure once, and every respondent answers the same fields so the data consolidates — RRI's
+own Response Creator tool has "a form for the creation of new RI strips" for exactly this. The
+raw-text `RRI_STRIP_OTHER` catch-all above couldn't do that (no field structure at all), so
+`routers/traffic_strip_templates.py` adds `POST /traffic/strip-templates`: any authenticated user
+pastes a filled example, labels each `/`-delimited token (a new `POST
+/traffic/strip-templates/tokenize` stateless preview splits it into ordered value tokens plus
+where its `/ /` section breaks fell, for the labeling UI), and submitting creates a real
+`FormDefinition` (`is_builtin=False`, `output_format='rri_strip'`) plus that example's own Form as
+its first entry — one call. This is deliberately narrower than "admin-authored generic
+definitions": only the RRI strip shape (ordered fields, optional section breaks), and any
+authenticated user rather than admin-only, matching the existing rule that anyone can
+originate/receive traffic. A new `form_definition_fields.starts_new_section` boolean (migration
+055) records each field's section-break position for `rri_strip.py`'s new data-driven fallback
+(`_dynamic_sections()`) — only consulted for form_types outside the hardcoded `_STRIP_SPECS`;
+WXOBS/GYX-CAR-SKYWARN keep their pinned layout in Python, unaffected. A dynamic type's own
+`form_type` doubles as its wire keyword (the name the user picks *is* the leading slash-token),
+unlike GYX-CAR-SKYWARN where those deliberately differ. Once defined, the type behaves exactly
+like a builtin one everywhere else (New tab picker, `FormRenderer`, `RRIStripPrintView.tsx`,
+ICS-309, visibility, permissions) — by construction, that's the whole point of D1's
+name-convention-based/data-driven design. **Explicit non-goal:** `parse_any()`/Import's
+paste-and-detect flow does *not* recognize a dynamic type's canonical string on a later paste —
+that would require the currently-pure-function parser to become DB-aware. Answers to a dynamic
+type are filed through the ordinary New tab instead, once it exists.
+
 ### D2 — Radiogram modeled as: generic JSON value storage plus promoted columns, with a dedicated formatter module
 
 **Decision.** Three tables, not one:
@@ -637,10 +680,65 @@ class TrafficReminderLog(Base):
 | Table | Column | Type / default | Purpose |
 |---|---|---|---|
 | `users` | `notify_traffic_reminder` | `Boolean, default=True` | Per-user opt-out of the delivery reminder ladder. Defaults on, unlike the digest. |
-| `nets` | `traffic_enabled` | `Boolean, default=True` | Per-net switch for the traffic panel. On by default; a chatty SKYWARN net can hide it. |
-| `net_templates` | `traffic_enabled` | `Boolean, default=True` | Seeds the net value, matching `ics309_enabled` / `propagation_logging_enabled`. |
+| `nets` | `traffic_enabled` | `Boolean, default=False` | Per-net switch for the Traffic toolbar button and panel. **Revised 2026-08-05** — was `default=True`; see the note below. |
+| `nets` | `traffic_form_types` | `Text, nullable` | JSON array of `form_type` codes this net takes. Null/empty = every enabled definition. |
+| `nets` | `traffic_strip_form_type` | `String(32), nullable` | The RRI/WX strip type this net collects answers for. |
+| `nets` | `traffic_strip_template` | `Text, nullable` | A raw pasted originating strip, for a net that wants the fields laid out without formally defining a type. |
+| `net_templates` | `traffic_enabled` | `Boolean, default=False` | Seeds the net value, matching `ics309_enabled` / `propagation_logging_enabled`. |
+| `net_templates` | `traffic_form_types` / `traffic_strip_form_type` / `traffic_strip_template` | same as `nets` | Seed the three per-net traffic settings. |
 | `net_templates` | `traffic_escalation_digest` | `Boolean, default=False` | Opt-in weekly stale-traffic digest to the schedule's manager (D4). |
 | `app_settings` | `traffic_reminder_enabled` | `Boolean, default=True` | Instance master switch for the reminder service. |
+
+**Revision (2026-08-05) — per-net traffic configuration.** The original
+`traffic_enabled` column shipped with no UI to change it, so it sat pinned at
+`True` for every net. It is now an actual setting in the shared
+`components/forms/TrafficSettingsPanel.tsx` (rendered in both the Net and the
+Schedule editors' "ARES & EmComm Features" block), joined by the three columns
+above. Two deliberate choices:
+
+- **Opt-in for new nets, unchanged for existing ones.** The SQLAlchemy default
+  flipped to `False`, which only affects newly inserted rows — nets created
+  before the toggle existed keep their stored `True` and do not lose the panel.
+  Migration `056_` adds columns only; it does not backfill.
+- **`traffic_form_types` filters pickers, it does not gate the API.**
+  `POST /traffic/forms` still accepts a type outside the list, so a legitimate
+  off-list message during an incident is never rejected because nobody stopped
+  to edit net settings. `TrafficComposer.tsx` also falls back to showing every
+  type if a stale restriction would otherwise leave the picker empty.
+
+The strip type and the raw strip template are two answers to the same question
+("what fields does an answering station enter?") and are both supported: a net
+either points at a defined type (reusable, exports and prints with real labels)
+or stores the originating strip verbatim and files answers as
+`RRI_STRIP_OTHER`. In the raw case the field names come from the origin strip
+itself — in RRI's "RI" (Request for Information) convention each
+slash-delimited token of an originating strip *is* the name of a field, so
+`ETO/CALL SIGN/CITY/...` defines fields labelled CALL SIGN, CITY, and so on.
+The settings panel's paste box is also the entry point for promoting the raw
+strip into a defined type, via `POST /traffic/strip-templates` with
+`file_first_form=false`.
+
+**Filing a strip: fields and wire text are equal, live-linked inputs.**
+`TrafficComposer.tsx` shows the labelled fields *and* the canonical
+slash-delimited strip together, permanently — not the strip behind a "paste
+instead" link. Typing in the fields rewrites the strip as you go; pasting a
+strip a station read over the air fills the fields from it (on demand, and
+automatically when a defined type is filed). Both directions live in
+`frontend/src/utils/rriStrip.ts` and mirror `format_rri_strip` /
+`parse_rri_strip` exactly, including preserving a blank token for an
+unanswered field so later values never shift onto the wrong label.
+
+That mirroring needs the strip's wire layout — its leading keyword and where
+its `/ /` section breaks fall — on the client. Rather than duplicate RRI's
+layout table in TypeScript, `rri_strip.strip_layout()` is the one source for
+both, and `FormDefinitionResponse` publishes what it returns as
+`strip_keyword` plus per-field `starts_new_section`. This matters for the two
+pinned builtins: WXOBS and GYX-CAR-SKYWARN keep their layout in Python
+(`_STRIP_SPECS`), so their stored `starts_new_section` flags are all false and
+their keyword is not always the form_type (GYX-CAR-SKYWARN transmits as
+`GYX-CAR WEATHER`). The response stamps the real layout on; for a dynamically
+defined type it is a no-op, since the layout came from those flags to begin
+with.
 
 All follow the AppSettings singleton pattern in DEVELOPMENT.md (column, then
 `AppSettingsResponse`/`AppSettingsUpdate`, then `_build_settings_response()` and the
@@ -657,6 +755,10 @@ Latest existing migration is `051_add_propagation_logging_enabled.py`. New work 
 - `053_add_traffic_reminder_log.py` — `traffic_reminder_logs`, `users.notify_traffic_reminder`.
 - `054_add_traffic_settings.py` — `nets.traffic_enabled`, `net_templates.traffic_enabled`,
   `net_templates.traffic_escalation_digest`, and the two `app_settings` columns.
+- `055_add_rri_section_break.py` — `form_definition_fields.starts_new_section`, backing
+  dynamically-defined RRI strip types.
+- `056_add_net_traffic_config.py` — `traffic_form_types`, `traffic_strip_form_type`, and
+  `traffic_strip_template` on both `nets` and `net_templates` (see §2.7's revision note).
 
 Per `backend/migrations/README.md`, these carry schema only. Definition **content** is
 seeded by the startup upsert in `app/traffic/definitions.py`, never by a migration, so a
@@ -698,6 +800,7 @@ backend/app/traffic/
 ├── nts_text.py        # normalize_nts_text, count_nts_check, NTS_SUBSTITUTIONS (section 5)
 ├── radiogram.py       # format_nts_radiogram, parse_nts_radiogram, preamble build
 ├── ics213.py          # format/parse for the second form type
+├── rri_strip.py       # format/parse for WXOBS, GYX-CAR-SKYWARN, RRI_STRIP_OTHER; make_nts_safe (2026-08-04)
 ├── formatters.py      # output_format -> module registry; the only place that branches on form type
 ├── definitions.py     # startup upsert from definitions/*.json
 ├── log.py             # append_entry (the single writer of the cached fields), derive_disposition
@@ -706,6 +809,9 @@ backend/app/traffic/
     ├── manifest.json
     ├── radiogram.json
     ├── ics213.json
+    ├── wxobs.json               # 2026-08-04
+    ├── gyx_car_skywarn.json     # 2026-08-04
+    ├── rri_strip_general.json   # 2026-08-04
     └── arl_messages.json
 ```
 
@@ -752,6 +858,24 @@ knows a message moved is whoever moved it, and that is often not the submitter.
 |---|---|---|---|
 | GET | `/traffic/forms/{id}/export` | view perm | `?format=text` (the only format) returns the RRI/NTS plaintext (ported formatter). **Revision (2026-08-03):** the printable PDF used to be generated here too (a reportlab monospace text dump) but is gone — see section 4.6's note on `RadiogramPrintView.tsx`/`ICS213PrintView.tsx`. |
 | POST | `/traffic/import/preview` | user | **Stateless parse only, writes nothing** (D5). Returns detected `form_type`, per-field `value`/`source`/`confidence`, `unparsed_lines`, and `warnings`. |
+
+**Revision (2026-08-04) — net-scoped bulk RRI strip export.** `GET /nets/{net_id}/export/rri-strips`
+(`routers/nets_export.py`, alongside the pre-existing `/export/csv` and `/export/ics309`, not
+`traffic_export.py` since it's net-scoped like those two) returns every RRI-strip-family `Form`
+on that net — filtered on `FormDefinition.output_format IN ('rri_strip', 'rri_strip_raw')`, so a
+future strip type is included automatically with no endpoint change — as one line per report,
+oldest first. `?format=raw` (default) is each report's canonical string unmodified, matching how
+receiving stations actually use this data (pasted straight into a spreadsheet); `?format=radiogram_safe`
+applies `rri_strip.py::make_nts_safe`'s minus→M substitution, an explicit opt-in for the rare
+case of relaying strip content inside a Radiogram/ICS-213 body over voice/CW. Same permission
+rule as CSV/ICS-309: `check_net_permission(db, net, current_user)`, anyone with net access.
+
+**Revision (2026-08-04) — `traffic_strip_templates.py`.** New router (registered in
+`routers/traffic.py`'s facade alongside the other four): `POST /traffic/strip-templates/tokenize`
+(stateless, D5 shape) and `POST /traffic/strip-templates` (creates a `FormDefinition` +
+`FormDefinitionField` rows + the first `Form`, atomically, reusing `compute_promoted_fields` and
+`append_entry` exactly like `traffic_forms.py::create_form`). See D1's revision note above for
+the full "define fields from a pasted example" design.
 
 **No email-send endpoint.** A `POST /traffic/forms/{id}/email` "send it for me" convenience
 was designed here and then explicitly rejected by the roadmap author (2026-08-03, resolving
@@ -845,6 +969,7 @@ Deep-link query params drive the pre-filtered entry points: `/traffic?net_id=123
 | `ImportPreview.tsx` | The parse-review screen: per-field confidence, warnings (especially the check mismatch), unparsed lines, and a Confirm that hands off to `FormRenderer`. Paste or drag-and-drop a text file onto the same box (2026-08-03) — both populate the same `text` state; there is no separate upload path. |
 | `TrafficPanel.tsx` | The embeddable per-net panel. Reused verbatim by NetView. |
 | `print/RadiogramPrintView.tsx`, `print/ICS213PrintView.tsx`, `print/ICS309PrintView.tsx` | Form-accurate print layouts (real box/rule grids matching the ARRL Radiogram pad and FEMA ICS-213/309 forms), added 2026-08-03. See section 4.6. |
+| `print/RRIStripPrintView.tsx` | Shared print view for WXOBS/GYX-CAR-SKYWARN/RRI_STRIP_OTHER (canonical string + generic field grid, not a box/rule replica), added 2026-08-04. See section 4.6. |
 
 ### 4.4 `hooks/`
 
@@ -857,10 +982,40 @@ Deep-link query params drive the pre-filtered entry points: `/traffic?net_id=123
 
 ### 4.5 Integrations into existing pages
 
-- **NetView** — a new Traffic side panel registered in `NetViewSidePanels.tsx`, the same
-  pattern as the embedded Chat panel, rendering `TrafficPanel.tsx` scoped to `net_id`, with a
-  "View all in Traffic" deep-link. Shown only when `net.traffic_enabled`. No browse/search UI
-  here.
+- **NetView** — a Traffic side panel registered in `NetViewSidePanels.tsx`, rendering
+  `TrafficPanel.tsx` scoped to `net_id`, with a "View all in Traffic" deep-link. No
+  browse/search UI here.
+
+  **Revision (2026-08-05) — the panel is on-demand, not always docked.** As first built it
+  was force-docked whenever `net.traffic_enabled` held, with no toolbar entry, no close, no
+  detach, and no pop-out — the only side panel missing the standard chrome. It now mirrors
+  **Coverage** exactly: a `MailIcon` **Traffic** button in `NetViewHeader.tsx`'s Information
+  group opens it (`usePersistedDialog(STORAGE_KEYS.TRAFFIC_OPEN)`), and the panel carries
+  close / detach-to-overlay / pop-out-to-window / minimize, with a `traffic` pane type in
+  `NetPaneWindow.tsx` behind `/nets/{netId}/pane/traffic`. The envelope matches what
+  `Navbar.tsx` already uses for the Traffic section. `net.traffic_enabled` plus the D3 rule 4
+  permission check now decides whether the *button* exists, not whether the pane is stuck open.
+
+  The panel's "View all in Traffic" icon is `ListAltIcon` (the Traffic section's own Browse-tab
+  icon). It must **never** be `LaunchIcon`: that is the same glyph MUI renders for
+  `OpenInNewIcon`, which means "pop out to a new window" in every other panel, so using it for
+  a navigation link made the two indistinguishable.
+
+  **Filing from a net.** `TrafficPanel.tsx` has an `AddIcon` action that asks its host page to
+  open `components/netview/FileTrafficDialog.tsx`, a dialog around the shared
+  `components/traffic/TrafficComposer.tsx` (extracted from the Traffic section's New tab, so
+  the picker/renderer/submit trio exists once). The dialog is mounted by **NetView /
+  NetPaneWindow, never by the panel** — the docked and floating copies of the panel are
+  different subtrees, so switching between docked and floating (a resize, or an attach/detach click) unmounts one and would take an
+  open dialog, and a half-typed radiogram, with it. Filing reports back via a
+  `netTrafficFiled` window event rather than a callback, since the panel may be a sibling, a
+  floating window, or closed. See DESIGN.md "Side-Panel Dialogs Belong to the Page, Not the
+  Panel" for the general rule and the `useEditDraft` counterpart for inline editors.
+  This closes a real gap: before it,
+  *nothing in the app ever sent `FormCreate.net_id`* — not the New tab, not Import, not the
+  strip-template flow — so every form filed was unaffiliated and a net's panel stayed empty no
+  matter how much traffic was logged. `Traffic.tsx` now also honors the `?net_id=` param its
+  own deep-link passes, threading it into both the composer and `ImportPreview.tsx`.
 - **Admin** — `components/admin/AdminTrafficTab.tsx`, modeled closely on `AdminFieldsTab.tsx`:
   enable/disable definitions, reorder, override labels, and set the instance reminder switches.
 - **Statistics / NetStatistics / Profile Activity** — "Traffic Handled" and "Traffic Pending"
@@ -908,6 +1063,13 @@ nothing like a real radiogram or ICS-213 pad, PDF export moved entirely client-s
   already exists alongside the generic `FormRenderer`).
 - The backend PDF branch of `traffic_export.py::export_form` (and its `reportlab` dependency)
   was removed as dead code once nothing called it any more.
+
+**Revision (2026-08-04) — `RRIStripPrintView.tsx`.** Unlike Radiogram/ICS-213/ICS-309, RRI
+strips (WXOBS, GYX-CAR-SKYWARN, RRI_STRIP_OTHER) aren't paper forms to replicate box-for-box —
+they're a Winlink template's field dump — so one shared component covers all three types instead
+of one bespoke view each: the canonical string (`form.normalized_text`) in monospace (exactly
+what pastes into RRI's tooling), then a labeled field grid driven generically by
+`form.definition.fields`, needing no per-type branching.
 
 ---
 

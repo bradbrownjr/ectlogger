@@ -259,7 +259,13 @@ async def create_net_from_template(
         status=NetStatus.DRAFT,
         ics309_enabled=template.ics309_enabled or False,
         propagation_logging_enabled=template.propagation_logging_enabled or False,
-        traffic_enabled=template.traffic_enabled if template.traffic_enabled is not None else True,
+        traffic_enabled=template.traffic_enabled or False,
+        # Copied verbatim -- traffic_form_types is already JSON text on both
+        # sides, so no re-encode. Per-net values are authoritative once copied,
+        # matching how auto_lobby_minutes/field_config behave.
+        traffic_form_types=template.traffic_form_types,
+        traffic_strip_form_type=template.traffic_strip_form_type,
+        traffic_strip_template=template.traffic_strip_template,
         mobile_priority_sort=template.mobile_priority_sort if template.mobile_priority_sort is not None else True,
         chat_grace_period_minutes=template.chat_grace_period_minutes,
         self_checkin_enabled=template.self_checkin_enabled if template.self_checkin_enabled is not None else True,

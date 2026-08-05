@@ -80,6 +80,12 @@ const CreateSchedule: React.FC = () => {
   // ---- ARES / EmComm features ----
   const [ics309Enabled, setIcs309Enabled] = useState(false);
   const [propagationLoggingEnabled, setPropagationLoggingEnabled] = useState(false);
+  // Assisted Traffic Handling. Seeds the same four settings on every net
+  // opened from this schedule -- see components/forms/TrafficSettingsPanel.tsx.
+  const [trafficEnabled, setTrafficEnabled] = useState(false);
+  const [trafficFormTypes, setTrafficFormTypes] = useState<string[]>([]);
+  const [trafficStripFormType, setTrafficStripFormType] = useState('');
+  const [trafficStripTemplate, setTrafficStripTemplate] = useState('');
   const [mobilePrioritySort, setMobilePrioritySort] = useState(true);
   const [chatGracePeriodEnabled, setChatGracePeriodEnabled] = useState(false);
   const [chatGracePeriodMinutes, setChatGracePeriodMinutes] = useState(15);
@@ -197,6 +203,10 @@ const CreateSchedule: React.FC = () => {
       setScript(schedule.script || '');
       setIcs309Enabled(schedule.ics309_enabled || false);
       setPropagationLoggingEnabled(schedule.propagation_logging_enabled || false);
+      setTrafficEnabled(schedule.traffic_enabled || false);
+      setTrafficFormTypes(schedule.traffic_form_types || []);
+      setTrafficStripFormType(schedule.traffic_strip_form_type || '');
+      setTrafficStripTemplate(schedule.traffic_strip_template || '');
       setMobilePrioritySort(schedule.mobile_priority_sort !== false);
       const grace = schedule.chat_grace_period_minutes;
       setChatGracePeriodEnabled(!!grace);
@@ -274,6 +284,10 @@ const CreateSchedule: React.FC = () => {
       fifth_week_user_id: fifthWeekUserId,
       ics309_enabled: ics309Enabled,
       propagation_logging_enabled: propagationLoggingEnabled,
+      traffic_enabled: trafficEnabled,
+      traffic_form_types: trafficFormTypes,
+      traffic_strip_form_type: trafficStripFormType || null,
+      traffic_strip_template: trafficStripTemplate || null,
       mobile_priority_sort: mobilePrioritySort,
       chat_grace_period_minutes: chatGracePeriodEnabled ? chatGracePeriodMinutes : null,
       self_checkin_enabled: selfCheckinEnabled,
@@ -342,6 +356,10 @@ const CreateSchedule: React.FC = () => {
     script, setScript, announcements, setAnnouncements,
     ics309Enabled, setIcs309Enabled, mobilePrioritySort, setMobilePrioritySort,
     propagationLoggingEnabled, setPropagationLoggingEnabled,
+    trafficEnabled, setTrafficEnabled,
+    trafficFormTypes, setTrafficFormTypes,
+    trafficStripFormType, setTrafficStripFormType,
+    trafficStripTemplate, setTrafficStripTemplate,
     chatGracePeriodEnabled, setChatGracePeriodEnabled,
     chatGracePeriodMinutes, setChatGracePeriodMinutes,
     selfCheckinEnabled, setSelfCheckinEnabled,

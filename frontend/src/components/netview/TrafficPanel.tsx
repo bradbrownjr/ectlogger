@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Chip,
   CircularProgress,
   IconButton,
+  Menu,
+  MenuItem,
   Paper,
   Table,
   TableCell,
@@ -15,11 +16,22 @@ import {
 import MinimizeIcon from '@mui/icons-material/Minimize';
 import CropSquareIcon from '@mui/icons-material/CropSquare';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import LaunchIcon from '@mui/icons-material/Launch';
-import { trafficApi } from '../../services/api';
+import AddIcon from '@mui/icons-material/Add';
+// "View all in Traffic" uses the Traffic section's own Browse-tab icon.
+// It must NOT be LaunchIcon -- that is the same glyph as OpenInNewIcon, which
+// means "pop out to a window" in every other panel, so using it here made a
+// navigation link look like a pop-out.
+import ListAltIcon from '@mui/icons-material/ListAlt';
+import PictureInPictureAltIcon from '@mui/icons-material/PictureInPictureAlt';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import CloseIcon from '@mui/icons-material/Close';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import api, { trafficApi } from '../../services/api';
 import { getErrorMessage } from '../../utils/apiErrors';
 import TrafficTable from '../traffic/TrafficTable';
 import TrafficDetail from '../traffic/TrafficDetail';
+import NetTrafficPrintBundle from '../traffic/print/NetTrafficPrintBundle';
+import { exportElementToPdf } from '../../utils/pdfExport';
 import { TrafficForm } from '../../hooks/useTrafficList';
 
 // ========== TRAFFIC SIDE PANEL (per-net) ==========
@@ -29,11 +41,15 @@ import { TrafficForm } from '../../hooks/useTrafficList';
 // -- that stays in the canonical /traffic section (Traffic.tsx); "View all
 // in Traffic" deep-links there. See TRAFFIC-HANDLING-DESIGN.md section 4.5.
 //
-// Header chrome (title row, minimize toggle) follows CoveragePanel.tsx's
-// "simple Chat-style chrome wrapper" pattern rather than the full
-// detach/pop-out-to-window machinery Chat/Activity Log/Coverage carry --
-// this panel is always docked once net.traffic_enabled is on, with no
-// on-demand open/close toggle, so that extra chrome isn't load-bearing yet.
+// Header chrome follows CoveragePanel.tsx exactly -- close, detach to a
+// floating overlay, pop out to a real window, minimize -- because this panel
+// is on-demand in the same way: the toolbar's Traffic button opens it, and it
+// is not force-docked just because the net has traffic handling turned on.
+//
+// The "+" only asks its host to open FileTrafficDialog; that dialog belongs
+// to the page, not to this panel, because this panel is remounted whenever
+// it moves between the docked column and a floating window. See
+// FileTrafficDialog.tsx.
 
 interface TrafficSummary {
   net_id: number;
@@ -56,13 +72,32 @@ const DISPOSITION_COLOR: Record<string, 'default' | 'warning' | 'info' | 'succes
 interface TrafficPanelProps {
   netId: number;
   currentUserId?: number;
+  // Opens the host page's FileTrafficDialog. The dialog is not mounted here
+  // on purpose (see FileTrafficDialog.tsx), so a host that doesn't offer one
+  // simply gets no "+" button rather than a button that does nothing.
+  onCompose?: () => void;
+  // On-demand panel needs a real close, unlike FloatingWindow's own close
+  // icon which only re-docks. onDetach/onPopOut are docked-mode only -- in
+  // floating mode FloatingWindow supplies its own, same as CoveragePanel.
+  onClose?: () => void;
+  onDetach?: () => void;
+  onPopOut?: () => void;
   minimized?: boolean;
   onMinimize?: () => void;
   onRestore?: () => void;
 }
 
-const TrafficPanel: React.FC<TrafficPanelProps> = ({ netId, currentUserId, minimized, onMinimize, onRestore }) => {
-  const navigate = useNavigate();
+const TrafficPanel: React.FC<TrafficPanelProps> = ({
+  netId,
+  currentUserId,
+  onCompose,
+  onClose,
+  onDetach,
+  onPopOut,
+  minimized,
+  onMinimize,
+  onRestore,
+}) => {
   const [items, setItems] = useState<TrafficForm[]>([]);
   const [summary, setSummary] = useState<TrafficSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -101,17 +136,113 @@ const TrafficPanel: React.FC<TrafficPanelProps> = ({ netId, currentUserId, minim
         refetch();
       }
     };
+    // Filed from this browser, by the host page's FileTrafficDialog: refetch
+    // and open what was just filed. Kept separate from the WebSocket events
+    // above deliberately -- jumping to a detail view is right for traffic the
+    // operator just entered, and wrong for traffic another station filed
+    // while they were reading something else.
+    const handleFiledLocally = (event: any) => {
+      if (event.detail?.net_id !== netId) return;
+      refetch();
+      if (event.detail?.form_id) setSelectedFormId(event.detail.form_id);
+    };
     window.addEventListener('trafficLogged', handleTrafficLogged);
     window.addEventListener('trafficLogChanged', handleTrafficLogged);
+    window.addEventListener('netTrafficFiled', handleFiledLocally);
     return () => {
       window.removeEventListener('trafficLogged', handleTrafficLogged);
       window.removeEventListener('trafficLogChanged', handleTrafficLogged);
+      window.removeEventListener('netTrafficFiled', handleFiledLocally);
     };
   }, [netId, refetch]);
 
+  // Opens in a new tab rather than navigating this one -- clicking it from
+  // an active net shouldn't cost the operator their place on the net page.
   const handleViewAll = () => {
-    navigate(`/traffic?net_id=${netId}`);
+    window.open(`/traffic?net_id=${netId}`, '_blank', 'noopener');
   };
+
+  // ========== TRAFFIC EXPORT ==========
+  // Two genuinely different outputs, not two encodings of one:
+  //   Text -- one line per report, for pasting into a spreadsheet or a
+  //           Winlink template. Every form type, via format_form()'s own
+  //           per-type dispatch.
+  //   PDF  -- every report rendered as its real form (Radiogram pad,
+  //           ICS-213, strip layout), for filing or handing off on paper.
+  // There is deliberately no raw/radiogram-safe choice: "M" for a negative
+  // number is how an RRI strip is written per its own field spec, so the
+  // server applies it to strip lines unconditionally -- see
+  // routers/nets_export.py::export_net_rri_strips.
+  const [exportMenuAnchor, setExportMenuAnchor] = useState<HTMLElement | null>(null);
+  const [pdfForms, setPdfForms] = useState<any[] | null>(null);
+  const [exportingPdf, setExportingPdf] = useState(false);
+
+  const handleExportText = async () => {
+    setExportMenuAnchor(null);
+    try {
+      const response = await api.get(`/nets/${netId}/export/rri-strips`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Traffic_net${netId}.txt`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Failed to export traffic:', err);
+    }
+  };
+
+  // The list endpoint returns summary rows without a `definition`, which the
+  // print views need -- so fetch each form's detail, mount the bundle
+  // off-screen, then capture it. Mounting is a state change, so the capture
+  // has to wait for the render (the effect below), not run inline here.
+  const handleExportPdf = async () => {
+    setExportMenuAnchor(null);
+    setExportingPdf(true);
+    try {
+      // 200 is the endpoint's own cap (schemas enforce le=200); asking for
+      // more is a 422, not a larger page.
+      const listRes = await trafficApi.listForNet(netId, { limit: 200 });
+      const details = await Promise.all(
+        listRes.data.items.map((item: TrafficForm) => trafficApi.get(item.id).then((r) => r.data))
+      );
+      if (details.length === 0) {
+        setExportingPdf(false);
+        return;
+      }
+      setPdfForms(details);
+    } catch (err) {
+      console.error('Failed to build the traffic PDF:', err);
+      setExportingPdf(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!pdfForms) return;
+    let cancelled = false;
+    // One frame for the off-screen bundle to lay out before html2canvas
+    // reads it -- capturing a not-yet-laid-out element yields a blank page.
+    const timer = setTimeout(async () => {
+      try {
+        await exportElementToPdf('net-traffic-print-bundle', {
+          filename: `Traffic_net${netId}`,
+        });
+      } catch (err) {
+        console.error('Failed to export the traffic PDF:', err);
+      } finally {
+        if (!cancelled) {
+          setPdfForms(null);
+          setExportingPdf(false);
+        }
+      }
+    }, 150);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [pdfForms, netId]);
 
   return (
     <Paper
@@ -134,10 +265,55 @@ const TrafficPanel: React.FC<TrafficPanelProps> = ({ netId, currentUserId, minim
                   <Box component="span" sx={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     Traffic
                   </Box>
-                  <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
-                    <IconButton size="small" onClick={handleViewAll} title="View all in Traffic" sx={{ p: 0.25 }}>
-                      <LaunchIcon sx={{ fontSize: 14 }} />
+                  {/* overflowX: auto is defensive -- the Paper this table sits
+                      in clips (overflow: hidden) rather than scrolls, so on a
+                      narrow docked panel with this many icons, without this
+                      the rightmost ones (Minimize/Close) would be unreachable
+                      rather than merely hidden-until-resize. */}
+                  <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, flexShrink: 0, overflowX: 'auto', maxWidth: '100%' }}>
+                    {onCompose && (
+                      <IconButton
+                        size="small"
+                        onClick={onCompose}
+                        title="File traffic on this net"
+                        sx={{ p: 0.25 }}
+                      >
+                        <AddIcon sx={{ fontSize: 14 }} />
+                      </IconButton>
+                    )}
+                    <IconButton
+                      size="small"
+                      onClick={(e) => setExportMenuAnchor(e.currentTarget)}
+                      title="Export traffic"
+                      sx={{ p: 0.25 }}
+                    >
+                      <FileDownloadIcon sx={{ fontSize: 14 }} />
                     </IconButton>
+                    <Menu
+                      anchorEl={exportMenuAnchor}
+                      open={Boolean(exportMenuAnchor)}
+                      onClose={() => setExportMenuAnchor(null)}
+                    >
+                      <MenuItem onClick={handleExportText} sx={{ minHeight: 44 }}>
+                        Text (one line per report)
+                      </MenuItem>
+                      <MenuItem onClick={handleExportPdf} disabled={exportingPdf} sx={{ minHeight: 44 }}>
+                        {exportingPdf ? 'Building PDF...' : 'PDF (printable forms)'}
+                      </MenuItem>
+                    </Menu>
+                    <IconButton size="small" onClick={handleViewAll} title="View all in Traffic" sx={{ p: 0.25 }}>
+                      <ListAltIcon sx={{ fontSize: 14 }} />
+                    </IconButton>
+                    {onDetach && (
+                      <IconButton size="small" onClick={onDetach} title="Detach panel" sx={{ p: 0.25 }}>
+                        <PictureInPictureAltIcon sx={{ fontSize: 14 }} />
+                      </IconButton>
+                    )}
+                    {onPopOut && (
+                      <IconButton size="small" onClick={onPopOut} title="Open in new window" sx={{ p: 0.25 }}>
+                        <OpenInNewIcon sx={{ fontSize: 14 }} />
+                      </IconButton>
+                    )}
                     {(onMinimize || onRestore) && (
                       <IconButton
                         size="small"
@@ -148,6 +324,11 @@ const TrafficPanel: React.FC<TrafficPanelProps> = ({ netId, currentUserId, minim
                         {minimized
                           ? <CropSquareIcon sx={{ fontSize: 14 }} />
                           : <MinimizeIcon sx={{ fontSize: 14 }} />}
+                      </IconButton>
+                    )}
+                    {onClose && (
+                      <IconButton size="small" onClick={onClose} title="Close" sx={{ p: 0.25 }}>
+                        <CloseIcon sx={{ fontSize: 14 }} />
                       </IconButton>
                     )}
                   </Box>
@@ -206,6 +387,15 @@ const TrafficPanel: React.FC<TrafficPanelProps> = ({ netId, currentUserId, minim
               )}
             </>
           )}
+        </Box>
+      )}
+
+      {/* Off-screen print bundle, mounted only while a PDF export is in
+          flight. Positioned off canvas rather than display:none, since
+          html2canvas needs it actually laid out to capture it. */}
+      {pdfForms && (
+        <Box sx={{ position: 'fixed', top: 0, left: -99999, width: 800, overflow: 'hidden' }}>
+          <NetTrafficPrintBundle id="net-traffic-print-bundle" forms={pdfForms} />
         </Box>
       )}
     </Paper>

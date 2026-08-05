@@ -92,3 +92,53 @@ async def test_upsert_preserves_admin_field_overrides(db):
     # Structural metadata (not admin-overridable) still gets synced.
     assert to_zip.validator == "us_zip"
     assert to_zip.max_length == 10
+
+
+@pytest.mark.asyncio
+async def test_strip_definition_response_publishes_its_wire_layout(db):
+    """FormDefinitionResponse carries the strip's keyword and section breaks.
+
+    The composer builds the canonical strip client-side while the operator
+    types, so it needs the same layout format_rri_strip() uses. WXOBS keeps
+    that layout pinned in Python (_STRIP_SPECS), which means the stored
+    starts_new_section flags are all False -- the response has to stamp the
+    real ones on or the preview would show a strip with no "/ /" breaks.
+    """
+    from sqlalchemy.orm import selectinload
+
+    from app.schemas import FormDefinitionResponse
+
+    await upsert_form_definitions(db)
+    result = await db.execute(
+        select(FormDefinition)
+        .options(selectinload(FormDefinition.fields))
+        .where(FormDefinition.form_type == "WXOBS")
+    )
+    body = FormDefinitionResponse.from_orm(result.scalar_one())
+
+    assert body.strip_keyword == "WXOBS"
+    starts = {f.name for f in body.fields if f.starts_new_section}
+    # First field of each _WXOBS_SECTIONS section after the first.
+    assert starts == {
+        "observation_time", "wind_dir", "clouds", "temp", "barometer",
+        "precip_type", "comments",
+    }
+    # call_sign opens the strip, so it does not start a new section.
+    assert not next(f for f in body.fields if f.name == "call_sign").starts_new_section
+
+
+@pytest.mark.asyncio
+async def test_non_strip_definition_has_no_strip_keyword(db):
+    """Only RRI strips get a wire keyword; a Radiogram has no such concept."""
+    from sqlalchemy.orm import selectinload
+
+    from app.schemas import FormDefinitionResponse
+
+    await upsert_form_definitions(db)
+    result = await db.execute(
+        select(FormDefinition)
+        .options(selectinload(FormDefinition.fields))
+        .where(FormDefinition.form_type == "RADIOGRAM")
+    )
+    body = FormDefinitionResponse.from_orm(result.scalar_one())
+    assert body.strip_keyword is None

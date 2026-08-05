@@ -13,6 +13,7 @@ from sqlalchemy.orm import selectinload
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models import CheckIn, Net, NetRole, NetStatus, User, net_frequencies
+from app.models import Form as TrafficFormModel
 from app.permissions import check_net_lifecycle_permission, check_net_permission
 from app.schemas import Ics309LogResponse, NetResponse
 from app.services.csv_import import (
@@ -23,12 +24,14 @@ from app.services.csv_import import (
     decode_csv_bytes,
     process_csv_rows,
 )
+from app.traffic.formatters import format_form
 from app.traffic.ics309 import (
     format_traffic_ics309_message,
     get_net_traffic_log_entries,
     traffic_from_station,
     traffic_to_station,
 )
+from app.traffic.rri_strip import make_nts_safe
 from app.utils import display_callsign, format_time_for_net, resolve_display_tz, to_display_tz
 
 router = APIRouter()
@@ -415,6 +418,62 @@ async def export_net_ics309(
     return StreamingResponse(
         iter([output.getvalue()]),
         media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
+@router.get("/{net_id}/export/rri-strips")
+async def export_net_rri_strips(
+    net_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Export this net's traffic as one line per report, oldest first --
+    built for pasting straight into a spreadsheet or Winlink template,
+    matching how receiving stations actually use RRI/WX strip data (see
+    TRAFFIC-HANDLING-DESIGN.md's RRI strip section). Every form type is
+    included via format_form()'s own per-type dispatch (Radiogram/ICS-213
+    canonical text alongside RRI/WX strip lines), not just strip types.
+
+    RRI's minus->M substitution is applied to strip lines unconditionally
+    and is NOT offered as a choice, because "M" is simply how a negative
+    number is written in an RRI strip -- the strip specs say so in the field
+    definition itself ("TEMP DEG F (### M=MINUS)"), so an operator following
+    the form would never enter a literal "-5" in the first place. This just
+    normalizes the case where they did. It is deliberately NOT applied to
+    Radiogram/ICS-213 lines: "M" is not a general NTS proword for a minus
+    sign (ordinary radiogram text spells a hyphen out as "DASH" -- see
+    app/traffic/nts_text.py), and blanket-substituting would corrupt
+    legitimate hyphenated free text like a route number.
+    """
+    net_result = await db.execute(select(Net).where(Net.id == net_id))
+    net = net_result.scalar_one_or_none()
+    if not net:
+        raise HTTPException(status_code=404, detail="Net not found")
+
+    if not await check_net_permission(db, net, current_user):
+        raise HTTPException(status_code=403, detail="Not authorized to export this net")
+
+    forms_result = await db.execute(
+        select(TrafficFormModel)
+        .options(selectinload(TrafficFormModel.definition))
+        .where(TrafficFormModel.net_id == net_id)
+        .order_by(TrafficFormModel.filed_at)
+    )
+    forms = forms_result.scalars().all()
+
+    lines = []
+    for form in forms:
+        line = format_form(form)
+        if form.definition.output_format in ("rri_strip", "rri_strip_raw"):
+            line = make_nts_safe(line)
+        lines.append(line)
+
+    filename = f"Traffic_{net.name.replace(' ', '_')}.txt"
+
+    return StreamingResponse(
+        iter(['\n'.join(lines)]),
+        media_type="text/plain",
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
 

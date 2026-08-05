@@ -333,6 +333,23 @@ class FrequencyWithUsageResponse(FrequencyBase):
         from_attributes = True
 
 
+# traffic_form_types is stored as a JSON array in a TEXT column on both nets
+# and net_templates (migration 056) but travels the API as a real list. Shared
+# by NetResponse.from_orm and NetTemplateResponse.from_orm so the two can't
+# drift. Tolerates junk rather than 500ing a whole net fetch over one column.
+def _parse_traffic_form_types(raw) -> Optional[List[str]]:
+    if not raw:
+        return None
+    if isinstance(raw, list):
+        return raw
+    import json
+    try:
+        parsed = json.loads(raw)
+    except (ValueError, TypeError):
+        return None
+    return parsed if isinstance(parsed, list) else None
+
+
 # Net Schemas
 class NetBase(BaseModel):
     name: str = Field(max_length=200, min_length=1)
@@ -344,7 +361,15 @@ class NetBase(BaseModel):
     field_config: Optional[dict] = None
     ics309_enabled: Optional[bool] = False
     propagation_logging_enabled: Optional[bool] = False
-    traffic_enabled: Optional[bool] = True
+    # Opt-in, matching the two EmComm toggles above. Nets created before the
+    # settings toggle existed keep their stored True -- see migration 056.
+    traffic_enabled: Optional[bool] = False
+    # Form types this net takes; null/empty = every enabled definition.
+    traffic_form_types: Optional[List[str]] = Field(None, max_length=50)
+    # Either a defined RRI/WX strip type, or a raw pasted origin strip whose
+    # fields are then positional. Both optional and independent.
+    traffic_strip_form_type: Optional[str] = Field(None, max_length=32)
+    traffic_strip_template: Optional[str] = Field(None, max_length=10000)
     mobile_priority_sort: Optional[bool] = True
     chat_grace_period_minutes: Optional[int] = None
     self_checkin_enabled: Optional[bool] = True
@@ -377,6 +402,9 @@ class NetUpdate(BaseModel):
     ics309_enabled: Optional[bool] = None
     propagation_logging_enabled: Optional[bool] = None
     traffic_enabled: Optional[bool] = None
+    traffic_form_types: Optional[List[str]] = Field(None, max_length=50)
+    traffic_strip_form_type: Optional[str] = Field(None, max_length=32)
+    traffic_strip_template: Optional[str] = Field(None, max_length=10000)
     mobile_priority_sort: Optional[bool] = None
     chat_grace_period_minutes: Optional[int] = None
     self_checkin_enabled: Optional[bool] = None
@@ -418,6 +446,9 @@ class NetResponse(NetBase):
     ics309_enabled: bool = False
     propagation_logging_enabled: bool = False
     traffic_enabled: bool = True
+    traffic_form_types: Optional[List[str]] = None
+    traffic_strip_form_type: Optional[str] = None
+    traffic_strip_template: Optional[str] = None
     scheduled_start_time: Optional[datetime] = None
     started_at: Optional[datetime] = None
     closed_at: Optional[datetime] = None
@@ -457,6 +488,9 @@ class NetResponse(NetBase):
             'ics309_enabled': net.ics309_enabled or False,
             'propagation_logging_enabled': net.propagation_logging_enabled or False,
             'traffic_enabled': net.traffic_enabled if net.traffic_enabled is not None else True,
+            'traffic_form_types': _parse_traffic_form_types(net.traffic_form_types),
+            'traffic_strip_form_type': net.traffic_strip_form_type,
+            'traffic_strip_template': net.traffic_strip_template,
             'mobile_priority_sort': net.mobile_priority_sort if net.mobile_priority_sort is not None else True,
             'chat_grace_period_minutes': net.chat_grace_period_minutes,
             'self_checkin_enabled': net.self_checkin_enabled if net.self_checkin_enabled is not None else True,
@@ -498,7 +532,11 @@ class NetTemplateBase(BaseModel):
     fifth_week_user_id: Optional[int] = None
     ics309_enabled: bool = False  # Enable ICS-309 format for net close emails
     propagation_logging_enabled: bool = False  # Seeds propagation_logging_enabled for nets created from this template
-    traffic_enabled: bool = True  # Seeds traffic_enabled for nets created from this template
+    traffic_enabled: bool = False  # Seeds traffic_enabled for nets created from this template
+    # Seed the three per-net traffic settings; same null semantics as NetBase.
+    traffic_form_types: Optional[List[str]] = Field(None, max_length=50)
+    traffic_strip_form_type: Optional[str] = Field(None, max_length=32)
+    traffic_strip_template: Optional[str] = Field(None, max_length=10000)
     mobile_priority_sort: Optional[bool] = True
     chat_grace_period_minutes: Optional[int] = None
     self_checkin_enabled: Optional[bool] = True
@@ -534,6 +572,9 @@ class NetTemplateUpdate(BaseModel):
     ics309_enabled: Optional[bool] = None
     propagation_logging_enabled: Optional[bool] = None
     traffic_enabled: Optional[bool] = None
+    traffic_form_types: Optional[List[str]] = Field(None, max_length=50)
+    traffic_strip_form_type: Optional[str] = Field(None, max_length=32)
+    traffic_strip_template: Optional[str] = Field(None, max_length=10000)
     mobile_priority_sort: Optional[bool] = None
     chat_grace_period_minutes: Optional[int] = None
     self_checkin_enabled: Optional[bool] = None
@@ -583,6 +624,9 @@ class NetTemplateResponse(NetTemplateBase):
             'ics309_enabled': template.ics309_enabled or False,
             'propagation_logging_enabled': template.propagation_logging_enabled or False,
             'traffic_enabled': template.traffic_enabled if template.traffic_enabled is not None else True,
+            'traffic_form_types': _parse_traffic_form_types(template.traffic_form_types),
+            'traffic_strip_form_type': template.traffic_strip_form_type,
+            'traffic_strip_template': template.traffic_strip_template,
             'mobile_priority_sort': template.mobile_priority_sort if template.mobile_priority_sort is not None else True,
             'chat_grace_period_minutes': template.chat_grace_period_minutes,
             'self_checkin_enabled': template.self_checkin_enabled if template.self_checkin_enabled is not None else True,
@@ -1473,6 +1517,7 @@ class FormDefinitionFieldResponse(BaseModel):
     auto_fill: Optional[str] = None
     nts_normalize: bool
     arl_enabled: bool
+    starts_new_section: bool
     sort_order: int
 
     class Config:
@@ -1497,6 +1542,7 @@ class FormDefinitionFieldResponse(BaseModel):
             auto_fill=field.auto_fill,
             nts_normalize=field.nts_normalize,
             arl_enabled=field.arl_enabled,
+            starts_new_section=field.starts_new_section,
             sort_order=field.sort_order,
         )
 
@@ -1526,6 +1572,12 @@ class FormDefinitionResponse(BaseModel):
     is_builtin: bool
     is_enabled: bool
     sort_order: int
+    # RRI strip types only (null on every other output_format): the leading
+    # keyword of the canonical slash-delimited string. Usually the form_type
+    # itself, but not always -- GYX-CAR-SKYWARN goes on the air as
+    # "GYX-CAR WEATHER". Published so the composer can build the same string
+    # rri_strip.format_rri_strip() will.
+    strip_keyword: Optional[str] = None
     fields: List[FormDefinitionFieldResponse] = Field(default_factory=list)
     created_at: datetime
     updated_at: Optional[datetime] = None
@@ -1535,6 +1587,24 @@ class FormDefinitionResponse(BaseModel):
 
     @classmethod
     def from_orm(cls, definition):
+        fields = [FormDefinitionFieldResponse.from_orm(f) for f in definition.fields]
+        strip_keyword = None
+        if definition.output_format == 'rri_strip':
+            from app.traffic.rri_strip import strip_layout
+            strip_keyword, sections = strip_layout(definition.form_type, definition)
+            # A pinned builtin (WXOBS, GYX-CAR-SKYWARN) keeps its "/ /"
+            # section breaks in Python, not in form_definition_fields, so the
+            # stored starts_new_section flags are all False and would render a
+            # strip with no section breaks. Stamp the real layout onto the
+            # response instead of shipping a wrong one; for a dynamically
+            # defined type this is a no-op, since the layout came from those
+            # same flags.
+            section_starts = set()
+            for section in sections[1:]:
+                if section:
+                    section_starts.add(section[0])
+            for field in fields:
+                field.starts_new_section = field.name in section_starts
         return cls(
             id=definition.id,
             form_type=definition.form_type,
@@ -1545,7 +1615,8 @@ class FormDefinitionResponse(BaseModel):
             is_builtin=definition.is_builtin,
             is_enabled=definition.is_enabled,
             sort_order=definition.sort_order,
-            fields=[FormDefinitionFieldResponse.from_orm(f) for f in definition.fields],
+            strip_keyword=strip_keyword,
+            fields=fields,
             created_at=definition.created_at,
             updated_at=definition.updated_at,
         )
@@ -1776,6 +1847,64 @@ class ImportPreviewResponse(BaseModel):
     warnings: List[str] = Field(default_factory=list)
     unparsed_lines: List[str] = Field(default_factory=list)
     raw_text: Optional[str] = None
+
+
+class StripTemplateTokenizeRequest(BaseModel):
+    text: str = Field(..., min_length=1, max_length=32000)
+
+
+class StripTemplateToken(BaseModel):
+    """One field-to-be-labeled from a pasted RRI strip example. Mirrors
+    app/traffic/rri_strip.py::tokenize_strip's dict shape."""
+    value: str
+    starts_new_section: bool
+
+
+class StripTemplateTokenizeResponse(BaseModel):
+    """POST /traffic/strip-templates/tokenize -- stateless, writes nothing
+    (D5 shape, like ImportPreviewResponse). suggested_form_type is the
+    paste's leading slash-token (RRI's own strip keyword convention, e.g.
+    "SITREP"), offered as a starting point for the form_type field on
+    StripTemplateCreate -- the operator can still change it."""
+    suggested_form_type: str
+    tokens: List[StripTemplateToken] = Field(default_factory=list)
+
+
+class StripTemplateFieldCreate(BaseModel):
+    label: str = Field(..., min_length=1, max_length=120)
+    starts_new_section: bool = False
+    value: str = Field(default="", max_length=10000)
+
+
+class StripTemplateCreate(BaseModel):
+    """POST /traffic/strip-templates: define a new, reusable RRI strip type
+    from a labeled set of fields, and file the first Form from their values
+    in the same call. See routers/traffic_strip_templates.py."""
+    form_type: str = Field(..., min_length=1, max_length=32)
+    title: str = Field(..., min_length=1, max_length=120)
+    net_id: Optional[int] = None
+    fields: List[StripTemplateFieldCreate]
+    # The Import flow defines a type *from* a real received strip, so filing
+    # that first report is the point. Net settings (TrafficSettingsPanel.tsx)
+    # defines the type up front from a blank example, where filing a form full
+    # of placeholder values would be noise -- hence the opt-out.
+    file_first_form: bool = True
+
+    @field_validator('fields')
+    @classmethod
+    def validate_fields(cls, v: List[StripTemplateFieldCreate]) -> List[StripTemplateFieldCreate]:
+        if not v:
+            raise ValueError('at least one field is required')
+        if len(v) > 100:
+            raise ValueError('maximum 100 fields allowed')
+        return v
+
+
+class StripTemplateCreateResponse(BaseModel):
+    """POST /traffic/strip-templates. `form` is null when the caller passed
+    file_first_form=False -- the type was defined but nothing was filed."""
+    definition: FormDefinitionResponse
+    form: Optional[FormDetailResponse] = None
 
 
 class TrafficInboxResponse(BaseModel):

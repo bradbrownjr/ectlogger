@@ -28,6 +28,7 @@ import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import { Rnd } from 'react-rnd';
 import { templateApi } from '../services/api';
 import MarkdownRender from './shared/MarkdownRender';
+import useEditDraft from '../hooks/useEditDraft';
 
 interface ScheduleAnnouncementsProps {
   open: boolean;
@@ -68,8 +69,10 @@ const ScheduleAnnouncements: React.FC<ScheduleAnnouncementsProps> = ({
 }) => {
   const [minimized, setMinimized] = useState(false);
   const [announcements, setAnnouncements] = useState('');
-  const [editing, setEditing] = useState(false);
-  const [editValue, setEditValue] = useState('');
+  const { editing, setEditing, editValue, setEditValue } = useEditDraft(
+    templateId ? `schedule-announcements:${templateId}` : null,
+    ''
+  );
   const [saving, setSaving] = useState(false);
   const [previewing, setPreviewing] = useState(false);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
@@ -88,9 +91,11 @@ const ScheduleAnnouncements: React.FC<ScheduleAnnouncementsProps> = ({
         .then(res => {
           const text = res.data.announcements || '';
           setAnnouncements(text);
-          setEditValue(text);
+          // Never over-write an edit in progress -- this fetch also runs when
+          // the panel is remounted mid-edit (see useEditDraft).
+          if (!editing) setEditValue(text);
         })
-        .catch(() => { setAnnouncements(''); setEditValue(''); });
+        .catch(() => { setAnnouncements(''); if (!editing) setEditValue(''); });
     }
   }, [open, templateId]);
 

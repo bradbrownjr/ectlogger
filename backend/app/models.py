@@ -153,7 +153,19 @@ class Net(Base):
     field_config = Column(Text, default='{"name": {"enabled": true, "required": false}, "location": {"enabled": true, "required": false}, "skywarn_number": {"enabled": false, "required": false}, "weather_observation": {"enabled": false, "required": false}, "power_source": {"enabled": false, "required": false}, "power": {"enabled": false, "required": false}, "feedback": {"enabled": false, "required": false}, "notes": {"enabled": false, "required": false}}')  # JSON config for check-in fields
     ics309_enabled = Column(Boolean, default=False)  # Generate ICS-309 format on close
     propagation_logging_enabled = Column(Boolean, default=False)  # Enable "can hear" station-to-station coverage logging
-    traffic_enabled = Column(Boolean, default=True)  # Show the per-net Traffic side panel (Assisted Traffic Handling)
+    # Opt-in like ics309_enabled/propagation_logging_enabled above. The default
+    # only applies to newly inserted rows, so nets created before the settings
+    # toggle existed keep their stored True and don't lose the panel.
+    traffic_enabled = Column(Boolean, default=False)  # Enable the per-net Traffic panel + toolbar button
+    # Which form types this net takes. JSON array of form_type codes; null =
+    # every enabled definition. Filters the pickers only -- the API still
+    # accepts an off-list type so unusual traffic is never rejected mid-incident.
+    traffic_form_types = Column(Text, nullable=True)
+    # The RRI/WX strip this net collects. Either a defined type (labels come
+    # from the definition) or a raw pasted origin strip (positional fields) --
+    # see TrafficSettingsPanel.tsx and migration 056.
+    traffic_strip_form_type = Column(String(32), nullable=True)
+    traffic_strip_template = Column(Text, nullable=True)
     mobile_priority_sort = Column(Boolean, default=True)  # Promote mobile stations above chronological order
     chat_grace_period_minutes = Column(Integer, nullable=True)  # Minutes to keep chat open after close; null = disabled
     self_checkin_enabled = Column(Boolean, default=True)  # If False, only NCS/logger-entered check-ins are accepted
@@ -218,7 +230,11 @@ class NetTemplate(Base):
     is_active = Column(Boolean, default=True)
     ics309_enabled = Column(Boolean, default=False)  # Enable ICS-309 format for net close emails
     propagation_logging_enabled = Column(Boolean, default=False)  # Seeds Net.propagation_logging_enabled for nets created from this template
-    traffic_enabled = Column(Boolean, default=True)  # Seeds Net.traffic_enabled for nets created from this template
+    traffic_enabled = Column(Boolean, default=False)  # Seeds Net.traffic_enabled for nets created from this template
+    # Seed the three per-net traffic settings above; same null semantics.
+    traffic_form_types = Column(Text, nullable=True)
+    traffic_strip_form_type = Column(String(32), nullable=True)
+    traffic_strip_template = Column(Text, nullable=True)
     traffic_escalation_digest = Column(Boolean, default=False)  # Opt-in weekly stale-traffic digest to this template's manager (D4). Off by default -- a badge in the traffic panel is the default escalation path; this is for groups that need active chasing.
     mobile_priority_sort = Column(Boolean, default=True)  # Promote mobile stations above chronological order
     chat_grace_period_minutes = Column(Integer, nullable=True)  # Minutes to keep chat open after close; null = disabled
@@ -447,6 +463,7 @@ class FormDefinitionField(Base):
     auto_fill = Column(String(32), nullable=True)    # "callsign" | "place_of_origin" | "signature"
     nts_normalize = Column(Boolean, default=False)   # run normalize_nts_text + count_nts_check on this field
     arl_enabled = Column(Boolean, default=False)     # offer the ARL numbered-message picker
+    starts_new_section = Column(Boolean, default=False)  # RRI "/ /" break before this field (dynamic strip types only)
     sort_order = Column(Integer, default=100)
 
     definition = relationship("FormDefinition", back_populates="fields")

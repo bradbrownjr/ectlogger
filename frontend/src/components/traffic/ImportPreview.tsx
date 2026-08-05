@@ -3,8 +3,10 @@ import {
   Alert,
   Box,
   Button,
+  Checkbox,
   Chip,
   CircularProgress,
+  FormControlLabel,
   Paper,
   TextField,
   Tooltip,
@@ -15,9 +17,10 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import AddIcon from '@mui/icons-material/Add';
+import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
 import { trafficApi } from '../../services/api';
 import { getErrorMessage } from '../../utils/apiErrors';
-import { FormDefinition } from '../../hooks/useFormDefinitions';
+import { FormDefinition, invalidateFormDefinitionsCache } from '../../hooks/useFormDefinitions';
 import FormRenderer from './FormRenderer';
 import RadiogramAssist from './RadiogramAssist';
 
@@ -48,9 +51,19 @@ interface ImportPreviewProps {
   definitions: FormDefinition[];
   onCreated: (id: number) => void;
   onGoToNewTab: () => void;
+  // Set when importing from a net's context (?net_id= on the Traffic page),
+  // so an imported message or a strip type defined from it belongs to that
+  // net rather than being filed unaffiliated.
+  netId?: number;
 }
 
-type Stage = 'paste' | 'review' | 'edit';
+type Stage = 'paste' | 'review' | 'edit' | 'define';
+
+interface DefineToken {
+  value: string;
+  starts_new_section: boolean;
+  label: string;
+}
 
 // A stated-vs-computed check mismatch is, per D5, "the single most valuable
 // thing the importer can do" -- so it gets its own always-visible callout
@@ -80,7 +93,7 @@ function valuesFromParseResult(definition: FormDefinition, result: ImportResult)
   return values;
 }
 
-const ImportPreview: React.FC<ImportPreviewProps> = ({ definitions, onCreated, onGoToNewTab }) => {
+const ImportPreview: React.FC<ImportPreviewProps> = ({ definitions, onCreated, onGoToNewTab, netId }) => {
   const [stage, setStage] = useState<Stage>('paste');
   const [text, setText] = useState('');
   const [parsing, setParsing] = useState(false);
@@ -91,6 +104,17 @@ const ImportPreview: React.FC<ImportPreviewProps> = ({ definitions, onCreated, o
   const [values, setValues] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  // ========== "define fields for a new strip type" ==========
+  // See routers/traffic_strip_templates.py -- RRI's "RI" (Request for
+  // Information) mechanism: label a pasted example's fields once, and every
+  // station's answer afterward shares that same structure.
+  const [defineLoading, setDefineLoading] = useState(false);
+  const [defineError, setDefineError] = useState<string | null>(null);
+  const [defineFormType, setDefineFormType] = useState('');
+  const [defineTitle, setDefineTitle] = useState('');
+  const [defineTokens, setDefineTokens] = useState<DefineToken[]>([]);
+  const [defining, setDefining] = useState(false);
 
   const matchedDefinition = result
     ? definitions.find((d) => d.form_type === result.form_type) ?? null
@@ -123,6 +147,64 @@ const ImportPreview: React.FC<ImportPreviewProps> = ({ definitions, onCreated, o
     setValues({});
     setParseError(null);
     setSaveError(null);
+    setDefineTokens([]);
+    setDefineFormType('');
+    setDefineTitle('');
+    setDefineError(null);
+  };
+
+  const rawStripText = result?.fields.strip_text?.value;
+
+  const handleStartDefine = async () => {
+    if (typeof rawStripText !== 'string') return;
+    setDefineLoading(true);
+    setDefineError(null);
+    try {
+      const resp = await trafficApi.tokenizeStripTemplate(rawStripText);
+      setDefineFormType(resp.data.suggested_form_type);
+      setDefineTitle('');
+      setDefineTokens(
+        resp.data.tokens.map((t: { value: string; starts_new_section: boolean }) => ({
+          value: t.value,
+          starts_new_section: t.starts_new_section,
+          label: '',
+        }))
+      );
+      setStage('define');
+    } catch (err) {
+      setDefineError(getErrorMessage(err, 'Could not read this text'));
+    } finally {
+      setDefineLoading(false);
+    }
+  };
+
+  const handleDefineTokenChange = (index: number, patch: Partial<DefineToken>) => {
+    setDefineTokens((prev) => prev.map((t, i) => (i === index ? { ...t, ...patch } : t)));
+  };
+
+  const handleDefineSubmit = async () => {
+    setDefining(true);
+    setDefineError(null);
+    try {
+      const resp = await trafficApi.createStripTemplate({
+        form_type: defineFormType,
+        title: defineTitle,
+        net_id: netId,
+        fields: defineTokens.map((t) => ({
+          label: t.label,
+          starts_new_section: t.starts_new_section,
+          value: t.value,
+        })),
+      });
+      invalidateFormDefinitionsCache();
+      // file_first_form defaults true here -- we're defining the type FROM a
+      // real received strip, so resp.data.form is the report just filed.
+      onCreated(resp.data.form.id);
+    } catch (err) {
+      setDefineError(getErrorMessage(err, 'Failed to define this strip type'));
+    } finally {
+      setDefining(false);
+    }
   };
 
   const handleChange = (name: string, value: string) => {
@@ -145,7 +227,7 @@ const ImportPreview: React.FC<ImportPreviewProps> = ({ definitions, onCreated, o
     setSaving(true);
     setSaveError(null);
     try {
-      const resp = await trafficApi.create({ form_type: matchedDefinition.form_type, field_values: values });
+      const resp = await trafficApi.create({ form_type: matchedDefinition.form_type, net_id: netId, field_values: values });
       onCreated(resp.data.id);
     } catch (err) {
       setSaveError(getErrorMessage(err, 'Failed to create this traffic item'));
@@ -159,9 +241,11 @@ const ImportPreview: React.FC<ImportPreviewProps> = ({ definitions, onCreated, o
     return (
       <Box>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Paste the plaintext of a radiogram or ICS-213 message as it was copied off the air, or
-          drag a text file onto the box below, and the parser will fill in what it can. Nothing is
-          saved until you review and confirm.
+          Paste the plaintext of a radiogram, ICS-213 message, or RRI strip (WXOBS, GYX-CAR
+          SKYWARN, or any other) as it was copied off the air, or drag a text file onto the box
+          below, and the parser will fill in what it can. Anything it doesn't recognize is still
+          saved as a general RRI strip, exactly as pasted. Nothing is saved until you review and
+          confirm.
         </Typography>
         <Box
           onDragOver={(e) => {
@@ -225,10 +309,11 @@ const ImportPreview: React.FC<ImportPreviewProps> = ({ definitions, onCreated, o
           Start over
         </Button>
 
-        {result.form_type === 'unknown' ? (
+        {result.form_type === 'unknown' || !matchedDefinition ? (
           <Alert severity="warning" sx={{ mb: 2 }}>
-            Could not recognize this as a radiogram or ICS-213 message. Nothing was lost — your
-            original text is preserved below. You can enter it manually on the New tab instead.
+            Could not recognize this as a radiogram, ICS-213, or RRI strip message, or that form
+            type isn't available. Nothing was lost — your original text is preserved below. You
+            can enter it manually on the New tab instead.
           </Alert>
         ) : (
           <Typography variant="subtitle1" sx={{ mb: 1 }}>
@@ -308,7 +393,20 @@ const ImportPreview: React.FC<ImportPreviewProps> = ({ definitions, onCreated, o
           </Paper>
         )}
 
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+        {defineError && <Alert severity="error" sx={{ mb: 2 }}>{defineError}</Alert>}
+
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, flexWrap: 'wrap' }}>
+          {typeof rawStripText === 'string' && (
+            <Button
+              variant="outlined"
+              startIcon={defineLoading ? <CircularProgress size={16} /> : <PlaylistAddIcon />}
+              onClick={handleStartDefine}
+              disabled={defineLoading}
+              sx={{ minHeight: 44 }}
+            >
+              Define fields for a new strip type
+            </Button>
+          )}
           {result.form_type === 'unknown' || !matchedDefinition ? (
             <Button variant="contained" onClick={onGoToNewTab} sx={{ minHeight: 44 }}>
               Enter manually on New tab
@@ -318,6 +416,93 @@ const ImportPreview: React.FC<ImportPreviewProps> = ({ definitions, onCreated, o
               Confirm and review fields
             </Button>
           )}
+        </Box>
+      </Box>
+    );
+  }
+
+  // ========== DEFINE STAGE ==========
+  // Label each token from the pasted example to define a new, reusable RRI
+  // strip type -- see routers/traffic_strip_templates.py. Submitting both
+  // creates the FormDefinition and files this example as its first Form.
+  if (stage === 'define') {
+    const canSubmit =
+      defineFormType.trim().length > 0 &&
+      defineTitle.trim().length > 0 &&
+      defineTokens.length > 0 &&
+      defineTokens.every((t) => t.label.trim().length > 0);
+
+    return (
+      <Box>
+        <Button startIcon={<ArrowBackIcon />} onClick={() => setStage('review')} sx={{ mb: 2, minHeight: 44 }}>
+          Back to parse review
+        </Button>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Name each field below. This becomes a reusable strip type — every station that answers
+          it afterward fills in the same fields, and this example becomes its first entry.
+        </Typography>
+        {defineError && <Alert severity="error" sx={{ mb: 2 }}>{defineError}</Alert>}
+
+        <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
+          <TextField
+            label="Strip type code"
+            value={defineFormType}
+            onChange={(e) => setDefineFormType(e.target.value)}
+            helperText="e.g. SITREP — becomes the type's short code"
+            sx={{ minWidth: 220 }}
+          />
+          <TextField
+            label="Title"
+            value={defineTitle}
+            onChange={(e) => setDefineTitle(e.target.value)}
+            helperText="e.g. Situation Report — shown in the New tab"
+            sx={{ flexGrow: 1, minWidth: 220 }}
+          />
+        </Box>
+
+        <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
+          <Typography variant="subtitle2" sx={{ mb: 1.5 }}>Fields</Typography>
+          {defineTokens.map((token, index) => (
+            <Box
+              key={index}
+              sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, py: 1, flexWrap: 'wrap' }}
+            >
+              <Box sx={{ minWidth: 160, maxWidth: 240, pt: 1 }}>
+                <Typography variant="caption" color="text.secondary">Value</Typography>
+                <Typography variant="body2" sx={{ wordBreak: 'break-word' }}>{token.value}</Typography>
+              </Box>
+              <TextField
+                label="Field name"
+                size="small"
+                value={token.label}
+                onChange={(e) => handleDefineTokenChange(index, { label: e.target.value })}
+                sx={{ flexGrow: 1, minWidth: 200 }}
+              />
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={token.starts_new_section}
+                    onChange={(e) => handleDefineTokenChange(index, { starts_new_section: e.target.checked })}
+                  />
+                }
+                label="Starts a new section"
+                sx={{ mt: 0.5 }}
+              />
+            </Box>
+          ))}
+        </Paper>
+
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={defining ? <CircularProgress size={16} color="inherit" /> : <AddIcon />}
+            onClick={handleDefineSubmit}
+            disabled={defining || !canSubmit}
+            sx={{ minHeight: 44 }}
+          >
+            {defining ? 'Defining...' : 'Define type and save'}
+          </Button>
         </Box>
       </Box>
     );

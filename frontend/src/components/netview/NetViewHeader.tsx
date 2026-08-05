@@ -31,6 +31,8 @@ import ArchiveIcon from '@mui/icons-material/Archive';
 import UnarchiveIcon from '@mui/icons-material/Unarchive';
 import MapIcon from '@mui/icons-material/Map';
 import HearingIcon from '@mui/icons-material/Hearing';
+// Envelope, matching what Navbar.tsx already uses for the Traffic section.
+import MailIcon from '@mui/icons-material/Mail';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import FastForwardIcon from '@mui/icons-material/FastForward';
@@ -204,6 +206,10 @@ interface NetViewHeaderProps {
   search: UseDialogResult;
   map: UseDialogResult;
   coverage: UseDialogResult;
+  traffic: UseDialogResult;
+  // Whether this viewer may see the net's traffic at all -- net.traffic_enabled
+  // plus NCS/logger/owner/admin, derived in NetView.tsx (canViewNetTraffic).
+  canViewTraffic: boolean;
   script: UseDialogResult;
   scheduleAnnouncements: UseDialogResult;
   announcements: UseDialogResult;
@@ -317,6 +323,8 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
   search,
   map,
   coverage,
+  traffic,
+  canViewTraffic,
   script,
   scheduleAnnouncements,
   announcements,
@@ -406,6 +414,17 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
       visible: net.propagation_logging_enabled,
       Icon: HearingIcon, color: theme.palette.primary.main, label: 'Coverage',
       tooltip: 'View station-to-station coverage reports', onClick: coverage.onOpen,
+    },
+    {
+      // Same "watch it build as it happens" rationale as coverage above: the
+      // panel is useful all through the net, not only once it's closed. Gated
+      // only by the net-level toggle plus who may see traffic at all -- the
+      // Information group per DESIGN.md's decision rule, since the pane is a
+      // view of the net's traffic (filing happens in a dialog inside it).
+      key: 'traffic', group: 'info', priority: 2,
+      visible: canViewTraffic,
+      Icon: MailIcon, color: theme.palette.primary.main, label: 'Traffic',
+      tooltip: 'View and file traffic for this net', onClick: traffic.onOpen,
     },
     {
       key: 'audio', group: 'info', priority: 1,

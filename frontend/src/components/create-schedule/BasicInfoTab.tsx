@@ -8,6 +8,7 @@ import {
   Switch,
 } from '@mui/material';
 import { useCreateScheduleContext } from '../../contexts/CreateScheduleContext';
+import TrafficSettingsPanel from '../forms/TrafficSettingsPanel';
 
 // ========== TAB 0: BASIC INFO ==========
 // Name, description, general net features, community features, ARES/EmComm features, active flag
@@ -19,6 +20,10 @@ const BasicInfoTab: React.FC = () => {
     infoUrl, setInfoUrl,
     ics309Enabled, setIcs309Enabled,
     propagationLoggingEnabled, setPropagationLoggingEnabled,
+    trafficEnabled, setTrafficEnabled,
+    trafficFormTypes, setTrafficFormTypes,
+    trafficStripFormType, setTrafficStripFormType,
+    trafficStripTemplate, setTrafficStripTemplate,
     mobilePrioritySort, setMobilePrioritySort,
     selfCheckinEnabled, setSelfCheckinEnabled,
     topicOfWeekEnabled, setTopicOfWeekEnabled,
@@ -198,6 +203,19 @@ const BasicInfoTab: React.FC = () => {
               Adds a 'can hear' action to each check-in, letting NCS, Logger, and Relay record which stations can hear each other during this net.
             </Typography>
           </Box>
+
+          {/* Assisted Traffic Handling — shared with the Net editor */}
+          <TrafficSettingsPanel
+            scope="schedule"
+            trafficEnabled={trafficEnabled}
+            setTrafficEnabled={setTrafficEnabled}
+            trafficFormTypes={trafficFormTypes}
+            setTrafficFormTypes={setTrafficFormTypes}
+            trafficStripFormType={trafficStripFormType}
+            setTrafficStripFormType={setTrafficStripFormType}
+            trafficStripTemplate={trafficStripTemplate}
+            setTrafficStripTemplate={setTrafficStripTemplate}
+          />
         </Box>
       </FormGroup>
 

@@ -18,6 +18,8 @@ import Chat from '../components/Chat';
 import ActivityLog from '../components/ActivityLog';
 import CheckInMap from '../components/CheckInMap';
 import CoverageReport from '../components/netview/CoverageReport';
+import TrafficPanel from '../components/netview/TrafficPanel';
+import FileTrafficDialog from '../components/netview/FileTrafficDialog';
 import CheckInTable from '../components/netview/CheckInTable';
 import CanHearDialog from '../components/netview/CanHearDialog';
 import { getCheckInActions } from '../components/netview/checkInActions';
@@ -42,6 +44,7 @@ const PANE_LABELS: Record<string, string> = {
   'check-ins': 'Check-Ins',
   map: 'Map',
   coverage: 'Station Coverage',
+  traffic: 'Traffic',
 };
 
 // Bare-bones page rendered inside a real popped-out browser window (see
@@ -74,6 +77,8 @@ const NetPaneWindow: React.FC = () => {
   // plain local toggle since there's no Coverage panel in this isolated
   // window to cross-link with (see CheckInMap.tsx's lifted-state comment).
   const [mapCoverageOverlayOn, setMapCoverageOverlayOn] = useState(false);
+  // Traffic composer for the popped-out Traffic pane (see NetView.tsx).
+  const [fileTrafficOpen, setFileTrafficOpen] = useState(false);
   const [checkInForm, setCheckInForm] = useState<CheckInFormState>({
     callsign: '',
     name: '',
@@ -221,6 +226,28 @@ const NetPaneWindow: React.FC = () => {
           frequencyLabels={Object.fromEntries(
             (net?.frequencies || []).map((f: any) => [f.id, `${f.frequency || f.network || ''} ${f.mode || ''}`.trim()])
           )}
+        />
+      </Box>
+    );
+  }
+
+  if (paneType === 'traffic') {
+    return (
+      <Box sx={{ height: '100vh', width: '100vw', p: 0.5, boxSizing: 'border-box', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {/* No chrome props: in a real window there is nothing to close to,
+            detach from, or minimize into — the window controls do that. */}
+        <TrafficPanel
+          netId={Number(netId)}
+          currentUserId={user?.id}
+          onCompose={() => setFileTrafficOpen(true)}
+        />
+        {/* Outside TrafficPanel, matching NetView — the composer must not be
+            owned by the panel it is opened from. */}
+        <FileTrafficDialog
+          netId={Number(netId)}
+          net={net}
+          open={fileTrafficOpen}
+          onClose={() => setFileTrafficOpen(false)}
         />
       </Box>
     );

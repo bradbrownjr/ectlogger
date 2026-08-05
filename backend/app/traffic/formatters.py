@@ -16,6 +16,12 @@ from typing import Any, Callable, Dict, Tuple
 
 from app.traffic.ics213 import format_ics213, parse_ics213
 from app.traffic.radiogram import format_nts_radiogram, parse_nts_radiogram
+from app.traffic.rri_strip import (
+    format_rri_strip,
+    format_rri_strip_raw,
+    parse_rri_strip,
+    parse_rri_strip_raw,
+)
 
 FormatFn = Callable[[Any], str]
 ParseFn = Callable[[str], Dict[str, Any]]
@@ -23,11 +29,17 @@ ParseFn = Callable[[str], Dict[str, Any]]
 FORMATTERS: Dict[str, Tuple[FormatFn, ParseFn]] = {
     'nts_radiogram': (format_nts_radiogram, parse_nts_radiogram),
     'ics213': (format_ics213, parse_ics213),
+    'rri_strip': (format_rri_strip, parse_rri_strip),
+    'rri_strip_raw': (format_rri_strip_raw, parse_rri_strip_raw),
 }
 
 # Detection order for parse_any, per TRAFFIC-HANDLING-DESIGN.md D5: try the
-# radiogram's unambiguous preamble shape first, then ICS-213 label matching.
-_DETECTION_ORDER = ('nts_radiogram', 'ics213')
+# radiogram's unambiguous preamble shape first, then ICS-213 label matching,
+# then RRI's own keyword-prefixed strips. rri_strip_raw is last and
+# deliberate -- its parser always succeeds on non-empty input (it's the
+# general "save whatever was pasted" catch-all), so nothing after it would
+# ever be reached.
+_DETECTION_ORDER = ('nts_radiogram', 'ics213', 'rri_strip', 'rri_strip_raw')
 
 
 def get_formatter(output_format: str) -> Tuple[FormatFn, ParseFn]:

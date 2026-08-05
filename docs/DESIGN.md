@@ -306,6 +306,75 @@ See Card Action Buttons below.
 
 ---
 
+## Tooltip Positioning
+
+Every `<Tooltip>` in the app gets its positioning behavior from a single
+`MuiTooltip` theme default in `App.tsx` — never add per-instance `PopperProps`
+or positioning `sx` overrides to work around a placement problem; fix (or
+extend) the theme default instead, or the same problem resurfaces on the next
+toolbar someone builds. Three things it enforces everywhere:
+
+- **Tooltips never intercept the click meant for what they're covering.**
+  `disableInteractive: true` gives every tooltip's popper `pointer-events:
+  none`. Toolbars in this app pack icon-only buttons into dense rows (26 px
+  desktop-dense, see the toolbar height exception above), so a tooltip
+  routinely overlaps a neighboring button — without this, hovering one
+  button's tooltip and moving to click made the cursor land on the
+  tooltip's own (selectable) text instead of the button underneath. No
+  tooltip in this app holds content worth hovering into (a link, a button),
+  so there is no cost to always disabling that interactivity.
+- **Tooltips stay below their anchor and inside the viewport.** `flip` is
+  disabled (a tooltip never jumps above its button, which would cover the
+  toolbar row itself) and `preventOverflow` runs with `altAxis: true` and
+  `boundary: 'viewport'` — explicitly the browser viewport, not Popper's own
+  default of "clippingParents". Toolbars here routinely clip their own
+  overflow (the collapse ladder, a panel's icon row), and a `Tooltip`
+  portals to `document.body` — it already renders outside that clipping
+  visually, so leaving the boundary at its default squeezed the tooltip's
+  computed position into that tiny clipped box instead of the actual
+  screen.
+- **Tooltips render correctly under NetView's short-viewport zoom.**
+  NetView.tsx applies a CSS `zoom` to `<body>` to fit the logging panel on
+  short screens (see "Net-Paused Indicator" area of this doc / `NetView.tsx`
+  for the zoom logic itself). Popper.js has no notion of the non-standard
+  `zoom` property — it only compensates for CSS `transform` scaling — so it
+  measured the anchor's already-zoomed position and wrote that same number
+  into the tooltip's own `top`/`left`, which the browser then zoomed a
+  *second* time on paint, landing the tooltip almost exactly on top of its
+  own anchor. The `compensateZoom` Popper modifier (in the same `App.tsx`
+  theme default) divides the tooltip's computed position back up by the
+  current zoom factor before it's written, undoing that double scaling. It
+  no-ops everywhere zoom isn't active.
+
+Per-instance `placement="top"` / `placement="right"` overrides (the check-in
+status legend, `CheckInTable.tsx`'s status icons) are unaffected — an
+explicit `placement` always wins over the theme default, as normal.
+
+**Menu/Select dropdowns need the same zoom fix, via a different mechanism.**
+Reported: opening the Traffic panel's Export menu on a short screen placed it
+in the middle of the page instead of under its button — the exact same
+double-scaling bug as above (`anchorEl.getBoundingClientRect()` is already
+zoomed; writing that number onto another descendant of the zoomed body
+zooms it again), but hitting `<Menu>`/`<Select>`, which are built on MUI's
+`Popover`, not `Popper`. Popover's positioning math
+(`Popover.js::getPositioningStyle`) is a private calculation with no
+modifier pipeline — nothing to intercept before the wrong value lands in
+the DOM, unlike Tooltip. `utils/zoomAwarePopovers.ts`'s
+`watchZoomAwarePopovers()` corrects it after the fact instead, via a
+`MutationObserver` watching for `.MuiPopover-paper` elements (Menu's own
+class plus Select's dropdown, which is also Popover-based) and dividing
+their `top`/`left` by the current zoom the same way the Tooltip modifier
+does its own output, re-applying on every subsequent reposition (scroll,
+resize, reopen). Started and stopped inside NetView's existing zoom effect
+— the only page this zoom ever applies to — rather than run for the app's
+whole lifetime, so the observer's cost isn't paid on pages that can never
+be zoomed.
+
+This is the one deliberate exception to "fix the theme default, don't patch
+the DOM" above: Popover genuinely leaves no other way in.
+
+---
+
 ## Markdown Write/Preview Toggle
 
 Net script, per-net notes, and schedule announcements are all markdown fields.
@@ -469,9 +538,13 @@ label is currently shown.
 Two groups, separated by a `1px × 20px` vertical divider (shown whenever both
 groups have at least one visible item):
 
-**Information group** (left) — Bulk add, Search, Map, Audio, Stats, Script,
-Announcements, Notes, Topics, Website, Net info, Import, then the `More`
-button for whatever didn't fit. Topics opens a read-only prior-topics list to
+**Information group** (left) — Bulk add, Search, Map, Coverage, Traffic, Audio,
+Stats, Script, Announcements, Notes, Topics, Website, Net info, Import, then the
+`More` button for whatever didn't fit. Traffic (`MailIcon`, the same envelope the
+navbar uses for the Traffic section) opens the per-net traffic panel; it is an
+Information item because the pane is a view of the net's traffic, with filing
+happening in a dialog inside it — the same reasoning that puts Coverage here
+despite its reporting action. Topics opens a read-only prior-topics list to
 everyone (with a new-tab link to the originating net for each entry, so
 browsing history doesn't lose your place in the currently-open net); the
 "Add Historical Topic" control inside that dialog is staff-only
@@ -551,6 +624,97 @@ context, matching the approved design handoff).
 >   **Information group**
 > - **State/participation action** (start, check in/out, roles, close,
 >   export, archive, delete) → **Management group**
+
+---
+
+## Side-Panel Dialogs Belong to the Page, Not the Panel
+
+A dialog opened from a side panel (Traffic, Coverage, Map, Script,
+Announcements) must be **mounted by the host page** — `NetView.tsx` or
+`NetPaneWindow.tsx` — with the panel receiving only a callback that opens it.
+`CheckInFormDialog`, `CanHearDialog`, `RoleAssignmentDialog`, and
+`FileTrafficDialog` all follow this; none of them is mounted inside a panel.
+
+The reason is structural, not stylistic. Every one of these panels renders
+**twice** in the tree — a docked copy inside its column and a floating copy
+in a `FloatingWindow` — chosen by a `dockedPref` boolean (gated on `isXlUp`
+too for the left-column panels; see "Docked Pane Width Gating" below). That
+switch can happen automatically — an ordinary window resize, or plugging a
+laptop into a projector, can cross the left column's xl breakpoint — which
+unmounts one subtree and mounts the other. Anything the panel owned goes
+with it. A compose dialog owned by the Traffic panel took a half-typed
+radiogram with it every time.
+
+Two rules follow:
+
+1. **Dialog state lives on the page.** The panel gets `onCompose`-style
+   props. A host that mounts no dialog should not render the button at all,
+   rather than rendering one that does nothing.
+2. **Report results by event, not by callback.** The panel that opened a
+   dialog may be a sibling, a floating window, or closed by the time the
+   dialog finishes. Dispatch a `CustomEvent` on `window` the way
+   `useNetWebSocket.ts` already does (`trafficLogged`, `newChatMessage`), and
+   let whichever instance is mounted pick it up.
+
+For in-place editing inside a panel — the Script and Announcements editors —
+there is no dialog to hoist, so the buffer is mirrored into `sessionStorage`
+by `useEditDraft.ts` instead, and cleared the moment editing ends. Any new
+panel with an inline editor should use that hook rather than a bare
+`useState` pair.
+
+---
+
+## Docked Pane Width Gating
+
+NetView's docked panes live in two different columns, and only one of them
+is width-gated:
+
+- **Left column** (Script, Announcements, Schedule Announcements) is a
+  *new* column that only exists at xl+ — below that there simply isn't
+  room for a third side-by-side slot alongside the check-ins and the
+  existing right column. Its `xxxDocked` booleans stay `xxxDockedPref &&
+  isXlUp`, and the "dock to layout" buttons that offer it stay gated the
+  same way (`isXlUp ? handler : undefined`) so they don't render a button
+  that does nothing below xl.
+- **Right column** (Chat, Map, Coverage, Traffic, Activity Log) is the
+  *existing* column — the two-column layout (check-ins + right) has worked
+  from md up since before any of this docked/floating machinery existed,
+  proven daily by Chat and Activity Log, neither of which has ever carried
+  a width gate. Map, Coverage, and Traffic dock into that same column
+  alongside them, so their `xxxDocked` booleans are plain `xxxDockedPref` —
+  **no width gate at all** — and their "dock to layout" handlers are always
+  passed, unconditionally.
+
+The rule for anything new: **the xl gate belongs to the left column only.**
+A panel docking into the right column never needs one, because the column
+it's joining already works at any width that shows two columns side by
+side (md+).
+
+## Docked Pane Stacking Order
+
+The right column's stacking order is fixed, not first-open-wins: **Chat**
+first, then whichever of **Map / Coverage / Traffic** are currently open, then
+**Activity Log last, always** — see the `panes.push` call order in
+`NetViewSidePanels.tsx`. Activity Log is the net's running record; an NCS
+should find it in the same place — the bottom of the stack — regardless of
+which on-demand panels happen to be open that session, rather than having it
+shuffle around as panels are opened and closed.
+
+A pane that legitimately wants to fill available vertical height (Chat, and
+Activity Log when expanded) uses the normal shared flex-grow pool
+(`useResizableSplit`'s per-pane weight, defaulting to an equal 1:1 share,
+user-resizable via the drag handles between panes). A pane whose content is
+typically short and has nothing useful to grow into — Traffic's list of
+pending items is the current example — should instead size to its own
+content by default (`flex: '0 1 auto'` rather than the weighted
+`${weight} 1 0px`) so it doesn't force a slab of blank space below a
+three-row table just because the column happens to be taller than that.
+`useResizableSplit.ts`'s `hasExplicitWeight(key)` distinguishes "never
+touched" from "resolved to the fallback", so a pane can default to
+content-hugging while still rejoining the normal weighted pool the moment a
+user deliberately drags it — see the `paneFlex()` helper in
+`NetViewSidePanels.tsx` for the pattern to copy for the next sparse-content
+panel.
 
 ---
 

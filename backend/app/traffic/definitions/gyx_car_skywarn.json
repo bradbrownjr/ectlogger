@@ -1,0 +1,143 @@
+{
+  "form_type": "GYX-CAR-SKYWARN",
+  "title": "GYX-CAR SKYWARN Report",
+  "description": "Radio Relay International's regional SKYWARN strip for the Gray ME and Caribou ME NWS forecast offices. Formatted to paste directly into the GYX/CAR SKYWARN Google Sheet -- keep the total under 900 characters.",
+  "output_format": "rri_strip",
+  "fields": [
+    {
+      "name": "date",
+      "label": "Date",
+      "field_type": "text",
+      "is_required": true,
+      "max_length": 10,
+      "default_now": "%m-%d-%Y",
+      "description": "MM-DD-YYYY",
+      "sort_order": 10
+    },
+    {
+      "name": "time",
+      "label": "Time",
+      "field_type": "text",
+      "is_required": true,
+      "max_length": 6,
+      "default_now": "%H%ML",
+      "description": "HHMM followed by L for local time",
+      "sort_order": 20
+    },
+    {
+      "name": "call_sign",
+      "label": "Call Sign",
+      "field_type": "text",
+      "is_required": true,
+      "max_length": 20,
+      "validator": "callsign",
+      "auto_fill": "callsign",
+      "sort_order": 30
+    },
+    {
+      "name": "spotter_id",
+      "label": "Spotter ID",
+      "field_type": "text",
+      "is_required": false,
+      "max_length": 20,
+      "description": "SKYWARN spotter ID, or NA if not a registered spotter",
+      "sort_order": 40
+    },
+    {
+      "name": "source",
+      "label": "Source",
+      "field_type": "text",
+      "is_required": false,
+      "max_length": 50,
+      "sort_order": 50
+    },
+    {
+      "name": "location",
+      "label": "Location",
+      "field_type": "text",
+      "is_required": true,
+      "max_length": 100,
+      "sort_order": 60
+    },
+    {
+      "name": "state_cwa",
+      "label": "State & CWA",
+      "field_type": "text",
+      "is_required": true,
+      "max_length": 20,
+      "sort_order": 70
+    },
+    {
+      "name": "current_weather",
+      "label": "Current Weather",
+      "field_type": "text",
+      "is_required": false,
+      "max_length": 100,
+      "sort_order": 80
+    },
+    {
+      "name": "snow_sleet",
+      "label": "Snow, Sleet",
+      "field_type": "text",
+      "is_required": false,
+      "max_length": 20,
+      "sort_order": 90
+    },
+    {
+      "name": "ice_accretion",
+      "label": "Ice Accretion",
+      "field_type": "text",
+      "is_required": false,
+      "max_length": 20,
+      "sort_order": 100
+    },
+    {
+      "name": "rainfall",
+      "label": "Rainfall",
+      "field_type": "text",
+      "is_required": false,
+      "max_length": 20,
+      "sort_order": 110
+    },
+    {
+      "name": "hail_size",
+      "label": "Hail Size",
+      "field_type": "text",
+      "is_required": false,
+      "max_length": 20,
+      "sort_order": 120
+    },
+    {
+      "name": "wind_dir_speed",
+      "label": "Wind Direction & Speed",
+      "field_type": "text",
+      "is_required": false,
+      "max_length": 30,
+      "sort_order": 130
+    },
+    {
+      "name": "storm_damage",
+      "label": "Storm Damage",
+      "field_type": "textarea",
+      "is_required": false,
+      "sort_order": 140
+    },
+    {
+      "name": "mode",
+      "label": "Mode",
+      "field_type": "text",
+      "is_required": false,
+      "max_length": 20,
+      "description": "How this report was received, e.g. Voice, Winlink, CW",
+      "sort_order": 150
+    },
+    {
+      "name": "net",
+      "label": "Net",
+      "field_type": "text",
+      "is_required": false,
+      "max_length": 50,
+      "sort_order": 160
+    }
+  ]
+}
