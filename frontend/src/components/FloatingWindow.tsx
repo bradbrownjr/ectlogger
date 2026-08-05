@@ -70,10 +70,14 @@ const FloatingWindow: React.FC<FloatingWindowProps> = ({
         }
       }
     }
-    // Default position - center of viewport
+    // Default position - center of viewport. document.body.offsetWidth/
+    // offsetHeight, not window.innerWidth/innerHeight -- see the bounds
+    // comment below on the same local-vs-visual distinction; identical
+    // numbers outside a zoomed context, so this is a no-op anywhere but
+    // NetView.
     return {
-      x: Math.max(50, (window.innerWidth - defaultWidth) / 2),
-      y: Math.max(50, (window.innerHeight - defaultHeight) / 3),
+      x: Math.max(50, (document.body.offsetWidth - defaultWidth) / 2),
+      y: Math.max(50, (document.body.offsetHeight - defaultHeight) / 3),
       width: defaultWidth,
       height: defaultHeight,
     };
@@ -86,13 +90,18 @@ const FloatingWindow: React.FC<FloatingWindowProps> = ({
     }
   }, [position, storageKey, isDetached]);
 
-  // Handle window resize to keep floating window in bounds
+  // Handle window resize to keep floating window in bounds. Same local-vs-
+  // visual distinction as the Rnd's own `bounds="body"` below -- position.x/y
+  // are LOCAL units, so the clamp must compare against document.body's own
+  // LOCAL offsetWidth/offsetHeight, not the VISUAL window.innerWidth/Height
+  // (identical numerically outside a zoomed context, so this is a no-op
+  // anywhere but NetView).
   useEffect(() => {
     const handleResize = () => {
       setPosition((prev: WindowPosition) => ({
         ...prev,
-        x: Math.min(prev.x, window.innerWidth - 100),
-        y: Math.min(prev.y, window.innerHeight - 100),
+        x: Math.min(prev.x, document.body.offsetWidth - 100),
+        y: Math.min(prev.y, document.body.offsetHeight - 100),
       }));
     };
     window.addEventListener('resize', handleResize);
@@ -127,7 +136,26 @@ const FloatingWindow: React.FC<FloatingWindowProps> = ({
       }}
       minWidth={minWidth}
       minHeight={isMinimized ? 40 : minHeight}
-      bounds="window"
+      // Not "window": react-rnd's own "window" bounds mode clamps drag/
+      // resize against window.innerWidth/innerHeight, which are TRUE/visual
+      // viewport pixels -- but this Rnd's own tracked position/size are in
+      // the LOCAL pixel space of its nearest zoomed ancestor (NetView.tsx
+      // applies a CSS `zoom` to <body> to fit the logging panel on short
+      // screens; see DESIGN.md "Tooltip Positioning" for the same local-vs-
+      // visual distinction elsewhere in this app). Under zoom<1, local
+      // units are inflated by 1/zoom relative to visual ones (confirmed by
+      // direct measurement on beta: document.body.offsetWidth 1000 vs
+      // window.innerWidth 800 at zoom 0.8) -- react-rnd's "window" mode
+      // mixes the two directly, undercounting how far the window can
+      // travel by exactly the zoom factor. Reported: a floating window
+      // could not be dragged into the bottom-right quarter of the screen.
+      // "body" mode uses document.body.offsetWidth/offsetHeight instead,
+      // which -- confirmed by that same measurement -- are in the same
+      // LOCAL units as this Rnd's own size, making the comparison
+      // zoom-safe. Outside NetView (zoom always 1), "body" and "window"
+      // bounds are numerically identical, so this is a no-op everywhere
+      // else in the app.
+      bounds="body"
       dragHandleClassName="floating-window-handle"
       enableResizing={!isMinimized}
       style={{
