@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Alert,
   Box,
@@ -101,6 +101,53 @@ const TrafficSettingsPanel: React.FC<TrafficSettingsPanelProps> = ({
   const [defineBusy, setDefineBusy] = useState(false);
   const [defineError, setDefineError] = useState<string | null>(null);
 
+  // ---- Live validation of the pasted origin strip ----
+  // tokenize_strip only ever raises on truly empty/oversized input -- any
+  // other text "succeeds" even with zero delimiters, silently producing zero
+  // fields (the whole string becomes the suggested form_type, nothing else).
+  // That's the actual failure mode worth catching before save: a strip typed
+  // or pasted without "/" separators looks fine here and then renders no
+  // fields at all when someone goes to answer it. Debounced so every
+  // keystroke doesn't fire a request.
+  const [stripValidation, setStripValidation] = useState<
+    { status: 'ok'; count: number } | { status: 'warning'; message: string } | { status: 'error'; message: string } | null
+  >(null);
+
+  useEffect(() => {
+    if (!trafficStripTemplate.trim()) {
+      setStripValidation(null);
+      return;
+    }
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      trafficApi.tokenizeStripTemplate(trafficStripTemplate)
+        .then((resp) => {
+          if (cancelled) return;
+          const count = resp.data.tokens.length;
+          if (count === 0) {
+            setStripValidation({
+              status: 'warning',
+              message: 'No fields found -- this strip has no "/" separators, so answering it would show no fields at all. Check for missing slashes.',
+            });
+          } else if (count === 1) {
+            setStripValidation({
+              status: 'warning',
+              message: 'Only 1 field found. If this strip is meant to have more, check that every value is separated by "/".',
+            });
+          } else {
+            setStripValidation({ status: 'ok', count });
+          }
+        })
+        .catch((err) => {
+          if (!cancelled) setStripValidation({ status: 'error', message: getErrorMessage(err, 'Could not read this text') });
+        });
+    }, 400);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [trafficStripTemplate]);
+
   const handleToggleFormType = (formType: string) => {
     setTrafficFormTypes(
       trafficFormTypes.includes(formType)
@@ -117,6 +164,13 @@ const TrafficSettingsPanel: React.FC<TrafficSettingsPanelProps> = ({
     setDefineError(null);
     try {
       const resp = await trafficApi.tokenizeStripTemplate(trafficStripTemplate);
+      if (resp.data.tokens.length === 0) {
+        // tokenize_strip only raises on empty/oversized input -- text with
+        // no "/" separators "succeeds" with zero fields, which would leave
+        // this screen with nothing to label. Catch it here instead.
+        setDefineError('No fields found in this strip -- check that values are separated by "/" before naming them.');
+        return;
+      }
       setDefineTokens(
         resp.data.tokens.map((t: any) => ({
           value: t.value,
@@ -265,6 +319,22 @@ const TrafficSettingsPanel: React.FC<TrafficSettingsPanelProps> = ({
                     helperText="Stored as-is so staff get the same fields in the same order. Parse it to name the fields and reuse them on future nets."
                     sx={{ '& .MuiInputBase-root': { fontFamily: 'monospace' } }}
                   />
+
+                  {/* Live syntax feedback -- not a save-blocker (the field is
+                      optional and a warning may be a false positive on an
+                      unusual strip), just a heads-up before the net relies
+                      on it. */}
+                  {stripValidation?.status === 'ok' && (
+                    <Typography variant="caption" color="success.main" display="block" sx={{ mt: 0.5 }}>
+                      {stripValidation.count} field{stripValidation.count === 1 ? '' : 's'} recognized.
+                    </Typography>
+                  )}
+                  {stripValidation?.status === 'warning' && (
+                    <Alert severity="warning" sx={{ mt: 1 }}>{stripValidation.message}</Alert>
+                  )}
+                  {stripValidation?.status === 'error' && (
+                    <Alert severity="error" sx={{ mt: 1 }}>{stripValidation.message}</Alert>
+                  )}
 
                   {defineError && <Alert severity="error" sx={{ mt: 1 }}>{defineError}</Alert>}
 
