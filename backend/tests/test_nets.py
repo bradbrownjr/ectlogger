@@ -5,6 +5,20 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 from tests.conftest import auth_headers
+from app.models import NetTemplate
+
+
+async def _make_template(db, owner_id: int, schedule_type: str) -> NetTemplate:
+    template = NetTemplate(
+        name="Test Schedule",
+        owner_id=owner_id,
+        schedule_type=schedule_type,
+        schedule_config="{}",
+    )
+    db.add(template)
+    await db.commit()
+    await db.refresh(template)
+    return template
 
 
 # ---------------------------------------------------------------------------
@@ -43,6 +57,64 @@ async def test_get_net_by_id(client, owner):
     resp = await client.get(f"/api/nets/{net_id}", headers=auth_headers(owner))
     assert resp.status_code == 200
     assert resp.json()["id"] == net_id
+
+
+# ---------------------------------------------------------------------------
+# template_schedule_type — reported bugs: (1) a post-close "subscribe to the
+# next instance" prompt appeared for a one-time net, which will never have a
+# next instance; (2) the "Edit net" toolbar button disappeared entirely once
+# any net closed, including one occurrence of an ONGOING (e.g. weekly)
+# schedule, where staff still legitimately need to fix that net's own
+# settings before finalizing its report. Both fixes key off this field, so
+# these tests pin what the backend reports for each schedule_type.
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_get_net_template_schedule_type_null_with_no_template(client, owner):
+    create = await client.post("/api/nets/", json={"name": "No Template Net"}, headers=auth_headers(owner))
+    net_id = create.json()["id"]
+
+    resp = await client.get(f"/api/nets/{net_id}", headers=auth_headers(owner))
+
+    assert resp.status_code == 200
+    assert resp.json()["template_schedule_type"] is None
+
+
+@pytest.mark.asyncio
+async def test_get_net_template_schedule_type_one_time(client, db, owner):
+    template = await _make_template(db, owner.id, schedule_type="one_time")
+    create = await client.post(f"/api/templates/{template.id}/create-net", headers=auth_headers(owner))
+    net_id = create.json()["id"]
+
+    resp = await client.get(f"/api/nets/{net_id}", headers=auth_headers(owner))
+
+    assert resp.status_code == 200
+    assert resp.json()["template_schedule_type"] == "one_time"
+
+
+@pytest.mark.asyncio
+async def test_get_net_template_schedule_type_weekly(client, db, owner):
+    template = await _make_template(db, owner.id, schedule_type="weekly")
+    create = await client.post(f"/api/templates/{template.id}/create-net", headers=auth_headers(owner))
+    net_id = create.json()["id"]
+
+    resp = await client.get(f"/api/nets/{net_id}", headers=auth_headers(owner))
+
+    assert resp.status_code == 200
+    assert resp.json()["template_schedule_type"] == "weekly"
+
+
+@pytest.mark.asyncio
+async def test_list_nets_template_schedule_type_matches_get_net(client, db, owner):
+    template = await _make_template(db, owner.id, schedule_type="weekly")
+    await client.post(f"/api/templates/{template.id}/create-net", headers=auth_headers(owner))
+
+    resp = await client.get("/api/nets/", headers=auth_headers(owner))
+
+    assert resp.status_code == 200
+    nets = [n for n in resp.json() if n["template_id"] == template.id]
+    assert len(nets) == 1
+    assert nets[0]["template_schedule_type"] == "weekly"
 
 
 # ---------------------------------------------------------------------------

@@ -912,19 +912,25 @@ const NetView: React.FC = () => {
       }
       
       // ========== SUBSCRIPTION PROMPT ==========
-      // If net was created from a schedule (has template_id), user is logged in,
-      // and user checked in to this net, ask if they want to subscribe
+      // If net was created from a RECURRING schedule (has template_id AND
+      // that template's schedule_type isn't ad_hoc/one_time -- a one-time
+      // net's template exists only to hold that single net's settings, so
+      // there will never be a "next instance" to subscribe to; reported:
+      // this prompt appeared for a one-time net regardless), user is logged
+      // in, and user checked in to this net, ask if they want to subscribe.
       if (templateId && user && isAuthenticated) {
         // Check if current user checked in to this net
         const userCheckedIn = currentCheckIns.some(ci => ci.user_id === user.id);
-        
+
         if (userCheckedIn) {
           // Check if user is already subscribed to this template
           try {
             const templateResponse = await templateApi.get(templateId);
             const isAlreadySubscribed = templateResponse.data.is_subscribed;
-            
-            if (!isAlreadySubscribed) {
+            const scheduleType = templateResponse.data.schedule_type;
+            const isRecurring = !!scheduleType && scheduleType !== 'ad_hoc' && scheduleType !== 'one_time';
+
+            if (!isAlreadySubscribed && isRecurring) {
               // Show subscription dialog
               subscribeDialog.onOpen();
             }

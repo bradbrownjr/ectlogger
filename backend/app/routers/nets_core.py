@@ -114,7 +114,8 @@ async def list_nets(
     """List nets with optional status filter, excludes archived by default (no auth required for guest access)"""
     query = select(Net).options(
         selectinload(Net.frequencies),
-        selectinload(Net.owner)
+        selectinload(Net.owner),
+        selectinload(Net.template)
     )
     
     if status:
@@ -217,8 +218,9 @@ async def list_nets(
             ncs_name=public_display_name(ncs_name, current_user is not None),
             user_attended=user_attended,
             user_ran=user_ran,
+            template_schedule_type=net.template.schedule_type if net.template else None,
         ))
-    
+
     return responses
 
 
@@ -232,14 +234,15 @@ async def get_net(
     result = await db.execute(
         select(Net).options(
             selectinload(Net.frequencies),
-            selectinload(Net.owner)
+            selectinload(Net.owner),
+            selectinload(Net.template)
         ).where(Net.id == net_id)
     )
     net = result.scalar_one_or_none()
-    
+
     if not net:
         raise HTTPException(status_code=404, detail="Net not found")
-    
+
     # Compute can_manage for this user
     can_manage = False
     is_owner_or_ncs = False
@@ -292,6 +295,7 @@ async def get_net(
         is_owner_or_ncs=is_owner_or_ncs,
         ncs_callsign=ncs_callsign,
         ncs_name=public_display_name(ncs_name, current_user is not None),
+        template_schedule_type=net.template.schedule_type if net.template else None,
     )
 
 

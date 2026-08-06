@@ -365,6 +365,17 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
   const isDraftOrScheduled = net.status === 'draft' || net.status === 'scheduled';
   const isClosedOrArchived = net.status === 'closed' || net.status === 'archived';
 
+  // True only for a net generated from an ONGOING schedule (daily/weekly/
+  // monthly/...), as opposed to a one-off (ad_hoc, one_time, or no template
+  // at all). Reported: after closing a net, "Edit net" disappeared
+  // entirely, which is right for a one-off net (nothing left to prepare)
+  // but wrong for one occurrence of a recurring net -- staff still need to
+  // fix a mistake in that net's own settings (e.g. the ICS-309 toggle)
+  // before finalizing its report, even though the net itself is done.
+  const isRecurringNet = !!net.template_schedule_type
+    && net.template_schedule_type !== 'ad_hoc'
+    && net.template_schedule_type !== 'one_time';
+
   const startingUpNet = canStartNet && isDraftOrScheduled;
 
   // Neutral (non-brand-colored) toolbar icon color — the dark-mode value
@@ -490,7 +501,10 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
   const managementItems: ToolbarItemDef[] = [
     {
       key: 'edit-net', group: 'management', priority: 3,
-      visible: canManage && (isDraftOrScheduled || isActiveOrLobby),
+      // Closed is also editable for a recurring net (see isRecurringNet) --
+      // archived stays locked either way, matching that status's
+      // "filed away, done" meaning elsewhere in the app.
+      visible: canManage && (isDraftOrScheduled || isActiveOrLobby || (net.status === 'closed' && isRecurringNet)),
       Icon: EditIcon, color: neutralIconColor, label: 'Edit net',
       tooltip: 'Edit net settings', onClick: () => navigate(`/nets/${netId}/edit`),
     },

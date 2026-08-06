@@ -464,9 +464,16 @@ class NetResponse(NetBase):
     is_owner_or_ncs: bool = False  # True if user has non-admin access (owner/NCS/staff) — used by admin simulation mode
     user_attended: Optional[bool] = None  # True if current user checked into this net
     user_ran: Optional[bool] = None       # True if current user owned/ran this net
+    # schedule_type of the template this net was created from ('ad_hoc',
+    # 'one_time', 'daily', 'weekly', 'monthly', ...), or None if the net has
+    # no template at all. Lets the frontend tell "this net will never recur"
+    # (ad_hoc/one_time/None) apart from "this is one occurrence of an
+    # ongoing schedule" without a second request — see NetViewHeader.tsx's
+    # edit-net visibility and the post-close subscribe prompt in NetView.tsx.
+    template_schedule_type: Optional[str] = None
 
     @classmethod
-    def from_orm(cls, net, owner_callsign: str = None, owner_name: str = None, check_in_count: int = None, can_manage: bool = False, is_owner_or_ncs: bool = False, ncs_callsign: str = None, ncs_name: str = None, user_attended: bool = None, user_ran: bool = None):
+    def from_orm(cls, net, owner_callsign: str = None, owner_name: str = None, check_in_count: int = None, can_manage: bool = False, is_owner_or_ncs: bool = False, ncs_callsign: str = None, ncs_name: str = None, user_attended: bool = None, user_ran: bool = None, template_schedule_type: str = None):
         import json
         data = {
             'id': net.id,
@@ -511,6 +518,7 @@ class NetResponse(NetBase):
             'is_owner_or_ncs': is_owner_or_ncs,
             'user_attended': user_attended,
             'user_ran': user_ran,
+            'template_schedule_type': template_schedule_type,
         }
         return cls(**data)
 
