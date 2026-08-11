@@ -40,7 +40,6 @@ def _is_primary_process() -> bool:
     except (ValueError, IndexError):
         return True
 
-@asynccontextmanager
 async def _load_gravatar_setting(db):
     """Read app_settings.gravatar_enabled into the in-process cache at boot.
 
@@ -59,6 +58,7 @@ async def _load_gravatar_setting(db):
         print(f"Could not load gravatar_enabled setting, defaulting to enabled: {exc}")
 
 
+@asynccontextmanager
 async def lifespan(_app: FastAPI):
     """Startup and shutdown lifecycle for the FastAPI application."""
     await init_db()
