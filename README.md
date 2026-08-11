@@ -167,6 +167,8 @@ Complete log generated automatically and emailed to NCS. Net archived for report
 | Document                             | Description                                  |
 | -------------------------------------- | ---------------------------------------------- |
 | **[User Guide](docs/USER-GUIDE.md)** | How to use ECTLogger as a participant or NCS |
+| **[Changelog](docs/CHANGELOG.md)**   | What's new in each release                   |
+| **[Roadmap](docs/ROADMAP.md)**       | Planned features and what's being worked on  |
 
 ### Self-Hosting
 
