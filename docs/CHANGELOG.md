@@ -12,6 +12,8 @@ All notable changes to ECTLogger are documented here.
 
 * **Sitewide: New-version banner** — If a tab is left open through a deploy, it now shows a banner offering to reload once a new version has shipped, so you're never troubleshooting on outdated code without realizing it, and you won't be told to force a hard refresh to see something new.
 
+* **Help: Feedback reports now carry diagnostics and a screenshot** — The Submit Feedback form has a checkbox (checked by default for bug reports) to include your diagnostics snapshot, which now also captures any recent browser console errors, plus a screenshot you attach from a file you've already captured. Reports arrive with the context needed to track down a problem instead of a back-and-forth asking what happened.
+
 ## Improvements
 
 * **Admin: An accurate, up-to-date picture of who's online** — the user list used to count anyone with a browser tab open as active every single minute, so admins couldn't tell who was genuinely on the site — and even then, seeing it meant reloading the page. "Last active" now updates only when someone actually does something, and the list refreshes itself every 30 seconds, with the time of the last update shown and a refresh button for an answer right now. Together that's what lets us deploy fixes and new features at a moment we know won't interrupt anyone mid-net, instead of guessing.
