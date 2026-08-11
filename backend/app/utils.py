@@ -1,7 +1,6 @@
 """Shared utility helpers used across the backend."""
 
 import hashlib
-import urllib.request
 from datetime import datetime, timezone as dt_timezone
 from pathlib import Path
 from typing import Optional
@@ -34,35 +33,55 @@ def _custom_avatar_file_ok(custom_url: str) -> bool:
         return False
 
 
+# Master switch mirroring app_settings.gravatar_enabled. Cached in-process
+# because get_avatar_url is called from UserResponse.from_orm, which is
+# synchronous and has no database session to consult. Loaded at startup and
+# refreshed whenever settings are saved -- see set_gravatar_enabled.
+_gravatar_enabled = True
+
+
+def set_gravatar_enabled(enabled: bool) -> None:
+    """Update the cached Gravatar master switch (startup + on settings save)."""
+    global _gravatar_enabled
+    _gravatar_enabled = bool(enabled)
+
+
+def gravatar_is_enabled() -> bool:
+    return _gravatar_enabled
+
+
 def get_avatar_url(email: Optional[str], custom_url: Optional[str] = None) -> Optional[str]:
     """Return a profile avatar URL for a user.
 
     If the user has uploaded a custom profile image (custom_url set) and the file
-    still exists on disk and is non-empty, return that. Otherwise compute a
-    Gravatar URL from the email hash. The email is never sent to the frontend —
-    only the resolved URL is exposed.
+    still exists on disk and is non-empty, return that. Otherwise return a
+    Gravatar URL computed from the email hash. The email is never sent to the
+    frontend — only the resolved URL is exposed.
 
-    Validates that the Gravatar exists (200) before returning it. If neither the
-    custom upload nor the Gravatar is available, returns None so the frontend
-    falls back to the name initial.
+    Deliberately does NOT check whether the Gravatar actually exists. That check
+    used to issue a blocking HTTP HEAD to gravatar.com per user: ~150-200 ms
+    each, on all twelve endpoints returning UserResponse — including /users/me,
+    which every authenticated page load hits. Worse, it used synchronous urllib
+    inside async request handlers, so it stalled the event loop for every other
+    request while it waited (66 users measured at 6.3 s of blocked loop).
+
+    It was also unnecessary. Gravatar is built for direct client-side embedding,
+    with the `d=` parameter deciding the fallback; `d=404` makes Gravatar answer
+    404 when a user has no image, and MUI's <Avatar> renders its children (the
+    user's initial) on any load failure — 404, blocked by an extension, offline,
+    or DNS failure alike. The browser already does this job, in parallel, cached,
+    and always current, with no server-side TTL to go stale.
+
+    Returns None when Gravatar is disabled instance-wide, so no browser is ever
+    asked to contact gravatar.com. Uploaded photos are served locally and remain
+    available either way.
     """
     if custom_url and _custom_avatar_file_ok(custom_url):
         return custom_url
-    if not email:
+    if not email or not _gravatar_enabled:
         return None
     h = hashlib.md5(email.strip().lower().encode()).hexdigest()
-    gravatar_url = f"https://www.gravatar.com/avatar/{h}?s=128&d=404&r=g"
-
-    # Validate that the Gravatar exists before returning it
-    try:
-        req = urllib.request.Request(gravatar_url, method="HEAD")
-        with urllib.request.urlopen(req, timeout=2) as resp:
-            if resp.status == 200:
-                return gravatar_url
-    except Exception:
-        pass
-
-    return None
+    return f"https://www.gravatar.com/avatar/{h}?s=128&d=404&r=g"
 
 
 def resolve_display_tz(user) -> Optional[ZoneInfo]:

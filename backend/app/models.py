@@ -863,4 +863,10 @@ class AppSettings(Base):
     # Assisted Traffic Handling
     traffic_reminder_enabled = Column(Boolean, default=True)  # Master switch for the precedence-scaled reminder ladder (D4)
 
+    # Avatars. When false, no Gravatar URL is ever handed to a client, so no
+    # browser contacts gravatar.com -- for self-hosted instances on isolated
+    # or privacy-restricted networks (EOC, hospital, agency). Uploaded profile
+    # photos are unaffected; only the third-party lookup is disabled.
+    gravatar_enabled = Column(Boolean, default=True)
+
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

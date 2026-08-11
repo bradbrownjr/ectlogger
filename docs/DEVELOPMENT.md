@@ -364,6 +364,52 @@ Global settings live in a single `app_settings` row (id=1). Add new settings by:
 Public settings (readable without auth) get a dedicated endpoint in `settings.py`;
 admin-only settings go through the standard `GET /settings` / `PUT /settings` pair.
 
+### Settings needed outside a request (in-process cache)
+
+`gravatar_enabled` is read by `utils.get_avatar_url()`, which is called from
+`UserResponse.from_orm()` — a **synchronous** serializer with no database session.
+It therefore can't query `app_settings` at call time. The pattern used:
+
+1. `utils.py` holds a module-level flag with `set_gravatar_enabled()` / `gravatar_is_enabled()`.
+2. `main.py`'s lifespan primes it once at startup (`_load_gravatar_setting`), tolerating
+   a database that predates the migration so an un-migrated instance still boots.
+3. `routers/settings.py` calls the setter whenever an admin saves, so the cache
+   never drifts from the stored value.
+
+Use this only for settings genuinely needed outside request scope. It is per-process,
+so a multi-process deployment updates the saving process immediately and the others on
+their next restart — acceptable for a cosmetic switch, **not** acceptable for anything
+security-relevant. Anything enforcing permissions must be read from the database inside
+the request.
+
+### Avatars and Gravatar
+
+`get_avatar_url()` returns a Gravatar URL **without checking whether the image exists**.
+This is deliberate and should not be "fixed" back:
+
+- The old existence probe issued a blocking `urllib` HTTP HEAD to gravatar.com per user,
+  ~150-200 ms each, on all twelve endpoints returning `UserResponse` — including
+  `/users/me`, which every authenticated page load hits. 66 users measured at 6.3 s.
+- Because it was synchronous inside async handlers, it stalled the event loop for every
+  other request while waiting.
+- It was also unnecessary. Gravatar is designed for direct client-side embedding, with
+  the `d=` parameter choosing the fallback. `d=404` makes Gravatar answer 404 when a user
+  has no image, and MUI's `<Avatar>` renders its children (the user's initial) on **any**
+  load failure — 404, ad-blocker, offline, DNS failure, or CSP violation alike.
+
+So the browser already does this job: in parallel, cached, always current, with no
+server-side TTL to go stale. Caching the probe server-side would have reintroduced a
+staleness problem that not probing avoids entirely.
+
+**CSP warning:** the HTML document is served by Caddy with no CSP today. The CSP set in
+`main.py` applies only to API responses and has no `img-src`. If a CSP is ever added to
+the served frontend, it must include `img-src https://www.gravatar.com` or every avatar
+silently degrades to initials.
+
+Admins can disable Gravatar entirely (Admin → Security → Profile Photos), which stops any
+Gravatar URL reaching a browser — for isolated or privacy-restricted deployments.
+Uploaded photos are served locally and are unaffected.
+
 ---
 
 ## Theming

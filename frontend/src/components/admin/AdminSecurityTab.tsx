@@ -79,6 +79,10 @@ const AdminSecurityTab: React.FC<Props> = ({ showSnackbar }) => {
   });
   const [sessionSettingsSaving, setSessionSettingsSaving] = useState(false);
 
+  // Avatar privacy: master switch for third-party Gravatar lookups.
+  const [gravatarEnabled, setGravatarEnabled] = useState(true);
+  const [gravatarSaving, setGravatarSaving] = useState(false);
+
   const fetchSecurityInfo = async () => {
     setSecurityLoading(true);
     try {
@@ -104,6 +108,7 @@ const AdminSecurityTab: React.FC<Props> = ({ showSnackbar }) => {
         session_lifetime_days: response.data.session_lifetime_days ?? 90,
         session_rolling_renewal: response.data.session_rolling_renewal ?? true,
       });
+      setGravatarEnabled(response.data.gravatar_enabled ?? true);
     } catch (error) {
       console.error('Failed to fetch settings:', error);
     } finally {
@@ -150,6 +155,20 @@ const AdminSecurityTab: React.FC<Props> = ({ showSnackbar }) => {
       showSnackbar(message, 'error');
     } finally {
       setSessionSettingsSaving(false);
+    }
+  };
+
+  const handleSaveGravatar = async (enabled: boolean) => {
+    setGravatarSaving(true);
+    setGravatarEnabled(enabled);
+    try {
+      await api.put('/settings', { gravatar_enabled: enabled });
+      showSnackbar(enabled ? 'Gravatar enabled' : 'Gravatar disabled', 'success');
+    } catch (error: any) {
+      setGravatarEnabled(!enabled); // revert so the switch reflects what is stored
+      showSnackbar(getErrorMessage(error, 'Failed to save avatar settings'), 'error');
+    } finally {
+      setGravatarSaving(false);
     }
   };
 
@@ -500,6 +519,35 @@ const AdminSecurityTab: React.FC<Props> = ({ showSnackbar }) => {
                     {sessionSettingsSaving ? 'Saving...' : 'Save Settings'}
                   </Button>
                 </Box>
+              </Box>
+            </CardContent>
+          </Card>
+
+          {/* ========== PROFILE PHOTO PRIVACY CARD ========== */}
+          {/* Lives on Security rather than Branding because the reason to turn
+              it off is third-party network contact, not appearance. */}
+          <Card variant="outlined">
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                <ShieldIcon sx={{ verticalAlign: 'middle', mr: 1 }} />
+                Profile Photos
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                Controls whether this instance uses Gravatar, a third-party service that supplies profile photos based on a hash of the user's email address.
+              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box sx={{ pr: 2 }}>
+                  <Typography variant="body1">Use Gravatar</Typography>
+                  <Typography variant="caption" color="text.secondary" component="div">
+                    When enabled, users without an uploaded photo get their Gravatar image if they have one, and their initials otherwise. Their browser fetches it directly from gravatar.com.
+                    When disabled, no Gravatar address is ever sent to a browser, so nothing on this site contacts gravatar.com — useful on isolated or restricted networks. Uploaded profile photos are served by this server and keep working either way.
+                  </Typography>
+                </Box>
+                <Switch
+                  checked={gravatarEnabled}
+                  disabled={gravatarSaving}
+                  onChange={(e) => handleSaveGravatar(e.target.checked)}
+                />
               </Box>
             </CardContent>
           </Card>

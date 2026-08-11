@@ -41,11 +41,34 @@ def _is_primary_process() -> bool:
         return True
 
 @asynccontextmanager
+async def _load_gravatar_setting(db):
+    """Read app_settings.gravatar_enabled into the in-process cache at boot.
+
+    Tolerates a database that predates migration 058 -- an instance that hasn't
+    run it yet simply keeps the enabled default rather than failing to start.
+    """
+    from sqlalchemy import select as _select
+    from app.models import AppSettings as _AppSettings
+    from app.utils import set_gravatar_enabled as _set
+
+    try:
+        row = (await db.execute(_select(_AppSettings).limit(1))).scalar_one_or_none()
+        if row is not None and row.gravatar_enabled is not None:
+            _set(row.gravatar_enabled)
+    except Exception as exc:  # pragma: no cover - startup resilience
+        print(f"Could not load gravatar_enabled setting, defaulting to enabled: {exc}")
+
+
 async def lifespan(_app: FastAPI):
     """Startup and shutdown lifecycle for the FastAPI application."""
     await init_db()
     async with AsyncSessionLocal() as db:
         await upsert_form_definitions(db)
+        # Prime the Gravatar master switch. get_avatar_url() runs inside a
+        # synchronous serializer with no DB session, so it reads an in-process
+        # cache; this loads it once at boot and routers/settings.py refreshes
+        # it whenever an admin saves.
+        await _load_gravatar_setting(db)
     asyncio.create_task(_ws_heartbeat_loop())
     if _is_primary_process():
         # Only the primary process (port 8001) runs background services to

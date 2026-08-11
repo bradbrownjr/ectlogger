@@ -14,7 +14,7 @@ from app.schemas import (
     FieldDefinitionCreate, FieldDefinitionUpdate, FieldDefinitionResponse
 )
 from app.dependencies import get_current_user, get_admin_user
-from app.utils import LOGO_DIR
+from app.utils import LOGO_DIR, set_gravatar_enabled
 
 router = APIRouter(prefix="/settings", tags=["settings"])
 
@@ -91,6 +91,7 @@ def _build_settings_response(settings: AppSettings) -> AppSettingsResponse:
         default_color_mode=settings.default_color_mode if settings.default_color_mode in ('light', 'dark') else 'light',
         custom_theme=CustomTheme(**json.loads(settings.custom_theme_json)) if settings.custom_theme_json else None,
         custom_logo_url=settings.custom_logo_url,
+        gravatar_enabled=settings.gravatar_enabled if settings.gravatar_enabled is not None else True,
     )
 
 
@@ -158,6 +159,13 @@ async def update_settings(
             settings_update.custom_theme.model_dump_json() if settings_update.custom_theme else None
         )
 
+    # Avatars
+    if settings_update.gravatar_enabled is not None:
+        settings.gravatar_enabled = settings_update.gravatar_enabled
+        # get_avatar_url() is called from a synchronous serializer with no DB
+        # session, so it reads an in-process cache that has to be refreshed here.
+        set_gravatar_enabled(settings_update.gravatar_enabled)
+
     await db.commit()
     await db.refresh(settings)
 
@@ -220,6 +228,7 @@ async def get_theme_settings(
         "default_color_mode": settings.default_color_mode if settings.default_color_mode in ('light', 'dark') else 'light',
         "custom_theme": json.loads(settings.custom_theme_json) if settings.custom_theme_json else None,
         "custom_logo_url": settings.custom_logo_url,
+        "gravatar_enabled": settings.gravatar_enabled if settings.gravatar_enabled is not None else True,
     }
 
 

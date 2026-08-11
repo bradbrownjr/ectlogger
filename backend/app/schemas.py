@@ -1013,6 +1013,9 @@ class AppSettingsResponse(BaseModel):
     default_color_mode: Literal['light', 'dark'] = 'light'
     custom_theme: Optional[CustomTheme] = None
     custom_logo_url: Optional[str] = None
+    # Avatars — when false no Gravatar URL is issued, so no browser contacts
+    # gravatar.com. Uploaded profile photos are unaffected.
+    gravatar_enabled: bool = True
 
     class Config:
         from_attributes = True
@@ -1041,6 +1044,8 @@ class AppSettingsUpdate(BaseModel):
     # validate and save the actual file)
     default_color_mode: Optional[Literal['light', 'dark']] = None
     custom_theme: Optional[CustomTheme] = None
+    # Avatars
+    gravatar_enabled: Optional[bool] = None
 
     @field_validator('default_theme')
     @classmethod

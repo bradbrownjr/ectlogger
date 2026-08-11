@@ -73,6 +73,9 @@ async def test_guest_can_view_default_theme(client):
         "default_color_mode": "light",
         "custom_theme": None,
         "custom_logo_url": None,
+        # Exposed here (rather than the admin-only GET /settings) so the profile
+        # page can avoid offering Gravatar on an instance that has it disabled.
+        "gravatar_enabled": True,
     }
 
 

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import Cropper from 'react-easy-crop';
 import type { Area } from 'react-easy-crop';
 import {
@@ -98,6 +98,17 @@ const ProfileAvatarSection: React.FC = () => {
     }
   };
 
+  // Whether this instance uses Gravatar at all (Admin -> Security -> Profile
+  // Photos). Read from the public branding endpoint so the copy below never
+  // offers a service the instance has disabled. Defaults to true so a failed
+  // request leaves the existing wording rather than hiding a working feature.
+  const [gravatarEnabled, setGravatarEnabled] = useState(true);
+  useEffect(() => {
+    api.get('/settings/theme')
+      .then((r) => setGravatarEnabled(r.data?.gravatar_enabled ?? true))
+      .catch(() => { /* keep the default */ });
+  }, []);
+
   const handleAvatarDelete = async () => {
     setAvatarError(null);
     setAvatarUploading(true);
@@ -121,7 +132,9 @@ const ProfileAvatarSection: React.FC = () => {
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2, textAlign: 'center' }}>
           {(user as any)?.avatar_url?.startsWith('/api/avatars/')
             ? 'Using uploaded photo'
-            : 'Using Gravatar if available, otherwise your initials'}
+            : gravatarEnabled
+              ? 'Using Gravatar if available, otherwise your initials'
+              : 'Using your initials'}
         </Typography>
         {avatarError && <Alert severity="error" sx={{ mb: 1, py: 0, width: '100%' }}>{avatarError}</Alert>}
         <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', justifyContent: 'center', gap: 1 }}>

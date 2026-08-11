@@ -8,6 +8,12 @@ All notable changes to ECTLogger are documented here.
 
 ## Improvements
 
+* **Sitewide: Pages load faster** — every screen that shows people (the net roster, chat, staff pickers, and your own profile) was waiting on the server to look up each person's profile photo with an outside service before it could answer. The admin user list took about seven seconds; that work now happens in your browser instead, in the background, so pages come back right away and photos appear as they load.
+
+* **Admin: Turn off Gravatar** — Security now has a Profile Photos switch that stops the site using Gravatar, the outside service that supplies profile pictures from a person's email address. With it off, nothing on the site contacts gravatar.com at all, which matters for instances running on isolated or restricted networks. Uploaded profile photos are stored here and keep working either way.
+
+* **Net View: Built to ride out a spotty connection** — Nets may be run or attended from field sites, EOCs on generator, and rural links where the internet comes and goes. The net page now keeps trying to reconnect for as long as you leave it open, instead of quietly giving up after a few minutes, and it reconnects the moment your signal returns rather than waiting out a timer. When it reconnects it catches up on everything that happened while you were out — check-ins, statuses, chat, the activity log, and traffic. Before this, a page could come back looking perfectly normal while showing an out-of-date net, which is the worst way to lose track of a net. This applies to everyone taking part, not just Net Control.
+
 * **Net View: Edit a closed or archived net** — NCS, net managers, and admins can now fix a typo or a wrong setting on a net after it has closed or archived, not just while it's part of a recurring schedule. A note reminds you the net's log has already gone out, so a change here updates the record only.
 
 * **Admin: Last active reflects real use** — the users list counted anyone with a browser tab open as active every single minute, so admins couldn't tell who was genuinely on the site. It now updates only when someone actually does something. That's what lets us deploy fixes and new features at a moment we know won't interrupt anyone mid-net, instead of guessing, and it stops the app polling in the background while a tab sits unattended.
@@ -15,8 +21,6 @@ All notable changes to ECTLogger are documented here.
 * **Help: Diagnostics for support** — the Help menu now has a Diagnostics option describing this browser and window (screen size, browser version, and whether the app noticed anything wrong with itself), with a Copy button so you can paste it into a message when something misbehaves. Some problems only happen at particular window sizes and are otherwise almost impossible to track down. It contains no callsigns, names, locations, or net activity, and nothing is sent anywhere unless you paste it.
 
 ## Bug Fixes
-
-* **Net View: Recovering from a dropped connection** — if your internet drops during a net, the page now keeps trying to reconnect for as long as you leave it open instead of giving up after a few minutes, and it reconnects the moment your connection returns. When it comes back it catches up on everything missed — check-ins, statuses, chat, the activity log, and traffic — so you are no longer looking at a page that seems fine but is quietly out of date. This applies to everyone in the net, not just Net Control.
 
 * **Net View: Check-in changes appear instantly** — picking a status used to leave the old icon on screen while the change saved, which made it look like the change hadn't taken and led people to click again. Your choice now shows the moment you make it, and new check-ins, edits, and deletions update the list right away instead of after a pause. The delay was worst on slow or mobile connections, where it could run to several seconds.
 
