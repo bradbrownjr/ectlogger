@@ -6,6 +6,12 @@ All notable changes to ECTLogger are documented here.
 
 # August 11, 2026
 
+## New Features
+
+* **Help: Diagnostics for support** — the Help menu now has a Diagnostics option describing this browser and window (screen size, browser version, and whether the app noticed anything wrong with itself), with a Copy button so you can paste it into a message when something misbehaves. Some problems only happen at particular window sizes and are otherwise almost impossible to track down. It contains no callsigns, names, locations, or net activity, and nothing is sent anywhere unless you paste it.
+
+* **Sitewide: New-version banner** — If a tab is left open through a deploy, it now shows a banner offering to reload once a new version has shipped, so you're never troubleshooting on outdated code without realizing it, and you won't be told to force a hard refresh to see something new.
+
 ## Improvements
 
 * **Admin: An accurate, up-to-date picture of who's online** — the user list used to count anyone with a browser tab open as active every single minute, so admins couldn't tell who was genuinely on the site — and even then, seeing it meant reloading the page. "Last active" now updates only when someone actually does something, and the list refreshes itself every 30 seconds, with the time of the last update shown and a refresh button for an answer right now. Together that's what lets us deploy fixes and new features at a moment we know won't interrupt anyone mid-net, instead of guessing.
@@ -17,10 +23,6 @@ All notable changes to ECTLogger are documented here.
 * **Net View: Built to ride out a spotty connection** — Nets may be run or attended from field sites, EOCs on generator, and rural links where the internet comes and goes. The net page now keeps trying to reconnect for as long as you leave it open, instead of quietly giving up after a few minutes, and it reconnects the moment your signal returns rather than waiting out a timer. When it reconnects it catches up on everything that happened while you were out — check-ins, statuses, chat, the activity log, and traffic. Before this, a page could come back looking perfectly normal while showing an out-of-date net, which is the worst way to lose track of a net. This applies to everyone taking part, not just Net Control.
 
 * **Net View: Edit a closed or archived net** — NCS, net managers, and admins can now fix a typo or a wrong setting on a net after it has closed or archived, not just while it's part of a recurring schedule. A note reminds you the net's log has already gone out, so a change here updates the record only.
-
-* **Help: Diagnostics for support** — the Help menu now has a Diagnostics option describing this browser and window (screen size, browser version, and whether the app noticed anything wrong with itself), with a Copy button so you can paste it into a message when something misbehaves. Some problems only happen at particular window sizes and are otherwise almost impossible to track down. It contains no callsigns, names, locations, or net activity, and nothing is sent anywhere unless you paste it.
-
-* **Sitewide: New-version banner** — If a tab is left open through a deploy, it now shows a banner offering to reload once a new version has shipped, so you're never troubleshooting on outdated code without realizing it, and you won't be told to force a hard refresh to see something new.
 
 * **Net View: Check-in prompt explains staff-only self check-in** — If a net has self check-in turned off, the owner, NCS, and loggers still get the check-in prompt since they can always check in; it now says why, so it doesn't look like the setting isn't working.
 
