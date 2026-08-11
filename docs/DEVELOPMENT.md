@@ -574,6 +574,20 @@ resync is exactly the silent-hole bug this section exists to prevent. Filter on
 what was missed — every list involved dedupes by id, so a full refetch merges cleanly
 and is far easier to get right than a diff.
 
+**Do not "optimize" this into an incremental catch-up** (fetch only what is newer than
+the last known id). Chat supports deletion and reactions, and check-ins can be deleted
+and edited, so an incremental fetch would silently never remove a deleted message or
+apply an edit made during the outage. The full refetch is a correctness requirement,
+not laziness.
+
+Chat and the activity log are two panels rendering the same endpoint, so both refetch
+it on resync. They cannot share state — a popped-out panel is a real `window.open`
+document with its own React root (`usePoppedOutWindow.ts`), so no context spans them.
+`chatApi.list` therefore coalesces concurrent in-flight requests per net in
+`api/chat.ts`, handing each caller its own copy of the array. Deliberately scoped to
+that one call; a blanket GET cache would change behavior for callers that legitimately
+expect an independent read.
+
 **What this does not do:** it does not let anyone keep working while disconnected.
 Writes attempted offline fail, the optimistic status paint rolls back, and the change
 is discarded rather than queued. Durable offline operation is a separate roadmap item

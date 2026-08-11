@@ -44,8 +44,40 @@ export function formatChatMessageText(message: string): string {
   return message.startsWith(CHAT_IMAGE_PREFIX) ? '[Photo]' : message;
 }
 
+// ========== IN-FLIGHT COALESCING FOR chatApi.list ==========
+// Chat.tsx and ActivityLog.tsx are separate panels that both render this net's
+// messages (ActivityLog filters to is_system), so they each fetch the full
+// thread independently -- on mount, and again on every netResync after a
+// dropped connection. That doubled a potentially large payload at the exact
+// moment bandwidth is worst, which matters for the degraded links this app is
+// built to survive.
+//
+// They genuinely cannot share state: a popped-out panel is a real window.open
+// document with its own React root (see usePoppedOutWindow.ts), so a context
+// or shared hook can't span them. Coalescing at the request layer works
+// regardless of how the panels are arranged.
+//
+// Scoped to this one call deliberately -- a blanket app-wide GET cache would
+// change behavior for callers that legitimately expect an independent read.
+//
+// Note: incremental catch-up ("only messages newer than id N") is NOT a valid
+// alternative here. Chat supports deletion and reactions, so a message removed
+// or reacted to during an outage would never update. The full refetch is the
+// correct behavior; this only stops us paying for it twice.
+const inFlightLists = new Map<number, Promise<{ data: ChatMessage[] }>>();
+
 export const chatApi = {
-  list: (netId: number) => api.get<ChatMessage[]>(`/chat/nets/${netId}/messages`),
+  list: (netId: number) => {
+    const pending = inFlightLists.get(netId);
+    // Hand every caller its own array so no panel can disturb another's copy.
+    const copy = (r: { data: ChatMessage[] }) => ({ ...r, data: [...r.data] });
+    if (pending) return pending.then(copy);
+
+    const request = api.get<ChatMessage[]>(`/chat/nets/${netId}/messages`)
+      .finally(() => { inFlightLists.delete(netId); });
+    inFlightLists.set(netId, request);
+    return request.then(copy);
+  },
 
   create: (netId: number, data: ChatMessageCreate) =>
     api.post<ChatMessage>(`/chat/nets/${netId}/messages`, data),
