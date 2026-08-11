@@ -18,7 +18,7 @@
               "userImpact": true
             },
             {
-              "text": "Admin: Turn off Gravatar — Security now has a Profile Photos switch that stops the site using Gravatar, the outside service that supplies profile pictures from a person's email address. With it off, nothing on the site contacts gravatar.com at all, which matters for instances running on isolated or restricted networks. Uploaded profile photos are stored here and keep working either way.",
+              "text": "Admin: New option to turn off Gravatar — Security now has a Profile Photos switch admins can use to stop the site from using Gravatar, the outside service that supplies profile pictures from a person's email address. Gravatar stays on by default, so nothing changes unless an admin turns it off. If an admin does turn it off, nothing on the site contacts gravatar.com at all, which matters for instances running on isolated or restricted networks. Uploaded profile photos are stored here and keep working either way.",
               "userImpact": false
             },
             {
