@@ -30,6 +30,7 @@ import { useLocation } from '../contexts/LocationContext';
 import useTrafficInbox from '../hooks/useTrafficInbox';
 import UserAvatar from './UserAvatar';
 import FeedbackModal from './FeedbackModal';
+import DiagnosticsModal from './DiagnosticsModal';
 import AboutModal from './AboutModal';
 import WalkthroughModal from './WalkthroughModal';
 import { userApi } from '../services/api';
@@ -54,6 +55,7 @@ import MenuBookIcon from '@mui/icons-material/MenuBook';
 import TourIcon from '@mui/icons-material/Tour';
 import FeedbackIcon from '@mui/icons-material/Feedback';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import BugReportIcon from '@mui/icons-material/BugReport';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 
 interface NavbarClockProps {
@@ -167,6 +169,7 @@ const Navbar: React.FC = () => {
   const [helpMenuAnchor, setHelpMenuAnchor] = useState<HTMLElement | null>(null);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [diagnosticsOpen, setDiagnosticsOpen] = useState(false);
   const [walkthroughOpen, setWalkthroughOpen] = useState(false);
 
   // Auto-launch walkthrough for first-time users (per-user DB flag, not localStorage)
@@ -209,6 +212,12 @@ const Navbar: React.FC = () => {
     setWalkthroughOpen(true);
   };
 
+  const handleOpenDiagnostics = () => {
+    closeHelpMenu();
+    setDrawerOpen(false);
+    setDiagnosticsOpen(true);
+  };
+
   const navItems = [
     { label: 'Nets', path: '/dashboard', icon: <RadioIcon /> },
     { label: 'Schedule', path: '/scheduler', icon: <EventIcon /> },
@@ -233,6 +242,11 @@ const Navbar: React.FC = () => {
       icon: <FeedbackIcon fontSize="small" />,
       action: handleOpenFeedback,
       authRequired: true,
+    },
+    {
+      label: 'Diagnostics',
+      icon: <BugReportIcon fontSize="small" />,
+      action: handleOpenDiagnostics,
     },
     {
       label: 'About ECTLogger',
@@ -520,6 +534,7 @@ const Navbar: React.FC = () => {
 
       <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
       <AboutModal open={aboutOpen} onClose={() => setAboutOpen(false)} />
+      <DiagnosticsModal open={diagnosticsOpen} onClose={() => setDiagnosticsOpen(false)} />
       <WalkthroughModal
         open={walkthroughOpen}
         onClose={() => {

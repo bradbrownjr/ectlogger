@@ -7,6 +7,9 @@ import { collectDiagnostics, formatDiagnostics } from '../utils/clientDiagnostic
 // Read-only summary of this browser's environment plus anything the app's own
 // self-checks flagged, with a one-click copy for pasting into a support email.
 //
+// Rendered by DiagnosticsModal (Help menu), which supplies the "Diagnostics"
+// heading via its dialog title -- hence none here.
+//
 // Nothing here is transmitted: the values are gathered in the browser when the
 // section renders, and leave it only if the operator copies and pastes them
 // themselves. See utils/clientDiagnostics.ts for what is (and is not)
@@ -34,9 +37,6 @@ const DiagnosticsPanel: React.FC = () => {
 
   return (
     <Box>
-      <Typography variant="h6" gutterBottom>
-        Diagnostics
-      </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         If something in the app isn't behaving, copy this and include it in your message.
         It describes this browser and window only — your screen size, browser version, and

@@ -910,11 +910,12 @@ Both columns are blank for users the badge doesn't apply to, and both are sortab
 
 ## Getting Help
 
-The **Help** menu in the top navigation bar provides four options:
+The **Help** menu in the top navigation bar provides five options:
 
 - **User Guide** — Opens this documentation site in a new tab.
 - **Start Walkthrough** — Launches a step-through tour of the main app areas: Dashboard, Running a Net, Schedule, Statistics, Profile & Settings, and the Help menu itself. The walkthrough launches automatically on your first login and can be restarted at any time from here.
 - **Submit Feedback** — Opens an in-app form to report a bug or request a feature. Submissions are delivered directly to the site administrator with your callsign and contact info included so they can follow up. Rate-limited to 5 submissions per hour.
+- **Diagnostics** — Shows details about the browser and window you're using: the app version, your window and screen size, your browser and version, and whether the app detected anything wrong with its own display. **Copy Diagnostics** puts it all on your clipboard to paste into a feedback form or an email. Include it whenever you report something misbehaving — a number of problems only appear at particular window sizes or in particular browsers, and are very hard to track down without it. It contains no callsigns, names, locations, or net activity, and nothing is sent anywhere unless you paste it yourself.
 - **About ECTLogger** — Shows the current version, a link to the GitHub repository, open-source license credits, and the Honorable Mentions list of operators whose feedback helped shape the platform.
 
 ---

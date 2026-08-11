@@ -23,7 +23,6 @@ import type { ProfileFormData } from './profileFormTypes';
 import ThemeSwatchPicker from '../ThemeSwatchPicker';
 import { STORAGE_KEYS, clearNetViewLayoutPrefs } from '../../utils/localStorageKeys';
 import useLocalStorage from '../../hooks/useLocalStorage';
-import DiagnosticsPanel from '../DiagnosticsPanel';
 
 // ========== SETTINGS TAB ==========
 // Display/notification toggle switches. formData/handleSubmit are shared
@@ -215,14 +214,6 @@ const SettingsTab: React.FC<SettingsTabProps> = ({
         >
           Reset Net View Layout
         </Button>
-
-        <Divider sx={{ my: 3 }} />
-
-        {/* Support aid: browser environment + self-check results, copyable.
-            Read-only, so it sits outside the save flow entirely. */}
-        <DiagnosticsPanel />
-
-        <Divider sx={{ my: 3 }} />
 
         <TextField
           fullWidth
