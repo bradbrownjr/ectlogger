@@ -189,6 +189,35 @@ const AdminSecurityTab: React.FC<Props> = ({ showSnackbar }) => {
         </Button>
       </Box>
 
+      {/* ========== PROFILE PHOTO PRIVACY CARD ========== */}
+      {/* Lives on Security rather than Branding because the reason to turn
+          it off is third-party network contact, not appearance. */}
+      <Card variant="outlined" sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>
+            <ShieldIcon sx={{ verticalAlign: 'middle', mr: 1 }} />
+            Profile Photos
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Controls whether this instance uses Gravatar, a third-party service that supplies profile photos based on a hash of the user's email address.
+          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box sx={{ pr: 2 }}>
+              <Typography variant="body1">Use Gravatar</Typography>
+              <Typography variant="caption" color="text.secondary" component="div">
+                When enabled, users without an uploaded photo get their Gravatar image if they have one, and their initials otherwise. Their browser fetches it directly from gravatar.com.
+                When disabled, no Gravatar address is ever sent to a browser, so nothing on this site contacts gravatar.com — useful on isolated or restricted networks. Uploaded profile photos are served by this server and keep working either way.
+              </Typography>
+            </Box>
+            <Switch
+              checked={gravatarEnabled}
+              disabled={gravatarSaving}
+              onChange={(e) => handleSaveGravatar(e.target.checked)}
+            />
+          </Box>
+        </CardContent>
+      </Card>
+
       {securityLoading && !securityInfo ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
           <CircularProgress />
@@ -523,34 +552,6 @@ const AdminSecurityTab: React.FC<Props> = ({ showSnackbar }) => {
             </CardContent>
           </Card>
 
-          {/* ========== PROFILE PHOTO PRIVACY CARD ========== */}
-          {/* Lives on Security rather than Branding because the reason to turn
-              it off is third-party network contact, not appearance. */}
-          <Card variant="outlined">
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                <ShieldIcon sx={{ verticalAlign: 'middle', mr: 1 }} />
-                Profile Photos
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                Controls whether this instance uses Gravatar, a third-party service that supplies profile photos based on a hash of the user's email address.
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Box sx={{ pr: 2 }}>
-                  <Typography variant="body1">Use Gravatar</Typography>
-                  <Typography variant="caption" color="text.secondary" component="div">
-                    When enabled, users without an uploaded photo get their Gravatar image if they have one, and their initials otherwise. Their browser fetches it directly from gravatar.com.
-                    When disabled, no Gravatar address is ever sent to a browser, so nothing on this site contacts gravatar.com — useful on isolated or restricted networks. Uploaded profile photos are served by this server and keep working either way.
-                  </Typography>
-                </Box>
-                <Switch
-                  checked={gravatarEnabled}
-                  disabled={gravatarSaving}
-                  onChange={(e) => handleSaveGravatar(e.target.checked)}
-                />
-              </Box>
-            </CardContent>
-          </Card>
         </Box>
       ) : (
         <Alert severity="error">
