@@ -20,10 +20,12 @@ const UpdateAvailableBanner: React.FC = () => {
 
   // Render directly (no Collapse wrapper) so the Alert stretches to full flex
   // width, matching MaintenanceBanner. variant="filled" for dark-mode contrast.
+  // severity="warning" (yellow) marks this as a brief, non-blocking interruption --
+  // distinct from MaintenanceBanner's severity="error" (red), which is a blocker.
   return (
     <Alert
       variant="filled"
-      severity="info"
+      severity="warning"
       icon={<SystemUpdateAltIcon fontSize="inherit" />}
       action={
         <>

@@ -923,20 +923,35 @@ Use responsive padding on `<Paper>` to reclaim space on small screens:
 
 ---
 
-## Sitewide Alert Banners (`MaintenanceBanner.tsx`)
+## Sitewide Alert Banners (`MaintenanceBanner.tsx`, `UpdateAvailableBanner.tsx`)
+
+There are two sitewide banners, mounted next to each other in `App.tsx` below the
+navbar. They share the same layout/polling pattern below but are deliberately
+different severities:
+
+| Banner | Severity | Color | Meaning |
+|---|---|---|---|
+| `MaintenanceBanner` | `error` | red | A blocker — features may not work at all. |
+| `UpdateAvailableBanner` | `warning` | yellow | A brief, non-blocking interruption — reload when convenient. |
+
+Don't reuse `severity="error"` or `"warning"` for anything less urgent than these
+two meanings, and don't add a third sitewide banner at `severity="info"` without
+first checking whether it actually belongs at one of these two levels — the whole
+point of the hierarchy is that color alone tells the user how urgent it is.
 
 ### Color / visibility
 Always use `variant="filled"` on the MUI `<Alert>`. The default standard variant
-applies a very low-opacity tint for `severity="warning"` in dark mode — nearly
-invisible on a dark background. `variant="filled"` gives a solid high-contrast
-amber background in both themes.
+applies a very low-opacity tint in dark mode — nearly invisible on a dark
+background, regardless of severity. `variant="filled"` gives a solid high-contrast
+background in both themes.
 
 ```tsx
 // Correct
-<Alert variant="filled" severity="warning" ...>
+<Alert variant="filled" severity="error" ...>   {/* MaintenanceBanner */}
+<Alert variant="filled" severity="warning" ...> {/* UpdateAvailableBanner */}
 
 // Wrong — invisible in dark mode
-<Alert severity="warning" ...>
+<Alert severity="error" ...>
 ```
 
 ### Layout — no Collapse wrapper
@@ -949,7 +964,7 @@ with wide content. The conditional `return null` pattern already handles show/hi
 ```tsx
 // Correct — direct render, full flex width
 if (!banner?.active || dismissed) return null;
-return <Alert variant="filled" severity="warning" sx={{ borderRadius: 0 }} ...>;
+return <Alert variant="filled" severity="error" sx={{ borderRadius: 0 }} ...>;
 
 // Wrong — Collapse wrapper clips text on some pages
 return <Collapse in><Alert ...></Collapse>;
@@ -961,11 +976,16 @@ The public `/api/settings/maintenance-banner` endpoint is lightweight and
 unauthenticated. Poll every **10 seconds** so enable/disable changes are
 reflected within one poll cycle rather than requiring a page reload. 60-second
 intervals leave users staring at a stale banner state for up to a minute.
+`UpdateAvailableBanner` polls `/version.json` every **5 minutes** instead — a
+stale build is never as time-critical, and it never auto-reloads, so there's no
+benefit to a tighter interval.
 
 ### Dismissed state reset
-Clear the `dismissed` flag on both transitions — inactive→active AND active→inactive
-— so re-enabling the banner after an admin disables it always shows it again without
-a page reload.
+`MaintenanceBanner` clears its `dismissed` flag on both transitions —
+inactive→active AND active→inactive — so re-enabling the banner after an admin
+disables it always shows it again without a page reload. `UpdateAvailableBanner`
+keys dismissal to the build id it was shown for, so a *later* deploy shows the
+notice again even if an earlier one was dismissed.
 
 ---
 

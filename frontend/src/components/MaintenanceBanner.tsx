@@ -48,11 +48,13 @@ const MaintenanceBanner: React.FC = () => {
 
   // Render directly (no Collapse wrapper) so the Alert stretches to full flex width.
   // variant="filled" gives a solid high-contrast background in both light and dark modes,
-  // unlike the standard severity="warning" which is nearly invisible in dark mode.
+  // unlike the standard variant which is nearly invisible in dark mode. severity="error"
+  // (red) marks this as a blocker, distinct from UpdateAvailableBanner's severity="warning"
+  // (yellow), which is a brief, non-blocking interruption.
   return (
     <Alert
       variant="filled"
-      severity="warning"
+      severity="error"
       icon={<BuildIcon fontSize="inherit" />}
       action={
         banner.dismissible ? (
