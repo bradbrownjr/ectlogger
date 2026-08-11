@@ -24,6 +24,8 @@ All notable changes to ECTLogger are documented here.
 
 * **Net View: Check-in prompt explains staff-only self check-in** — If a net has self check-in turned off, the owner, NCS, and loggers still get the check-in prompt since they can always check in; it now says why, so it doesn't look like the setting isn't working.
 
+* **Sitewide: Alert banner colors show urgency** — The maintenance banner is now red to mark it as a blocker, and the new-version banner is amber to mark it as a brief, non-blocking interruption, so the color itself tells you how urgent a sitewide notice is.
+
 ## Bug Fixes
 
 * **Net View: Check-in changes appear instantly** — picking a status used to leave the old icon on screen while the change saved, which made it look like the change hadn't taken and led people to click again. Your choice now shows the moment you make it, and new check-ins, edits, and deletions update the list right away instead of after a pause. The delay was worst on slow or mobile connections, where it could run to several seconds.

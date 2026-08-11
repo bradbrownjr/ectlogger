@@ -1,8 +1,8 @@
 {
-  "version": "2026.08.11h",
+  "version": "2026.08.11i",
   "entries": [
     {
-      "version": "2026.08.11h",
+      "version": "2026.08.11i",
       "date": "2026-08-11",
       "sections": [
         {
@@ -38,6 +38,9 @@
             },
             {
               "text": "Net View: Check-in prompt explains staff-only self check-in — if a net has self check-in turned off, the owner, NCS, and loggers still get the check-in prompt since they can always check in; it now says why, so it doesn't look like the setting isn't working."
+            },
+            {
+              "text": "Sitewide: Alert banner colors show urgency — the maintenance banner is now red to mark it as a blocker, and the new-version banner is amber to mark it as a brief, non-blocking interruption, so the color itself tells you how urgent a sitewide notice is."
             }
           ]
         },
