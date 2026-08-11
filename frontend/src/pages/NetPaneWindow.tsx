@@ -415,8 +415,6 @@ const NetPaneWindow: React.FC = () => {
         handleInlineKeyDown={handleInlineKeyDown}
         handleInlineBlur={handleInlineBlur}
         handleStatusChange={handleStatusChange}
-        fetchNetRoles={fetchNetRoles}
-        fetchCheckIns={fetchCheckIns}
         handleToggleHand={handleToggleHand}
         handleSetActiveSpeaker={handleSetActiveSpeaker}
         handleDeleteCheckIn={handleDeleteCheckIn}

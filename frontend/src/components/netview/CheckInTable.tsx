@@ -78,8 +78,6 @@ interface CheckInTableProps {
   handleInlineKeyDown: (e: React.KeyboardEvent) => void;
   handleInlineBlur: (e: React.FocusEvent) => void;
   handleStatusChange: (checkInId: number, newStatus: string) => Promise<any> | void;
-  fetchNetRoles: () => Promise<any> | void;
-  fetchCheckIns: () => Promise<any> | void;
   handleToggleHand: (checkInId: number) => void;
   handleSetActiveSpeaker: (checkInId: number | null) => void;
   handleDeleteCheckIn: (checkInId: number) => void;
@@ -127,8 +125,6 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
   handleInlineKeyDown,
   handleInlineBlur,
   handleStatusChange,
-  fetchNetRoles,
-  fetchCheckIns,
   handleToggleHand,
   handleSetActiveSpeaker,
   handleDeleteCheckIn,
@@ -405,11 +401,15 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                               <Select
                                 size="small"
                                 value={selectValue}
-                                onChange={async (e) => {
-                                  await handleStatusChange(checkIn.id, e.target.value);
-                                  // Force refresh after role assignment
-                                  await fetchNetRoles();
-                                  await fetchCheckIns();
+                                onChange={(e) => {
+                                  // handleStatusChange already refreshes whatever the
+                                  // change actually touched (roles only on the role
+                                  // branch, the row itself either way). Re-awaiting a
+                                  // second roles+check-ins pair here doubled the
+                                  // round trips before the control could repaint, so
+                                  // the operator watched the old icon for the whole
+                                  // trip and concluded the change hadn't taken.
+                                  handleStatusChange(checkIn.id, e.target.value);
                                 }}
                                 sx={{ minWidth: 50 }}
                                 MenuProps={{

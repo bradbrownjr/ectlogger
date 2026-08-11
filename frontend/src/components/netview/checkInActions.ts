@@ -111,7 +111,7 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
         ...checkInForm,
         custom_fields: checkInForm.custom_fields,
       };
-      await checkInApi.create(Number(netId), checkInData);
+      const response = await checkInApi.create(Number(netId), checkInData);
 
       // Clear form for next check-in
       setCheckInForm({
@@ -132,7 +132,11 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
         status: 'checked_in',
       });
 
-      fetchCheckIns();
+      // Append the new row from the response instead of re-reading the list.
+      // Every check-in creates a new row -- a recheck included (see
+      // routers/check_ins.py::create_check_in) -- and the list is ordered by
+      // checked_in_at, so the newest row always belongs at the end.
+      setCheckIns((prev: any[]) => [...prev, response.data]);
 
       // Refresh poll responses after new check-in (in case new response was added)
       if (net?.poll_enabled) {
@@ -197,8 +201,14 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
             await fetchNetRoles();
           }
         }
-        await checkInApi.update(checkInId, { status: newStatus });
-        await fetchCheckIns();
+        // Patch the one row from the write's own response instead of re-reading
+        // the whole list. PUT /check-ins/{id} returns the authoritative
+        // CheckInResponse, and the list is ordered by checked_in_at -- which a
+        // status change never touches -- so replacing in place keeps row order
+        // correct while removing a full round trip. Same shape handleToggleHand
+        // already used.
+        const response = await checkInApi.update(checkInId, { status: newStatus });
+        setCheckIns((prev: any[]) => prev.map(ci => (ci.id === checkInId ? response.data : ci)));
       }
     } catch (error: any) {
       console.error('Failed to update status:', error);
@@ -211,7 +221,9 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
     if (!confirm('Delete this check-in entry?')) return;
     try {
       await checkInApi.delete(checkInId);
-      fetchCheckIns();
+      // Drop the row locally rather than re-reading the list; the server's
+      // check_in_deleted broadcast does the same for every other client.
+      setCheckIns((prev: any[]) => prev.filter(ci => ci.id !== checkInId));
     } catch (error) {
       console.error('Failed to delete check-in:', error);
       setToastMessage('Failed to delete check-in');
@@ -249,7 +261,7 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
     if (!checkIn) return;
 
     try {
-      await checkInApi.update(inlineEditingId, {
+      const response = await checkInApi.update(inlineEditingId, {
         callsign: inlineEditValues.callsign || checkIn.callsign,
         name: inlineEditValues.name,
         location: inlineEditValues.location,
@@ -268,7 +280,10 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
       setInlineEditingId(null);
       setInlineEditValues({});
       setInlineEditFocusField(null);
-      fetchCheckIns();
+      // Patch from the write's response rather than re-reading the list -- an
+      // edit never changes checked_in_at, so row order is unaffected.
+      const edited = response.data;
+      setCheckIns((prev: any[]) => prev.map(ci => (ci.id === edited.id ? edited : ci)));
       // Refresh poll responses in case a new answer was added
       if (net?.poll_enabled) {
         fetchPollResponses();

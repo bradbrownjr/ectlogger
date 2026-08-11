@@ -1623,8 +1623,6 @@ const NetView: React.FC = () => {
                 handleInlineKeyDown={handleInlineKeyDown}
                 handleInlineBlur={handleInlineBlur}
                 handleStatusChange={handleStatusChange}
-                fetchNetRoles={fetchNetRoles}
-                fetchCheckIns={fetchCheckIns}
                 handleToggleHand={handleToggleHand}
                 handleSetActiveSpeaker={handleSetActiveSpeaker}
                 handleDeleteCheckIn={handleDeleteCheckIn}
@@ -2440,8 +2438,6 @@ const NetView: React.FC = () => {
                 handleInlineKeyDown={handleInlineKeyDown}
                 handleInlineBlur={handleInlineBlur}
                 handleStatusChange={handleStatusChange}
-                fetchNetRoles={fetchNetRoles}
-                fetchCheckIns={fetchCheckIns}
                 handleToggleHand={handleToggleHand}
                 handleSetActiveSpeaker={handleSetActiveSpeaker}
                 handleDeleteCheckIn={handleDeleteCheckIn}
