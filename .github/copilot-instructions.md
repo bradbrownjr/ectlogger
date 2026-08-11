@@ -303,6 +303,20 @@ For a multi-phase roadmap feature (the kind with its own "Design questions to re
   anyone else, hold off — deploy to beta only and confirm timing with the user before touching
   prod. This applies even to changes that were already approved/tested; approval to ship isn't
   approval to ship at any specific moment.
+
+  **What each half of that check actually means.** The two queries answer different questions and
+  neither replaces the other:
+  - **Active/lobby nets** is the one that protects people *quietly watching a net*. Someone
+    monitoring a net may click nothing for an hour and still be very much present, so a live net
+    is a hard stop on its own, regardless of what `last_active` says about anyone.
+  - **`last_active`** means "this operator did something deliberate", not "has a tab open".
+    Automatic polls send `X-Background-Request: 1` and are deliberately excluded from it
+    (`backend/app/dependencies.py`), so an idle tab parked on the dashboard no longer keeps a
+    user looking permanently active. Before this, one real user (`W1CPR`) showed as
+    active-within-the-minute continuously from the day they registered, which made this check
+    useless — it was reporting an open browser tab, not a person. **Never "fix" a future version
+    of this by stamping `last_active` on polled endpoints again**; add the header to any new poll
+    instead.
 - **Deploy from GitHub**:
   ```bash
   # 1. Pull latest from GitHub

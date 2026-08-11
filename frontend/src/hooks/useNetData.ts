@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
-import { netApi, checkInApi, userApi } from '../services/api';
+import { netApi, checkInApi, userApi, BACKGROUND_REQUEST_CONFIG } from '../services/api';
 import api from '../services/api';
+import useVisibilityAwareInterval from './useVisibilityAwareInterval';
 
 // ========== useNetData ==========
 // Owns the net's core data: the net itself, check-ins, roles, live stats,
@@ -125,9 +126,11 @@ export function useNetData(netId: string | undefined): UseNetDataResult {
     }
   };
 
-  const fetchNetStats = async () => {
+  // `background` marks the 10s poll below so it doesn't count as operator
+  // activity; the initial load and WebSocket-driven refreshes leave it off.
+  const fetchNetStats = async (background = false) => {
     try {
-      const response = await api.get(`/nets/${netId}/stats`);
+      const response = await api.get(`/nets/${netId}/stats`, background ? BACKGROUND_REQUEST_CONFIG : undefined);
       setNetStats(response.data);
       setOnlineUserIds(response.data.online_user_ids || []);
     } catch (error) {
@@ -175,15 +178,19 @@ export function useNetData(netId: string | undefined): UseNetDataResult {
       fetchFieldDefinitions();
       // The live message socket is owned by useNetWebSocket, in NetView.
 
-      // Poll stats every 10 seconds to update online users
-      const statsInterval = setInterval(fetchNetStats, 10000);
-
-      return () => {
-        clearInterval(statsInterval);
-      };
+      // The 10s stats poll now lives in the visibility-aware effect below, so
+      // it stops while the tab is hidden.
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [netId]);
+
+  // Poll stats to refresh the online-user list. Paused while the tab is
+  // hidden -- see useVisibilityAwareInterval.
+  useVisibilityAwareInterval(
+    useCallback(() => { fetchNetStats(true); }, [netId]),
+    10000,
+    !!netId,
+  );
 
   useEffect(() => {
     if (net?.owner_id) {

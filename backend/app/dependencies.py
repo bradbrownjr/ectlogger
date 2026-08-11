@@ -14,6 +14,32 @@ from app.session_config import get_session_config
 security = HTTPBearer()
 optional_security = HTTPBearer(auto_error=False)
 
+# ========== BACKGROUND REQUEST MARKER ==========
+# Header the frontend sets on requests it makes on a timer rather than because
+# the operator did something (see frontend/src/services/api.ts's
+# BACKGROUND_REQUEST_CONFIG).
+#
+# Why: `last_active` is meant to answer "is this person using ECTLogger right
+# now" -- it orders the admin user list, and it gates whether production is
+# safe to restart. But the navbar's traffic-inbox badge polls every 60s from
+# every page, so any logged-in browser tab kept open kept stamping
+# `last_active` forever. One user had shown as "active a minute ago",
+# continuously, since the day they registered: a tab left open, not a person
+# at the keyboard. Requests that arrive on a timer therefore no longer count
+# as activity.
+#
+# Someone quietly watching a live net is still genuinely present even though
+# they may click nothing for an hour -- that case is covered by checking for
+# nets in active/lobby status, not by this timestamp.
+BACKGROUND_REQUEST_HEADER = "X-Background-Request"
+
+
+def is_background_request(request: Request) -> bool:
+    """True when this request was made by a client-side timer, not by the
+    operator doing something. Trusted only for activity bookkeeping -- it must
+    never be allowed to influence authorization."""
+    return request.headers.get(BACKGROUND_REQUEST_HEADER) == "1"
+
 
 async def get_current_user(
     request: Request,
@@ -71,9 +97,12 @@ async def get_current_user(
             detail="Inactive user"
         )
     
-    # Update last_active timestamp for online tracking
-    user.last_active = datetime.now(timezone.utc)
-    await db.commit()
+    # Update last_active timestamp for online tracking. Automatic polls are
+    # excluded so an idle open tab doesn't read as someone using the app --
+    # see BACKGROUND_REQUEST_HEADER above.
+    if not is_background_request(request):
+        user.last_active = datetime.now(timezone.utc)
+        await db.commit()
 
     # Rolling refresh: if enabled and fewer than 7 days remain, issue a new
     # token so active users never have to re-authenticate.

@@ -12,6 +12,20 @@ const api = axios.create({
   },
 });
 
+// ========== BACKGROUND REQUEST MARKER ==========
+// Spread into an axios config to mark a call as one the app made on a timer,
+// rather than one the operator asked for:
+//   api.get('/traffic/inbox', BACKGROUND_REQUEST_CONFIG)
+//
+// The backend skips its `last_active` bookkeeping for these, so a logged-in
+// tab left open on the dashboard stops looking like somebody at the keyboard
+// (see backend/app/dependencies.py's BACKGROUND_REQUEST_HEADER). Use it for
+// every polled/interval-driven request; never for one triggered by a click,
+// a navigation, or a form submit.
+export const BACKGROUND_REQUEST_CONFIG = {
+  headers: { 'X-Background-Request': '1' },
+} as const;
+
 // Add token to requests
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
@@ -288,7 +302,10 @@ export const trafficApi = {
   listLogEntries: (formId: number) => api.get(`/traffic/forms/${formId}/log`),
   deleteLogEntry: (formId: number, entryId: number) =>
     api.delete(`/traffic/forms/${formId}/log/${entryId}`),
-  getInbox: () => api.get('/traffic/inbox'),
+  // `background` marks the navbar badge's 60s poll, so it doesn't count as
+  // operator activity. The initial load and any manual refresh leave it off.
+  getInbox: (background = false) =>
+    api.get('/traffic/inbox', background ? BACKGROUND_REQUEST_CONFIG : undefined),
 };
 
 // Contact API (station contacts from check-in history)

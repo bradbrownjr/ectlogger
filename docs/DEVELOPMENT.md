@@ -450,6 +450,36 @@ This is what makes multi-timezone nets correct: the net happens at one instant, 
 
 ---
 
+## Background polling and `last_active`
+
+Any request the app makes on a timer must be marked as a background request, and any
+frequent poll should stop while the tab is hidden.
+
+**Mark the request.** Spread `BACKGROUND_REQUEST_CONFIG` (`frontend/src/services/api.ts`)
+into the axios call, which sets `X-Background-Request: 1`. The backend
+(`backend/app/dependencies.py`) skips its `last_active` bookkeeping for those requests, so
+that timestamp keeps meaning "this operator did something", not "this operator has a tab
+open". Use it only for interval-driven calls — never for one caused by a click, a
+navigation, or a form submit. The header is bookkeeping only and must never influence
+authorization; `tests/test_last_active.py` pins that, along with the requirement that only
+the exact value `1` counts.
+
+**Pause it while hidden.** Use `useVisibilityAwareInterval`
+(`frontend/src/hooks/useVisibilityAwareInterval.ts`) instead of a bare `setInterval`. Browsers
+throttle timers in hidden tabs but don't stop them, so a plain interval keeps hitting the
+backend all night for nobody. The hook clears the interval when the tab is hidden and refetches
+immediately on return, so what the operator sees when they come back is fresh either way.
+
+**Never do this to the net WebSocket.** An NCS with the net in a background tab still needs
+live events; only polling pauses.
+
+Why this exists: the navbar traffic-inbox badge polls every 60s from every page, and every
+authenticated request used to stamp `last_active`. One real user therefore showed as
+active-within-the-minute continuously from the day they registered — a tab left open, not a
+person at the keyboard — which silently defeated the pre-deploy "is anyone using prod right
+now" safety check. Note the net-view "Online" indicator is unaffected either way: it comes from
+live WebSocket connections (`ConnectionManager.get_online_users`), not from `last_active`.
+
 ## WebSocket
 
 Endpoint: `WS /api/ws/nets/{net_id}?token=<jwt>`
