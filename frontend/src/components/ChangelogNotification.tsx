@@ -767,8 +767,10 @@ const ChangelogNotification: React.FC = () => {
                 </span>
               </Tooltip>
             )}
-            <Button onClick={handleClose} variant="contained">
-              Got it!
+            {/* Matches Subscribe's size so the two buttons in this group read
+                as one row, not two different scales. */}
+            <Button onClick={handleClose} variant="contained" size="small">
+              OK
             </Button>
           </Box>
         </DialogActions>
