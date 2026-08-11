@@ -54,6 +54,8 @@
 // so that residual can be computed and added back without knowing what
 // anchorOrigin/transformOrigin a given Menu instance used.
 
+import { recordDiagnosticIssue } from './clientDiagnostics';
+
 function currentZoom(): number {
   return parseFloat(document.body.style.zoom) || 1;
 }
@@ -114,6 +116,46 @@ export function isPlausiblePosition(value: number | null): boolean {
   return Number.isFinite(value) && Math.abs(value) <= MAX_PLAUSIBLE_POSITION_PX;
 }
 
+/** Exported for unit testing only -- true when a rendered rect sits far enough
+ * outside the viewport that the operator cannot see it. A menu is allowed to
+ * hang slightly past an edge (browsers reposition those routinely); this is
+ * looking for the pathological case, where the element is nowhere near the
+ * screen and the control therefore looks dead. */
+export function isEffectivelyOffscreen(
+  rect: { top: number; left: number; bottom: number; right: number },
+  viewport: { width: number; height: number },
+): boolean {
+  const SLACK_PX = 50;
+  return (
+    rect.bottom < -SLACK_PX ||
+    rect.right < -SLACK_PX ||
+    rect.top > viewport.height + SLACK_PX ||
+    rect.left > viewport.width + SLACK_PX
+  );
+}
+
+/**
+ * Self-check: after correcting a menu's position, confirm it actually landed
+ * somewhere the operator can see it. This exact failure -- a perfectly
+ * rendered menu positioned far offscreen -- produces no console error and no
+ * failed request, so without this check it is indistinguishable from "the
+ * dropdown does nothing", which is precisely how it was reported.
+ */
+function reportIfOffscreen(paper: HTMLElement, zoom: number): void {
+  try {
+    const r = paper.getBoundingClientRect();
+    const viewport = { width: window.innerWidth, height: window.innerHeight };
+    if (!isEffectivelyOffscreen(r, viewport)) return;
+    recordDiagnosticIssue(
+      'popover-offscreen',
+      `a menu rendered offscreen at (${Math.round(r.left)}, ${Math.round(r.top)}) ` +
+        `with zoom ${zoom} and viewport ${viewport.width}x${viewport.height}`,
+    );
+  } catch {
+    /* diagnostics must never break the page */
+  }
+}
+
 /**
  * Starts watching for MUI Popover-family Paper elements (`.MuiPopover-paper`
  * -- Menu and Select's dropdown both use it) anywhere in the document, and
@@ -149,11 +191,18 @@ export function watchZoomAwarePopovers(): () => void {
 
     // Never write a diverged coordinate -- an offscreen menu reads to the
     // operator as a control that does nothing at all.
-    if (!isPlausiblePosition(nextTop) || !isPlausiblePosition(nextLeft)) return;
+    if (!isPlausiblePosition(nextTop) || !isPlausiblePosition(nextLeft)) {
+      recordDiagnosticIssue(
+        'popover-position-diverged',
+        `menu position calculation diverged at zoom ${zoom}; left as-is`,
+      );
+      return;
+    }
 
     lastWritten.set(paper, { top: nextTop, left: nextLeft });
     if (nextTop !== null) paper.style.top = `${nextTop}px`;
     if (nextLeft !== null) paper.style.left = `${nextLeft}px`;
+    reportIfOffscreen(paper, zoom);
   };
 
   const watchPaper = (paper: HTMLElement) => {

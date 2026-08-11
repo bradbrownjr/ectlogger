@@ -6,6 +6,10 @@ All notable changes to ECTLogger are documented here.
 
 # August 11, 2026
 
+## Improvements
+
+* **Profile: Diagnostics for support** — Profile → Settings now has a Diagnostics section describing this browser and window (screen size, browser version, and whether the app noticed anything wrong with itself), with a Copy button so you can paste it into a message when something misbehaves. It contains no callsigns, names, locations, or net activity, and nothing is sent anywhere unless you paste it — some problems only happen at particular window sizes, and this is what makes them findable.
+
 ## Bug Fixes
 
 * **Net View: Dropdown menus on shorter screens** — Status and other dropdown menus inside a net now open next to the control you clicked instead of far off-screen, so they no longer look like buttons that do nothing. This affected anyone whose browser window was less than about 800 pixels tall, which is common on a laptop or with Windows display scaling turned up, and it hit every dropdown on the page including the status box in the check-in row at the bottom.

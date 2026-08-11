@@ -4,6 +4,7 @@ import {
   correctZoomedCoordinate,
   isEchoOfOwnWrite,
   isPlausiblePosition,
+  isEffectivelyOffscreen,
 } from './zoomAwarePopovers';
 
 describe('parseTransformOrigin', () => {
@@ -106,5 +107,29 @@ describe('isPlausiblePosition', () => {
     expect(isPlausiblePosition(1.6164e23)).toBe(false);
     expect(isPlausiblePosition(Infinity)).toBe(false);
     expect(isPlausiblePosition(NaN)).toBe(false);
+  });
+});
+
+describe('isEffectivelyOffscreen', () => {
+  const viewport = { width: 1600, height: 650 };
+
+  it('accepts a menu sitting normally in view', () => {
+    expect(isEffectivelyOffscreen({ top: 236, left: 56, bottom: 536, right: 200 }, viewport)).toBe(false);
+  });
+
+  it('tolerates a menu hanging slightly past an edge', () => {
+    // Browsers routinely nudge menus a few px past a boundary; that is not
+    // the failure this check is looking for.
+    expect(isEffectivelyOffscreen({ top: 630, left: 56, bottom: 690, right: 200 }, viewport)).toBe(false);
+  });
+
+  it('flags the runaway case that made every dropdown look dead', () => {
+    const far = 1.6164e23;
+    expect(isEffectivelyOffscreen({ top: far, left: far, bottom: far + 300, right: far + 144 }, viewport)).toBe(true);
+  });
+
+  it('flags a menu entirely off the top or left', () => {
+    expect(isEffectivelyOffscreen({ top: -500, left: 56, bottom: -200, right: 200 }, viewport)).toBe(true);
+    expect(isEffectivelyOffscreen({ top: 100, left: -900, bottom: 400, right: -600 }, viewport)).toBe(true);
   });
 });

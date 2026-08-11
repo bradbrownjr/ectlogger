@@ -6,6 +6,16 @@
       "date": "2026-08-11",
       "sections": [
         {
+          "title": "Improvements",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Profile: Diagnostics for support — Profile → Settings now has a Diagnostics section describing this browser and window (screen size, browser version, and whether the app noticed anything wrong with itself), with a Copy button so you can paste it into a message when something misbehaves. It contains no callsigns, names, locations, or net activity, and nothing is sent anywhere unless you paste it — some problems only happen at particular window sizes, and this is what makes them findable.",
+              "userImpact": true
+            }
+          ]
+        },
+        {
           "title": "Bug Fixes",
           "type": "bugfix",
           "items": [
