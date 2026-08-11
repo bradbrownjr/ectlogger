@@ -1,8 +1,8 @@
 {
-  "version": "2026.08.11f",
+  "version": "2026.08.11g",
   "entries": [
     {
-      "version": "2026.08.11f",
+      "version": "2026.08.11g",
       "date": "2026-08-11",
       "sections": [
         {
@@ -32,6 +32,9 @@
             {
               "text": "Net View: Edit a closed or archived net — NCS, net managers, and admins can now fix a typo or a wrong setting on a net after it has closed or archived, not just while it's part of a recurring schedule. A note reminds you the net's log has already gone out, so a change here updates the record only.",
               "userImpact": true
+            },
+            {
+              "text": "Sitewide: New-version banner — if a tab is left open through a deploy, it now shows a banner offering to reload once a new version has shipped, so you're never troubleshooting on outdated code without realizing it, and you won't be told to force a hard refresh to see something new."
             }
           ]
         },

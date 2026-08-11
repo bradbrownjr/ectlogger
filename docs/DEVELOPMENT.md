@@ -626,6 +626,39 @@ and edited, so an incremental fetch would silently never remove a deleted messag
 apply an edit made during the outage. The full refetch is a correctness requirement,
 not laziness.
 
+### Frontend build-version detection
+
+A tab left open across a deploy keeps running the JS it loaded with — nothing tells it
+a new build exists, and content-hashed asset filenames mean a stale tab can't even
+fetch the new bundle by accident. Left alone this produces two symptoms: bug reports
+that turn out to be an old client, and (worse) admin metrics skewed by old clients
+missing newer instrumentation, e.g. the `X-Background-Request` header did not exist
+before 2026-08-11, so any tab still running pre-that-date JS stamps `last_active` on
+every background poll and never stops looking "active."
+
+**How it works:**
+
+1. `vite.config.ts` computes `getBuildId()` — the short git commit SHA, **not** a
+   timestamp. A backend-only deploy that rebuilds the frontend from an unchanged
+   commit must produce the identical id, or every deploy would falsely tell open tabs
+   a new frontend shipped when nothing about the frontend actually changed.
+2. The id is embedded in the JS bundle via `define: { __BUILD_ID__ }` (that tab's own
+   version, fixed at load time) and separately written to `dist/version.json` by the
+   `write-version-file` plugin's `closeBundle` hook (the server's *current* version,
+   fetched fresh on every poll). These must stay two different mechanisms — embedding
+   the server's current id in the same hashed bundle a stale tab is running would
+   never update.
+3. `hooks/useBuildVersion.ts` fetches `/version.json` with `cache: 'no-store'` — this
+   depends on production sending `Cache-Control: no-cache` on non-hashed static files
+   (Caddyfile), otherwise a browser-cached copy of `version.json` itself defeats the
+   check. Polls via `useVisibilityAwareInterval` (5 minutes; a stale build is never as
+   time-critical as the 10s maintenance banner, and this never auto-reloads, so there's
+   no benefit to a tighter interval).
+4. `components/UpdateAvailableBanner.tsx` shows a dismissible `info` banner with a
+   Reload button when the ids differ. **Never auto-reload** — an operator mid check-in
+   entry would lose it. Dismissal is keyed to the build id it was shown for, so the
+   *next* deploy shows the banner again even if a previous one was dismissed.
+
 Chat and the activity log are two panels rendering the same endpoint, so both refetch
 it on resync. They cannot share state — a popped-out panel is a real `window.open`
 document with its own React root (`usePoppedOutWindow.ts`), so no context spans them.

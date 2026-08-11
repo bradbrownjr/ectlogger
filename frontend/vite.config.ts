@@ -1,9 +1,41 @@
-import { defineConfig, loadEnv } from 'vite'
+import { defineConfig, loadEnv, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
+import { execSync } from 'child_process'
+import { writeFileSync } from 'fs'
+import { fileURLToPath } from 'url'
+import { dirname, resolve } from 'path'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+
+// Short commit SHA identifies this build. Deliberately not a timestamp: a
+// backend-only deploy that rebuilds the frontend from an unchanged commit
+// must produce the SAME id, or every deploy would falsely tell open tabs
+// a new frontend shipped even when nothing about the frontend changed.
+function getBuildId(): string {
+  try {
+    return execSync('git rev-parse --short HEAD', { cwd: __dirname }).toString().trim()
+  } catch {
+    return 'unknown'
+  }
+}
+
+// Writes dist/version.json after the build so a running tab can poll it to
+// learn the server's current build id. This must be a plain static file,
+// never embedded in the hashed JS bundle -- the whole point is for an old,
+// already-loaded tab (running old JS) to detect a NEW id without reloading.
+function writeVersionFile(buildId: string): Plugin {
+  return {
+    name: 'write-version-file',
+    closeBundle() {
+      writeFileSync(resolve(__dirname, 'dist/version.json'), JSON.stringify({ buildId }))
+    },
+  }
+}
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  
+  const buildId = getBuildId()
+
   // Parse allowed hosts from environment variable
   // Format: comma-separated list, e.g., "ect.example.com,localhost"
   // Default: localhost only (secure by default)
@@ -15,7 +47,10 @@ export default defineConfig(({ mode }) => {
   const backendPort = env.VITE_BACKEND_PORT || '8000'
   
   return {
-    plugins: [react()],
+    plugins: [react(), writeVersionFile(buildId)],
+    define: {
+      __BUILD_ID__: JSON.stringify(buildId),
+    },
     server: {
       port: 3000,
       // Restrict hosts to configured list for security

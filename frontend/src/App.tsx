@@ -29,6 +29,7 @@ import Navbar from './components/Navbar';
 import ProfileSetupDialog from './components/ProfileSetupDialog';
 import ChangelogNotification from './components/ChangelogNotification';
 import MaintenanceBanner from './components/MaintenanceBanner';
+import UpdateAvailableBanner from './components/UpdateAvailableBanner';
 import ErrorBoundary from './components/ErrorBoundary';
 
 const getDesignTokens = (mode: PaletteMode, themeKey: string, customTheme: ThemeDefinition | null) => {
@@ -170,6 +171,7 @@ const AppRoutes: React.FC = () => {
     <Box sx={{ display: 'flex', flexDirection: 'column', height: 'var(--ect-app-h, 100vh)', overflow: 'hidden' }}>
       {!isPaneWindow && <Navbar />}
       {!isPaneWindow && <MaintenanceBanner />}
+      {!isPaneWindow && <UpdateAvailableBanner />}
       {isAuthenticated && !isPaneWindow && <ProfileSetupDialog />}
       {showChangelog && !isPaneWindow && <ChangelogNotification />}
       <Box component="main" sx={{ flexGrow: 1, bgcolor: 'background.default', display: 'flex', flexDirection: 'column', overflow: 'auto', minHeight: 0 }}>

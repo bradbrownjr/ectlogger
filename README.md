@@ -35,6 +35,7 @@ The responsive interface works beautifully on any device — from a phone in the
 - **📻 Multi-Frequency Support** — Track stations across multiple frequencies and modes
 - **👥 Multi-NCS Support** - Multiple NCS operators can check in and track stations across multiple frequencies and modes simultaneously
 - **⏸️ Paused-Net Indicator** — If the NCS steps away with no co-NCS covering, the net shows a blue border and banner so everyone knows no one is actively running it, and the recorded duration excludes that time
+- **🔄 New-Version Notice** — A tab left open across a deploy shows a banner offering to reload once a new version has shipped, so you're never troubleshooting on outdated code without knowing it
 
 ### Net Management
 

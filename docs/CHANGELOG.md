@@ -20,6 +20,8 @@ All notable changes to ECTLogger are documented here.
 
 * **Help: Diagnostics for support** — the Help menu now has a Diagnostics option describing this browser and window (screen size, browser version, and whether the app noticed anything wrong with itself), with a Copy button so you can paste it into a message when something misbehaves. Some problems only happen at particular window sizes and are otherwise almost impossible to track down. It contains no callsigns, names, locations, or net activity, and nothing is sent anywhere unless you paste it.
 
+* **Sitewide: New-version banner** — If a tab is left open through a deploy, it now shows a banner offering to reload once a new version has shipped, so you're never troubleshooting on outdated code without realizing it, and you won't be told to force a hard refresh to see something new.
+
 ## Bug Fixes
 
 * **Net View: Check-in changes appear instantly** — picking a status used to leave the old icon on screen while the change saved, which made it look like the change hadn't taken and led people to click again. Your choice now shows the moment you make it, and new check-ins, edits, and deletions update the list right away instead of after a pause. The delay was worst on slow or mobile connections, where it could run to several seconds.
