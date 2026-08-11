@@ -3,7 +3,7 @@ from typing import Optional
 
 
 from app.config import settings
-from app.email.base import get_unsubscribe_footer, send_email
+from app.email.base import get_unsubscribe_footer, send_email, send_email_with_binary_attachment
 
 async def send_feedback_email(
     to_email: str,
@@ -13,8 +13,17 @@ async def send_feedback_email(
     submitter_callsign: Optional[str],
     submitter_name: Optional[str],
     submitter_email: str,
+    diagnostics: Optional[str] = None,
+    screenshot: Optional[tuple] = None,
 ):
-    """Send an in-app feedback submission to an admin user."""
+    """Send an in-app feedback submission to an admin user.
+
+    ``diagnostics`` is the plain-text browser/environment snapshot the
+    submitter opted to include (see frontend/src/utils/clientDiagnostics.ts) --
+    rendered in its own boxed section, separate from the user's own message.
+    ``screenshot``, if provided, is (bytes, filename, mime_type) and is sent
+    as a real attachment rather than inlined, since it isn't text.
+    """
     from jinja2 import Template as JinjaTemplate
 
     color = "#d32f2f" if type_label == "Bug Report" else "#1565c0"
@@ -51,6 +60,16 @@ async def send_feedback_email(
                 white-space: pre-wrap;
                 font-size: 14px;
             }
+            .diagnostics-box {
+                background-color: #f5f5f5;
+                border-left: 4px solid #999;
+                padding: 12px 16px;
+                margin: 16px 0;
+                white-space: pre-wrap;
+                font-family: monospace;
+                font-size: 12px;
+                color: #555;
+            }
             .footer { margin-top: 30px; font-size: 12px; color: #888; }
         </style>
     </head>
@@ -64,6 +83,13 @@ async def send_feedback_email(
                 <p><strong>Email:</strong> {{ submitter_email }}</p>
             </div>
             <div class="body-box">{{ body }}</div>
+            {% if diagnostics %}
+            <p style="font-size: 13px; color: #666; margin-bottom: 4px;"><strong>Diagnostics (submitted by the reporter's browser):</strong></p>
+            <div class="diagnostics-box">{{ diagnostics }}</div>
+            {% endif %}
+            {% if has_screenshot %}
+            <p style="font-size: 13px; color: #666;">A screenshot is attached to this email.</p>
+            {% endif %}
             <div class="footer">
                 <p>Submitted via the in-app feedback form on {{ app_name }}.</p>
                 <p>Reply directly to this email to follow up with the submitter.</p>
@@ -82,12 +108,27 @@ async def send_feedback_email(
         submitter_email=submitter_email,
         color=color,
         app_name=settings.app_name,
+        diagnostics=diagnostics,
+        has_screenshot=screenshot is not None,
     )
 
     logger.info("EMAIL", f"Sending feedback notification to admin {to_email}")
+    email_subject = f"{emoji} [{type_label}] {subject} — {settings.app_name}"
+    if screenshot:
+        screenshot_bytes, screenshot_filename, screenshot_mime = screenshot
+        await send_email_with_binary_attachment(
+            to_email=to_email,
+            subject=email_subject,
+            html_content=html_content,
+            attachment_bytes=screenshot_bytes,
+            attachment_filename=screenshot_filename,
+            attachment_mime=screenshot_mime,
+        )
+        return
+
     await send_email(
         to_email=to_email,
-        subject=f"{emoji} [{type_label}] {subject} — {settings.app_name}",
+        subject=email_subject,
         html_content=html_content,
     )
 

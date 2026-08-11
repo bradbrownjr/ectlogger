@@ -245,8 +245,15 @@ export const netRoleApi = {
 
 // Feedback API
 export const feedbackApi = {
-  submit: (data: { type: 'bug' | 'feature'; subject: string; body: string }) =>
-    api.post('/feedback', data),
+  submit: (data: {
+    type: 'bug' | 'feature';
+    subject: string;
+    body: string;
+    diagnostics?: string;
+    screenshot_data?: string;
+    screenshot_filename?: string;
+    screenshot_mime?: string;
+  }) => api.post('/feedback', data),
 };
 
 // Traffic API (Assisted Traffic Handling & Forms — radiograms, ICS-213, etc.)

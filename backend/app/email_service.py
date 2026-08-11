@@ -3,7 +3,7 @@ EmailService facade — assembles the email sub-modules into a single class
 so all existing callers continue to work without change.
 
 Implementation lives in:
-  email/base.py          — send_email, send_email_with_attachment/s, unsubscribe helpers
+  email/base.py          — send_email, send_email_with_attachment/s/binary_attachment, unsubscribe helpers
   email/auth.py          — send_magic_link
   email/net_lifecycle.py — send_net_notification, send_net_invitation, send_net_cancellation
   email/reminders.py     — send_ncs_reminder, send_subscriber_reminder, send_staff_reminder
@@ -19,6 +19,7 @@ from app.email.base import (
     send_email,
     send_email_with_attachment,
     send_email_with_attachments,
+    send_email_with_binary_attachment,
 )
 from app.email.digest import send_feedback_email, send_whats_new_email
 from app.email.net_lifecycle import (
@@ -47,6 +48,7 @@ class EmailService:
     send_email = staticmethod(send_email)
     send_email_with_attachment = staticmethod(send_email_with_attachment)
     send_email_with_attachments = staticmethod(send_email_with_attachments)
+    send_email_with_binary_attachment = staticmethod(send_email_with_binary_attachment)
     send_magic_link = staticmethod(send_magic_link)
     send_net_notification = staticmethod(send_net_notification)
     send_net_invitation = staticmethod(send_net_invitation)

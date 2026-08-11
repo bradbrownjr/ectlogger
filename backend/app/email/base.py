@@ -1,5 +1,6 @@
 from email import encoders
 from email.mime.base import MIMEBase
+from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from typing import Optional
@@ -204,6 +205,68 @@ async def send_email_with_attachment(to_email: str, subject: str, html_content: 
         logger.info("EMAIL", f"Email with attachment sent successfully to {to_email}")
     except Exception as e:
         logger.error("EMAIL", f"Failed to send email with attachment: {str(e)}")
+        raise
+
+async def send_email_with_binary_attachment(to_email: str, subject: str, html_content: str,
+                                             attachment_bytes: bytes, attachment_filename: str,
+                                             attachment_mime: str = "application/octet-stream",
+                                             unsubscribe_token: str = None):
+    """Send an email with a single binary attachment (e.g. a screenshot).
+
+    send_email_with_attachment/s above take a str and call .encode() on it
+    before base64-wrapping -- correct for text payloads (CSV exports) but it
+    would corrupt real binary data by forcing it through UTF-8 decoding first.
+    This takes raw bytes directly and, for image/* mime types, uses MIMEImage
+    so mail clients can preview it rather than treating it as an opaque blob.
+    """
+    if _send_suppressed(to_email, subject, "email with attachment"):
+        return
+
+    logger.info("EMAIL", f"Sending email with binary attachment to {to_email}")
+
+    message = MIMEMultipart("mixed")
+    message["Subject"] = subject
+    message["From"] = f"{settings.smtp_from_name} <{settings.smtp_from_email}>"
+    message["To"] = to_email
+    message["Reply-To"] = settings.smtp_from_email
+    message["Message-ID"] = f"<{hash(to_email + subject)}.ectlogger@{settings.smtp_host}>"
+    message["X-Mailer"] = "ECTLogger"
+
+    if unsubscribe_token:
+        unsubscribe_url = get_unsubscribe_url(unsubscribe_token)
+        message["List-Unsubscribe"] = f"<{unsubscribe_url}>"
+        message["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click"
+    else:
+        message["List-Unsubscribe"] = f"<mailto:{settings.smtp_from_email}?subject=unsubscribe>"
+
+    html_part = MIMEText(html_content, "html")
+    message.attach(html_part)
+
+    maintype, _, subtype = attachment_mime.partition("/")
+    if maintype == "image":
+        attachment = MIMEImage(attachment_bytes, _subtype=subtype or "octet-stream")
+    else:
+        attachment = MIMEBase(maintype or "application", subtype or "octet-stream")
+        attachment.set_payload(attachment_bytes)
+        encoders.encode_base64(attachment)
+    attachment.add_header("Content-Disposition", f"attachment; filename={attachment_filename}")
+    message.attach(attachment)
+
+    try:
+        use_tls = settings.smtp_port == 465
+        await aiosmtplib.send(
+            message,
+            hostname=settings.smtp_host,
+            port=settings.smtp_port,
+            username=settings.smtp_user,
+            password=settings.smtp_password,
+            use_tls=use_tls,
+            start_tls=(settings.smtp_port == 587),
+            timeout=30,
+        )
+        logger.info("EMAIL", f"Email with binary attachment sent successfully to {to_email}")
+    except Exception as e:
+        logger.error("EMAIL", f"Failed to send email with binary attachment: {str(e)}")
         raise
 
 async def send_email_with_attachments(to_email: str, subject: str, html_content: str, attachments: list, unsubscribe_token: str = None):

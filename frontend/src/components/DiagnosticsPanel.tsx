@@ -39,9 +39,10 @@ const DiagnosticsPanel: React.FC = () => {
     <Box>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         If something in the app isn't behaving, copy this and include it in your message.
-        It describes this browser and window only — your screen size, browser version, and
-        whether the app noticed anything wrong with itself. It contains no callsigns, names,
-        locations, or net activity, and nothing is sent anywhere unless you paste it.
+        It describes this browser and window only — your screen size, browser version,
+        whether the app noticed anything wrong with itself, and any recent error messages
+        from the browser console. It contains no callsigns, names, locations, or net
+        activity, and nothing is sent anywhere unless you paste it.
       </Typography>
 
       <Box
@@ -67,7 +68,7 @@ const DiagnosticsPanel: React.FC = () => {
             <Typography component="dt" variant="body2" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
               {label}
             </Typography>
-            <Typography component="dd" variant="body2" sx={{ m: 0, fontFamily: 'monospace' }}>
+            <Typography component="dd" variant="body2" sx={{ m: 0, fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>
               {value}
             </Typography>
           </React.Fragment>

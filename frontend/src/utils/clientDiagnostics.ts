@@ -13,9 +13,12 @@
 //
 // PRIVACY: this is environment only, never content. No callsign, name, email,
 // location, chat, check-in or traffic data is collected, and nothing is
-// transmitted anywhere -- the operator reads it, then chooses to paste it. Keep
-// it that way: if a field would identify a person or reveal net activity, it
-// does not belong here.
+// transmitted anywhere -- the operator reads it, then chooses to paste it (or,
+// via the feedback form's opt-in checkbox, send it). Keep it that way: if a
+// field would identify a person or reveal net activity, it does not belong
+// here. Recent console.error/warn text is included (see CONSOLE CAPTURE
+// below) but non-string arguments are redacted before capture for the same
+// reason -- a raw object could be a check-in or an API response body.
 
 import changelog from '../changelog.json';
 
@@ -62,6 +65,69 @@ export function getDiagnosticIssues(): DiagnosticIssue[] {
 /** Exported for testing. Clears the recorded issues. */
 export function resetDiagnosticIssues(): void {
   issues.length = 0;
+}
+
+// ========== CONSOLE CAPTURE ==========
+// A small ring buffer of recent console.error/warn calls, so the feedback
+// form's diagnostics checkbox can actually surface what went wrong, not just
+// describe the browser. console.log/info are deliberately excluded -- they're
+// noisier and far more likely to contain a full object dump (a check-in, an
+// API response) that this file's PRIVACY note above forbids.
+//
+// Non-string arguments are redacted to '[object]' rather than serialized:
+// this codebase's console.error calls are almost always
+// `console.error('Static label:', err)`, where err is an Error/axios error.
+// Capturing err.message keeps the useful part ("Request failed with status
+// code 403") without risking a full response body (which can contain net or
+// user data) ending up in a diagnostics snapshot a reporter didn't inspect.
+const MAX_CONSOLE_ENTRIES = 15;
+const MAX_MESSAGE_LENGTH = 300;
+
+export type ConsoleCapture = {
+  level: 'error' | 'warn';
+  message: string;
+  at: string;
+};
+
+const consoleCaptures: ConsoleCapture[] = [];
+
+function redactArg(arg: unknown): string {
+  if (typeof arg === 'string') return arg;
+  if (arg instanceof Error) return arg.message;
+  if (typeof arg === 'number' || typeof arg === 'boolean') return String(arg);
+  if (arg == null) return String(arg);
+  return '[object]';
+}
+
+function recordConsoleCapture(level: 'error' | 'warn', args: unknown[]): void {
+  try {
+    const message = args.map(redactArg).join(' ').slice(0, MAX_MESSAGE_LENGTH);
+    consoleCaptures.push({ level, message, at: new Date().toISOString() });
+    if (consoleCaptures.length > MAX_CONSOLE_ENTRIES) consoleCaptures.shift();
+  } catch {
+    /* never let diagnostics throw */
+  }
+}
+
+const originalConsoleError = console.error.bind(console);
+const originalConsoleWarn = console.warn.bind(console);
+
+console.error = (...args: unknown[]) => {
+  recordConsoleCapture('error', args);
+  originalConsoleError(...args);
+};
+console.warn = (...args: unknown[]) => {
+  recordConsoleCapture('warn', args);
+  originalConsoleWarn(...args);
+};
+
+export function getConsoleCaptures(): ConsoleCapture[] {
+  return [...consoleCaptures];
+}
+
+/** Exported for testing. Clears captured console messages. */
+export function resetConsoleCaptures(): void {
+  consoleCaptures.length = 0;
 }
 
 /**
@@ -127,6 +193,11 @@ export function collectDiagnostics(): DiagnosticsSnapshot {
   snapshot['Self-check'] = recorded.length
     ? recorded.map((i) => `${i.kind} (${i.detail})`).join('; ')
     : 'no problems detected';
+
+  const console_ = getConsoleCaptures();
+  snapshot['Recent console messages'] = console_.length
+    ? console_.map((c) => `[${c.level}] ${c.message}`).join('\n')
+    : 'none';
 
   return snapshot;
 }
