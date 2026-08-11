@@ -1451,8 +1451,11 @@ class TopicHistoryBase(BaseModel):
 
 
 class TopicHistoryCreate(TopicHistoryBase):
-    template_id: int
-    net_id: Optional[int] = None
+    # template_id comes from the URL path (POST /templates/{template_id}/topic-history)
+    # and net_id is always None for a manually-added entry -- the route never reads
+    # either off this body, so requiring them here only rejected every legitimate
+    # request. See routers/templates_topics.py::add_topic_history.
+    pass
 
 
 class TopicHistoryUpdate(BaseModel):

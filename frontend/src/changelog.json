@@ -1,8 +1,8 @@
 {
-  "version": "2026.08.11",
+  "version": "2026.08.11b",
   "entries": [
     {
-      "version": "2026.08.11",
+      "version": "2026.08.11b",
       "date": "2026-08-11",
       "sections": [
         {
@@ -15,6 +15,10 @@
             },
             {
               "text": "Admin: Last active reflects real use — the users list counted anyone with a browser tab open as active every single minute, so admins couldn't tell who was genuinely on the site. It now updates only when someone actually does something. That's what lets us deploy fixes and new features at a moment we know won't interrupt anyone mid-net, instead of guessing, and it stops the app polling in the background while a tab sits unattended.",
+              "userImpact": true
+            },
+            {
+              "text": "Net View: Edit a closed or archived net — NCS, net managers, and admins can now fix a typo or a wrong setting on a net after it has closed or archived, not just while it's part of a recurring schedule. A note reminds you the net's log has already gone out, so a change here updates the record only.",
               "userImpact": true
             }
           ]
@@ -29,6 +33,10 @@
             },
             {
               "text": "Net View: Setting your own station's status — Whoever owns the net can now set their own station's status (mobile, away, has traffic, announcements, and the rest) instead of that one box being permanently locked. A status you set is now also shown in place of the NCS crown, so you can see it actually took effect, and the rest of the net can tell when Net Control has stepped away or gone mobile.",
+              "userImpact": true
+            },
+            {
+              "text": "Schedule: Adding a topic to history — Adding a past topic to a schedule's topic history always failed with an error. Fixed, so NCS and staff can log topics again.",
               "userImpact": true
             }
           ]

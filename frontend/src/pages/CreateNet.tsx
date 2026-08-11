@@ -70,6 +70,9 @@ const CreateNet: React.FC = () => {
   const [toastSeverity, setToastSeverity] = useState<'info' | 'success' | 'error' | 'warning'>('info');
   const [saveToScheduleConfirmOpen, setSaveToScheduleConfirmOpen] = useState(false);
   const [savingToSchedule, setSavingToSchedule] = useState(false);
+  // The net's own status, fetched alongside its other fields. Used only to
+  // show the closed/archived notice below -- nothing here is status-gated.
+  const [netStatus, setNetStatus] = useState<string | null>(null);
 
   // ---- Core form fields ----
   const [name, setName] = useState('');
@@ -191,6 +194,7 @@ const CreateNet: React.FC = () => {
         navigate(`/nets/${netId}`, { replace: true });
         return;
       }
+      setNetStatus(net.status);
       setName(net.name);
       setDescription(net.description || '');
       setInfoUrl(net.info_url || '');
@@ -438,6 +442,19 @@ const CreateNet: React.FC = () => {
           <Typography variant="h4" component="h1" gutterBottom>
             {isInfoMode ? 'Net Information' : isEditMode ? 'Edit Net' : 'Create New Net'}
           </Typography>
+
+          {/* Shown once, above the tabs, so it's visible no matter which tab an
+              editor lands on -- editing a closed/archived net is allowed (a typo
+              or a wrong setting still needs fixing), but its log and any
+              close-out notifications already went out, so a change here updates
+              the record only. */}
+          {isEditMode && !isInfoMode && (netStatus === 'closed' || netStatus === 'archived') && (
+            <Alert severity="info" sx={{ mb: 2 }}>
+              This net is {netStatus}, and its log has already gone out to anyone subscribed.
+              Changes made here update the record for future reference only — they won't be
+              re-sent or re-triggered.
+            </Alert>
+          )}
 
           <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
             <Tabs

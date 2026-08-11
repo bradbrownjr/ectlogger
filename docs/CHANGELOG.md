@@ -8,11 +8,15 @@ All notable changes to ECTLogger are documented here.
 
 ## Improvements
 
+* **Net View: Edit a closed or archived net** — NCS, net managers, and admins can now fix a typo or a wrong setting on a net after it has closed or archived, not just while it's part of a recurring schedule. A note reminds you the net's log has already gone out, so a change here updates the record only.
+
 * **Admin: Last active reflects real use** — the users list counted anyone with a browser tab open as active every single minute, so admins couldn't tell who was genuinely on the site. It now updates only when someone actually does something. That's what lets us deploy fixes and new features at a moment we know won't interrupt anyone mid-net, instead of guessing, and it stops the app polling in the background while a tab sits unattended.
 
 * **Help: Diagnostics for support** — the Help menu now has a Diagnostics option describing this browser and window (screen size, browser version, and whether the app noticed anything wrong with itself), with a Copy button so you can paste it into a message when something misbehaves. Some problems only happen at particular window sizes and are otherwise almost impossible to track down. It contains no callsigns, names, locations, or net activity, and nothing is sent anywhere unless you paste it.
 
 ## Bug Fixes
+
+* **Schedule: Adding a topic to history** — Adding a past topic to a schedule's topic history always failed with an error. Fixed, so NCS and staff can log topics again.
 
 * **Net View: Dropdown menus on shorter screens** — Status and other dropdown menus inside a net now open next to the control you clicked instead of far off-screen, so they no longer look like buttons that do nothing. This affected anyone whose browser window was less than about 800 pixels tall, which is common on a laptop or with Windows display scaling turned up, and it hit every dropdown on the page including the status box in the check-in row at the bottom.
 
