@@ -2751,7 +2751,21 @@ const NetView: React.FC = () => {
         open={checkInPrompt.open}
         autoHideDuration={15000}
         onClose={checkInPrompt.onClose}
-        message={net?.status === 'lobby' ? 'The lobby is open! Would you like to check in?' : 'This net is active. Would you like to check in?'}
+        message={
+          <Box>
+            <Typography variant="body2">
+              {net?.status === 'lobby' ? 'The lobby is open! Would you like to check in?' : 'This net is active. Would you like to check in?'}
+            </Typography>
+            {net?.self_checkin_enabled === false && (
+              // This prompt only ever opens for staff when self check-in is off (see the
+              // effect above) -- everyone else never reaches this Snackbar, so no extra
+              // staff check is needed here.
+              <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                Self check-in is off for this net -- you're seeing this because you have staff access.
+              </Typography>
+            )}
+          </Box>
+        }
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
         action={
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
