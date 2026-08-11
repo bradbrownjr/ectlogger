@@ -17,6 +17,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import HearingIcon from '@mui/icons-material/Hearing';
 import UserAvatar from '../UserAvatar';
 import { formatTimeWithDate } from '../../utils/dateUtils';
+import { STATUS_SELECT_MENU_PROPS } from './statusSelectMenuProps';
 
 // ========== CHECK-IN LIST TABLE 2: Mobile View ==========
 // The small-screen (xs only) check-in table. Intentionally simpler than the
@@ -237,7 +238,7 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
                           await onRefreshCheckIns();
                         }}
                         sx={{ minWidth: 45 }}
-                        MenuProps={{ disableScrollLock: true }}
+                        MenuProps={STATUS_SELECT_MENU_PROPS}
                         renderValue={(v) => v === 'ncs' ? getNcsIcon(checkIn) : v === 'logger' ? '📋' : getStatusIcon(v as string, checkIn)}
                       >
                         {((canManageCheckIns || selectValue === 'ncs') && <MenuItem value="ncs">{getNcsIcon(checkIn)}  {getStatusLabel('ncs')}</MenuItem>)}

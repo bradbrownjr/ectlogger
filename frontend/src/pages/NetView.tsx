@@ -11,6 +11,7 @@ import CheckInFormDialog, { CheckInFormState } from '../components/netview/Check
 import NetControlDialogs from '../components/netview/NetControlDialogs';
 import NetViewHeader from '../components/netview/NetViewHeader';
 import { getCheckInStatusHelpers } from '../components/netview/checkInStatusHelpers';
+import { STATUS_SELECT_MENU_PROPS } from '../components/netview/statusSelectMenuProps';
 import { getCheckInActions } from '../components/netview/checkInActions';
 import CheckInMobileList from '../components/netview/CheckInMobileList';
 import CheckInTable from '../components/netview/CheckInTable';
@@ -2026,6 +2027,7 @@ const NetView: React.FC = () => {
                         value={checkInForm.status}
                         onChange={(e) => setCheckInForm({ ...checkInForm, status: e.target.value })}
                         sx={{ fontSize: '0.75rem', minWidth: 90 }}
+                        MenuProps={STATUS_SELECT_MENU_PROPS}
                       >
                         <MenuItem value="checked_in">✅ In</MenuItem>
                         <MenuItem value="listening">👂 Listening</MenuItem>
@@ -2284,6 +2286,7 @@ const NetView: React.FC = () => {
                       value={checkInForm.status}
                       label="Status"
                       onChange={(e) => setCheckInForm({ ...checkInForm, status: e.target.value })}
+                      MenuProps={STATUS_SELECT_MENU_PROPS}
                     >
                       <MenuItem value="checked_in">✅ Checked In</MenuItem>
                       <MenuItem value="listening">👂 Just Listening</MenuItem>

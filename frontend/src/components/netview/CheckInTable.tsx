@@ -24,6 +24,7 @@ import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutline';
 import PictureInPictureAltIcon from '@mui/icons-material/PictureInPictureAlt';
 import UserAvatar from '../UserAvatar';
 import { formatTimeWithDate } from '../../utils/dateUtils';
+import { STATUS_SELECT_MENU_PROPS } from './statusSelectMenuProps';
 
 // ========== CHECK-IN LIST TABLE 1: Desktop Inline (attached) ==========
 // The full-featured desktop check-in table: sticky header, inline click-to-edit
@@ -412,7 +413,7 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                                 }}
                                 sx={{ minWidth: 50 }}
                                 MenuProps={{
-                                  disableScrollLock: true,
+                                  ...STATUS_SELECT_MENU_PROPS,
                                   disableAutoFocusItem: false,
                                   autoFocus: true,
                                 }}
