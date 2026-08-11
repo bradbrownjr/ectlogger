@@ -8,7 +8,7 @@ All notable changes to ECTLogger are documented here.
 
 ## Improvements
 
-* **Admin: Last active reflects real use** — the users list counted anyone with a browser tab open as active every single minute, so it couldn't tell you who was genuinely on the site. It now updates only when someone actually does something. That's what lets us deploy fixes and new features at a moment we know won't interrupt anyone mid-net, instead of guessing, and it stops the app polling in the background while a tab sits unattended.
+* **Admin: Last active reflects real use** — the users list counted anyone with a browser tab open as active every single minute, so admins couldn't tell who was genuinely on the site. It now updates only when someone actually does something. That's what lets us deploy fixes and new features at a moment we know won't interrupt anyone mid-net, instead of guessing, and it stops the app polling in the background while a tab sits unattended.
 
 * **Help: Diagnostics for support** — the Help menu now has a Diagnostics option describing this browser and window (screen size, browser version, and whether the app noticed anything wrong with itself), with a Copy button so you can paste it into a message when something misbehaves. Some problems only happen at particular window sizes and are otherwise almost impossible to track down. It contains no callsigns, names, locations, or net activity, and nothing is sent anywhere unless you paste it.
 

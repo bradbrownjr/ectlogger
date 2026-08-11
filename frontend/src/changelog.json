@@ -14,7 +14,7 @@
               "userImpact": true
             },
             {
-              "text": "Admin: Last active reflects real use — the users list counted anyone with a browser tab open as active every single minute, so it couldn't tell you who was genuinely on the site. It now updates only when someone actually does something. That's what lets us deploy fixes and new features at a moment we know won't interrupt anyone mid-net, instead of guessing, and it stops the app polling in the background while a tab sits unattended.",
+              "text": "Admin: Last active reflects real use — the users list counted anyone with a browser tab open as active every single minute, so admins couldn't tell who was genuinely on the site. It now updates only when someone actually does something. That's what lets us deploy fixes and new features at a moment we know won't interrupt anyone mid-net, instead of guessing, and it stops the app polling in the background while a tab sits unattended.",
               "userImpact": true
             }
           ]
