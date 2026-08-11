@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { parseTransformOrigin, correctZoomedCoordinate } from './zoomAwarePopovers';
+import {
+  parseTransformOrigin,
+  correctZoomedCoordinate,
+  isEchoOfOwnWrite,
+  isPlausiblePosition,
+} from './zoomAwarePopovers';
 
 describe('parseTransformOrigin', () => {
   it('parses the "Xpx Ypx" string Popover writes', () => {
@@ -43,5 +48,63 @@ describe('correctZoomedCoordinate', () => {
 
   it('is unaffected when zoom is 1 (no zoom active)', () => {
     expect(correctZoomedCoordinate(500, 200, 1)).toBeCloseTo(500, 10);
+  });
+});
+
+describe('isEchoOfOwnWrite', () => {
+  // Regression: every Menu/Select on the net view opened at roughly 1e23px --
+  // far offscreen, so the control looked completely dead -- on any viewport
+  // under 800px tall. The echo check used to compare style strings, but the
+  // browser re-serializes the float it is handed, so our own write came back
+  // looking like a fresh position from Popover and got corrected again on
+  // every mutation, compounding the divide-by-zoom without limit.
+  it('recognizes a write that the browser rounded on read-back', () => {
+    expect(isEchoOfOwnWrite(253.74999999999997, 253.75)).toBe(true);
+  });
+
+  it('still recognizes an exact echo', () => {
+    expect(isEchoOfOwnWrite(300, 300)).toBe(true);
+  });
+
+  it('does not mistake a genuine reposition for an echo', () => {
+    expect(isEchoOfOwnWrite(300, 480)).toBe(false);
+  });
+
+  it('treats a never-written axis as matching only another never-written one', () => {
+    expect(isEchoOfOwnWrite(null, null)).toBe(true);
+    expect(isEchoOfOwnWrite(null, 120)).toBe(false);
+    expect(isEchoOfOwnWrite(120, null)).toBe(false);
+  });
+
+  it('stops the runaway: a corrected value re-read is never corrected twice', () => {
+    const zoom = 0.8;
+    let written = correctZoomedCoordinate(200, 0, zoom);
+    // Simulate the browser handing the value back with float noise, the way
+    // the real CSSOM read-back did.
+    for (let i = 0; i < 50; i++) {
+      const readBack = parseFloat(written.toFixed(2));
+      if (isEchoOfOwnWrite(written, readBack)) break;
+      written = correctZoomedCoordinate(readBack, 0, zoom);
+    }
+    expect(isPlausiblePosition(written)).toBe(true);
+    expect(written).toBeCloseTo(250, 1);
+  });
+});
+
+describe('isPlausiblePosition', () => {
+  it('accepts ordinary on-screen coordinates', () => {
+    expect(isPlausiblePosition(0)).toBe(true);
+    expect(isPlausiblePosition(-40)).toBe(true);
+    expect(isPlausiblePosition(4000)).toBe(true);
+  });
+
+  it('accepts a never-written axis', () => {
+    expect(isPlausiblePosition(null)).toBe(true);
+  });
+
+  it('rejects the diverged coordinates the runaway used to produce', () => {
+    expect(isPlausiblePosition(1.6164e23)).toBe(false);
+    expect(isPlausiblePosition(Infinity)).toBe(false);
+    expect(isPlausiblePosition(NaN)).toBe(false);
   });
 });

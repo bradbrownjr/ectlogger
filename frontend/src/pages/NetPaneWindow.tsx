@@ -387,7 +387,6 @@ const NetPaneWindow: React.FC = () => {
         filteredCheckIns={filteredCheckIns}
         netRoles={netRoles}
         ncsRoles={ncsRoles}
-        owner={owner}
         user={user}
         onlineUserIds={[]}
         activeSpeakerId={activeSpeakerId}

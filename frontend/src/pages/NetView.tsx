@@ -1593,7 +1593,6 @@ const NetView: React.FC = () => {
                 filteredCheckIns={filteredCheckIns}
                 netRoles={netRoles}
                 ncsRoles={ncsRoles}
-                owner={owner}
                 user={user}
                 onlineUserIds={onlineUserIds}
                 activeSpeakerId={activeSpeakerId}
@@ -1640,7 +1639,6 @@ const NetView: React.FC = () => {
               filteredCheckIns={filteredCheckIns}
               netRoles={netRoles}
               ncsRoles={ncsRoles}
-              owner={owner}
               user={user}
               onlineUserIds={onlineUserIds}
               activeSpeakerId={activeSpeakerId}
@@ -2410,7 +2408,6 @@ const NetView: React.FC = () => {
                 filteredCheckIns={filteredCheckIns}
                 netRoles={netRoles}
                 ncsRoles={ncsRoles}
-                owner={owner}
                 user={user}
                 onlineUserIds={onlineUserIds}
                 activeSpeakerId={activeSpeakerId}

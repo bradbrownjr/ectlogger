@@ -373,6 +373,29 @@ be zoomed.
 This is the one deliberate exception to "fix the theme default, don't patch
 the DOM" above: Popover genuinely leaves no other way in.
 
+**Never compare style strings to detect this correction's own echo.** The
+observer necessarily sees the write it just made, so it has to tell its own
+write apart from a fresh position from Popover. Comparing
+`element.style.top` against the exact string that was written there does
+*not* work: the browser re-serializes whatever float it is handed (write
+`253.74999999999997px`, read back `253.75px`), so the echo goes
+unrecognized and the paper is corrected again on every mutation. Each pass
+divides by zoom again, so the coordinate compounds (x1.25 per pass at zoom
+0.8) and runs away within a few hundred mutations. Reported from
+production: every Menu and Select on the net view opened at roughly 1e23px
+— completely off-screen — for anyone on a viewport under 800px tall, which
+reads to the operator as a dropdown that does nothing at all, with no
+console error to hint otherwise. Compare **numerically, with a tolerance**
+(`isEchoOfOwnWrite`), and keep the divergence guard
+(`isPlausiblePosition`) that refuses to write an implausible coordinate —
+leaving a menu slightly misplaced is always better than flinging it
+somewhere invisible, because a misplaced menu still tells the operator the
+control works.
+
+Note this bug is invisible at any viewport ≥ 800px tall, since the zoom is
+never applied there — so it cannot be found by testing on a roomy monitor.
+Verify dropdown changes at a short viewport specifically.
+
 ---
 
 ## Markdown Write/Preview Toggle

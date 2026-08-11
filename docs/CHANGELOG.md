@@ -4,6 +4,16 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# August 11, 2026
+
+## Bug Fixes
+
+* **Net View: Dropdown menus on shorter screens** — Status and other dropdown menus inside a net now open next to the control you clicked instead of far off-screen, so they no longer look like buttons that do nothing. This affected anyone whose browser window was less than about 800 pixels tall, which is common on a laptop or with Windows display scaling turned up, and it hit every dropdown on the page including the status box in the check-in row at the bottom.
+
+* **Net View: Setting your own station's status** — Whoever owns the net can now set their own station's status (mobile, away, has traffic, announcements, and the rest) instead of that one box being permanently locked. A status you set is now also shown in place of the NCS crown, so you can see it actually took effect, and the rest of the net can tell when Net Control has stepped away or gone mobile.
+
+---
+
 # August 5, 2026
 
 ## New Features

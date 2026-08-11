@@ -32,7 +32,6 @@ interface CheckInMobileListProps {
   filteredCheckIns: any[];
   netRoles: any[];
   ncsRoles: any[];
-  owner: any;
   user: any;
   onlineUserIds: number[];
   activeSpeakerId: number | null;
@@ -64,7 +63,6 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
   filteredCheckIns,
   netRoles,
   ncsRoles,
-  owner,
   user,
   onlineUserIds,
   activeSpeakerId,
@@ -220,7 +218,9 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
                   {(net.status === 'active' || net.status === 'lobby') && checkIn.status !== 'checked_out' && (canManageCheckIns || checkIn.user_id === user?.id) ? (() => {
                     const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
                     let selectValue = checkIn.status.toLowerCase();
-                    if (userRole && ['ncs', 'logger'].includes(userRole.role.toLowerCase())) {
+                    // Role only takes over the value while checked in -- same rule as
+                    // the desktop table and getStatusIcon (see checkInStatusHelpers.ts).
+                    if (selectValue === 'checked_in' && userRole && ['ncs', 'logger'].includes(userRole.role.toLowerCase())) {
                       selectValue = userRole.role.toLowerCase();
                     }
                     const validValues = ['ncs', 'logger', 'checked_in', 'listening', 'relay', 'away', 'has_traffic', 'announcements', 'mobile', 'checked_out'];
@@ -237,7 +237,6 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
                           await onRefreshCheckIns();
                         }}
                         sx={{ minWidth: 45 }}
-                        disabled={owner?.id === checkIn.user_id}
                         MenuProps={{ disableScrollLock: true }}
                         renderValue={(v) => v === 'ncs' ? getNcsIcon(checkIn) : v === 'logger' ? '📋' : getStatusIcon(v as string, checkIn)}
                       >

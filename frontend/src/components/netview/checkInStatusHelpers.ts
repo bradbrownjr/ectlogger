@@ -29,9 +29,19 @@ export function getCheckInStatusHelpers({
   checkIns,
   ncsRoles,
 }: StatusHelperContext): CheckInStatusHelpers {
+  // A role badge (crown / 2nd crown / clipboard) describes the standing role
+  // a station holds, not what it is doing right now, so it only takes over
+  // the status column while that station is in the default checked-in state.
+  // Once an explicit operational status is set (away, mobile, has traffic,
+  // ...) that status wins, for staff exactly as for everyone else -- both
+  // because an NCS who has stepped away or gone mobile is precisely what the
+  // rest of the net needs to see, and because otherwise setting a status on
+  // a station holding a role changes nothing visible and reads as broken.
+  const roleBadgeApplies = (status: string) => status === 'checked_in';
+
   const getStatusIcon = (status: string, checkIn?: any) => {
     // Show role icons for users with active roles
-    if (checkIn) {
+    if (checkIn && roleBadgeApplies(status)) {
       // Owner always gets the primary crown
       if (net?.owner_id === checkIn.user_id) return '👑';
 
@@ -80,8 +90,10 @@ export function getCheckInStatusHelpers({
   };
 
   const getStatusTooltip = (status: string, checkIn?: any) => {
-    // Check for role-based tooltips first
-    if (checkIn) {
+    // Check for role-based tooltips first -- gated on the same rule as the
+    // icon above, so the tooltip never describes a station's role while the
+    // icon beside it is showing that station's current status.
+    if (checkIn && roleBadgeApplies(status)) {
       if (net?.owner_id === checkIn.user_id) return 'Net Control Station - manages the net';
       const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
       if (userRole?.role?.toUpperCase() === 'NCS') {

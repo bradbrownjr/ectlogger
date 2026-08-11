@@ -58,6 +58,30 @@ function currentZoom(): number {
   return parseFloat(document.body.style.zoom) || 1;
 }
 
+// How close a paper's current coordinate must be to the one this code last
+// wrote for that mutation to count as our own write echoing back.
+//
+// This is compared NUMERICALLY, never as strings. Reported: on any viewport
+// under 800px tall (where NetView's fit-to-viewport zoom kicks in) every
+// Menu/Select on the page opened somewhere around 1e23px -- far offscreen,
+// so clicking a dropdown appeared to do nothing at all. The cause was here:
+// the echo check used to compare `element.style.top` against the exact
+// string this code had written, but the browser re-serializes the float it
+// is given ("253.74999999999997px" reads back as "253.75px"), so the echo
+// went unrecognized and the same paper was corrected again on every
+// mutation. Each pass divides by zoom again, so the coordinate compounds
+// (x1.25 per pass at zoom 0.8) and runs away within a few hundred
+// mutations. A tolerance comparison is immune to that re-serialization.
+const ECHO_TOLERANCE_PX = 0.5;
+
+// Upper bound on a plausible corrected coordinate. Nothing legitimate lands
+// this far out (the largest real displays are ~10k CSS px, and zoom only
+// ever divides by <= 1), so anything beyond it means the correction has
+// diverged. Bailing out leaves the menu at Popover's own imperfect position
+// -- visibly a little off, but on screen and usable -- rather than flinging
+// it into nowhere, which is indistinguishable from a dead control.
+const MAX_PLAUSIBLE_POSITION_PX = 100_000;
+
 /** Exported for unit testing only -- parses the "Xpx Ypx" Popover writes to
  * `element.style.transformOrigin` back into the two LOCAL-unit numbers. */
 export function parseTransformOrigin(value: string): { x: number; y: number } | null {
@@ -74,6 +98,22 @@ export function correctZoomedCoordinate(writtenPx: number, localOriginValue: num
   return writtenPx / zoom + (localOriginValue * (1 - zoom)) / zoom;
 }
 
+/** Exported for unit testing only -- true when a coordinate now on the
+ * element is (within rounding) the one this code last wrote there, i.e. the
+ * mutation being handled is our own write echoing back rather than a fresh
+ * position from Popover. Both null means the axis was never written. */
+export function isEchoOfOwnWrite(written: number | null, current: number | null): boolean {
+  if (written === null || current === null) return written === current;
+  return Math.abs(written - current) <= ECHO_TOLERANCE_PX;
+}
+
+/** Exported for unit testing only -- guards against a diverging correction
+ * (see MAX_PLAUSIBLE_POSITION_PX). */
+export function isPlausiblePosition(value: number | null): boolean {
+  if (value === null) return true;
+  return Number.isFinite(value) && Math.abs(value) <= MAX_PLAUSIBLE_POSITION_PX;
+}
+
 /**
  * Starts watching for MUI Popover-family Paper elements (`.MuiPopover-paper`
  * -- Menu and Select's dropdown both use it) anywhere in the document, and
@@ -83,8 +123,10 @@ export function correctZoomedCoordinate(writtenPx: number, localOriginValue: num
 export function watchZoomAwarePopovers(): () => void {
   // Tracks the last value THIS code wrote to each paper, so the mutation
   // that write itself triggers (observed asynchronously) is recognized as
-  // an echo and skipped, rather than divided by zoom a second time.
-  const lastWritten = new WeakMap<HTMLElement, { top: string; left: string }>();
+  // an echo and skipped, rather than divided by zoom a second time. Stored
+  // as numbers, and compared with a tolerance, because the browser does not
+  // hand back the exact string it was given -- see ECHO_TOLERANCE_PX.
+  const lastWritten = new WeakMap<HTMLElement, { top: number | null; left: number | null }>();
   const paperObservers = new WeakMap<HTMLElement, MutationObserver>();
 
   const correct = (paper: HTMLElement) => {
@@ -92,18 +134,26 @@ export function watchZoomAwarePopovers(): () => void {
     if (zoom === 1) return;
     const { top, left, transformOrigin } = paper.style;
     if (!top && !left) return;
+
+    const currentTop = top ? parseFloat(top) : null;
+    const currentLeft = left ? parseFloat(left) : null;
+
     const prev = lastWritten.get(paper);
-    if (prev && prev.top === top && prev.left === left) return;
+    if (prev && isEchoOfOwnWrite(prev.top, currentTop) && isEchoOfOwnWrite(prev.left, currentLeft)) return;
+
     // transformOrigin itself is never rewritten by this function, so it's
     // still exactly what Popover last computed -- safe to read fresh here.
     const origin = transformOrigin ? parseTransformOrigin(transformOrigin) : null;
-    const next = {
-      top: top ? `${correctZoomedCoordinate(parseFloat(top), origin?.y ?? 0, zoom)}px` : top,
-      left: left ? `${correctZoomedCoordinate(parseFloat(left), origin?.x ?? 0, zoom)}px` : left,
-    };
-    lastWritten.set(paper, next);
-    if (next.top) paper.style.top = next.top;
-    if (next.left) paper.style.left = next.left;
+    const nextTop = currentTop === null ? null : correctZoomedCoordinate(currentTop, origin?.y ?? 0, zoom);
+    const nextLeft = currentLeft === null ? null : correctZoomedCoordinate(currentLeft, origin?.x ?? 0, zoom);
+
+    // Never write a diverged coordinate -- an offscreen menu reads to the
+    // operator as a control that does nothing at all.
+    if (!isPlausiblePosition(nextTop) || !isPlausiblePosition(nextLeft)) return;
+
+    lastWritten.set(paper, { top: nextTop, left: nextLeft });
+    if (nextTop !== null) paper.style.top = `${nextTop}px`;
+    if (nextLeft !== null) paper.style.left = `${nextLeft}px`;
   };
 
   const watchPaper = (paper: HTMLElement) => {

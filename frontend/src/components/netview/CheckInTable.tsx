@@ -43,7 +43,6 @@ interface CheckInTableProps {
   filteredCheckIns: any[];
   netRoles: any[];
   ncsRoles: any[];
-  owner: any;
   user: any;
   onlineUserIds: number[];
   activeSpeakerId: number | null;
@@ -97,7 +96,6 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
   filteredCheckIns,
   netRoles,
   ncsRoles,
-  owner,
   user,
   onlineUserIds,
   activeSpeakerId,
@@ -387,9 +385,12 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                           // Determine selectValue: show role if present, else status
                           const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
                           let selectValue = checkIn.status.toLowerCase();
-                          if (userRole && ['ncs', 'logger'].includes(userRole.role.toLowerCase())) {
-                            selectValue = userRole.role.toLowerCase();
-                          } else if (userRole && ['NCS', 'LOGGER'].includes(userRole.role)) {
+                          // The role only takes over the control's value while the station
+                          // is in the default checked-in state, mirroring getStatusIcon's
+                          // rule -- otherwise setting a status on a station that holds a
+                          // role leaves the control showing the role, so the change the
+                          // operator just made appears not to have happened.
+                          if (selectValue === 'checked_in' && userRole && ['ncs', 'logger'].includes(userRole.role.toLowerCase())) {
                             selectValue = userRole.role.toLowerCase();
                           }
                           // Only allow lowercase values for Select and MenuItem
@@ -410,7 +411,6 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                                   await fetchCheckIns();
                                 }}
                                 sx={{ minWidth: 50 }}
-                                disabled={owner?.id === checkIn.user_id}
                                 MenuProps={{
                                   disableScrollLock: true,
                                   disableAutoFocusItem: false,
