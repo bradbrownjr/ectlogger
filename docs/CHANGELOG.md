@@ -22,6 +22,8 @@ All notable changes to ECTLogger are documented here.
 
 * **Sitewide: New-version banner** — If a tab is left open through a deploy, it now shows a banner offering to reload once a new version has shipped, so you're never troubleshooting on outdated code without realizing it, and you won't be told to force a hard refresh to see something new.
 
+* **Net View: Check-in prompt explains staff-only self check-in** — If a net has self check-in turned off, the owner, NCS, and loggers still get the check-in prompt since they can always check in; it now says why, so it doesn't look like the setting isn't working.
+
 ## Bug Fixes
 
 * **Net View: Check-in changes appear instantly** — picking a status used to leave the old icon on screen while the change saved, which made it look like the change hadn't taken and led people to click again. Your choice now shows the moment you make it, and new check-ins, edits, and deletions update the list right away instead of after a pause. The delay was worst on slow or mobile connections, where it could run to several seconds.
