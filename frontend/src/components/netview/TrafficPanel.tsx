@@ -146,13 +146,22 @@ const TrafficPanel: React.FC<TrafficPanelProps> = ({
       refetch();
       if (event.detail?.form_id) setSelectedFormId(event.detail.form_id);
     };
+    // Traffic filed or forwarded while the socket was down never reached this
+    // panel, so refetch on reconnect (see useNetWebSocket.ts). No jump to a
+    // detail view here -- this is catching up on someone else's activity.
+    const handleResync = (event: any) => {
+      if (event.detail?.netId && String(event.detail.netId) !== String(netId)) return;
+      refetch();
+    };
     window.addEventListener('trafficLogged', handleTrafficLogged);
     window.addEventListener('trafficLogChanged', handleTrafficLogged);
     window.addEventListener('netTrafficFiled', handleFiledLocally);
+    window.addEventListener('netResync', handleResync);
     return () => {
       window.removeEventListener('trafficLogged', handleTrafficLogged);
       window.removeEventListener('trafficLogChanged', handleTrafficLogged);
       window.removeEventListener('netTrafficFiled', handleFiledLocally);
+      window.removeEventListener('netResync', handleResync);
     };
   }, [netId, refetch]);
 

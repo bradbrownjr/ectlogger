@@ -245,6 +245,10 @@ Offline operation in the browser requires a service worker to cache the app shel
 
 **Groundwork already in place.** Every check-in mutation now applies the server's authoritative single-row response to local state rather than re-reading the whole list (`frontend/src/components/netview/checkInActions.ts`), and a status change paints optimistically and rolls back on failure. "Refetch everything after a write" cannot work offline — there is nothing to refetch from — so that single-row apply is the reconcile primitive this feature builds on. Optimistic update is the same mechanism with the round trip deferred from milliseconds to minutes.
 
+Reconnect resilience also shipped separately: the net socket now reconnects indefinitely, reconnects immediately when the browser reports `online`, and resyncs everything on reconnect via the `netResync` event — check-ins, roles, stats, can-hear, chat, activity log, and traffic. See DEVELOPMENT.md "Reconnect and resync". That covers *recovery* from an outage; it does not cover *working through* one.
+
+**The PWA is the last piece, not the first.** A service worker is strictly required for only two things: cold-starting the app with no network, and surviving a reload mid-outage. Everything else people actually want during a net works in a plain page with the tab already open — IndexedDB needs no service worker, and neither do `online`/`offline` detection or the resync above. The realistic ARES/SKYWARN failure is not "the NCS opens a laptop with no internet"; it is "the NCS is mid-net and the link drops for ten minutes with the tab already open." Stage the work accordingly: durable queue and conflict handling first, service worker and installability last. Doing it in the other order spends the expensive effort on the rarer case.
+
 **Prerequisites, in rough dependency order:**
 
 1. **Client-generated IDs.** The server assigns `check_in.id` today. A check-in created offline has no id, so a queue cannot reference it and it cannot be edited before reconnect. A client-side UUID has to be carried through the model and honored by the create endpoint — this is a schema and API change, not a frontend detail.

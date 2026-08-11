@@ -62,8 +62,15 @@ export function useTrafficInbox() {
   // matching the trafficLogged/TrafficPanel.tsx convention.
   useEffect(() => {
     const handleTrafficLogChanged = () => refetch();
+    // Hops relayed while a net socket was down never reached the badge, so
+    // refresh it on reconnect too (see useNetWebSocket.ts).
+    const handleResync = () => refetch();
     window.addEventListener('trafficLogChanged', handleTrafficLogChanged);
-    return () => window.removeEventListener('trafficLogChanged', handleTrafficLogChanged);
+    window.addEventListener('netResync', handleResync);
+    return () => {
+      window.removeEventListener('trafficLogChanged', handleTrafficLogChanged);
+      window.removeEventListener('netResync', handleResync);
+    };
   }, [refetch]);
 
   return { count, items, loading, error, refetch };

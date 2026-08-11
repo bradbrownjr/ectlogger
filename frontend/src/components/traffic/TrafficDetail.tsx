@@ -75,8 +75,16 @@ const TrafficDetail: React.FC<TrafficDetailProps> = ({ formId }) => {
         refetch();
       }
     };
+    // A hop logged while the socket was down would otherwise leave this
+    // timeline permanently missing it (see useNetWebSocket.ts). Not filtered
+    // by net: this view is open on one form, and refetching it is cheap.
+    const handleResync = () => refetch();
     window.addEventListener('trafficLogChanged', handleTrafficLogChanged);
-    return () => window.removeEventListener('trafficLogChanged', handleTrafficLogChanged);
+    window.addEventListener('netResync', handleResync);
+    return () => {
+      window.removeEventListener('trafficLogChanged', handleTrafficLogChanged);
+      window.removeEventListener('netResync', handleResync);
+    };
   }, [formId, refetch]);
 
   if (loading) {

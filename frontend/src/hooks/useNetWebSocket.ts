@@ -41,9 +41,43 @@ export function useNetWebSocket(deps: NetWebSocketDeps): WebSocket | null {
   const wsRef = useRef<WebSocket | null>(null);
   const wsRetryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wsRetryCountRef = useRef(0);
+  // Distinguishes the first connection from a reconnection. Only a
+  // reconnection needs to resync -- the initial mount already fetches
+  // everything through useNetData.
+  const hasConnectedRef = useRef(false);
 
   useEffect(() => {
     if (!netId) return;
+    hasConnectedRef.current = false;
+
+    // ========== RESYNC AFTER RECONNECT ==========
+    // Every update between the drop and the reconnect was broadcast to a
+    // socket that wasn't listening, and broadcasts are fire-and-forget -- the
+    // server never replays them. Without this the operator comes back to a
+    // connected socket and a silently stale page, which is more dangerous than
+    // a visible disconnect because nothing looks wrong.
+    //
+    // Panels that own their own data (chat, activity log, traffic) can't be
+    // refetched from here, so they get a 'netResync' window event -- the same
+    // relay convention already used for newChatMessage/trafficLogged. Their
+    // lists dedupe by id, so a full refetch merges cleanly.
+    const resyncAfterReconnect = () => {
+      const {
+        fetchNet, fetchCheckIns, fetchNetRoles, fetchNetStats,
+        fetchCanHearReports, setToastMessage,
+      } = depsRef.current;
+
+      fetchNet();
+      fetchCheckIns();
+      fetchNetRoles();
+      fetchNetStats();
+      fetchCanHearReports();
+
+      if (typeof window !== 'undefined' && window.dispatchEvent) {
+        window.dispatchEvent(new CustomEvent('netResync', { detail: { netId } }));
+      }
+      setToastMessage('Reconnected - catching up on anything missed.');
+    };
 
     const connectWebSocket = () => {
       // Get JWT token from localStorage (optional - guests can still connect)
@@ -60,6 +94,11 @@ export function useNetWebSocket(deps: NetWebSocketDeps): WebSocket | null {
       websocket.onopen = () => {
         console.log('WebSocket connected to net', netId);
         wsRetryCountRef.current = 0;
+        if (hasConnectedRef.current) {
+          resyncAfterReconnect();
+        } else {
+          hasConnectedRef.current = true;
+        }
       };
 
       websocket.onmessage = (event) => {
@@ -188,15 +227,21 @@ export function useNetWebSocket(deps: NetWebSocketDeps): WebSocket | null {
         if (event.code === 1008) {
           console.error('WebSocket authentication failed');
         } else if (event.code !== 1000) {
-          // Abnormal close — exponential backoff: 3s, 6s, 12s … capped at 30s, max 10 attempts
-          const MAX_RETRIES = 10;
+          // Abnormal close — exponential backoff: 3s, 6s, 12s … capped at 30s.
+          //
+          // Deliberately unbounded. This previously gave up after 10 attempts
+          // (~3.75 minutes), which left an NCS running a dead page that still
+          // looked live -- exactly the wrong failure for a served ARES/SKYWARN
+          // net, where an outage longer than a few minutes is routine and the
+          // operator is least able to notice a silent stall. The 30s cap keeps
+          // a long outage cheap, and the cleanup below stops retries when the
+          // page goes away.
           const count = wsRetryCountRef.current;
-          if (count >= MAX_RETRIES) {
-            console.warn(`WebSocket: max reconnect attempts reached for net ${netId}`);
-            return;
-          }
           const delay = Math.min(3000 * Math.pow(2, count), 30000);
-          console.log(`WebSocket disconnected, reconnecting in ${delay / 1000}s (attempt ${count + 1}/${MAX_RETRIES})...`);
+          if (count === 0) {
+            depsRef.current.setToastMessage('Connection lost - reconnecting...');
+          }
+          console.log(`WebSocket disconnected, reconnecting in ${delay / 1000}s (attempt ${count + 1})...`);
           wsRetryCountRef.current = count + 1;
           wsRetryTimeoutRef.current = setTimeout(() => {
             wsRetryTimeoutRef.current = null;
@@ -211,7 +256,26 @@ export function useNetWebSocket(deps: NetWebSocketDeps): WebSocket | null {
 
     connectWebSocket();
 
+    // ========== IMMEDIATE RECONNECT ON REGAINED CONNECTIVITY ==========
+    // Backoff alone means a link that returns one second after a failed
+    // attempt still waits out the rest of the delay (up to 30s) before the
+    // page catches up. The browser already knows the moment the interface is
+    // back, so use it: cancel the pending retry, reset the backoff, and
+    // reconnect now. Harmless if the socket is already healthy.
+    const handleOnline = () => {
+      const live = wsRef.current;
+      if (live && (live.readyState === WebSocket.OPEN || live.readyState === WebSocket.CONNECTING)) return;
+      if (wsRetryTimeoutRef.current) {
+        clearTimeout(wsRetryTimeoutRef.current);
+        wsRetryTimeoutRef.current = null;
+      }
+      wsRetryCountRef.current = 0;
+      connectWebSocket();
+    };
+    window.addEventListener('online', handleOnline);
+
     return () => {
+      window.removeEventListener('online', handleOnline);
       // Cancel any pending reconnect before closing so onclose doesn't reschedule
       if (wsRetryTimeoutRef.current) {
         clearTimeout(wsRetryTimeoutRef.current);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -30,18 +30,33 @@ const ActivityLog: React.FC<ActivityLogProps> = ({ netId, minimized, onMinimize,
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Hoisted out of the mount effect so a reconnect can reuse it -- the
+  // activity log is the record of what happened during a net, so it's the
+  // worst thing to leave with a silent hole in it after an outage.
+  const fetchMessages = useCallback(async () => {
+    try {
+      const response = await chatApi.list(netId);
+      setMessages(response.data.filter((m) => m.is_system));
+    } catch (err) {
+      console.error('ActivityLog: failed to fetch messages', err);
+    }
+  }, [netId]);
+
   // Fetch initial system messages on mount / netId change
   useEffect(() => {
-    const fetchMessages = async () => {
-      try {
-        const response = await chatApi.list(netId);
-        setMessages(response.data.filter((m) => m.is_system));
-      } catch (err) {
-        console.error('ActivityLog: failed to fetch messages', err);
-      }
-    };
     fetchMessages();
-  }, [netId]);
+  }, [fetchMessages]);
+
+  // Refill the log after a dropped connection (see useNetWebSocket.ts).
+  useEffect(() => {
+    const handleResync = (event: Event) => {
+      const detail = (event as CustomEvent<{ netId?: number | string }>).detail;
+      if (detail?.netId && String(detail.netId) !== String(netId)) return;
+      fetchMessages();
+    };
+    window.addEventListener('netResync', handleResync);
+    return () => window.removeEventListener('netResync', handleResync);
+  }, [netId, fetchMessages]);
 
   // Listen for new messages from the NetView WebSocket dispatcher
   useEffect(() => {

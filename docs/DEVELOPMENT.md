@@ -526,6 +526,60 @@ truth, and the relay is only a hint to go read it.
 
 `useNetWebSocket.ts` is the single frontend consumer and handles both sets.
 
+### Reconnect and resync
+
+Broadcasts are fire-and-forget. `ConnectionManager` sends to whoever is connected at
+that instant and keeps no per-client history, so **every event emitted while a client
+is disconnected is lost to that client permanently.** Nothing replays it.
+
+This matters more than it sounds. A reconnected socket looks healthy, so a stale page
+shows no symptom — the operator sees a normal-looking net that is quietly missing
+check-ins, status changes, chat, and traffic. For ARES and SKYWARN deployments, where
+a link dropping mid-net is routine, a silently stale log is the worst available
+failure mode.
+
+`useNetWebSocket.ts` therefore does three things:
+
+1. **Reconnects indefinitely.** Exponential backoff (3s, 6s, 12s … capped at 30s) with
+   no attempt ceiling. It previously gave up after 10 tries (~3.75 minutes), which left
+   a dead page that still looked live. The effect cleanup stops retries when the page
+   or net goes away, which is the only thing that should stop them.
+2. **Reconnects immediately on the browser's `online` event**, cancelling any pending
+   backoff, so a link that returns doesn't wait out a 30-second timer.
+3. **Resyncs on every reconnect but not the first connect.** `hasConnectedRef`
+   distinguishes them — the initial mount already fetches through `useNetData`, so
+   resyncing there would just double every request.
+
+The resync refetches net, check-ins, roles, stats, and can-hear reports directly, then
+dispatches a **`netResync`** window `CustomEvent` with `detail: { netId }`.
+
+**`netResync` is the contract for any panel that owns its own data.** Panels that fetch
+independently can't be refreshed from the hook, so they listen for this event — the
+same relay convention already used for `newChatMessage` and `trafficLogged`. Current
+listeners:
+
+| Listener | Refetches |
+|---|---|
+| `components/Chat.tsx` | the message thread |
+| `components/ActivityLog.tsx` | the net's system/activity messages |
+| `components/netview/TrafficPanel.tsx` | the per-net traffic list and summary |
+| `components/traffic/TrafficDetail.tsx` | the open form's chain-of-custody timeline |
+| `hooks/useTrafficInbox.ts` | the inbox badge count |
+
+**If you add a panel that fetches its own data and updates from a WebSocket event, add
+a `netResync` listener at the same time.** A panel that handles live events but ignores
+resync is exactly the silent-hole bug this section exists to prevent. Filter on
+`detail.netId` where the panel is net-scoped; refetch unconditionally where it isn't
+(the inbox badge, an open form detail). Refetch wholesale rather than reasoning about
+what was missed — every list involved dedupes by id, so a full refetch merges cleanly
+and is far easier to get right than a diff.
+
+**What this does not do:** it does not let anyone keep working while disconnected.
+Writes attempted offline fail, the optimistic status paint rolls back, and the change
+is discarded rather than queued. Durable offline operation is a separate roadmap item
+(see ROADMAP.md, "Offline-Capable Web Client") and needs client-generated IDs, an
+IndexedDB queue, and a conflict rule before it is safe.
+
 ---
 
 ## Enabling and disabling outbound email

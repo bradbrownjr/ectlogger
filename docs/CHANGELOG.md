@@ -16,6 +16,8 @@ All notable changes to ECTLogger are documented here.
 
 ## Bug Fixes
 
+* **Net View: Recovering from a dropped connection** — if your internet drops during a net, the page now keeps trying to reconnect for as long as you leave it open instead of giving up after a few minutes, and it reconnects the moment your connection returns. When it comes back it catches up on everything missed — check-ins, statuses, chat, the activity log, and traffic — so you are no longer looking at a page that seems fine but is quietly out of date. This applies to everyone in the net, not just Net Control.
+
 * **Net View: Check-in changes appear instantly** — picking a status used to leave the old icon on screen while the change saved, which made it look like the change hadn't taken and led people to click again. Your choice now shows the moment you make it, and new check-ins, edits, and deletions update the list right away instead of after a pause. The delay was worst on slow or mobile connections, where it could run to several seconds.
 
 * **Schedule: Adding a topic to history** — Adding a past topic to a schedule's topic history always failed with an error. Fixed, so NCS and staff can log topics again.

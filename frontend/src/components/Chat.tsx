@@ -111,13 +111,23 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
       );
     };
 
+    // The socket dropped and came back, so every message sent during the gap
+    // was broadcast to nobody here. Refetch the thread wholesale rather than
+    // trying to reason about what was missed -- see useNetWebSocket.ts.
+    const handleResync = (event: any) => {
+      if (event.detail?.netId && String(event.detail.netId) !== String(netId)) return;
+      fetchMessages();
+    };
+
     window.addEventListener('newChatMessage', handleNewChatMessage);
     window.addEventListener('chatReactionUpdate', handleReactionUpdate);
+    window.addEventListener('netResync', handleResync);
     return () => {
       window.removeEventListener('newChatMessage', handleNewChatMessage);
       window.removeEventListener('chatReactionUpdate', handleReactionUpdate);
+      window.removeEventListener('netResync', handleResync);
     };
-  }, [user?.id]);
+  }, [user?.id, netId]);
 
   const scrollToBottom = () => {
     if (messagesContainerRef.current) {
