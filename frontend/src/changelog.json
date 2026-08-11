@@ -10,7 +10,7 @@
           "type": "improvement",
           "items": [
             {
-              "text": "Admin: The user list keeps itself current — who is online and when they were last active now updates on its own every 30 seconds, with the time of the last update shown and a refresh button when you want an answer immediately. No more reloading the page to see who is around. It pauses while the tab is in the background and updates the moment you return to it.",
+              "text": "Admin: An accurate, up-to-date picture of who's online — the user list used to count anyone with a browser tab open as active every single minute, so admins couldn't tell who was genuinely on the site — and even then, seeing it meant reloading the page. \"Last active\" now updates only when someone actually does something, and the list refreshes itself every 30 seconds, with the time of the last update shown and a refresh button for an answer right now. Together that's what lets us deploy fixes and new features at a moment we know won't interrupt anyone mid-net, instead of guessing.",
               "userImpact": false
             },
             {
@@ -27,10 +27,6 @@
             },
             {
               "text": "Help: Diagnostics for support — the Help menu now has a Diagnostics option describing this browser and window (screen size, browser version, and whether the app noticed anything wrong with itself), with a Copy button so you can paste it into a message when something misbehaves. Some problems only happen at particular window sizes and are otherwise almost impossible to track down. It contains no callsigns, names, locations, or net activity, and nothing is sent anywhere unless you paste it.",
-              "userImpact": true
-            },
-            {
-              "text": "Admin: Last active reflects real use — the users list counted anyone with a browser tab open as active every single minute, so admins couldn't tell who was genuinely on the site. It now updates only when someone actually does something. That's what lets us deploy fixes and new features at a moment we know won't interrupt anyone mid-net, instead of guessing, and it stops the app polling in the background while a tab sits unattended.",
               "userImpact": true
             },
             {

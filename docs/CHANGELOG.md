@@ -8,7 +8,7 @@ All notable changes to ECTLogger are documented here.
 
 ## Improvements
 
-* **Admin: The user list keeps itself current** — who is online and when they were last active now updates on its own every 30 seconds, with the time of the last update shown and a refresh button when you want an answer immediately. No more reloading the page to see who is around. It pauses while the tab is in the background and updates the moment you return to it.
+* **Admin: An accurate, up-to-date picture of who's online** — the user list used to count anyone with a browser tab open as active every single minute, so admins couldn't tell who was genuinely on the site — and even then, seeing it meant reloading the page. "Last active" now updates only when someone actually does something, and the list refreshes itself every 30 seconds, with the time of the last update shown and a refresh button for an answer right now. Together that's what lets us deploy fixes and new features at a moment we know won't interrupt anyone mid-net, instead of guessing.
 
 * **Sitewide: Pages load faster** — every screen that shows people (the net roster, chat, staff pickers, and your own profile) was waiting on the server to look up each person's profile photo with an outside service before it could answer. The admin user list took about seven seconds; that work now happens in your browser instead, in the background, so pages come back right away and photos appear as they load.
 
@@ -17,8 +17,6 @@ All notable changes to ECTLogger are documented here.
 * **Net View: Built to ride out a spotty connection** — Nets may be run or attended from field sites, EOCs on generator, and rural links where the internet comes and goes. The net page now keeps trying to reconnect for as long as you leave it open, instead of quietly giving up after a few minutes, and it reconnects the moment your signal returns rather than waiting out a timer. When it reconnects it catches up on everything that happened while you were out — check-ins, statuses, chat, the activity log, and traffic. Before this, a page could come back looking perfectly normal while showing an out-of-date net, which is the worst way to lose track of a net. This applies to everyone taking part, not just Net Control.
 
 * **Net View: Edit a closed or archived net** — NCS, net managers, and admins can now fix a typo or a wrong setting on a net after it has closed or archived, not just while it's part of a recurring schedule. A note reminds you the net's log has already gone out, so a change here updates the record only.
-
-* **Admin: Last active reflects real use** — the users list counted anyone with a browser tab open as active every single minute, so admins couldn't tell who was genuinely on the site. It now updates only when someone actually does something. That's what lets us deploy fixes and new features at a moment we know won't interrupt anyone mid-net, instead of guessing, and it stops the app polling in the background while a tab sits unattended.
 
 * **Help: Diagnostics for support** — the Help menu now has a Diagnostics option describing this browser and window (screen size, browser version, and whether the app noticed anything wrong with itself), with a Copy button so you can paste it into a message when something misbehaves. Some problems only happen at particular window sizes and are otherwise almost impossible to track down. It contains no callsigns, names, locations, or net activity, and nothing is sent anywhere unless you paste it.
 
