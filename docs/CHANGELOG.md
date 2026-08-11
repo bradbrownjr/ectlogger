@@ -8,6 +8,8 @@ All notable changes to ECTLogger are documented here.
 
 ## Improvements
 
+* **Admin: The user list keeps itself current** — who is online and when they were last active now updates on its own every 30 seconds, with the time of the last update shown and a refresh button when you want an answer immediately. No more reloading the page to see who is around. It pauses while the tab is in the background and updates the moment you return to it.
+
 * **Sitewide: Pages load faster** — every screen that shows people (the net roster, chat, staff pickers, and your own profile) was waiting on the server to look up each person's profile photo with an outside service before it could answer. The admin user list took about seven seconds; that work now happens in your browser instead, in the background, so pages come back right away and photos appear as they load.
 
 * **Admin: Turn off Gravatar** — Security now has a Profile Photos switch that stops the site using Gravatar, the outside service that supplies profile pictures from a person's email address. With it off, nothing on the site contacts gravatar.com at all, which matters for instances running on isolated or restricted networks. Uploaded profile photos are stored here and keep working either way.

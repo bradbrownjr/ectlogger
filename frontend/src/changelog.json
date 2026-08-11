@@ -1,14 +1,18 @@
 {
-  "version": "2026.08.11e",
+  "version": "2026.08.11f",
   "entries": [
     {
-      "version": "2026.08.11e",
+      "version": "2026.08.11f",
       "date": "2026-08-11",
       "sections": [
         {
           "title": "Improvements",
           "type": "improvement",
           "items": [
+            {
+              "text": "Admin: The user list keeps itself current — who is online and when they were last active now updates on its own every 30 seconds, with the time of the last update shown and a refresh button when you want an answer immediately. No more reloading the page to see who is around. It pauses while the tab is in the background and updates the moment you return to it.",
+              "userImpact": false
+            },
             {
               "text": "Sitewide: Pages load faster — every screen that shows people (the net roster, chat, staff pickers, and your own profile) was waiting on the server to look up each person's profile photo with an outside service before it could answer. The admin user list took about seven seconds; that work now happens in your browser instead, in the background, so pages come back right away and photos appear as they load.",
               "userImpact": true

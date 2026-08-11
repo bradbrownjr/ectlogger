@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -37,11 +37,13 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import EmailIcon from '@mui/icons-material/Email';
 import TimerIcon from '@mui/icons-material/Timer';
 import SearchIcon from '@mui/icons-material/Search';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import ClearIcon from '@mui/icons-material/Clear';
 import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium';
 import NewReleasesIcon from '@mui/icons-material/NewReleases';
 import useSortableTable from '../../hooks/useSortableTable';
-import api from '../../services/api';
+import api, { BACKGROUND_REQUEST_CONFIG } from '../../services/api';
+import useVisibilityAwareInterval from '../../hooks/useVisibilityAwareInterval';
 import { formatDateTime, formatDate } from '../../utils/dateUtils';
 import { displayCallsign } from '../../utils/userDisplay';
 import { getErrorMessage } from '../../utils/apiErrors';
@@ -74,6 +76,8 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
   const { user: currentUser } = useAuth();
 
   const [users, setUsers] = useState<AdminUser[]>([]);
+  // Drives the "updated Xs ago" caption so the admin can see the list is live.
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
   const [newRole, setNewRole] = useState('');
@@ -96,14 +100,19 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
   const { sortField: userSortField, sortDirection: userSortDirection, handleSort: _handleUserSortBase } =
     useSortableTable<UserSortField>('online', (f) => DESC_DEFAULT_SORT_FIELDS.includes(f) ? 'desc' : 'asc');
 
-  const fetchUsers = async () => {
+  // `background` marks the auto-refresh below so it is not counted as operator
+  // activity. Without it this poll would stamp last_active on the admin every
+  // 30 s, re-breaking the very signal this table exists to report -- see
+  // docs/DEVELOPMENT.md "Background polling and `last_active`".
+  const fetchUsers = useCallback(async (background = false) => {
     try {
-      const response = await api.get('/users');
+      const response = await api.get('/users', background ? BACKGROUND_REQUEST_CONFIG : undefined);
       setUsers(response.data);
+      setLastRefreshed(new Date());
     } catch (error) {
       console.error('Failed to fetch users:', error);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchUsers();
@@ -116,6 +125,17 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
   useEffect(() => {
     if (refreshTrigger) fetchUsers();
   }, [refreshTrigger]);
+
+  // Keep the online/away/offline column honest without the admin hitting F5.
+  // Paused while the tab is hidden (useVisibilityAwareInterval), and refetches
+  // immediately on becoming visible again, so returning to the tab shows
+  // current data rather than whatever was true when it was last looked at.
+  // 30 s is well inside the 5-minute "online" threshold this table renders.
+  useVisibilityAwareInterval(
+    useCallback(() => { fetchUsers(true); }, [fetchUsers]),
+    30000,
+    true,
+  );
 
   // ========== ONLINE STATUS HELPERS ==========
   const getOnlineStatusScore = (user: AdminUser): number => {
@@ -408,6 +428,21 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
             />
           )}
         </Typography>
+        {/* Refresh state: the list updates itself every 30 s, so this exists to
+            show that it is current rather than to invite clicking. The button
+            is for when an admin wants an answer right now. */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, ml: 'auto' }}>
+          {lastRefreshed && (
+            <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
+              Updated {lastRefreshed.toLocaleTimeString()}
+            </Typography>
+          )}
+          <Tooltip title="Refresh now">
+            <IconButton size="small" onClick={() => fetchUsers()} aria-label="Refresh user list">
+              <RefreshIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </Box>
       </Box>
 
       <TableContainer>
