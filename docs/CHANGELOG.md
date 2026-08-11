@@ -16,6 +16,8 @@ All notable changes to ECTLogger are documented here.
 
 ## Bug Fixes
 
+* **Net View: Check-in changes appear instantly** — picking a status used to leave the old icon on screen while the change saved, which made it look like the change hadn't taken and led people to click again. Your choice now shows the moment you make it, and new check-ins, edits, and deletions update the list right away instead of after a pause. The delay was worst on slow or mobile connections, where it could run to several seconds.
+
 * **Schedule: Adding a topic to history** — Adding a past topic to a schedule's topic history always failed with an error. Fixed, so NCS and staff can log topics again.
 
 * **Net View: Dropdown menus on shorter screens** — Status and other dropdown menus inside a net now open next to the control you clicked instead of far off-screen, so they no longer look like buttons that do nothing. This affected anyone whose browser window was less than about 800 pixels tall, which is common on a laptop or with Windows display scaling turned up, and it hit every dropdown on the page including the status box in the check-in row at the bottom.

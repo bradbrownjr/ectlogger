@@ -234,10 +234,32 @@ Also carries the Teams-dependent half of "can hear" station-to-station coverage 
 
 Blocked on: core web app stability, self-hosting, and Docker packaging being in good shape first.
 
+### Offline-Capable Web Client (PWA)
+
+**✨ Keep logging a net when connectivity drops, and sync on reconnect** *(KC1JMH)*  
+**Model:** Opus for the sync and conflict design — this is a distributed-state problem, and the conflict rule below has a real data-loss failure mode. Sonnet for implementation once the design is settled.
+
+An NCS running a net from a field site, an EOC on generator, or a rural home should be able to keep logging check-ins through a connectivity outage, with queued changes replayed when the link returns. Other participants should see that the NCS has gone offline and that net updates will resume once connectivity is restored, rather than silently watching a frozen net.
+
+Offline operation in the browser requires a service worker to cache the app shell, which makes this a PWA. **This resolves the PWA-vs-native question previously flagged under Native Desktop Client below:** the offline requirement is the strongest driver for that work, and a PWA satisfies it without maintaining three native packages. Treat the PWA as the path forward and the native desktop client as likely redundant.
+
+**Groundwork already in place.** Every check-in mutation now applies the server's authoritative single-row response to local state rather than re-reading the whole list (`frontend/src/components/netview/checkInActions.ts`), and a status change paints optimistically and rolls back on failure. "Refetch everything after a write" cannot work offline — there is nothing to refetch from — so that single-row apply is the reconcile primitive this feature builds on. Optimistic update is the same mechanism with the round trip deferred from milliseconds to minutes.
+
+**Prerequisites, in rough dependency order:**
+
+1. **Client-generated IDs.** The server assigns `check_in.id` today. A check-in created offline has no id, so a queue cannot reference it and it cannot be edited before reconnect. A client-side UUID has to be carried through the model and honored by the create endpoint — this is a schema and API change, not a frontend detail.
+2. **A durable queue.** Optimistic state is in-memory and does not survive a refresh, tab close, or crash — precisely the conditions a field deployment hits. Needs IndexedDB with an explicit replay order.
+3. **A conflict rule.** This is the sharp edge, not a detail. `create_check_in` (`backend/app/routers/check_ins.py`) rejects with 400 "already checked in" when a callsign's latest row is not `CHECKED_OUT`. Two NCS operating offline on the same net will both log the same callsigns, and on reconnect the second operator's queued creates get rejected wholesale. This needs a merge policy decided up front; retry-with-backoff makes it worse, not better.
+4. **Deferred-rollback UX.** A rollback 200 ms after a click is invisible. A rollback twenty minutes later, after the operator has moved on and the net has advanced, needs a reconciliation review screen showing what could not be applied and why. A toast is useless at that timescale.
+
+**The offline-presence signal.** `backend/app/net_pause.py` already computes "no NCS present" and broadcasts `net_pause_change`, with a banner surface on the net view. Reuse that pattern rather than inventing a parallel one — but note the trigger differs: it keys off check-in *status*, not connectivity, so an NCS whose link drops still reads as present. The new signal should be driven by socket liveness, which `ConnectionManager` (`backend/app/main.py`) already observes when a WebSocket drops.
+
+**Relationship to the TUI/packet client below:** that item also specifies offline command queuing and replay. The conflict rule and queue semantics should be designed once and shared, not solved twice with different answers.
+
 ### Native Desktop Client
 
 **✨ Standalone NCS client application (Windows / macOS / Linux)** *(KC1JMH — back-burner)*  
-**Model:** Opus (framework selection and packaging architecture). *Review note for Brad — not removing, but flagging for a decision:* this overlaps with the TUI/packet client below and with the browser app itself; a PWA (installable web app with offline caching) might satisfy the "browser is impractical" case at a fraction of the cost of maintaining three native packages. Worth deciding before any work starts.  
+**Model:** Opus (framework selection and packaging architecture). *Decision recorded:* the PWA question flagged here is resolved in favor of the PWA — see Offline-Capable Web Client above. Offline operation is the strongest driver for a dedicated client, a PWA satisfies it, and maintaining three native packages alongside it is hard to justify. Treat this section as likely superseded; revisit only if a concrete requirement emerges that a PWA genuinely cannot meet.  
 A packaged desktop GUI application for NCS operators connecting to a hosted or self-hosted ECTLogger instance. Intended for single-operator NCS use; not a server. Targets scenarios where a browser is impractical but a full GUI is available. Proposed repo layout: `clients/windows/`, `clients/macos/`, `clients/linux/` with installable packages per release. Technology decision pending — evaluate Electron, Tauri, or native framework.
 
 ### TUI / Packet Client
@@ -250,6 +272,8 @@ Full spec and design notes: [`docs/concepts/TUI-PACKET-CLIENT.md`](concepts/TUI-
 Summary: a terminal UI (TUI) client and packet-optimized command protocol for running nets over SSH, local console, or packet radio links (~1200 baud). Two command modes — full terminal and abbreviated packet — with offline command queuing and replay on reconnect. Future phase includes a Winlink gateway for form-based check-in submission. Distinct from the desktop GUI client above: this is the degraded-connectivity and emergency deployment path.
 
 This is separate from the standalone desktop client above. Both are back-burner until the web app and self-hosting are stable.
+
+Its offline command queuing and replay overlaps directly with the Offline-Capable Web Client above. Design the queue semantics and the conflict rule once and share them across both clients — solving the same problem twice invites two different answers to "what happens when two operators logged the same callsign offline."
 
 ### Self-Hosting Enhancements
 

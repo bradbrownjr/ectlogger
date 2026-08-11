@@ -169,6 +169,11 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
       return;
     }
 
+    // Set only on the optimistic (plain status) branch below, so the catch
+    // knows whether there's a local change to undo. Role assignment doesn't
+    // update optimistically and therefore has nothing to roll back.
+    let rollbackStatus: (() => void) | null = null;
+
     try {
       if ((newStatus === 'ncs' || newStatus === 'logger') && checkIn.user_id) {
         // Remove any existing role
@@ -191,6 +196,25 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
         setToastMessage('Cannot assign roles to stations without user accounts');
         return;
       } else {
+        // ========== OPTIMISTIC STATUS UPDATE ==========
+        // Paint the new status immediately instead of waiting on the write.
+        // The control's value derives from server state, so without this the
+        // operator stares at the old icon for the whole round trip -- on a
+        // rural mobile link that's seconds, which reads as "it didn't save"
+        // and drives people to click again. Confirmed against the server's
+        // authoritative response below; restored by rollbackStatus on failure,
+        // where the existing error toast already explains what happened.
+        //
+        // Deliberately not applied to the role branch above: assigning
+        // NCS/Logger mutates netRoles as well as the check-in, and the
+        // control's value derives from both, so faking it locally would make
+        // a rollback genuinely confusing rather than merely surprising.
+        const previousStatus = checkIn.status;
+        const applyStatus = (value: string) =>
+          setCheckIns((prev: any[]) => prev.map(ci => (ci.id === checkInId ? { ...ci, status: value } : ci)));
+        applyStatus(newStatus);
+        rollbackStatus = () => applyStatus(previousStatus);
+
         // Only owner/admin may revoke a role when changing to a non-role status.
         // Regular NCS users changing their own status must not trigger a DELETE they
         // can't authorize (the backend rejects it with 403).
@@ -212,6 +236,9 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
       }
     } catch (error: any) {
       console.error('Failed to update status:', error);
+      // Undo the optimistic paint so the row reflects what the server actually
+      // holds, rather than leaving a change that looks saved but isn't.
+      if (rollbackStatus) rollbackStatus();
       const message = getErrorMessage(error, 'Failed to update status');
       setToastMessage(message);
     }
