@@ -76,6 +76,47 @@ async def check_net_permission(
     return False
 
 
+async def is_eligible_for_ncs_auto_grant(db: AsyncSession, net: Net, user_id: int) -> bool:
+    """Return True when *user_id* would be auto-granted NCS access on checking
+    into *net*: an active co-manager or active NCS rotation member for the
+    net's template, with no existing NetRole on this specific net occurrence
+    yet (owner/admin/an already-assigned role don't need this -- they already
+    have access, or checking in wouldn't change anything for them).
+
+    Shared by check_ins.py (to decide whether to actually grant) and
+    nets_core.py (to expose the choice to the frontend before the user checks
+    in at all, e.g. the check-in dialog's NCS/Standard toggle).
+    """
+    if not net.template_id:
+        return False
+
+    existing_result = await db.execute(
+        select(NetRole).where(NetRole.net_id == net.id, NetRole.user_id == user_id)
+    )
+    if existing_result.scalar_one_or_none() is not None:
+        return False
+
+    co_mgr_result = await db.execute(
+        select(TemplateStaff).where(
+            TemplateStaff.template_id == net.template_id,
+            TemplateStaff.user_id == user_id,
+            TemplateStaff.is_active == True,  # noqa: E712
+            TemplateStaff.is_co_manager == True,  # noqa: E712
+        )
+    )
+    if co_mgr_result.scalar_one_or_none() is not None:
+        return True
+
+    rotation_result = await db.execute(
+        select(NCSRotationMember).where(
+            NCSRotationMember.template_id == net.template_id,
+            NCSRotationMember.user_id == user_id,
+            NCSRotationMember.is_active == True,  # noqa: E712
+        )
+    )
+    return rotation_result.scalar_one_or_none() is not None
+
+
 async def check_net_lifecycle_permission(
     db: AsyncSession, net: Net, user: User
 ) -> bool:

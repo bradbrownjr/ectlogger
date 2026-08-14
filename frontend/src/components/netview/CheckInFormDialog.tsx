@@ -9,6 +9,12 @@ import {
   TextField,
   Autocomplete,
   Chip,
+  FormControl,
+  FormLabel,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
+  Typography,
 } from '@mui/material';
 import type { UseDialogResult } from '../../hooks/useDialog';
 
@@ -33,6 +39,10 @@ export interface CheckInFormState {
   topic_response: string;
   poll_response: string;
   status: string;
+  // Opt-out of the NCS auto-grant for co-managers/rotation members checking
+  // themselves in -- see backend permissions.is_eligible_for_ncs_auto_grant.
+  // Meaningless (ignored server-side) unless showNcsChoice is true below.
+  check_in_as_standard?: boolean;
 }
 
 interface CheckInFormDialogProps {
@@ -45,6 +55,10 @@ interface CheckInFormDialogProps {
   onCallsignLookup: (callsign: string) => void;
   onCheckIn: () => void;
   formatFrequency: (freq: any) => string;
+  // True when checking in would auto-grant the current user NCS (an active
+  // co-manager or NCS rotation member for this net's schedule, with no
+  // NetRole here yet) -- shows the NCS/Standard choice when true.
+  showNcsChoice?: boolean;
 }
 
 const CheckInFormDialog: React.FC<CheckInFormDialogProps> = ({
@@ -57,6 +71,7 @@ const CheckInFormDialog: React.FC<CheckInFormDialogProps> = ({
   onCallsignLookup,
   onCheckIn,
   formatFrequency,
+  showNcsChoice,
 }) => {
   const submit = () => {
     onCheckIn();
@@ -90,6 +105,23 @@ const CheckInFormDialog: React.FC<CheckInFormDialogProps> = ({
             required
             inputProps={{ style: { textTransform: 'uppercase' } }}
           />
+
+          {showNcsChoice && (
+            <FormControl>
+              <FormLabel sx={{ fontSize: '0.9rem' }}>Check in as</FormLabel>
+              <RadioGroup
+                row
+                value={checkInForm.check_in_as_standard ? 'standard' : 'ncs'}
+                onChange={(e) => setCheckInForm({ ...checkInForm, check_in_as_standard: e.target.value === 'standard' })}
+              >
+                <FormControlLabel value="ncs" control={<Radio size="small" />} label="NCS (backup net control)" />
+                <FormControlLabel value="standard" control={<Radio size="small" />} label="Standard participant" />
+              </RadioGroup>
+              <Typography variant="caption" color="text.secondary">
+                You're a co-manager or rotation member for this schedule, so you can help run this net. Choose Standard if you're just checking in as a participant this time.
+              </Typography>
+            </FormControl>
+          )}
 
           {fieldConfig?.name?.enabled && (
             <TextField

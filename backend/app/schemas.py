@@ -465,6 +465,7 @@ class NetResponse(NetBase):
     check_in_count: Optional[int] = None
     can_manage: bool = False  # True if current user can edit (owner, admin, or NCS)
     is_owner_or_ncs: bool = False  # True if user has non-admin access (owner/NCS/staff) — used by admin simulation mode
+    current_user_ncs_eligible: bool = False  # True if checking in would auto-grant current user NCS (see permissions.is_eligible_for_ncs_auto_grant) — drives the NCS/Standard choice on the check-in prompt/dialog
     user_attended: Optional[bool] = None  # True if current user checked into this net
     user_ran: Optional[bool] = None       # True if current user owned/ran this net
     # schedule_type of the template this net was created from ('ad_hoc',
@@ -476,7 +477,7 @@ class NetResponse(NetBase):
     template_schedule_type: Optional[str] = None
 
     @classmethod
-    def from_orm(cls, net, owner_callsign: str = None, owner_name: str = None, check_in_count: int = None, can_manage: bool = False, is_owner_or_ncs: bool = False, ncs_callsign: str = None, ncs_name: str = None, user_attended: bool = None, user_ran: bool = None, template_schedule_type: str = None):
+    def from_orm(cls, net, owner_callsign: str = None, owner_name: str = None, check_in_count: int = None, can_manage: bool = False, is_owner_or_ncs: bool = False, current_user_ncs_eligible: bool = False, ncs_callsign: str = None, ncs_name: str = None, user_attended: bool = None, user_ran: bool = None, template_schedule_type: str = None):
         import json
         data = {
             'id': net.id,
@@ -520,6 +521,7 @@ class NetResponse(NetBase):
             'check_in_count': check_in_count,
             'can_manage': can_manage,
             'is_owner_or_ncs': is_owner_or_ncs,
+            'current_user_ncs_eligible': current_user_ncs_eligible,
             'user_attended': user_attended,
             'user_ran': user_ran,
             'template_schedule_type': template_schedule_type,
@@ -780,6 +782,10 @@ class CheckInCreate(CheckInBase):
     available_frequency_ids: Optional[List[int]] = Field(default_factory=list)
     custom_fields: Optional[dict] = Field(default_factory=dict, max_length=50)
     status: Optional[StationStatus] = None
+    # Opt-out of the co-manager/rotation-member NCS auto-grant on self-check-in
+    # (see is_eligible_for_ncs_auto_grant / check_ins.py's auto-grant block).
+    # Ignored for staff-entered check-ins, which never auto-grant regardless.
+    check_in_as_standard: Optional[bool] = False
     
     @field_validator('custom_fields')
     @classmethod

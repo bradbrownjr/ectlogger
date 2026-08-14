@@ -10,7 +10,7 @@ All notable changes to ECTLogger are documented here.
 
 * **Net View: Stations can self-report their own coverage** — Any station can now log its own "can hear" report from the ear icon on its own check-in row, not just NCS, Logger, and Relay recording on its behalf. Net managers can turn this off per net or schedule under ARES & EmComm Features if they'd rather staff record every report themselves.
 
-* **Net View: Co-managers and rotation members can step in as NCS** — Any active co-manager or NCS rotation member for a schedule is now automatically granted acting-NCS access the moment they check into one of its nets, even when it isn't their week, so they can pick up net control if the scheduled NCS is unavailable or has to step away. They can switch back to a standard participant at any time using the existing Acting as NCS/Standard toggle.
+* **Net View: Co-managers and rotation members can step in as NCS** — Any active co-manager or NCS rotation member for a schedule is now automatically granted acting-NCS access the moment they check themselves into one of its nets, even when it isn't their week, so they can pick up net control if the scheduled NCS is unavailable or has to step away. A "Check in as NCS / Check in as Participant" choice on the check-in prompt and check-in form lets them decide up front, and the existing Acting as NCS/Standard toggle lets them change their mind at any time afterward. A station checked in by NCS or Logger on its behalf (e.g. by voice) is always recorded as a standard participant.
 
 ---
 

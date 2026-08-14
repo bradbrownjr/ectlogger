@@ -1,8 +1,8 @@
 {
-  "version": "2026.08.14b",
+  "version": "2026.08.14c",
   "entries": [
     {
-      "version": "2026.08.14b",
+      "version": "2026.08.14c",
       "date": "2026-08-14",
       "sections": [
         {
@@ -14,7 +14,7 @@
               "userImpact": true
             },
             {
-              "text": "Net View: Co-managers and rotation members can step in as NCS — any active co-manager or NCS rotation member for a schedule is now automatically granted acting-NCS access the moment they check into one of its nets, even when it isn't their week, so they can pick up net control if the scheduled NCS is unavailable or has to step away. They can switch back to a standard participant at any time using the existing Acting as NCS/Standard toggle.",
+              "text": "Net View: Co-managers and rotation members can step in as NCS — any active co-manager or NCS rotation member for a schedule is now automatically granted acting-NCS access the moment they check themselves into one of its nets, even when it isn't their week, so they can pick up net control if the scheduled NCS is unavailable or has to step away. A \"Check in as NCS / Check in as Participant\" choice on the check-in prompt and check-in form lets them decide up front, and the existing Acting as NCS/Standard toggle lets them change their mind at any time afterward. A station checked in by NCS or Logger on its behalf (e.g. by voice) is always recorded as a standard participant.",
               "userImpact": true
             }
           ]

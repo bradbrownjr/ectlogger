@@ -130,6 +130,7 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
         topic_response: '',
         poll_response: '',
         status: 'checked_in',
+        check_in_as_standard: false,
       });
 
       // Append the new row from the response instead of re-reading the list.

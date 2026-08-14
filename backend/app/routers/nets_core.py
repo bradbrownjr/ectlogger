@@ -23,7 +23,7 @@ from app.models import (
     net_frequencies,
 )
 from app.net_start import send_net_start_notifications
-from app.permissions import check_net_permission, is_admin
+from app.permissions import check_net_permission, is_admin, is_eligible_for_ncs_auto_grant
 from app.schemas import (
     NetCreate,
     NetResponse,
@@ -273,6 +273,14 @@ async def get_net(
         is_owner_or_ncs = is_owner or is_ncs or is_template_staff  # non-admin access; used by frontend simulation mode
         can_manage = is_owner_or_ncs or is_admin
 
+    # Would checking in right now auto-grant this user NCS? Drives the
+    # NCS/Standard choice on the check-in prompt/dialog. Independent of
+    # can_manage above -- an eligible co-manager/rotation member with no
+    # NetRole here yet isn't a manager until they actually check in.
+    current_user_ncs_eligible = False
+    if current_user:
+        current_user_ncs_eligible = await is_eligible_for_ncs_auto_grant(db, net, current_user.id)
+
     # ========== CURRENT NCS ==========
     # Look up the most-recently-assigned NCS user for this net so the UI
     # can display the Net Manager (owner) and NCS as separate entities.
@@ -294,6 +302,7 @@ async def get_net(
         owner_name=public_display_name(net.owner.name if net.owner else None, current_user is not None),
         can_manage=can_manage,
         is_owner_or_ncs=is_owner_or_ncs,
+        current_user_ncs_eligible=current_user_ncs_eligible,
         ncs_callsign=ncs_callsign,
         ncs_name=public_display_name(ncs_name, current_user is not None),
         template_schedule_type=net.template.schedule_type if net.template else None,

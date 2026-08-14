@@ -345,6 +345,7 @@ const NetView: React.FC = () => {
     topic_response: '',
     poll_response: '',
     status: 'checked_in',
+    check_in_as_standard: false,
   });
 
   // Fetches the full "can hear" report list for this net. Called once on mount
@@ -886,6 +887,7 @@ const NetView: React.FC = () => {
         topic_response: '',
         poll_response: '',
         status: 'checked_in',
+        check_in_as_standard: false,
       });
     } catch (error) {
       console.error('Failed to start net:', error);
@@ -1435,6 +1437,7 @@ const NetView: React.FC = () => {
         topic_response: '',
         poll_response: '',
         status: 'checked_in',
+        check_in_as_standard: false,
       });
     }
     checkInDialog.onOpen();
@@ -2608,6 +2611,7 @@ const NetView: React.FC = () => {
         onCallsignLookup={handleCallsignLookup}
         onCheckIn={handleCheckIn}
         formatFrequency={formatFrequencyDisplay}
+        showNcsChoice={!!net?.current_user_ncs_eligible}
       />
 
       {/* Check-in Location Map - docked version lives in NetViewSidePanels */}
@@ -2770,7 +2774,7 @@ const NetView: React.FC = () => {
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
         action={
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-            {isNCS ? (
+            {(isNCS || net?.current_user_ncs_eligible) ? (
               <>
                 <Button
                   color="primary"
@@ -2780,7 +2784,7 @@ const NetView: React.FC = () => {
                     checkInPrompt.onClose();
                     if (user) {
                       const locationValue = (user.location_awareness && gridSquare) ? gridSquare : (user.location || '');
-                      setCheckInForm({ callsign: getAppropriateCallsign(), name: user.name || '', location: locationValue, skywarn_number: '', weather_observation: '', power_source: '', power: '', feedback: '', notes: '', relayed_by: '', available_frequency_ids: [], custom_fields: {}, topic_response: '', poll_response: '', status: 'checked_in' });
+                      setCheckInForm({ callsign: getAppropriateCallsign(), name: user.name || '', location: locationValue, skywarn_number: '', weather_observation: '', power_source: '', power: '', feedback: '', notes: '', relayed_by: '', available_frequency_ids: [], custom_fields: {}, topic_response: '', poll_response: '', status: 'checked_in', check_in_as_standard: false });
                     }
                     checkInDialog.onOpen();
                   }}
@@ -2796,7 +2800,7 @@ const NetView: React.FC = () => {
                     checkInPrompt.onClose();
                     if (user) {
                       const locationValue = (user.location_awareness && gridSquare) ? gridSquare : (user.location || '');
-                      setCheckInForm({ callsign: getAppropriateCallsign(), name: user.name || '', location: locationValue, skywarn_number: '', weather_observation: '', power_source: '', power: '', feedback: '', notes: '', relayed_by: '', available_frequency_ids: [], custom_fields: {}, topic_response: '', poll_response: '', status: 'checked_in' });
+                      setCheckInForm({ callsign: getAppropriateCallsign(), name: user.name || '', location: locationValue, skywarn_number: '', weather_observation: '', power_source: '', power: '', feedback: '', notes: '', relayed_by: '', available_frequency_ids: [], custom_fields: {}, topic_response: '', poll_response: '', status: 'checked_in', check_in_as_standard: true });
                     }
                     checkInDialog.onOpen();
                   }}
@@ -2813,7 +2817,7 @@ const NetView: React.FC = () => {
                   checkInPrompt.onClose();
                   if (user) {
                     const locationValue = (user.location_awareness && gridSquare) ? gridSquare : (user.location || '');
-                    setCheckInForm({ callsign: getAppropriateCallsign(), name: user.name || '', location: locationValue, skywarn_number: '', weather_observation: '', power_source: '', power: '', feedback: '', notes: '', relayed_by: '', available_frequency_ids: [], custom_fields: {}, topic_response: '', poll_response: '', status: 'checked_in' });
+                    setCheckInForm({ callsign: getAppropriateCallsign(), name: user.name || '', location: locationValue, skywarn_number: '', weather_observation: '', power_source: '', power: '', feedback: '', notes: '', relayed_by: '', available_frequency_ids: [], custom_fields: {}, topic_response: '', poll_response: '', status: 'checked_in', check_in_as_standard: false });
                   }
                   checkInDialog.onOpen();
                 }}
