@@ -53,7 +53,10 @@ async def check_net_permission(
     Grants access to:
     - The net owner
     - Any global admin
-    - Any user whose NetRole for this net is listed in *required_roles*
+    - Any user with an active NetRole for this net listed in *required_roles*
+      (a role stepped down to Standard via toggle_self_net_role, is_active=False,
+      no longer counts -- otherwise "step down to Standard" would only change
+      what's displayed, not what's actually permitted)
     """
     if net.owner_id == user.id or is_admin(user):
         return True
@@ -64,6 +67,7 @@ async def check_net_permission(
                 NetRole.net_id == net.id,
                 NetRole.user_id == user.id,
                 NetRole.role.in_(required_roles),
+                NetRole.is_active == True,  # noqa: E712
             )
         )
         if result.scalar_one_or_none():

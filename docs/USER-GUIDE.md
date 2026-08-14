@@ -269,6 +269,8 @@ For nets that run regularly (weekly club nets, SKYWARN practice nets, etc.), cre
 - Request coverage or swap dates with other operators
 - Override specific dates when needed
 
+**Backup NCS access.** An active co-manager or rotation member is automatically granted acting-NCS access the moment they check into any net from that schedule, even on a week that isn't theirs — so they can pick up net control if the scheduled NCS is unavailable or has to step away, without waiting on the owner or an admin to assign a role. The toolbar's **Acting as NCS / Acting as Standard** control lets them step back to a standard participant at any time (and step back up again later) for that net.
+
 ### Schedules act as templates
 
 A **schedule** is also the *template* that nets are opened from. When the system (or you) opens a net from a schedule, the net is seeded with the schedule's name, description, info URL, stream URL, script, announcements, frequencies, check-in field configuration, ICS-309/Topic/Poll settings, self check-in and self-report coverage settings, and staff list.

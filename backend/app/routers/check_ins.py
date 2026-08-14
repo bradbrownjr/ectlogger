@@ -6,7 +6,7 @@ from typing import List
 from datetime import datetime, UTC
 import json
 from app.database import get_db
-from app.models import CheckIn, Net, NetStatus, User, UserRole, StationStatus, NetRole, Contact, Frequency
+from app.models import CheckIn, Net, NetStatus, User, UserRole, StationStatus, NetRole, Contact, Frequency, TemplateStaff, NCSRotationMember
 from app.schemas import CheckInCreate, CheckInUpdate, CheckInResponse
 from app.dependencies import get_current_user
 from app.utils import display_callsign
@@ -275,6 +275,63 @@ async def create_check_in(
         if ncs_arrival.scalar_one_or_none():
             from app.net_start import send_net_start_notifications
             await send_net_start_notifications(db, net)
+
+    # ========== AUTO-GRANT NCS ACCESS FOR CO-MANAGERS / ROTATION MEMBERS ==========
+    # A co-manager or active NCS-rotation member should have the same net-level
+    # privileges as the scheduled/on-duty NCS the moment they check in, so they
+    # can pick up the net if the assigned NCS is unavailable, without a separate
+    # "claim" step. They can step back down to Standard at any time via the
+    # existing Acting as NCS/Standard toggle (toggle_self_net_role in
+    # nets_roles.py), which flips is_active rather than deleting the row.
+    # Scoped to template-based nets only -- ad hoc nets have no co-manager or
+    # rotation concept. Deliberately placed after the auto-opened-lobby check
+    # above, using state from before this grant, so a co-manager's own check-in
+    # doesn't itself count as "the NCS arrived" confirmation to subscribers --
+    # only an already-assigned NCS does.
+    if linked_user_id and net.template_id:
+        existing_role_result = await db.execute(
+            select(NetRole).where(
+                NetRole.net_id == net_id,
+                NetRole.user_id == linked_user_id,
+            )
+        )
+        if existing_role_result.scalar_one_or_none() is None:
+            co_mgr_result = await db.execute(
+                select(TemplateStaff).where(
+                    TemplateStaff.template_id == net.template_id,
+                    TemplateStaff.user_id == linked_user_id,
+                    TemplateStaff.is_active == True,
+                    TemplateStaff.is_co_manager == True,
+                )
+            )
+            is_eligible = co_mgr_result.scalar_one_or_none() is not None
+            if not is_eligible:
+                rotation_result = await db.execute(
+                    select(NCSRotationMember).where(
+                        NCSRotationMember.template_id == net.template_id,
+                        NCSRotationMember.user_id == linked_user_id,
+                        NCSRotationMember.is_active == True,
+                    )
+                )
+                is_eligible = rotation_result.scalar_one_or_none() is not None
+
+            if is_eligible:
+                db.add(NetRole(net_id=net_id, user_id=linked_user_id, role="NCS"))
+                await db.commit()
+
+                from app.main import manager as ws_manager, post_system_message
+                await ws_manager.broadcast({
+                    "type": "role_change",
+                    "data": {
+                        "net_id": net_id,
+                        "user_id": linked_user_id,
+                        "role": "NCS",
+                        "removed": False,
+                        "assigned_at": datetime.now(UTC).isoformat()
+                    },
+                    "timestamp": datetime.now(UTC).isoformat()
+                }, net_id)
+                await post_system_message(net_id, f"{display_callsign(matching_user)} has been granted NCS access (schedule co-manager/rotation)", db)
 
     # Re-fetch with user relationship loaded (needed for avatar_url in response)
     result = await db.execute(
