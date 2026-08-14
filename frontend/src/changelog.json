@@ -1,6 +1,22 @@
 {
-  "version": "2026.08.11k",
+  "version": "2026.08.14",
   "entries": [
+    {
+      "version": "2026.08.14",
+      "date": "2026-08-14",
+      "sections": [
+        {
+          "title": "Improvements",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Net View: Stations can self-report their own coverage — any station can now log its own \"can hear\" report from the ear icon on its own check-in row, not just NCS, Logger, and Relay recording on its behalf. Net managers can turn this off per net or schedule under ARES & EmComm Features if they'd rather staff record every report themselves.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.08.11k",
       "date": "2026-08-11",

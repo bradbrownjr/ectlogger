@@ -137,6 +137,7 @@ async def create_template(
         schedule_config=schedule_config_json,
         ics309_enabled=template_data.ics309_enabled or False,
         propagation_logging_enabled=template_data.propagation_logging_enabled or False,
+        self_can_hear_enabled=template_data.self_can_hear_enabled if template_data.self_can_hear_enabled is not None else True,
         traffic_enabled=template_data.traffic_enabled or False,
         traffic_form_types=json.dumps(template_data.traffic_form_types) if template_data.traffic_form_types else None,
         traffic_strip_form_type=template_data.traffic_strip_form_type,
@@ -365,6 +366,8 @@ async def update_template(
         template.ics309_enabled = template_data.ics309_enabled
     if template_data.propagation_logging_enabled is not None:
         template.propagation_logging_enabled = template_data.propagation_logging_enabled
+    if template_data.self_can_hear_enabled is not None:
+        template.self_can_hear_enabled = template_data.self_can_hear_enabled
     if template_data.traffic_enabled is not None:
         template.traffic_enabled = template_data.traffic_enabled
     # model_fields_set for all three: clearing a restriction (null/empty list)

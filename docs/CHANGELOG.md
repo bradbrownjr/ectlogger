@@ -4,6 +4,14 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# August 14, 2026
+
+## Improvements
+
+* **Net View: Stations can self-report their own coverage** — Any station can now log its own "can hear" report from the ear icon on its own check-in row, not just NCS, Logger, and Relay recording on its behalf. Net managers can turn this off per net or schedule under ARES & EmComm Features if they'd rather staff record every report themselves.
+
+---
+
 # August 11, 2026
 
 ## New Features

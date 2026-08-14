@@ -26,6 +26,7 @@ const BasicInfoTab: React.FC = () => {
     streamUrl, setStreamUrl,
     ics309Enabled, setIcs309Enabled,
     propagationLoggingEnabled, setPropagationLoggingEnabled,
+    selfCanHearEnabled, setSelfCanHearEnabled,
     trafficEnabled, setTrafficEnabled,
     trafficFormTypes, setTrafficFormTypes,
     trafficStripFormType, setTrafficStripFormType,
@@ -296,8 +297,19 @@ const BasicInfoTab: React.FC = () => {
               label="Enable Station-to-Station Coverage Logging"
             />
             <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
-              Adds a 'can hear' action to each check-in, letting NCS, Logger, and Relay record which stations can hear each other during this net.
+              Adds a 'can hear' action to each check-in. Stations can record their own reception; NCS, Logger, and Relay can record on behalf of any station.
             </Typography>
+            {propagationLoggingEnabled && (
+              <Box sx={{ mt: 1, ml: 4.5 }}>
+                <FormControlLabel
+                  control={<Switch checked={selfCanHearEnabled} onChange={(e) => setSelfCanHearEnabled(e.target.checked)} />}
+                  label="Allow stations to self-report"
+                />
+                <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
+                  When disabled, only Net Control, Logger, and Relay can record 'can hear' reports; regular stations won't see the action.
+                </Typography>
+              </Box>
+            )}
           </Box>
 
           {/* Assisted Traffic Handling — shared with the Schedule editor */}

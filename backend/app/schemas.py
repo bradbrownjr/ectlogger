@@ -361,6 +361,7 @@ class NetBase(BaseModel):
     field_config: Optional[dict] = None
     ics309_enabled: Optional[bool] = False
     propagation_logging_enabled: Optional[bool] = False
+    self_can_hear_enabled: Optional[bool] = True
     # Opt-in, matching the two EmComm toggles above. Nets created before the
     # settings toggle existed keep their stored True -- see migration 056.
     traffic_enabled: Optional[bool] = False
@@ -401,6 +402,7 @@ class NetUpdate(BaseModel):
     field_config: Optional[dict] = None
     ics309_enabled: Optional[bool] = None
     propagation_logging_enabled: Optional[bool] = None
+    self_can_hear_enabled: Optional[bool] = None
     traffic_enabled: Optional[bool] = None
     traffic_form_types: Optional[List[str]] = Field(None, max_length=50)
     traffic_strip_form_type: Optional[str] = Field(None, max_length=32)
@@ -445,6 +447,7 @@ class NetResponse(NetBase):
     field_config: Optional[dict] = None
     ics309_enabled: bool = False
     propagation_logging_enabled: bool = False
+    self_can_hear_enabled: bool = True
     traffic_enabled: bool = True
     traffic_form_types: Optional[List[str]] = None
     traffic_strip_form_type: Optional[str] = None
@@ -494,6 +497,7 @@ class NetResponse(NetBase):
             'field_config': json.loads(net.field_config) if net.field_config else None,
             'ics309_enabled': net.ics309_enabled or False,
             'propagation_logging_enabled': net.propagation_logging_enabled or False,
+            'self_can_hear_enabled': net.self_can_hear_enabled if net.self_can_hear_enabled is not None else True,
             'traffic_enabled': net.traffic_enabled if net.traffic_enabled is not None else True,
             'traffic_form_types': _parse_traffic_form_types(net.traffic_form_types),
             'traffic_strip_form_type': net.traffic_strip_form_type,
@@ -540,6 +544,7 @@ class NetTemplateBase(BaseModel):
     fifth_week_user_id: Optional[int] = None
     ics309_enabled: bool = False  # Enable ICS-309 format for net close emails
     propagation_logging_enabled: bool = False  # Seeds propagation_logging_enabled for nets created from this template
+    self_can_hear_enabled: bool = True  # Seeds self_can_hear_enabled for nets created from this template
     traffic_enabled: bool = False  # Seeds traffic_enabled for nets created from this template
     # Seed the three per-net traffic settings; same null semantics as NetBase.
     traffic_form_types: Optional[List[str]] = Field(None, max_length=50)
@@ -579,6 +584,7 @@ class NetTemplateUpdate(BaseModel):
     owner_id: Optional[int] = None  # Allow changing the owner (admin only or current owner)
     ics309_enabled: Optional[bool] = None
     propagation_logging_enabled: Optional[bool] = None
+    self_can_hear_enabled: Optional[bool] = None
     traffic_enabled: Optional[bool] = None
     traffic_form_types: Optional[List[str]] = Field(None, max_length=50)
     traffic_strip_form_type: Optional[str] = Field(None, max_length=32)
@@ -636,6 +642,7 @@ class NetTemplateResponse(NetTemplateBase):
             'schedule_config': json.loads(template.schedule_config) if template.schedule_config else {},
             'ics309_enabled': template.ics309_enabled or False,
             'propagation_logging_enabled': template.propagation_logging_enabled or False,
+            'self_can_hear_enabled': template.self_can_hear_enabled if template.self_can_hear_enabled is not None else True,
             'traffic_enabled': template.traffic_enabled if template.traffic_enabled is not None else True,
             'traffic_form_types': _parse_traffic_form_types(template.traffic_form_types),
             'traffic_strip_form_type': template.traffic_strip_form_type,

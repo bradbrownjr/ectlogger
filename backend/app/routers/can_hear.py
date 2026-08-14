@@ -89,15 +89,19 @@ async def save_can_hear_report(
     if not net.propagation_logging_enabled:
         raise HTTPException(status_code=403, detail="Station-to-station coverage logging is not enabled for this net")
 
-    if not await check_net_permission(db, net, current_user, ["NCS", "LOGGER", "RELAY"]):
-        raise HTTPException(status_code=403, detail="Not authorized to record coverage reports")
-
     result = await db.execute(select(CheckIn).where(CheckIn.id == payload.reporter_check_in_id))
     reporter_check_in = result.scalar_one_or_none()
     if not reporter_check_in:
         raise HTTPException(status_code=404, detail="Check-in not found")
     if reporter_check_in.net_id != net_id:
         raise HTTPException(status_code=400, detail="Check-in does not belong to this net")
+
+    # A station can report what it itself can hear, unless self-reporting is
+    # turned off for this net; staff can always report on behalf of any station.
+    is_own_check_in = reporter_check_in.user_id == current_user.id
+    self_report_allowed = is_own_check_in and net.self_can_hear_enabled is not False
+    if not self_report_allowed and not await check_net_permission(db, net, current_user, ["NCS", "LOGGER", "RELAY"]):
+        raise HTTPException(status_code=403, detail="Not authorized to record coverage reports")
 
     if payload.reporter_check_in_id in payload.heard_check_in_ids:
         raise HTTPException(status_code=400, detail="A station cannot report hearing itself")

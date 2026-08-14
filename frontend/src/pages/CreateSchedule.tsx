@@ -80,6 +80,7 @@ const CreateSchedule: React.FC = () => {
   // ---- ARES / EmComm features ----
   const [ics309Enabled, setIcs309Enabled] = useState(false);
   const [propagationLoggingEnabled, setPropagationLoggingEnabled] = useState(false);
+  const [selfCanHearEnabled, setSelfCanHearEnabled] = useState(true);
   // Assisted Traffic Handling. Seeds the same four settings on every net
   // opened from this schedule -- see components/forms/TrafficSettingsPanel.tsx.
   const [trafficEnabled, setTrafficEnabled] = useState(false);
@@ -203,6 +204,7 @@ const CreateSchedule: React.FC = () => {
       setScript(schedule.script || '');
       setIcs309Enabled(schedule.ics309_enabled || false);
       setPropagationLoggingEnabled(schedule.propagation_logging_enabled || false);
+      setSelfCanHearEnabled(schedule.self_can_hear_enabled !== false);
       setTrafficEnabled(schedule.traffic_enabled || false);
       setTrafficFormTypes(schedule.traffic_form_types || []);
       setTrafficStripFormType(schedule.traffic_strip_form_type || '');
@@ -284,6 +286,7 @@ const CreateSchedule: React.FC = () => {
       fifth_week_user_id: fifthWeekUserId,
       ics309_enabled: ics309Enabled,
       propagation_logging_enabled: propagationLoggingEnabled,
+      self_can_hear_enabled: selfCanHearEnabled,
       traffic_enabled: trafficEnabled,
       traffic_form_types: trafficFormTypes,
       traffic_strip_form_type: trafficStripFormType || null,
@@ -356,6 +359,7 @@ const CreateSchedule: React.FC = () => {
     script, setScript, announcements, setAnnouncements,
     ics309Enabled, setIcs309Enabled, mobilePrioritySort, setMobilePrioritySort,
     propagationLoggingEnabled, setPropagationLoggingEnabled,
+    selfCanHearEnabled, setSelfCanHearEnabled,
     trafficEnabled, setTrafficEnabled,
     trafficFormTypes, setTrafficFormTypes,
     trafficStripFormType, setTrafficStripFormType,

@@ -151,6 +151,7 @@ class NCSReminderService:
                 status=NetStatus.SCHEDULED,
                 ics309_enabled=template.ics309_enabled or False,
                 propagation_logging_enabled=template.propagation_logging_enabled or False,
+                self_can_hear_enabled=template.self_can_hear_enabled if template.self_can_hear_enabled is not None else True,
                 # The traffic settings were previously left off this copy list, so
                 # an auto-created scheduled net silently fell back to the column
                 # default instead of honoring its schedule -- matching what

@@ -60,6 +60,7 @@ async def create_net(
         field_config=json.dumps(net_data.field_config) if net_data.field_config else None,
         ics309_enabled=net_data.ics309_enabled or False,
         propagation_logging_enabled=net_data.propagation_logging_enabled or False,
+        self_can_hear_enabled=net_data.self_can_hear_enabled if net_data.self_can_hear_enabled is not None else True,
         traffic_enabled=net_data.traffic_enabled or False,
         traffic_form_types=json.dumps(net_data.traffic_form_types) if net_data.traffic_form_types else None,
         traffic_strip_form_type=net_data.traffic_strip_form_type,

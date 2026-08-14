@@ -734,8 +734,10 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                         </>
                         )}
                         {/* "Can hear" reporting - gated independently of canManage/ownership
-                            above, since Relay staff can report without managing check-ins */}
-                        {net.propagation_logging_enabled && canReportCanHear && (net.status === 'active' || net.status === 'lobby') && checkIn.status !== 'checked_out' && (
+                            above, since Relay staff can report without managing check-ins.
+                            A station can also report what it itself can hear, unless the net
+                            has turned self-reporting off (self_can_hear_enabled). */}
+                        {net.propagation_logging_enabled && (canReportCanHear || (checkIn.user_id === user?.id && net.self_can_hear_enabled !== false)) && (net.status === 'active' || net.status === 'lobby') && checkIn.status !== 'checked_out' && (
                           <IconButton
                             size="small"
                             onClick={() => onOpenCanHearDialog(checkIn.id)}

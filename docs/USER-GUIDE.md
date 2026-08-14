@@ -208,7 +208,8 @@ The Create Net form has five tabs to configure your net:
 - **Info URL** — Optional link to your club or organization's website
 - **Scheduled Start Time** — Optional. If set, a countdown timer displays before the net starts
 - **Enable ICS-309 format** — Use official FEMA communications log format for net closure emails
-- **Enable Station-to-Station Coverage Logging** — Adds an ear icon action to each check-in row, so NCS, Logger, and Relay can record which stations can hear each other during the net, not just who NCS hears. See "Station-to-Station Coverage Logging" below.
+- **Enable Station-to-Station Coverage Logging** — Adds an ear icon action to each check-in row. Any station can record its own reception; NCS, Logger, and Relay can also record on behalf of any station. See "Station-to-Station Coverage Logging" below.
+  - **Allow stations to self-report** — Shown once coverage logging is on. On by default. Turn off if you want only Net Control, Logger, and Relay to record "can hear" reports; regular stations won't see the ear icon on their own check-in.
 - **Allow self check-in** — On by default. Turn off if you want only Net Control and logging staff to add check-ins, e.g. when stations checking in both by voice and by app is causing confusion during roll call. When off, the check-in button is hidden for regular participants; staff still check stations in from the check-in list.
 
 **Community Net Features** (optional):
@@ -270,7 +271,7 @@ For nets that run regularly (weekly club nets, SKYWARN practice nets, etc.), cre
 
 ### Schedules act as templates
 
-A **schedule** is also the *template* that nets are opened from. When the system (or you) opens a net from a schedule, the net is seeded with the schedule's name, description, info URL, stream URL, script, announcements, frequencies, check-in field configuration, ICS-309/Topic/Poll settings, self check-in setting, and staff list.
+A **schedule** is also the *template* that nets are opened from. When the system (or you) opens a net from a schedule, the net is seeded with the schedule's name, description, info URL, stream URL, script, announcements, frequencies, check-in field configuration, ICS-309/Topic/Poll settings, self check-in and self-report coverage settings, and staff list.
 
 After a net is opened, edits you make to the net stay on **that net only** by default. The schedule isn't touched unless you explicitly push your changes back to it. This keeps in-the-moment edits (a one-off frequency change, a session-specific announcement) from rewriting the schedule's defaults.
 
@@ -577,7 +578,7 @@ An ARES/EmComm feature for recording who can hear whom during a net, useful for 
 
 Once enabled:
 
-1. Each check-in row gets an ear icon action, available to NCS, Logger, and Relay. Click it to open **"Who can this station hear?"**
+1. Each check-in row gets an ear icon action. Every station sees it on its own row and can log its own reception; NCS, Logger, and Relay see it on every row and can record on behalf of any station. Click it to open **"Who can this station hear?"** Net managers can turn off self-reporting (**Allow stations to self-report**, in the net's Basic Info tab) to restrict recording to staff only.
 2. Check every other station the reporting station can hear on the currently selected frequency, and optionally set their operating position (Home, Field Deployed, or your own text). Save — the dialog reconciles the checked set, so unchecking a station removes that report.
 3. A **Coverage** button appears in the net toolbar, opening a **Station Coverage** panel alongside Chat, Activity Log, and the Check-In Map. It lists every reported connection, sortable by column, with one-way and two-way paths distinguished, and a filter to narrow the list to one callsign.
 4. Click a callsign in the Coverage panel to highlight just that station's connections (in the panel and on the map); click the highlighted callsign again, or use the **Clear highlight** button, to go back to the full list.

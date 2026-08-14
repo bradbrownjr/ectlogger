@@ -31,6 +31,7 @@ export interface CreateNetContextValue {
   // ARES / EmComm features
   ics309Enabled: boolean; setIcs309Enabled: Dispatch<SetStateAction<boolean>>;
   propagationLoggingEnabled: boolean; setPropagationLoggingEnabled: Dispatch<SetStateAction<boolean>>;
+  selfCanHearEnabled: boolean; setSelfCanHearEnabled: Dispatch<SetStateAction<boolean>>;
   // Assisted Traffic Handling settings -- see components/forms/TrafficSettingsPanel.tsx
   trafficEnabled: boolean; setTrafficEnabled: Dispatch<SetStateAction<boolean>>;
   trafficFormTypes: string[]; setTrafficFormTypes: Dispatch<SetStateAction<string[]>>;

@@ -259,6 +259,7 @@ async def create_net_from_template(
         status=NetStatus.DRAFT,
         ics309_enabled=template.ics309_enabled or False,
         propagation_logging_enabled=template.propagation_logging_enabled or False,
+        self_can_hear_enabled=template.self_can_hear_enabled if template.self_can_hear_enabled is not None else True,
         traffic_enabled=template.traffic_enabled or False,
         # Copied verbatim -- traffic_form_types is already JSON text on both
         # sides, so no re-encode. Per-net values are authoritative once copied,

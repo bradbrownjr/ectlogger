@@ -153,6 +153,7 @@ class Net(Base):
     field_config = Column(Text, default='{"name": {"enabled": true, "required": false}, "location": {"enabled": true, "required": false}, "skywarn_number": {"enabled": false, "required": false}, "weather_observation": {"enabled": false, "required": false}, "power_source": {"enabled": false, "required": false}, "power": {"enabled": false, "required": false}, "feedback": {"enabled": false, "required": false}, "notes": {"enabled": false, "required": false}}')  # JSON config for check-in fields
     ics309_enabled = Column(Boolean, default=False)  # Generate ICS-309 format on close
     propagation_logging_enabled = Column(Boolean, default=False)  # Enable "can hear" station-to-station coverage logging
+    self_can_hear_enabled = Column(Boolean, default=True)  # If False, only NCS/logger/relay may record "can hear" reports; regular stations can't self-report
     # Opt-in like ics309_enabled/propagation_logging_enabled above. The default
     # only applies to newly inserted rows, so nets created before the settings
     # toggle existed keep their stored True and don't lose the panel.
@@ -230,6 +231,7 @@ class NetTemplate(Base):
     is_active = Column(Boolean, default=True)
     ics309_enabled = Column(Boolean, default=False)  # Enable ICS-309 format for net close emails
     propagation_logging_enabled = Column(Boolean, default=False)  # Seeds Net.propagation_logging_enabled for nets created from this template
+    self_can_hear_enabled = Column(Boolean, default=True)  # Seeds Net.self_can_hear_enabled for nets created from this template
     traffic_enabled = Column(Boolean, default=False)  # Seeds Net.traffic_enabled for nets created from this template
     # Seed the three per-net traffic settings above; same null semantics.
     traffic_form_types = Column(Text, nullable=True)
