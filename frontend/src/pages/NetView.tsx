@@ -1511,6 +1511,7 @@ const NetView: React.FC = () => {
         onStatusChange={handleStatusChange}
         onToggleNCSRole={handleToggleNCSRole}
         onCheckOut={handleCheckOut}
+        onOpenCanHearDialog={setCanHearDialogCheckInId}
         onGoLive={handleGoLive}
         onExportCSV={handleExportCSV}
         onExportICS309={handleExportICS309}

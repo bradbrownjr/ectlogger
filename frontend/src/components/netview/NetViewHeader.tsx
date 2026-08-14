@@ -227,6 +227,7 @@ interface NetViewHeaderProps {
   onStatusChange: (checkInId: number, newStatus: string) => void;
   onToggleNCSRole: () => void;
   onCheckOut: () => void;
+  onOpenCanHearDialog: (checkInId: number) => void;
   onGoLive: () => void;
   onExportCSV: () => void;
   onExportICS309: () => void;
@@ -340,6 +341,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
   onStatusChange,
   onToggleNCSRole,
   onCheckOut,
+  onOpenCanHearDialog,
   onGoLive,
   onExportCSV,
   onExportICS309,
@@ -550,6 +552,18 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
         onStatusChange(userActiveCheckIn?.id, goingAway ? 'away' : 'checked_in');
       },
       active: userActiveCheckIn?.status === 'away', activeTone: 'warning',
+    },
+    {
+      // Self-service path to the same "can hear" dialog available per-row in
+      // the check-in table, for a station that wants to log its own reception
+      // without hunting for its own row. Gated by both the net-level feature
+      // toggle and self_can_hear_enabled -- if a net has restricted "can hear"
+      // reporting to staff, this button shouldn't offer a save that will 403.
+      key: 'can-hear', group: 'management', priority: 3,
+      visible: isAuthenticated && isActiveOrLobby && !!userActiveCheckIn
+        && net.propagation_logging_enabled && net.self_can_hear_enabled !== false,
+      Icon: HearingIcon, color: neutralIconColor, label: 'I hear',
+      tooltip: 'Record which stations you can hear', onClick: () => onOpenCanHearDialog(userActiveCheckIn?.id),
     },
     {
       key: 'check-out', group: 'management', priority: 3,
