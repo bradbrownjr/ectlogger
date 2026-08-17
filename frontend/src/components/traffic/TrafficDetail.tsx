@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Box, Paper, Typography, Chip, Divider, CircularProgress, Alert, Grid, Button } from '@mui/material';
+import { Box, Paper, Typography, Chip, Divider, CircularProgress, Alert, Grid, Button, IconButton, Tooltip } from '@mui/material';
 import DescriptionIcon from '@mui/icons-material/Description';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import SendIcon from '@mui/icons-material/Send';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import { useSnackbar } from 'notistack';
 import { trafficApi } from '../../services/api';
 import { getErrorMessage } from '../../utils/apiErrors';
 import { exportElementToPdf } from '../../utils/pdfExport';
@@ -30,11 +32,13 @@ interface TrafficDetailProps {
 }
 
 const TrafficDetail: React.FC<TrafficDetailProps> = ({ formId }) => {
+  const { enqueueSnackbar } = useSnackbar();
   const [form, setForm] = useState<FormDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [exportingFormat, setExportingFormat] = useState<'text' | 'pdf' | null>(null);
   const [handoffOpen, setHandoffOpen] = useState(false);
+  const [rawStripText, setRawStripText] = useState<string | null>(null);
 
   const refetch = useCallback(() => {
     setError(null);
@@ -59,6 +63,17 @@ const TrafficDetail: React.FC<TrafficDetailProps> = ({ formId }) => {
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
+      });
+    // Same plaintext the Text export button downloads (traffic_export.py's
+    // format_form) -- fetched separately here so it can be shown inline with
+    // a copy button, rather than only as a file download.
+    trafficApi.exportForm(formId, 'text')
+      .then((res) => res.data.text())
+      .then((text: string) => {
+        if (!cancelled) setRawStripText(text);
+      })
+      .catch(() => {
+        if (!cancelled) setRawStripText(null);
       });
     return () => {
       cancelled = true;
@@ -100,6 +115,16 @@ const TrafficDetail: React.FC<TrafficDetailProps> = ({ formId }) => {
   }
 
   const printViewId = `traffic-print-view-${form.id}`;
+
+  const handleCopyRawStrip = async () => {
+    if (!rawStripText) return;
+    try {
+      await navigator.clipboard.writeText(rawStripText);
+      enqueueSnackbar('Exported text copied to clipboard', { variant: 'success' });
+    } catch {
+      enqueueSnackbar("Couldn't copy automatically — select the text and copy it manually", { variant: 'error' });
+    }
+  };
 
   // Text still downloads the server-rendered plaintext file (traffic_export.py),
   // following the same blob-response idiom as NetView.tsx's handleExportCSV. PDF
@@ -172,6 +197,39 @@ const TrafficDetail: React.FC<TrafficDetailProps> = ({ formId }) => {
           </Grid>
         ))}
       </Grid>
+
+      {rawStripText && (
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="caption" color="text.secondary">
+            Exported text (as saved to a text file)
+          </Typography>
+          <Box sx={{ position: 'relative' }}>
+            <Box
+              sx={{
+                p: 1.5,
+                pr: 6,
+                bgcolor: 'action.hover',
+                borderRadius: 1,
+                fontFamily: 'monospace',
+                fontSize: '0.8rem',
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word',
+              }}
+            >
+              {rawStripText}
+            </Box>
+            <Tooltip title="Copy exported text">
+              <IconButton
+                size="small"
+                onClick={handleCopyRawStrip}
+                sx={{ position: 'absolute', top: 4, right: 4, minWidth: 44, minHeight: 44 }}
+              >
+                <ContentCopyIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        </Box>
+      )}
 
       <Divider sx={{ my: 2 }} />
 

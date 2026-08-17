@@ -1,10 +1,24 @@
 {
-  "version": "2026.08.17",
+  "version": "2026.08.17b",
   "entries": [
     {
-      "version": "2026.08.17",
+      "version": "2026.08.17b",
       "date": "2026-08-17",
       "sections": [
+        {
+          "title": "Improvements",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Traffic: Copy exported text — a piece of traffic's detail screen now shows the exact text that gets exported to a text file, with a copy icon right next to it, so you can hand it to whoever needs it without exporting and opening a file first.",
+              "userImpact": true
+            },
+            {
+              "text": "Traffic: Handoff defaults to you — Log a Handoff now pre-fills \"Handed to\" with your own callsign, since you're usually logging that you handled the message yourself; overwrite it when you're instead logging a handoff someone else verbally reported to you.",
+              "userImpact": true
+            }
+          ]
+        },
         {
           "title": "Bug Fixes",
           "type": "bugfix",

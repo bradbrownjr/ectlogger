@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 import { trafficApi, userApi } from '../../services/api';
 import { getErrorMessage } from '../../utils/apiErrors';
+import { useAuth } from '../../contexts/AuthContext';
 
 // ========== RelayLogDialog ==========
 // Appends one hop to a form's chain of custody via POST /traffic/forms/{id}/log.
@@ -22,6 +23,11 @@ import { getErrorMessage } from '../../utils/apiErrors';
 // pattern as NCSStaffRosterTab.tsx), occurred-at (defaults to now, editable),
 // note. The chain is append-only -- this dialog only ever creates a new
 // entry, never edits or removes one.
+//
+// "Handed to" defaults to the logged-in operator's own callsign, since the
+// common case is self-service ("I'm logging that I handled this"); it's a
+// plain editable text field so it's overwritten freely when the operator is
+// instead logging a hop someone else verbally reported to them.
 
 const ACTIONS = [
   { value: 'originated', label: 'Originated' },
@@ -65,6 +71,7 @@ interface RelayLogDialogProps {
 }
 
 const RelayLogDialog: React.FC<RelayLogDialogProps> = ({ open, formId, defaultAction, onClose, onLogged }) => {
+  const { user } = useAuth();
   const [action, setAction] = useState(defaultAction || 'relayed');
   const [method, setMethod] = useState('');
   const [methodNote, setMethodNote] = useState('');
@@ -83,13 +90,13 @@ const RelayLogDialog: React.FC<RelayLogDialogProps> = ({ open, formId, defaultAc
     setMethod('');
     setMethodNote('');
     setPathName('');
-    setHandedTo('');
+    setHandedTo(user?.callsign || '');
     setHandedToUser(null);
     setOccurredAt(nowForInput());
     setNote('');
     setError(null);
     userApi.listDirectory().then((res) => setDirectory(res.data)).catch(() => setDirectory([]));
-  }, [open, defaultAction]);
+  }, [open, defaultAction, user]);
 
   const handleClose = () => {
     if (submitting) return;

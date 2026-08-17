@@ -776,7 +776,7 @@ If you already have the plaintext of a radiogram, ICS-213 message, or RRI strip 
 
 ### Logging what happens next
 
-Every piece of traffic has a chain of custody: a timeline of who touched it and what they did (originated, received, relayed, delivered, serviced, or cancelled). As you relay or deliver a message, log the handoff so the chain stays accurate — this is what lets a net's NCS or logger answer "what happened to that message?" after the net closes, and it's what keeps your **inbox** honest: a piece of traffic you're still holding stays visible there until you log that it moved on.
+Every piece of traffic has a chain of custody: a timeline of who touched it and what they did (originated, received, relayed, delivered, serviced, or cancelled). As you relay or deliver a message, log the handoff so the chain stays accurate — this is what lets a net's NCS or logger answer "what happened to that message?" after the net closes, and it's what keeps your **inbox** honest: a piece of traffic you're still holding stays visible there until you log that it moved on. The **Log a Handoff** dialog's "Handed to" field starts pre-filled with your own callsign, since the common case is logging that you handled the message yourself — overwrite it when you're instead logging a handoff someone else verbally reported to you.
 
 ### Your Traffic Inbox
 
@@ -787,6 +787,8 @@ The **Traffic** section's **Inbox** tab shows everything you're currently holdin
 Only the submitter, the current holder, anyone else in its chain of custody, that net's NCS/logger, and admins can view a given piece of traffic. Ordinary check-ins on the net do not grant access to its traffic. This matters because welfare traffic can carry a private individual's name, address, and phone number.
 
 ### Exporting
+
+A piece of traffic's detail view also shows an **Exported text** field: the exact plaintext that the **Text** export produces (the slash-delimited strip line, or radiogram/ICS-213 plaintext), right on screen, with a copy icon next to it so you can paste it straight to whoever needs it (a served agency's form, an email, another net) without exporting and opening a file first.
 
 From a piece of traffic's detail view, **Export** gives you the plaintext (for reading over the air or filing) or a printable PDF. For a Radiogram or ICS-213, that PDF is laid out like the real paper form — the ARRL Radiogram pad or the FEMA ICS-213 General Message form, boxes and rules included — ready to file or hand to the addressee, with fields ECTLogger doesn't collect (like a delivery-confirmation signature) printing blank and ruled, the same as they'd appear on a hand-filled paper copy. For a WXOBS, GYX-CAR SKYWARN, or general RRI strip, the PDF shows the exact strip text alongside a readable field list. On a net with **ICS-309 enabled**, traffic handled during that net also appears as metadata-only rows (message number, precedence, addressee, handling station) on the net's ICS-309 Communications Log, including its own form-accurate PDF — the message text itself is never included in that export.
 
