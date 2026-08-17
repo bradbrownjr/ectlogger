@@ -27,6 +27,19 @@ interface TabPanelProps {
   value: number;
 }
 
+// Named tab values for shareable URLs, e.g. /profile?tab=coverage. Index
+// order must match the <Tab> order below. Numeric ?tab=N is still accepted
+// on read for backward compatibility with links shared before this existed.
+const TAB_NAMES = ['profile', 'settings', 'notifications', 'activity', 'coverage'];
+
+function tabParamToIndex(param: string | null): number {
+  if (!param) return 0;
+  const named = TAB_NAMES.indexOf(param.toLowerCase());
+  if (named !== -1) return named;
+  const numeric = parseInt(param, 10);
+  return isNaN(numeric) || numeric < 0 || numeric >= TAB_NAMES.length ? 0 : numeric;
+}
+
 function TabPanel(props: TabPanelProps) {
   const { children, value, index, ...other } = props;
   return (
@@ -52,8 +65,7 @@ const Profile: React.FC = () => {
   const [tabValue, setTabValue] = useState(0);
 
   useEffect(() => {
-    const tab = parseInt(searchParams.get('tab') || '0', 10);
-    setTabValue(isNaN(tab) ? 0 : tab);
+    setTabValue(tabParamToIndex(searchParams.get('tab')));
   }, [searchParams]);
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
@@ -90,7 +102,7 @@ const Profile: React.FC = () => {
     // raising it as tabs are added.
     const next = deltaX < 0 ? Math.min(tabValue + 1, 4) : Math.max(tabValue - 1, 0);
     setTabValue(next);
-    setSearchParams(next > 0 ? { tab: String(next) } : {});
+    setSearchParams(next > 0 ? { tab: TAB_NAMES[next] } : {});
   };
 
   const [formData, setFormData] = useState({
@@ -143,7 +155,7 @@ const Profile: React.FC = () => {
             value={tabValue}
             onChange={(_, newValue) => {
               setTabValue(newValue);
-              setSearchParams(newValue > 0 ? { tab: String(newValue) } : {});
+              setSearchParams(newValue > 0 ? { tab: TAB_NAMES[newValue] } : {});
             }}
             aria-label="profile tabs"
             variant="scrollable"
