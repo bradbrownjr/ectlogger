@@ -87,7 +87,7 @@ async def test_create_net_from_template_copies_traffic_config(client, db, owner)
         traffic_enabled=True,
         traffic_form_types=json.dumps(["RADIOGRAM", "ICS213"]),
         traffic_strip_form_type="GYX-CAR-SKYWARN",
-        traffic_strip_template="GYX-CAR WEATHER/W1AW//",
+        traffic_strip_template="GYX WEATHER/W1AW//",
     )
     db.add(template)
     await db.commit()
@@ -99,7 +99,7 @@ async def test_create_net_from_template_copies_traffic_config(client, db, owner)
     assert data["traffic_enabled"] is True
     assert data["traffic_form_types"] == ["RADIOGRAM", "ICS213"]
     assert data["traffic_strip_form_type"] == "GYX-CAR-SKYWARN"
-    assert data["traffic_strip_template"] == "GYX-CAR WEATHER/W1AW//"
+    assert data["traffic_strip_template"] == "GYX WEATHER/W1AW//"
 
 
 @pytest.mark.asyncio

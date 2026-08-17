@@ -131,7 +131,7 @@ async def test_format_rri_strip_gyx_car_skywarn_matches_canonical_string(client,
     form_id = await _create_form(client, owner, "GYX-CAR-SKYWARN", values)
     form = await _fetch_form(db, form_id)
 
-    assert format_form(form).startswith("GYX-CAR WEATHER/08-04-2026/1200L/W1ABC/NA/TRAINED SPOTTER/PORTLAND/ME GYX/")
+    assert format_form(form).startswith("GYX WEATHER/08-04-2026/1200L/W1ABC/NA/TRAINED SPOTTER/PORTLAND/ME GYX/")
     assert format_form(form).endswith("//")
     # No "/ /" section breaks in GYX-CAR's spec -- one flat field sequence.
     assert " / " not in format_form(form).replace("/ /", "")

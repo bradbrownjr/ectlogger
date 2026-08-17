@@ -736,7 +736,7 @@ both, and `FormDefinitionResponse` publishes what it returns as
 pinned builtins: WXOBS and GYX-CAR-SKYWARN keep their layout in Python
 (`_STRIP_SPECS`), so their stored `starts_new_section` flags are all false and
 their keyword is not always the form_type (GYX-CAR-SKYWARN transmits as
-`GYX-CAR WEATHER`). The response stamps the real layout on; for a dynamically
+`GYX WEATHER`). The response stamps the real layout on; for a dynamically
 defined type it is a no-op, since the layout came from those flags to begin
 with.
 

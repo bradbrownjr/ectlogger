@@ -21,7 +21,7 @@
       "is_required": true,
       "max_length": 6,
       "default_now": "%H%ML",
-      "description": "HHMM followed by L for local time",
+      "description": "HHMM followed by L for local time or Z for Zulu",
       "sort_order": 20
     },
     {
@@ -61,10 +61,11 @@
     },
     {
       "name": "state_cwa",
-      "label": "State & CWA",
+      "label": "State",
       "field_type": "text",
       "is_required": true,
       "max_length": 20,
+      "description": "ME, NH, OA",
       "sort_order": 70
     },
     {

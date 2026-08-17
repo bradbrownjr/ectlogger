@@ -1610,7 +1610,7 @@ class FormDefinitionResponse(BaseModel):
     # RRI strip types only (null on every other output_format): the leading
     # keyword of the canonical slash-delimited string. Usually the form_type
     # itself, but not always -- GYX-CAR-SKYWARN goes on the air as
-    # "GYX-CAR WEATHER". Published so the composer can build the same string
+    # "GYX WEATHER". Published so the composer can build the same string
     # rri_strip.format_rri_strip() will.
     strip_keyword: Optional[str] = None
     fields: List[FormDefinitionFieldResponse] = Field(default_factory=list)

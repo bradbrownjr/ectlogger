@@ -38,7 +38,7 @@ export interface FormDefinition {
   output_format: string;
   // RRI strip types only: the leading keyword of the canonical
   // slash-delimited string, which is not always the form_type
-  // (GYX-CAR-SKYWARN transmits as "GYX-CAR WEATHER"). Supplied by the
+  // (GYX-CAR-SKYWARN transmits as "GYX WEATHER"). Supplied by the
   // backend so the composer's live strip preview matches exactly what
   // format_rri_strip() will store. Null for every other output_format.
   strip_keyword?: string | null;

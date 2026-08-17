@@ -73,7 +73,7 @@ _GYX_CAR_SKYWARN_SECTIONS: List[List[str]] = [
 
 _STRIP_SPECS: Dict[str, Tuple[str, List[List[str]]]] = {
     'WXOBS': ('WXOBS', _WXOBS_SECTIONS),
-    'GYX-CAR-SKYWARN': ('GYX-CAR WEATHER', _GYX_CAR_SKYWARN_SECTIONS),
+    'GYX-CAR-SKYWARN': ('GYX WEATHER', _GYX_CAR_SKYWARN_SECTIONS),
 }
 
 _KEYWORD_TO_FORM_TYPE = {keyword: form_type for form_type, (keyword, _sections) in _STRIP_SPECS.items()}
@@ -166,7 +166,7 @@ def parse_rri_strip(text: str) -> Dict[str, Any]:
         return {
             'form_type': 'unknown',
             'fields': {},
-            'warnings': ['first field does not match a known RRI strip keyword (WXOBS, GYX-CAR WEATHER)'],
+            'warnings': ['first field does not match a known RRI strip keyword (WXOBS, GYX WEATHER)'],
             'unparsed_lines': [text.strip()],
             'raw_text': text,
         }

@@ -4,6 +4,14 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# August 17, 2026
+
+## Bug Fixes
+
+* **Traffic: GYX/CAR SKYWARN strip now recognized correctly** — A strip pasted straight from the current GYX SKYWARN reporting tool starts with "GYX WEATHER," which the strip type didn't recognize, so those reports landed as an unrecognized strip instead of auto-filling into the named fields. Pasting one now correctly identifies it and fills every field.
+
+---
+
 # August 14, 2026
 
 ## Improvements

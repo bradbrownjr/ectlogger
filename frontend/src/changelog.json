@@ -1,6 +1,22 @@
 {
-  "version": "2026.08.14c",
+  "version": "2026.08.17",
   "entries": [
+    {
+      "version": "2026.08.17",
+      "date": "2026-08-17",
+      "sections": [
+        {
+          "title": "Bug Fixes",
+          "type": "bugfix",
+          "items": [
+            {
+              "text": "Traffic: GYX/CAR SKYWARN strip now recognized correctly — a strip pasted straight from the current GYX SKYWARN reporting tool starts with \"GYX WEATHER,\" which the strip type didn't recognize, so those reports landed as an unrecognized strip instead of auto-filling into the named fields. Pasting one now correctly identifies it and fills every field.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.08.14c",
       "date": "2026-08-14",
