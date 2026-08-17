@@ -1677,6 +1677,7 @@ class TrafficLogEntryCreate(BaseModel):
     path_name: Optional[str] = Field(None, max_length=200)
     handed_to: Optional[str] = Field(None, max_length=200)
     handed_to_user_id: Optional[int] = None
+    handled_by: Optional[str] = Field(None, max_length=200)
     net_id: Optional[int] = None
     occurred_at: Optional[datetime] = None
     note: Optional[str] = Field(None, max_length=2000)
@@ -1698,6 +1699,7 @@ class TrafficLogEntryResponse(BaseModel):
     path_name: Optional[str] = None
     handed_to: Optional[str] = None
     handed_to_user_id: Optional[int] = None
+    handled_by: Optional[str] = None
     reported_by_user_id: Optional[int] = None
     net_id: Optional[int] = None
     note: Optional[str] = None

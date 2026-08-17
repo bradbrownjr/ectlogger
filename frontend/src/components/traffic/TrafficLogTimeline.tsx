@@ -22,6 +22,7 @@ export interface TrafficLogEntry {
   path_name: string | null;
   handed_to: string | null;
   handed_to_user_id: number | null;
+  handled_by: string | null;
   reported_by_user_id: number | null;
   net_id: number | null;
   note: string | null;
@@ -118,8 +119,10 @@ const TrafficLogTimeline: React.FC<TrafficLogTimelineProps> = ({ entries, formCr
               <Typography variant="caption" color="text.secondary" display="block">
                 {formatDateTime(entry.occurred_at)}
               </Typography>
-              {(entry.handed_to || entry.path_name) && (
+              {(entry.handled_by || entry.handed_to || entry.path_name) && (
                 <Typography variant="body2">
+                  {entry.handled_by ? `By ${entry.handled_by}` : ''}
+                  {entry.handled_by && (entry.handed_to || entry.path_name) ? ' — ' : ''}
                   {entry.handed_to ? `To ${entry.handed_to}` : ''}
                   {entry.handed_to && entry.path_name ? ' ' : ''}
                   {entry.path_name ? `via ${entry.path_name}` : ''}

@@ -776,7 +776,9 @@ If you already have the plaintext of a radiogram, ICS-213 message, or RRI strip 
 
 ### Logging what happens next
 
-Every piece of traffic has a chain of custody: a timeline of who touched it and what they did (originated, received, relayed, delivered, serviced, or cancelled). As you relay or deliver a message, log the handoff so the chain stays accurate — this is what lets a net's NCS or logger answer "what happened to that message?" after the net closes, and it's what keeps your **inbox** honest: a piece of traffic you're still holding stays visible there until you log that it moved on. The **Log a Handoff** dialog's "Handed to" field starts pre-filled with your own callsign, since the common case is logging that you handled the message yourself — overwrite it when you're instead logging a handoff someone else verbally reported to you.
+Every piece of traffic has a chain of custody: a timeline of who touched it and what they did (originated, received, relayed, delivered, serviced, or cancelled). As you relay or deliver a message, log the handoff so the chain stays accurate — this is what lets a net's NCS or logger answer "what happened to that message?" after the net closes, and it's what keeps your **inbox** honest: a piece of traffic you're still holding stays visible there until you log that it moved on.
+
+The **Log a Handoff** dialog has two different "who" fields, since the person entering the log entry isn't always the person who did the work: **Handled by** is who actually performed the action you're logging (originated it, relayed it, delivered it), and starts pre-filled with your own callsign since the common case is logging your own work — overwrite it when you're instead logging a hop someone else verbally reported to you (say, an NCS logging a relay a station reported over the net). **Handed to** is a separate field: who the message went *to*.
 
 ### Your Traffic Inbox
 

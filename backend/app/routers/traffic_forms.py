@@ -101,6 +101,7 @@ async def create_form(
         path_name=initial.path_name if initial else None,
         handed_to=initial.handed_to if initial else None,
         handed_to_user_id=initial.handed_to_user_id if initial else None,
+        handled_by=initial.handled_by if initial else None,
         reported_by_user_id=current_user.id,
         net_id=(initial.net_id if initial else None) or data.net_id,
         note=initial.note if initial else None,

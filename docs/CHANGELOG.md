@@ -10,7 +10,7 @@ All notable changes to ECTLogger are documented here.
 
 * **Traffic: Copy exported text** — A piece of traffic's detail screen now shows the exact text that gets exported to a text file, with a copy icon right next to it, so you can hand it to whoever needs it without exporting and opening a file first.
 
-* **Traffic: Handoff defaults to you** — Log a Handoff now pre-fills "Handed to" with your own callsign, since you're usually logging that you handled the message yourself; overwrite it when you're instead logging a handoff someone else verbally reported to you.
+* **Traffic: Log who actually handled it** — Log a Handoff now has a "Handled by" field for who performed the action (separate from "Handed to," who it went to), pre-filled with your own callsign since you're usually logging your own work; overwrite it when you're instead logging a hop someone else verbally reported to you, like an NCS logging a relay a station reported over the net.
 
 ## Bug Fixes
 

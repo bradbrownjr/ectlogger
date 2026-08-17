@@ -57,6 +57,7 @@ async def append_log_entry(
         path_name=data.path_name,
         handed_to=data.handed_to,
         handed_to_user_id=data.handed_to_user_id,
+        handled_by=data.handled_by,
         reported_by_user_id=current_user.id,
         net_id=data.net_id,
         note=data.note,

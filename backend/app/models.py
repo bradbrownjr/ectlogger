@@ -557,7 +557,17 @@ class TrafficLogEntry(Base):
     handed_to_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"),
                                nullable=True, index=True)
 
-    # Who asserted this entry. Distinguishes first-hand from second-hand records.
+    # Who actually performed this hop (took the message). Free text, distinct
+    # from reported_by_user_id below: the common case is the entering operator
+    # logging their own action, but e.g. an NCS often logs a hop a relay
+    # station reported verbally over the net -- handled_by records that
+    # station, while reported_by_user_id still records the NCS as whoever
+    # entered it. Purely descriptive; does not feed held_by_user_id.
+    handled_by = Column(String(200), nullable=True)
+
+    # Who asserted this entry (i.e. who is logged into ECTLogger entering it).
+    # Always the current user server-side, never client-supplied -- this is an
+    # audit column, not a claim about who did the work (see handled_by above).
     reported_by_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"),
                                  nullable=True, index=True)
     # The net this hop happened on, when it was an ECTLogger-logged net.

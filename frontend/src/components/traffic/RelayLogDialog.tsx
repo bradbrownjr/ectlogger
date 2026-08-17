@@ -18,16 +18,20 @@ import { useAuth } from '../../contexts/AuthContext';
 // ========== RelayLogDialog ==========
 // Appends one hop to a form's chain of custody via POST /traffic/forms/{id}/log.
 // Follows docs/concepts/TRAFFIC-HANDLING-DESIGN.md section 3.3/4.3: action
-// select, method select (enum), path name (free text), handed-to (free text
-// with an optional account autocomplete reusing the same directory-picker
-// pattern as NCSStaffRosterTab.tsx), occurred-at (defaults to now, editable),
-// note. The chain is append-only -- this dialog only ever creates a new
-// entry, never edits or removes one.
+// select, method select (enum), handled-by (free text, who actually did the
+// hop), path name (free text), handed-to (free text with an optional account
+// autocomplete reusing the same directory-picker pattern as
+// NCSStaffRosterTab.tsx), occurred-at (defaults to now, editable), note. The
+// chain is append-only -- this dialog only ever creates a new entry, never
+// edits or removes one.
 //
-// "Handed to" defaults to the logged-in operator's own callsign, since the
-// common case is self-service ("I'm logging that I handled this"); it's a
-// plain editable text field so it's overwritten freely when the operator is
-// instead logging a hop someone else verbally reported to them.
+// "Handled by" defaults to the logged-in operator's own callsign, since the
+// common case is self-service ("I'm logging that I did this"); it stays a
+// plain editable text field so it's overwritten when the operator is instead
+// logging a hop someone else verbally reported to them (e.g. NCS logging a
+// relay a station reported over the net). This is distinct from "Handed to"
+// below, which is who the message went TO -- handled_by is who performed the
+// action being logged, not its recipient.
 
 const ACTIONS = [
   { value: 'originated', label: 'Originated' },
@@ -75,6 +79,7 @@ const RelayLogDialog: React.FC<RelayLogDialogProps> = ({ open, formId, defaultAc
   const [action, setAction] = useState(defaultAction || 'relayed');
   const [method, setMethod] = useState('');
   const [methodNote, setMethodNote] = useState('');
+  const [handledBy, setHandledBy] = useState('');
   const [pathName, setPathName] = useState('');
   const [handedTo, setHandedTo] = useState('');
   const [handedToUser, setHandedToUser] = useState<DirectoryUser | null>(null);
@@ -89,8 +94,9 @@ const RelayLogDialog: React.FC<RelayLogDialogProps> = ({ open, formId, defaultAc
     setAction(defaultAction || 'relayed');
     setMethod('');
     setMethodNote('');
+    setHandledBy(user?.callsign || '');
     setPathName('');
-    setHandedTo(user?.callsign || '');
+    setHandedTo('');
     setHandedToUser(null);
     setOccurredAt(nowForInput());
     setNote('');
@@ -113,6 +119,7 @@ const RelayLogDialog: React.FC<RelayLogDialogProps> = ({ open, formId, defaultAc
         action,
         method: method || undefined,
         method_note: method === 'other' ? methodNote.trim() : undefined,
+        handled_by: handledBy.trim() || undefined,
         path_name: pathName.trim() || undefined,
         handed_to: handedToUser
           ? `${handedToUser.callsign || ''}${handedToUser.name ? ` (${handedToUser.name})` : ''}`.trim()
@@ -175,6 +182,17 @@ const RelayLogDialog: React.FC<RelayLogDialogProps> = ({ open, formId, defaultAc
               inputProps={{ maxLength: 255 }}
             />
           )}
+
+          <TextField
+            label="Handled by"
+            value={handledBy}
+            onChange={(e) => setHandledBy(e.target.value)}
+            placeholder="Callsign of whoever did this"
+            fullWidth
+            size="small"
+            helperText="Defaults to you — change it if someone else told you they did this"
+            inputProps={{ maxLength: 200 }}
+          />
 
           <TextField
             label="Net / path name"

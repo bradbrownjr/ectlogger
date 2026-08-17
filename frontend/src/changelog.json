@@ -1,8 +1,8 @@
 {
-  "version": "2026.08.17b",
+  "version": "2026.08.17c",
   "entries": [
     {
-      "version": "2026.08.17b",
+      "version": "2026.08.17c",
       "date": "2026-08-17",
       "sections": [
         {
@@ -14,7 +14,7 @@
               "userImpact": true
             },
             {
-              "text": "Traffic: Handoff defaults to you — Log a Handoff now pre-fills \"Handed to\" with your own callsign, since you're usually logging that you handled the message yourself; overwrite it when you're instead logging a handoff someone else verbally reported to you.",
+              "text": "Traffic: Log who actually handled it — Log a Handoff now has a \"Handled by\" field for who performed the action (separate from \"Handed to,\" who it went to), pre-filled with your own callsign since you're usually logging your own work; overwrite it when you're instead logging a hop someone else verbally reported to you, like an NCS logging a relay a station reported over the net.",
               "userImpact": true
             }
           ]
