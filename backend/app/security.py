@@ -6,31 +6,42 @@ import re
 from typing import Optional
 from fastapi import Request
 
+# Every proxy hop we run ourselves. The backend binds 127.0.0.1 in production
+# (see copilot-instructions.md's deployment notes), so Caddy is always the
+# immediate peer and is the only thing that can reach the backend directly.
+_TRUSTED_PROXIES = {"127.0.0.1", "::1"}
+
 
 def get_client_ip(request: Request) -> str:
     """
-    Extract the client IP address from a request.
-    Handles reverse proxy headers (X-Forwarded-For, X-Real-IP).
-    
-    Returns the client's real IP address for logging and Fail2Ban.
+    Extract the client IP address from a request, for logging and Fail2Ban.
+
+    Only trusts X-Forwarded-For / X-Real-IP when the immediate peer is one of
+    our own reverse proxies, and takes the LAST X-Forwarded-For entry rather
+    than the first. Caddy's reverse_proxy *appends* the peer it actually saw
+    to whatever X-Forwarded-For the client sent rather than replacing it, so
+    a request from 9.9.9.9 carrying a forged "X-Forwarded-For: 1.2.3.4"
+    arrives here as "1.2.3.4, 9.9.9.9". Reading the first entry lets an
+    attacker choose which IP gets banned; the rightmost entry is the one our
+    own proxy vouched for. If the peer isn't a trusted proxy, the headers are
+    ignored entirely and the socket address is used, since a direct
+    connection has no reason to be believed about who it is.
     """
-    # Check X-Forwarded-For header (set by reverse proxies)
+    peer = request.client.host if request.client else None
+    if peer not in _TRUSTED_PROXIES:
+        return peer or "unknown"
+
     forwarded_for = request.headers.get("X-Forwarded-For")
     if forwarded_for:
-        # X-Forwarded-For can contain multiple IPs: client, proxy1, proxy2
-        # The first IP is the original client
-        return forwarded_for.split(",")[0].strip()
-    
-    # Check X-Real-IP header (set by nginx)
+        hops = [hop.strip() for hop in forwarded_for.split(",") if hop.strip()]
+        if hops:
+            return hops[-1]
+
     real_ip = request.headers.get("X-Real-IP")
     if real_ip:
         return real_ip.strip()
-    
-    # Fall back to direct client IP
-    if request.client:
-        return request.client.host
-    
-    return "unknown"
+
+    return peer or "unknown"
 
 
 def sanitize_html(text: Optional[str]) -> Optional[str]:
