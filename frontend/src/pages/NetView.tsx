@@ -704,7 +704,10 @@ const NetView: React.FC = () => {
     if (mapPopout.open()) map.onClose();
     else setToastMessage('Popup blocked — please allow popups for this site.');
   };
-  const coveragePopout = usePoppedOutWindow(`/nets/${netId}/pane/coverage`, `ectlogger-coverage-${netId}`, 'coverage', 700, 500);
+  // Wide enough by default to fit the coverage table's five columns without
+  // wrapping headers -- matches the floating window's default in
+  // NetViewSidePanels.tsx.
+  const coveragePopout = usePoppedOutWindow(`/nets/${netId}/pane/coverage`, `ectlogger-coverage-${netId}`, 'coverage', 900, 500);
   const handlePopOutCoverage = () => {
     if (coveragePopout.open()) coverage.onClose();
     else setToastMessage('Popup blocked — please allow popups for this site.');

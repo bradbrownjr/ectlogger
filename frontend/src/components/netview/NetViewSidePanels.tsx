@@ -430,7 +430,10 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
           onAttach={onAttachCoverage}
           onClose={onCloseCoverage}
           onPopOut={handleFloatToWindowCoverage}
-          defaultWidth={500}
+          // Wide enough by default to fit Reporter/Link Type/Heard
+          // Station/Frequency/Reported without wrapping - matches Traffic's
+          // default just below.
+          defaultWidth={900}
           defaultHeight={450}
           minWidth={350}
           minHeight={250}

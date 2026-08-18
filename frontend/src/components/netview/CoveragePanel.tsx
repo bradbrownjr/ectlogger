@@ -14,12 +14,15 @@ import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 import MapIcon from '@mui/icons-material/Map';
+import DownloadIcon from '@mui/icons-material/Download';
 import MinimizeIcon from '@mui/icons-material/Minimize';
 import CropSquareIcon from '@mui/icons-material/CropSquare';
 import PictureInPictureAltIcon from '@mui/icons-material/PictureInPictureAlt';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import CloseIcon from '@mui/icons-material/Close';
-import CoverageReport, { CanHearReportEntry } from './CoverageReport';
+import { useAuth } from '../../contexts/AuthContext';
+import { formatDateTime } from '../../utils/dateUtils';
+import CoverageReport, { CanHearReportEntry, buildCoverageRows, formatFrequencyCell } from './CoverageReport';
 
 // ========== STATION COVERAGE SIDE PANEL ==========
 // Header-chrome wrapper around CoverageReport (Phase 3 of the "can hear"
@@ -80,6 +83,39 @@ const CoveragePanel: React.FC<CoveragePanelProps> = ({
   // without hiding anything else - the two must not share state, or a click
   // would silently hide rows with no visible indication or way back.
   const [searchText, setSearchText] = useState('');
+  const { user } = useAuth();
+
+  // Exports exactly what's currently visible in the table (same two-way
+  // detection and callsign filter as CoverageReport itself, via the shared
+  // buildCoverageRows helper) rather than the raw unfiltered report list.
+  const handleExportCsv = () => {
+    const rows = buildCoverageRows(reports, searchText || undefined);
+    const escape = (value: string) => `"${value.replace(/"/g, '""')}"`;
+    const header = ['Reporter', 'Link Type', 'Heard Station', 'Frequency', 'Reported'];
+    const lines = [header.map(escape).join(',')];
+    rows.forEach((r) => {
+      lines.push(
+        [
+          r.reporter_callsign,
+          r.isTwoWay ? 'Two-way' : 'One-way',
+          r.heard_callsign,
+          formatFrequencyCell(r, frequencyLabels || {}),
+          formatDateTime(r.reported_at, user?.prefer_utc || false),
+        ]
+          .map(escape)
+          .join(',')
+      );
+    });
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `station-coverage-net-${netId}-${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  };
 
   return (
     <Paper
@@ -144,6 +180,16 @@ const CoveragePanel: React.FC<CoveragePanelProps> = ({
                         sx={{ p: 0.25 }}
                       >
                         <HighlightOffIcon sx={{ fontSize: 14 }} />
+                      </IconButton>
+                    )}
+                    {reports.length > 0 && (
+                      <IconButton
+                        size="small"
+                        onClick={handleExportCsv}
+                        title="Export to CSV"
+                        sx={{ p: 0.25 }}
+                      >
+                        <DownloadIcon sx={{ fontSize: 14 }} />
                       </IconButton>
                     )}
                     {onShowOnMap && (

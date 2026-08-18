@@ -98,7 +98,7 @@ function edgeKey(reporterId: number, heardId: number, frequencyId: number | null
 // parentheses. A report saved with no specific frequency but a
 // server-inferred band (single-frequency net) shows "Net frequency (2m)"
 // rather than a bare "—", since the band is still useful information.
-function formatFrequencyCell(report: CanHearReportEntry, frequencyLabels: Record<number, string>): string {
+export function formatFrequencyCell(report: CanHearReportEntry, frequencyLabels: Record<number, string>): string {
   let label: string;
   if (report.frequency_id != null) {
     label = frequencyLabels[report.frequency_id] || '—';
@@ -108,6 +108,34 @@ function formatFrequencyCell(report: CanHearReportEntry, frequencyLabels: Record
     label = '—';
   }
   return report.band ? `${label} (${report.band})` : label;
+}
+
+// Two-way/one-way detection + optional callsign filter, factored out of the
+// table's own useMemo so CoveragePanel's CSV export can build the exact same
+// rows (including which pairs are reciprocal) without duplicating the logic.
+// Exact frequency_id match only - a report logged with no specific frequency
+// is never assumed to be the same edge as one logged against an explicit
+// frequency on a multi-frequency net, since that would be guessing which
+// frequency it was actually heard on.
+export function buildCoverageRows(
+  reports: CanHearReportEntry[],
+  filterCallsign?: string
+): (CanHearReportEntry & { isTwoWay: boolean })[] {
+  const allKeys = new Set(
+    reports.map((r) => edgeKey(r.reporter_check_in_id, r.heard_check_in_id, r.frequency_id))
+  );
+  const withTwoWay = reports.map((r) => {
+    const reverseKey = edgeKey(r.heard_check_in_id, r.reporter_check_in_id, r.frequency_id);
+    return { ...r, isTwoWay: allKeys.has(reverseKey) };
+  });
+
+  if (!filterCallsign) return withTwoWay;
+  const needle = filterCallsign.toLowerCase();
+  return withTwoWay.filter(
+    (r) =>
+      r.reporter_callsign.toLowerCase().includes(needle) ||
+      r.heard_callsign.toLowerCase().includes(needle)
+  );
 }
 
 const CoverageReport: React.FC<CoverageReportProps> = ({
@@ -133,23 +161,7 @@ const CoverageReport: React.FC<CoverageReportProps> = ({
     // Reciprocity is computed over the FULL unfiltered report list first -
     // filtering before this would make a genuinely two-way edge look
     // one-way whenever its partner's callsign is filtered out.
-    const allKeys = new Set(
-      reports.map((r) => edgeKey(r.reporter_check_in_id, r.heard_check_in_id, r.frequency_id))
-    );
-    const withTwoWay = reports.map((r) => {
-      const reverseKey = edgeKey(r.heard_check_in_id, r.reporter_check_in_id, r.frequency_id);
-      return { ...r, isTwoWay: allKeys.has(reverseKey) };
-    });
-
-    const filtered = filterCallsign
-      ? withTwoWay.filter((r) => {
-          const needle = filterCallsign.toLowerCase();
-          return (
-            r.reporter_callsign.toLowerCase().includes(needle) ||
-            r.heard_callsign.toLowerCase().includes(needle)
-          );
-        })
-      : withTwoWay;
+    const filtered = buildCoverageRows(reports, filterCallsign);
 
     const sorted = [...filtered].sort((a, b) => {
       let cmp = 0;
