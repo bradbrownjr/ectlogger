@@ -1515,6 +1515,13 @@ class CanHearReportSave(BaseModel):
     operating_position: Optional[str] = Field(None, max_length=50)
 
 
+class CanHearReportFrequencyUpdate(BaseModel):
+    """Corrects a single already-recorded report's frequency - e.g. one
+    logged with 'no specific frequency' before the reporter's actual
+    frequency was known. Does not touch which stations were heard."""
+    frequency_id: Optional[int] = None
+
+
 class CoverageStationResponse(BaseModel):
     """Phase 5 personal coverage rollup entry (see docs/ROADMAP.md
     "Relaying & Propagation Mapping", Profile map section). One row per

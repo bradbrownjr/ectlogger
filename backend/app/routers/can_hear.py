@@ -20,7 +20,7 @@ from typing import List, Optional
 from datetime import datetime
 from app.database import get_db
 from app.models import CanHearReport, CheckIn, Frequency, Net, User, net_frequencies
-from app.schemas import CanHearReportResponse, CanHearReportSave
+from app.schemas import CanHearReportResponse, CanHearReportSave, CanHearReportFrequencyUpdate
 from app.dependencies import get_current_user
 from app.permissions import check_net_permission
 from app.band_utils import band_from_frequency_string
@@ -227,3 +227,74 @@ async def save_can_hear_report(
     refreshed_reports = result.scalars().all()
 
     return await _build_report_responses(db, net, refreshed_reports)
+
+
+@router.patch("/{net_id}/can-hear-reports/{report_id}", response_model=CanHearReportResponse)
+async def update_can_hear_report_frequency(
+    net_id: int,
+    report_id: int,
+    payload: CanHearReportFrequencyUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Correct a single report's frequency after the fact - e.g. one logged
+    with 'no specific frequency' (see the single-list dialog's dropdown)
+    before it's clear which of the net's frequencies it was actually on.
+    Does not touch heard_check_in_id or reported_at, and unlike the reconcile
+    endpoint above this is scoped to one report, not a full (reporter,
+    frequency) set."""
+    result = await db.execute(select(Net).options(selectinload(Net.frequencies)).where(Net.id == net_id))
+    net = result.scalar_one_or_none()
+    if not net:
+        raise HTTPException(status_code=404, detail="Net not found")
+
+    result = await db.execute(select(CanHearReport).where(CanHearReport.id == report_id))
+    report = result.scalar_one_or_none()
+    if not report or report.net_id != net_id:
+        raise HTTPException(status_code=404, detail="Coverage report not found")
+
+    result = await db.execute(select(CheckIn).where(CheckIn.id == report.reporter_check_in_id))
+    reporter_check_in = result.scalar_one_or_none()
+
+    # Same self-report-or-staff rule as saving a report in the first place -
+    # the reporting station (or whoever is currently allowed to report on
+    # its behalf) can correct its own past entry.
+    is_own_check_in = bool(reporter_check_in) and reporter_check_in.user_id == current_user.id
+    self_report_allowed = is_own_check_in and net.self_can_hear_enabled is not False
+    if not self_report_allowed and not await check_net_permission(db, net, current_user, ["NCS", "LOGGER", "RELAY"]):
+        raise HTTPException(status_code=403, detail="Not authorized to edit this coverage report")
+
+    if payload.frequency_id is not None:
+        result = await db.execute(
+            select(net_frequencies.c.frequency_id).where(
+                net_frequencies.c.net_id == net_id,
+                net_frequencies.c.frequency_id == payload.frequency_id,
+            )
+        )
+        if result.scalar_one_or_none() is None:
+            raise HTTPException(status_code=400, detail="Frequency does not belong to this net")
+
+    report.frequency_id = payload.frequency_id
+
+    try:
+        await db.commit()
+    except IntegrityError:
+        # A report already exists for (reporter, heard, new frequency) -
+        # can't merge, so surface the conflict instead of silently dropping
+        # one of the two.
+        await db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="A report already exists for this station pair on that frequency."
+        )
+
+    from app.main import manager
+    import datetime as dt
+    await manager.broadcast({
+        "type": "can_hear_changed",
+        "data": {"net_id": net_id, "reporter_check_in_id": report.reporter_check_in_id},
+        "timestamp": dt.datetime.utcnow().isoformat()
+    }, net_id)
+
+    responses = await _build_report_responses(db, net, [report])
+    return responses[0]

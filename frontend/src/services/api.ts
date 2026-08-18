@@ -139,6 +139,8 @@ export const canHearApi = {
     api.get(`/nets/${netId}/can-hear-reports`),
   save: (netId: number, payload: { reporter_check_in_id: number; heard_check_in_ids: number[]; frequency_id?: number | null; operating_position?: string | null }) =>
     api.put(`/nets/${netId}/can-hear-reports`, payload),
+  updateFrequency: (netId: number, reportId: number, frequencyId: number | null) =>
+    api.patch(`/nets/${netId}/can-hear-reports/${reportId}`, { frequency_id: frequencyId }),
 };
 
 // Template API

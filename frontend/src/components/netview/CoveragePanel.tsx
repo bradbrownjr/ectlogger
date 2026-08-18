@@ -22,6 +22,8 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import CloseIcon from '@mui/icons-material/Close';
 import { useAuth } from '../../contexts/AuthContext';
 import { formatDateTime } from '../../utils/dateUtils';
+import { canHearApi } from '../../services/api';
+import { getErrorMessage } from '../../utils/apiErrors';
 import CoverageReport, { CanHearReportEntry, buildCoverageRows, formatFrequencyCell } from './CoverageReport';
 
 // ========== STATION COVERAGE SIDE PANEL ==========
@@ -56,6 +58,15 @@ interface CoveragePanelProps {
   minimized?: boolean;
   onMinimize?: () => void;
   onRestore?: () => void;
+  // Frequency-correction dropdown in the table below - all three needed
+  // together, since without a permission gate or somewhere to send the
+  // request the dropdown has nothing safe to do. canManage mirrors
+  // NetView.tsx's canReportCanHear (NCS/Logger/Relay); a report's own
+  // reporter can also correct it regardless of canManage.
+  netFrequencyOptions?: { id: number; label: string }[];
+  canManage?: boolean;
+  currentUserId?: number;
+  onToast?: (message: string) => void;
 }
 
 const CoveragePanel: React.FC<CoveragePanelProps> = ({
@@ -72,6 +83,10 @@ const CoveragePanel: React.FC<CoveragePanelProps> = ({
   minimized,
   onMinimize,
   onRestore,
+  netFrequencyOptions,
+  canManage,
+  currentUserId,
+  onToast,
 }) => {
   // Local UI toggle only - whether the title is replaced by the filter
   // TextField.
@@ -84,6 +99,28 @@ const CoveragePanel: React.FC<CoveragePanelProps> = ({
   // would silently hide rows with no visible indication or way back.
   const [searchText, setSearchText] = useState('');
   const { user } = useAuth();
+
+  // Staff can correct any report; a station can also correct its own past
+  // entry, matching the backend's self-report-or-staff rule. reported_by_user_id
+  // is the closest client-side signal to "whoever submitted this" - the
+  // reporter's *current* user_id isn't loaded onto CanHearReportEntry, and
+  // the backend re-checks the authoritative rule anyway (including whether
+  // self-reporting is still enabled for the net) before applying the change.
+  const canEditFrequency = (report: CanHearReportEntry) =>
+    !!canManage || (!!currentUserId && report.reported_by_user_id === currentUserId);
+
+  // State is intentionally NOT patched optimistically - the can_hear_changed
+  // WebSocket broadcast (received by every viewer, including this one)
+  // refreshes the parent's report list, matching CanHearDialog's own save
+  // flow. A 403/409 surfaces via onToast and the dropdown just reverts to
+  // its last known value once that refresh arrives.
+  const handleFrequencyChange = async (reportId: number, frequencyId: number | null) => {
+    try {
+      await canHearApi.updateFrequency(netId, reportId, frequencyId);
+    } catch (error: any) {
+      onToast?.(getErrorMessage(error, 'Failed to update this report\'s frequency'));
+    }
+  };
 
   // Exports exactly what's currently visible in the table (same two-way
   // detection and callsign filter as CoverageReport itself, via the shared
@@ -266,6 +303,9 @@ const CoveragePanel: React.FC<CoveragePanelProps> = ({
             filterCallsign={searchText || undefined}
             highlightCallsign={highlightedCallsign ?? undefined}
             onCallsignClick={(cs) => onHighlightCallsign(highlightedCallsign === cs ? null : cs)}
+            netFrequencyOptions={netFrequencyOptions}
+            canEditFrequency={canEditFrequency}
+            onFrequencyChange={handleFrequencyChange}
           />
         </Box>
       )}

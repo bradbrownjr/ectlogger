@@ -16,6 +16,10 @@
             {
               "text": "Net View: Export coverage reports to CSV — the Station Coverage panel is wider by default so every column, including the timestamp, fits without wrapping, and a new download button next to the search and map icons lets you export the current report to a CSV file for use in a spreadsheet.",
               "userImpact": true
+            },
+            {
+              "text": "Net View: Correct a coverage report's frequency — if a station-to-station coverage report was logged without picking a specific frequency (or the wrong one), NCS, Logger, and Relay can now fix it right in the Station Coverage panel's Frequency column, and any station can correct its own past reports the same way.",
+              "userImpact": true
             }
           ]
         }

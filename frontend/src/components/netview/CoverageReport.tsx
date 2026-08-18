@@ -1,9 +1,11 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   alpha,
   Box,
   Chip,
+  MenuItem,
   Paper,
+  Select,
   Table,
   TableBody,
   TableCell,
@@ -83,6 +85,16 @@ interface CoverageReportProps {
   // state (CoveragePanel), not here - this component just reports which
   // callsign was clicked.
   onCallsignClick?: (callsign: string) => void;
+  // The net's own frequencies, for the inline frequency-correction dropdown
+  // below - only shown at all when this is non-empty AND onFrequencyChange
+  // is supplied. Labels are pre-formatted with band, e.g. "146.520 FM (2m)".
+  netFrequencyOptions?: { id: number; label: string }[];
+  // Per-row gate for the correction dropdown - the panel decides who may
+  // edit a given report (staff, or the station that reported it) since that
+  // depends on net settings and the current user, neither of which this
+  // presentational component knows about.
+  canEditFrequency?: (report: CanHearReportEntry) => boolean;
+  onFrequencyChange?: (reportId: number, frequencyId: number | null) => Promise<void>;
 }
 
 // A directional edge is part of a confirmed two-way pair when the reverse
@@ -145,9 +157,16 @@ const CoverageReport: React.FC<CoverageReportProps> = ({
   filterCallsign,
   highlightCallsign,
   onCallsignClick,
+  netFrequencyOptions,
+  canEditFrequency,
+  onFrequencyChange,
 }) => {
   const theme = useTheme();
   const { user } = useAuth();
+  // Which report's dropdown is mid-save, so its Select can disable itself -
+  // there's no optimistic update here (see onFrequencyChange's own comment),
+  // so this is the only feedback the user gets while the PATCH is in flight.
+  const [savingReportId, setSavingReportId] = useState<number | null>(null);
 
   // Default sort: reported_at desc. Link type (two-way/one-way) also
   // defaults to desc so two-way (the more informative confirmation) sorts
@@ -325,7 +344,37 @@ const CoverageReport: React.FC<CoverageReportProps> = ({
                   {renderCallsign(r.heard_callsign)}
                 </TableCell>
                 {showFrequencyColumn && (
-                  <TableCell>{formatFrequencyCell(r, frequencyLabels)}</TableCell>
+                  <TableCell>
+                    {netFrequencyOptions && netFrequencyOptions.length > 0 && onFrequencyChange && canEditFrequency?.(r) ? (
+                      <Select
+                        size="small"
+                        variant="standard"
+                        value={r.frequency_id ?? ''}
+                        disabled={savingReportId === r.id}
+                        onChange={async (e) => {
+                          const newFrequencyId = e.target.value === '' ? null : Number(e.target.value);
+                          setSavingReportId(r.id);
+                          try {
+                            await onFrequencyChange(r.id, newFrequencyId);
+                          } finally {
+                            setSavingReportId(null);
+                          }
+                        }}
+                        sx={{ fontSize: '0.875rem' }}
+                      >
+                        <MenuItem value="">
+                          <em>No specific frequency</em>
+                        </MenuItem>
+                        {netFrequencyOptions.map((opt) => (
+                          <MenuItem key={opt.id} value={opt.id}>
+                            {opt.label}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    ) : (
+                      formatFrequencyCell(r, frequencyLabels)
+                    )}
+                  </TableCell>
                 )}
                 <TableCell sx={{ whiteSpace: 'nowrap', fontSize: '0.8rem' }}>
                   {formatTimeWithDate(r.reported_at, user?.prefer_utc || false)}

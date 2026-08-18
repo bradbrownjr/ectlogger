@@ -102,6 +102,12 @@ interface NetViewSidePanelsProps {
   highlightedCallsign: string | null;
   setHighlightedCallsign: (callsign: string | null) => void;
   onShowCoverageOnMap: () => void;
+  // Who may correct an existing report's frequency in the Coverage panel -
+  // mirrors NetView.tsx's own canReportCanHear (NCS/Logger/Relay); distinct
+  // from the plain `canManage` above, which is narrower (owner/admin/NCS
+  // only) and used for other panels' own permission checks.
+  canReportCanHear: boolean;
+  onToast: (message: string) => void;
   // Traffic side panel (Assisted Traffic Handling & Forms). On-demand like
   // Map/Coverage above -- opened from the toolbar's Traffic button, which
   // itself only exists when net.traffic_enabled and the viewer is that net's
@@ -176,6 +182,8 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
   highlightedCallsign,
   setHighlightedCallsign,
   onShowCoverageOnMap,
+  canReportCanHear,
+  onToast,
   currentUserId,
   showTraffic,
   trafficOpen,
@@ -199,6 +207,14 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
   const frequencyLabels = Object.fromEntries(
     (net?.frequencies || []).map((f: any) => [f.id, `${f.frequency || f.network || ''} ${f.mode || ''}`.trim()])
   );
+  // Same frequencies, shaped for CoveragePanel's frequency-correction
+  // dropdown - includes the band suffix (e.g. "(2m)") since that's the
+  // detail that actually distinguishes the net's frequencies at a glance,
+  // matching CanHearDialog.tsx's own frequencyLabel() convention.
+  const netFrequencyOptions = (net?.frequencies || []).map((f: any) => {
+    const base = `${f.frequency || f.network || ''} ${f.mode || ''}`.trim() || f.description || `Frequency #${f.id}`;
+    return { id: f.id, label: f.band ? `${base} (${f.band})` : base };
+  });
 
   const layoutTier = useLayoutTier();
   const { containerRef, getWeight, hasExplicitWeight, startDrag } = useResizableSplit(`${STORAGE_KEYS.RIGHT_PANELS_SPLIT}_${layoutTier}`, 'column');
@@ -299,6 +315,10 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
           minimized={coverageMinimized}
           onMinimize={onMinimizeCoverage}
           onRestore={onRestoreCoverage}
+          netFrequencyOptions={netFrequencyOptions}
+          canManage={canReportCanHear}
+          currentUserId={currentUserId}
+          onToast={onToast}
         />
       ),
     });
@@ -447,6 +467,10 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
             highlightedCallsign={highlightedCallsign}
             onHighlightCallsign={setHighlightedCallsign}
             onShowOnMap={onShowCoverageOnMap}
+            netFrequencyOptions={netFrequencyOptions}
+            canManage={canReportCanHear}
+            currentUserId={currentUserId}
+            onToast={onToast}
           />
         </FloatingWindow>
       )}

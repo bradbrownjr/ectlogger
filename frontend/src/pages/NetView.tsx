@@ -2374,6 +2374,8 @@ const NetView: React.FC = () => {
               onRestoreCoverage={() => setCoverageMinimized(false)}
               coverageOverlayOn={coverageOverlayOn}
               onToggleCoverageOverlay={handleToggleCoverageOverlay}
+              canReportCanHear={canReportCanHear}
+              onToast={setToastMessage}
               highlightedCallsign={highlightedCallsign}
               setHighlightedCallsign={setHighlightedCallsign}
               onShowCoverageOnMap={handleShowCoverageOnMap}

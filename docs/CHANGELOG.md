@@ -10,6 +10,7 @@ All notable changes to ECTLogger are documented here.
 
 * **Net View: Coverage reports now show band** — Station-to-station "can hear" reports and your Profile's coverage map now label (and color-code) each entry by the amateur band it was heard on, like 2m or 40m, blending colors on the map when a station's been heard on more than one, since HF and VHF/UHF propagation behave very differently. On nets with more than one frequency, the "Who can this station hear?" dialog now shows one column per frequency so you can record who you heard on each in a single pass, instead of switching a dropdown and re-checking the list per frequency.
 * **Net View: Export coverage reports to CSV** — The Station Coverage panel is wider by default so every column, including the timestamp, fits without wrapping, and a new download button next to the search and map icons lets you export the current report to a CSV file for use in a spreadsheet.
+* **Net View: Correct a coverage report's frequency** — If a station-to-station coverage report was logged without picking a specific frequency (or the wrong one), NCS, Logger, and Relay can now fix it right in the Station Coverage panel's Frequency column, and any station can correct its own past reports the same way.
 
 ---
 
