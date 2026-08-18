@@ -1,10 +1,11 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { Box, Typography } from '@mui/material';
 import { MapContainer, TileLayer, Marker, Popup, Tooltip } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { parseLocation, geocodeAddress, ParsedLocation } from '../../utils/locationParser';
 import type { CoverageStation } from '../../hooks/useCoverageStations';
+import { bandFillFor, bandTierFor, BandTier, BAND_LEGEND, BAND_UNKNOWN_HEX } from '../../utils/bandColors';
 
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
@@ -38,21 +39,23 @@ const DefaultIcon = L.icon({
 L.Marker.prototype.options.icon = DefaultIcon;
 
 // A confirmation not reconfirmed in this many days is visually flagged as
-// stale (muted marker color plus explicit "N days ago" text) rather than
+// stale (reduced marker opacity plus explicit "N days ago" text) rather than
 // looking identical to a fresh one. The roadmap's "Last heard" section
 // requires this distinction but doesn't specify a number, so 90 days is a
 // reasonable default, not a hardcoded product decision.
 const STALE_DAYS_THRESHOLD = 90;
+const STALE_OPACITY = 0.5;
 
-const FRESH_COLOR = '#2e7d32'; // green - reconfirmed within the threshold
-const STALE_COLOR = '#9e9e9e'; // muted gray - not reconfirmed recently
-
-function createStationIcon(stale: boolean) {
-  const color = stale ? STALE_COLOR : FRESH_COLOR;
+// Marker fill is now band-derived (see bandColors.ts) rather than a
+// fresh/stale color swap - staleness is represented as reduced opacity on
+// the same fill instead, so it never collides with the band color channel.
+function createStationIcon(tiers: BandTier[], stale: boolean) {
+  const color = bandFillFor(tiers);
   return L.divIcon({
     className: 'coverage-marker',
     html: `<div style="
       background-color: ${color};
+      opacity: ${stale ? STALE_OPACITY : 1};
       width: 24px;
       height: 24px;
       border-radius: 50% 50% 50% 0;
@@ -73,7 +76,7 @@ function daysSince(isoDate: string): number {
 }
 
 // Accessibility: staleness must never be color-only, so the actual "N days
-// ago" phrasing always accompanies the marker color, both in the tooltip
+// ago" phrasing always accompanies the marker opacity, both in the tooltip
 // and the popup.
 function formatLastHeard(isoDate: string): string {
   const days = daysSince(isoDate);
@@ -82,7 +85,48 @@ function formatLastHeard(isoDate: string): string {
   return `${days} days ago`;
 }
 
-interface MappedStation extends CoverageStation {
+// One marker per callsign, not per (callsign, band) rollup row - the backend
+// groups by band (users.py get_my_can_hear_coverage) so 2m and 40m
+// confirmations of the same station are two separate CoverageStation
+// entries, but on the map that station is one physical location whose
+// marker should show every band it's been heard on, mixed into one color
+// (see bandColors.ts). perBand keeps the per-band detail for the popup.
+interface GroupedStation {
+  callsign: string;
+  tiers: BandTier[];
+  perBand: CoverageStation[]; // sorted most-recent last_heard first
+  lastHeard: string;
+  totalConfirmations: number;
+  location: string | null;
+}
+
+function groupByCallsign(stations: CoverageStation[]): GroupedStation[] {
+  const byCallsign = new Map<string, CoverageStation[]>();
+  for (const s of stations) {
+    const list = byCallsign.get(s.callsign);
+    if (list) list.push(s);
+    else byCallsign.set(s.callsign, [s]);
+  }
+  return Array.from(byCallsign.entries()).map(([callsign, entries]) => {
+    const perBand = [...entries].sort(
+      (a, b) => new Date(b.last_heard).getTime() - new Date(a.last_heard).getTime()
+    );
+    const mostRecent = perBand[0];
+    const tiers = Array.from(
+      new Set(entries.map((e) => bandTierFor(e.band)).filter((t): t is BandTier => t !== null))
+    );
+    return {
+      callsign,
+      tiers,
+      perBand,
+      lastHeard: mostRecent.last_heard,
+      totalConfirmations: entries.reduce((sum, e) => sum + e.confirmation_count, 0),
+      location: mostRecent.location,
+    };
+  });
+}
+
+interface MappedStation extends GroupedStation {
   parsedLocation: ParsedLocation;
 }
 
@@ -91,12 +135,14 @@ interface CoverageMapProps {
 }
 
 const CoverageMap: React.FC<CoverageMapProps> = ({ stations }) => {
+  const groupedStations = useMemo(() => groupByCallsign(stations), [stations]);
+
   const [mappedStations, setMappedStations] = useState<MappedStation[]>([]);
   const [geocoding, setGeocoding] = useState(true);
   // Keyed off callsign+location so re-geocoding only re-runs when the actual
   // set of stations or their locations changes, not on every parent re-render.
   const stationsKeyRef = useRef<string>('');
-  const stationsKey = stations.map((s) => `${s.callsign}:${s.location ?? ''}`).join('|');
+  const stationsKey = groupedStations.map((s) => `${s.callsign}:${s.location ?? ''}`).join('|');
 
   useEffect(() => {
     if (stationsKeyRef.current === stationsKey) return;
@@ -105,7 +151,7 @@ const CoverageMap: React.FC<CoverageMapProps> = ({ stations }) => {
       setGeocoding(true);
       const results: MappedStation[] = [];
 
-      for (const station of stations) {
+      for (const station of groupedStations) {
         if (!station.location) continue; // No location to plot - skip silently
 
         const parsed = parseLocation(station.location);
@@ -132,7 +178,7 @@ const CoverageMap: React.FC<CoverageMapProps> = ({ stations }) => {
     };
 
     processLocations();
-  }, [stationsKey, stations]);
+  }, [stationsKey, groupedStations]);
 
   if (geocoding) {
     return (
@@ -155,6 +201,12 @@ const CoverageMap: React.FC<CoverageMapProps> = ({ stations }) => {
     mappedStations[0].parsedLocation.lon,
   ];
 
+  // Bands actually present on the map, in legend order - the legend only
+  // lists tiers that could actually appear, plus "unknown" only when at
+  // least one marker has no determinable band.
+  const tiersPresent = new Set(mappedStations.flatMap((s) => s.tiers));
+  const hasUnknown = mappedStations.some((s) => s.tiers.length === 0);
+
   return (
     <Box>
       <Box sx={{ height: 420, width: '100%', borderRadius: 1, overflow: 'hidden' }}>
@@ -164,13 +216,14 @@ const CoverageMap: React.FC<CoverageMapProps> = ({ stations }) => {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
           {mappedStations.map((station) => {
-            const stale = daysSince(station.last_heard) > STALE_DAYS_THRESHOLD;
-            const lastHeardText = formatLastHeard(station.last_heard);
+            const stale = daysSince(station.lastHeard) > STALE_DAYS_THRESHOLD;
+            const lastHeardText = formatLastHeard(station.lastHeard);
+            const bandList = station.perBand.map((e) => e.band || 'unknown band').join(', ');
             return (
               <Marker
                 key={station.callsign}
                 position={[station.parsedLocation.lat, station.parsedLocation.lon]}
-                icon={createStationIcon(stale)}
+                icon={createStationIcon(station.tiers, stale)}
               >
                 {/* Hover on desktop - the one piece of detail the map exists
                     to answer at a glance, per docs/ROADMAP.md Phase 5. */}
@@ -178,6 +231,9 @@ const CoverageMap: React.FC<CoverageMapProps> = ({ stations }) => {
                   <Box>
                     <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
                       {station.callsign}
+                    </Typography>
+                    <Typography variant="caption" component="div">
+                      {bandList}
                     </Typography>
                     <Typography variant="caption" component="div">
                       Last heard {lastHeardText}{stale ? ' (stale)' : ''}
@@ -188,7 +244,7 @@ const CoverageMap: React.FC<CoverageMapProps> = ({ stations }) => {
                     a Popup rather than a hover Tooltip, so the same content
                     is duplicated here. */}
                 <Popup>
-                  <Box sx={{ minWidth: 150 }}>
+                  <Box sx={{ minWidth: 170 }}>
                     <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
                       {station.callsign}
                     </Typography>
@@ -196,15 +252,39 @@ const CoverageMap: React.FC<CoverageMapProps> = ({ stations }) => {
                       Last heard {lastHeardText}
                       {stale ? ' — not reconfirmed recently' : ''}
                     </Typography>
-                    <Typography variant="caption" color="text.secondary" display="block">
-                      Confirmed on {station.confirmation_count} net{station.confirmation_count !== 1 ? 's' : ''}
-                    </Typography>
+                    {/* Per-band breakdown - a station heard on both 2m and
+                        40m gets one line each, since the two bands are
+                        different propagation data points. */}
+                    {station.perBand.map((entry) => (
+                      <Typography key={entry.band ?? 'unknown'} variant="caption" color="text.secondary" display="block">
+                        {entry.band || 'Unknown band'}: confirmed on {entry.confirmation_count} net{entry.confirmation_count !== 1 ? 's' : ''}, last heard {formatLastHeard(entry.last_heard)}
+                      </Typography>
+                    ))}
                   </Box>
                 </Popup>
               </Marker>
             );
           })}
         </MapContainer>
+      </Box>
+      {/* Band color legend - accessibility note: color is reinforced by the
+          band label text in every tooltip/popup above, never color-only. */}
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1.5, mt: 1 }}>
+        {BAND_LEGEND.filter((entry) => tiersPresent.has(entry.tier)).map((entry) => (
+          <Box key={entry.tier} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <Box sx={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: entry.hex, flexShrink: 0 }} />
+            <Typography variant="caption" color="text.secondary">{entry.label}</Typography>
+          </Box>
+        ))}
+        {hasUnknown && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <Box sx={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: BAND_UNKNOWN_HEX, flexShrink: 0 }} />
+            <Typography variant="caption" color="text.secondary">Unknown band</Typography>
+          </Box>
+        )}
+        <Typography variant="caption" color="text.secondary">
+          — a station heard on multiple bands blends their colors (e.g. HF + VHF shows as green)
+        </Typography>
       </Box>
       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
         This map shows only stations you personally reported hearing from a Home operating position — it never includes reports from other participants or nets you did not attend.

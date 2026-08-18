@@ -14,6 +14,10 @@ import { userApi } from '../services/api';
 
 export interface CoverageStation {
   callsign: string;
+  // Amateur band label (e.g. "2m", "40m") this rollup entry was heard on.
+  // Rows are grouped by (callsign, band) server-side, so the same station
+  // heard on two bands appears as two entries.
+  band: string | null;
   last_heard: string;
   confirmation_count: number;
   location: string | null;

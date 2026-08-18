@@ -43,6 +43,10 @@ export interface CanHearReportEntry {
   reporter_callsign: string;
   heard_callsign: string;
   frequency_id: number | null;
+  // Amateur band label (e.g. "2m", "40m") the backend derives from
+  // frequency_id, or - when frequency_id is null - from the net's PACE plan
+  // if it has exactly one frequency. Null when neither resolves.
+  band: string | null;
   reported_by_user_id: number | null;
   reported_at: string;
 }
@@ -88,6 +92,22 @@ interface CoverageReportProps {
 // no need for a graph library or memoized adjacency structure.
 function edgeKey(reporterId: number, heardId: number, frequencyId: number | null): string {
   return `${reporterId}-${heardId}-${frequencyId ?? 'none'}`;
+}
+
+// Frequency cell text: the looked-up label plus, when known, the band in
+// parentheses. A report saved with no specific frequency but a
+// server-inferred band (single-frequency net) shows "Net frequency (2m)"
+// rather than a bare "—", since the band is still useful information.
+function formatFrequencyCell(report: CanHearReportEntry, frequencyLabels: Record<number, string>): string {
+  let label: string;
+  if (report.frequency_id != null) {
+    label = frequencyLabels[report.frequency_id] || '—';
+  } else if (report.band) {
+    label = 'Net frequency';
+  } else {
+    label = '—';
+  }
+  return report.band ? `${label} (${report.band})` : label;
 }
 
 const CoverageReport: React.FC<CoverageReportProps> = ({
@@ -293,7 +313,7 @@ const CoverageReport: React.FC<CoverageReportProps> = ({
                   {renderCallsign(r.heard_callsign)}
                 </TableCell>
                 {showFrequencyColumn && (
-                  <TableCell>{r.frequency_id != null ? (frequencyLabels[r.frequency_id] || '—') : '—'}</TableCell>
+                  <TableCell>{formatFrequencyCell(r, frequencyLabels)}</TableCell>
                 )}
                 <TableCell sx={{ whiteSpace: 'nowrap', fontSize: '0.8rem' }}>
                   {formatTimeWithDate(r.reported_at, user?.prefer_utc || false)}

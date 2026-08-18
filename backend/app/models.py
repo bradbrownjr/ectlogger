@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, T
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
+from app.band_utils import band_from_frequency_string
 import enum
 
 
@@ -293,6 +294,13 @@ class Frequency(Base):
     talkgroup = Column(String(50), nullable=True)  # e.g., "31665", "Room 12345"
     description = Column(String(255))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    @property
+    def band(self):
+        """Amateur band label (e.g. "2m", "40m") derived from `frequency`.
+        See band_utils.py; None for digital-mode entries with no analog
+        frequency, or a value outside every mapped band."""
+        return band_from_frequency_string(self.frequency)
 
     # Relationships
     nets = relationship("Net", secondary=net_frequencies, back_populates="frequencies")

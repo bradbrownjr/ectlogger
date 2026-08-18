@@ -4,6 +4,14 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# August 18, 2026
+
+## Improvements
+
+* **Net View: Coverage reports now show band** — Station-to-station "can hear" reports and your Profile's coverage map now label (and color-code) each entry by the amateur band it was heard on, like 2m or 40m, blending colors on the map when a station's been heard on more than one, since HF and VHF/UHF propagation behave very differently. On nets with more than one frequency, the "Who can this station hear?" dialog now shows one column per frequency so you can record who you heard on each in a single pass, instead of switching a dropdown and re-checking the list per frequency.
+
+---
+
 # August 17, 2026
 
 ## Improvements

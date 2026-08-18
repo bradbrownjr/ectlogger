@@ -7,10 +7,11 @@ from typing import List, Optional
 from io import BytesIO
 from PIL import Image, ImageOps
 from app.database import get_db
-from app.models import User, UserRole, Contact, NetRole, CanHearReport, CheckIn
+from app.models import User, UserRole, Contact, NetRole, CanHearReport, CheckIn, Frequency, net_frequencies
 from app.schemas import UserResponse, UserUpdate, AdminUserCreate, CallsignLookupResponse, UserDirectoryEntry, UserPopupResponse, CoverageStationResponse
 from app.dependencies import get_current_user, get_current_user_optional, get_admin_user
 from app.utils import AVATAR_DIR
+from app.band_utils import band_from_frequency_string
 
 AVATAR_MAX_BYTES = 2 * 1024 * 1024  # 2 MB
 AVATAR_MAX_DIM = 256
@@ -159,10 +160,13 @@ async def get_my_can_hear_coverage(
     inter-station propagation logging feature - see docs/ROADMAP.md
     "Relaying & Propagation Mapping", "Last heard" and Phase 5 sections).
 
-    Returns, for every station the current user has personally reported
-    hearing while operating from home, a MAX(reported_at) "last heard"
-    rollup, a confirmation count (distinct nets), and the location tied to
-    the most recent report - the data the Profile page's Coverage map plots.
+    Returns, for every (station, band) the current user has personally
+    reported hearing while operating from home, a MAX(reported_at) "last
+    heard" rollup, a confirmation count (distinct nets), and the location
+    tied to the most recent report - the data the Profile page's Coverage
+    map plots. Grouped by band as well as callsign because the same station
+    heard on 2m and on 40m is two different propagation data points (see
+    band_utils.py) - a station worked on both bands appears as two rows.
 
     Privacy: this is scoped, by construction, to
     CanHearReport.reported_by_user_id == current_user.id AND the reporter
@@ -184,10 +188,13 @@ async def get_my_can_hear_coverage(
             CanHearReport.net_id,
             CanHearReport.reported_at,
             HeardCheckIn.location,
+            CanHearReport.frequency_id,
+            Frequency.frequency,
         )
         .select_from(CanHearReport)
         .join(ReporterCheckIn, CanHearReport.reporter_check_in_id == ReporterCheckIn.id)
         .join(HeardCheckIn, CanHearReport.heard_check_in_id == HeardCheckIn.id)
+        .outerjoin(Frequency, CanHearReport.frequency_id == Frequency.id)
         .where(
             CanHearReport.reported_by_user_id == current_user.id,
             ReporterCheckIn.user_id == current_user.id,
@@ -202,17 +209,44 @@ async def get_my_can_hear_coverage(
     )
     rows = result.all()
 
-    # Roll up per heard callsign (not check-in id or user_id - see
+    # A report with no specific frequency still happened on *some*
+    # frequency - if the net's PACE plan has exactly one, that's
+    # unambiguously what was used (see can_hear.py's same fallback for the
+    # per-net coverage report). Look this up per net_id that needs it.
+    net_ids_needing_fallback = {row.net_id for row in rows if row.frequency_id is None}
+    sole_frequency_by_net: dict = {}
+    if net_ids_needing_fallback:
+        freq_result = await db.execute(
+            select(net_frequencies.c.net_id, Frequency.frequency)
+            .join(Frequency, net_frequencies.c.frequency_id == Frequency.id)
+            .where(net_frequencies.c.net_id.in_(net_ids_needing_fallback))
+        )
+        freqs_by_net: dict = {}
+        for net_id, freq_str in freq_result.all():
+            freqs_by_net.setdefault(net_id, []).append(freq_str)
+        sole_frequency_by_net = {
+            net_id: freqs[0] for net_id, freqs in freqs_by_net.items() if len(freqs) == 1
+        }
+
+    # Roll up per (heard callsign, band) - not check-in id or user_id, see
     # ROADMAP.md "Last heard": manually-logged stations have no user_id, and
     # the same callsign appears in different check-in rows across different
-    # nets) in Python rather than via a SQL window function. The roadmap's
-    # own volume argument (a dense net tops out under 900 edges) means a
-    # single user's lifetime report count is small, so this is simpler and
-    # more portable than a window-function query, and matches this
-    # feature's "no separately-maintained aggregate table" philosophy.
-    by_callsign: dict = {}
-    for callsign, net_id, reported_at, location in rows:
-        entry = by_callsign.setdefault(callsign, {
+    # nets - and not callsign alone, since the same station heard on 2m and
+    # on 40m is two different propagation data points. Done in Python rather
+    # than via a SQL window function. The roadmap's own volume argument (a
+    # dense net tops out under 900 edges) means a single user's lifetime
+    # report count is small, so this is simpler and more portable than a
+    # window-function query, and matches this feature's "no
+    # separately-maintained aggregate table" philosophy.
+    by_key: dict = {}
+    for callsign, net_id, reported_at, location, frequency_id, frequency_str in rows:
+        if frequency_id is not None:
+            band = band_from_frequency_string(frequency_str)
+        else:
+            band = band_from_frequency_string(sole_frequency_by_net.get(net_id))
+
+        key = (callsign, band)
+        entry = by_key.setdefault(key, {
             "net_ids": set(),
             "last_heard": reported_at,
             "location": location,
@@ -228,11 +262,12 @@ async def get_my_can_hear_coverage(
     stations = [
         CoverageStationResponse(
             callsign=callsign,
+            band=band,
             last_heard=data["last_heard"],
             confirmation_count=len(data["net_ids"]),
             location=data["location"],
         )
-        for callsign, data in by_callsign.items()
+        for (callsign, band), data in by_key.items()
     ]
     stations.sort(key=lambda s: s.last_heard, reverse=True)
     return stations

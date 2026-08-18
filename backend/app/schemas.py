@@ -318,6 +318,10 @@ class FrequencyCreate(FrequencyBase):
 class FrequencyResponse(FrequencyBase):
     id: int
     created_at: datetime
+    # Amateur band label (e.g. "2m", "40m") derived from `frequency` - see
+    # Frequency.band / band_utils.py. None for digital-mode entries or
+    # values outside every mapped band.
+    band: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -327,6 +331,7 @@ class FrequencyWithUsageResponse(FrequencyBase):
     """Frequency response with net usage count for admin view"""
     id: int
     created_at: datetime
+    band: Optional[str] = None
     net_count: int = 0
 
     class Config:
@@ -1491,6 +1496,11 @@ class CanHearReportResponse(BaseModel):
     reporter_callsign: str
     heard_callsign: str
     frequency_id: Optional[int] = None
+    # Amateur band label (e.g. "2m", "40m") derived from frequency_id's
+    # frequency string, or - when frequency_id is null - from the net's
+    # PACE plan if it has exactly one frequency (see band_utils.py). None
+    # when neither source resolves to a known band.
+    band: Optional[str] = None
     reported_by_user_id: Optional[int] = None
     reported_at: datetime
 
@@ -1509,13 +1519,17 @@ class CoverageStationResponse(BaseModel):
     """Phase 5 personal coverage rollup entry (see docs/ROADMAP.md
     "Relaying & Propagation Mapping", Profile map section). One row per
     heard station, aggregated across all of the current user's own "can
-    hear" reports made while operating from home. last_heard is a
-    MAX(reported_at) rollup across every net the callsign was heard on, not
-    a single net's timestamp; confirmation_count is the number of distinct
-    nets it was confirmed on; location is the heard check-in's location
-    from whichever report is most recent (a station's location can vary
-    across nets, e.g. a mobile station)."""
+    hear" reports made while operating from home. Rows are grouped by
+    (callsign, band) rather than callsign alone, since the same station
+    heard on 2m and on 40m represents two very different propagation data
+    points - see band_utils.py. last_heard is a MAX(reported_at) rollup
+    across every net the callsign was heard on that band, not a single
+    net's timestamp; confirmation_count is the number of distinct nets it
+    was confirmed on (on that band); location is the heard check-in's
+    location from whichever report is most recent (a station's location can
+    vary across nets, e.g. a mobile station)."""
     callsign: str
+    band: Optional[str] = None
     last_heard: datetime
     confirmation_count: int
     location: Optional[str] = None

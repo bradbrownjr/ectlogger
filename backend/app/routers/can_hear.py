@@ -15,25 +15,50 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select
-from typing import List
+from sqlalchemy.orm import selectinload
+from typing import List, Optional
 from datetime import datetime
 from app.database import get_db
-from app.models import CanHearReport, CheckIn, Net, User, net_frequencies
+from app.models import CanHearReport, CheckIn, Frequency, Net, User, net_frequencies
 from app.schemas import CanHearReportResponse, CanHearReportSave
 from app.dependencies import get_current_user
 from app.permissions import check_net_permission
+from app.band_utils import band_from_frequency_string
 
 router = APIRouter(prefix="/nets", tags=["can-hear"])
 
 
-async def _build_report_responses(db: AsyncSession, net_id: int, reports: List[CanHearReport]) -> List[CanHearReportResponse]:
-    """Attach reporter/heard callsigns to a list of CanHearReport rows."""
+async def _build_report_responses(db: AsyncSession, net: Net, reports: List[CanHearReport]) -> List[CanHearReportResponse]:
+    """Attach reporter/heard callsigns and a derived band to a list of
+    CanHearReport rows. `net` must have `frequencies` loaded (selectinload) -
+    it's the source for the single-frequency fallback below."""
     if not reports:
         return []
 
     check_in_ids = {r.reporter_check_in_id for r in reports} | {r.heard_check_in_id for r in reports}
     result = await db.execute(select(CheckIn).where(CheckIn.id.in_(check_in_ids)))
     callsigns_by_id = {c.id: c.callsign for c in result.scalars().all()}
+
+    freq_ids = {r.frequency_id for r in reports if r.frequency_id is not None}
+    frequencies_by_id = {}
+    if freq_ids:
+        result = await db.execute(select(Frequency).where(Frequency.id.in_(freq_ids)))
+        frequencies_by_id = {f.id: f for f in result.scalars().all()}
+
+    # A report with no specific frequency (the reporter picked "No specific
+    # frequency" in the dialog) still happened on *some* frequency - if the
+    # net's PACE plan has exactly one, that's unambiguously what was used.
+    # With more than one frequency there's no way to tell which, so band
+    # stays unknown for those reports.
+    sole_net_frequency = net.frequencies[0] if len(net.frequencies) == 1 else None
+
+    def _band_for(report: CanHearReport) -> Optional[str]:
+        if report.frequency_id is not None:
+            freq = frequencies_by_id.get(report.frequency_id)
+            return band_from_frequency_string(freq.frequency) if freq else None
+        if sole_net_frequency is not None:
+            return band_from_frequency_string(sole_net_frequency.frequency)
+        return None
 
     return [
         CanHearReportResponse(
@@ -44,6 +69,7 @@ async def _build_report_responses(db: AsyncSession, net_id: int, reports: List[C
             reporter_callsign=callsigns_by_id.get(r.reporter_check_in_id, ""),
             heard_callsign=callsigns_by_id.get(r.heard_check_in_id, ""),
             frequency_id=r.frequency_id,
+            band=_band_for(r),
             reported_by_user_id=r.reported_by_user_id,
             reported_at=r.reported_at,
         )
@@ -59,7 +85,7 @@ async def list_can_hear_reports(
 ):
     """List all 'can hear' reports for a net. Reading is not more sensitive
     than the check-in list, so no permission gate beyond normal auth."""
-    result = await db.execute(select(Net).where(Net.id == net_id))
+    result = await db.execute(select(Net).options(selectinload(Net.frequencies)).where(Net.id == net_id))
     net = result.scalar_one_or_none()
     if not net:
         raise HTTPException(status_code=404, detail="Net not found")
@@ -67,7 +93,7 @@ async def list_can_hear_reports(
     result = await db.execute(select(CanHearReport).where(CanHearReport.net_id == net_id))
     reports = result.scalars().all()
 
-    return await _build_report_responses(db, net_id, reports)
+    return await _build_report_responses(db, net, reports)
 
 
 @router.put("/{net_id}/can-hear-reports", response_model=List[CanHearReportResponse])
@@ -81,7 +107,7 @@ async def save_can_hear_report(
     frequency_id: insert newly-checked edges, delete unchecked ones, and
     touch reported_at on edges that stay checked (a reconfirmation is a
     more current data point than the one it replaced)."""
-    result = await db.execute(select(Net).where(Net.id == net_id))
+    result = await db.execute(select(Net).options(selectinload(Net.frequencies)).where(Net.id == net_id))
     net = result.scalar_one_or_none()
     if not net:
         raise HTTPException(status_code=404, detail="Net not found")
@@ -200,4 +226,4 @@ async def save_can_hear_report(
     )
     refreshed_reports = result.scalars().all()
 
-    return await _build_report_responses(db, net_id, refreshed_reports)
+    return await _build_report_responses(db, net, refreshed_reports)
