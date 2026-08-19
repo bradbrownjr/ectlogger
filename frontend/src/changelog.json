@@ -1,8 +1,8 @@
 {
-  "version": "2026.08.18",
+  "version": "2026.08.18b",
   "entries": [
     {
-      "version": "2026.08.18",
+      "version": "2026.08.18b",
       "date": "2026-08-18",
       "sections": [
         {
@@ -19,6 +19,16 @@
             },
             {
               "text": "Net View: Correct a coverage report's frequency — if a station-to-station coverage report was logged without picking a specific frequency (or the wrong one), NCS, Logger, and Relay can now fix it right in the Station Coverage panel's Frequency column, and any station can correct its own past reports the same way.",
+              "userImpact": true
+            }
+          ]
+        },
+        {
+          "title": "Bug Fixes",
+          "type": "bugfix",
+          "items": [
+            {
+              "text": "Schedule: No more duplicate nets from manual create — clicking \"Create Net\" on a schedule shortly before its scheduled time could create a second, separate net if one had already been auto-created for that same time slot. It now opens the existing net instead of creating a duplicate.",
               "userImpact": true
             }
           ]

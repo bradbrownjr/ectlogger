@@ -240,6 +240,28 @@ async def create_net_from_template(
     if request.scheduled_start_time is not None:
         scheduled_start_time = request.scheduled_start_time
 
+    # Reuse an existing net for this occurrence instead of creating a duplicate.
+    # The background scheduler (_get_or_create_scheduled_net) auto-creates the
+    # SCHEDULED net ~24h ahead of scheduled_start_time, so a manual click here
+    # shortly before the scheduled time would otherwise insert a second net for
+    # the same slot. Same ±5 min tolerance as the scheduler's own dedup check.
+    if scheduled_start_time is not None:
+        window_start = scheduled_start_time - timedelta(minutes=5)
+        window_end = scheduled_start_time + timedelta(minutes=5)
+        existing_result = await db.execute(
+            select(Net)
+            .options(selectinload(Net.frequencies))
+            .where(
+                Net.template_id == template_id,
+                Net.status.notin_([NetStatus.CLOSED, NetStatus.ARCHIVED]),
+                Net.scheduled_start_time >= window_start,
+                Net.scheduled_start_time <= window_end,
+            )
+        )
+        existing_net = existing_result.scalar_one_or_none()
+        if existing_net:
+            return NetResponse.from_orm(existing_net)
+
     # Create net from template
     from app.models import net_frequencies as net_freq_table
     

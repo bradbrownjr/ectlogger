@@ -12,6 +12,10 @@ All notable changes to ECTLogger are documented here.
 * **Net View: Export coverage reports to CSV** — The Station Coverage panel is wider by default so every column, including the timestamp, fits without wrapping, and a new download button next to the search and map icons lets you export the current report to a CSV file for use in a spreadsheet.
 * **Net View: Correct a coverage report's frequency** — If a station-to-station coverage report was logged without picking a specific frequency (or the wrong one), NCS, Logger, and Relay can now fix it right in the Station Coverage panel's Frequency column, and any station can correct its own past reports the same way.
 
+## Bug Fixes
+
+* **Schedule: No more duplicate nets from manual create** — Clicking "Create Net" on a schedule shortly before its scheduled time could create a second, separate net if one had already been auto-created for that same time slot. It now opens the existing net instead of creating a duplicate.
+
 ---
 
 # August 17, 2026
