@@ -295,7 +295,11 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
                 {net?.field_config?.power?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.power}</TableCell>}
                 {net?.field_config?.notes?.enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.notes}</TableCell>}
                 {getEnabledCustomFields().map((field) => (
-                  <TableCell key={field.name} sx={{ whiteSpace: 'nowrap' }}>{checkIn.custom_fields?.[field.name] || ''}</TableCell>
+                  <TableCell key={field.name} sx={{ whiteSpace: 'nowrap' }}>
+                    {field.field_type === 'checkbox'
+                      ? (checkIn.custom_fields?.[field.name] === 'true' ? 'Yes' : 'No')
+                      : checkIn.custom_fields?.[field.name] || ''}
+                  </TableCell>
                 ))}
                 {net?.topic_of_week_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.topic_response || ''}</TableCell>}
                 {net?.poll_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>{checkIn.poll_response || ''}</TableCell>}

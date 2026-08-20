@@ -4,6 +4,14 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# August 19, 2026
+
+## New Features
+
+* **Admin: Checkbox custom fields** — Custom check-in fields can now be a checkbox, not just text or a dropdown, for capturing yes/no info like whether a station can do digital modes.
+
+---
+
 # August 18, 2026
 
 ## Improvements

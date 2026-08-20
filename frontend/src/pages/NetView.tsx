@@ -42,6 +42,8 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Checkbox,
+  FormControlLabel,
   List,
   ListItem,
   ListItemText,
@@ -1937,16 +1939,28 @@ const NetView: React.FC = () => {
                               ))}
                             </Select>
                           </FormControl>
+                        ) : field.field_type === 'checkbox' ? (
+                          <Checkbox
+                            size="small"
+                            checked={checkInForm.custom_fields[field.name] === 'true'}
+                            onChange={(e) => setCheckInForm({
+                              ...checkInForm,
+                              custom_fields: {
+                                ...checkInForm.custom_fields,
+                                [field.name]: e.target.checked ? 'true' : 'false'
+                              }
+                            })}
+                          />
                         ) : (
                           <TextField
                             size="small"
                             value={checkInForm.custom_fields[field.name] || ''}
-                            onChange={(e) => setCheckInForm({ 
-                              ...checkInForm, 
-                              custom_fields: { 
-                                ...checkInForm.custom_fields, 
-                                [field.name]: e.target.value 
-                              } 
+                            onChange={(e) => setCheckInForm({
+                              ...checkInForm,
+                              custom_fields: {
+                                ...checkInForm.custom_fields,
+                                [field.name]: e.target.value
+                              }
                             })}
                             onKeyDown={(e) => {
                               if (e.key === 'Enter') {
@@ -2222,18 +2236,35 @@ const NetView: React.FC = () => {
                           ))}
                         </Select>
                       </FormControl>
+                    ) : field.field_type === 'checkbox' ? (
+                      <FormControlLabel
+                        key={field.name}
+                        control={
+                          <Checkbox
+                            checked={checkInForm.custom_fields[field.name] === 'true'}
+                            onChange={(e) => setCheckInForm({
+                              ...checkInForm,
+                              custom_fields: {
+                                ...checkInForm.custom_fields,
+                                [field.name]: e.target.checked ? 'true' : 'false'
+                              }
+                            })}
+                          />
+                        }
+                        label={`${field.label}${isFieldRequired(field.name) ? ' *' : ''}`}
+                      />
                     ) : (
                       <TextField
                         key={field.name}
                         size="small"
                         label={`${field.label}${isFieldRequired(field.name) ? ' *' : ''}`}
                         value={checkInForm.custom_fields[field.name] || ''}
-                        onChange={(e) => setCheckInForm({ 
-                          ...checkInForm, 
-                          custom_fields: { 
-                            ...checkInForm.custom_fields, 
-                            [field.name]: e.target.value 
-                          } 
+                        onChange={(e) => setCheckInForm({
+                          ...checkInForm,
+                          custom_fields: {
+                            ...checkInForm.custom_fields,
+                            [field.name]: e.target.value
+                          }
                         })}
                         placeholder={field.placeholder || field.label}
                         fullWidth

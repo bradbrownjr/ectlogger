@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Box,
+  Checkbox,
   Chip,
   IconButton,
   MenuItem,
@@ -603,16 +604,28 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                       {getEnabledCustomFields().map((field) => (
                         <TableCell key={field.name} data-field={`custom_${field.name}`}>
                           {isInlineEditing ? (
-                            <TextField
-                              size="small"
-                              value={inlineEditValues.custom_fields?.[field.name] || ''}
-                              onChange={(e) => handleInlineFieldChange(`custom_${field.name}`, e.target.value)}
-                              onKeyDown={handleInlineKeyDown}
-                              onBlur={handleInlineBlur}
-                              autoFocus={inlineEditFocusField === `custom_${field.name}`}
-                              inputProps={{ style: { padding: '4px 8px' } }}
-                              sx={{ width: '100%' }}
-                            />
+                            field.field_type === 'checkbox' ? (
+                              <Checkbox
+                                size="small"
+                                checked={inlineEditValues.custom_fields?.[field.name] === 'true'}
+                                onChange={(e) => handleInlineFieldChange(`custom_${field.name}`, e.target.checked ? 'true' : 'false')}
+                                onBlur={handleInlineBlur}
+                                autoFocus={inlineEditFocusField === `custom_${field.name}`}
+                              />
+                            ) : (
+                              <TextField
+                                size="small"
+                                value={inlineEditValues.custom_fields?.[field.name] || ''}
+                                onChange={(e) => handleInlineFieldChange(`custom_${field.name}`, e.target.value)}
+                                onKeyDown={handleInlineKeyDown}
+                                onBlur={handleInlineBlur}
+                                autoFocus={inlineEditFocusField === `custom_${field.name}`}
+                                inputProps={{ style: { padding: '4px 8px' } }}
+                                sx={{ width: '100%' }}
+                              />
+                            )
+                          ) : field.field_type === 'checkbox' ? (
+                            checkIn.custom_fields?.[field.name] === 'true' ? 'Yes' : 'No'
                           ) : checkIn.custom_fields?.[field.name] || ''}
                         </TableCell>
                       ))}

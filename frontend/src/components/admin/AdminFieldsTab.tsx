@@ -44,6 +44,7 @@ const FIELD_TYPES = [
   { value: 'textarea', label: 'Text Area (multi-line)' },
   { value: 'number', label: 'Number' },
   { value: 'select', label: 'Dropdown Select' },
+  { value: 'checkbox', label: 'Checkbox' },
 ];
 
 interface FieldDefinition {

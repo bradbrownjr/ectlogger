@@ -1077,7 +1077,7 @@ class AppSettingsUpdate(BaseModel):
 class FieldDefinitionBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=50, pattern=r'^[a-z][a-z0-9_]*$')
     label: str = Field(..., min_length=1, max_length=100)
-    field_type: str = Field(default='text', pattern=r'^(text|textarea|number|select)$')
+    field_type: str = Field(default='text', pattern=r'^(text|textarea|number|select|checkbox)$')
     options: Optional[List[str]] = None  # For select type
     placeholder: Optional[str] = Field(None, max_length=200)
     default_enabled: bool = False
@@ -1091,7 +1091,7 @@ class FieldDefinitionCreate(FieldDefinitionBase):
 
 class FieldDefinitionUpdate(BaseModel):
     label: Optional[str] = Field(None, min_length=1, max_length=100)
-    field_type: Optional[str] = Field(None, pattern=r'^(text|textarea|number|select)$')
+    field_type: Optional[str] = Field(None, pattern=r'^(text|textarea|number|select|checkbox)$')
     options: Optional[List[str]] = None
     placeholder: Optional[str] = Field(None, max_length=200)
     default_enabled: Optional[bool] = None

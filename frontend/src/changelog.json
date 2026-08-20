@@ -1,6 +1,22 @@
 {
-  "version": "2026.08.18b",
+  "version": "2026.08.19",
   "entries": [
+    {
+      "version": "2026.08.19",
+      "date": "2026-08-19",
+      "sections": [
+        {
+          "title": "New Features",
+          "type": "feature",
+          "items": [
+            {
+              "text": "Admin: Checkbox custom fields — custom check-in fields can now be a checkbox, not just text or a dropdown, for capturing yes/no info like whether a station can do digital modes.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.08.18b",
       "date": "2026-08-18",
