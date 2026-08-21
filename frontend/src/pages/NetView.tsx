@@ -2688,6 +2688,10 @@ const NetView: React.FC = () => {
         netId={netId}
         netName={net?.name || 'net'}
         sampleFrequencyDisplay={net?.frequencies?.[0] ? formatFrequencyDisplay(net.frequencies[0]) : ''}
+        netStatus={net?.status}
+        scheduledStartTime={net?.scheduled_start_time}
+        startedAt={net?.started_at}
+        closedAt={net?.closed_at}
         onToast={setToastMessage}
         onImported={() => Promise.all([fetchCheckIns(), fetchNetStats(), fetchNet()]).then(() => {})}
       />

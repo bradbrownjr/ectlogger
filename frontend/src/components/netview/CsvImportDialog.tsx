@@ -16,6 +16,8 @@ import {
   List,
   ListItem,
   ListItemText,
+  Alert,
+  TextField,
 } from '@mui/material';
 import DownloadIcon from '@mui/icons-material/Download';
 import api from '../../services/api';
@@ -39,6 +41,29 @@ const COMMON_IMPORT_TIMEZONES = [
   'Europe/London',
 ];
 
+// Render a UTC instant as the wall-clock text a datetime-local input expects,
+// in an arbitrary IANA zone. Deliberately not the getTimezoneOffset trick used
+// in CreateNet.tsx: that converts to the *browser's* zone, which would disagree
+// with this dialog's own Import Time Zone selector and silently shift the window.
+const formatForInputInZone = (iso: string | null | undefined, timeZone: string): string => {
+  if (!iso) return '';
+  const parsed = new Date(iso.endsWith('Z') || iso.includes('+') ? iso : `${iso}Z`);
+  if (Number.isNaN(parsed.getTime())) return '';
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    hour12: false,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).formatToParts(parsed);
+  const get = (type: string) => parts.find((p) => p.type === type)?.value || '';
+  // Intl renders midnight as hour 24 in some locales/engines; normalize it.
+  const hour = get('hour') === '24' ? '00' : get('hour');
+  return `${get('year')}-${get('month')}-${get('day')}T${hour}:${get('minute')}`;
+};
+
 interface CsvImportDialogProps {
   open: boolean;
   onClose: () => void;
@@ -46,6 +71,11 @@ interface CsvImportDialogProps {
   netName: string;
   /** Pre-formatted first frequency for the downloadable template's sample row. */
   sampleFrequencyDisplay: string;
+  /** Net lifecycle status - decides backfill mode, prefill source, and the close option. */
+  netStatus?: string | null;
+  scheduledStartTime?: string | null;
+  startedAt?: string | null;
+  closedAt?: string | null;
   onToast: (message: string) => void;
   /** Called after a successful import so the parent can refresh check-ins/stats/net. */
   onImported: () => void | Promise<void>;
@@ -57,6 +87,10 @@ const CsvImportDialog: React.FC<CsvImportDialogProps> = ({
   netId,
   netName,
   sampleFrequencyDisplay,
+  netStatus,
+  scheduledStartTime,
+  startedAt,
+  closedAt,
   onToast,
   onImported,
 }) => {
@@ -72,6 +106,19 @@ const CsvImportDialog: React.FC<CsvImportDialogProps> = ({
     return browserTz;
   });
   const csvImportInputRef = useRef<HTMLInputElement | null>(null);
+  const [csvImportWarnings, setCsvImportWarnings] = useState<string[]>([]);
+  const [netStartedAtInput, setNetStartedAtInput] = useState('');
+  const [netClosedAtInput, setNetClosedAtInput] = useState('');
+  const [closeOnImport, setCloseOnImport] = useState(true);
+  // Once the operator edits a time, stop re-deriving it from the net underneath them.
+  const [timesDirty, setTimesDirty] = useState(false);
+
+  const status = (netStatus || '').toLowerCase();
+  // A draft or scheduled net never ran in the app, so importing into one is a
+  // backfill: the times are required and the net can be closed in the same step.
+  const isBackfill = status === 'draft' || status === 'scheduled';
+  const isClosedOrArchived = status === 'closed' || status === 'archived';
+  const effectiveZone = csvImportUseUtc ? 'UTC' : csvImportTimezone;
 
   // Reset to a clean slate each time the dialog opens (matches the original
   // handleOpenImportDialog behavior, which reset state before opening).
@@ -82,11 +129,43 @@ const CsvImportDialog: React.FC<CsvImportDialogProps> = ({
       setCsvImportErrors([]);
       setCsvImportSummary('');
       setCsvImportErrorsTruncated(false);
+      setCsvImportWarnings([]);
       const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
       setCsvImportTimezone(browserTz);
       setCsvImportUseUtc(true);
+      setCloseOnImport(true);
+      setTimesDirty(false);
     }
   }, [open]);
+
+  // Prefill the net times from whatever the net already knows, expressed in the
+  // selected import zone. Re-runs when the zone changes so toggling UTC re-renders
+  // 23:00 as 19:00 rather than leaving a value that means something different now.
+  // A scheduled net has no end time to offer, and a draft has neither: an empty
+  // box is better than a plausible guess on a form that writes an official record.
+  useEffect(() => {
+    if (!open || timesDirty) return;
+    if (isClosedOrArchived) {
+      setNetStartedAtInput(formatForInputInZone(startedAt, effectiveZone));
+      setNetClosedAtInput(formatForInputInZone(closedAt, effectiveZone));
+    } else if (isBackfill) {
+      // The net never ran, so the scheduled time is the only start worth
+      // offering, and it may not exist at all. There is no end time to guess:
+      // a wrong-looking default is worse than an empty box on a form that
+      // writes an official record.
+      setNetStartedAtInput(formatForInputInZone(scheduledStartTime, effectiveZone));
+      setNetClosedAtInput('');
+    } else {
+      setNetStartedAtInput(formatForInputInZone(startedAt, effectiveZone));
+      setNetClosedAtInput('');
+    }
+  }, [open, timesDirty, effectiveZone, isBackfill, isClosedOrArchived, scheduledStartTime, startedAt, closedAt]);
+
+  // A backfill cannot proceed without both times, and an inverted range is always
+  // a typo. Compared as raw strings: the fixed YYYY-MM-DDTHH:mm format sorts correctly.
+  const timesInvalid =
+    (isBackfill && (!netStartedAtInput || !netClosedAtInput)) ||
+    (!!netStartedAtInput && !!netClosedAtInput && netClosedAtInput <= netStartedAtInput);
 
   const handleClose = () => {
     if (csvImporting) return;
@@ -126,6 +205,13 @@ const CsvImportDialog: React.FC<CsvImportDialogProps> = ({
       formData.append('file', csvImportFile);
       formData.append('timezone_name', csvImportTimezone || 'UTC');
       formData.append('assume_utc', csvImportUseUtc ? 'true' : 'false');
+      // Sent as raw YYYY-MM-DDTHH:mm wall-clock text, never converted here: the
+      // server applies the Import Time Zone above so the window and the CSV rows
+      // are interpreted by one rule. Omitted when blank so an ordinary import of
+      // a live or closed net sends exactly what it always did.
+      if (netStartedAtInput) formData.append('net_started_at', netStartedAtInput);
+      if (netClosedAtInput) formData.append('net_closed_at', netClosedAtInput);
+      if (isBackfill) formData.append('close_net_on_import', closeOnImport ? 'true' : 'false');
       const response = await api.post(`/nets/${netId}/import/csv`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -149,10 +235,14 @@ const CsvImportDialog: React.FC<CsvImportDialogProps> = ({
       if (data.timezone_used) {
         message += ` Time zone: ${data.timezone_used}${data.assume_utc ? ' (UTC mode)' : ''}.`;
       }
+      if (data.closed) {
+        message += ' Net closed.';
+      }
 
       setCsvImportSummary(message);
       setCsvImportErrors(returnedErrors);
       setCsvImportErrorsTruncated(errorsTruncated);
+      setCsvImportWarnings(Array.isArray(data.warnings) ? data.warnings : []);
       onToast(message);
       await onImported();
       if (errorCount === 0) {
@@ -268,9 +358,34 @@ const CsvImportDialog: React.FC<CsvImportDialogProps> = ({
       <DialogTitle>Import Check-ins from CSV</DialogTitle>
       <DialogContent>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+          {/* Shown only for a draft/scheduled net, where this writes a historical record */}
+          {isBackfill && (
+            <Alert severity="warning">
+              <Typography variant="subtitle2" gutterBottom>Backfilling a net that already ran</Typography>
+              <Typography variant="body2">
+                This writes historical check-in records. Enter the net&apos;s actual start and end times below,
+                in the time zone selected here - they decide which timestamps in your file are accepted, they
+                resolve rows that give only a time of day, and they become the net&apos;s official start and end.
+                Rows outside that window are rejected. There is no one-click undo: imported check-ins are removed
+                one at a time, and the times can be corrected afterwards from Edit net.
+              </Typography>
+            </Alert>
+          )}
+
+          {/* Shown on a closed/archived net, where changing the times edits a filed record */}
+          {isClosedOrArchived && (
+            <Alert severity="info">
+              <Typography variant="body2">
+                Changing the start or end time below updates this net&apos;s official record, including its log
+                and ICS-309. Leave them as prefilled to import without altering the recorded times.
+              </Typography>
+            </Alert>
+          )}
+
           <Typography variant="body2" color="text.secondary">
             Use the template to match expected columns. Sample template rows are auto-detected and ignored if left in the file.
             Accepted date/time examples: 6/3/2026 2:24 PM, 3/6/2026 14:24, 2:24 PM, 2:24, 14:24.
+            A row giving only a time of day is placed using the net start and end times below.
           </Typography>
 
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -304,11 +419,80 @@ const CsvImportDialog: React.FC<CsvImportDialogProps> = ({
             Timestamps with explicit zone markers (Z, UTC, GMT, +HH:MM) always use that explicit zone.
           </Typography>
 
+          {/* ========== ACTUAL NET TIMES ========== */}
+          {/* Placed below the time zone controls on purpose: these values are wall */}
+          {/* clock in the zone selected above, and re-render when that zone changes. */}
+          {/* Mirrors the "Actual Net Times" block in create-net/BasicInfoTab.tsx. */}
+          <Box sx={{ p: 2, border: '1px dashed', borderColor: 'divider', borderRadius: 1 }}>
+            <Typography variant="subtitle2" gutterBottom>Actual Net Times</Typography>
+            <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
+              {isBackfill
+                ? `Required. When the net actually ran, in ${effectiveZone}.`
+                : `Times in ${effectiveZone}. Adjust only if the recorded times are wrong.`}
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+              <TextField
+                label="Actual Start Time"
+                type="datetime-local"
+                value={netStartedAtInput}
+                onChange={(event) => { setTimesDirty(true); setNetStartedAtInput(event.target.value); }}
+                InputLabelProps={{ shrink: true }}
+                required={isBackfill}
+                error={isBackfill && !netStartedAtInput}
+                sx={{ flex: '1 1 220px' }}
+              />
+              <TextField
+                label="Actual End Time"
+                type="datetime-local"
+                value={netClosedAtInput}
+                onChange={(event) => { setTimesDirty(true); setNetClosedAtInput(event.target.value); }}
+                InputLabelProps={{ shrink: true }}
+                required={isBackfill}
+                error={
+                  (isBackfill && !netClosedAtInput) ||
+                  (!!netStartedAtInput && !!netClosedAtInput && netClosedAtInput <= netStartedAtInput)
+                }
+                helperText={
+                  !!netStartedAtInput && !!netClosedAtInput && netClosedAtInput <= netStartedAtInput
+                    ? 'End must be after start'
+                    : undefined
+                }
+                sx={{ flex: '1 1 220px' }}
+              />
+            </Box>
+
+            {/* Only a draft/scheduled net has a lifecycle left to complete */}
+            {isBackfill && (
+              <Box sx={{ mt: 1.5 }}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={closeOnImport}
+                      onChange={(event) => setCloseOnImport(event.target.checked)}
+                    />
+                  }
+                  label="Close the net at the end time above"
+                />
+                <Typography variant="caption" color="text.secondary" display="block">
+                  Records the net as closed using the times above, so it counts toward attendance statistics.
+                  The net log is emailed as it would be for any closed net. Nothing is posted to chat.
+                </Typography>
+              </Box>
+            )}
+          </Box>
+
           {csvImportSummary && (
             <Box sx={{ p: 1.5, borderRadius: 1, bgcolor: 'action.hover' }}>
               <Typography variant="body2">{csvImportSummary}</Typography>
             </Box>
           )}
+
+          {/* Server-side advisories: a wide window, or a close that was skipped */}
+          {csvImportWarnings.map((warningText, index) => (
+            <Alert severity="warning" key={`${index}-${warningText}`}>
+              <Typography variant="body2">{warningText}</Typography>
+            </Alert>
+          ))}
 
           <Button
             variant="outlined"
@@ -390,7 +574,7 @@ const CsvImportDialog: React.FC<CsvImportDialogProps> = ({
         <Button
           variant="contained"
           onClick={handleCsvImportSubmit}
-          disabled={!csvImportFile || csvImporting}
+          disabled={!csvImportFile || csvImporting || timesInvalid}
         >
           {csvImporting ? 'Importing...' : 'Import CSV'}
         </Button>

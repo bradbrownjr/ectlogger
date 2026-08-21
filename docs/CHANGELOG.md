@@ -4,6 +4,14 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# August 20, 2026
+
+## New Features
+
+* **Net View: Backfill a net that ran off-app** — If a net was run on paper or in another program and never started in ECT Logger, staff can now import its check-in log from a CSV, enter the net's real start and end times, and have the net recorded as closed in one step, so everyone who took part gets attendance credit and the schedule's participation statistics stay accurate. Rows that list only a time of day, like 7:05 PM, are now placed correctly when you pick your own time zone instead of UTC, and anyone on a schedule's staff can run the import rather than only the net's owner.
+
+---
+
 # August 19, 2026
 
 ## New Features

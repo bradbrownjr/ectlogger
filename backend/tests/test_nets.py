@@ -238,7 +238,7 @@ async def test_lobby_open_sends_notification_go_live_does_not(client, owner):
     net_id = create.json()["id"]
 
     with patch(
-        "app.routers.nets_core.EmailService.send_net_notification",
+        "app.email_service.EmailService.send_net_notification",
         new_callable=AsyncMock,
     ) as mock_notify:
         # /start → LOBBY: this is the one and only send.
@@ -264,7 +264,7 @@ async def test_straight_to_active_sends_notification_once(client, owner):
     net_id = create.json()["id"]
 
     with patch(
-        "app.routers.nets_core.EmailService.send_net_notification",
+        "app.email_service.EmailService.send_net_notification",
         new_callable=AsyncMock,
     ) as mock_notify:
         resp = await client.post(f"/api/nets/{net_id}/start", headers=auth_headers(owner))
