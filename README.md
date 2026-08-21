@@ -27,6 +27,7 @@ The responsive interface works beautifully on any device — from a phone in the
 ### Core Capabilities
 
 - **🔐 Secure Authentication** — Frictionless sign-in with magic link email authentication + OAuth (Google, Microsoft, GitHub)
+- **🔗 Shareable Net Links** — A net's view and report page work for someone with no account at all, so you can send a link to show a prospective member how a net runs before they sign up; phone numbers and email addresses typed into check-in notes or chat are hidden from anyone viewing without an account
 - **⚡ Real-Time Updates** — WebSocket-powered live check-ins, status updates, and chat messages
 - **👥 Role-Based Access** — Admin, NCS, Logger, User, and Guest roles
 - **📧 Email Notifications** — Automatic net reminders, start notifications, and invitations

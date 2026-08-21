@@ -717,6 +717,18 @@ Generate a comprehensive multi-page PDF report for closed or archived nets:
 
 The PDF is ideal for after-action reports, club records, or emergency management documentation.
 
+### Sharing a Net With Someone Who Doesn't Have an Account
+
+A net's view page and its Report page both work for someone who isn't signed in — copy the
+link from your browser's address bar and send it to a prospective member so they can see how a
+net runs, or how a check-in log and report turn out, before they create an account.
+
+A callsign and licensee name are public information via the FCC's license database, so those
+are always shown. Anything that looks like a phone number or email address typed into a
+check-in field or chat message is hidden from a viewer who isn't signed in — sharing a callback
+number during a net is normal coordination between operators, so it's only hidden from someone
+outside the net, not from other logged-in participants.
+
 ## Statistics
 
 Three statistics views are available, each with PDF export:

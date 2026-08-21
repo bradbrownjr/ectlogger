@@ -310,6 +310,18 @@ if not await check_net_permission(db, net, user, required_roles=["ncs", "logger"
     raise HTTPException(status_code=403, detail="Permission denied")
 ```
 
+**Guest-readable net data.** A net's view and report pages are intentionally usable with no
+account (see `docs/USER-GUIDE.md` "Sharing a Net With Someone Who Doesn't Have an Account"), so
+a GET that feeds either page should use `Depends(get_current_user_optional)` (`current_user:
+Optional[User]`), not `Depends(get_current_user)`, unless the data is genuinely staff-only. When
+a response includes free text a user typed (a check-in field, a chat message, an assembled
+ICS-309 log entry), pass it through `redact_contact_info` (`app/utils.py`) whenever
+`current_user is None` — it strips anything that looks like an email or phone number. A
+callsign and licensee name are not redacted; both are already public via the FCC ULS. The
+frontend's axios response interceptor (`services/api.ts`) only logs a user out on a 401 if a
+token was actually being sent — a guest hitting a login-required resource should fail that one
+request quietly, not get bounced off a page they're allowed to be on.
+
 ---
 
 ## Database Migrations
@@ -571,6 +583,16 @@ treat them as guaranteed delivery of a state change — the REST write is the so
 truth, and the relay is only a hint to go read it.
 
 `useNetWebSocket.ts` is the single frontend consumer and handles both sets.
+
+**Guest connections and PII.** The WS endpoint accepts connections with no `token`
+(`user_id` becomes the guest sentinel `0`) so an anonymous viewer gets live updates on a
+publicly-shared net, same as the REST reads. `ConnectionManager.broadcast` takes an optional
+`guest_message` — when given, connections with `user_id == 0` receive it instead of `message`.
+`chat.py::create_message` is the one caller today: it sends the raw chat text to authenticated
+connections and a copy scrubbed by `redact_contact_info` (see `app/utils.py`) to guests, so a
+live guest can't see a phone number or email arrive in real time that the REST `GET
+/chat/nets/{id}/messages` would have redacted. Any future server-originated message type that
+carries free text a user typed (not just structured state) needs the same treatment.
 
 ### Reconnect and resync
 

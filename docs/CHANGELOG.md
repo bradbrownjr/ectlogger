@@ -4,6 +4,14 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# August 21, 2026
+
+## New Features
+
+* **Net View: Share a net without an account** — A net's view or report page now works for someone who isn't signed in, instead of bouncing them to the login screen, so you can send a link to a prospective member and let them see how a net works before they create an account. Phone numbers and email addresses typed into check-in notes or chat messages are hidden from anyone viewing without an account.
+
+---
+
 # August 20, 2026
 
 ## New Features
