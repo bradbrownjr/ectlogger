@@ -384,7 +384,7 @@ const CsvImportDialog: React.FC<CsvImportDialogProps> = ({
 
           <Typography variant="body2" color="text.secondary">
             Use the template to match expected columns. Sample template rows are auto-detected and ignored if left in the file.
-            Accepted date/time examples: 6/3/2026 2:24 PM, 3/6/2026 14:24, 2:24 PM, 2:24, 14:24.
+            Accepted date/time examples: 6/3/2026 2:24 PM, 3/6/2026 14:24, 6/3/26 2:24 PM, 2:24 PM, 2:24, 14:24.
             A row giving only a time of day is placed using the net start and end times below.
           </Typography>
 

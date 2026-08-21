@@ -672,6 +672,7 @@ The importer accepts simple operator-friendly formats:
 - `6/3/2026 2:24 PM`
 - `3/6/2026 14:24`
 - `2026-06-03 14:24`
+- `6/3/26 2:24 PM` (2-digit years are accepted too)
 - `2:24 PM`
 - `2:24`
 - `14:24`

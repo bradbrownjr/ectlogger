@@ -13,6 +13,7 @@ All notable changes to ECTLogger are documented here.
 ## Bug Fixes
 
 * **Net Report: Complete check-in maps** — The check-in map on a net's report no longer silently drops stations once a net has more than 10 different locations; every mappable station now shows up. Any station that still can't be placed (no location on file, or one we couldn't look up) is listed by callsign under the map instead of just vanishing with no explanation.
+* **Check-in Import: Shortened years accepted** — Timestamps written with a 2-digit year, like 8/20/26, now import correctly instead of every row being rejected, so a CSV straight from Notepad or a spreadsheet's default date format doesn't need to be reformatted by hand first.
 
 ---
 

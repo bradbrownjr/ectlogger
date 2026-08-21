@@ -64,6 +64,16 @@ _FULL_FORMATS = [
     "%Y-%m-%d %H:%M",
     "%Y-%m-%d %I:%M:%S %p",
     "%Y-%m-%d %H:%M:%S",
+    # 2-digit year: spreadsheet apps often shorten the year on CSV export
+    # depending on regional cell formatting (e.g. OnlyOffice/Excel "M/D/YY").
+    "%m/%d/%y %I:%M %p",
+    "%m/%d/%y %H:%M",
+    "%d/%m/%y %I:%M %p",
+    "%d/%m/%y %H:%M",
+    "%m/%d/%y %I:%M:%S %p",
+    "%m/%d/%y %H:%M:%S",
+    "%d/%m/%y %I:%M:%S %p",
+    "%d/%m/%y %H:%M:%S",
 ]
 
 _FULL_TZ_FORMATS = [
@@ -79,6 +89,14 @@ _FULL_TZ_FORMATS = [
     "%d/%m/%Y %H:%M:%S %z",
     "%Y-%m-%d %I:%M:%S %p %z",
     "%Y-%m-%d %H:%M:%S %z",
+    "%m/%d/%y %I:%M %p %z",
+    "%m/%d/%y %H:%M %z",
+    "%d/%m/%y %I:%M %p %z",
+    "%d/%m/%y %H:%M %z",
+    "%m/%d/%y %I:%M:%S %p %z",
+    "%m/%d/%y %H:%M:%S %z",
+    "%d/%m/%y %I:%M:%S %p %z",
+    "%d/%m/%y %H:%M:%S %z",
 ]
 
 _TIME_FORMATS = ["%I:%M %p", "%H:%M", "%I:%M:%S %p", "%H:%M:%S"]
@@ -340,7 +358,7 @@ def parse_checkin_timestamp(
     if not utc_candidates:
         return None, (
             f"could not parse check-in time '{raw_value}'. Supported examples: "
-            "6/3/2026 2:24 PM, 3/6/2026 14:24, 2026-06-03 14:24, 2:24 PM, 2:24, 14:24."
+            "6/3/2026 2:24 PM, 3/6/2026 14:24, 2026-06-03 14:24, 6/3/26 2:24 PM, 2:24 PM, 2:24, 14:24."
         )
 
     deduped = sorted(set(utc_candidates))
