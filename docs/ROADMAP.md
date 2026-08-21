@@ -1,6 +1,6 @@
 # ECT Logger — Product Roadmap
 
-*Last updated: 2026-08-01*  
+*Last updated: 2026-08-20*  
 *Compiled from user feedback: AA1GM, KC1UIX, W1BKW, W1MTW, N1GSK, KC1JMH*
 
 > **Canonical location:** `docs/ROADMAP.md`.
@@ -73,6 +73,75 @@ Requirements / design questions:
 - Verification is only offered on nets flagged `authenticated`; on all other nets no padlock is shown.
 - **Dependency:** requires the MFA / TOTP support above to exist first.
 
+### Public Service Event Support
+
+**✨ Tactical-callsign posts, shift staffing, and event management for public service events** *(KC1JMH, from a Manchester ARES request via Ken)*
+
+**Model:** Opus for Phase 1-2 (new domain model, and a change to what `CheckIn.callsign` means app-wide); Sonnet for Phases 3-6 build-out against the settled design; **Opus review gate on Phase 1** before merge, since every statistics, export, and dedup path reads that column.
+
+Full spec and design notes: [`docs/concepts/PUBLIC-SERVICE-EVENTS.md`](concepts/PUBLIC-SERVICE-EVENTS.md)
+
+Marathons, bicycle rides, dog sled races, and parades are a structurally different kind of net from an ARES exercise or a SKYWARN spotter net. Amateur operators ride alongside public volunteers in SAG vehicles, at checkpoints, and at start and finish lines. **A station is a place, not a person:** "AID 3" is a table at mile 14 that exists from 06:30 to 16:00 and is worked by whoever is standing there — three different licensed operators over a fourteen-hour ride, a dozen over a four-day sled race.
+
+ECTLogger cannot serve those events today. A check-in typed as a tactical designator links to no user, so the operator earns no credit for their work — the original complaint that prompted this item. There is also no way to plan or track who staffs a position across a rotation, which is what an event manager spends their weeks doing.
+
+**The two facts that shape the design.** The position and the operator are separate, and both must be recorded: the position is what the net calls on the air, while the operator is who gets credit and who is legally responsible, since FCC 97.119 permits tactical calls but still requires each station to identify with its own FCC callsign every ten minutes. And the event manager is a distinct user with distinct needs — staffing the net rather than running it, weeks before the event and again after it.
+
+**Vocabulary decision.** The words *coverage*, *tactical callsign*, *operating position*, *staff*, and *position* are all already spent in this codebase (RF propagation, the per-person `User.callsigns` alias list, the Home/Field classifier, the NCS eligibility pool, and a rotation sort integer respectively). This feature uses **Post** and **Shift** throughout, and never a bare `post` identifier in backend code.
+
+**Key decisions, argued in full in the concept doc:**
+- An event is a `NetTemplate` (the reusable plan) plus one `Net` per ICS operational period. No new top-level entity.
+- The check-in row carries the **operator's own FCC callsign**, plus a post reference supplying the designator; it renders and exports as designator-then-callsign. This is the only option that gives operator credit with zero changes to the statistics layer, and the only one that does not corrupt recheck dedup.
+- Shifts are **materialized rows**, deliberately unlike the computed NCS rotation, because an event is a 2-D sparse assignment with no generating function and every assignment carries state that cannot be recomputed.
+- Unlicensed volunteers get a shift and appear on every staffing surface, but never a check-in row — they are not operating a station.
+
+**Phase 1 — Posts on a net, and honest operator credit** *(not started)*
+- [ ] Migration `061_`: `net_posts` table; `net_post_id` and `post_designator` columns on `check_ins`
+- [ ] `NetPost` model and `PostCategory` enum; post CRUD plus drag-reorder in a new `routers/nets_posts.py`
+- [ ] Check-in resolves and stamps the post; a post-designator match takes precedence over the `User.callsigns` alias auto-link so nobody hijacks a post from their profile
+- [ ] ICS-309 and net CSV render designator-then-callsign; legacy rows export byte-identically
+- [ ] Close the validation hole: `CheckInUpdate.callsign` has no pattern and allows 50 chars while create enforces `^[A-Z0-9/]+$` at 20 — an inline edit can write a value a create rejects
+- [ ] Post picker on the check-in dialog, prefilling the callsign from the covering shift
+- [ ] Relabel Profile "additional callsigns" to Alias Callsigns, dropping the word "tactical"
+
+**Phase 2 — Shifts, Assignment Board, and gap detection** *(not started)*
+- [ ] Migration `062_`: `net_post_shifts`; `ShiftStatus` enum
+- [ ] `backend/app/events/gaps.py` — pure, database-free gap computation, unit-testable without a session
+- [ ] Assignment Board page at `/nets/:netId/posts` with a CSS Grid station-by-time grid. **No calendar library** — every candidate is 100-400 kB and resource-hostile for a layout that is sixty lines of CSS
+- [ ] Native HTML5 drag-and-drop with the required arrow-button and keyboard fallbacks
+
+**Phase 3 — Live board, sign-in and sign-out, day-of accountability** *(not started)*
+- [ ] Sign-in and sign-out endpoints creating and closing the linked check-in
+- [ ] Live Post Board NetView panel with an UNMANNED badge and unmanned-first sorting
+- [ ] The `NetRole` bridge — signing in to a net-control post grants NCS, or a marathon staffed entirely from the board looks NCS-less and auto-pauses
+- [ ] Per-net opt-in toggle so ordinary weekly nets are untouched
+
+**Phase 4 — Reusable event plans and notifications** *(not started)*
+- [ ] Migrations `063_`/`064_`: `event_posts` with default shift patterns; `net_post_reminder_logs`
+- [ ] Copy posts on **all three** net-creation paths, not just the obvious one
+- [ ] `event_post_reminder_service.py` following the `NCSReminderService` pattern, including cross-service deduplication so an operator who is also on-duty NCS gets one email rather than three
+- [ ] Tokenized accept and decline from the offer email, no login required
+- [ ] "Materialize the next N operational periods" — without it a multi-day race planned six weeks out cannot be staffed
+
+**Phase 5 — ICS-204, ICS-205, and hours reporting** *(not started)*
+- [ ] `events/ics204.py` and `events/ics205.py`, each a single-source-of-truth dict builder so CSV and PDF cannot drift
+- [ ] Print views and PDF export through the existing mechanism; roster and hours CSV sharing a row-builder with the on-screen table
+- [ ] Hours and mileage per operator; Posts and Staffing section in the net report
+
+**Phase 6 — Multi-day series, adoption, and polish** *(not started)*
+- [ ] Event-series rollup across nets sharing a template; roster carry-forward between operational periods
+- [ ] Opt-in, human-confirmed adoption tool for historical tactical strings. **Never rewrite a closed net's log** — it is an ICS record that may already have been filed
+- [ ] Per-post equipment checklists; ICS-217 if still wanted
+
+**Documentation deliverables** *(not started)* — these ship **with** the phases, not after. Until then no user-facing guide may describe this feature as available.
+- [ ] New `docs/EVENT-MANAGER-GUIDE.md` — the audience is the event communications lead, not the NCS. Planning a course and its posts, recruiting and assigning, chasing gaps, race-morning sign-in, handling no-shows, and post-event hours and forms. Drafted alongside Phase 2 and completed at Phase 5, linked from the README documentation index and `docs/USER-GUIDE.md`
+- [ ] `docs/USER-GUIDE.md` — a Public Service Events section covering checking in at a post, shift sign-in and sign-out, and responding to an assignment offer, plus the Alias Callsigns relabel in the profile section
+- [ ] `README.md` — a Public Service Events entry in the feature list and the new guide in the documentation index
+- [ ] `docs/DEVELOPMENT.md` — the `net_post` / `event_post` naming rule, the materialized-shift decision, and the fourth polling service note
+- [ ] `docs/DESIGN.md` — Assignment Board grid conventions and the Post Board panel's place among the NetView side panels
+
+**Trigger:** Phase 1 alone satisfies the original request and can ship independently; it is also the phase carrying the `CheckIn.callsign` semantics change, so it wants the Opus review gate before merge. Phases 2-3 are what make the feature usable for a real event. Phases 4-6 are what make it reusable year over year. Sequence Phase 4's multi-period materialization before any dog sled race pilot.
+
 ### Supporter / Funding Integration
 
 **✨ Optional Ko-fi supporter integration, admin-configured per deployment** *(sustainability)*
@@ -143,6 +212,55 @@ Top financial supporters and community contributors are acknowledged directly in
 **Trigger:** implement after Phase 2 (donor tracking) is in place. Honorable Mentions can ship independently of Phase 2 since they are admin-curated.
 
 **Trigger:** start after the Help Menu / About modal ships (done). Phase 1 alone satisfies the original goal (a subtle support link); Phases 2–4 are additive and carry no risk to core net logging.
+
+### Schedule Visibility & Calendar
+
+**✨ Month calendar view on the Schedule page, and calendar subscription** *(KC1JMH)*  
+**Model:** Sonnet for the month view and the single-event link (Phases 1-2, established UI patterns against one new read endpoint); **Opus for Phase 3**, the subscribable feed — its URL must be fetchable by Google's unauthenticated servers, which makes it an auth design task rather than a UI one.  
+
+Two related capabilities. The first is a **month grid on the Schedule page** with next/previous month arrows, showing which nets fall on which day and, where the schedule has a rotation, who is NCS. The second is **getting a net onto the operator's own calendar** so it shows up next to the rest of their week.
+
+Today the Schedule page (`frontend/src/pages/Scheduler.tsx`) lists *schedules*, not *occurrences* — it answers "what nets exist" but not "what is happening this month." The view-mode `ToggleButtonGroup` at `:582-600` already offers card and list, so calendar is a third button in an affordance that exists. (Note `CalendarMonthIcon` is already imported at `:51` and in use for the date-sort toggle at `:577` — the calendar view needs a different icon, or two adjacent groups show the same glyph.)
+
+**The month grid is a union of two sources, and the seam is today.** Past days come from real `Net` rows — what actually happened, whether it was held, who actually ran it, how many checked in. Today and forward come from materialized `Net` rows where they exist, and from projections where they do not, since `_get_or_create_scheduled_net` only materializes about 24 hours ahead. Projections use the existing `calculate_schedule_dates` plus `compute_anchored_ncs_schedule` (`backend/app/routers/ncs_schedule.py`).
+
+Two rules fall out of that and both are load-bearing:
+
+- **Never project into the past.** `calculate_schedule_dates` filters `d >= start_date` (`ncs_schedule.py:110`) and `get_ncs_schedule` starts at `datetime.now()` (`ncs_rotation.py:234`), so the computed path cannot look backwards at all. That is the correct boundary, not a limitation to fix — a projection onto a past date would assert a net was held that may have been cancelled, and would name an NCS who never served. Do not "enable" previous months by backdating `start_date`.
+- **A real row always beats a projection for the same slot**, or a day cell shows the same net twice. This is the same collision already fixed once for manual creation (commit `4034f1f`).
+
+**One aggregate endpoint, not the current fan-out.** `fetchSchedules` (`Scheduler.tsx:119-143`) already issues one `getNextNCS` request per schedule. That is N requests to answer one question, and a month view asks it for every occurrence of every schedule — repeating the pattern means N requests on every arrow click. This needs a single `GET` returning the whole window across all visible schedules in one response.
+
+**Performance is the non-obvious risk.** `compute_anchored_ncs_schedule` regenerates every occurrence from the template's creation date up to the requested window on each call (`ncs_schedule.py:174-179`), because the rotation index is a count of elapsed occurrences. Paging a three-year-old weekly schedule out to a month next year generates hundreds of dates, per template, per click — and the cost grows with both the template's age and how far the user pages. Compute one window for all templates in a single pass, cap the paging range, and treat the anchor-to-index offset as cacheable.
+
+**Naming: this is the third collision in this codebase, and the worst one.** *ICS* here means **Incident Command System** — ICS-309 has shipped, ICS-204 and ICS-205 are planned above. An "Export ICS" button or an `ics.py` module would be read as an incident form export by precisely the emergency-management audience this product serves. Use **iCalendar** and **Calendar Feed** in labels and `ical_feed.py` in code. Never "ICS file."
+
+**Phase 1 — Month view** *(not started)*
+- [ ] New aggregate read endpoint returning occurrences across all visible schedules for a date window, merging real `Net` rows with projections and suppressing a projection wherever a real row already covers the slot
+- [ ] Calendar as a third view mode on the Schedule page, honoring the existing filter and favorites state, with next/previous month arrows
+- [ ] Month grid in CSS Grid — seven columns, six rows. **No calendar library**, consistent with the Assignment Board decision above
+- [ ] Render all four states `NCSScheduleEntry` already distinguishes: normal rotation, override, fifth-week, and **cancelled**. A cancelled occurrence must appear struck through, never silently omitted, or the reader concludes the net is on
+- [ ] Past days render actual outcome (held, cancelled, check-in count) and link to the net report; future days link to the schedule
+- [ ] Mobile falls back to an agenda list via `useLayoutTier` — a month grid is unreadable at 375 px
+- [ ] Decide and document the display timezone. Recommend the **viewer's** zone via `resolve_display_tz` (`backend/app/utils.py:87`), since the question being asked is "am I free that evening"; the Schedule page already labels times in the browser zone. This is deliberately the opposite of the Assignment Board, which uses the net's zone — record the divergence so it does not later read as an inconsistency bug
+
+**Phase 2 — Add one net to a calendar** *(not started)*
+- [ ] "Add to calendar" on a net and on a schedule occurrence, emitting a Google Calendar template URL and a downloadable `.ics` for everyone else. No backend and no new dependency
+- [ ] Populate title, start and end, location or frequency, and a link back to the net
+
+**Phase 3 — Subscribable calendar feed** *(not started)*
+- [ ] Per-user feed of their subscribed schedules, offered as both `https` and `webcal://`. This is the version that actually pays off for a recurring net: it keeps updating as schedules change and the rotation advances
+- [ ] **Auth design first.** Google fetches feed URLs unauthenticated, so the URL carries a per-user secret token. It must be revocable and regenerable from Profile, must expose nothing the user cannot already see, and must not accept a session cookie as an alternative. Same class of decision as the tokenized accept/decline question in the events spec
+- [ ] Emit concrete events per occurrence over a bounded forward window rather than a recurrence rule — each occurrence carries a different NCS in its summary, and cancellations and overrides are sparse exceptions a recurrence rule cannot express cleanly
+- [ ] Decide whether to add a Python iCalendar dependency or emit the text directly; `backend/requirements.txt` has neither today
+- [ ] Document in the user guide that Google refreshes subscribed feeds on its own schedule, often 12 to 24 hours, so a same-day edit will not appear immediately. Without this line it will be reported as a bug
+
+**Documentation deliverables** *(not started)*
+- [ ] `docs/USER-GUIDE.md` — the calendar view, adding a net to a personal calendar, and subscribing to a feed including how to revoke the link
+- [ ] `README.md` — feature list entry once Phase 1 ships
+- [ ] `docs/DEVELOPMENT.md` — the past-versus-projected boundary rule and the iCalendar naming rule
+
+**Trigger:** Phase 1 stands alone and delivers most of the value. Phase 2 is small and independent. Phase 3 should not start until someone actually asks for a live-updating subscription, since it adds a permanently reachable unauthenticated URL to the attack surface for a convenience the first two phases mostly cover.
 
 ### Trivia Integration
 

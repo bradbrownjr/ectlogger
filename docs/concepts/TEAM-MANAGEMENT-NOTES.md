@@ -54,6 +54,24 @@ Goal: provide a secure, role-based team management experience integrated with ex
 - Native desktop-specific team workflows.
 - Third-party API integrations with external club systems.
 - Automated legal policy generation.
+- Per-event staffing. See the boundary below.
+
+### Boundary against Public Service Event Support
+
+[`PUBLIC-SERVICE-EVENTS.md`](PUBLIC-SERVICE-EVENTS.md) covers staffing the communications
+positions of a marathon, bicycle ride, or sled race. It overlaps this module on hours,
+contact details, and rosters, so the split is fixed here and stated identically in both
+documents:
+
+> **Events own per-event posts, shifts, sign-in and sign-out, and the hours produced by one
+> event. Teams owns people, long-term membership, training records, and cross-event ARRL Form
+> 2 and EMA rollups.**
+
+Practically: Events must not create a `volunteers` or `people` table — unregistered people
+live inline on its shift rows, and `Contact.user_id` links them if they later register.
+Events export hours for one event; Teams sums them across events and produces the form. Any
+new noun proposed for either module should be tested against that sentence before it is given
+a table.
 
 ## 4. Personas and Roles
 
