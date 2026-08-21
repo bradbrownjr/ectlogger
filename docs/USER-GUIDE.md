@@ -635,17 +635,35 @@ Both Topic and Poll columns are only visible when configured for the net. System
 
 ### Importing Check-ins from CSV
 
-Closed and archived nets now include an **Import CSV** button next to export actions. This is useful when multiple NCS operators are logging in parallel and some logs were captured on paper or in another tool.
+Net staff see an **Import** button in the net toolbar at any stage of a net. This is useful when multiple NCS operators are logging in parallel, when some logs were captured on paper or in another tool, or when a net ran without the app at all.
 
-1. Open the closed or archived net.
-2. Click **Import CSV**.
-3. Optional: click **Export Template** to download the expected columns and sample rows.
+1. Open the net.
+2. Click **Import**.
+3. Optional: click **Import Template** to download the expected columns and sample rows.
 4. Choose a file by clicking the drop zone or drag and drop a CSV file.
 5. Set time interpretation:
    - **UTC checked**: untagged timestamps are treated as UTC.
    - **UTC unchecked**: untagged timestamps use the selected **Import Time Zone**.
    - Timestamps with explicit markers (`Z`, `UTC`, `GMT`, `+/-HH:MM`) always use their explicit timezone.
-6. Click **Import CSV**.
+6. Check the **Actual Net Times**. These are shown in whichever time zone you selected in the step above, so they change if you toggle UTC. On a net that already ran they are filled in for you and only need attention if they are wrong.
+7. Click **Import CSV**.
+
+### Backfilling a net that ran off-app
+
+Sometimes a scheduled net runs entirely on the air, with the log kept on paper or in another program, and nobody ever starts it in ECT Logger. You can still enter that log afterwards so the operators who took part get credit for it.
+
+1. Open the scheduled net and click **Import**.
+2. Enter the **Actual Start Time** and **Actual End Time**. These are required here, because a net that never started has no times of its own to fall back on. The start time is prefilled from the scheduled start when there is one; check it against what actually happened.
+3. Leave **Close the net at the end time above** checked. This records the net as closed using the times you entered.
+4. Choose the CSV file and click **Import CSV**.
+
+A few things worth knowing:
+
+- **The times decide which rows are accepted.** Anything outside the window is rejected with a row number and a reason. They also place rows that give only a time of day, like `7:05 PM` - a bare time is matched against the day the net ran. If your start and end times span more than a day, those rows cannot be placed and need a full date instead.
+- **Closing is what makes the net count.** Attendance credit for each operator appears as soon as the rows import, but a schedule's participation rate only counts nets that are closed. Leaving the net scheduled makes everyone's participation rate look higher than it is.
+- **If nothing imports, the net stays scheduled.** A file where every row fails will not close the net, so you can correct the file and try again.
+- **The net log is emailed** to the owner and to subscribers who asked for close notifications, exactly as it would be for a net closed live. Nothing is posted to the net's chat.
+- **There is no one-click undo.** Imported check-ins are deleted one at a time from the check-in list, and the times can be corrected afterwards under **Edit net** in the **Actual Net Times** box.
 
 #### Accepted Date and Time Formats
 
@@ -662,12 +680,12 @@ Both US and British slash-date ordering are supported. If a slash-date is ambigu
 
 #### Timeframe Validation
 
-Imported timestamps are validated against the net timeline:
+Imported timestamps are validated against the net's start and end times, as shown in the **Actual Net Times** box:
 
-- Earliest allowed: net open/lobby start.
-- Latest allowed: net close time plus 10 minutes.
+- Earliest allowed: the net's start time.
+- Latest allowed: the net's end time plus 10 minutes, since a paper log's last entry is often written right at or just past the closing minute.
 
-Rows outside this window are skipped and reported with clear row numbers and reason text.
+Rows outside this window are skipped and reported with clear row numbers and reason text. The same window places rows that give only a time of day, so a window covering more than one day will report those rows as ambiguous and ask for a full date.
 
 #### Checks and Balances
 

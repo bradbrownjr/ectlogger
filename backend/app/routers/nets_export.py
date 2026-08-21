@@ -12,18 +12,22 @@ from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.dependencies import get_current_user
-from app.models import CheckIn, Net, NetRole, NetStatus, User, net_frequencies
+from app.models import CheckIn, Net, NetRole, NetStatus, TemplateStaff, User, net_frequencies
 from app.models import Form as TrafficFormModel
 from app.permissions import check_net_lifecycle_permission, check_net_permission
 from app.schemas import Ics309LogResponse, NetResponse
 from app.services.csv_import import (
+    MAX_IMPORT_WINDOW_DAYS,
+    WIDE_IMPORT_WINDOW_HOURS,
     CsvImportConfig,
     ZoneInfo,
     ZoneInfoNotFoundError,
     build_frequency_token_map,
     decode_csv_bytes,
+    local_naive_to_utc,
     process_csv_rows,
 )
+from app.services.net_closure import close_net_and_notify
 from app.traffic.formatters import format_form
 from app.traffic.ics309 import (
     format_traffic_ics309_message,
@@ -137,16 +141,56 @@ async def export_net_csv(
     )
 
 
+def _parse_import_datetime(
+    raw: Optional[str],
+    import_zone: ZoneInfo,
+    assume_utc: bool,
+    field_label: str,
+) -> Optional[datetime]:
+    """Parse an operator-supplied net start/end time into naive UTC.
+
+    Deliberately takes a string rather than letting FastAPI coerce a datetime:
+    a naive ISO value would be read as UTC, but these times must follow the same
+    assume_utc / timezone_name contract as the CSV rows themselves. Otherwise an
+    operator who unchecks UTC and types 19:00 gets a window in UTC and rows in
+    their local zone, and every row silently lands hours away from the window.
+    An explicit offset in the string always wins, matching parse_checkin_timestamp.
+    """
+    if raw is None or not raw.strip():
+        return None
+    value = raw.strip()
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid {field_label}: '{raw}'. Use the format YYYY-MM-DDTHH:MM.",
+        )
+    if parsed.tzinfo is not None:
+        return parsed.astimezone(timezone.utc).replace(tzinfo=None)
+    return local_naive_to_utc(parsed, import_zone, assume_utc)
+
+
 @router.post("/{net_id}/import/csv")
 async def import_net_csv(
     net_id: int,
     file: UploadFile = File(...),
     timezone_name: str = Form("UTC"),
     assume_utc: bool = Form(False),
+    net_started_at: Optional[str] = Form(None),
+    net_closed_at: Optional[str] = Form(None),
+    close_net_on_import: bool = Form(False),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """Import net check-ins from CSV (supports closed/archived nets)."""
+    """Import net check-ins from CSV.
+
+    Works on any net status. A draft or scheduled net is a *backfill*: the net
+    ran off-app, so the operator must supply the real start and end times, which
+    both scope the import and become the net's recorded times. Lobby, active,
+    closed and archived nets keep their previous behavior when the new
+    parameters are omitted.
+    """
     result = await db.execute(
         select(Net).options(
             selectinload(Net.frequencies)
@@ -158,13 +202,22 @@ async def import_net_csv(
         raise HTTPException(status_code=404, detail="Net not found")
 
     if not await check_net_permission(db, net, current_user, required_roles=["NCS", "LOGGER", "RELAY"]):
-        raise HTTPException(status_code=403, detail="Not authorized to import into this net")
-
-    if net.status in (NetStatus.DRAFT, NetStatus.SCHEDULED):
-        raise HTTPException(
-            status_code=400,
-            detail="CSV import is only available for lobby, active, closed, or archived nets"
-        )
+        # Active template staff can start a net (see nets_core.start_net), so they
+        # can also fix or backfill its log. Without this, a scheduled net that has
+        # no NetRole rows yet is importable only by the owner or an admin -- which
+        # is exactly the net a backfill is for.
+        staff_row = None
+        if net.template_id:
+            staff_result = await db.execute(
+                select(TemplateStaff).where(
+                    TemplateStaff.template_id == net.template_id,
+                    TemplateStaff.user_id == current_user.id,
+                    TemplateStaff.is_active == True,  # noqa: E712
+                )
+            )
+            staff_row = staff_result.scalar_one_or_none()
+        if staff_row is None:
+            raise HTTPException(status_code=403, detail="Not authorized to import into this net")
 
     if not file.filename:
         raise HTTPException(status_code=400, detail="No CSV file uploaded")
@@ -178,6 +231,65 @@ async def import_net_csv(
     if not reader.fieldnames:
         raise HTTPException(status_code=400, detail="CSV header row is missing")
 
+    # Built before the window is derived: parsing the prompted times needs the zone.
+    try:
+        import_zone = ZoneInfo("UTC") if assume_utc else ZoneInfo(timezone_name)
+    except ZoneInfoNotFoundError:
+        raise HTTPException(status_code=400, detail=f"Invalid import timezone '{timezone_name}'")
+
+    prompted_start = _parse_import_datetime(net_started_at, import_zone, bool(assume_utc), "net start time")
+    prompted_end = _parse_import_datetime(net_closed_at, import_zone, bool(assume_utc), "net end time")
+
+    # ========== VALIDATION ==========
+    is_backfill = net.status in (NetStatus.DRAFT, NetStatus.SCHEDULED)
+
+    if is_backfill and (prompted_start is None or prompted_end is None):
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Importing into a draft or scheduled net needs the net's actual start "
+                "and end times, since the net has none recorded."
+            ),
+        )
+
+    if prompted_start is not None and prompted_end is not None:
+        if prompted_end <= prompted_start:
+            raise HTTPException(status_code=400, detail="Net end time must be after the net start time.")
+        window_span = prompted_end - prompted_start
+        if window_span > timedelta(days=MAX_IMPORT_WINDOW_DAYS):
+            # Also a guard, not just a sanity check: time-only rows generate one
+            # candidate per day in the window, so an unbounded window is cheap
+            # CPU amplification on an authenticated upload endpoint.
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"The net start and end times are more than {MAX_IMPORT_WINDOW_DAYS} days "
+                    "apart. Check the dates you entered."
+                ),
+            )
+
+    if close_net_on_import and (prompted_start is None or prompted_end is None):
+        raise HTTPException(
+            status_code=400,
+            detail="Provide the net start and end times to close the net on import.",
+        )
+
+    if close_net_on_import and prompted_end > datetime.utcnow() + timedelta(minutes=5):
+        raise HTTPException(
+            status_code=400,
+            detail="A net cannot be closed with an end time in the future.",
+        )
+
+    warnings: list[str] = []
+    if prompted_start is not None and prompted_end is not None:
+        if prompted_end - prompted_start > timedelta(hours=WIDE_IMPORT_WINDOW_HOURS):
+            warnings.append(
+                f"The net start and end times span more than {WIDE_IMPORT_WINDOW_HOURS} hours. "
+                "Rows that give only a time of day (like 7:05 PM) may be rejected as ambiguous; "
+                "give those rows a full date."
+            )
+
+    # ========== TIME WINDOW ==========
     def to_utc_naive(value: Optional[datetime]) -> Optional[datetime]:
         if value is None:
             return None
@@ -185,17 +297,23 @@ async def import_net_csv(
             return value.astimezone(timezone.utc).replace(tzinfo=None)
         return value
 
-    net_window_start = to_utc_naive(net.started_at or net.created_at)
-    close_base = to_utc_naive(net.closed_at)
-    net_window_end = (
-        (close_base + timedelta(minutes=10)) if close_base
-        else (datetime.utcnow() + timedelta(minutes=10))
-    )
+    if prompted_start is not None:
+        net_window_start = prompted_start
+    else:
+        net_window_start = to_utc_naive(net.started_at or net.created_at)
 
-    try:
-        import_zone = ZoneInfo("UTC") if assume_utc else ZoneInfo(timezone_name)
-    except ZoneInfoNotFoundError:
-        raise HTTPException(status_code=400, detail=f"Invalid import timezone '{timezone_name}'")
+    if prompted_end is not None:
+        # The 10-minute grace exists because a paper log's last entry is often
+        # written at or just past the closing minute. It widens the *parse
+        # window* only -- net.closed_at below is stamped with the raw prompted
+        # end, never this padded value.
+        net_window_end = prompted_end + timedelta(minutes=10)
+    else:
+        close_base = to_utc_naive(net.closed_at)
+        net_window_end = (
+            (close_base + timedelta(minutes=10)) if close_base
+            else (datetime.utcnow() + timedelta(minutes=10))
+        )
 
     config = CsvImportConfig(
         net_id=net.id,
@@ -224,9 +342,48 @@ async def import_net_csv(
         payload["user_id"] = matched_user.id if matched_user else None
         imported_rows.append(CheckIn(**payload))
 
+    # ========== PERSIST, AND CLOSE IF THIS WAS A BACKFILL ==========
+    # Closing is gated on imported_rows: if every row was rejected, recording the
+    # net as closed with nobody in it is the worst outcome available -- it makes
+    # the log permanently wrong and moves the retry onto a different code path.
+    # Leave it scheduled, report the errors, let the operator fix the file.
+    should_close = bool(close_net_on_import and is_backfill and imported_rows)
+
     if imported_rows:
         db.add_all(imported_rows)
-        await db.commit()
+
+    if should_close:
+        # Flush so the new rows exist in the transaction, then reload the
+        # relationship: close_net_and_notify builds the emailed log from
+        # net.check_ins, which would otherwise be the stale pre-import list.
+        await db.flush()
+        await db.refresh(net, attribute_names=["check_ins"])
+        # Commits the check-ins and the closure together, then broadcasts and
+        # mails the log. The system chat message is suppressed: it would be
+        # stamped after closed_at and render out of order in the official log.
+        await close_net_and_notify(
+            db,
+            net,
+            current_user,
+            closed_at=prompted_end,
+            started_at=prompted_start,
+            post_chat_message=False,
+        )
+    else:
+        if close_net_on_import and is_backfill and not imported_rows:
+            warnings.append(
+                "The net was left scheduled because no rows could be imported. "
+                "Fix the errors below and import again to close it."
+            )
+        if not is_backfill and (prompted_start is not None or prompted_end is not None):
+            # Correcting the recorded times on a net that already ran. No
+            # re-close: the net's lifecycle is unchanged, only its timestamps.
+            if prompted_start is not None:
+                net.started_at = prompted_start
+            if prompted_end is not None and net.closed_at is not None:
+                net.closed_at = prompted_end
+        if imported_rows or db.dirty:
+            await db.commit()
 
     max_errors = 50
     errors = svc_result.errors
@@ -240,6 +397,9 @@ async def import_net_csv(
         "net_window_end": net_window_end.isoformat() if net_window_end else None,
         "timezone_used": "UTC" if assume_utc else timezone_name,
         "assume_utc": bool(assume_utc),
+        "warnings": warnings,
+        "closed": should_close,
+        "net_status": net.status.value if net.status else None,
     }
 
 

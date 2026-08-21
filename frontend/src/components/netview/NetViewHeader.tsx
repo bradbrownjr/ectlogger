@@ -480,16 +480,24 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
       Icon: InfoIcon, color: theme.palette.primary.main, label: 'Net info',
       tooltip: 'View net info', onClick: () => navigate(`/nets/${netId}/info`),
     },
-    {
-      key: 'import', group: 'info', priority: 1,
-      visible: canManage && (isActiveOrLobby || isClosedOrArchived),
-      Icon: UploadFileIcon, color: '#2e7d32', label: 'Import',
-      tooltip: 'Import check-ins from CSV', onClick: importDialog.onOpen,
-    },
   ];
 
   // ===== MANAGEMENT GROUP (state / participation-changing actions) =====
   const managementItems: ToolbarItemDef[] = [
+    {
+      // Import writes check-in records, and on a draft/scheduled net it can also
+      // close the net, so it belongs with the state-changing actions rather than
+      // the read-only Information group (see DESIGN.md "Decision rule for new
+      // buttons"). Available at every status: a net that ran off-app is exactly
+      // the one that needs backfilling.
+      key: 'import', group: 'management', priority: 1,
+      visible: canManage,
+      Icon: UploadFileIcon, color: '#2e7d32', label: 'Import',
+      tooltip: isDraftOrScheduled
+        ? 'Backfill check-ins from a CSV for a net that ran off-app'
+        : 'Import check-ins from CSV',
+      onClick: importDialog.onOpen,
+    },
     {
       key: 'edit-net', group: 'management', priority: 3,
       // A closed or archived net stays editable too -- staff still need to

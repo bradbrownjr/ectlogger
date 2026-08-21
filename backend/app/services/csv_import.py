@@ -25,6 +25,16 @@ from app.models import StationStatus
 
 SAMPLE_ROW_MARKER = "ECTLOGGER_SAMPLE_ROW"
 
+# Longest net window an import may declare. Time-only rows generate one candidate
+# per day in the window, so window length multiplies parsing work per row; before
+# operators could supply the window themselves it was always bounded by real net
+# timestamps. The router rejects anything longer.
+MAX_IMPORT_WINDOW_DAYS = 30
+
+# Beyond this the window is still accepted, but time-only rows become unplaceable,
+# so the router returns a warning explaining why such rows may be rejected.
+WIDE_IMPORT_WINDOW_HOURS = 24
+
 STATUS_MAP: dict[str, StationStatus] = {
     "checkedin": StationStatus.CHECKED_IN,
     "checked_in": StationStatus.CHECKED_IN,
@@ -101,6 +111,19 @@ class CsvImportResult:
 # ---------------------------------------------------------------------------
 # Public utilities used by the router
 # ---------------------------------------------------------------------------
+
+def local_naive_to_utc(naive: datetime, import_zone: ZoneInfo, assume_utc: bool) -> datetime:
+    """Interpret a naive wall-clock datetime under the import settings and return naive UTC.
+
+    This is the single rule for turning "what the operator typed" into a stored
+    instant. The router applies it to the prompted net start/end times and the
+    row parser applies it to every CSV cell, so a window and the rows it filters
+    can never be interpreted against different clocks.
+    """
+    if assume_utc:
+        return naive
+    return naive.replace(tzinfo=import_zone).astimezone(timezone.utc).replace(tzinfo=None)
+
 
 def decode_csv_bytes(raw_bytes: bytes) -> str:
     """Decode raw file bytes, preferring UTF-8-with-BOM then latin-1."""
@@ -298,8 +321,18 @@ def parse_checkin_timestamp(
             continue
 
     if parsed_time and config.net_window_start and config.net_window_end:
-        day_cursor = config.net_window_start.date()
-        while day_cursor <= config.net_window_end.date():
+        # The window bounds are UTC, but parsed_time is wall clock in import_zone,
+        # so the local date can fall one day outside the window's UTC date span in
+        # either direction. A net running 8-10 PM Eastern has a window entirely on
+        # the following UTC date, and its rows' correct local date sits one day
+        # before that; a net just after midnight UTC is the mirror image. Pad by a
+        # day on each side so the right local date is always generated. Padding
+        # cannot loosen validation: the in-window filter below still constrains,
+        # and an extra in-window candidate for the same wall-clock time requires a
+        # window near 24h, which the router warns about separately.
+        day_cursor = config.net_window_start.date() - timedelta(days=1)
+        last_day = config.net_window_end.date() + timedelta(days=1)
+        while day_cursor <= last_day:
             naive_candidate = datetime.combine(day_cursor, parsed_time)
             utc_candidates.append(_local_naive_to_utc(naive_candidate, config))
             day_cursor += timedelta(days=1)
@@ -316,6 +349,18 @@ def parse_checkin_timestamp(
         if len(in_window) == 1:
             return in_window[0], None
         if len(in_window) > 1:
+            # Two different causes produce multiple in-window candidates, and
+            # telling the operator the wrong one sends them to the wrong fix.
+            # Candidates on different dates mean the net window spans more than
+            # one day, so a bare time of day cannot be placed; candidates sharing
+            # a date mean a slash-date parsed both US and British ways.
+            if len({dt.date() for dt in in_window}) > 1:
+                return None, (
+                    f"time '{raw_value}' gives only a time of day, and the net's start "
+                    "and end times span more than one day, so it could belong to either. "
+                    "Give this row a full date (YYYY-MM-DD HH:MM), or narrow the net's "
+                    "start and end times."
+                )
             return None, (
                 f"time '{raw_value}' is ambiguous (US vs British date ordering). "
                 "Use ISO format YYYY-MM-DD HH:MM with timezone (or check UTC)."
@@ -408,9 +453,7 @@ def _normalize_tz_text(value: str) -> str:
 
 
 def _local_naive_to_utc(naive: datetime, config: CsvImportConfig) -> datetime:
-    if config.assume_utc:
-        return naive
-    return naive.replace(tzinfo=config.import_zone).astimezone(timezone.utc).replace(tzinfo=None)
+    return local_naive_to_utc(naive, config.import_zone, config.assume_utc)
 
 
 def _should_ignore_sample_row(row: dict, header_lookup: dict[str, str]) -> bool:
