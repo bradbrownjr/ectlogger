@@ -1,6 +1,22 @@
 {
-  "version": "2026.08.19",
+  "version": "2026.08.20",
   "entries": [
+    {
+      "version": "2026.08.20",
+      "date": "2026-08-20",
+      "sections": [
+        {
+          "title": "New Features",
+          "type": "feature",
+          "items": [
+            {
+              "text": "Net View: Backfill a net that ran off-app — if a net was run on paper or in another program and never started in ECT Logger, staff can now import its check-in log from a CSV, enter the net's real start and end times, and have the net recorded as closed in one step, so everyone who took part gets attendance credit and the schedule's participation statistics stay accurate. Rows that list only a time of day, like 7:05 PM, are now placed correctly when you pick your own time zone instead of UTC, and anyone on a schedule's staff can run the import rather than only the net's owner.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.08.19",
       "date": "2026-08-19",
