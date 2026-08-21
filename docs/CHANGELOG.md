@@ -8,7 +8,7 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Net View: Share a net without an account** — A net's view or report page now works for someone who isn't signed in, instead of bouncing them to the login screen, so you can send a link to a prospective member and let them see how a net works before they create an account. Phone numbers and email addresses typed into check-in notes or chat messages are hidden from anyone viewing without an account.
+* **Net View: Share a net without an account** — Send someone a net's link and they can view it, no sign-in needed, so you can show a prospective member how ECT Logger works before they join. Any phone number or email address in check-in notes or chat stays hidden from them.
 
 ---
 

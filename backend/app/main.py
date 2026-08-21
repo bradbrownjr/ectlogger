@@ -246,16 +246,26 @@ async def _ws_heartbeat_loop():
 
 
 async def post_system_message(net_id: int, message: str, db_session=None):
-    """Post a system message to chat and broadcast via WebSocket"""
+    """Post a system message to chat and broadcast via WebSocket.
+
+    Many callers (check_ins.py in particular) build message from free text a
+    user typed -- location, a topic-of-the-week answer, a poll response --
+    e.g. "{callsign} has checked in from {location}". The REST GET .../messages
+    redacts that for a guest viewer, but this is the one function behind
+    every system message, so it's also the one place that has to send a
+    redacted copy to live guest WebSocket connections -- otherwise a guest
+    watching an active net sees the raw text the instant it happens, before
+    a refetch would ever mask it."""
     from app.database import AsyncSessionLocal
     from app.models import ChatMessage
+    from app.utils import redact_contact_info
     import datetime
-    
+
     should_close = False
     if db_session is None:
         db_session = AsyncSessionLocal()
         should_close = True
-    
+
     try:
         # Create system message
         chat_message = ChatMessage(
@@ -267,22 +277,31 @@ async def post_system_message(net_id: int, message: str, db_session=None):
         db_session.add(chat_message)
         await db_session.commit()
         await db_session.refresh(chat_message)
-        
+
         # Broadcast via WebSocket
-        await manager.broadcast({
-            "type": "chat_message",
-            "data": {
-                "id": chat_message.id,
-                "net_id": chat_message.net_id,
-                "user_id": None,
-                "callsign": None,
-                "message": chat_message.message,
-                "is_system": True,
-                "created_at": chat_message.created_at.isoformat() if hasattr(chat_message.created_at, 'isoformat') else str(chat_message.created_at)
+        base_data = {
+            "id": chat_message.id,
+            "net_id": chat_message.net_id,
+            "user_id": None,
+            "callsign": None,
+            "is_system": True,
+            "created_at": chat_message.created_at.isoformat() if hasattr(chat_message.created_at, 'isoformat') else str(chat_message.created_at)
+        }
+        timestamp = datetime.datetime.utcnow().isoformat()
+        await manager.broadcast(
+            {
+                "type": "chat_message",
+                "data": {**base_data, "message": chat_message.message},
+                "timestamp": timestamp,
             },
-            "timestamp": datetime.datetime.utcnow().isoformat()
-        }, net_id)
-        
+            net_id,
+            guest_message={
+                "type": "chat_message",
+                "data": {**base_data, "message": redact_contact_info(chat_message.message)},
+                "timestamp": timestamp,
+            },
+        )
+
         return chat_message
     finally:
         if should_close:

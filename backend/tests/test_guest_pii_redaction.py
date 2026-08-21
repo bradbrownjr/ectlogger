@@ -124,6 +124,34 @@ async def test_chat_broadcast_sends_redacted_copy_to_guests(client, owner):
 
 
 @pytest.mark.asyncio
+async def test_check_in_system_message_broadcast_redacted_for_guests(client, owner):
+    """The "{callsign} has checked in from {location}" system message is
+    built by check_ins.py and broadcast by main.py::post_system_message --
+    a different code path than chat.py::create_message, and one that used
+    to send the raw location to every WebSocket connection including
+    guests, live, before a REST refetch would ever have redacted it."""
+    net_id = await _active_net(client, owner)
+
+    with patch("app.main.manager.broadcast", new_callable=AsyncMock) as mock_broadcast:
+        resp = await client.post(
+            f"/api/check-ins/nets/{net_id}/check-ins",
+            json={"callsign": "W1TEST", "location": "call 555-123-4567 for directions"},
+            headers=auth_headers(owner),
+        )
+        assert resp.status_code == 201
+
+        system_calls = [
+            call for call in mock_broadcast.call_args_list
+            if call.args[0]["data"].get("is_system") and "checked in from" in call.args[0]["data"]["message"]
+        ]
+        assert len(system_calls) == 1
+        raw_message = system_calls[0].args[0]["data"]["message"]
+        guest_message = system_calls[0].kwargs["guest_message"]["data"]["message"]
+        assert "555-123-4567" in raw_message
+        assert "555-123-4567" not in guest_message
+
+
+@pytest.mark.asyncio
 async def test_ics309_export_readable_by_guest_and_redacted(client, owner):
     net_id = await _active_net(client, owner)
     await client.post(
