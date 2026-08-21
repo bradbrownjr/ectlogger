@@ -10,11 +10,16 @@ All notable changes to ECTLogger are documented here.
 
 * **Net View: Share a net without an account** — Send someone a net's link and they can view it, no sign-in needed, so you can show a prospective member how ECT Logger works before they join. Any phone number or email address in check-in notes or chat stays hidden from them.
 
+## Improvements
+
+* **Check-in Import: Imports now logged** — A CSV check-in import posts a summary note to the net's Activity Log recording who ran it and how many rows landed, so there's a visible record of when and how a backfilled net's data arrived.
+
 ## Bug Fixes
 
 * **Net Report: Complete check-in maps** — The check-in map on a net's report no longer silently drops stations once a net has more than 10 different locations; every mappable station now shows up. Any station that still can't be placed (no location on file, or one we couldn't look up) is listed by callsign under the map instead of just vanishing with no explanation.
 * **Check-in Import: Shortened years accepted** — Timestamps written with a 2-digit year, like 8/20/26, now import correctly instead of every row being rejected, so a CSV straight from Notepad or a spreadsheet's default date format doesn't need to be reformatted by hand first.
 * **Net View: Fix roles on closed nets** — NCS and Logger assignments can now be corrected after a net is closed or archived, not just while it's live, so a wrong or missing role from a backfilled import doesn't require reopening the net to fix.
+* **Net View: Archive reminder no longer covers import results** — Closing a net through a CSV import no longer pops the archive-reminder dialog immediately on top of the import summary, so you get a moment to read the results first.
 
 ---
 

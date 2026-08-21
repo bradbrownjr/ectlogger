@@ -662,8 +662,9 @@ A few things worth knowing:
 - **The times decide which rows are accepted.** Anything outside the window is rejected with a row number and a reason. They also place rows that give only a time of day, like `7:05 PM` - a bare time is matched against the day the net ran. If your start and end times span more than a day, those rows cannot be placed and need a full date instead.
 - **Closing is what makes the net count.** Attendance credit for each operator appears as soon as the rows import, but a schedule's participation rate only counts nets that are closed. Leaving the net scheduled makes everyone's participation rate look higher than it is.
 - **If nothing imports, the net stays scheduled.** A file where every row fails will not close the net, so you can correct the file and try again.
-- **The net log is emailed** to the owner and to subscribers who asked for close notifications, exactly as it would be for a net closed live. Nothing is posted to the net's chat.
+- **The net log is emailed** to the owner and to subscribers who asked for close notifications, exactly as it would be for a net closed live. The "Net closed" message itself isn't posted to the net's chat, since it would be timestamped after the historical window the import just wrote and read out of order. A summary line noting who ran the import and how many rows landed is posted to the Activity Log, timestamped at the real time the import ran.
 - **There is no one-click undo.** Imported check-ins are deleted one at a time from the check-in list, and the times can be corrected afterwards under **Edit net** in the **Actual Net Times** box.
+- **NCS and Logger roles aren't set by the import.** The CSV only creates check-ins; assign NCS or Logger to any imported station afterward using the **Roles** button, which works on a closed net too.
 
 #### Accepted Date and Time Formats
 

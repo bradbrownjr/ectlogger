@@ -385,6 +385,17 @@ async def import_net_csv(
         if imported_rows or db.dirty:
             await db.commit()
 
+    if imported_rows:
+        # A CSV import bypasses create_check_in entirely, so unlike a live
+        # check-in it leaves no trace in the Activity Log on its own. Posted
+        # after the commit above, so it's stamped at the real time the import
+        # ran rather than backdated into the historical window it just wrote.
+        from app.main import post_system_message
+        summary = f"{display_callsign(current_user)} imported {len(imported_rows)} check-in(s) from CSV"
+        if svc_result.skipped or svc_result.errors:
+            summary += f" ({svc_result.skipped} skipped, {len(svc_result.errors)} error(s))"
+        await post_system_message(net_id, summary, db)
+
     max_errors = 50
     errors = svc_result.errors
     return {

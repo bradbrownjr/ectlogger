@@ -645,7 +645,11 @@ const NetView: React.FC = () => {
     const canManageThisNet = user?.role === 'admin' || !!net?.is_owner_or_ncs;
     if (net?.status === 'closed' && canManageThisNet && !archiveReminderShownRef.current) {
       archiveReminderShownRef.current = true;
-      archiveReminder.onOpen();
+      // Delayed so this modal doesn't pop up right on top of a toast that just
+      // fired for the same status change (e.g. a CSV import that closes the net
+      // as part of the same action) -- the toast gets a moment on screen first.
+      const timer = setTimeout(() => archiveReminder.onOpen(), 1500);
+      return () => clearTimeout(timer);
     }
   }, [net?.status, net?.is_owner_or_ncs, user?.role]);
 
