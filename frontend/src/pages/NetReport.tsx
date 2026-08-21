@@ -303,6 +303,10 @@ const NetReport: React.FC = () => {
     parsedLocation: ParsedLocation;
   }
   const [mappedCheckIns, setMappedCheckIns] = useState<MappedCheckIn[]>([]);
+  // Checked-in (non-checked-out) stations that couldn't be placed on the map --
+  // no location on file, an unparseable location, or a geocode that came back
+  // empty. Surfaced explicitly rather than silently dropped, see Section 3 below.
+  const [unmappedCheckIns, setUnmappedCheckIns] = useState<CheckIn[]>([]);
   const [mapLoading, setMapLoading] = useState(false);
   const [mapTilesReady, setMapTilesReady] = useState(false);
   const processedKeyRef = useRef<string>('');
@@ -382,11 +386,16 @@ const NetReport: React.FC = () => {
     const processLocations = async () => {
       setMapLoading(true);
       const results: MappedCheckIn[] = [];
+      const failed: CheckIn[] = [];
       const addressesToGeocode: { checkIn: CheckIn; parsed: ParsedLocation }[] = [];
 
       // First pass: parse all locations
       for (const checkIn of checkIns) {
-        if (!checkIn.location || checkIn.status.toUpperCase() === 'CHECKED_OUT') continue;
+        if (checkIn.status.toUpperCase() === 'CHECKED_OUT') continue;
+        if (!checkIn.location) {
+          failed.push(checkIn);
+          continue;
+        }
 
         const parsed = parseLocation(checkIn.location);
         if (parsed) {
@@ -397,28 +406,37 @@ const NetReport: React.FC = () => {
             // Already have coordinates
             results.push({ checkIn, parsedLocation: parsed });
           }
+        } else {
+          failed.push(checkIn);
         }
       }
 
-      // Geocode addresses (limit to prevent too many API calls)
-      const geocodeLimit = 10;
-      for (let i = 0; i < Math.min(addressesToGeocode.length, geocodeLimit); i++) {
-        const { checkIn, parsed } = addressesToGeocode[i];
+      // Geocode every address that needs it. Nominatim rate limiting is
+      // already serialized server-side (app/routers/geocode.py) and results
+      // are cached there, so there's no reason to cap this list -- a net
+      // with many unique locations just takes a few extra seconds the first
+      // time. (Previously hard-capped at 10, which silently dropped every
+      // station past the 10th with no indication anything was missing --
+      // see docs/CHANGELOG.md.)
+      for (const { checkIn, parsed } of addressesToGeocode) {
         const geocoded = await geocodeAddress(parsed.original);
         if (geocoded) {
-          results.push({ 
-            checkIn, 
-            parsedLocation: { 
-              ...geocoded, 
-              type: 'address', 
-              original: parsed.original 
-            } 
+          results.push({
+            checkIn,
+            parsedLocation: {
+              ...geocoded,
+              type: 'address',
+              original: parsed.original
+            }
           });
+        } else {
+          failed.push(checkIn);
         }
       }
 
       processedKeyRef.current = checkInsKey;
       setMappedCheckIns(results);
+      setUnmappedCheckIns(failed);
       setMapTilesReady(false);
       setMapLoading(false);
     };
@@ -1194,6 +1212,18 @@ const NetReport: React.FC = () => {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
             <CircularProgress size={16} />
             <Typography variant="body2" color="text.secondary">Loading map locations...</Typography>
+          </Box>
+        )}
+
+        {/* ---- Stations the primary check-in map couldn't place ---- */}
+        {/* No location on file, an unparseable location, or a geocode that
+            came back empty -- listed explicitly rather than just vanishing
+            from the map with no explanation. */}
+        {!mapLoading && unmappedCheckIns.length > 0 && (
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+              Not mapped due to insufficient location information: {unmappedCheckIns.map((c) => c.callsign).join(', ')}
+            </Typography>
           </Box>
         )}
 

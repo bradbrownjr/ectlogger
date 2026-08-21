@@ -10,6 +10,10 @@ All notable changes to ECTLogger are documented here.
 
 * **Net View: Share a net without an account** — Send someone a net's link and they can view it, no sign-in needed, so you can show a prospective member how ECT Logger works before they join. Any phone number or email address in check-in notes or chat stays hidden from them.
 
+## Bug Fixes
+
+* **Net Report: Complete check-in maps** — The check-in map on a net's report no longer silently drops stations once a net has more than 10 different locations; every mappable station now shows up. Any station that still can't be placed (no location on file, or one we couldn't look up) is listed by callsign under the map instead of just vanishing with no explanation.
+
 ---
 
 # August 20, 2026
