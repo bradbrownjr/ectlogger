@@ -1,8 +1,8 @@
 {
-  "version": "2026.08.21d",
+  "version": "2026.08.21e",
   "entries": [
     {
-      "version": "2026.08.21d",
+      "version": "2026.08.21e",
       "date": "2026-08-21",
       "sections": [
         {
@@ -25,6 +25,10 @@
             },
             {
               "text": "Check-in Import: Shortened years accepted — timestamps written with a 2-digit year, like 8/20/26, now import correctly instead of every row being rejected, so a CSV straight from Notepad or a spreadsheet's default date format doesn't need to be reformatted by hand first.",
+              "userImpact": true
+            },
+            {
+              "text": "Net View: Fix roles on closed nets — NCS and Logger assignments can now be corrected after a net is closed or archived, not just while it's live, so a wrong or missing role from a backfilled import doesn't require reopening the net to fix.",
               "userImpact": true
             }
           ]

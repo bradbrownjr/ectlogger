@@ -223,7 +223,10 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
               }}>
                 <TableCell sx={{ whiteSpace: 'nowrap' }}>{index + 1}</TableCell>
                 <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                  {(net.status === 'active' || net.status === 'lobby') && checkIn.status !== 'checked_out' && (canManageCheckIns || checkIn.user_id === user?.id) ? (() => {
+                  {/* Also editable on a closed/archived net: a backfilled import or a
+                      misattributed NCS/Logger role still needs correcting after the fact,
+                      same reasoning as the Edit net and Roles toolbar actions. */}
+                  {(net.status === 'active' || net.status === 'lobby' || net.status === 'closed' || net.status === 'archived') && checkIn.status !== 'checked_out' && (canManageCheckIns || checkIn.user_id === user?.id) ? (() => {
                     const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
                     let selectValue = checkIn.status.toLowerCase();
                     // Role only takes over the value while checked in -- same rule as

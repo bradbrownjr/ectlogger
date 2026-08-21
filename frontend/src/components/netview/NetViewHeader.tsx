@@ -511,7 +511,11 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
     },
     {
       key: 'roles', group: 'management', priority: 3,
-      visible: canManage && (isDraftOrScheduled || isActiveOrLobby),
+      // Stays available on a closed/archived net too, same reasoning as
+      // edit-net above: a backfilled or misattributed NCS/Logger role still
+      // needs fixing after the fact, and the API has no status guard on
+      // assigning or removing a NetRole.
+      visible: canManage,
       Icon: GroupIcon, color: '#9c27b0', label: 'Roles',
       tooltip: isDraftOrScheduled
         ? 'Assign NCS and logger roles (any assigned NCS can start the net)'

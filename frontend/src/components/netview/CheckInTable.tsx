@@ -376,7 +376,10 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                     >
                       <TableCell sx={{ width: 35 }}>{index + 1}</TableCell>
                       <TableCell sx={{ width: 75 }} onClick={(e) => e.stopPropagation()}>
-                        {(net.status === 'active' || net.status === 'lobby') && checkIn.status !== 'checked_out' && (canManageCheckIns || checkIn.user_id === user?.id) ? (() => {
+                        {/* Also editable on a closed/archived net: a backfilled import or a
+                            misattributed NCS/Logger role still needs correcting after the fact,
+                            same reasoning as the Edit net and Roles toolbar actions. */}
+                        {(net.status === 'active' || net.status === 'lobby' || net.status === 'closed' || net.status === 'archived') && checkIn.status !== 'checked_out' && (canManageCheckIns || checkIn.user_id === user?.id) ? (() => {
                           // Calculate value once
 
                           // Ensure selectValue matches MenuItem values exactly
