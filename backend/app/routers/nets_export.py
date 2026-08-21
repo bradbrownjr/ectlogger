@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.database import get_db
-from app.dependencies import get_current_user
+from app.dependencies import get_current_user, get_current_user_optional
 from app.models import CheckIn, Net, NetRole, NetStatus, TemplateStaff, User, net_frequencies
 from app.models import Form as TrafficFormModel
 from app.permissions import check_net_lifecycle_permission, check_net_permission
@@ -36,7 +36,7 @@ from app.traffic.ics309 import (
     traffic_to_station,
 )
 from app.traffic.rri_strip import make_nts_safe
-from app.utils import display_callsign, format_time_for_net, resolve_display_tz, to_display_tz
+from app.utils import display_callsign, format_time_for_net, redact_contact_info, resolve_display_tz, to_display_tz
 
 router = APIRouter()
 
@@ -403,12 +403,17 @@ async def import_net_csv(
     }
 
 
-async def _build_ics309_data(db: AsyncSession, net: Net, current_user: User) -> dict:
+async def _build_ics309_data(db: AsyncSession, net: Net, current_user: Optional[User]) -> dict:
     """Single source of truth for the ICS-309 Communications Log content --
     header fields plus the merged/sorted check-in + chat + traffic log rows.
     Shared by export_net_ics309's csv and json formats (and, via the json
     format, by the frontend's ICS309PrintView PDF) so there is exactly one
-    place that assembles this log, not one per output format."""
+    place that assembles this log, not one per output format.
+
+    current_user may be None (a guest viewing a public net's report) -- in
+    that case check-in/chat free text is scrubbed of anything that looks
+    like an email or phone number, same as the REST list endpoints."""
+    redact = current_user is None
     # Helper to format frequency
     def format_freq(freq):
         if freq.frequency:
@@ -456,8 +461,10 @@ async def _build_ics309_data(db: AsyncSession, net: Net, current_user: User) -> 
 
     # Add check-ins
     for check_in in sorted(net.check_ins, key=lambda x: x.checked_in_at):
-        location_info = f" from {check_in.location}" if check_in.location else ""
-        weather_info = f" | WX: {check_in.weather_observation}" if check_in.weather_observation else ""
+        location_text = redact_contact_info(check_in.location) if redact else check_in.location
+        weather_text = redact_contact_info(check_in.weather_observation) if redact else check_in.weather_observation
+        location_info = f" from {location_text}" if location_text else ""
+        weather_info = f" | WX: {weather_text}" if weather_text else ""
 
         log_entries.append({
             'time': format_time_for_net(to_display_tz(check_in.checked_in_at, tz), display_started_at, display_closed_at),
@@ -474,7 +481,7 @@ async def _build_ics309_data(db: AsyncSession, net: Net, current_user: User) -> 
                 'time': format_time_for_net(to_display_tz(msg.created_at, tz), display_started_at, display_closed_at),
                 'from_station': callsign,
                 'to_station': 'NET',
-                'message': msg.message
+                'message': redact_contact_info(msg.message) if redact else msg.message
             })
 
     # Add Assisted Traffic Handling rows -- metadata only, never the message
@@ -512,12 +519,16 @@ async def _build_ics309_data(db: AsyncSession, net: Net, current_user: User) -> 
 async def export_net_ics309(
     net_id: int,
     format: str = Query("csv"),
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db)
 ):
     """Export net as an ICS-309 Communications Log: CSV (?format=csv, the
     default, for spreadsheet/filing use) or structured JSON (?format=json,
-    consumed by the frontend's ICS309PrintView for a form-accurate PDF)."""
+    consumed by the frontend's ICS309PrintView for a form-accurate PDF, and
+    by NetReport.tsx -- a page intentionally open to guests). Reading this
+    is no more sensitive than the check-in list and chat, both already open
+    to guests: callsign and licensee name are public via the FCC ULS, and
+    free text is redacted for guests the same way as those endpoints."""
     if format not in ("csv", "json"):
         raise HTTPException(status_code=400, detail="format must be 'csv' or 'json'")
 
@@ -533,10 +544,6 @@ async def export_net_ics309(
 
     if not net:
         raise HTTPException(status_code=404, detail="Net not found")
-
-    # Check permissions - anyone can export a net they have access to
-    if not await check_net_permission(db, net, current_user):
-        raise HTTPException(status_code=403, detail="Not authorized to export this net")
 
     data = await _build_ics309_data(db, net, current_user)
 

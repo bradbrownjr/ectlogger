@@ -21,7 +21,7 @@ from datetime import datetime
 from app.database import get_db
 from app.models import CanHearReport, CheckIn, Frequency, Net, User, net_frequencies
 from app.schemas import CanHearReportResponse, CanHearReportSave, CanHearReportFrequencyUpdate
-from app.dependencies import get_current_user
+from app.dependencies import get_current_user, get_current_user_optional
 from app.permissions import check_net_permission
 from app.band_utils import band_from_frequency_string
 
@@ -80,11 +80,12 @@ async def _build_report_responses(db: AsyncSession, net: Net, reports: List[CanH
 @router.get("/{net_id}/can-hear-reports", response_model=List[CanHearReportResponse])
 async def list_can_hear_reports(
     net_id: int,
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db)
 ):
     """List all 'can hear' reports for a net. Reading is not more sensitive
-    than the check-in list, so no permission gate beyond normal auth."""
+    than the check-in list, which requires no auth at all -- so this is
+    open to guests too, matching every other net-view read endpoint."""
     result = await db.execute(select(Net).options(selectinload(Net.frequencies)).where(Net.id == net_id))
     net = result.scalar_one_or_none()
     if not net:

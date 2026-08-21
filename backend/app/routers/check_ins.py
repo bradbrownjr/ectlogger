@@ -2,13 +2,13 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
-from typing import List
+from typing import List, Optional
 from datetime import datetime, UTC
 import json
 from app.database import get_db
 from app.models import CheckIn, Net, NetStatus, User, UserRole, StationStatus, NetRole, Contact, Frequency
 from app.schemas import CheckInCreate, CheckInUpdate, CheckInResponse
-from app.dependencies import get_current_user
+from app.dependencies import get_current_user, get_current_user_optional
 from app.utils import display_callsign
 from app.permissions import check_net_permission, is_eligible_for_ncs_auto_grant
 
@@ -331,9 +331,12 @@ async def create_check_in(
 @router.get("/nets/{net_id}/check-ins", response_model=List[CheckInResponse])
 async def list_check_ins(
     net_id: int,
+    current_user: Optional[User] = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db)
 ):
-    """List all check-ins for a net"""
+    """List all check-ins for a net. Guests (no current_user) get free-text
+    fields scrubbed of anything that looks like an email or phone number --
+    see redact_contact_info."""
     result = await db.execute(
         select(CheckIn)
         .options(selectinload(CheckIn.user))
@@ -341,13 +344,15 @@ async def list_check_ins(
         .order_by(CheckIn.checked_in_at)
     )
     check_ins = result.scalars().all()
-    
-    return [CheckInResponse.from_orm(ci) for ci in check_ins]
+
+    redact = current_user is None
+    return [CheckInResponse.from_orm(ci, redact=redact) for ci in check_ins]
 
 
 @router.get("/check-ins/{check_in_id}", response_model=CheckInResponse)
 async def get_check_in(
     check_in_id: int,
+    current_user: Optional[User] = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db)
 ):
     """Get a specific check-in"""
@@ -355,11 +360,11 @@ async def get_check_in(
         select(CheckIn).options(selectinload(CheckIn.user)).where(CheckIn.id == check_in_id)
     )
     check_in = result.scalar_one_or_none()
-    
+
     if not check_in:
         raise HTTPException(status_code=404, detail="Check-in not found")
-    
-    return CheckInResponse.from_orm(check_in)
+
+    return CheckInResponse.from_orm(check_in, redact=current_user is None)
 
 
 @router.put("/check-ins/{check_in_id}", response_model=CheckInResponse)

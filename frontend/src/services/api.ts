@@ -46,9 +46,15 @@ api.interceptors.response.use(
   },
   (error) => {
     if (error.response?.status === 401) {
-      // Don't redirect to login if we're already verifying a magic link
+      // A 401 with no stored token just means a guest hit a login-required
+      // resource while browsing a public net/report page -- that's expected
+      // and the calling code already handles the rejected promise. Only a
+      // 401 on a request that WAS sending a token means the session itself
+      // died (expired/revoked), which is the case that should log the user
+      // out and bounce to /login.
+      const hadToken = !!localStorage.getItem('token');
       const isVerifyingMagicLink = window.location.pathname === '/auth/verify';
-      if (!isVerifyingMagicLink) {
+      if (hadToken && !isVerifyingMagicLink) {
         console.error('[API] 401 Unauthorized - redirecting to login');
         localStorage.removeItem('token');
         localStorage.removeItem('user');

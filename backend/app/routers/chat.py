@@ -8,13 +8,13 @@ from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
-from typing import List
+from typing import List, Optional
 from PIL import Image
 
 from app.database import get_db
 from app.models import ChatMessage, ChatReaction, ChatImage, Net, User
 from app.schemas import ChatMessageCreate, ChatMessageResponse, ChatImageUploadResponse
-from app.dependencies import get_current_user
+from app.dependencies import get_current_user, get_current_user_optional
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
@@ -98,9 +98,12 @@ async def create_message(
     )
     chat_message = result.scalar_one()
     
-    # Broadcast chat message via WebSocket
+    # Broadcast chat message via WebSocket. Guest connections (WS allows
+    # anonymous viewers) get a redacted copy of the message text -- same
+    # rule as the REST GET below -- so a live guest can't see contact info
+    # arrive in real time that the REST list would have scrubbed.
     from app.main import manager
-    from app.utils import get_avatar_url
+    from app.utils import get_avatar_url, redact_contact_info
     import datetime
     avatar_url = None
     if chat_message.user:
@@ -108,28 +111,40 @@ async def create_message(
             getattr(chat_message.user, 'email', None),
             getattr(chat_message.user, 'avatar_url', None),
         )
-    await manager.broadcast({
-        "type": "chat_message",
-        "data": {
-            "id": chat_message.id,
-            "net_id": chat_message.net_id,
-            "user_id": chat_message.user_id,
-            "callsign": chat_message.user.callsign if chat_message.user else "",
-            "message": chat_message.message,
-            "avatar_url": avatar_url,
-            "created_at": chat_message.created_at.isoformat() if hasattr(chat_message.created_at, 'isoformat') else str(chat_message.created_at)
+    base_data = {
+        "id": chat_message.id,
+        "net_id": chat_message.net_id,
+        "user_id": chat_message.user_id,
+        "callsign": chat_message.user.callsign if chat_message.user else "",
+        "avatar_url": avatar_url,
+        "created_at": chat_message.created_at.isoformat() if hasattr(chat_message.created_at, 'isoformat') else str(chat_message.created_at)
+    }
+    timestamp = datetime.datetime.utcnow().isoformat()
+    await manager.broadcast(
+        {
+            "type": "chat_message",
+            "data": {**base_data, "message": chat_message.message},
+            "timestamp": timestamp,
         },
-        "timestamp": datetime.datetime.utcnow().isoformat()
-    }, net_id)
+        net_id,
+        guest_message={
+            "type": "chat_message",
+            "data": {**base_data, "message": redact_contact_info(chat_message.message)},
+            "timestamp": timestamp,
+        },
+    )
     return ChatMessageResponse.from_orm(chat_message)
 
 
 @router.get("/nets/{net_id}/messages", response_model=List[ChatMessageResponse])
 async def get_messages(
     net_id: int,
+    current_user: Optional[User] = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db)
 ):
-    """Get all chat messages for a net"""
+    """Get all chat messages for a net. Guests (no current_user) get
+    messages scrubbed of anything that looks like an email or phone number --
+    see redact_contact_info."""
     result = await db.execute(
         select(ChatMessage)
         .options(
@@ -141,8 +156,9 @@ async def get_messages(
         .order_by(ChatMessage.created_at.asc())
     )
     messages = result.scalars().all()
-    
-    return [ChatMessageResponse.from_orm(msg) for msg in messages]
+
+    redact = current_user is None
+    return [ChatMessageResponse.from_orm(msg, redact=redact) for msg in messages]
 
 
 @router.delete("/nets/{net_id}/messages/{message_id}", status_code=status.HTTP_204_NO_CONTENT)

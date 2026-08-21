@@ -14,7 +14,7 @@ from app.ncs_reminder_service import ncs_reminder_service
 from app.whats_new_service import whats_new_service
 from app.traffic_reminder_service import traffic_reminder_service
 from app.traffic.definitions import upsert_form_definitions
-from typing import Dict, List
+from typing import Dict, List, Optional
 import asyncio
 import json
 import logging
@@ -201,15 +201,20 @@ class ConnectionManager:
             return 0
         return sum(1 for _, user_id in self.active_connections[net_id] if user_id == 0)
     
-    async def broadcast(self, message: dict, net_id: int):
-        """Broadcast message to all connections for a net, cleaning up dead connections"""
+    async def broadcast(self, message: dict, net_id: int, guest_message: Optional[dict] = None):
+        """Broadcast message to all connections for a net, cleaning up dead connections.
+
+        If guest_message is given, unauthenticated connections (user_id == 0,
+        the guest-viewer sentinel) receive it instead of message -- used to
+        send a PII-redacted copy of a chat message to anonymous viewers."""
         if net_id not in self.active_connections:
             return
-        
+
         dead_connections = []
         for connection, user_id in self.active_connections[net_id]:
+            payload = guest_message if (guest_message is not None and user_id == 0) else message
             try:
-                await connection.send_json(message)
+                await connection.send_json(payload)
             except Exception as e:
                 logger.warning("WebSocket send failed for user %s on net %s: %s", user_id, net_id, e)
                 dead_connections.append(connection)

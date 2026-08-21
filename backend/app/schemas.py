@@ -850,7 +850,7 @@ class CheckInResponse(CheckInBase):
         from_attributes = True
     
     @classmethod
-    def from_orm(cls, obj):
+    def from_orm(cls, obj, redact: bool = False):
         import json
         from app.utils import get_avatar_url
         # Deserialize available_frequencies JSON field
@@ -877,7 +877,21 @@ class CheckInResponse(CheckInBase):
             )
         else:
             obj.avatar_url = None
-        return super().from_orm(obj)
+        result = super().from_orm(obj)
+        if redact:
+            from app.utils import redact_contact_info
+            result = result.model_copy(update={
+                'location': redact_contact_info(result.location),
+                'weather_observation': redact_contact_info(result.weather_observation),
+                'feedback': redact_contact_info(result.feedback),
+                'notes': redact_contact_info(result.notes),
+                'topic_response': redact_contact_info(result.topic_response),
+                'custom_fields': {
+                    k: (redact_contact_info(v) if isinstance(v, str) else v)
+                    for k, v in (result.custom_fields or {}).items()
+                },
+            })
+        return result
 
 
 # Custom Field Schemas
@@ -930,8 +944,8 @@ class ChatMessageResponse(BaseModel):
         from_attributes = True
     
     @classmethod
-    def from_orm(cls, obj):
-        from app.utils import get_avatar_url
+    def from_orm(cls, obj, redact: bool = False):
+        from app.utils import get_avatar_url, redact_contact_info
         # Build reactions dict: emoji -> sorted list of user_ids
         reactions: dict = {}
         for r in (obj.reactions if hasattr(obj, 'reactions') and obj.reactions else []):
@@ -952,7 +966,7 @@ class ChatMessageResponse(BaseModel):
             'net_id': obj.net_id,
             'user_id': obj.user_id,
             'callsign': obj.user.callsign if obj.user and obj.user.callsign else ('System' if obj.is_system else 'Unknown'),
-            'message': obj.message,
+            'message': redact_contact_info(obj.message) if redact else obj.message,
             'is_system': obj.is_system if hasattr(obj, 'is_system') else False,
             'created_at': obj.created_at,
             'reactions': reactions,

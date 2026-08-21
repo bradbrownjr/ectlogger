@@ -1,6 +1,7 @@
 """Shared utility helpers used across the backend."""
 
 import hashlib
+import re
 from datetime import datetime, timezone as dt_timezone
 from pathlib import Path
 from typing import Optional
@@ -143,3 +144,31 @@ def display_callsign(user) -> str:
         or getattr(user, 'email', '')
         or ''
     )
+
+
+_EMAIL_RE = re.compile(r'[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}')
+# Matches common US phone formats -- (555) 123-4567, 555-123-4567,
+# 555.123.4567, +1 555 123 4567, or a bare 5551234567 -- while the
+# (?<!\d)/(?!\d) boundaries keep it from grabbing a piece of a longer digit
+# run (a talkgroup ID, a ZIP+4, etc).
+_PHONE_RE = re.compile(r'(?<!\d)(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}(?!\d)')
+
+
+def redact_contact_info(text: Optional[str]) -> Optional[str]:
+    """Best-effort redaction of email addresses and phone numbers from free
+    text shown to unauthenticated (guest) viewers of a net's history.
+
+    Regex-based PII detection is inherently imperfect -- this reduces casual
+    exposure of a callback number or email address typed into a check-in
+    note or chat message, it does not guarantee none is present. Callers
+    apply this only when the requester is not logged in; a callsign and
+    licensee name are already public via the FCC ULS, so those are left
+    alone, and authenticated net participants always see the original
+    text -- sharing a callback number during a net is normal coordination,
+    not a leak.
+    """
+    if not text:
+        return text
+    text = _EMAIL_RE.sub('[redacted]', text)
+    text = _PHONE_RE.sub('[redacted]', text)
+    return text
