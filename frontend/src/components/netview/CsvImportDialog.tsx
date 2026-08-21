@@ -148,17 +148,18 @@ const CsvImportDialog: React.FC<CsvImportDialogProps> = ({
     if (isClosedOrArchived) {
       setNetStartedAtInput(formatForInputInZone(startedAt, effectiveZone));
       setNetClosedAtInput(formatForInputInZone(closedAt, effectiveZone));
-    } else if (status === 'scheduled') {
+    } else if (isBackfill) {
+      // The net never ran, so the scheduled time is the only start worth
+      // offering, and it may not exist at all. There is no end time to guess:
+      // a wrong-looking default is worse than an empty box on a form that
+      // writes an official record.
       setNetStartedAtInput(formatForInputInZone(scheduledStartTime, effectiveZone));
-      setNetClosedAtInput('');
-    } else if (status === 'draft') {
-      setNetStartedAtInput('');
       setNetClosedAtInput('');
     } else {
       setNetStartedAtInput(formatForInputInZone(startedAt, effectiveZone));
       setNetClosedAtInput('');
     }
-  }, [open, timesDirty, effectiveZone, status, isClosedOrArchived, scheduledStartTime, startedAt, closedAt]);
+  }, [open, timesDirty, effectiveZone, isBackfill, isClosedOrArchived, scheduledStartTime, startedAt, closedAt]);
 
   // A backfill cannot proceed without both times, and an inverted range is always
   // a typo. Compared as raw strings: the fixed YYYY-MM-DDTHH:mm format sorts correctly.
