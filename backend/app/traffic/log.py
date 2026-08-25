@@ -10,11 +10,11 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from typing import Iterable, Optional, Union
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import Form, FormDisposition, RelayMethod, TrafficAction, TrafficLogEntry
+from app.models import Form, FormDisposition, RelayMethod, TrafficAction, TrafficLogEntry, TrafficTestCategory
 
 # Stage C's reminder service (TRAFFIC-HANDLING-DESIGN.md D4) will replace this
 # fixed threshold with the real precedence-scaled staleness ladder. Until that
@@ -190,6 +190,14 @@ def disposition_filter_clause(disposition: FormDisposition):
     return None
 
 
+def not_demo_clause():
+    """DEMO-labeled traffic is throwaway test data, excluded from every
+    summary/report count; DRILL and real traffic are not (see
+    TrafficTestCategory). != against a nullable column would silently
+    exclude the (common) NULL/real rows too, so this spells out the OR."""
+    return or_(Form.test_category.is_(None), Form.test_category != TrafficTestCategory.DEMO)
+
+
 async def compute_net_traffic_counts(db: AsyncSession, net_id: int) -> dict:
     """Counts by derived disposition for *net_id*, plus the outstanding/stale
     placeholder count. Returns a plain dict (not a schema) so this can be
@@ -202,7 +210,9 @@ async def compute_net_traffic_counts(db: AsyncSession, net_id: int) -> dict:
     counts: dict[FormDisposition, int] = {}
     for disposition in FormDisposition:
         clause = disposition_filter_clause(disposition)
-        count_query = select(func.count()).select_from(Form).where(Form.net_id == net_id, clause)
+        count_query = select(func.count()).select_from(Form).where(
+            Form.net_id == net_id, clause, not_demo_clause()
+        )
         counts[disposition] = (await db.execute(count_query)).scalar() or 0
 
     stale_cutoff = datetime.utcnow() - _STALE_THRESHOLD
@@ -211,6 +221,7 @@ async def compute_net_traffic_counts(db: AsyncSession, net_id: int) -> dict:
         disposition_filter_clause(FormDisposition.PENDING),
         Form.held_since.isnot(None),
         Form.held_since <= stale_cutoff,
+        not_demo_clause(),
     )
     outstanding = (await db.execute(outstanding_query)).scalar() or 0
 

@@ -36,6 +36,7 @@ from app.models import (
     TrafficReminderLog,
     User,
 )
+from app.traffic.log import not_demo_clause
 from app.email_service import EmailService
 from app.config import settings
 from app.logger import logger
@@ -197,6 +198,7 @@ class TrafficReminderService:
                     Form.last_action.in_([TrafficAction.ORIGINATED, TrafficAction.RECEIVED]),
                     Form.held_by_user_id.isnot(None),
                     Form.held_since.isnot(None),
+                    not_demo_clause(),
                 )
             )
         )
@@ -416,6 +418,7 @@ class TrafficReminderService:
                     Net.template_id == template_id,
                     Form.last_action.in_([TrafficAction.ORIGINATED, TrafficAction.RECEIVED]),
                     Form.held_since.isnot(None),
+                    not_demo_clause(),
                 )
             )
         )

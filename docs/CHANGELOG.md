@@ -6,6 +6,10 @@ All notable changes to ECTLogger are documented here.
 
 # August 25, 2026
 
+## New Features
+
+* **Traffic: Mark traffic as Drill or Demo** — You can now label a piece of traffic as Drill (a full exercise, still logged and reported like real traffic) or Demo (throwaway test data), right when you file it or any time after. Demo traffic is excluded from reminder emails and from ICS-309/Net Report exports and traffic counts, and you (or an admin) can delete it even after it's been logged, so a test strip never sits in your inbox nagging you.
+
 ## Bug Fixes
 
 * **Net View: NCS crown shows only for active staff** — The crown icon could appear for someone who had stepped down from the role; it now only shows for staff who currently hold that position.

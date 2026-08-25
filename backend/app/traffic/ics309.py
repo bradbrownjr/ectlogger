@@ -22,6 +22,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models import Form, TrafficAction, TrafficLogEntry
+from app.traffic.log import not_demo_clause
 from app.utils import display_callsign
 
 _ACTION_VERBS = {
@@ -40,14 +41,19 @@ async def get_net_traffic_log_entries(db: AsyncSession, net_id: int) -> List[Tra
     itself was filed on (see TRAFFIC-HANDLING-DESIGN.md R4: a message
     received on net A and relayed on net B is a fact about both nets).
     Eager-loads the parent Form (promoted columns only are ever read from
-    it) and the reporting user, for the FROM column."""
+    it) and the reporting user, for the FROM column.
+
+    Excludes DEMO-labeled forms -- throwaway test data with no place in a
+    communications log. DRILL forms are deliberately included; a drill is
+    meant to fully simulate real traffic, ICS-309 row and all."""
     result = await db.execute(
         select(TrafficLogEntry)
+        .join(Form, TrafficLogEntry.form_id == Form.id)
         .options(
             selectinload(TrafficLogEntry.form),
             selectinload(TrafficLogEntry.reported_by),
         )
-        .where(TrafficLogEntry.net_id == net_id)
+        .where(TrafficLogEntry.net_id == net_id, not_demo_clause())
         .order_by(TrafficLogEntry.occurred_at)
     )
     return list(result.scalars().all())

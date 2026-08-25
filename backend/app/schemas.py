@@ -1,7 +1,7 @@
 from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 from typing import Optional, List, Literal, Dict, Any, Union
 from datetime import datetime
-from app.models import UserRole, NetStatus, StationStatus, FormDisposition, TrafficAction, RelayMethod
+from app.models import UserRole, NetStatus, StationStatus, FormDisposition, TrafficAction, RelayMethod, TrafficTestCategory
 import re
 
 
@@ -1750,6 +1750,7 @@ class FormCreate(BaseModel):
     net_id: Optional[int] = None
     field_values: dict = Field(default_factory=dict)
     initial_log_entry: Optional[TrafficLogEntryCreate] = None
+    test_category: Optional[TrafficTestCategory] = None
 
     @field_validator('field_values')
     @classmethod
@@ -1777,6 +1778,13 @@ class FormUpdate(BaseModel):
         return v
 
 
+class FormTestCategoryUpdate(BaseModel):
+    """Set or clear a form's drill/demo label. A dedicated endpoint/schema,
+    separate from FormUpdate, because this is allowed regardless of
+    append-only/log-entry state -- see traffic_forms.py::set_test_category."""
+    test_category: Optional[TrafficTestCategory] = None
+
+
 class FormResponse(BaseModel):
     id: int
     definition_id: int
@@ -1798,6 +1806,7 @@ class FormResponse(BaseModel):
     held_since: Optional[datetime] = None
     last_action: Optional[TrafficAction] = None
     disposition: FormDisposition
+    test_category: Optional[TrafficTestCategory] = None
     filed_at: datetime
     created_at: datetime
     updated_at: Optional[datetime] = None
@@ -1836,6 +1845,7 @@ class FormResponse(BaseModel):
             held_since=obj.held_since,
             last_action=obj.last_action,
             disposition=derive_disposition(obj),
+            test_category=obj.test_category,
             filed_at=obj.filed_at,
             created_at=obj.created_at,
             updated_at=obj.updated_at,

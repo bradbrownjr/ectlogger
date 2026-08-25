@@ -123,6 +123,49 @@ async def test_summary_counts_all_dispositions_and_outstanding(client, db, owner
 
 
 @pytest.mark.asyncio
+async def test_summary_excludes_demo_but_includes_drill(client, db, owner):
+    """DEMO traffic must not inflate summary counts (it isn't real); DRILL
+    traffic must, since it's meant to fully simulate a real incident."""
+    await upsert_form_definitions(db)
+    net = Net(name="Summary Test Category Net", owner_id=owner.id)
+    db.add(net)
+    await db.commit()
+    await db.refresh(net)
+
+    definition = (await db.execute(
+        select(FormDefinition).where(FormDefinition.form_type == "RADIOGRAM")
+    )).scalar_one()
+
+    def _make_form(number: str, test_category=None) -> Form:
+        form = Form(
+            definition_id=definition.id,
+            form_type=definition.form_type,
+            definition_version=definition.version,
+            net_id=net.id,
+            created_by_id=owner.id,
+            field_values="{}",
+            message_number=number,
+            test_category=test_category,
+        )
+        db.add(form)
+        return form
+
+    real_form = _make_form("real-1")
+    drill_form = _make_form("drill-1", test_category="drill")
+    demo_form = _make_form("demo-1", test_category="demo")
+    await db.flush()
+    for form in (real_form, drill_form, demo_form):
+        await append_entry(db, form, TrafficAction.ORIGINATED, reported_by_user_id=owner.id,
+                            net_id=net.id, occurred_at=datetime.utcnow())
+    await db.commit()
+
+    resp = await client.get(f"/api/traffic/nets/{net.id}/summary", headers=auth_headers(owner))
+    assert resp.status_code == 200
+    # Only real_form + drill_form counted as pending; demo_form excluded.
+    assert resp.json()["pending"] == 2
+
+
+@pytest.mark.asyncio
 async def test_summary_denied_without_ncs_or_logger_role(client, db, owner, other):
     net = Net(name="Summary Perm Net", owner_id=owner.id)
     db.add(net)

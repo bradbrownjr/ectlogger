@@ -7,6 +7,8 @@ import {
   CardActionArea,
   CardContent,
   TextField,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
@@ -93,6 +95,11 @@ const TrafficComposer: React.FC<TrafficComposerProps> = ({
   const [values, setValues] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Drill simulates a real incident and gets no special treatment beyond
+  // this label; Demo is throwaway test data (excluded from reminders/
+  // reports, deletable later). Mutually exclusive with "real traffic",
+  // hence a toggle group rather than a checkbox per option.
+  const [testCategory, setTestCategory] = useState<'drill' | 'demo' | null>(null);
 
   // ---- The full strip, shown alongside the fields (strip types only) ----
   // Two ways into the same message: fill the fields and watch the strip
@@ -267,6 +274,7 @@ const TrafficComposer: React.FC<TrafficComposerProps> = ({
     setStripLabel('');
     setStripOverride(null);
     setStripWarnings([]);
+    setTestCategory(null);
     // Keep the single auto-selected option selected; otherwise return to the
     // picker so the next item can be a different type.
     if (!autoSelected) setSelectedKey(null);
@@ -311,6 +319,7 @@ const TrafficComposer: React.FC<TrafficComposerProps> = ({
         form_type: selected.definition.form_type,
         net_id: netId,
         field_values: fieldValues,
+        test_category: testCategory,
       });
       onCreated(resp.data.id);
       resetAfterCreate();
@@ -339,6 +348,7 @@ const TrafficComposer: React.FC<TrafficComposerProps> = ({
           call_sign: stripCallSign.trim().toUpperCase(),
           strip_text: stripText,
         },
+        test_category: testCategory,
       });
       onCreated(resp.data.id);
       resetAfterCreate();
@@ -446,6 +456,26 @@ const TrafficComposer: React.FC<TrafficComposerProps> = ({
       {contextLabel && (
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
           {contextLabel}
+        </Typography>
+      )}
+      <ToggleButtonGroup
+        exclusive
+        size="small"
+        value={testCategory}
+        onChange={(_e, next) => setTestCategory(next)}
+        sx={{ mb: 2 }}
+      >
+        <ToggleButton value="drill" sx={{ minHeight: 44 }}>Drill</ToggleButton>
+        <ToggleButton value="demo" sx={{ minHeight: 44 }}>Demo</ToggleButton>
+      </ToggleButtonGroup>
+      {testCategory === 'drill' && (
+        <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2, mt: -1 }}>
+          Simulates a real incident — logged and reported the same as real traffic, just labeled for after-action review.
+        </Typography>
+      )}
+      {testCategory === 'demo' && (
+        <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2, mt: -1 }}>
+          Throwaway test data — you (or an admin) can delete it later, and it's excluded from reminders and reports.
         </Typography>
       )}
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}

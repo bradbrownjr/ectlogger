@@ -1,13 +1,16 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Box, Paper, Typography, Chip, Divider, CircularProgress, Alert, Grid, Button, IconButton, Tooltip } from '@mui/material';
+import { Box, Paper, Typography, Chip, Divider, CircularProgress, Alert, Grid, Button, IconButton, Tooltip, Menu, MenuItem } from '@mui/material';
 import DescriptionIcon from '@mui/icons-material/Description';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import SendIcon from '@mui/icons-material/Send';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import LabelOutlinedIcon from '@mui/icons-material/LabelOutlined';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { useSnackbar } from 'notistack';
 import { trafficApi } from '../../services/api';
 import { getErrorMessage } from '../../utils/apiErrors';
 import { exportElementToPdf } from '../../utils/pdfExport';
+import { useAuth } from '../../contexts/AuthContext';
 import { TrafficForm } from '../../hooks/useTrafficList';
 import { FormDefinition } from '../../hooks/useFormDefinitions';
 import TrafficLogTimeline, { TrafficLogEntry } from './TrafficLogTimeline';
@@ -15,6 +18,11 @@ import RelayLogDialog from './RelayLogDialog';
 import RadiogramPrintView from './print/RadiogramPrintView';
 import ICS213PrintView from './print/ICS213PrintView';
 import RRIStripPrintView from './print/RRIStripPrintView';
+
+const TEST_CATEGORY_LABEL: Record<string, string> = {
+  drill: 'DRILL',
+  demo: 'DEMO',
+};
 
 // ========== TrafficDetail ==========
 // Read view of a single form: field values, disposition, the chain-of-custody
@@ -29,16 +37,24 @@ interface FormDetail extends TrafficForm {
 
 interface TrafficDetailProps {
   formId: number;
+  // Called after a successful delete (only reachable for demo-labeled
+  // traffic) so the caller can navigate back to a list -- this form no
+  // longer exists to display.
+  onDeleted?: () => void;
 }
 
-const TrafficDetail: React.FC<TrafficDetailProps> = ({ formId }) => {
+const TrafficDetail: React.FC<TrafficDetailProps> = ({ formId, onDeleted }) => {
   const { enqueueSnackbar } = useSnackbar();
+  const { user } = useAuth();
   const [form, setForm] = useState<FormDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [exportingFormat, setExportingFormat] = useState<'text' | 'pdf' | null>(null);
   const [handoffOpen, setHandoffOpen] = useState(false);
   const [rawStripText, setRawStripText] = useState<string | null>(null);
+  const [relabelAnchorEl, setRelabelAnchorEl] = useState<null | HTMLElement>(null);
+  const [relabeling, setRelabeling] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const refetch = useCallback(() => {
     setError(null);
@@ -156,6 +172,34 @@ const TrafficDetail: React.FC<TrafficDetailProps> = ({ formId }) => {
     }
   };
 
+  const canRelabel = !!user && (user.id === form.created_by_id || user.role === 'admin');
+
+  const handleSetTestCategory = async (testCategory: 'drill' | 'demo' | null) => {
+    setRelabelAnchorEl(null);
+    setRelabeling(true);
+    try {
+      const res = await trafficApi.setTestCategory(form.id, testCategory);
+      setForm((prev) => (prev ? { ...prev, test_category: res.data.test_category } : prev));
+    } catch (err) {
+      enqueueSnackbar(getErrorMessage(err, 'Failed to update the drill/demo label'), { variant: 'error' });
+    } finally {
+      setRelabeling(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm('Delete this demo traffic item? This cannot be undone.')) return;
+    setDeleting(true);
+    try {
+      await trafficApi.delete(form.id);
+      enqueueSnackbar('Demo traffic deleted', { variant: 'success' });
+      onDeleted?.();
+    } catch (err) {
+      enqueueSnackbar(getErrorMessage(err, 'Failed to delete this traffic item'), { variant: 'error' });
+      setDeleting(false);
+    }
+  };
+
   return (
     <Paper sx={{ p: { xs: 2, sm: 3 } }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1, mb: 2 }}>
@@ -164,6 +208,47 @@ const TrafficDetail: React.FC<TrafficDetailProps> = ({ formId }) => {
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
           <Chip label={form.disposition} size="small" />
+          {form.test_category && (
+            <Chip label={TEST_CATEGORY_LABEL[form.test_category]} size="small" variant="outlined" color="secondary" />
+          )}
+          {canRelabel && (
+            <>
+              <Button
+                size="small"
+                variant="outlined"
+                startIcon={relabeling ? <CircularProgress size={14} /> : <LabelOutlinedIcon />}
+                disabled={relabeling}
+                onClick={(e) => setRelabelAnchorEl(e.currentTarget)}
+                sx={{ minHeight: 44 }}
+              >
+                Label
+              </Button>
+              <Menu anchorEl={relabelAnchorEl} open={!!relabelAnchorEl} onClose={() => setRelabelAnchorEl(null)}>
+                <MenuItem disabled={form.test_category === 'drill'} onClick={() => handleSetTestCategory('drill')}>
+                  Mark as Drill
+                </MenuItem>
+                <MenuItem disabled={form.test_category === 'demo'} onClick={() => handleSetTestCategory('demo')}>
+                  Mark as Demo
+                </MenuItem>
+                <MenuItem disabled={!form.test_category} onClick={() => handleSetTestCategory(null)}>
+                  Clear label (real traffic)
+                </MenuItem>
+              </Menu>
+            </>
+          )}
+          {canRelabel && form.test_category === 'demo' && (
+            <Button
+              size="small"
+              variant="outlined"
+              color="error"
+              startIcon={deleting ? <CircularProgress size={14} /> : <DeleteOutlineIcon />}
+              disabled={deleting}
+              onClick={handleDelete}
+              sx={{ minHeight: 44 }}
+            >
+              Delete
+            </Button>
+          )}
           <Button
             size="small"
             variant="outlined"

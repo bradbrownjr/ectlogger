@@ -798,6 +798,15 @@ Fields like your callsign, place of origin, and filing time are auto-filled from
 
 On any strip form you get both ways of entering the same report, side by side and always visible: the named fields, and the **Full strip** box holding the single slash-delimited line that goes on the air. Fill in the fields and the strip builds itself as you type. Or, when a station reads the whole strip back in one breath, paste it into the box — press **Fill fields above** to see it split across the fields, or just file it and it's split for you. A blank field mid-strip stays blank rather than pulling the values after it out of line, and you're told if the pasted strip was short or had more values than the form expects.
 
+### Marking traffic as Drill or Demo
+
+Not every piece of traffic is real. When filing a Radiogram, ICS-213, or RRI strip, you can label it **Drill** or **Demo**:
+
+- **Drill** — a full exercise meant to simulate a real incident. It's treated exactly like real traffic: it still shows up in reminder emails if it sits unhandled, and it still appears in that net's ICS-309/Net Report exports and traffic counts. Only a "DRILL" tag on the item tells you afterward that it wasn't real, for after-action review.
+- **Demo** — throwaway test data, not meant to represent anything. Demo traffic never triggers a reminder email, never counts toward a net's traffic totals, and never appears in ICS-309 or Net Report exports. You (or an admin) can delete it at any time, even after it's been logged or relayed — the one case where traffic can be removed after the fact.
+
+Forgot to label something before filing it, or need to relabel it later? Open the item and use the **Label** button (visible to whoever filed it, and to admins) to set, change, or clear the Drill/Demo label at any time — including on traffic that's already been logged.
+
 ### Importing a message you copied off the air
 
 If you already have the plaintext of a radiogram, ICS-213 message, or RRI strip — copied down by hand, relayed from another station, or saved from packet — choose **Import** instead of **New**. Paste the text in, or drag a text file onto the box, and the parser fills in what it can recognize, flagging anything low-confidence (like a stated check that doesn't match the recomputed word count) for you to double-check before saving. Anything the parser doesn't recognize as one of the built-in types is still saved as a general RRI strip, exactly as pasted, rather than being discarded. Nothing is saved until you review and confirm the parsed fields.

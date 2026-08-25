@@ -38,6 +38,11 @@ const DISPOSITION_COLOR: Record<string, 'default' | 'warning' | 'info' | 'succes
   cancelled: 'error',
 };
 
+const TEST_CATEGORY_LABEL: Record<string, string> = {
+  drill: 'DRILL',
+  demo: 'DEMO',
+};
+
 function formatAge(dateString: string): string {
   const filed = new Date(dateString).getTime();
   const diffMs = Date.now() - filed;
@@ -111,11 +116,21 @@ const TrafficTable: React.FC<TrafficTableProps> = ({ items, currentUserId, onRow
               <TableCell>{form.form_type}</TableCell>
               <TableCell>{form.addressee_display || '—'}</TableCell>
               <TableCell>
-                <Chip
-                  label={form.disposition}
-                  size="small"
-                  color={DISPOSITION_COLOR[form.disposition] ?? 'default'}
-                />
+                <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                  <Chip
+                    label={form.disposition}
+                    size="small"
+                    color={DISPOSITION_COLOR[form.disposition] ?? 'default'}
+                  />
+                  {form.test_category && (
+                    <Chip
+                      label={TEST_CATEGORY_LABEL[form.test_category]}
+                      size="small"
+                      variant="outlined"
+                      color="secondary"
+                    />
+                  )}
+                </Box>
               </TableCell>
               <TableCell>{formatAge(form.filed_at)}</TableCell>
               <TableCell>

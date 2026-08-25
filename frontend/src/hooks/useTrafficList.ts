@@ -31,6 +31,7 @@ export interface TrafficForm {
   held_since: string | null;
   last_action: string | null;
   disposition: 'draft' | 'pending' | 'relayed' | 'delivered' | 'cancelled';
+  test_category: 'drill' | 'demo' | null;
   filed_at: string;
   created_at: string;
   updated_at: string | null;

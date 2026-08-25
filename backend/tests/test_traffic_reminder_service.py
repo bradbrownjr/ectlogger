@@ -167,6 +167,26 @@ async def test_new_log_entry_removes_form_from_eligibility(db, owner, other):
     assert form.id not in {f.id for f in pending}
 
 
+@pytest.mark.asyncio
+async def test_find_pending_forms_excludes_demo_but_includes_drill(db, owner):
+    """DEMO is throwaway test data and must never nag anyone. DRILL simulates
+    a real incident and is deliberately NOT exempted -- it stays eligible
+    exactly like real (unlabeled) traffic."""
+    definition = await _definition(db)
+    real_form = await _form(db, definition, created_by_id=owner.id)
+    drill_form = await _form(db, definition, created_by_id=owner.id, test_category="drill")
+    demo_form = await _form(db, definition, created_by_id=owner.id, test_category="demo")
+
+    for form in (real_form, drill_form, demo_form):
+        await append_entry(db, form, TrafficAction.ORIGINATED, reported_by_user_id=owner.id)
+
+    service = TrafficReminderService()
+    pending_ids = {f.id for f in await service._find_pending_forms(db)}
+    assert real_form.id in pending_ids
+    assert drill_form.id in pending_ids
+    assert demo_form.id not in pending_ids
+
+
 # ---------------------------------------------------------------------------
 # Per-stage dedup: the ladder fires at the right elapsed time, and the
 # UniqueConstraint blocks a duplicate even under a simulated race.

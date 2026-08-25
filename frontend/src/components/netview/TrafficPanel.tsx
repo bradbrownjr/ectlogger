@@ -361,7 +361,7 @@ const TrafficPanel: React.FC<TrafficPanelProps> = ({
               <IconButton size="small" onClick={() => setSelectedFormId(null)} title="Back to list" sx={{ mb: 1 }}>
                 <ArrowBackIcon sx={{ fontSize: 16 }} />
               </IconButton>
-              <TrafficDetail formId={selectedFormId} />
+              <TrafficDetail formId={selectedFormId} onDeleted={() => setSelectedFormId(null)} />
             </Box>
           ) : (
             <>

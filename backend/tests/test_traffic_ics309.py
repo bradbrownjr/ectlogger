@@ -37,12 +37,14 @@ RADIOGRAM_VALUES = {
 }
 
 
-async def _create_form_via_api(client, owner, net_id=None, **overrides):
+async def _create_form_via_api(client, owner, net_id=None, test_category=None, **overrides):
     values = dict(RADIOGRAM_VALUES)
     values.update(overrides)
     payload = {"form_type": "RADIOGRAM", "field_values": values}
     if net_id is not None:
         payload["net_id"] = net_id
+    if test_category is not None:
+        payload["test_category"] = test_category
     resp = await client.post("/api/traffic/forms", json=payload, headers=auth_headers(owner))
     assert resp.status_code == 201
     return resp.json()["id"]
@@ -160,6 +162,26 @@ async def test_ics309_export_excludes_traffic_rows_when_net_not_enabled(client, 
     assert "NR 21" not in csv_text
     assert "Jim Kutsch KY2D" not in csv_text
     assert SECRET_BODY_MARKER not in csv_text
+
+
+@pytest.mark.asyncio
+async def test_ics309_export_excludes_demo_but_includes_drill(client, db, owner):
+    """DEMO traffic has no place in a communications log; DRILL traffic is
+    meant to fully simulate real traffic, ICS-309 row and all."""
+    await upsert_form_definitions(db)
+    net = Net(name="ICS309 Test Category Net", owner_id=owner.id, ics309_enabled=True)
+    db.add(net)
+    await db.commit()
+    await db.refresh(net)
+
+    await _create_form_via_api(client, owner, net_id=net.id, number="30", test_category="drill")
+    await _create_form_via_api(client, owner, net_id=net.id, number="31", test_category="demo")
+
+    resp = await client.get(f"/api/nets/{net.id}/export/ics309", headers=auth_headers(owner))
+    assert resp.status_code == 200
+    csv_text = resp.text
+    assert "NR 30" in csv_text
+    assert "NR 31" not in csv_text
 
 
 @pytest.mark.asyncio

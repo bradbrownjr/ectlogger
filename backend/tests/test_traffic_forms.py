@@ -230,3 +230,111 @@ async def test_list_and_get_form_definitions(client, db, owner):
     assert single.status_code == 200
     assert single.json()["form_type"] == "RADIOGRAM"
     assert any(f["name"] == "station_of_origin" for f in single.json()["fields"])
+
+
+# ========== DRILL / DEMO LABELING ==========
+
+@pytest.mark.asyncio
+async def test_create_with_test_category(client, db, owner):
+    await upsert_form_definitions(db)
+    resp = await client.post(
+        "/api/traffic/forms",
+        json={"form_type": "RADIOGRAM", "field_values": RADIOGRAM_VALUES, "test_category": "demo"},
+        headers=auth_headers(owner),
+    )
+    assert resp.status_code == 201
+    assert resp.json()["test_category"] == "demo"
+
+
+@pytest.mark.asyncio
+async def test_set_test_category_works_regardless_of_log_entries(client, db, owner):
+    """Unlike PATCH /forms/{id}, the label endpoint must succeed even once
+    the form is append-only -- this is what lets an already-logged (and
+    already nagging) strip get relabeled after the fact."""
+    await upsert_form_definitions(db)
+    definition = (await db.execute(select(FormDefinition).where(FormDefinition.form_type == "RADIOGRAM"))).scalar_one()
+    form = Form(
+        definition_id=definition.id,
+        form_type=definition.form_type,
+        definition_version=definition.version,
+        created_by_id=owner.id,
+        field_values="{}",
+    )
+    db.add(form)
+    await db.commit()
+    await db.refresh(form)
+    await append_entry(db, form, TrafficAction.ORIGINATED, reported_by_user_id=owner.id, occurred_at=datetime.utcnow())
+
+    resp = await client.patch(
+        f"/api/traffic/forms/{form.id}/test-category",
+        json={"test_category": "demo"},
+        headers=auth_headers(owner),
+    )
+    assert resp.status_code == 200
+    assert resp.json()["test_category"] == "demo"
+
+    # Clearing it back to real traffic works the same way.
+    resp = await client.patch(
+        f"/api/traffic/forms/{form.id}/test-category",
+        json={"test_category": None},
+        headers=auth_headers(owner),
+    )
+    assert resp.status_code == 200
+    assert resp.json()["test_category"] is None
+
+
+@pytest.mark.asyncio
+async def test_set_test_category_denied_for_non_creator_non_admin(client, db, owner, other):
+    await upsert_form_definitions(db)
+    resp = await client.post(
+        "/api/traffic/forms",
+        json={"form_type": "RADIOGRAM", "field_values": RADIOGRAM_VALUES},
+        headers=auth_headers(owner),
+    )
+    form_id = resp.json()["id"]
+
+    resp = await client.patch(
+        f"/api/traffic/forms/{form_id}/test-category",
+        json={"test_category": "demo"},
+        headers=auth_headers(other),
+    )
+    assert resp.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_delete_demo_form_succeeds_even_once_logged(client, db, owner):
+    """DEMO carries no audit-trail requirement, so unlike ordinary traffic it
+    stays deletable by its creator after being logged. A DRILL form, by
+    contrast, gets no such exception -- it follows the same append-only rule
+    real traffic does."""
+    await upsert_form_definitions(db)
+    definition = (await db.execute(select(FormDefinition).where(FormDefinition.form_type == "RADIOGRAM"))).scalar_one()
+
+    demo_form = Form(
+        definition_id=definition.id,
+        form_type=definition.form_type,
+        definition_version=definition.version,
+        created_by_id=owner.id,
+        field_values="{}",
+        test_category="demo",
+    )
+    drill_form = Form(
+        definition_id=definition.id,
+        form_type=definition.form_type,
+        definition_version=definition.version,
+        created_by_id=owner.id,
+        field_values="{}",
+        test_category="drill",
+    )
+    db.add_all([demo_form, drill_form])
+    await db.commit()
+    await db.refresh(demo_form)
+    await db.refresh(drill_form)
+    await append_entry(db, demo_form, TrafficAction.ORIGINATED, reported_by_user_id=owner.id, occurred_at=datetime.utcnow())
+    await append_entry(db, drill_form, TrafficAction.ORIGINATED, reported_by_user_id=owner.id, occurred_at=datetime.utcnow())
+
+    resp = await client.delete(f"/api/traffic/forms/{demo_form.id}", headers=auth_headers(owner))
+    assert resp.status_code == 204
+
+    resp = await client.delete(f"/api/traffic/forms/{drill_form.id}", headers=auth_headers(owner))
+    assert resp.status_code == 409

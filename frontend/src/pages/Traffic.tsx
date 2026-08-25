@@ -186,7 +186,7 @@ const Traffic: React.FC = () => {
         <Button startIcon={<ArrowBackIcon />} onClick={handleBackToBrowse} sx={{ mb: 2, minHeight: 44 }}>
           Back to Traffic
         </Button>
-        <TrafficDetail formId={parseInt(viewingId, 10)} />
+        <TrafficDetail formId={parseInt(viewingId, 10)} onDeleted={handleBackToBrowse} />
       </Container>
     );
   }

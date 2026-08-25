@@ -88,6 +88,18 @@ class RelayMethod(str, enum.Enum):
     OTHER = "other"
 
 
+class TrafficTestCategory(str, enum.Enum):
+    """A Form's real/not-real status. None (unset) means real traffic.
+    DRILL simulates a real incident and is deliberately NOT exempted from
+    anything -- same reminder ladder, same append-only chain of custody,
+    same appearance in ICS-309/Net Report exports -- it only carries a label
+    for after-action review. DEMO is throwaway test data: excluded from
+    reminders and from ICS-309/Net Report/summary-count output, and
+    deletable by its creator or an admin regardless of log-entry history."""
+    DRILL = "drill"
+    DEMO = "demo"
+
+
 class User(Base):
     __tablename__ = "users"
 
@@ -521,6 +533,9 @@ class Form(Base):
     check_count = Column(Integer, nullable=True)   # computed by count_nts_check, authoritative
     check_stated = Column(Integer, nullable=True)  # what an imported text claimed; null when we originated
     normalized_text = Column(Text)                 # post-normalize_nts_text body, authoritative for export
+
+    # None = real traffic. See TrafficTestCategory for DRILL vs DEMO semantics.
+    test_category = Column(Enum(TrafficTestCategory), nullable=True, index=True)
 
     # ---- Derived-and-cached (single writer: app/traffic/log.py::append_entry) ----
     held_by_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"),

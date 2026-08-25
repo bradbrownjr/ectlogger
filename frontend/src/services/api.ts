@@ -285,6 +285,11 @@ export const trafficApi = {
   get: (id: number) => api.get(`/traffic/forms/${id}`),
   update: (id: number, data: any) => api.patch(`/traffic/forms/${id}`, data),
   delete: (id: number) => api.delete(`/traffic/forms/${id}`),
+  // Set/clear the drill or demo label. Allowed regardless of append-only
+  // state (unlike `update` above), so it also works on already-logged
+  // traffic -- see routers/traffic_forms.py::set_test_category.
+  setTestCategory: (id: number, testCategory: 'drill' | 'demo' | null) =>
+    api.patch(`/traffic/forms/${id}/test-category`, { test_category: testCategory }),
   // responseType 'blob' since this returns a plaintext file download. The
   // printable PDF is rendered client-side now (RadiogramPrintView.tsx /
   // ICS213PrintView.tsx + utils/pdfExport.ts), not a server format option.

@@ -381,6 +381,33 @@ distributed ledger; this one is a logbook.
 The UI cost is also smaller than it sounds: the chain is an append-only timeline component,
 not a CRUD grid, and each entry is one dialog with five fields.
 
+**Revision (2026-08-25) — DRILL and DEMO labels, and a scoped exception to append-only.**
+`Form.test_category` (nullable `TrafficTestCategory` enum: `drill` | `demo`, `None` = real
+traffic) marks a form as not-real, in one of two distinct ways:
+
+- **DRILL** — a full incident simulation. Deliberately gets *no* exception anywhere: same
+  append-only chain-of-custody rule as this section describes, same reminder ladder
+  (`traffic_reminder_service.py`), same appearance in ICS-309/Net Report exports and
+  summary counts. The only thing DRILL changes is a label, because a drill is meant to feel
+  exactly like the real thing for after-action review to be meaningful.
+- **DEMO** — throwaway test data, not a simulation of anything. Excluded from the reminder
+  ladder's eligibility query (`_find_pending_forms`/`_find_stale_forms_for_template`), from
+  `compute_net_traffic_counts`, and from the ICS-309/Net Report traffic rows
+  (`app/traffic/ics309.py::get_net_traffic_log_entries`) — all three via the shared
+  `not_demo_clause()` helper in `app/traffic/log.py`, so there's exactly one place that
+  defines "counts as demo" for every consumer.
+
+DEMO is also the one deliberate, scoped exception to this section's append-only rule: its
+creator or an admin may delete it via `DELETE /traffic/forms/{id}` regardless of how many
+log entries it has, because it carries no audit-trail requirement — there's no chain of
+custody to preserve for a message that never represented anything. `delete_form` special-
+cases exactly this one condition; every other form (real or DRILL) keeps the "no log entries"
+409 unchanged. The label itself is set via a dedicated endpoint,
+`PATCH /traffic/forms/{id}/test-category` (creator or admin, and — unlike `PATCH
+/traffic/forms/{id}`'s field_values editing — allowed regardless of append-only state), so an
+already-logged strip that should have been marked DEMO from the start can still be fixed
+after the fact.
+
 ---
 
 ## 2. Locked data model

@@ -9,13 +9,14 @@ from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.dependencies import get_current_user
-from app.models import Form, FormDefinition, FormDisposition, Net, TrafficAction, TrafficLogEntry, User
+from app.models import Form, FormDefinition, FormDisposition, Net, TrafficAction, TrafficLogEntry, TrafficTestCategory, User
 from app.permissions import FormPermissionResult, check_form_permission, check_net_permission, is_admin
 from app.schemas import (
     FormCreate,
     FormDetailResponse,
     FormListResponse,
     FormResponse,
+    FormTestCategoryUpdate,
     FormUpdate,
     TrafficSummaryResponse,
 )
@@ -89,6 +90,7 @@ async def create_form(
         net_id=data.net_id,
         created_by_id=current_user.id,
         field_values=json.dumps(values),
+        test_category=data.test_category,
         **promoted,
     )
     db.add(form)
@@ -311,6 +313,35 @@ async def update_form(
     return FormResponse.from_orm(form)
 
 
+@router.patch("/forms/{form_id}/test-category", response_model=FormResponse)
+async def set_test_category(
+    form_id: int,
+    data: FormTestCategoryUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Set or clear a form's drill/demo label. Submitter or admin only, and
+    allowed regardless of log-entry/append-only state -- unlike PATCH
+    /forms/{id}, this never touches field_values, so it's safe to let it
+    apply after the form has been logged/relayed (the common case: fixing a
+    strip that was filed without the label and is already in someone's
+    inbox)."""
+    result = await db.execute(
+        select(Form).options(selectinload(Form.log_entries)).where(Form.id == form_id)
+    )
+    form = result.scalar_one_or_none()
+    if not form:
+        raise HTTPException(status_code=404, detail="Form not found")
+
+    if not (form.created_by_id == current_user.id or is_admin(current_user)):
+        raise HTTPException(status_code=403, detail="Not authorized to relabel this form")
+
+    form.test_category = data.test_category
+    await db.commit()
+    await db.refresh(form)
+    return FormResponse.from_orm(form)
+
+
 @router.delete("/forms/{form_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_form(
     form_id: int,
@@ -319,7 +350,11 @@ async def delete_form(
 ):
     """Remove a mis-filed draft. Submitter or admin only, and only while the
     form has no log entries -- a form with any history is a record, not a
-    draft, and must not be deletable."""
+    draft, and must not be deletable. The one exception is DEMO-labeled
+    traffic: it isn't a simulation of anything and carries no audit-trail
+    requirement, so its submitter or an admin may delete it outright even
+    after it's been logged/relayed. DRILL traffic gets no such exception --
+    it's meant to fully simulate real traffic, log entries and all."""
     result = await db.execute(select(Form).where(Form.id == form_id))
     form = result.scalar_one_or_none()
     if not form:
@@ -328,14 +363,15 @@ async def delete_form(
     if not (form.created_by_id == current_user.id or is_admin(current_user)):
         raise HTTPException(status_code=403, detail="Not authorized to delete this form")
 
-    entries_result = await db.execute(
-        select(TrafficLogEntry.id).where(TrafficLogEntry.form_id == form.id).limit(1)
-    )
-    if entries_result.scalar_one_or_none() is not None:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Cannot delete a form once it has log entries",
+    if form.test_category != TrafficTestCategory.DEMO:
+        entries_result = await db.execute(
+            select(TrafficLogEntry.id).where(TrafficLogEntry.form_id == form.id).limit(1)
         )
+        if entries_result.scalar_one_or_none() is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Cannot delete a form once it has log entries",
+            )
 
     await db.delete(form)
     await db.commit()
