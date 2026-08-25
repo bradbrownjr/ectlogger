@@ -17,6 +17,7 @@ from app.models import (
     User,
     UserRole,
 )
+from app.routers.ncs_schedule import stamp_rotation_anchor
 from app.schemas import (
     TemplateMergeConflict,
     TemplateMergePreview,
@@ -322,6 +323,12 @@ async def merge_templates(
         else:
             await db.delete(member)
     logger.info(f"Merge: moved {rotation_moved} rotation members")
+
+    # Appending members changes both the size and the order of the target's rotation,
+    # so its assignment count has to restart from here or the merged schedule stays
+    # phase-shifted against the roster it now shows.
+    if rotation_moved:
+        stamp_rotation_anchor(target)
 
     # 5. Move schedule overrides
     source_overrides_result = await db.execute(

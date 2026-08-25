@@ -116,8 +116,31 @@ def is_fifth_occurrence(dt: datetime) -> bool:
     return (dt.day - 1) // 7 == 4
 
 
+def stamp_rotation_anchor(template: NetTemplate) -> None:
+    """Re-anchor the NCS rotation to right now, for the caller to commit.
+
+    The rotation stores no "whose turn is next" pointer. Each date's assignment is
+    derived by counting how many occurrences have elapsed since an anchor date and
+    taking that count modulo the active-member list (see get_rotation_anchor_date
+    below, which reads what this writes). Both halves of that calculation --
+    the divisor and the position-to-operator mapping -- change the instant the roster
+    is edited, so an anchor left back at the template's creation date puts the
+    computed order permanently out of phase with the order the manager just arranged.
+    It never self-corrects, which previously forced managers to fix each occurrence
+    by hand with a swap, indefinitely.
+
+    Stamping the anchor at the moment of the edit is what makes the edit take effect:
+    the first occurrence after this point belongs to whoever is now at position 1,
+    and the cycle carries on normally from there.
+
+    Call this from every route that changes which members are in the rotation or what
+    order they sit in. Naive UTC to match the rest of the codebase's timestamps.
+    """
+    template.rotation_anchor_date = datetime.utcnow()
+
+
 def get_rotation_anchor_date(template: NetTemplate) -> Optional[datetime]:
-    """Return the first scheduled occurrence on/after the template was created.
+    """Return the first scheduled occurrence the rotation counts from.
 
     The rotation's first active member serves this anchor date, and every later
     assignment is derived from how many occurrences have elapsed since it. Anchoring
@@ -126,22 +149,49 @@ def get_rotation_anchor_date(template: NetTemplate) -> Optional[datetime]:
     position 1 to whatever the next date happens to be, so the same operator is
     perpetually "Next NCS".
 
+    Two possible anchor sources, in priority order:
+
+    1. ``template.rotation_anchor_date`` — stamped by the roster-editing routes in
+       ``ncs_rotation.py`` whenever the membership or order of the rotation changes.
+       Because the divisor and the position-to-operator mapping both change on such
+       an edit, a creation-date anchor would leave the computed order permanently
+       out of phase with the order the manager just arranged, with no self-correction.
+       Re-anchoring at the moment of the edit is what makes the arrangement take
+       effect: the first occurrence *after* the edit belongs to position 1.
+    2. ``template.created_at`` — the original behavior, used whenever no anchor has
+       been stamped (every template whose roster has not been touched since the
+       anchor column shipped), so those schedules keep computing exactly as before.
+
+    Note the difference in how the two are floored. A creation timestamp is taken
+    back to local midnight, so a template created *after* that evening's net still
+    counts that same-day occurrence as its first. A roster-edit timestamp is used
+    as-is, because an edit made after tonight's net has already run must not claim
+    that net — the next *upcoming* occurrence is the one that belongs to position 1.
+
     Returns a naive *local* datetime (matching calculate_schedule_dates), or None for
-    ad-hoc schedules or templates with no creation timestamp.
+    ad-hoc schedules or templates with no usable anchor timestamp.
     """
-    if template.schedule_type == 'ad_hoc' or not template.created_at:
+    if template.schedule_type == 'ad_hoc':
         return None
-    created = template.created_at
-    if created.tzinfo is None:
-        created = created.replace(tzinfo=timezone.utc)
-    # Express creation time in the template's local tz, at midnight, so the same-day
-    # occurrence is captured even if the template was created after the net's start time.
-    created_local = created.astimezone(_template_local_tz(template)).replace(
-        tzinfo=None, hour=0, minute=0, second=0, microsecond=0
-    )
+
+    # getattr keeps this safe against a model instance predating the column
+    # (e.g. a database that has not run migration 061 yet).
+    roster_anchor = getattr(template, 'rotation_anchor_date', None)
+    source = roster_anchor or template.created_at
+    if not source:
+        return None
+
+    if source.tzinfo is None:
+        source = source.replace(tzinfo=timezone.utc)
+    source_local = source.astimezone(_template_local_tz(template)).replace(tzinfo=None)
+
+    if roster_anchor is None:
+        # Creation anchor: floor to local midnight so the same-day occurrence counts.
+        source_local = source_local.replace(hour=0, minute=0, second=0, microsecond=0)
+
     # Look ahead far enough to catch at least one occurrence for any cadence
     # (monthly nets may only meet once a month).
-    dates = calculate_schedule_dates(template, created_local, months_ahead=4)
+    dates = calculate_schedule_dates(template, source_local, months_ahead=4)
     return dates[0] if dates else None
 
 

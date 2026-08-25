@@ -1,10 +1,11 @@
 """Realign an NCS rotation's starting point to match the order the team expects.
 
-The schedule is anchored to a template's first occurrence, so the operator who
-lands on the next net is a function of (member order) and (elapsed occurrences).
-When a rotation needs to resume from a specific operator (e.g. after the
-"perpetual position 1" bug left it stuck), rotating the member list to put that
-operator first realigns the whole forward sequence without changing the cycle.
+The operator who lands on the next net is a function of (member order) and
+(occurrences elapsed since the rotation's anchor date). Reordering through the
+app already re-anchors the rotation, so the next net goes to the new position 1;
+this script is the offline equivalent for repairs that have to be done directly
+against the database. It writes the same anchor stamp the routes do -- without
+it, the new order would be computed against the old anchor and land out of phase.
 
 Usage (from the backend directory):
     python scripts/realign_rotation.py <template_id> <CALLSIGN1> <CALLSIGN2> ...
@@ -26,6 +27,7 @@ from sqlalchemy.orm import selectinload
 
 from app.database import AsyncSessionLocal
 from app.models import NetTemplate, NCSRotationMember
+from app.routers.ncs_schedule import stamp_rotation_anchor
 
 
 async def main(template_id: int, desired_order: list[str]):
@@ -55,6 +57,9 @@ async def main(template_id: int, desired_order: list[str]):
 
         for i, callsign in enumerate(desired_order, start=1):
             by_callsign[callsign].position = i
+        # Same re-anchoring the API routes do, so the new order takes effect on the
+        # next occurrence instead of being replayed against the old anchor.
+        stamp_rotation_anchor(tpl)
         await db.commit()
 
         result = await db.execute(

@@ -25,7 +25,7 @@ from app.permissions import check_template_permission
 from app.routers.ncs_schedule import (
     calculate_schedule_dates,
     compute_anchored_ncs_schedule,
-    compute_ncs_schedule,
+    stamp_rotation_anchor,
 )
 
 router = APIRouter(prefix="/templates/{template_id}/ncs-rotation", tags=["ncs-rotation"])
@@ -107,6 +107,8 @@ async def add_rotation_member(
         position=max_position + 1
     )
     db.add(member)
+    # Roster composition changed -- restart the rotation from this point.
+    stamp_rotation_anchor(template)
     await db.commit()
     
     # Reload with user relationship
@@ -153,6 +155,8 @@ async def remove_rotation_member(
     )
     
     await db.delete(member)
+    # Roster composition changed -- restart the rotation from this point.
+    stamp_rotation_anchor(template)
     await db.commit()
 
 
@@ -182,6 +186,8 @@ async def clear_all_rotation_members(
         )
     )
     
+    # Roster composition changed -- whoever is added back starts the cycle fresh.
+    stamp_rotation_anchor(template)
     await db.commit()
 
 
@@ -210,6 +216,8 @@ async def reorder_rotation_members(
         if member:
             member.position = i
     
+    # Roster order changed -- the next occurrence belongs to the new position 1.
+    stamp_rotation_anchor(template)
     await db.commit()
     
     # Reload and return
@@ -298,9 +306,13 @@ async def create_schedule_override(
     if not await check_template_permission(db, template, current_user):
         raise HTTPException(status_code=403, detail="Permission denied")
     
-    # Calculate who was originally scheduled
+    # Calculate who was originally scheduled. This must use the *anchored* calculation:
+    # compute_ncs_schedule on a single-date list always starts its rotation counter at
+    # zero, so it reported the current position-1 member as "originally scheduled" for
+    # every swap regardless of the date, recording a wrong name in the audit trail and
+    # in the cancellation notice below.
     dates = [override_data.scheduled_date]
-    schedule = compute_ncs_schedule(
+    schedule = compute_anchored_ncs_schedule(
         template, dates, template.rotation_members, []  # No overrides for original calc
     )
     original_user_id = schedule[0].user_id if schedule else None

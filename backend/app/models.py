@@ -255,7 +255,15 @@ class NetTemplate(Base):
     # Schedule configuration
     schedule_type = Column(String(20), default='ad_hoc')  # ad_hoc, daily, weekly, monthly
     schedule_config = Column(Text, default='{}')  # JSON: {day_of_week: 0-6, week_of_month: 1-5, time: "18:00"}
-    
+
+    # Movable start point for the NCS rotation. The rotation stores no "whose turn
+    # is next" pointer -- each assignment is derived by counting occurrences elapsed
+    # since an anchor. This column is re-stamped whenever the roster's membership or
+    # order changes, so the first occurrence after an edit belongs to whoever is now
+    # at position 1. Null = never edited, fall back to the created_at-derived anchor.
+    # See routers/ncs_schedule.py::get_rotation_anchor_date.
+    rotation_anchor_date = Column(DateTime(timezone=True), nullable=True)
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

@@ -45,7 +45,7 @@ export function getCheckInStatusHelpers({
       // Owner always gets the primary crown
       if (net?.owner_id === checkIn.user_id) return '👑';
 
-      const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
+      const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id && r.is_active !== false);
       if (userRole?.role?.toUpperCase() === 'NCS') {
         // Check if owner is checked in - if so, this NCS is secondary
         const ownerCheckedIn = net?.owner_id && checkIns.some(c => c.user_id === net.owner_id && c.status !== 'checked_out');
@@ -55,7 +55,7 @@ export function getCheckInStatusHelpers({
         }
 
         // Owner not present - check if this is first NCS in the list (acting primary)
-        const ncsIndex = ncsRoles.findIndex((r: any) => r.user_id === checkIn.user_id);
+        const ncsIndex = ncsRoles.findIndex((r: any) => r.user_id === checkIn.user_id && r.is_active !== false);
         if (ncsIndex > 0) {
           // This is a secondary NCS - check if primary NCS is checked in
           const primaryNCS = ncsRoles[0];
@@ -95,7 +95,7 @@ export function getCheckInStatusHelpers({
     // icon beside it is showing that station's current status.
     if (checkIn && roleBadgeApplies(status)) {
       if (net?.owner_id === checkIn.user_id) return 'Net Control Station - manages the net';
-      const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
+      const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id && r.is_active !== false);
       if (userRole?.role?.toUpperCase() === 'NCS') {
         // Check if owner is checked in - if so, this NCS is secondary
         const ownerCheckedIn = net?.owner_id && checkIns.some(c => c.user_id === net.owner_id && c.status !== 'checked_out');
@@ -104,7 +104,7 @@ export function getCheckInStatusHelpers({
         }
 
         // Check if this is a secondary NCS (not first in the list)
-        const ncsIndex = ncsRoles.findIndex((r: any) => r.user_id === checkIn.user_id);
+        const ncsIndex = ncsRoles.findIndex((r: any) => r.user_id === checkIn.user_id && r.is_active !== false);
         if (ncsIndex > 0) {
           const primaryNCS = ncsRoles[0];
           const primaryCheckedIn = checkIns.some(c => c.user_id === primaryNCS.user_id && c.status !== 'checked_out');
@@ -161,7 +161,7 @@ export function getCheckInStatusHelpers({
     if (ownerCheckedIn) return '🤴';
 
     // Owner not present - check if this is first NCS in the list
-    const ncsIndex = ncsRoles.findIndex((r: any) => r.user_id === checkIn.user_id);
+    const ncsIndex = ncsRoles.findIndex((r: any) => r.user_id === checkIn.user_id && r.is_active !== false);
     if (ncsIndex > 0) {
       const primaryNCS = ncsRoles[0];
       const primaryCheckedIn = checkIns.some(c => c.user_id === primaryNCS.user_id && c.status !== 'checked_out');

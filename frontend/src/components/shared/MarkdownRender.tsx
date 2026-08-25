@@ -60,7 +60,14 @@ interface MarkdownRenderProps {
 const MarkdownRender: React.FC<MarkdownRenderProps> = ({ content, emptyText, variant = 'colored', sx }) => (
   <Box sx={{ ...(variant === 'bordered' ? borderedHeadingStyles : coloredHeadingStyles), ...sx }}>
     {content ? (
-      <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{normalizeMarkdownDelimiters(content)}</ReactMarkdown>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm, remarkBreaks]}
+        components={{
+          a: ({ node, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" />,
+        }}
+      >
+        {normalizeMarkdownDelimiters(content)}
+      </ReactMarkdown>
     ) : (
       <Typography color="text.secondary" sx={{ fontStyle: 'italic' }}>{emptyText}</Typography>
     )}

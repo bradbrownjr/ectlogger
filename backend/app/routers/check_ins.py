@@ -5,6 +5,7 @@ from sqlalchemy.orm import selectinload
 from typing import List, Optional
 from datetime import datetime, UTC
 import json
+import logging
 from app.database import get_db
 from app.models import CheckIn, Net, NetStatus, User, UserRole, StationStatus, NetRole, Contact, Frequency
 from app.schemas import CheckInCreate, CheckInUpdate, CheckInResponse
@@ -12,7 +13,80 @@ from app.dependencies import get_current_user, get_current_user_optional
 from app.utils import display_callsign
 from app.permissions import check_net_permission, is_eligible_for_ncs_auto_grant
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/check-ins", tags=["check-ins"])
+
+
+# ========== SHARED CONTACT / USER LOOKUP HELPERS ==========
+# Used by both create_check_in and update_check_in so a station's shared
+# Contact row stays in sync no matter which path recorded the location.
+
+async def _find_user_by_callsign(db: AsyncSession, callsign: str) -> Optional[User]:
+    """Find the registered user who owns a callsign (amateur, GMRS, or one of
+    the extra callsigns stored in the User.callsigns JSON list)."""
+    result = await db.execute(
+        select(User).where(
+            (User.callsign == callsign) |
+            (User.gmrs_callsign == callsign) |
+            (User.callsigns.like(f'%"{callsign}"%'))
+        )
+    )
+    return result.scalar_one_or_none()
+
+
+async def _sync_contact_location(
+    db: AsyncSession,
+    callsign: str,
+    name: Optional[str],
+    location: Optional[str],
+    skywarn_number: Optional[str],
+    matching_user: Optional[User],
+) -> None:
+    """Create or update the shared Contact row for a callsign.
+
+    Contacts are the app-wide callsign history used for lookups across every
+    net, so both a new check-in and an edit to an existing one keep them
+    current. The one exception is a registered user with location_awareness
+    enabled: their location comes from live browser geolocation, so a
+    hand-typed location must not overwrite their tracked history.
+
+    Best-effort by design — a Contact failure must never fail the check-in
+    itself, so the exception is logged and the Contact changes rolled back.
+    The caller is expected to have already committed the check-in.
+    """
+    if matching_user and matching_user.location_awareness:
+        return
+
+    try:
+        contact_result = await db.execute(
+            select(Contact).where(Contact.callsign == callsign)
+        )
+        contact = contact_result.scalar_one_or_none()
+
+        if contact:
+            # Update contact with latest info (only if new values are non-empty)
+            if name and name != contact.name:
+                contact.name = name
+            if location and location != contact.location:
+                contact.location = location
+            if skywarn_number and skywarn_number != contact.skywarn_number:
+                contact.skywarn_number = skywarn_number
+        else:
+            # Create new contact from check-in data
+            contact = Contact(
+                callsign=callsign,
+                name=name or None,
+                location=location or None,
+                skywarn_number=skywarn_number or None,
+            )
+            db.add(contact)
+
+        await db.commit()
+    except Exception:
+        # Contact sync is best-effort — don't fail the check-in
+        logger.exception("Failed to sync Contact record for callsign %s", callsign)
+        await db.rollback()
 
 
 @router.post("/nets/{net_id}/check-ins", response_model=CheckInResponse, status_code=status.HTTP_201_CREATED)
@@ -105,17 +179,8 @@ async def create_check_in(
         )
     
     # Try to automatically link to existing user by callsign (amateur or GMRS)
-    linked_user_id = None
-    result = await db.execute(
-        select(User).where(
-            (User.callsign == check_in_data.callsign) | 
-            (User.gmrs_callsign == check_in_data.callsign) |
-            (User.callsigns.like(f'%"{check_in_data.callsign}"%'))
-        )
-    )
-    matching_user = result.scalar_one_or_none()
-    if matching_user:
-        linked_user_id = matching_user.id
+    matching_user = await _find_user_by_callsign(db, check_in_data.callsign)
+    linked_user_id = matching_user.id if matching_user else None
     
     # Every check-in — whether first or re-check — creates a new row.
     # Re-checks link back to the root (original) check-in via parent_check_in_id.
@@ -227,38 +292,18 @@ async def create_check_in(
         if check_in_data.poll_response != old_poll:
             await post_system_message(net_id, f"{check_in_data.callsign} answered the poll: {check_in_data.poll_response}", db)
     
-    # Auto-create or update Contact record for callsign history
-    # Only if this callsign doesn't belong to a registered user
-    if not linked_user_id:
-        try:
-            contact_result = await db.execute(
-                select(Contact).where(Contact.callsign == check_in_data.callsign)
-            )
-            contact = contact_result.scalar_one_or_none()
-            
-            if contact:
-                # Update contact with latest info (only if new values are non-empty)
-                if check_in_data.name and check_in_data.name != contact.name:
-                    contact.name = check_in_data.name
-                if check_in_data.location and check_in_data.location != contact.location:
-                    contact.location = check_in_data.location
-                if check_in_data.skywarn_number and check_in_data.skywarn_number != contact.skywarn_number:
-                    contact.skywarn_number = check_in_data.skywarn_number
-            else:
-                # Create new contact from check-in data
-                contact = Contact(
-                    callsign=check_in_data.callsign,
-                    name=check_in_data.name or None,
-                    location=check_in_data.location or None,
-                    skywarn_number=check_in_data.skywarn_number or None,
-                )
-                db.add(contact)
-            
-            await db.commit()
-        except Exception:
-            # Contact auto-creation is best-effort — don't fail the check-in
-            await db.rollback()
-    
+    # Auto-create or update the shared Contact record for callsign history.
+    # Skipped only for a registered user who tracks location via browser
+    # geolocation — see _sync_contact_location.
+    await _sync_contact_location(
+        db,
+        callsign=check_in.callsign,
+        name=check_in.name,
+        location=check_in.location,
+        skywarn_number=check_in.skywarn_number,
+        matching_user=matching_user,
+    )
+
     # ========== NCS ARRIVAL IN AN AUTO-OPENED LOBBY ==========
     # An automatically opened lobby stays silent until a human confirms the net
     # is really happening, so subscribers aren't told a net started that nobody
@@ -437,7 +482,22 @@ async def update_check_in(
         select(CheckIn).options(selectinload(CheckIn.user)).where(CheckIn.id == check_in.id)
     )
     check_in = result.scalar_one()
-    
+
+    # Keep the shared Contact record in sync when the location is edited here
+    # (e.g. NCS correcting a station's location inline). Without this, a
+    # correction only ever lived on this one check-in row and the station's
+    # app-wide history kept the stale value.
+    if 'location' in update_data:
+        matching_user = await _find_user_by_callsign(db, check_in.callsign)
+        await _sync_contact_location(
+            db,
+            callsign=check_in.callsign,
+            name=check_in.name,
+            location=check_in.location,
+            skywarn_number=check_in.skywarn_number,
+            matching_user=matching_user,
+        )
+
     # Post system message for status changes
     from app.main import post_system_message
     if 'status' in check_in_update.dict(exclude_unset=True):

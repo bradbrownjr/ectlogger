@@ -4,6 +4,18 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# August 25, 2026
+
+## Bug Fixes
+
+* **Net View: NCS crown shows only for active staff** — The crown icon could appear for someone who had stepped down from the role; it now only shows for staff who currently hold that position.
+* **Net View: Announcement links open in new tabs** — Links in the net script, announcements, and notes now open in a new tab, so clicking one keeps you in the net instead of taking you away.
+* **Check-in: Station locations saved to history** — Correcting a station's location on an existing check-in now updates that callsign's saved location everywhere, and locations are saved for members with accounts too, so a station's location no longer reverts to an old value the next time they check in.
+* **NCS Rotation: Roster changes take effect immediately** — Reordering the rotation, or adding and removing people, now sets the upcoming nets to match the list you just arranged. Before, the schedule kept working from the old order underneath, so a correction never really took hold and had to be patched with a swap on every net from then on.
+* **NCS Rotation: Swaps record the right person** — The operator a swap or cancellation says was originally scheduled is now the operator who actually had that date, so cancellation notices reach the person who was going to run the net instead of whoever happens to be first on the roster.
+
+---
+
 # August 21, 2026
 
 ## New Features
