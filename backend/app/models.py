@@ -350,6 +350,10 @@ class NetRole(Base):
     active_frequency_id = Column(Integer, ForeignKey("frequencies.id", ondelete="SET NULL"), nullable=True)  # Frequency this NCS is monitoring
     assigned_at = Column(DateTime(timezone=True), server_default=func.now())
     is_active = Column(Boolean, default=True)  # False when operator has temporarily stepped down to participant
+    # True only for the NCS role _assign_duty_ncs stamps from the rotation at
+    # auto-create time. Lets a later roster edit find and replace just the
+    # rotation's own pick on a not-yet-started net -- never a human's choice.
+    auto_assigned = Column(Boolean, default=False, nullable=False)
 
     # Relationships
     net = relationship("Net", back_populates="net_roles")

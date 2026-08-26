@@ -242,7 +242,7 @@ class NCSReminderService:
         if not schedule or not schedule[0].user_id or schedule[0].is_cancelled:
             return
 
-        db.add(NetRole(net_id=net_id, user_id=schedule[0].user_id, role="NCS"))
+        db.add(NetRole(net_id=net_id, user_id=schedule[0].user_id, role="NCS", auto_assigned=True))
 
     async def _check_and_auto_create_nets(self):
         """Ensure a SCHEDULED net instance exists ~24h before every recurring template.

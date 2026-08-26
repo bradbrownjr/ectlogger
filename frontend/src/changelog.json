@@ -1,8 +1,8 @@
 {
-  "version": "2026.08.25b",
+  "version": "2026.08.25c",
   "entries": [
     {
-      "version": "2026.08.25b",
+      "version": "2026.08.25c",
       "date": "2026-08-25",
       "sections": [
         {
@@ -32,7 +32,7 @@
               "userImpact": true
             },
             {
-              "text": "NCS Rotation: Roster changes take effect immediately — reordering the rotation, or adding and removing people, now sets the upcoming nets to match the list you just arranged. Before, the schedule kept working from the old order underneath, so a correction never really took hold and had to be patched with a swap on every net from then on.",
+              "text": "NCS Rotation: Roster changes take effect immediately — reordering the rotation, or adding and removing people, now sets the upcoming nets to match the list you just arranged, including a net that had already been created and staffed before you made the fix. Before, the schedule kept working from the old order underneath, so a correction never really took hold and had to be patched with a swap on every net from then on. When a roster change does move a net's assigned NCS, both the person coming off and the person going on duty get an email so nobody finds out by surprise.",
               "userImpact": true
             },
             {

@@ -6,7 +6,8 @@ Implementation lives in:
   email/base.py          — send_email, send_email_with_attachment/s/binary_attachment, unsubscribe helpers
   email/auth.py          — send_magic_link
   email/net_lifecycle.py — send_net_notification, send_net_invitation, send_net_cancellation
-  email/reminders.py     — send_ncs_reminder, send_subscriber_reminder, send_staff_reminder
+  email/reminders.py     — send_ncs_reminder, send_subscriber_reminder, send_staff_reminder,
+                            send_ncs_duty_correction
   email/net_logs.py      — send_net_log, send_ics309_log
   email/digest.py        — send_feedback_email, send_whats_new_email
   email/traffic.py       — send_traffic_reminder, send_traffic_hxb_final_notice,
@@ -29,6 +30,7 @@ from app.email.net_lifecycle import (
 )
 from app.email.net_logs import send_ics309_log, send_net_log
 from app.email.reminders import (
+    send_ncs_duty_correction,
     send_ncs_reminder,
     send_staff_reminder,
     send_subscriber_reminder,
@@ -56,6 +58,7 @@ class EmailService:
     send_ncs_reminder = staticmethod(send_ncs_reminder)
     send_subscriber_reminder = staticmethod(send_subscriber_reminder)
     send_staff_reminder = staticmethod(send_staff_reminder)
+    send_ncs_duty_correction = staticmethod(send_ncs_duty_correction)
     send_net_log = staticmethod(send_net_log)
     send_ics309_log = staticmethod(send_ics309_log)
     send_feedback_email = staticmethod(send_feedback_email)

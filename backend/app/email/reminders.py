@@ -238,6 +238,114 @@ async def send_subscriber_reminder(
         unsubscribe_token=unsubscribe_token
     )
 
+async def send_ncs_duty_correction(
+    to_email: str,
+    recipient_name: str,
+    recipient_callsign: str,
+    net_name: str,
+    net_date: str,
+    net_time: str,
+    is_new_assignment: bool,
+    scheduler_url: str = None,
+    unsubscribe_token: str = None
+):
+    """Tell an operator the NCS rotation reassigned duty for a net that hasn't started yet.
+
+    Sent when a roster edit (add/remove/reorder/clear/merge) changes who the
+    rotation now picks for a net that was already auto-created ~24h ahead, so
+    whoever the *old* roster state had staffed doesn't find out by surprise,
+    and whoever is newly staffed knows before the net starts. Framed as a
+    schedule correction, not a cancellation -- nothing was cancelled, the
+    roster just changed after this net was already on the calendar.
+    """
+    logger.info("EMAIL", f"Sending NCS duty correction to {to_email} for {net_name} on {net_date}")
+
+    if is_new_assignment:
+        intro_text = ("A recent change to the NCS rotation roster means you are now "
+                       "scheduled as Net Control Station for the net below.")
+    else:
+        intro_text = ("A recent change to the NCS rotation roster means you are no longer "
+                       "scheduled as Net Control Station for the net below. No action is needed "
+                       "unless you were planning around it.")
+
+    html_template = Template("""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .alert { background-color: #fff3e0; border-left: 4px solid #ff9800; padding: 15px; margin: 20px 0; border-radius: 4px; }
+            .details { background-color: #f5f5f5; padding: 15px; border-radius: 4px; margin: 20px 0; }
+            .button {
+                display: inline-block;
+                padding: 12px 24px;
+                background-color: #1976d2;
+                color: #ffffff !important;
+                text-decoration: none;
+                border-radius: 4px;
+                margin: 20px 0;
+                font-weight: bold;
+            }
+            .footer { margin-top: 30px; font-size: 12px; color: #666; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h2>&#128251; NCS Schedule Correction</h2>
+
+            <div class="alert">
+                <strong>The NCS rotation schedule for an upcoming net was corrected.</strong>
+            </div>
+
+            <p>Hello {{ recipient_name }} ({{ recipient_callsign }}),</p>
+
+            <p>{{ intro_text }}</p>
+
+            <div class="details">
+                <h3>Net Details</h3>
+                <p><strong>Net:</strong> {{ net_name }}</p>
+                <p><strong>Date:</strong> {{ net_date }}</p>
+                <p><strong>Time:</strong> {{ net_time }}</p>
+            </div>
+
+            {% if scheduler_url %}
+            <a href="{{ scheduler_url }}" class="button" style="color: #ffffff;">View Schedule</a>
+            {% endif %}
+
+            <div class="footer">
+                <p>This is an automated notification from {{ app_name }}.</p>
+            </div>
+
+            {{ unsubscribe_footer }}
+        </div>
+    </body>
+    </html>
+    """)
+
+    html_content = html_template.render(
+        recipient_name=recipient_name,
+        recipient_callsign=recipient_callsign,
+        net_name=net_name,
+        net_date=net_date,
+        net_time=net_time,
+        intro_text=intro_text,
+        scheduler_url=scheduler_url,
+        app_name=settings.app_name,
+        unsubscribe_footer=get_unsubscribe_footer(unsubscribe_token)
+    )
+
+    subject = (f"📻 NCS Schedule Correction: you're now on duty for {net_name} - {net_date}"
+               if is_new_assignment else
+               f"📻 NCS Schedule Correction: {net_name} - {net_date}")
+
+    await send_email(
+        to_email=to_email,
+        subject=subject,
+        html_content=html_content,
+        unsubscribe_token=unsubscribe_token
+    )
+
 async def send_staff_reminder(
     to_email: str,
     recipient_name: str,

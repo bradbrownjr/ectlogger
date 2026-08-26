@@ -9,7 +9,8 @@ from pydantic import BaseModel
 
 from app.database import get_db
 from app.models import (
-    NetTemplate, NCSRotationMember, NCSScheduleOverride, User, NetTemplateSubscription, TemplateStaff
+    Net, NetRole, NetStatus, NetTemplate, NCSRotationMember, NCSScheduleOverride, User,
+    NetTemplateSubscription, TemplateStaff
 )
 from app.schemas import (
     NCSRotationMemberCreate, NCSRotationMemberResponse, NCSRotationMemberReorder,
@@ -26,6 +27,7 @@ from app.routers.ncs_schedule import (
     calculate_schedule_dates,
     compute_anchored_ncs_schedule,
     stamp_rotation_anchor,
+    template_utc_to_local,
 )
 
 router = APIRouter(prefix="/templates/{template_id}/ncs-rotation", tags=["ncs-rotation"])
@@ -59,6 +61,126 @@ async def get_template_or_404(template_id: int, db: AsyncSession) -> NetTemplate
 # check_template_permission is now in app.permissions (canonical DB-query version)
 
 
+async def resync_pending_duty_ncs(
+    db: AsyncSession,
+    template_id: int,
+    background_tasks: Optional[BackgroundTasks] = None,
+) -> None:
+    """Recompute the duty NCS for any not-yet-started net still tied to this
+    template, now that the roster underneath it has just changed.
+
+    _assign_duty_ncs (ncs_reminder_service.py) stamps a NetRole(NCS,
+    auto_assigned=True) exactly once, at auto-create time (~24h before the
+    net starts). Nothing previously revisited that net if the roster was
+    edited afterward, so a correction made in that window never reached a
+    net that already existed -- it stayed staffed by whoever the rotation
+    picked before the edit, permanently. Call this from every route that
+    calls stamp_rotation_anchor (add/remove/reorder/clear/merge) so the
+    correction actually lands.
+
+    Only DRAFT/SCHEDULED nets with a future scheduled_start_time are
+    touched; once the lobby is open a human is expected to be involved, not
+    an automatic reassignment. If any NCS NetRole on a net is human-authored
+    (starting the net, self-check-in, or a manual assign -- auto_assigned is
+    False), that net is skipped entirely: the existing role is left alone
+    and no auto-assigned duplicate is added alongside it. Only when every
+    NCS NetRole present is itself auto_assigned does this replace it with
+    the freshly computed pick.
+
+    Reloads the template fresh, like _assign_duty_ncs, so this is safe to
+    call regardless of what the caller has eager-loaded.
+    """
+    tpl_result = await db.execute(
+        select(NetTemplate)
+        .options(
+            selectinload(NetTemplate.rotation_members),
+            selectinload(NetTemplate.schedule_overrides).selectinload(NCSScheduleOverride.replacement_user),
+            selectinload(NetTemplate.fifth_week_user),
+        )
+        .where(NetTemplate.id == template_id)
+    )
+    template = tpl_result.scalar_one_or_none()
+    if not template or template.schedule_type == 'ad_hoc' or not template.rotation_members:
+        return
+
+    now = datetime.utcnow()
+    nets_result = await db.execute(
+        select(Net).where(
+            Net.template_id == template_id,
+            Net.status.in_([NetStatus.DRAFT, NetStatus.SCHEDULED]),
+            Net.scheduled_start_time.isnot(None),
+            Net.scheduled_start_time > now,
+        )
+    )
+    pending_nets = nets_result.scalars().all()
+    if not pending_nets:
+        return
+
+    config = json.loads(template.schedule_config) if template.schedule_config else {}
+    net_time = config.get('time', '19:00')
+    scheduler_url = f"{settings.frontend_url}/scheduler"
+
+    for net in pending_nets:
+        local_dt = template_utc_to_local(template, net.scheduled_start_time)
+        schedule = compute_anchored_ncs_schedule(
+            template, [local_dt], template.rotation_members, template.schedule_overrides,
+        )
+        new_user_id = schedule[0].user_id if schedule and not schedule[0].is_cancelled else None
+
+        existing_result = await db.execute(
+            select(NetRole).where(NetRole.net_id == net.id, NetRole.role == "NCS")
+        )
+        existing_roles = existing_result.scalars().all()
+
+        # A human already made an explicit choice for this net (assigned a
+        # role, started it, or self-checked in) -- never overwrite that with
+        # a roster edit, and never add a second NCS alongside it.
+        if any(not r.auto_assigned for r in existing_roles):
+            continue
+
+        existing = existing_roles[0] if existing_roles else None
+        old_user_id = existing.user_id if existing else None
+
+        if old_user_id == new_user_id:
+            continue
+
+        if existing:
+            await db.delete(existing)
+        if new_user_id is not None:
+            db.add(NetRole(net_id=net.id, user_id=new_user_id, role="NCS", auto_assigned=True))
+        await db.commit()
+
+        logger.info(
+            "NCS_ROTATION",
+            f"Resynced duty NCS for net {net.id} ({template.name}): {old_user_id} -> {new_user_id}",
+        )
+
+        if background_tasks is None:
+            continue
+
+        net_date = local_dt.strftime('%A, %B %d, %Y')
+
+        for user_id, is_new in ((old_user_id, False), (new_user_id, True)):
+            if user_id is None:
+                continue
+            user_result = await db.execute(select(User).where(User.id == user_id))
+            user = user_result.scalar_one_or_none()
+            if not user or not user.email:
+                continue
+            background_tasks.add_task(
+                EmailService.send_ncs_duty_correction,
+                to_email=user.email,
+                recipient_name=user.name or user.callsign,
+                recipient_callsign=user.callsign,
+                net_name=template.name,
+                net_date=net_date,
+                net_time=net_time,
+                is_new_assignment=is_new,
+                scheduler_url=scheduler_url,
+                unsubscribe_token=user.unsubscribe_token,
+            )
+
+
 @router.get("/members", response_model=List[NCSRotationMemberResponse])
 async def list_rotation_members(
     template_id: int,
@@ -78,6 +200,7 @@ async def list_rotation_members(
 async def add_rotation_member(
     template_id: int,
     member_data: NCSRotationMemberCreate,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -110,7 +233,8 @@ async def add_rotation_member(
     # Roster composition changed -- restart the rotation from this point.
     stamp_rotation_anchor(template)
     await db.commit()
-    
+    await resync_pending_duty_ncs(db, template_id, background_tasks)
+
     # Reload with user relationship
     result = await db.execute(
         select(NCSRotationMember)
@@ -126,6 +250,7 @@ async def add_rotation_member(
 async def remove_rotation_member(
     template_id: int,
     member_id: int,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -158,11 +283,13 @@ async def remove_rotation_member(
     # Roster composition changed -- restart the rotation from this point.
     stamp_rotation_anchor(template)
     await db.commit()
+    await resync_pending_duty_ncs(db, template_id, background_tasks)
 
 
 @router.delete("/members", status_code=status.HTTP_204_NO_CONTENT)
 async def clear_all_rotation_members(
     template_id: int,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -189,12 +316,14 @@ async def clear_all_rotation_members(
     # Roster composition changed -- whoever is added back starts the cycle fresh.
     stamp_rotation_anchor(template)
     await db.commit()
+    await resync_pending_duty_ncs(db, template_id, background_tasks)
 
 
 @router.put("/members/reorder", response_model=List[NCSRotationMemberResponse])
 async def reorder_rotation_members(
     template_id: int,
     reorder_data: NCSRotationMemberReorder,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -219,7 +348,8 @@ async def reorder_rotation_members(
     # Roster order changed -- the next occurrence belongs to the new position 1.
     stamp_rotation_anchor(template)
     await db.commit()
-    
+    await resync_pending_duty_ncs(db, template_id, background_tasks)
+
     # Reload and return
     template = await get_template_or_404(template_id, db)
     return [

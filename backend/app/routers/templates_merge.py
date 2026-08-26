@@ -1,5 +1,5 @@
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -17,6 +17,7 @@ from app.models import (
     User,
     UserRole,
 )
+from app.routers.ncs_rotation import resync_pending_duty_ncs
 from app.routers.ncs_schedule import stamp_rotation_anchor
 from app.schemas import (
     TemplateMergeConflict,
@@ -193,6 +194,7 @@ async def preview_merge(
 @router.post("/merge", response_model=TemplateMergeResponse)
 async def merge_templates(
     merge_data: TemplateMergeRequest,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -357,6 +359,9 @@ async def merge_templates(
     logger.info(f"Merge: deleted {len(sources)} source templates")
 
     await db.commit()
+
+    if rotation_moved:
+        await resync_pending_duty_ncs(db, target_id, background_tasks)
 
     logger.info(f"Merge complete: {nets_moved} nets, {subs_moved} subs, {staff_moved} staff, {rotation_moved} rotation → template {target_id}")
 
