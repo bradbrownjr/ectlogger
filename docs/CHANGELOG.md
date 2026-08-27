@@ -4,6 +4,14 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# August 26, 2026
+
+## New Features
+
+* **Net Script: Highlight important text** — A new highlight button in the script toolbar wraps selected text in a yellow highlight, so instructions NCS operators shouldn't miss stand out from the rest of the script.
+
+---
+
 # August 25, 2026
 
 ## New Features

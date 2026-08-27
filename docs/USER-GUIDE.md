@@ -236,7 +236,7 @@ Nets can have multiple frequencies for split operations or cross-band coordinati
 #### Tab 4: Net Script
 
 Enter a formatted script for NCS operators to follow. Supports Markdown formatting:
-- Use the toolbar for bold, italic, lists, and horizontal rules
+- Use the toolbar for bold, italic, highlight, lists, and horizontal rules
 - Upload a .txt or .md file with an existing script
 - Script appears in a floating, resizable window during the net
 

@@ -408,7 +408,9 @@ rendered output can be checked before saving.
 - Rendering goes through the single shared component
   `frontend/src/components/shared/MarkdownRender.tsx` — never inline a second
   `ReactMarkdown` block. It wraps `react-markdown` + `remark-gfm` + `remark-breaks`
-  and the delimiter-normalizing helper, and exposes two heading-style `variant`s
+  + `remark-flexible-markers` (parses `==text==` into a `<mark>` element, styled
+  as a classic yellow highlighter in both style `variant`s) and the
+  delimiter-normalizing helper, and exposes two heading-style `variant`s
   (`bordered` for net script, `colored` for notes/announcements) matching the
   styles already established in the dialogs.
 - The toggle is a `ToggleButtonGroup` (`size="small"`, `exclusive`), not a plain

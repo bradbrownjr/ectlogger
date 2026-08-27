@@ -3,6 +3,7 @@ import { Box, Typography, SxProps, Theme } from '@mui/material';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
+import remarkFlexibleMarkers from 'remark-flexible-markers';
 
 // ========== SHARED MARKDOWN RENDER ==========
 // Rendered markdown output shared by the net script / notes / announcements
@@ -36,6 +37,7 @@ const borderedHeadingStyles: SxProps<Theme> = {
   '& strong': { fontWeight: 'bold' },
   '& em': { fontStyle: 'italic' },
   '& a': { color: 'primary.main' },
+  '& mark': { backgroundColor: '#fff59d', color: 'rgba(0, 0, 0, 0.87)', borderRadius: '2px', px: '2px' },
 };
 
 const coloredHeadingStyles: SxProps<Theme> = {
@@ -48,6 +50,7 @@ const coloredHeadingStyles: SxProps<Theme> = {
   '& strong': { fontWeight: 'bold' },
   '& em': { fontStyle: 'italic' },
   '& a': { color: 'primary.main' },
+  '& mark': { backgroundColor: '#fff59d', color: 'rgba(0, 0, 0, 0.87)', borderRadius: '2px', px: '2px' },
 };
 
 interface MarkdownRenderProps {
@@ -61,7 +64,7 @@ const MarkdownRender: React.FC<MarkdownRenderProps> = ({ content, emptyText, var
   <Box sx={{ ...(variant === 'bordered' ? borderedHeadingStyles : coloredHeadingStyles), ...sx }}>
     {content ? (
       <ReactMarkdown
-        remarkPlugins={[remarkGfm, remarkBreaks]}
+        remarkPlugins={[remarkGfm, remarkBreaks, remarkFlexibleMarkers]}
         components={{
           a: ({ node, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" />,
         }}

@@ -12,6 +12,7 @@ import {
 } from '@mui/material';
 import FormatBoldIcon from '@mui/icons-material/FormatBold';
 import FormatItalicIcon from '@mui/icons-material/FormatItalic';
+import HighlightIcon from '@mui/icons-material/Highlight';
 import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
 import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
 import HorizontalRuleIcon from '@mui/icons-material/HorizontalRule';
@@ -127,6 +128,9 @@ const NetScriptPanel: React.FC<NetScriptPanelProps> = ({ script, setScript }) =>
             </Tooltip>
             <Tooltip title="Italic (*text*)">
               <IconButton type="button" size="small" onClick={() => insertMarkdown('*', '*', 'italic text')}><FormatItalicIcon fontSize="small" /></IconButton>
+            </Tooltip>
+            <Tooltip title="Highlight (==text==)">
+              <IconButton type="button" size="small" onClick={() => insertMarkdown('==', '==', 'highlighted text')}><HighlightIcon fontSize="small" /></IconButton>
             </Tooltip>
             <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
             <Tooltip title="Bulleted List">

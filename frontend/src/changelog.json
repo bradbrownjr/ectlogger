@@ -1,6 +1,22 @@
 {
-  "version": "2026.08.25c",
+  "version": "2026.08.26",
   "entries": [
+    {
+      "version": "2026.08.26",
+      "date": "2026-08-26",
+      "sections": [
+        {
+          "title": "New Features",
+          "type": "feature",
+          "items": [
+            {
+              "text": "Net Script: Highlight important text — a new highlight button in the script toolbar wraps selected text in a yellow highlight, so instructions NCS operators shouldn't miss stand out from the rest of the script.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.08.25c",
       "date": "2026-08-25",
