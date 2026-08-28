@@ -45,6 +45,7 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({ open, onClose }) => {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [issueUrl, setIssueUrl] = useState<string | null>(null);
+  const [issueNumber, setIssueNumber] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -67,6 +68,7 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({ open, onClose }) => {
     if (submitting) return;
     setSuccess(false);
     setIssueUrl(null);
+    setIssueNumber(null);
     setError(null);
     setSubject('');
     setBody('');
@@ -128,6 +130,7 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({ open, onClose }) => {
       }
       const response = await feedbackApi.submit(payload);
       setIssueUrl(response.data?.github_issue_url || null);
+      setIssueNumber(response.data?.github_issue_number ?? null);
       setSuccess(true);
     } catch (e: any) {
       if (e.response?.status === 429) {
@@ -153,8 +156,11 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({ open, onClose }) => {
             Thank you! Your feedback has been sent to the administrator.
             {issueUrl && (
               <>
-                {' '}You can track it on{' '}
-                <a href={issueUrl} target="_blank" rel="noopener noreferrer">GitHub</a>.
+                {' '}You can track it as{' '}
+                <a href={issueUrl} target="_blank" rel="noopener noreferrer">
+                  issue {issueNumber ? `#${issueNumber}` : ''}
+                </a>{' '}
+                on GitHub.
               </>
             )}
           </Alert>

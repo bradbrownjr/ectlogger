@@ -16,6 +16,7 @@ async def send_feedback_email(
     diagnostics: Optional[str] = None,
     screenshot: Optional[tuple] = None,
     github_issue_url: Optional[str] = None,
+    github_issue_number: Optional[int] = None,
 ):
     """Send an in-app feedback submission to an admin user.
 
@@ -96,7 +97,7 @@ async def send_feedback_email(
             <p style="font-size: 13px; color: #666;">A screenshot is attached to this email.</p>
             {% endif %}
             {% if github_issue_url %}
-            <p style="font-size: 13px; color: #666;">Tracked as a public GitHub issue: <a href="{{ github_issue_url }}">{{ github_issue_url }}</a></p>
+            <p style="font-size: 13px; color: #666;">Tracked as public GitHub issue <a href="{{ github_issue_url }}">#{{ github_issue_number }}</a>.</p>
             {% endif %}
             <div class="footer">
                 <p>Submitted via the in-app feedback form on {{ app_name }}.</p>
@@ -119,6 +120,7 @@ async def send_feedback_email(
         diagnostics=diagnostics,
         has_screenshot=screenshot is not None,
         github_issue_url=github_issue_url,
+        github_issue_number=github_issue_number,
     )
 
     logger.info("EMAIL", f"Sending feedback notification to admin {to_email}")

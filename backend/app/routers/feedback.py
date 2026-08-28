@@ -46,13 +46,13 @@ class FeedbackCreate(BaseModel):
     screenshot_mime: Optional[str] = Field(None, max_length=100)
 
 
-async def _create_github_issue(feedback: FeedbackCreate, submitter_callsign: str, submitter_name: str) -> Optional[str]:
+async def _create_github_issue(feedback: FeedbackCreate, submitter_callsign: str, submitter_name: str) -> Optional[tuple[str, int]]:
     """Best-effort: open a public GitHub issue for a feedback submission.
 
-    Returns the issue URL on success, None if disabled or on any failure
-    (network, auth, rate limit) -- this must never block the admin email
-    path, which is the reliable notification channel. Submitter email is
-    intentionally omitted from the issue body since it's public; callsign
+    Returns (issue URL, issue number) on success, None if disabled or on any
+    failure (network, auth, rate limit) -- this must never block the admin
+    email path, which is the reliable notification channel. Submitter email
+    is intentionally omitted from the issue body since it's public; callsign
     and name are already public via FCC lookup.
     """
     if not settings.github_issues_token:
@@ -86,7 +86,8 @@ async def _create_github_issue(feedback: FeedbackCreate, submitter_callsign: str
                 timeout=10.0,
             )
             response.raise_for_status()
-            return response.json().get("html_url")
+            issue = response.json()
+            return issue.get("html_url"), issue.get("number")
     except Exception as e:
         logger.error("FEEDBACK", f"Failed to create GitHub issue: {e}")
         return None
@@ -117,9 +118,9 @@ async def submit_feedback(
     type_label = "Bug Report" if feedback.type == "bug" else "Feature Request"
     submitter = current_user.callsign or current_user.name or current_user.email
 
-    issue_url = await _create_github_issue(feedback, current_user.callsign, current_user.name)
+    issue_url, issue_number = await _create_github_issue(feedback, current_user.callsign, current_user.name) or (None, None)
     if issue_url:
-        logger.info("FEEDBACK", f"Created GitHub issue for [{type_label}] from {submitter}: {issue_url}")
+        logger.info("FEEDBACK", f"Created GitHub issue #{issue_number} for [{type_label}] from {submitter}: {issue_url}")
 
     result = await db.execute(
         select(User).where(User.role == UserRole.ADMIN, User.is_active == True)
@@ -128,7 +129,7 @@ async def submit_feedback(
 
     if not admins:
         logger.warning("FEEDBACK", "No admin users to notify — feedback received but not emailed")
-        return {"message": "Feedback received", "github_issue_url": issue_url}
+        return {"message": "Feedback received", "github_issue_url": issue_url, "github_issue_number": issue_number}
 
     for admin in admins:
         try:
@@ -143,9 +144,10 @@ async def submit_feedback(
                 diagnostics=feedback.diagnostics,
                 screenshot=screenshot,
                 github_issue_url=issue_url,
+                github_issue_number=issue_number,
             )
         except Exception as e:
             logger.error("FEEDBACK", f"Failed to notify admin {admin.email}: {e}")
 
     logger.info("FEEDBACK", f"[{type_label}] from {submitter}: {feedback.subject}")
-    return {"message": "Feedback submitted", "github_issue_url": issue_url}
+    return {"message": "Feedback submitted", "github_issue_url": issue_url, "github_issue_number": issue_number}
