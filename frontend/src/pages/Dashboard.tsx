@@ -1062,8 +1062,7 @@ const Dashboard: React.FC = () => {
               <Typography sx={{ mb: 2 }}>
                 This net will be marked <strong>Cancelled</strong> and removed from the
                 active dashboard. Unlike a delete, it stays on record in{' '}
-                <strong>Archived Nets</strong> so others can see it was cancelled
-                instead of just missing, and it won't be automatically recreated by
+                <strong>Archived Nets</strong> and won't be automatically recreated by
                 the recurring schedule. You can restore it later if plans change.
               </Typography>
               <TextField
