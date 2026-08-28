@@ -106,6 +106,29 @@ class NCSReminderService:
             # Wait before next check
             await asyncio.sleep(self.CHECK_INTERVAL_MINUTES * 60)
     
+    async def _is_cancelled_occurrence(self, db, template_id: int, scheduled_dt: datetime) -> bool:
+        """True if this template+time slot has a Net row explicitly marked CANCELLED.
+
+        A cancelled occurrence must never be auto-(re)created or reminded about
+        until the operator explicitly restores it. Callers should check this
+        before doing any work for a computed schedule date, since e.g. a
+        _get_or_create_scheduled_net's own reuse query doesn't exclude
+        cancelled rows (it treats them as "already exists, don't recreate").
+        """
+        window_start = scheduled_dt - timedelta(minutes=5)
+        window_end = scheduled_dt + timedelta(minutes=5)
+        result = await db.execute(
+            select(Net.id).where(
+                and_(
+                    Net.template_id == template_id,
+                    Net.status == NetStatus.CANCELLED,
+                    Net.scheduled_start_time >= window_start,
+                    Net.scheduled_start_time <= window_end,
+                )
+            )
+        )
+        return result.scalar_one_or_none() is not None
+
     async def _get_or_create_scheduled_net(self, db, template: NetTemplate, scheduled_dt: datetime) -> int | None:
         """
         Find an existing open net for this template near scheduled_dt,
@@ -286,6 +309,8 @@ class NCSReminderService:
 
                 hours_until = (next_utc - now).total_seconds() / 3600
                 if abs(hours_until - 24) <= 0.5:
+                    if await self._is_cancelled_occurrence(db, template.id, next_utc):
+                        continue
                     net_id = await self._get_or_create_scheduled_net(db, template, next_utc)
                     if net_id:
                         created += 1
@@ -450,6 +475,9 @@ class NCSReminderService:
                 if not self._in_reminder_window(hours_until, 1.0):
                     continue
 
+                if await self._is_cancelled_occurrence(db, template.id, next_utc):
+                    continue
+
                 # Find the net instance (should exist from _check_and_auto_create_nets)
                 net_result = await db.execute(
                     select(Net).where(
@@ -602,6 +630,9 @@ class NCSReminderService:
                     # Calculate hours until the net
                     time_until = scheduled_utc - now
                     hours_until = time_until.total_seconds() / 3600
+
+                    if await self._is_cancelled_occurrence(db, template.id, scheduled_utc):
+                        continue
 
                     # Check if we should send a reminder
                     for reminder_hours in self.REMINDER_HOURS:
@@ -823,7 +854,10 @@ class NCSReminderService:
                 
                 if not self._in_reminder_window(hours_until, 1.0):
                     continue
-                
+
+                if await self._is_cancelled_occurrence(db, template.id, next_date):
+                    continue
+
                 # Get subscribers who want reminders
                 for sub in template.subscriptions:
                     user = sub.user

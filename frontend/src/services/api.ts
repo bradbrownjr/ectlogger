@@ -99,13 +99,26 @@ export const userApi = {
 export const netApi = {
   create: (data: any) => api.post('/nets/', data),
   list: (status?: string) => api.get('/nets/', { params: { status } }),
-  listArchived: () => api.get('/nets/', { params: { include_archived: true, status: 'archived', limit: 1000 } }),
+  // Archived Nets shows both terminal "not on the active dashboard" states side by side.
+  // Built with URLSearchParams (not a plain object) so axios emits repeated
+  // ?status=archived&status=cancelled keys, matching FastAPI's List[NetStatus]
+  // query parsing -- axios's default array serialization uses status[]=... instead.
+  listArchived: () => {
+    const params = new URLSearchParams();
+    params.append('include_archived', 'true');
+    params.append('status', 'archived');
+    params.append('status', 'cancelled');
+    params.append('limit', '1000');
+    return api.get('/nets/', { params });
+  },
   get: (id: number) => api.get(`/nets/${id}`),
   update: (id: number, data: any) => api.put(`/nets/${id}`, data),
   start: (id: number) => api.post(`/nets/${id}/start`),
   close: (id: number) => api.post(`/nets/${id}/close`),
   archive: (id: number) => api.post(`/nets/${id}/archive`),
   unarchive: (id: number) => api.post(`/nets/${id}/unarchive`),
+  cancel: (id: number, reason?: string) => api.post(`/nets/${id}/cancel`, { reason: reason || null }),
+  restore: (id: number) => api.post(`/nets/${id}/restore`),
   delete: (id: number) => api.delete(`/nets/${id}`),
   setActiveFrequency: (netId: number, frequencyId: number) => 
     api.put(`/nets/${netId}/active-frequency/${frequencyId}`),

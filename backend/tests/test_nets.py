@@ -352,6 +352,84 @@ async def test_unarchive_net_broadcasts_status_change(client, owner):
 
 
 # ---------------------------------------------------------------------------
+# Cancel/restore (regression: "Cancel" on a scheduled net used to hard-DELETE
+# the row. Because the reminder scheduler treats "no row for this slot" as
+# "not created yet", the deleted net got silently recreated - reminder email
+# included - a few hours later. Cancelling now sets NetStatus.CANCELLED
+# instead, so the occurrence stays on record and the scheduler leaves it
+# alone (see _is_cancelled_occurrence in ncs_reminder_service.py).
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_cancel_net_sets_status_reason_and_broadcasts(client, owner):
+    create = await client.post("/api/nets/", json={"name": "Cancel Broadcast Net"}, headers=auth_headers(owner))
+    net_id = create.json()["id"]
+
+    with patch("app.main.manager.broadcast", new_callable=AsyncMock) as mock_broadcast:
+        resp = await client.post(
+            f"/api/nets/{net_id}/cancel",
+            json={"reason": "In-person meeting instead"},
+            headers=auth_headers(owner),
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["status"] == "cancelled"
+        assert body["cancel_reason"] == "In-person meeting instead"
+        assert body["cancelled_at"] is not None
+
+        mock_broadcast.assert_called_once()
+        broadcast_payload, broadcast_net_id = mock_broadcast.call_args[0]
+        assert broadcast_payload["data"]["status"] == "cancelled"
+        assert broadcast_net_id == net_id
+
+    # The row still exists - findable, not just missing.
+    get_resp = await client.get(f"/api/nets/{net_id}", headers=auth_headers(owner))
+    assert get_resp.status_code == 200
+    assert get_resp.json()["status"] == "cancelled"
+
+
+@pytest.mark.asyncio
+async def test_cancel_net_rejects_active_net(client, owner):
+    create = await client.post("/api/nets/", json={"name": "Active Cancel Net"}, headers=auth_headers(owner))
+    net_id = create.json()["id"]
+    await client.post(f"/api/nets/{net_id}/start", headers=auth_headers(owner))
+
+    resp = await client.post(f"/api/nets/{net_id}/cancel", json={}, headers=auth_headers(owner))
+    assert resp.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_restore_net_returns_to_scheduled_when_start_time_set(client, owner):
+    create = await client.post(
+        "/api/nets/",
+        json={"name": "Restore Net", "scheduled_start_time": "2027-01-01T14:00:00+00:00"},
+        headers=auth_headers(owner),
+    )
+    net_id = create.json()["id"]
+    await client.post(f"/api/nets/{net_id}/cancel", json={"reason": "test"}, headers=auth_headers(owner))
+
+    with patch("app.main.manager.broadcast", new_callable=AsyncMock) as mock_broadcast:
+        resp = await client.post(f"/api/nets/{net_id}/restore", headers=auth_headers(owner))
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["status"] == "scheduled"
+        assert body["cancelled_at"] is None
+        assert body["cancel_reason"] is None
+
+        broadcast_payload, _ = mock_broadcast.call_args[0]
+        assert broadcast_payload["data"]["status"] == "scheduled"
+
+
+@pytest.mark.asyncio
+async def test_restore_net_rejects_non_cancelled(client, owner):
+    create = await client.post("/api/nets/", json={"name": "Not Cancelled Net"}, headers=auth_headers(owner))
+    net_id = create.json()["id"]
+
+    resp = await client.post(f"/api/nets/{net_id}/restore", headers=auth_headers(owner))
+    assert resp.status_code == 400
+
+
+# ---------------------------------------------------------------------------
 # Logger-role active-frequency permission (regression: these two endpoints
 # checked required_roles=["NCS", "Logger"], but the only place a Logger role
 # is ever actually assigned (RoleAssignmentDialog.tsx) stores it as "LOGGER"

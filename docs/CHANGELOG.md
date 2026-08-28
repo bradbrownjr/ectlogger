@@ -4,6 +4,14 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# August 27, 2026
+
+## New Features
+
+* **Dashboard: Cancel a scheduled net** — Cancelling a net that hasn't happened yet now marks it Cancelled instead of deleting it, with an optional reason, so it stays on record in Archived Nets instead of vanishing, won't be recreated by the recurring schedule, and can be restored if plans change.
+
+---
+
 # August 26, 2026
 
 ## New Features

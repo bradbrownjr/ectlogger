@@ -2,7 +2,7 @@ import json
 from datetime import datetime
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -98,25 +98,27 @@ async def create_net(
 
 @router.get("/", response_model=List[NetResponse])
 async def list_nets(
-    status: NetStatus = None,
+    status: Optional[List[NetStatus]] = Query(None),
     include_archived: bool = False,
     skip: int = 0,
     limit: int = 100,
     db: AsyncSession = Depends(get_db),
     current_user: Optional[User] = Depends(get_current_user_optional)
 ):
-    """List nets with optional status filter, excludes archived by default (no auth required for guest access)"""
+    """List nets with optional status filter (repeatable, e.g. ?status=archived&status=cancelled),
+    excludes archived/cancelled by default (no auth required for guest access)"""
     query = select(Net).options(
         selectinload(Net.frequencies),
         selectinload(Net.owner),
         selectinload(Net.template)
     )
-    
+
     if status:
-        query = query.where(Net.status == status)
+        query = query.where(Net.status.in_(status))
     elif not include_archived:
-        # Exclude archived nets by default
-        query = query.where(Net.status != NetStatus.ARCHIVED)
+        # Exclude archived and cancelled nets by default - both are terminal
+        # "not on the active dashboard" states, findable instead via Archived Nets.
+        query = query.where(Net.status.notin_([NetStatus.ARCHIVED, NetStatus.CANCELLED]))
     
     query = query.offset(skip).limit(limit).order_by(Net.created_at.desc())
     
@@ -148,7 +150,7 @@ async def list_nets(
 
     # For archived net requests, compute personal attendance flags
     user_attended_net_ids: set = set()
-    compute_user_flags = current_user is not None and status == NetStatus.ARCHIVED and bool(net_ids)
+    compute_user_flags = current_user is not None and bool(status) and NetStatus.ARCHIVED in status and bool(net_ids)
     if compute_user_flags:
         user_callsigns = [current_user.callsign] if current_user.callsign else []
         if current_user.gmrs_callsign:

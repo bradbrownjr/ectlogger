@@ -102,7 +102,7 @@ Cancel. On a schedule card, **Create** leads, followed by Edit and Delete.
 | **Info** | Open the club or organization's website | Everyone, when an Info URL is set |
 | **Email** | Message subscribers before the net | Net staff, on draft/scheduled nets from a schedule |
 | **Edit** | Change the net's settings | Net staff, on draft/scheduled nets |
-| **Cancel** | Cancel this net instance | Net staff, on draft/scheduled nets |
+| **Cancel** | Mark this net instance Cancelled (reversible, kept on record in Archived Nets) | Net staff, on draft/scheduled nets |
 | **Start** | Open the net for check-ins | Net staff, on draft/scheduled nets |
 | **Delete** | Remove the net and its data | Net staff, on active, lobby, and closed nets |
 | **Export** | Download the check-in log as CSV | Net staff, on closed nets |
@@ -415,18 +415,25 @@ Details worth knowing:
 
 ### Canceling or Deleting a Net
 
-To cancel or remove a specific net instance:
-1. Find the net on the Dashboard
-2. Click the red **Cancel** button (on draft and scheduled nets) or **Delete** button (on active, lobby, and closed nets) in the card's management row. Both appear only to net owners, NCS, and admins.
-3. The confirmation dialog spells out exactly what will be lost (check-ins, chat, reports). Choose:
+Draft and scheduled nets use **Cancel**, a soft, reversible action; active, lobby, and closed nets use **Delete**, which is permanent. Both appear only to net owners, NCS, and admins.
+
+**Canceling a draft/scheduled net** — for a night where the net simply isn't happening (an in-person meeting instead, a work conflict, no volunteers that week):
+1. Find the net on the Dashboard and click the red **Cancel** button in the card's management row.
+2. Optionally note why (e.g. "in-person meeting instead") — this is shown to anyone who later looks up the cancelled net.
+3. Click **Cancel Net**. The net is marked **Cancelled**, drops off the active dashboard, and moves into **Archived Nets** so it stays on record and findable instead of just disappearing. The recurring schedule will not recreate a net for that date, and no reminder emails go out for it.
+4. Changed your mind? Open **Archived Nets** and click **Restore** on the cancelled net to bring it back to Draft or Scheduled.
+
+**Deleting an active, lobby, or closed net** — this is permanent, unlike cancelling:
+1. Find the net on the Dashboard and click the red **Delete** button in the card's management row.
+2. The confirmation dialog spells out exactly what will be lost (check-ins, chat, reports). Choose:
    - **Cancel** (blue) — back out
    - **Close & Archive** (yellow, only on active/lobby nets) — close the net normally (the full log is emailed to you) and immediately archive it, so the record is preserved but the net leaves the active list. Best choice for finished test/training runs you want to keep.
    - **Archive Instead** (yellow, only on closed nets) — hide the net from the active list while keeping every record
    - **Delete Permanently** (red) — destroy the net and all its data; this cannot be undone
 
-This deletes only the chosen net instance — the recurring schedule continues for future dates. For training and practice runs, deletion is the right choice; for real net activations, **archive** is almost always safer because it preserves the log.
+Either way, only the chosen net instance is affected — the recurring schedule continues for future dates. For training and practice runs, deletion is the right choice; for real net activations, **archive** (or **cancel**, if the net never happened) is almost always safer because it preserves the record.
 
-**Email Subscribers** — Before canceling a draft/scheduled net, you can notify subscribers by clicking the **Email** button on the net's card and sending a custom message.
+**Email Subscribers** — Before cancelling a draft/scheduled net, you can notify subscribers by clicking the **Email** button on the net's card and sending a custom message.
 
 ### Managing Check-ins
 
@@ -627,6 +634,7 @@ Both Topic and Poll columns are only visible when configured for the net. System
 - **Archive** — From a closed net, click **Archive** (on the net's card, or in the net toolbar) to hide it from the main dashboard. A 5-second UNDO toast lets you cancel if clicked accidentally.
 - **Unarchive** — From an archived net view, click **Unarchive** in the toolbar to restore it to closed status.
 - **Download Logs** — Both closed and archived nets have download buttons (CSV and ICS-309) available in the toolbar. Closed nets also have an **Export** button on their dashboard card for the CSV log.
+- **Cancelled nets** — A draft/scheduled net that was cancelled (see "Canceling or Deleting a Net" above) lives in the same **Archived Nets** list, tagged with a **Cancelled** chip instead of **Archived** so it's easy to tell the two apart. It has no log to export or report on, since it never ran. Click **Restore** to bring it back to Draft or Scheduled.
 
 ### Exporting Logs
 

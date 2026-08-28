@@ -47,6 +47,8 @@ export interface Net {
   template_id?: number | null;
   started_at?: string;
   closed_at?: string;
+  cancelled_at?: string | null;
+  cancel_reason?: string | null;
   created_at: string;
   scheduled_start_time?: string;
   frequencies: any[];
@@ -65,6 +67,7 @@ export function getStatusColor(status: string): 'success' | 'warning' | 'default
     case 'lobby': return 'warning';
     case 'closed': return 'default';
     case 'scheduled': return 'info';
+    case 'cancelled': return 'default';
     default: return 'default';
   }
 }

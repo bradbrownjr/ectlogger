@@ -1,6 +1,22 @@
 {
-  "version": "2026.08.26",
+  "version": "2026.08.27",
   "entries": [
+    {
+      "version": "2026.08.27",
+      "date": "2026-08-27",
+      "sections": [
+        {
+          "title": "New Features",
+          "type": "feature",
+          "items": [
+            {
+              "text": "Dashboard: Cancel a scheduled net — Cancelling a net that hasn’t happened yet now marks it Cancelled instead of deleting it, with an optional reason, so it stays on record in Archived Nets instead of vanishing, won’t be recreated by the recurring schedule, and can be restored if plans change.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.08.26",
       "date": "2026-08-26",

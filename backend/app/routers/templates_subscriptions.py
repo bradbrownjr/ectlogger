@@ -259,7 +259,11 @@ async def create_net_from_template(
             )
         )
         existing_net = existing_result.scalar_one_or_none()
-        if existing_net:
+        # A cancelled occurrence isn't "already created" for this purpose - a
+        # manual click here is the operator explicitly asking to run this slot
+        # after all, so fall through and create a fresh net instead of handing
+        # back the cancelled one.
+        if existing_net and existing_net.status != NetStatus.CANCELLED:
             return NetResponse.from_orm(existing_net)
 
     # Create net from template

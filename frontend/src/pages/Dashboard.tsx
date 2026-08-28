@@ -77,6 +77,7 @@ const Dashboard: React.FC = () => {
   const [showArchived, setShowArchived] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [netToDelete, setNetToDelete] = useState<Net | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
   const [staffModalOpen, setStaffModalOpen] = useState(false);
   const [selectedNet, setSelectedNet] = useState<Net | null>(null);
   const [archiveFilter, setArchiveFilter] = useState('');
@@ -191,8 +192,15 @@ const Dashboard: React.FC = () => {
 
   const handleDeleteClick = (net: Net) => {
     setNetToDelete(net);
+    setCancelReason('');
     setDeleteConfirmOpen(true);
   };
+
+  // True for the two statuses whose card button reads "Cancel" — draft and
+  // scheduled nets haven't happened yet, so removing one is a cancellation
+  // (soft, reversible, logged) rather than the permanent delete that active/
+  // lobby/closed nets still use through this same dialog.
+  const isCancelFlow = netToDelete?.status === 'draft' || netToDelete?.status === 'scheduled';
 
   const handleDeleteConfirm = async () => {
     if (!netToDelete) return;
@@ -212,6 +220,27 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const handleCancelConfirm = async () => {
+    if (!netToDelete) return;
+    const name = netToDelete.name;
+    try {
+      await netApi.cancel(netToDelete.id, cancelReason.trim());
+      fetchNets();
+      if (showArchived) {
+        fetchArchivedNets();
+      }
+      setSnackbar({ open: true, message: `"${name}" has been cancelled`, severity: 'success' });
+    } catch (error: any) {
+      console.error('Failed to cancel net:', error);
+      const message = getErrorMessage(error, 'Failed to cancel net');
+      setSnackbar({ open: true, message, severity: 'error' });
+    } finally {
+      setDeleteConfirmOpen(false);
+      setNetToDelete(null);
+      setCancelReason('');
+    }
+  };
+
   // ========== EMAIL SUBSCRIBERS HANDLERS ==========
   const handleEmailClick = (net: Net) => {
     setEmailNet(net);
@@ -219,7 +248,7 @@ const Dashboard: React.FC = () => {
     setEmailDialogOpen(true);
   };
 
-  // ========== UNARCHIVE HANDLER ==========
+  // ========== UNARCHIVE / RESTORE HANDLERS ==========
   const handleUnarchive = async (net: Net) => {
     try {
       await netApi.unarchive(net.id);
@@ -230,6 +259,19 @@ const Dashboard: React.FC = () => {
     } catch (error: any) {
       console.error('Failed to unarchive net:', error);
       const message = getErrorMessage(error, 'Failed to unarchive net');
+      setSnackbar({ open: true, message, severity: 'error' });
+    }
+  };
+
+  const handleRestore = async (net: Net) => {
+    try {
+      await netApi.restore(net.id);
+      fetchNets();
+      fetchArchivedNets();
+      setSnackbar({ open: true, message: `"${net.name}" has been restored`, severity: 'success' });
+    } catch (error: any) {
+      console.error('Failed to restore net:', error);
+      const message = getErrorMessage(error, 'Failed to restore net');
       setSnackbar({ open: true, message, severity: 'error' });
     }
   };
@@ -281,9 +323,10 @@ const Dashboard: React.FC = () => {
         if (!matchesText) return false;
       }
       
-      // Date filter
+      // Date filter — a cancelled net has no closed_at, so fall back to cancelled_at
       if (archiveDateFrom || archiveDateTo) {
-        const closedDate = net.closed_at ? new Date(net.closed_at) : null;
+        const closedOrCancelled = net.closed_at || net.cancelled_at;
+        const closedDate = closedOrCancelled ? new Date(closedOrCancelled) : null;
         if (!closedDate) return false;
 
         if (archiveDateFrom) {
@@ -321,8 +364,8 @@ const Dashboard: React.FC = () => {
           comparison = (a.check_in_count ?? 0) - (b.check_in_count ?? 0);
           break;
         case 'closed':
-          const dateA = a.closed_at ? new Date(a.closed_at).getTime() : 0;
-          const dateB = b.closed_at ? new Date(b.closed_at).getTime() : 0;
+          const dateA = (a.closed_at || a.cancelled_at) ? new Date(a.closed_at || a.cancelled_at!).getTime() : 0;
+          const dateB = (b.closed_at || b.cancelled_at) ? new Date(b.closed_at || b.cancelled_at!).getTime() : 0;
           comparison = dateA - dateB;
           break;
       }
@@ -745,7 +788,7 @@ const Dashboard: React.FC = () => {
         PaperProps={{ sx: { m: { xs: 1, sm: 4 } } }}
       >
         <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          📦 Archived Nets ({filteredArchivedNets.length}{(archiveFilter || archiveDateFrom || archiveDateTo || archiveShowAttended || archiveShowRan) ? ` of ${archivedNets.length}` : ''})
+          📦 Archived &amp; Cancelled Nets ({filteredArchivedNets.length}{(archiveFilter || archiveDateFrom || archiveDateTo || archiveShowAttended || archiveShowRan) ? ` of ${archivedNets.length}` : ''})
           <IconButton onClick={() => {
             setShowArchived(false);
             setArchiveFilter('');
@@ -819,7 +862,7 @@ const Dashboard: React.FC = () => {
           
           {archivedNets.length === 0 ? (
             <Typography color="text.secondary" sx={{ py: 4, textAlign: 'center' }}>
-              No archived nets found
+              No archived or cancelled nets found
             </Typography>
           ) : filteredArchivedNets.length === 0 ? (
             <Typography color="text.secondary" sx={{ py: 4, textAlign: 'center' }}>
@@ -840,6 +883,7 @@ const Dashboard: React.FC = () => {
                         Net Name
                       </TableSortLabel>
                     </TableCell>
+                    <TableCell>Status</TableCell>
                     <TableCell>
                       <TableSortLabel
                         active={archiveSortField === 'owner'}
@@ -864,23 +908,42 @@ const Dashboard: React.FC = () => {
                         direction={archiveSortField === 'closed' ? archiveSortDirection : 'asc'}
                         onClick={() => handleArchiveSort('closed')}
                       >
-                        Closed
+                        Closed / Cancelled
                       </TableSortLabel>
                     </TableCell>
                     <TableCell align="right">Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {(archivedPerPage === -1 ? filteredArchivedNets : filteredArchivedNets.slice(archivedPage * archivedPerPage, (archivedPage + 1) * archivedPerPage)).map((net) => (
+                  {(archivedPerPage === -1 ? filteredArchivedNets : filteredArchivedNets.slice(archivedPage * archivedPerPage, (archivedPage + 1) * archivedPerPage)).map((net) => {
+                    const isCancelled = net.status === 'cancelled';
+                    return (
                     <TableRow key={net.id} hover>
-                      <TableCell>{net.name}</TableCell>
+                      <TableCell>
+                        {net.name}
+                        {isCancelled && net.cancel_reason && (
+                          <Typography variant="caption" color="text.secondary" display="block">
+                            {net.cancel_reason}
+                          </Typography>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          size="small"
+                          label={isCancelled ? 'Cancelled' : 'Archived'}
+                          color={isCancelled ? 'warning' : 'default'}
+                          variant={isCancelled ? 'filled' : 'outlined'}
+                        />
+                      </TableCell>
                       <TableCell>
                         {net.owner_callsign || 'Unknown'}
                         {net.owner_name && ` (${net.owner_name})`}
                       </TableCell>
                       <TableCell align="center">{net.check_in_count ?? 0}</TableCell>
                       <TableCell>
-                        {net.closed_at ? formatDateTime(net.closed_at, user?.prefer_utc || false) : 'N/A'}
+                        {(net.closed_at || net.cancelled_at)
+                          ? formatDateTime((net.closed_at || net.cancelled_at)!, user?.prefer_utc || false)
+                          : 'N/A'}
                       </TableCell>
                       <TableCell align="right">
                         <Tooltip title="View net">
@@ -895,32 +958,49 @@ const Dashboard: React.FC = () => {
                             <SearchIcon />
                           </IconButton>
                         </Tooltip>
-                        <Tooltip title="Export log">
-                          <IconButton
-                            size="small"
-                            onClick={() => handleExportCSV(net)}
-                          >
-                            <DownloadIcon />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Net report (PDF)">
-                          <IconButton
-                            size="small"
-                            onClick={() => navigate(`/nets/${net.id}/report`)}
-                          >
-                            <PictureAsPdfIcon />
-                          </IconButton>
-                        </Tooltip>
+                        {/* A cancelled net never ran, so there's no log to export or report on */}
+                        {!isCancelled && (
+                          <>
+                            <Tooltip title="Export log">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleExportCSV(net)}
+                              >
+                                <DownloadIcon />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Net report (PDF)">
+                              <IconButton
+                                size="small"
+                                onClick={() => navigate(`/nets/${net.id}/report`)}
+                              >
+                                <PictureAsPdfIcon />
+                              </IconButton>
+                            </Tooltip>
+                          </>
+                        )}
                         {(user?.role === 'admin' || canManage(net)) && (
-                          <Tooltip title="Unarchive net">
-                            <IconButton
-                              size="small"
-                              color="warning"
-                              onClick={() => handleUnarchive(net)}
-                            >
-                              <UnarchiveIcon />
-                            </IconButton>
-                          </Tooltip>
+                          isCancelled ? (
+                            <Tooltip title="Restore net">
+                              <IconButton
+                                size="small"
+                                color="warning"
+                                onClick={() => handleRestore(net)}
+                              >
+                                <UnarchiveIcon />
+                              </IconButton>
+                            </Tooltip>
+                          ) : (
+                            <Tooltip title="Unarchive net">
+                              <IconButton
+                                size="small"
+                                color="warning"
+                                onClick={() => handleUnarchive(net)}
+                              >
+                                <UnarchiveIcon />
+                              </IconButton>
+                            </Tooltip>
+                          )
                         )}
                         {user?.role === 'admin' && (
                           <Tooltip title="Delete net">
@@ -935,7 +1015,8 @@ const Dashboard: React.FC = () => {
                         )}
                       </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })}
                 </TableBody>
               </Table>
             </TableContainer>
@@ -954,9 +1035,16 @@ const Dashboard: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* ========== DELETE CONFIRMATION DIALOG ========== */}
+      {/* ========== CANCEL / DELETE CONFIRMATION DIALOG ========== */}
+      {/* A draft/scheduled net (isCancelFlow) hasn't happened yet, so removing */}
+      {/* it here is a soft, reversible CANCELLED status - not a delete. It stays */}
+      {/* as a row (logged, findable in Archived Nets, restorable) instead of */}
+      {/* vanishing, which also stops the recurring schedule from silently */}
+      {/* recreating it. Active/lobby/closed nets still get the real, permanent */}
+      {/* delete below - this only applies to a *scheduled* occurrence. */}
       {/* Hard-coded button colors per design: */}
-      {/*   - Cancel: blue (primary)   – default safe action */}
+      {/*   - Keep Net / dismiss: blue (primary) – default safe action */}
+      {/*   - Cancel Net: yellow (warning)  – reversible, keeps the record */}
       {/*   - Archive: yellow (warning) – only for closed nets, hides from */}
       {/*     active list while preserving check-ins/chat for later review */}
       {/*   - Delete: red (error)      – permanent destruction of all data */}
@@ -967,110 +1055,154 @@ const Dashboard: React.FC = () => {
         fullWidth
         PaperProps={{ sx: { m: { xs: 1, sm: 4 } } }}
       >
-        <DialogTitle>Delete "{netToDelete?.name}"?</DialogTitle>
-        <DialogContent>
-          <Typography sx={{ mb: 2 }}>
-            Deleting this net will <strong>permanently remove</strong> every record
-            tied to it, including:
-          </Typography>
-          <Box component="ul" sx={{ mt: 0, mb: 2, pl: 3 }}>
-            <li><Typography variant="body2">All check-ins logged during this net</Typography></li>
-            <li><Typography variant="body2">All chat messages sent in this net</Typography></li>
-            <li><Typography variant="body2">Any reports, statistics, and history for this instance</Typography></li>
-          </Box>
-          <Typography color="error" sx={{ mb: 2, fontWeight: 'bold' }}>
-            This cannot be undone.
-          </Typography>
-          {netToDelete?.status === 'closed' ? (
-            <Typography variant="body2" color="text.secondary">
-              If you only want to clear this net out of the active list while keeping
-              the log for later, choose <strong>Archive</strong> instead. Archived
-              nets stay searchable and can be restored at any time.
-            </Typography>
-          ) : netToDelete?.status === 'active' || netToDelete?.status === 'lobby' ? (
-            <Typography variant="body2" color="text.secondary">
-              If you'd rather keep the log for the record, choose
-              {' '}<strong>Close &amp; Archive</strong>. The net is closed normally
-              (a complete log is emailed to you), then immediately archived so it
-              disappears from the active list but every check-in and chat message
-              is preserved and downloadable.
-            </Typography>
-          ) : (
-            <Typography variant="body2" color="text.secondary">
-              If you'd rather keep the log for the record, close the net first and
-              then archive it &mdash; archiving hides the net from the active list
-              but preserves every check-in and message.
-            </Typography>
-          )}
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          {/* Blue Cancel — keep on the left, the safe default */}
-          <Button
-            onClick={() => setDeleteConfirmOpen(false)}
-            variant="contained"
-            color="primary"
-          >
-            Cancel
-          </Button>
-          {/* Yellow Close & Archive — for active/lobby nets, runs close */}
-          {/* (which emails the full log to the owner) then archive in one */}
-          {/* shot. Saves the manager from a two-step "close, then archive" */}
-          {/* dance when they realize mid-net they want to keep the record. */}
-          {(netToDelete?.status === 'active' || netToDelete?.status === 'lobby') && (
-            <Button
-              onClick={async () => {
-                if (!netToDelete) return;
-                const id = netToDelete.id;
-                const name = netToDelete.name;
-                setDeleteConfirmOpen(false);
-                setNetToDelete(null);
-                try {
-                  await netApi.close(id);
-                  await netApi.archive(id);
-                  fetchNets();
-                  if (showArchived) fetchArchivedNets();
-                  setSnackbar({ open: true, message: `"${name}" closed and archived. The log was emailed to you.`, severity: 'success' });
-                } catch (error: any) {
-                  console.error('Failed to close & archive net:', error);
-                  const message = getErrorMessage(error, 'Failed to close and archive net');
-                  setSnackbar({ open: true, message, severity: 'error' });
-                }
-              }}
-              variant="contained"
-              color="warning"
-              startIcon={<ArchiveIcon />}
-            >
-              Close &amp; Archive
-            </Button>
-          )}
-          {/* Yellow Archive — only valid for closed nets (the only state */}
-          {/* the existing archive endpoint accepts) */}
-          {netToDelete?.status === 'closed' && (
-            <Button
-              onClick={async () => {
-                if (!netToDelete) return;
-                const id = netToDelete.id;
-                setDeleteConfirmOpen(false);
-                setNetToDelete(null);
-                await handleArchiveNet(id);
-              }}
-              variant="contained"
-              color="warning"
-              startIcon={<ArchiveIcon />}
-            >
-              Archive Instead
-            </Button>
-          )}
-          {/* Red Delete — destructive, requires explicit click */}
-          <Button
-            onClick={handleDeleteConfirm}
-            variant="contained"
-            color="error"
-            startIcon={<DeleteIcon />}
-          >
-            Delete Permanently
-          </Button>
-        </DialogActions>
+        {isCancelFlow ? (
+          <>
+            <DialogTitle>Cancel "{netToDelete?.name}"?</DialogTitle>
+            <DialogContent>
+              <Typography sx={{ mb: 2 }}>
+                This net will be marked <strong>Cancelled</strong> and removed from the
+                active dashboard. Unlike a delete, it stays on record in{' '}
+                <strong>Archived Nets</strong> so others can see it was cancelled
+                instead of just missing, and it won't be automatically recreated by
+                the recurring schedule. You can restore it later if plans change.
+              </Typography>
+              <TextField
+                label="Reason (optional)"
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                fullWidth
+                multiline
+                minRows={2}
+                placeholder="e.g. in-person meeting instead, work conflict, no volunteers this week"
+                sx={{ mb: 1 }}
+              />
+            </DialogContent>
+            <DialogActions sx={{ px: 3, pb: 2 }}>
+              <Button
+                onClick={() => setDeleteConfirmOpen(false)}
+                variant="contained"
+                color="primary"
+              >
+                Keep Net
+              </Button>
+              <Button
+                onClick={handleCancelConfirm}
+                variant="contained"
+                color="warning"
+                startIcon={<DeleteIcon />}
+              >
+                Cancel Net
+              </Button>
+            </DialogActions>
+          </>
+        ) : (
+          <>
+            <DialogTitle>Delete "{netToDelete?.name}"?</DialogTitle>
+            <DialogContent>
+              <Typography sx={{ mb: 2 }}>
+                Deleting this net will <strong>permanently remove</strong> every record
+                tied to it, including:
+              </Typography>
+              <Box component="ul" sx={{ mt: 0, mb: 2, pl: 3 }}>
+                <li><Typography variant="body2">All check-ins logged during this net</Typography></li>
+                <li><Typography variant="body2">All chat messages sent in this net</Typography></li>
+                <li><Typography variant="body2">Any reports, statistics, and history for this instance</Typography></li>
+              </Box>
+              <Typography color="error" sx={{ mb: 2, fontWeight: 'bold' }}>
+                This cannot be undone.
+              </Typography>
+              {netToDelete?.status === 'closed' ? (
+                <Typography variant="body2" color="text.secondary">
+                  If you only want to clear this net out of the active list while keeping
+                  the log for later, choose <strong>Archive</strong> instead. Archived
+                  nets stay searchable and can be restored at any time.
+                </Typography>
+              ) : netToDelete?.status === 'active' || netToDelete?.status === 'lobby' ? (
+                <Typography variant="body2" color="text.secondary">
+                  If you'd rather keep the log for the record, choose
+                  {' '}<strong>Close &amp; Archive</strong>. The net is closed normally
+                  (a complete log is emailed to you), then immediately archived so it
+                  disappears from the active list but every check-in and chat message
+                  is preserved and downloadable.
+                </Typography>
+              ) : (
+                <Typography variant="body2" color="text.secondary">
+                  If you'd rather keep the log for the record, close the net first and
+                  then archive it &mdash; archiving hides the net from the active list
+                  but preserves every check-in and message.
+                </Typography>
+              )}
+            </DialogContent>
+            <DialogActions sx={{ px: 3, pb: 2 }}>
+              {/* Blue Cancel — keep on the left, the safe default */}
+              <Button
+                onClick={() => setDeleteConfirmOpen(false)}
+                variant="contained"
+                color="primary"
+              >
+                Cancel
+              </Button>
+              {/* Yellow Close & Archive — for active/lobby nets, runs close */}
+              {/* (which emails the full log to the owner) then archive in one */}
+              {/* shot. Saves the manager from a two-step "close, then archive" */}
+              {/* dance when they realize mid-net they want to keep the record. */}
+              {(netToDelete?.status === 'active' || netToDelete?.status === 'lobby') && (
+                <Button
+                  onClick={async () => {
+                    if (!netToDelete) return;
+                    const id = netToDelete.id;
+                    const name = netToDelete.name;
+                    setDeleteConfirmOpen(false);
+                    setNetToDelete(null);
+                    try {
+                      await netApi.close(id);
+                      await netApi.archive(id);
+                      fetchNets();
+                      if (showArchived) fetchArchivedNets();
+                      setSnackbar({ open: true, message: `"${name}" closed and archived. The log was emailed to you.`, severity: 'success' });
+                    } catch (error: any) {
+                      console.error('Failed to close & archive net:', error);
+                      const message = getErrorMessage(error, 'Failed to close and archive net');
+                      setSnackbar({ open: true, message, severity: 'error' });
+                    }
+                  }}
+                  variant="contained"
+                  color="warning"
+                  startIcon={<ArchiveIcon />}
+                >
+                  Close &amp; Archive
+                </Button>
+              )}
+              {/* Yellow Archive — only valid for closed nets (the only state */}
+              {/* the existing archive endpoint accepts) */}
+              {netToDelete?.status === 'closed' && (
+                <Button
+                  onClick={async () => {
+                    if (!netToDelete) return;
+                    const id = netToDelete.id;
+                    setDeleteConfirmOpen(false);
+                    setNetToDelete(null);
+                    await handleArchiveNet(id);
+                  }}
+                  variant="contained"
+                  color="warning"
+                  startIcon={<ArchiveIcon />}
+                >
+                  Archive Instead
+                </Button>
+              )}
+              {/* Red Delete — destructive, requires explicit click */}
+              <Button
+                onClick={handleDeleteConfirm}
+                variant="contained"
+                color="error"
+                startIcon={<DeleteIcon />}
+              >
+                Delete Permanently
+              </Button>
+            </DialogActions>
+          </>
+        )}
       </Dialog>
 
       {/* ========== EMAIL SUBSCRIBERS DIALOG ========== */}

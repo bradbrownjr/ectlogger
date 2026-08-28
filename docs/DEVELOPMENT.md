@@ -310,6 +310,16 @@ if not await check_net_permission(db, net, user, required_roles=["ncs", "logger"
     raise HTTPException(status_code=403, detail="Permission denied")
 ```
 
+**Repeatable query params (`status=a&status=b`).** A route can accept a list via
+`status: Optional[List[NetStatus]] = Query(None)` — FastAPI parses both a single value and
+repeated keys into a list, so existing single-status callers keep working unchanged. The catch
+is on the frontend: axios's default array serialization (v1.x) turns `params: { status: ['a',
+'b'] }` into `status[]=a&status[]=b`, which FastAPI does *not* bind to `List[...]` (it needs
+bare repeated `status=a&status=b`). Build a `URLSearchParams` and `.append()` each value instead
+of passing a plain array — axios passes a `URLSearchParams` instance through untouched. See
+`netApi.listArchived` in `services/api.ts` (fetches both `archived` and `cancelled` nets this
+way) and `list_nets` in `routers/nets_core.py`.
+
 **Guest-readable net data.** A net's view and report pages are intentionally usable with no
 account (see `docs/USER-GUIDE.md` "Sharing a Net With Someone Who Doesn't Have an Account"), so
 a GET that feeds either page should use `Depends(get_current_user_optional)` (`current_user:

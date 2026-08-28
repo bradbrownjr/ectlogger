@@ -45,6 +45,12 @@ class NetStatus(str, enum.Enum):
     ACTIVE = "active"
     CLOSED = "closed"
     ARCHIVED = "archived"
+    # Terminal, like ARCHIVED, but for an occurrence that never happened at all
+    # (e.g. cancelled ahead of time). Kept as a row instead of deleted so the
+    # reminder scheduler can see "this slot was intentionally skipped" and the
+    # cancellation stays visible/findable instead of just disappearing. Only
+    # reachable from DRAFT/SCHEDULED - see cancel_net in routers/nets_export.py.
+    CANCELLED = "cancelled"
 
 
 class StationStatus(str, enum.Enum):
@@ -205,6 +211,8 @@ class Net(Base):
     scheduled_start_time = Column(DateTime(timezone=True))  # When the net is scheduled to start
     started_at = Column(DateTime(timezone=True))
     closed_at = Column(DateTime(timezone=True))
+    cancelled_at = Column(DateTime(timezone=True), nullable=True)
+    cancel_reason = Column(String(500), nullable=True)  # Optional operator-entered note, e.g. "in-person meeting instead"
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

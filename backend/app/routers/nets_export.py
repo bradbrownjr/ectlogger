@@ -15,7 +15,7 @@ from app.dependencies import get_current_user, get_current_user_optional
 from app.models import CheckIn, Net, NetRole, NetStatus, TemplateStaff, User, net_frequencies
 from app.models import Form as TrafficFormModel
 from app.permissions import check_net_lifecycle_permission, check_net_permission
-from app.schemas import Ics309LogResponse, NetResponse
+from app.schemas import Ics309LogResponse, NetResponse, NetCancelRequest
 from app.services.csv_import import (
     MAX_IMPORT_WINDOW_DAYS,
     WIDE_IMPORT_WINDOW_HOURS,
@@ -674,8 +674,98 @@ async def delete_net(
     
     await db.delete(net)
     await db.commit()
-    
+
     return None
+
+
+@router.post("/{net_id}/cancel", response_model=NetResponse)
+async def cancel_net(
+    net_id: int,
+    request: NetCancelRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Cancel a net that hasn't happened yet.
+
+    Unlike delete_net, this keeps the row (marked CANCELLED) instead of
+    removing it, so the occurrence stays visible in Archived Nets and the
+    reminder scheduler sees it as intentionally skipped rather than "never
+    created" - see _is_cancelled_occurrence in ncs_reminder_service.py.
+    """
+    result = await db.execute(
+        select(Net).options(selectinload(Net.frequencies)).where(Net.id == net_id)
+    )
+    net = result.scalar_one_or_none()
+
+    if not net:
+        raise HTTPException(status_code=404, detail="Net not found")
+
+    if not await check_net_lifecycle_permission(db, net, current_user):
+        raise HTTPException(status_code=403, detail="Not authorized to cancel this net")
+
+    if net.status not in (NetStatus.DRAFT, NetStatus.SCHEDULED):
+        raise HTTPException(status_code=400, detail="Only draft or scheduled nets can be cancelled")
+
+    net.status = NetStatus.CANCELLED
+    net.cancelled_at = datetime.utcnow()
+    net.cancel_reason = request.reason
+    await db.commit()
+    await db.refresh(net, ['frequencies'])
+
+    from app.main import manager
+    await manager.broadcast({
+        "type": "net_status_change",
+        "data": {
+            "net_id": net_id,
+            "status": "cancelled",
+        }
+    }, net_id)
+
+    return NetResponse.from_orm(net)
+
+
+@router.post("/{net_id}/restore", response_model=NetResponse)
+async def restore_net(
+    net_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Restore a cancelled net back to Draft or Scheduled.
+
+    Mirrors unarchive_net. Whether it lands in DRAFT or SCHEDULED is derived
+    from scheduled_start_time (the same signal that determines it elsewhere)
+    since cancelling doesn't separately remember the pre-cancel status.
+    """
+    result = await db.execute(
+        select(Net).options(selectinload(Net.frequencies)).where(Net.id == net_id)
+    )
+    net = result.scalar_one_or_none()
+
+    if not net:
+        raise HTTPException(status_code=404, detail="Net not found")
+
+    if not await check_net_lifecycle_permission(db, net, current_user):
+        raise HTTPException(status_code=403, detail="Not authorized to restore this net")
+
+    if net.status != NetStatus.CANCELLED:
+        raise HTTPException(status_code=400, detail="Only cancelled nets can be restored")
+
+    net.status = NetStatus.SCHEDULED if net.scheduled_start_time is not None else NetStatus.DRAFT
+    net.cancelled_at = None
+    net.cancel_reason = None
+    await db.commit()
+    await db.refresh(net, ['frequencies'])
+
+    from app.main import manager
+    await manager.broadcast({
+        "type": "net_status_change",
+        "data": {
+            "net_id": net_id,
+            "status": net.status.value,
+        }
+    }, net_id)
+
+    return NetResponse.from_orm(net)
 
 
 @router.post("/{net_id}/archive", response_model=NetResponse)

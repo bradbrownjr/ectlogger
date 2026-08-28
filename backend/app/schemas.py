@@ -394,6 +394,10 @@ class NetCreate(NetBase):
     frequency_ids: List[int] = []
 
 
+class NetCancelRequest(BaseModel):
+    reason: Optional[str] = Field(None, max_length=500)
+
+
 class NetUpdate(BaseModel):
     name: Optional[str] = Field(None, max_length=200, min_length=1)
     description: Optional[str] = Field(None, max_length=2000)
@@ -460,6 +464,8 @@ class NetResponse(NetBase):
     scheduled_start_time: Optional[datetime] = None
     started_at: Optional[datetime] = None
     closed_at: Optional[datetime] = None
+    cancelled_at: Optional[datetime] = None
+    cancel_reason: Optional[str] = None
     created_at: datetime
     # Set while the net has an assigned NCS but none are actively present
     # (all away/not checked in); null otherwise. total_paused_seconds
@@ -519,6 +525,8 @@ class NetResponse(NetBase):
             'scheduled_start_time': net.scheduled_start_time,
             'started_at': net.started_at,
             'closed_at': net.closed_at,
+            'cancelled_at': net.cancelled_at,
+            'cancel_reason': net.cancel_reason,
             'created_at': net.created_at,
             'paused_at': net.paused_at,
             'total_paused_seconds': net.total_paused_seconds or 0,

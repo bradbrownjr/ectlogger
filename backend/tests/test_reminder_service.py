@@ -114,6 +114,61 @@ async def test_auto_create_is_idempotent(db, owner):
 
 
 @pytest.mark.asyncio
+async def test_is_cancelled_occurrence_detects_cancelled_net(db, owner):
+    """Regression: cancelling a scheduled net used to hard-delete the row, so
+    the next reminder tick saw "no net for this slot" and silently recreated
+    it (reminder email included). _is_cancelled_occurrence is the guard the
+    reminder loops check before doing any work for a computed schedule date.
+    """
+    template = await _weekly_rotation_template(db, owner.id)
+
+    db.add(Net(
+        name=template.name,
+        owner_id=owner.id,
+        template_id=template.id,
+        status=NetStatus.CANCELLED,
+        scheduled_start_time=_SCHEDULED,
+        cancelled_at=datetime.now(timezone.utc),
+        cancel_reason="in-person meeting instead",
+    ))
+    await db.commit()
+
+    service = NCSReminderService()
+    assert await service._is_cancelled_occurrence(db, template.id, _SCHEDULED) is True
+    # A different slot for the same template has no cancelled row and isn't flagged.
+    other_slot = _SCHEDULED.replace(hour=15)
+    assert await service._is_cancelled_occurrence(db, template.id, other_slot) is False
+
+
+@pytest.mark.asyncio
+async def test_get_or_create_scheduled_net_does_not_duplicate_cancelled_row(db, owner):
+    """Defense in depth: even called directly for an already-cancelled slot
+    (normal callers check _is_cancelled_occurrence first and skip instead),
+    _get_or_create_scheduled_net must reuse the existing row, not insert a
+    second Net for the same occurrence.
+    """
+    template = await _weekly_rotation_template(db, owner.id)
+
+    cancelled = Net(
+        name=template.name,
+        owner_id=owner.id,
+        template_id=template.id,
+        status=NetStatus.CANCELLED,
+        scheduled_start_time=_SCHEDULED,
+    )
+    db.add(cancelled)
+    await db.commit()
+    await db.refresh(cancelled)
+
+    service = NCSReminderService()
+    net_id = await service._get_or_create_scheduled_net(db, template, _SCHEDULED)
+
+    assert net_id == cancelled.id
+    nets = (await db.execute(select(Net).where(Net.template_id == template.id))).scalars().all()
+    assert len(nets) == 1
+
+
+@pytest.mark.asyncio
 async def test_one_hour_dedup_spans_all_reminder_types(db, owner):
     """A user who already got any 1h-class reminder is deduped across all paths.
 
