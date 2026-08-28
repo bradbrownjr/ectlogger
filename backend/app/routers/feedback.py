@@ -128,7 +128,7 @@ async def submit_feedback(
 
     if not admins:
         logger.warning("FEEDBACK", "No admin users to notify — feedback received but not emailed")
-        return {"message": "Feedback received"}
+        return {"message": "Feedback received", "github_issue_url": issue_url}
 
     for admin in admins:
         try:
@@ -148,4 +148,4 @@ async def submit_feedback(
             logger.error("FEEDBACK", f"Failed to notify admin {admin.email}: {e}")
 
     logger.info("FEEDBACK", f"[{type_label}] from {submitter}: {feedback.subject}")
-    return {"message": "Feedback submitted"}
+    return {"message": "Feedback submitted", "github_issue_url": issue_url}

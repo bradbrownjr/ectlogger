@@ -44,6 +44,7 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({ open, onClose }) => {
   const [screenshotError, setScreenshotError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [issueUrl, setIssueUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -65,6 +66,7 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({ open, onClose }) => {
   const handleClose = () => {
     if (submitting) return;
     setSuccess(false);
+    setIssueUrl(null);
     setError(null);
     setSubject('');
     setBody('');
@@ -124,7 +126,8 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({ open, onClose }) => {
         payload.screenshot_filename = screenshot.name;
         payload.screenshot_mime = screenshot.type;
       }
-      await feedbackApi.submit(payload);
+      const response = await feedbackApi.submit(payload);
+      setIssueUrl(response.data?.github_issue_url || null);
       setSuccess(true);
     } catch (e: any) {
       if (e.response?.status === 429) {
@@ -148,6 +151,12 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({ open, onClose }) => {
         {success ? (
           <Alert severity="success" sx={{ mt: 1 }}>
             Thank you! Your feedback has been sent to the administrator.
+            {issueUrl && (
+              <>
+                {' '}You can track it on{' '}
+                <a href={issueUrl} target="_blank" rel="noopener noreferrer">GitHub</a>.
+              </>
+            )}
           </Alert>
         ) : (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>

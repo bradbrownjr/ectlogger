@@ -234,6 +234,12 @@ const Navbar: React.FC = () => {
       external: true,
     },
     {
+      label: 'Roadmap',
+      icon: <MapIcon fontSize="small" />,
+      action: () => { closeHelpMenu(); setDrawerOpen(false); window.open('https://ectlogger.us/docs/ROADMAP', '_blank', 'noopener,noreferrer'); },
+      external: true,
+    },
+    {
       label: 'Start Walkthrough',
       icon: <TourIcon fontSize="small" />,
       action: handleOpenWalkthrough,
@@ -243,12 +249,6 @@ const Navbar: React.FC = () => {
       icon: <FeedbackIcon fontSize="small" />,
       action: handleOpenFeedback,
       authRequired: true,
-    },
-    {
-      label: 'Roadmap',
-      icon: <MapIcon fontSize="small" />,
-      action: () => { closeHelpMenu(); setDrawerOpen(false); window.open('https://ectlogger.us/docs/ROADMAP', '_blank', 'noopener,noreferrer'); },
-      external: true,
     },
     {
       label: 'Diagnostics',
