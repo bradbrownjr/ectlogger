@@ -1,6 +1,32 @@
 {
-  "version": "2026.08.27",
+  "version": "2026.08.28",
   "entries": [
+    {
+      "version": "2026.08.28",
+      "date": "2026-08-28",
+      "sections": [
+        {
+          "title": "New Features",
+          "type": "feature",
+          "items": [
+            {
+              "text": "Help: Feedback becomes a trackable GitHub issue — bug reports and feature requests submitted through Submit Feedback are now also opened as public issues on the project's GitHub page (tagged with your callsign, not your email), so you can watch progress on what you reported instead of just sending it into an email.",
+              "userImpact": true
+            }
+          ]
+        },
+        {
+          "title": "Improvements",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Help menu: Roadmap link — the Help menu now links straight to the public roadmap, so you can see what's planned without leaving the app to go find it.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.08.27",
       "date": "2026-08-27",

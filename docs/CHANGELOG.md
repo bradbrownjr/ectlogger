@@ -4,6 +4,18 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# August 28, 2026
+
+## New Features
+
+* **Help: Feedback becomes a trackable GitHub issue** — Bug reports and feature requests submitted through Submit Feedback are now also opened as public issues on the project's GitHub page (tagged with your callsign, not your email), so you can watch progress on what you reported instead of just sending it into an email.
+
+## Improvements
+
+* **Help menu: Roadmap link** — The Help menu now links straight to the public roadmap, so you can see what's planned without leaving the app to go find it.
+
+---
+
 # August 27, 2026
 
 ## New Features

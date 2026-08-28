@@ -52,6 +52,7 @@ import GridOnIcon from '@mui/icons-material/GridOn';
 import LockIcon from '@mui/icons-material/Lock';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
+import MapIcon from '@mui/icons-material/Map';
 import TourIcon from '@mui/icons-material/Tour';
 import FeedbackIcon from '@mui/icons-material/Feedback';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
@@ -242,6 +243,12 @@ const Navbar: React.FC = () => {
       icon: <FeedbackIcon fontSize="small" />,
       action: handleOpenFeedback,
       authRequired: true,
+    },
+    {
+      label: 'Roadmap',
+      icon: <MapIcon fontSize="small" />,
+      action: () => { closeHelpMenu(); setDrawerOpen(false); window.open('https://ectlogger.us/docs/ROADMAP', '_blank', 'noopener,noreferrer'); },
+      external: true,
     },
     {
       label: 'Diagnostics',

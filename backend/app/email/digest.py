@@ -15,6 +15,7 @@ async def send_feedback_email(
     submitter_email: str,
     diagnostics: Optional[str] = None,
     screenshot: Optional[tuple] = None,
+    github_issue_url: Optional[str] = None,
 ):
     """Send an in-app feedback submission to an admin user.
 
@@ -23,6 +24,10 @@ async def send_feedback_email(
     rendered in its own boxed section, separate from the user's own message.
     ``screenshot``, if provided, is (bytes, filename, mime_type) and is sent
     as a real attachment rather than inlined, since it isn't text.
+    ``github_issue_url`` is set when app.routers.feedback._create_github_issue
+    successfully opened a public tracking issue; None if that's disabled
+    (no token configured) or failed, in which case this email is the only
+    record and the admin follows up directly.
     """
     from jinja2 import Template as JinjaTemplate
 
@@ -90,6 +95,9 @@ async def send_feedback_email(
             {% if has_screenshot %}
             <p style="font-size: 13px; color: #666;">A screenshot is attached to this email.</p>
             {% endif %}
+            {% if github_issue_url %}
+            <p style="font-size: 13px; color: #666;">Tracked as a public GitHub issue: <a href="{{ github_issue_url }}">{{ github_issue_url }}</a></p>
+            {% endif %}
             <div class="footer">
                 <p>Submitted via the in-app feedback form on {{ app_name }}.</p>
                 <p>Reply directly to this email to follow up with the submitter.</p>
@@ -110,6 +118,7 @@ async def send_feedback_email(
         app_name=settings.app_name,
         diagnostics=diagnostics,
         has_screenshot=screenshot is not None,
+        github_issue_url=github_issue_url,
     )
 
     logger.info("EMAIL", f"Sending feedback notification to admin {to_email}")

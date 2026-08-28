@@ -966,11 +966,12 @@ Both columns are blank for users the badge doesn't apply to, and both are sortab
 
 ## Getting Help
 
-The **Help** menu in the top navigation bar provides five options:
+The **Help** menu in the top navigation bar provides six options:
 
 - **User Guide** — Opens this documentation site in a new tab.
 - **Start Walkthrough** — Launches a step-through tour of the main app areas: Dashboard, Running a Net, Schedule, Statistics, Profile & Settings, and the Help menu itself. The walkthrough launches automatically on your first login and can be restarted at any time from here.
-- **Submit Feedback** — Opens an in-app form to report a bug or request a feature. Submissions are delivered directly to the site administrator with your callsign and contact info included so they can follow up. A checkbox lets you include the same diagnostics snapshot described below (checked by default for bug reports), and you can attach a screenshot — pick or paste an image file you've already captured with your device's screenshot tool. Rate-limited to 5 submissions per hour.
+- **Submit Feedback** — Opens an in-app form to report a bug or request a feature. Submissions are delivered directly to the site administrator with your callsign and contact info included so they can follow up, and bug reports and feature requests are also opened as public issues on the project's GitHub page (tagged with your callsign and name, not your email address) so you can watch progress on your request. A checkbox lets you include the same diagnostics snapshot described below (checked by default for bug reports), and you can attach a screenshot — pick or paste an image file you've already captured with your device's screenshot tool; screenshots go to the administrator's email only, not the public issue. Rate-limited to 5 submissions per hour.
+- **Roadmap** — Opens the public roadmap in a new tab, showing what's planned and being worked on next.
 - **Diagnostics** — Shows details about the browser and window you're using: the app version, your window and screen size, your browser and version, whether the app detected anything wrong with its own display, and any recent error messages from the browser console. **Copy Diagnostics** puts it all on your clipboard to paste into a feedback form or an email. Include it whenever you report something misbehaving — a number of problems only appear at particular window sizes or in particular browsers, and are very hard to track down without it. It contains no callsigns, names, locations, or net activity, and nothing is sent anywhere unless you paste it yourself (or, from the feedback form, check the box to include it).
 - **About ECTLogger** — Shows the current version, a link to the GitHub repository, open-source license credits, and the Honorable Mentions list of operators whose feedback helped shape the platform.
 

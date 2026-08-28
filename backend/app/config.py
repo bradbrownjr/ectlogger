@@ -29,7 +29,14 @@ class Settings(BaseSettings):
     microsoft_client_secret: Optional[str] = None
     github_client_id: Optional[str] = None
     github_client_secret: Optional[str] = None
-    
+
+    # GitHub Issues (in-app feedback bridge). Separate from the OAuth login
+    # credentials above -- this needs a personal/fine-grained access token
+    # with issues:write on github_issues_repo. Unset disables the bridge;
+    # feedback submission still emails admins either way.
+    github_issues_token: Optional[str] = None
+    github_issues_repo: str = "bradbrownjr/ectlogger"
+
     # Email
     # Master send switch. False makes every send a no-op that logs the intended
     # recipient and returns, so a non-production instance cannot mail real users
