@@ -8,7 +8,7 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Login: Password sign-in and two-factor authentication** — You can now set a password as a backup sign-in method for when magic-link email isn't available, and admin accounts get an extra authenticator app code for added protection.
+* **Login: Password sign-in and two-factor authentication** — You can now set a password as a backup sign-in method for when magic-link email isn't available. Admin accounts are now required to set up an authenticator app code at sign-in, to help protect the site and its data.
 * **Help: Privacy Policy** — A new Privacy Policy page, linked from the Help menu and the About window, explains what data ECTLogger collects and why.
 
 ---

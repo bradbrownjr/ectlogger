@@ -10,7 +10,7 @@
           "type": "feature",
           "items": [
             {
-              "text": "Login: Password sign-in and two-factor authentication — you can now set a password as a backup sign-in method for when magic-link email isn't available, and admin accounts get an extra authenticator app code for added protection.",
+              "text": "Login: Password sign-in and two-factor authentication — you can now set a password as a backup sign-in method for when magic-link email isn't available. Admin accounts are now required to set up an authenticator app code at sign-in, to help protect the site and its data.",
               "userImpact": true
             },
             {
