@@ -1,6 +1,25 @@
 {
-  "version": "2026.08.28b",
+  "version": "2026.08.29",
   "entries": [
+    {
+      "version": "2026.08.29",
+      "date": "2026-08-29",
+      "sections": [
+        {
+          "title": "New Features",
+          "type": "feature",
+          "items": [
+            {
+              "text": "Login: Password sign-in and two-factor authentication — you can now set a password as a backup sign-in method for when magic-link email isn't available, and admin accounts get an extra authenticator app code for added protection.",
+              "userImpact": true
+            },
+            {
+              "text": "Help: Privacy Policy — a new Privacy Policy page, linked from the Help menu and the About window, explains what data ECTLogger collects and why."
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.08.28b",
       "date": "2026-08-28",
