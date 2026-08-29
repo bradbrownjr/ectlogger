@@ -41,6 +41,8 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import ClearIcon from '@mui/icons-material/Clear';
 import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium';
 import NewReleasesIcon from '@mui/icons-material/NewReleases';
+import VpnKeyIcon from '@mui/icons-material/VpnKey';
+import LockResetIcon from '@mui/icons-material/LockReset';
 import useSortableTable from '../../hooks/useSortableTable';
 import api, { BACKGROUND_REQUEST_CONFIG } from '../../services/api';
 import useVisibilityAwareInterval from '../../hooks/useVisibilityAwareInterval';
@@ -62,6 +64,8 @@ interface AdminUser {
   // Power-user indicators (Admin Tooling roadmap item) - see docs/USER-GUIDE.md
   is_ncs: boolean;
   notify_whats_new: boolean;
+  has_password: boolean;
+  mfa_enabled: boolean;
 }
 
 type UserSortField = 'online' | 'email' | 'name' | 'callsign' | 'role' | 'status' | 'last_active' | 'created_at' | 'is_ncs' | 'notify_whats_new';
@@ -294,6 +298,33 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
     } catch (error) {
       console.error('Failed to unban user:', error);
       alert('Failed to unban user');
+    }
+  };
+
+  // Recovery path for a user who can't retrieve a magic link (email down)
+  // or lost their authenticator device. The temp password is shown once
+  // here -- the backend never logs or stores it in the clear.
+  const handleResetPassword = async (userId: number) => {
+    if (!confirm("Generate a new temporary password for this user? Their current password (if any) stops working immediately.")) return;
+    try {
+      const response = await api.post(`/users/${userId}/password/reset`);
+      alert(`Temporary password: ${response.data.temporary_password}\n\nShare this with the user through a trusted channel (not email, if that's why they're locked out). They should change it after signing in.`);
+      fetchUsers();
+    } catch (error) {
+      console.error('Failed to reset password:', error);
+      showSnackbar(getErrorMessage(error, 'Failed to reset password'), 'error');
+    }
+  };
+
+  const handleResetMfa = async (userId: number) => {
+    if (!confirm("Reset this user's two-factor authentication? They will need to re-enroll from scratch.")) return;
+    try {
+      await api.post(`/users/${userId}/mfa/reset`);
+      showSnackbar('Two-factor authentication reset.', 'success');
+      fetchUsers();
+    } catch (error) {
+      console.error('Failed to reset MFA:', error);
+      showSnackbar(getErrorMessage(error, 'Failed to reset MFA'), 'error');
     }
   };
 
@@ -696,6 +727,23 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
                         </Tooltip>
                       );
                     })()}
+                    <IconButton
+                      size="small"
+                      onClick={() => handleResetPassword(user.id)}
+                      title="Reset Password"
+                    >
+                      <VpnKeyIcon fontSize="small" />
+                    </IconButton>
+                    {user.mfa_enabled && (
+                      <IconButton
+                        size="small"
+                        onClick={() => handleResetMfa(user.id)}
+                        title="Reset Two-Factor Authentication"
+                        disabled={user.id === currentUser?.id}
+                      >
+                        <LockResetIcon fontSize="small" />
+                      </IconButton>
+                    )}
                     <IconButton
                       size="small"
                       onClick={() => handleDeleteUser(user.id)}

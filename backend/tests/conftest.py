@@ -12,11 +12,16 @@ os.environ.setdefault("SECRET_KEY", "test-secret-key-do-not-use-in-production")
 os.environ.setdefault("SMTP_USER", "test@example.com")
 os.environ.setdefault("SMTP_PASSWORD", "test-password")
 os.environ.setdefault("SMTP_FROM_EMAIL", "test@example.com")
+# Without this, any code path that actually sends email (net close, password
+# change, magic link) attempts a real SMTP connection with the fake
+# credentials above and raises -- tests should never depend on network access.
+os.environ.setdefault("EMAIL_ENABLED", "false")
 # Point the module-level engine at in-memory SQLite so startup init_db() creates
 # tables there and never touches the real dev database.  The test engine below
 # (also in-memory, StaticPool) is what endpoints use via get_db override.
 os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
 
+import pytest
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
@@ -52,6 +57,19 @@ async def db(engine):
     factory = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
     async with factory() as session:
         yield session
+
+
+@pytest.fixture(autouse=True)
+def _reset_rate_limiters():
+    """Per-route slowapi limiters (routers/auth.py, routers/feedback.py) keep
+    in-memory counters for the life of the process, not per-test -- without
+    this, a test file that calls a rate-limited endpoint more than its
+    per-minute budget starts getting real 429s from earlier tests' traffic."""
+    from app.routers.auth import _limiter as auth_limiter
+    from app.routers.feedback import _limiter as feedback_limiter
+    auth_limiter.reset()
+    feedback_limiter.reset()
+    yield
 
 
 @pytest_asyncio.fixture()
@@ -93,7 +111,12 @@ async def other(db):
 
 @pytest_asyncio.fixture()
 async def admin(db):
-    user = User(email="admin@test.com", callsign="KC1ADM", role=UserRole.ADMIN, is_active=True)
+    # mfa_enabled=True: get_admin_user requires MFA enrollment on top of the
+    # ADMIN role (see app.dependencies.get_admin_user), so an admin fixture
+    # used against admin-only endpoints has to already be "enrolled" or every
+    # such test would 403 on the MFA gate instead of testing what it means to.
+    # test_password_mfa.py covers the un-enrolled-admin case directly.
+    user = User(email="admin@test.com", callsign="KC1ADM", role=UserRole.ADMIN, is_active=True, mfa_enabled=True)
     db.add(user)
     await db.commit()
     await db.refresh(user)

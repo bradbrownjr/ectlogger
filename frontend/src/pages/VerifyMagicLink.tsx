@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Container, Typography, CircularProgress, Box, Button } from '@mui/material';
+import { Container, Typography, CircularProgress, Box, Button, TextField, Alert } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
 import { authApi } from '../services/api';
 import { getErrorMessage } from '../utils/apiErrors';
@@ -11,33 +11,55 @@ const VerifyMagicLink: React.FC = () => {
   const { login, isAuthenticated } = useAuth();
   const [error, setError] = useState<string>('');
   const [verifying, setVerifying] = useState(true);
+  const [mfaRequired, setMfaRequired] = useState(false);
+  const [totpCode, setTotpCode] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    const verifyToken = async () => {
-      const token = searchParams.get('token');
-      const redirect = searchParams.get('redirect');
+  const token = searchParams.get('token');
+  const redirect = searchParams.get('redirect');
 
-      if (!token) {
-        setError('No verification token provided');
+  const attemptVerify = async (code?: string) => {
+    if (!token) {
+      setError('No verification token provided');
+      setVerifying(false);
+      return;
+    }
+
+    try {
+      const response = await authApi.verifyMagicLink(token, code);
+      const { login_status, access_token } = response.data;
+
+      if (login_status === 'mfa_required') {
+        // Admin account, MFA not satisfied yet -- the magic-link token was
+        // deliberately not consumed, so this can be resubmitted with a code.
+        setMfaRequired(true);
         setVerifying(false);
         return;
       }
 
-      try {
-        const response = await authApi.verifyMagicLink(token);
-        await login(response.data.access_token);
-        // Redirect to specified path or default to dashboard
-        navigate(redirect || '/dashboard');
-      } catch (err: any) {
-        console.error('[VERIFY] Magic link verification failed:', err.response?.data);
-        setError(getErrorMessage(err, 'Invalid or expired magic link'));
-        setVerifying(false);
-      }
-    };
+      await login(access_token);
+      navigate(login_status === 'mfa_setup_required' ? '/profile?tab=security&mfaRequired=1' : (redirect || '/dashboard'));
+    } catch (err: any) {
+      console.error('[VERIFY] Magic link verification failed:', err.response?.data);
+      setError(getErrorMessage(err, mfaRequired ? 'Incorrect verification code.' : 'Invalid or expired magic link'));
+      setVerifying(false);
+      if (!mfaRequired) setMfaRequired(false);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
-    verifyToken();
+  useEffect(() => {
+    attemptVerify();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run once on mount, regardless of dependency changes
+
+  const handleSubmitCode = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setError('');
+    attemptVerify(totpCode);
+  };
 
   return (
     <Container maxWidth="sm">
@@ -47,6 +69,31 @@ const VerifyMagicLink: React.FC = () => {
             <CircularProgress size={60} sx={{ mb: 2 }} />
             <Typography variant="h5">Verifying your magic link...</Typography>
           </>
+        ) : mfaRequired ? (
+          <Box component="form" onSubmit={handleSubmitCode} sx={{ width: '100%' }}>
+            <Typography variant="h5" gutterBottom align="center">
+              Two-Factor Verification
+            </Typography>
+            <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 3 }}>
+              Enter the 6-digit code from your authenticator app to finish signing in.
+            </Typography>
+            {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+            <TextField
+              fullWidth
+              label="Verification Code"
+              value={totpCode}
+              onChange={(e) => setTotpCode(e.target.value)}
+              required
+              autoFocus
+              inputProps={{ inputMode: 'numeric', maxLength: 10 }}
+              disabled={submitting}
+              sx={{ mb: 2 }}
+              helperText="A backup code also works if you don't have your authenticator handy."
+            />
+            <Button fullWidth type="submit" variant="contained" size="large" disabled={submitting}>
+              {submitting ? <CircularProgress size={24} /> : 'Verify'}
+            </Button>
+          </Box>
         ) : isAuthenticated ? (
           // The link failed, but an existing session is still valid (e.g. an older
           // or already-used link clicked while signed in on this device).

@@ -1,22 +1,43 @@
+import base64
+import io
+import json
+
+import qrcode
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from authlib.integrations.starlette_client import OAuth
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from app.session_config import get_session_config
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models import User, UserRole, Contact
-from app.schemas import Token, UserResponse, MagicLinkRequest, MagicLinkVerify
-from app.auth import create_access_token, create_magic_link_token, verify_magic_link_token
+from app.schemas import (
+    Token, UserResponse, MagicLinkRequest, MagicLinkVerify,
+    PasswordLoginRequest, LoginResult, PasswordSetRequest,
+    MfaSetupStartResult, MfaSetupConfirmRequest, MfaSetupConfirmResult,
+    MfaReplaceStartRequest, MfaDisableRequest,
+)
+from app.auth import (
+    create_access_token, create_magic_link_token, verify_magic_link_token,
+    hash_password, verify_password, encrypt_mfa_secret, decrypt_mfa_secret,
+    generate_totp_secret, totp_provisioning_uri, verify_totp_code,
+    generate_backup_codes, hash_backup_code,
+    MAX_FAILED_PASSWORD_ATTEMPTS, PASSWORD_LOCKOUT_MINUTES,
+)
 from app.email_service import EmailService
 from app.config import settings
 from app.logger import logger
 from app.security import get_client_ip
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 import secrets
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
+_limiter = Limiter(key_func=get_remote_address)
+
+GENERIC_LOGIN_ERROR = "Incorrect callsign/email or password"
 
 
 def generate_unsubscribe_token() -> str:
@@ -129,33 +150,108 @@ async def get_or_create_user(db: AsyncSession, email: str, name: str, provider: 
     return user
 
 
+async def _find_by_identifier(db: AsyncSession, identifier: str) -> Optional[User]:
+    """Login identifier can be either a callsign or an email, disambiguated
+    by the presence of "@" -- shared by password login."""
+    identifier = identifier.strip()
+    if "@" in identifier:
+        result = await db.execute(select(User).where(User.email == identifier.lower()))
+    else:
+        result = await db.execute(select(User).where(User.callsign == identifier.upper()))
+    return result.scalar_one_or_none()
+
+
+async def _consume_backup_code(db: AsyncSession, user: User, code: str) -> bool:
+    """Single-use: removes the matching hash from mfa_backup_codes and
+    commits. Returns False (no side effect) if the code doesn't match."""
+    if not user.mfa_backup_codes:
+        return False
+    code_hash = hash_backup_code(code)
+    codes = json.loads(user.mfa_backup_codes)
+    if code_hash not in codes:
+        return False
+    codes.remove(code_hash)
+    user.mfa_backup_codes = json.dumps(codes)
+    await db.commit()
+    return True
+
+
+async def _resolve_mfa(db: AsyncSession, user: User, totp_code: Optional[str]) -> str:
+    """Shared by password login and magic-link verify, since MFA has to be
+    checked no matter which first factor was used.
+
+    Returns "ok" / "mfa_required" / "mfa_setup_required". MFA is mandatory
+    for admins (an unenrolled admin gets mfa_setup_required, never "ok").
+    For everyone else it's opt-in, but once a user has enrolled it, it IS
+    enforced at login -- an "optional" second factor a user turned on but
+    that's silently skipped would be worse than not offering it.
+    """
+    if user.role == UserRole.ADMIN and not user.mfa_enabled:
+        return "mfa_setup_required"
+    if not user.mfa_enabled:
+        return "ok"
+
+    secret = decrypt_mfa_secret(user.mfa_secret_encrypted) if user.mfa_secret_encrypted else None
+    if not secret:
+        # secret_key was rotated, or the row is corrupt. For an admin this
+        # must still block access (force re-enrollment); for a non-admin
+        # there's nothing left to verify against, so don't lock them out of
+        # their own account over an operational key rotation.
+        return "mfa_setup_required" if user.role == UserRole.ADMIN else "ok"
+
+    if totp_code and (verify_totp_code(secret, totp_code) or await _consume_backup_code(db, user, totp_code)):
+        return "ok"
+    return "mfa_required"
+
+
+def _require_non_admin_mfa_self_service(user: User):
+    """Admins can't disable or replace their own MFA -- that would defeat
+    "MFA mandatory for admins" trivially. Recovery is another admin using
+    the admin reset endpoint, or scripts/reset_admin_mfa.py as a last
+    resort if no other admin exists."""
+    if user.role == UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin MFA can't be self-managed this way. Ask another admin to reset it, "
+                   "or use the server-side recovery script if none is available."
+        )
+
+
+def _mfa_qr_data_uri(otpauth_url: str) -> str:
+    img = qrcode.make(otpauth_url)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
+
+
 @router.post("/magic-link/request")
+@_limiter.limit("5/hour")
 async def request_magic_link(
-    request: MagicLinkRequest,
-    req: Request,
+    request: Request,
+    payload: MagicLinkRequest,
     db: AsyncSession = Depends(get_db)
 ):
     """Request a magic link to sign in via email"""
-    client_ip = get_client_ip(req)
-    logger.info("API", f"Magic link request received for {request.email}", ip=client_ip)
-    
+    client_ip = get_client_ip(request)
+    logger.info("API", f"Magic link request received for {payload.email}", ip=client_ip)
+
     # Check if user exists and is banned
-    result = await db.execute(select(User).where(User.email == request.email))
+    result = await db.execute(select(User).where(User.email == payload.email))
     existing_user = result.scalar_one_or_none()
     if existing_user and not existing_user.is_active:
-        logger.banned_access(request.email, client_ip)
+        logger.banned_access(payload.email, client_ip)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Your account has been deactivated. Please contact an administrator."
         )
-    
+
     try:
-        token = create_magic_link_token(request.email)
+        token = create_magic_link_token(payload.email)
         logger.debug("API", "Token generated successfully")
-        
-        await EmailService.send_magic_link(request.email, token, settings.magic_link_expire_days)
-        
-        logger.info("API", f"Magic link sent successfully to {request.email}")
+
+        await EmailService.send_magic_link(payload.email, token, settings.magic_link_expire_days)
+
+        logger.info("API", f"Magic link sent successfully to {payload.email}")
         return {
             "message": "Magic link sent to your email",
             "expires_in_days": settings.magic_link_expire_days
@@ -171,31 +267,34 @@ async def request_magic_link(
         )
 
 
-@router.post("/magic-link/verify", response_model=Token)
+@router.post("/magic-link/verify", response_model=LoginResult)
+@_limiter.limit("20/minute")
 async def verify_magic_link(
-    request: MagicLinkVerify,
-    req: Request,
+    request: Request,
+    payload: MagicLinkVerify,
     db: AsyncSession = Depends(get_db)
 ):
-    """Verify magic link token and sign in"""
-    client_ip = get_client_ip(req)
+    """Verify magic link token and sign in. If the account is an admin
+    without MFA satisfied yet, the single-use token is deliberately NOT
+    consumed here -- resubmit the same token with totp_code filled in."""
+    client_ip = get_client_ip(request)
     logger.info("API", "Magic link verification request received", ip=client_ip)
-    logger.debug("API", f"Token: {request.token[:20]}...{request.token[-10:]} (truncated)", ip=client_ip)
-    
-    email = verify_magic_link_token(request.token)
-    
+    logger.debug("API", f"Token: {payload.token[:20]}...{payload.token[-10:]} (truncated)", ip=client_ip)
+
+    email = verify_magic_link_token(payload.token)
+
     if not email:
         logger.auth_failure("Invalid or expired magic link token", client_ip)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired magic link"
         )
-    
+
     logger.debug("API", f"Token valid for email: {email}", ip=client_ip)
-    
+
     # Get or create user
     user = await get_or_create_user(db, email, email, "email", email)
-    
+
     # Check if user is banned (is_active = False)
     if not user.is_active:
         logger.banned_access(user.email, client_ip)
@@ -203,23 +302,227 @@ async def verify_magic_link(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Your account has been locked. Please contact an administrator for assistance."
         )
-    
+
+    mfa_status = await _resolve_mfa(db, user, payload.totp_code)
+    if mfa_status == "mfa_required":
+        logger.auth_failure("Magic link valid, MFA code required", client_ip, email=user.email)
+        return LoginResult(login_status="mfa_required")
+
     logger.auth_success(user.email, client_ip)
-    
+
     # Create access token using admin-configured lifetime
     lifetime_days, _ = await get_session_config(db)
     access_token = create_access_token(
         data={"sub": str(user.id)},
         expires_delta=timedelta(days=lifetime_days)
     )
-    
+
     logger.debug("API", "Access token created successfully", ip=client_ip)
-    
-    return Token(
+
+    return LoginResult(
+        login_status=mfa_status,  # "ok" or "mfa_setup_required"
         access_token=access_token,
         token_type="bearer",
         user=UserResponse.from_orm(user)
     )
+
+
+@router.post("/login", response_model=LoginResult)
+@_limiter.limit("10/minute")
+async def password_login(
+    request: Request,
+    payload: PasswordLoginRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """Password fallback for when magic-link email can't be delivered or
+    retrieved. Accepts a callsign or email as the identifier. Errors are
+    deliberately generic (no distinction between "no such account", "no
+    password set", and "wrong password") to avoid account enumeration."""
+    client_ip = get_client_ip(request)
+    user = await _find_by_identifier(db, payload.identifier)
+
+    if user and not user.is_active:
+        logger.banned_access(user.email, client_ip)
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Your account has been deactivated. Please contact an administrator."
+        )
+
+    # SQLite drops tzinfo on round-trip even for a DateTime(timezone=True)
+    # column, so a value read back is naive and needs it reattached before
+    # comparing against an aware "now" (same pattern as net_pause.py and
+    # traffic_reminder_service.py).
+    locked_until = user.password_locked_until if user else None
+    if locked_until and locked_until.tzinfo is None:
+        locked_until = locked_until.replace(tzinfo=timezone.utc)
+    if locked_until and locked_until > datetime.now(timezone.utc):
+        logger.auth_failure("Password login blocked (account locked)", client_ip, email=user.email)
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many failed attempts. Try again in a few minutes."
+        )
+
+    if not user or not user.password_hash or not verify_password(payload.password, user.password_hash):
+        if user:
+            user.failed_password_attempts = (user.failed_password_attempts or 0) + 1
+            if user.failed_password_attempts >= MAX_FAILED_PASSWORD_ATTEMPTS:
+                user.password_locked_until = datetime.now(timezone.utc) + timedelta(minutes=PASSWORD_LOCKOUT_MINUTES)
+            await db.commit()
+        logger.auth_failure("Invalid password login", client_ip, email=payload.identifier)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=GENERIC_LOGIN_ERROR)
+
+    user.failed_password_attempts = 0
+    user.password_locked_until = None
+    await db.commit()
+
+    mfa_status = await _resolve_mfa(db, user, payload.totp_code)
+    if mfa_status == "mfa_required":
+        logger.auth_failure("Password valid, MFA code required", client_ip, email=user.email)
+        return LoginResult(login_status="mfa_required")
+
+    logger.auth_success(user.email, client_ip)
+    lifetime_days, _ = await get_session_config(db)
+    access_token = create_access_token(
+        data={"sub": str(user.id)},
+        expires_delta=timedelta(days=lifetime_days)
+    )
+    return LoginResult(
+        login_status=mfa_status,  # "ok" or "mfa_setup_required"
+        access_token=access_token,
+        token_type="bearer",
+        user=UserResponse.from_orm(user)
+    )
+
+
+@router.post("/password/set")
+async def set_password(
+    payload: PasswordSetRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Self-service set/change password. current_password is required only
+    when the account already has one set."""
+    if current_user.password_hash:
+        if not payload.current_password or not verify_password(payload.current_password, current_user.password_hash):
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Current password is incorrect")
+
+    current_user.password_hash = hash_password(payload.new_password)
+    current_user.failed_password_attempts = 0
+    current_user.password_locked_until = None
+    await db.commit()
+
+    if current_user.email:
+        await EmailService.send_password_changed(current_user.email)
+
+    return {"success": True, "message": "Password updated."}
+
+
+@router.post("/mfa/setup/start", response_model=MfaSetupStartResult)
+async def mfa_setup_start(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Mints a new secret and persists it immediately (not yet enabled), so
+    the flow survives a page refresh mid-enrollment. Call setup/confirm with
+    a real code from the authenticator app to activate it."""
+    if current_user.mfa_enabled:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="MFA is already enabled. Use the replace flow to change authenticator.")
+
+    secret = generate_totp_secret()
+    current_user.mfa_secret_encrypted = encrypt_mfa_secret(secret)
+    await db.commit()
+
+    otpauth_url = totp_provisioning_uri(secret, current_user.callsign or current_user.email)
+    return MfaSetupStartResult(secret=secret, otpauth_url=otpauth_url, qr_code_data_uri=_mfa_qr_data_uri(otpauth_url))
+
+
+@router.post("/mfa/setup/confirm", response_model=MfaSetupConfirmResult)
+async def mfa_setup_confirm(
+    payload: MfaSetupConfirmRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    if current_user.mfa_enabled:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="MFA is already enabled.")
+    if not current_user.mfa_secret_encrypted:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Start MFA setup first.")
+
+    secret = decrypt_mfa_secret(current_user.mfa_secret_encrypted)
+    if not secret or not verify_totp_code(secret, payload.totp_code):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect verification code.")
+
+    codes = generate_backup_codes()
+    current_user.mfa_backup_codes = json.dumps([hash_backup_code(c) for c in codes])
+    current_user.mfa_enabled = True
+    await db.commit()
+
+    return MfaSetupConfirmResult(backup_codes=codes)
+
+
+@router.post("/mfa/replace/start", response_model=MfaSetupStartResult)
+async def mfa_replace_start(
+    payload: MfaReplaceStartRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Replace a lost authenticator, proven by account password rather than
+    a TOTP code from the (lost) old device. Staged in mfa_pending_secret_encrypted
+    until confirmed, so an abandoned attempt never strands a working secret."""
+    _require_non_admin_mfa_self_service(current_user)
+    if not current_user.password_hash or not verify_password(payload.password, current_user.password_hash):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect password")
+
+    secret = generate_totp_secret()
+    current_user.mfa_pending_secret_encrypted = encrypt_mfa_secret(secret)
+    await db.commit()
+
+    otpauth_url = totp_provisioning_uri(secret, current_user.callsign or current_user.email)
+    return MfaSetupStartResult(secret=secret, otpauth_url=otpauth_url, qr_code_data_uri=_mfa_qr_data_uri(otpauth_url))
+
+
+@router.post("/mfa/replace/confirm", response_model=MfaSetupConfirmResult)
+async def mfa_replace_confirm(
+    payload: MfaSetupConfirmRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    _require_non_admin_mfa_self_service(current_user)
+    if not current_user.mfa_pending_secret_encrypted:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Start the replacement flow first.")
+
+    secret = decrypt_mfa_secret(current_user.mfa_pending_secret_encrypted)
+    if not secret or not verify_totp_code(secret, payload.totp_code):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect verification code.")
+
+    codes = generate_backup_codes()
+    current_user.mfa_secret_encrypted = current_user.mfa_pending_secret_encrypted
+    current_user.mfa_pending_secret_encrypted = None
+    current_user.mfa_backup_codes = json.dumps([hash_backup_code(c) for c in codes])
+    current_user.mfa_enabled = True
+    await db.commit()
+
+    return MfaSetupConfirmResult(backup_codes=codes)
+
+
+@router.post("/mfa/disable")
+async def mfa_disable(
+    payload: MfaDisableRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    _require_non_admin_mfa_self_service(current_user)
+    if not current_user.mfa_enabled:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="MFA is not enabled.")
+    if not current_user.password_hash or not verify_password(payload.password, current_user.password_hash):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect password")
+
+    current_user.mfa_enabled = False
+    current_user.mfa_secret_encrypted = None
+    current_user.mfa_backup_codes = None
+    current_user.mfa_pending_secret_encrypted = None
+    await db.commit()
+
+    return {"success": True, "message": "Two-factor authentication disabled."}
 
 
 @router.get("/oauth/{provider}")

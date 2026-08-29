@@ -1,13 +1,99 @@
+import base64
+import hashlib
+import secrets
 from datetime import datetime, timedelta
 from typing import Optional
+import bcrypt
+import pyotp
+from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from app.config import settings
 from app.logger import logger
 from itsdangerous import URLSafeTimedSerializer
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 serializer = URLSafeTimedSerializer(settings.secret_key)
+
+# Passwords longer than this are rejected at the schema layer (see
+# schemas.py) rather than silently truncated -- bcrypt itself ignores
+# anything past 72 bytes, so a longer password would still "work" but
+# wouldn't mean what the user thinks it means.
+MAX_PASSWORD_BYTES = 72
+
+MAX_FAILED_PASSWORD_ATTEMPTS = 5
+PASSWORD_LOCKOUT_MINUTES = 15
+BACKUP_CODE_COUNT = 8
+
+# HKDF-derived from secret_key with a purpose label distinct from any other
+# use of secret_key (JWT signing, magic-link tokens), so rotating one
+# doesn't cross-contaminate the other and a leaked derived key can't be
+# used to recover secret_key itself.
+_MFA_SECRET_PURPOSE = b"ectlogger-mfa-secret-v1"
+
+
+def hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+
+
+def verify_password(password: str, password_hash: str) -> bool:
+    try:
+        return bcrypt.checkpw(password.encode(), password_hash.encode())
+    except ValueError:
+        # Corrupt/foreign hash -- fail closed rather than raise.
+        return False
+
+
+def generate_temporary_password() -> str:
+    """Admin-issued reset password, shown once."""
+    return secrets.token_urlsafe(12)
+
+
+def _mfa_fernet() -> Fernet:
+    key_material = HKDF(
+        algorithm=hashes.SHA256(), length=32, salt=None, info=_MFA_SECRET_PURPOSE
+    ).derive(settings.secret_key.encode())
+    return Fernet(base64.urlsafe_b64encode(key_material))
+
+
+def encrypt_mfa_secret(secret: str) -> str:
+    return _mfa_fernet().encrypt(secret.encode()).decode()
+
+
+def decrypt_mfa_secret(token: str) -> Optional[str]:
+    """Returns None on any decrypt failure (corrupt data, or secret_key was
+    rotated since encryption) -- callers treat that the same as "never
+    enrolled" and prompt re-enrollment rather than erroring."""
+    try:
+        return _mfa_fernet().decrypt(token.encode()).decode()
+    except Exception:
+        return None
+
+
+def generate_totp_secret() -> str:
+    return pyotp.random_base32()
+
+
+def totp_provisioning_uri(secret: str, account_label: str) -> str:
+    return pyotp.TOTP(secret).provisioning_uri(name=account_label, issuer_name=settings.app_name)
+
+
+def verify_totp_code(secret: str, code: str) -> bool:
+    code = (code or "").strip().replace(" ", "")
+    if not code:
+        return False
+    # valid_window=1 tolerates ~30s of clock drift on either side.
+    return pyotp.TOTP(secret).verify(code, valid_window=1)
+
+
+def generate_backup_codes(count: int = BACKUP_CODE_COUNT) -> list[str]:
+    return [secrets.token_hex(5) for _ in range(count)]  # 40 bits of entropy each
+
+
+def hash_backup_code(code: str) -> str:
+    # Plain SHA-256, not a slow KDF -- there's nothing to brute-force from a
+    # stolen hash of 40 bits of random entropy, unlike a user-chosen password.
+    return hashlib.sha256(code.strip().lower().encode()).hexdigest()
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):

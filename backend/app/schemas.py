@@ -170,14 +170,20 @@ class UserResponse(UserBase):
     live_location: Optional[str] = None
     live_location_updated: Optional[datetime] = None
     avatar_url: Optional[str] = None
+    # Never the hash itself -- just whether a password fallback is set up,
+    # so the frontend knows whether to ask for a "current password" on
+    # change and whether to offer password login at all.
+    has_password: bool = False
+    mfa_enabled: bool = False
 
     class Config:
         from_attributes = True
-    
+
     @classmethod
     def from_orm(cls, obj):
         import json
         from app.utils import get_avatar_url
+        obj.has_password = bool(getattr(obj, 'password_hash', None))
         # Deserialize callsigns JSON field
         if hasattr(obj, 'callsigns') and obj.callsigns:
             try:
@@ -996,6 +1002,68 @@ class MagicLinkRequest(BaseModel):
 
 class MagicLinkVerify(BaseModel):
     token: str
+    # Only consulted when the account is an admin without MFA satisfied yet
+    # (see routers/auth.py::_resolve_mfa) -- the magic-link token itself is
+    # not consumed until MFA passes, so a code-less first attempt doesn't
+    # burn the single-use link.
+    totp_code: Optional[str] = None
+
+
+# Password login accepts either a callsign or an email in one field,
+# disambiguated by the presence of "@" (see routers/auth.py::_find_by_identifier).
+class PasswordLoginRequest(BaseModel):
+    identifier: str = Field(min_length=3, max_length=255)
+    password: str = Field(min_length=1, max_length=128)
+    totp_code: Optional[str] = None
+
+
+# Discriminated result of a login attempt (password or magic-link). "ok"
+# carries a normal session token. "mfa_required" means the first factor
+# succeeded but a TOTP/backup code is still needed -- resubmit the same
+# request with totp_code filled in. "mfa_setup_required" means the account
+# is an admin without MFA enrolled yet; a token IS issued, but it only
+# reaches /auth/me and /auth/mfa/setup/* until enrollment completes (see
+# app.dependencies.get_admin_user).
+class LoginResult(BaseModel):
+    login_status: Literal["ok", "mfa_required", "mfa_setup_required"]
+    access_token: Optional[str] = None
+    token_type: Optional[str] = None
+    user: Optional[UserResponse] = None
+
+
+class PasswordSetRequest(BaseModel):
+    # Omitted only when the account has no password yet; required to change
+    # an existing one.
+    current_password: Optional[str] = Field(None, max_length=128)
+    new_password: str = Field(min_length=10, max_length=72)
+
+
+class AdminPasswordResetResult(BaseModel):
+    temporary_password: str
+
+
+class MfaSetupStartResult(BaseModel):
+    secret: str
+    otpauth_url: str
+    qr_code_data_uri: str
+
+
+class MfaSetupConfirmRequest(BaseModel):
+    totp_code: str = Field(min_length=6, max_length=10)
+
+
+class MfaSetupConfirmResult(BaseModel):
+    backup_codes: List[str]
+
+
+class MfaReplaceStartRequest(BaseModel):
+    # Proven by account password, not a TOTP code -- this flow exists
+    # specifically for "I lost the device with the old code."
+    password: str = Field(min_length=1, max_length=128)
+
+
+class MfaDisableRequest(BaseModel):
+    password: str = Field(min_length=1, max_length=128)
 
 
 # App Settings Schemas

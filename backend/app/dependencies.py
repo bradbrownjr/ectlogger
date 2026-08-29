@@ -172,10 +172,24 @@ def require_role(required_role: UserRole):
     return role_checker
 
 
+# Matched verbatim by the frontend (see AuthContext/AdminRoute) to route an
+# unenrolled admin to the forced MFA setup screen instead of a generic
+# "access denied" -- keep this string and the frontend's check in sync.
+MFA_SETUP_REQUIRED_DETAIL = "Set up two-factor authentication to use admin features."
+
+
 async def get_admin_user(current_user: User = Depends(get_current_user)) -> User:
     if current_user.role != UserRole.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"
+        )
+    # MFA is mandatory for admins. Login itself still succeeds for an
+    # unenrolled admin (see routers/auth.py::_resolve_mfa's mfa_setup_required
+    # status), but every other admin-only route is blocked until they enroll.
+    if not current_user.mfa_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=MFA_SETUP_REQUIRED_DETAIL
         )
     return current_user

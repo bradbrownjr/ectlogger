@@ -68,3 +68,41 @@ async def send_magic_link(email: str, token: str, expire_days: int = 30):
         html_content=html_content
     )
 
+
+async def send_password_changed(email: str):
+    """Notify the account owner their password was changed -- covers both a
+    self-service change and an admin-initiated reset. Never includes the new
+    password itself; an admin reset returns the one-time temp password only
+    in the API response, shown once to the admin performing it."""
+    logger.info("PASSWORD", f"Sending password-changed notice to {email}")
+
+    html_template = Template("""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .footer { margin-top: 30px; font-size: 12px; color: #666; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h2>Your {{ app_name }} password was changed</h2>
+            <p>This is a confirmation that the password on your account was just changed.</p>
+            <div class="footer">
+                <p>If you didn't make this change, contact an administrator right away.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """)
+
+    html_content = html_template.render(app_name=settings.app_name)
+
+    await send_email(
+        to_email=email,
+        subject=f"Your {settings.app_name} password was changed",
+        html_content=html_content
+    )
+

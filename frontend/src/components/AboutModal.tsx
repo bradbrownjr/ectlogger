@@ -57,6 +57,16 @@ const AboutModal: React.FC<AboutModalProps> = ({ open, onClose }) => {
               GitHub Repository
               <OpenInNewIcon sx={{ fontSize: 14 }} />
             </Link>
+            <Link
+              href="https://ectlogger.us/docs/PRIVACY"
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
+              underline="hover"
+            >
+              Privacy Policy
+              <OpenInNewIcon sx={{ fontSize: 14 }} />
+            </Link>
           </Box>
 
           {/* ========== HONORABLE MENTIONS ========== */}
