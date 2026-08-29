@@ -120,6 +120,8 @@ const Login: React.FC = () => {
                 fullWidth
                 label="Email Address"
                 type="email"
+                name="email"
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -167,6 +169,8 @@ const Login: React.FC = () => {
                   <TextField
                     fullWidth
                     label="Callsign or Email"
+                    name="username"
+                    autoComplete="username"
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
                     required
@@ -178,6 +182,8 @@ const Login: React.FC = () => {
                     fullWidth
                     label="Password"
                     type="password"
+                    name="password"
+                    autoComplete="current-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
@@ -189,6 +195,8 @@ const Login: React.FC = () => {
                 <TextField
                   fullWidth
                   label="Verification Code"
+                  name="otp"
+                  autoComplete="one-time-code"
                   value={totpCode}
                   onChange={(e) => setTotpCode(e.target.value)}
                   required

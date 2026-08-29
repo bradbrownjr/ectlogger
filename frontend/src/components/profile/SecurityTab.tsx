@@ -13,7 +13,11 @@ import {
   DialogContentText,
   DialogActions,
   Chip,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import CheckIcon from '@mui/icons-material/Check';
 import { useAuth } from '../../contexts/AuthContext';
 import { authApi } from '../../services/api';
 import { getErrorMessage } from '../../utils/apiErrors';
@@ -89,6 +93,17 @@ const SecurityTab: React.FC = () => {
   const [disablePassword, setDisablePassword] = useState('');
   const [disableError, setDisableError] = useState('');
   const [disableBusy, setDisableBusy] = useState(false);
+
+  const [secretCopied, setSecretCopied] = useState(false);
+  const copySecret = async () => {
+    try {
+      await navigator.clipboard.writeText(secret);
+      setSecretCopied(true);
+      setTimeout(() => setSecretCopied(false), 2000);
+    } catch {
+      // Clipboard API unavailable/denied -- the key is still visible to copy by hand.
+    }
+  };
 
   const startEnrollment = async (replacing: boolean) => {
     setMfaError('');
@@ -166,11 +181,17 @@ const SecurityTab: React.FC = () => {
       {passwordSuccess && <Alert severity="success" sx={{ mb: 2 }}>Password updated.</Alert>}
 
       <Box component="form" onSubmit={handleSetPassword} sx={{ mb: 2 }}>
+        {/* A hidden username field pairs with the password fields below so
+            password managers can associate this form with the account's
+            login identifier, not just a bare password. */}
+        <input type="hidden" name="username" autoComplete="username" value={user?.email || ''} readOnly />
         {user?.has_password && (
           <TextField
             fullWidth
             type="password"
             label="Current Password"
+            name="current-password"
+            autoComplete="current-password"
             value={currentPassword}
             onChange={(e) => setCurrentPassword(e.target.value)}
             required
@@ -182,6 +203,8 @@ const SecurityTab: React.FC = () => {
           fullWidth
           type="password"
           label={user?.has_password ? 'New Password' : 'Password'}
+          name="new-password"
+          autoComplete="new-password"
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
           required
@@ -193,6 +216,8 @@ const SecurityTab: React.FC = () => {
           fullWidth
           type="password"
           label="Confirm Password"
+          name="new-password"
+          autoComplete="new-password"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
           required
@@ -239,6 +264,8 @@ const SecurityTab: React.FC = () => {
             <TextField
               type="password"
               label="Current Password"
+              name="current-password"
+              autoComplete="current-password"
               value={mfaPassword}
               onChange={(e) => setMfaPassword(e.target.value)}
               size="small"
@@ -271,12 +298,40 @@ const SecurityTab: React.FC = () => {
               <img src={qrDataUri} alt="Two-factor authentication QR code" width={200} height={200} />
             </Box>
           )}
-          <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2, wordBreak: 'break-all' }}>
-            Can't scan it? Enter this key manually: {secret}
+          <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.5 }}>
+            Can't scan it? Enter this key manually:
           </Typography>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.5,
+              mb: 2,
+              bgcolor: 'action.hover',
+              borderRadius: 1,
+              pl: 1.5,
+              pr: 0.5,
+              py: 0.5,
+            }}
+          >
+            <Typography
+              variant="body2"
+              component="code"
+              sx={{ fontFamily: 'monospace', whiteSpace: 'nowrap', overflowX: 'auto', flex: 1 }}
+            >
+              {secret}
+            </Typography>
+            <Tooltip title={secretCopied ? 'Copied!' : 'Copy to clipboard'}>
+              <IconButton size="small" onClick={copySecret} aria-label="Copy secret key to clipboard">
+                {secretCopied ? <CheckIcon fontSize="small" color="success" /> : <ContentCopyIcon fontSize="small" />}
+              </IconButton>
+            </Tooltip>
+          </Box>
           <TextField
             fullWidth
             label="Verification Code"
+            name="otp"
+            autoComplete="one-time-code"
             value={mfaCode}
             onChange={(e) => setMfaCode(e.target.value)}
             required
@@ -336,6 +391,8 @@ const SecurityTab: React.FC = () => {
             fullWidth
             type="password"
             label="Password"
+            name="current-password"
+            autoComplete="current-password"
             value={disablePassword}
             onChange={(e) => setDisablePassword(e.target.value)}
             autoFocus

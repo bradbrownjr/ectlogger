@@ -81,6 +81,8 @@ const VerifyMagicLink: React.FC = () => {
             <TextField
               fullWidth
               label="Verification Code"
+              name="otp"
+              autoComplete="one-time-code"
               value={totpCode}
               onChange={(e) => setTotpCode(e.target.value)}
               required
