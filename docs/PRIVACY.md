@@ -15,10 +15,9 @@ runs the server and holds the data — contact them with questions about your ow
 Creating an account requires an email address and, typically, a callsign. A password is
 optional — magic-link sign-in (a one-time link emailed to you) is the default, and a
 password is only useful as a fallback for when email delivery is unavailable. If you set
-one, it must be at least 10 characters — there's no other complexity rule (no required
-mix of letters, numbers, or symbols), so a longer passphrase you'll actually remember is
-a fine choice. Administrator accounts are required to also set up two-factor authentication
-(a code from an authenticator app).
+one, it must meet an industry-standard complexity policy: at least 12 characters, with a
+mix of uppercase, lowercase, a number, and a symbol. Administrator accounts are required
+to also set up two-factor authentication (a code from an authenticator app).
 
 Your email address is never shown to other users. Your callsign, name, and any contact
 details you add to your profile are visible to other signed-in users by default, since

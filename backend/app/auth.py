@@ -21,6 +21,30 @@ serializer = URLSafeTimedSerializer(settings.secret_key)
 # wouldn't mean what the user thinks it means.
 MAX_PASSWORD_BYTES = 72
 
+# Industry-standard composition policy (OWASP ASVS / common enterprise AD
+# baseline): 12+ characters, at least one of each character class. Applies
+# only to self-service/admin-set passwords via PasswordSetRequest -- not to
+# admin-issued one-time temporary passwords (generate_temporary_password),
+# which are never typed by a human and are replaced on first use.
+MIN_PASSWORD_LENGTH = 12
+_PASSWORD_SPECIAL_CHARS = "!@#$%^&*()_+-=[]{}|;:'\",.<>/?`~\\"
+
+
+def validate_password_strength(password: str) -> Optional[str]:
+    """Returns an error message if the password fails the composition
+    policy, or None if it passes."""
+    if len(password) < MIN_PASSWORD_LENGTH:
+        return f"Password must be at least {MIN_PASSWORD_LENGTH} characters."
+    if not any(c.islower() for c in password):
+        return "Password must include at least one lowercase letter."
+    if not any(c.isupper() for c in password):
+        return "Password must include at least one uppercase letter."
+    if not any(c.isdigit() for c in password):
+        return "Password must include at least one number."
+    if not any(c in _PASSWORD_SPECIAL_CHARS for c in password):
+        return "Password must include at least one special character."
+    return None
+
 MAX_FAILED_PASSWORD_ATTEMPTS = 5
 PASSWORD_LOCKOUT_MINUTES = 15
 BACKUP_CODE_COUNT = 8

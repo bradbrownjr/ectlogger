@@ -20,6 +20,22 @@ against the venv in this repo before building on it). Passwords are capped at 72
 the schema layer (`PasswordSetRequest`/`PasswordLoginRequest` in `schemas.py`) since bcrypt
 silently ignores anything past that.
 
+## Password complexity policy
+
+Self-service and admin-set passwords (`PasswordSetRequest.new_password`) go through
+`app/auth.py::validate_password_strength`: at least 12 characters, with at least one
+lowercase letter, one uppercase letter, one digit, and one special character. This is an
+industry-standard composition policy, enforced as a Pydantic field validator on
+`PasswordSetRequest` (`schemas.py`) so both the self-service `/auth/password/set` route and
+any future caller of that schema get the same rule for free. Mirrored client-side in
+`frontend/src/components/profile/SecurityTab.tsx::getPasswordStrengthError` for instant
+feedback; the backend validator is the actual enforcement point.
+
+This rule does not apply to admin-issued one-time temporary passwords
+(`generate_temporary_password`, `POST /users/{id}/password/reset`) — those are random
+`secrets.token_urlsafe` strings never typed by a human, shown once, and meant to be replaced
+via `/auth/password/set` (which does enforce the policy) on first use.
+
 ## Account lockout
 
 Five failed password attempts (`MAX_FAILED_PASSWORD_ATTEMPTS` in `app/auth.py`) locks the

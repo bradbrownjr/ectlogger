@@ -101,14 +101,14 @@ async def test_set_password_requires_current_password_when_already_set(client, o
     await _set_password(db, owner, "originalpassword")
     resp = await client.post(
         "/api/auth/password/set",
-        json={"new_password": "brandnewpassword1"},
+        json={"new_password": "BrandNewPassword1!"},
         headers=auth_headers(owner),
     )
     assert resp.status_code == 401
 
     resp = await client.post(
         "/api/auth/password/set",
-        json={"current_password": "originalpassword", "new_password": "brandnewpassword1"},
+        json={"current_password": "originalpassword", "new_password": "BrandNewPassword1!"},
         headers=auth_headers(owner),
     )
     assert resp.status_code == 200
@@ -118,10 +118,27 @@ async def test_set_password_requires_current_password_when_already_set(client, o
 async def test_set_password_first_time_no_current_required(client, owner):
     resp = await client.post(
         "/api/auth/password/set",
-        json={"new_password": "brandnewpassword1"},
+        json={"new_password": "BrandNewPassword1!"},
         headers=auth_headers(owner),
     )
     assert resp.status_code == 200
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("weak_password", [
+    "Short1!",  # too short
+    "alllowercase123!",  # no uppercase
+    "ALLUPPERCASE123!",  # no lowercase
+    "NoDigitsHere!!",  # no digit
+    "NoSpecialChars123",  # no special character
+])
+async def test_set_password_rejects_weak_passwords(client, owner, weak_password):
+    resp = await client.post(
+        "/api/auth/password/set",
+        json={"new_password": weak_password},
+        headers=auth_headers(owner),
+    )
+    assert resp.status_code == 422
 
 
 @pytest.mark.asyncio

@@ -1,8 +1,8 @@
 {
-  "version": "2026.08.29",
+  "version": "2026.08.29b",
   "entries": [
     {
-      "version": "2026.08.29",
+      "version": "2026.08.29b",
       "date": "2026-08-29",
       "sections": [
         {
@@ -15,6 +15,16 @@
             },
             {
               "text": "Help: Privacy Policy — a new Privacy Policy page, linked from the Help menu and the About window, explains what data ECTLogger collects and why."
+            }
+          ]
+        },
+        {
+          "title": "Improvements",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Login: Stronger password requirements — a password you set now needs at least 12 characters with a mix of uppercase, lowercase, a number, and a symbol, matching industry-standard security practice.",
+              "userImpact": true
             }
           ]
         }

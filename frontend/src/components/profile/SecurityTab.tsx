@@ -29,6 +29,19 @@ import { getErrorMessage } from '../../utils/apiErrors';
 // response interceptor after hitting an admin-only route unenrolled) sees
 // the enrollment section called out.
 
+// Mirrors backend/app/auth.py::validate_password_strength -- keep both in
+// sync. Client-side check is just for instant feedback; the backend is the
+// actual enforcement point.
+const PASSWORD_SPECIAL_CHARS = /[!@#$%^&*()_+\-=[\]{}|;:'",.<>/?`~\\]/;
+function getPasswordStrengthError(password: string): string {
+  if (password.length < 12) return 'Password must be at least 12 characters.';
+  if (!/[a-z]/.test(password)) return 'Password must include at least one lowercase letter.';
+  if (!/[A-Z]/.test(password)) return 'Password must include at least one uppercase letter.';
+  if (!/[0-9]/.test(password)) return 'Password must include at least one number.';
+  if (!PASSWORD_SPECIAL_CHARS.test(password)) return 'Password must include at least one special character.';
+  return '';
+}
+
 const SecurityTab: React.FC = () => {
   const { user, login } = useAuth();
   const [searchParams] = useSearchParams();
@@ -57,8 +70,9 @@ const SecurityTab: React.FC = () => {
       setPasswordError("New passwords don't match.");
       return;
     }
-    if (newPassword.length < 10) {
-      setPasswordError('Password must be at least 10 characters.');
+    const strengthError = getPasswordStrengthError(newPassword);
+    if (strengthError) {
+      setPasswordError(strengthError);
       return;
     }
 
@@ -209,7 +223,7 @@ const SecurityTab: React.FC = () => {
           onChange={(e) => setNewPassword(e.target.value)}
           required
           disabled={passwordSaving}
-          helperText="At least 10 characters."
+          helperText="At least 12 characters, with upper/lowercase, a number, and a symbol."
           sx={{ mb: 2 }}
         />
         <TextField

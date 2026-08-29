@@ -2,6 +2,7 @@ from pydantic import BaseModel, EmailStr, Field, field_validator, model_validato
 from typing import Optional, List, Literal, Dict, Any, Union
 from datetime import datetime
 from app.models import UserRole, NetStatus, StationStatus, FormDisposition, TrafficAction, RelayMethod, TrafficTestCategory
+from app.auth import validate_password_strength
 import re
 
 
@@ -1035,7 +1036,15 @@ class PasswordSetRequest(BaseModel):
     # Omitted only when the account has no password yet; required to change
     # an existing one.
     current_password: Optional[str] = Field(None, max_length=128)
-    new_password: str = Field(min_length=10, max_length=72)
+    new_password: str = Field(min_length=12, max_length=72)
+
+    @field_validator('new_password')
+    @classmethod
+    def _check_password_strength(cls, v: str) -> str:
+        error = validate_password_strength(v)
+        if error:
+            raise ValueError(error)
+        return v
 
 
 class AdminPasswordResetResult(BaseModel):

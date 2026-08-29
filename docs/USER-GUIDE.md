@@ -64,7 +64,9 @@ Control which emails you receive for nets you're subscribed to:
 Magic link is all you need day to day. Setting a password here is optional, and exists as a
 fallback for the rare case where email delivery is down and you can't retrieve a magic link
 at all. If you set one, sign in from the login page's "Sign in with a password instead" link
-using your callsign or email plus that password.
+using your callsign or email plus that password. Passwords must meet an industry-standard
+complexity policy: at least 12 characters, with a mix of uppercase, lowercase, a number,
+and a symbol.
 
 **Two-Factor Authentication**
 
