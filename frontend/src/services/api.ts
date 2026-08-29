@@ -40,6 +40,12 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Matches app.dependencies.MFA_SETUP_REQUIRED_DETAIL verbatim -- keep these
+// two in sync. Lets the interceptor tell "you're not an admin" apart from
+// "you're an admin but haven't enrolled MFA yet" and route to enrollment
+// instead of just showing a generic access-denied error.
+export const MFA_SETUP_REQUIRED_DETAIL = 'Set up two-factor authentication to use admin features.';
+
 // Handle responses: persist refreshed token and handle 401 logout
 api.interceptors.response.use(
   (response) => {
@@ -65,6 +71,14 @@ api.interceptors.response.use(
         localStorage.removeItem('user');
         window.location.href = '/login';
       }
+    } else if (
+      error.response?.status === 403 &&
+      error.response?.data?.detail === MFA_SETUP_REQUIRED_DETAIL &&
+      window.location.pathname !== '/profile'
+    ) {
+      // An admin without MFA enrolled hit an admin-only route. Send them to
+      // enroll instead of showing a generic "access denied".
+      window.location.href = '/profile?tab=security&mfaRequired=1';
     }
     return Promise.reject(error);
   }
@@ -74,11 +88,20 @@ export default api;
 
 // Auth API
 export const authApi = {
-  requestMagicLink: (email: string) => 
+  requestMagicLink: (email: string) =>
     api.post('/auth/magic-link/request', { email }),
-  verifyMagicLink: (token: string) => 
-    api.post('/auth/magic-link/verify', { token }),
-  getCurrentUser: () => 
+  verifyMagicLink: (token: string, totp_code?: string) =>
+    api.post('/auth/magic-link/verify', { token, totp_code }),
+  passwordLogin: (identifier: string, password: string, totp_code?: string) =>
+    api.post('/auth/login', { identifier, password, totp_code }),
+  setPassword: (new_password: string, current_password?: string) =>
+    api.post('/auth/password/set', { new_password, current_password }),
+  mfaSetupStart: () => api.post('/auth/mfa/setup/start'),
+  mfaSetupConfirm: (totp_code: string) => api.post('/auth/mfa/setup/confirm', { totp_code }),
+  mfaReplaceStart: (password: string) => api.post('/auth/mfa/replace/start', { password }),
+  mfaReplaceConfirm: (totp_code: string) => api.post('/auth/mfa/replace/confirm', { totp_code }),
+  mfaDisable: (password: string) => api.post('/auth/mfa/disable', { password }),
+  getCurrentUser: () =>
     api.get('/users/me'),
 };
 
@@ -96,6 +119,9 @@ export const userApi = {
   // requiring admin access.
   listDirectory: () => api.get('/users/directory'),
   lookupByCallsign: (callsign: string) => api.get(`/users/lookup/${encodeURIComponent(callsign)}`),
+  // Admin recovery actions for a user locked out of magic-link email or a lost authenticator.
+  adminResetPassword: (userId: number) => api.post(`/users/${userId}/password/reset`),
+  adminResetMfa: (userId: number) => api.post(`/users/${userId}/mfa/reset`),
   getPopup: (userId: number, netId?: number) =>
     api.get(`/users/${userId}/popup${netId ? `?net_id=${netId}` : ''}`),
 };

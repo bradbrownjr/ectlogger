@@ -8,8 +8,10 @@ from io import BytesIO
 from PIL import Image, ImageOps
 from app.database import get_db
 from app.models import User, UserRole, Contact, NetRole, CanHearReport, CheckIn, Frequency, net_frequencies
-from app.schemas import UserResponse, UserUpdate, AdminUserCreate, CallsignLookupResponse, UserDirectoryEntry, UserPopupResponse, CoverageStationResponse
+from app.schemas import UserResponse, UserUpdate, AdminUserCreate, CallsignLookupResponse, UserDirectoryEntry, UserPopupResponse, CoverageStationResponse, AdminPasswordResetResult
 from app.dependencies import get_current_user, get_current_user_optional, get_admin_user
+from app.auth import generate_temporary_password, hash_password
+from app.email_service import EmailService
 from app.utils import AVATAR_DIR
 from app.band_utils import band_from_frequency_string
 
@@ -533,6 +535,65 @@ async def unban_user(
     await db.commit()
     await db.refresh(user)
     return UserResponse.from_orm(user)
+
+
+@router.post("/{user_id}/password/reset", response_model=AdminPasswordResetResult)
+async def admin_reset_password(
+    user_id: int,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Issue a one-time temporary password for a user who's locked out and
+    can't receive magic-link email (admin only). The password is returned
+    once in this response and never logged or stored in the clear; the user
+    only gets a "your password was changed" notice, not the password itself."""
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    temp_password = generate_temporary_password()
+    user.password_hash = hash_password(temp_password)
+    user.failed_password_attempts = 0
+    user.password_locked_until = None
+    await db.commit()
+
+    if user.email:
+        await EmailService.send_password_changed(user.email)
+
+    return AdminPasswordResetResult(temporary_password=temp_password)
+
+
+@router.post("/{user_id}/mfa/reset")
+async def admin_reset_mfa(
+    user_id: int,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Clear a user's MFA enrollment so they can re-enroll from scratch
+    (admin only) -- the recovery path for a lost device with no backup
+    codes left. An admin can't reset their own MFA this way (that would
+    trivially defeat "MFA mandatory for admins"); ask another admin, or use
+    scripts/reset_admin_mfa.py if none is available."""
+    if user_id == current_user.id:
+        raise HTTPException(
+            status_code=400,
+            detail="Admins can't reset their own MFA this way. Ask another admin, "
+                   "or use the server-side recovery script if none is available."
+        )
+
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user.mfa_enabled = False
+    user.mfa_secret_encrypted = None
+    user.mfa_backup_codes = None
+    user.mfa_pending_secret_encrypted = None
+    await db.commit()
+
+    return {"success": True, "message": "Two-factor authentication reset. The user will need to re-enroll."}
 
 
 @router.put("/{user_id}/schedule-bypass", response_model=UserResponse)

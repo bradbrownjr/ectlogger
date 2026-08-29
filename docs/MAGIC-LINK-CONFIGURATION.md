@@ -2,7 +2,7 @@
 
 ## Overview
 
-Magic links provide passwordless authentication for ECTLogger. The expiration time is configurable to support different operational scenarios, particularly long-duration emergency events.
+Magic links provide passwordless sign-in for ECTLogger, and remain the default. The expiration time is configurable to support different operational scenarios, particularly long-duration emergency events. Users can optionally set a password as a fallback for when email delivery is unavailable — see [PASSWORD-MFA.md](PASSWORD-MFA.md) for that flow, rate limiting, and the fail2ban integration.
 
 ## Configuration
 

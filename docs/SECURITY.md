@@ -45,14 +45,28 @@ The ECT Net Logger application implements comprehensive security measures to pro
 - Token verification on all protected endpoints
 
 **OAuth2 Integration:**
-- Google, Microsoft, GitHub SSO
-- State parameter for CSRF protection
-- Secure token exchange flow
+- Google, Microsoft, GitHub client registration exists (`routers/auth.py`), but the
+  authorization-code exchange in the callback route is not implemented (`HTTPException(501)`)
+  — magic link and password are the only working sign-in methods today.
 
 **Magic Link Email:**
 - Time-limited tokens via `itsdangerous`
 - Single-use token pattern recommended
 - Email delivery via SMTP with TLS
+
+**Password Login (fallback):**
+- Optional, opt-in per user — magic link stays the default
+- bcrypt-hashed (`app/auth.py::hash_password`), not passlib (broken against modern bcrypt
+  releases in this environment)
+- Account lockout after 5 failed attempts (15 minutes), on top of IP-based rate limiting
+- Generic error messages (no account enumeration)
+- See [Password & Two-Factor Authentication](PASSWORD-MFA.md) for full detail
+
+**Two-Factor Authentication (TOTP):**
+- Optional for regular accounts, required for admins (enforced in
+  `app.dependencies.get_admin_user`, not just at login)
+- `pyotp`-based, Fernet-encrypted secret at rest, 8 single-use backup codes
+- See [Password & Two-Factor Authentication](PASSWORD-MFA.md)
 
 **Role-Based Access Control (RBAC):**
 - User roles: USER, LOGGER, NCS, ADMIN
@@ -104,7 +118,8 @@ async def sensitive_operation():
 - Connection string validation
 
 **Data Protection:**
-- Passwords never stored (OAuth-only authentication)
+- Passwords are optional and bcrypt-hashed when set (magic link remains the default;
+  see [Password & Two-Factor Authentication](PASSWORD-MFA.md))
 - Sensitive data encrypted in transit (HTTPS/TLS)
 - Database-level constraints (foreign keys, unique, not null)
 
@@ -274,7 +289,7 @@ npm audit
 - [ ] Regular security audits and penetration testing
 - [ ] Keep all dependencies updated
 - [ ] Monitor security advisories for dependencies
-- [ ] Implement backup authentication method
+- [x] Implement backup authentication method (password fallback + TOTP MFA — see [PASSWORD-MFA.md](PASSWORD-MFA.md))
 - [ ] Set up alerting for suspicious activity
 - [ ] Review file upload capabilities (if added)
 - [ ] Audit user permissions regularly

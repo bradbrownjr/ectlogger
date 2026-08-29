@@ -11,11 +11,17 @@ Welcome to ECTLogger! This guide will help you get started with using the applic
 3. Click "Send Magic Link"
 4. Check your email and click the link to sign in
 
-That's it! No password to remember.
+That's it! No password to remember by default.
+
+If email delivery is ever down and you can't retrieve a magic link, you can set a password
+as a fallback from your **Profile > Security** tab, then sign in with your callsign or email
+and that password from the "Sign in with a password instead" link on the login page.
+Administrator accounts additionally require two-factor authentication (a code from an
+authenticator app) — see the [Security Tab](#security-tab) section below.
 
 ### Setting Up Your Profile
 
-After signing in, complete your profile by clicking your name in the top-right corner and selecting **Profile**. The profile page has three tabs: **Profile**, **Settings**, and **Activity**.
+After signing in, complete your profile by clicking your name in the top-right corner and selecting **Profile**. The profile page has six tabs: **Profile**, **Settings**, **Security**, **Notifications**, **Activity**, and **Coverage**.
 
 #### Settings Tab
 
@@ -50,6 +56,31 @@ Control which emails you receive for nets you're subscribed to:
 - **Net close notifications (with log)** — Receive the net log when a subscribed net closes
   - **Use ICS-309 format** — Format net logs as ICS-309 Communications Log (FEMA standard) instead of the regular format
 - **Net reminder (1 hour before)** — Receive a reminder email 1 hour before scheduled nets start
+
+#### Security Tab
+
+**Password**
+
+Magic link is all you need day to day. Setting a password here is optional, and exists as a
+fallback for the rare case where email delivery is down and you can't retrieve a magic link
+at all. If you set one, sign in from the login page's "Sign in with a password instead" link
+using your callsign or email plus that password.
+
+**Two-Factor Authentication**
+
+Adds a 6-digit code from an authenticator app (Google Authenticator, Authy, etc.) on top of
+your password or magic link. Optional for regular accounts, required for administrators.
+
+To enroll: click **Set Up Two-Factor Authentication**, scan the QR code with your
+authenticator app, then enter the code it shows to confirm. You'll be given 8 one-time
+backup codes — save them somewhere safe. Each one works once, in place of an app code, if
+you ever lose your device.
+
+If you enable two-factor authentication and later lose your device, use a backup code to
+sign in, then replace your authenticator from the Security tab (this requires your account
+password). If you're out of backup codes too, an administrator can reset your two-factor
+enrollment from the Admin panel so you can set it up again. Administrators can't reset their
+own two-factor authentication this way — that has to come from another administrator.
 
 #### Activity Tab
 

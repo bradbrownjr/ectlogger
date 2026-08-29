@@ -54,6 +54,7 @@ import LockOpenIcon from '@mui/icons-material/LockOpen';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import MapIcon from '@mui/icons-material/Map';
 import TourIcon from '@mui/icons-material/Tour';
+import PrivacyTipIcon from '@mui/icons-material/PrivacyTip';
 import FeedbackIcon from '@mui/icons-material/Feedback';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import BugReportIcon from '@mui/icons-material/BugReport';
@@ -237,6 +238,12 @@ const Navbar: React.FC = () => {
       label: 'Roadmap',
       icon: <MapIcon fontSize="small" />,
       action: () => { closeHelpMenu(); setDrawerOpen(false); window.open('https://ectlogger.us/docs/ROADMAP', '_blank', 'noopener,noreferrer'); },
+      external: true,
+    },
+    {
+      label: 'Privacy Policy',
+      icon: <PrivacyTipIcon fontSize="small" />,
+      action: () => { closeHelpMenu(); setDrawerOpen(false); window.open('https://ectlogger.us/docs/PRIVACY', '_blank', 'noopener,noreferrer'); },
       external: true,
     },
     {

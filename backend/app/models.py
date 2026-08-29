@@ -144,6 +144,13 @@ class User(Base):
     dashboard_sort_order = Column(String(16), nullable=False, default='status', server_default='status')  # 'status' (active first, then next up) or 'alpha'
     schedule_sort_order = Column(String(16), nullable=False, default='date', server_default='date')  # 'date' (next occurrence first) or 'alpha'
     theme = Column(String(32), nullable=True)  # Named color theme key; null = follow system default
+    password_hash = Column(String(255), nullable=True)  # bcrypt hash; null until the user sets a password. Magic link works either way -- this is the fallback for when email delivery is down.
+    failed_password_attempts = Column(Integer, default=0, nullable=False)  # Resets to 0 on a successful password login
+    password_locked_until = Column(DateTime(timezone=True), nullable=True)  # Temporary lockout after MAX_FAILED_PASSWORD_ATTEMPTS in a row
+    mfa_enabled = Column(Boolean, default=False, nullable=False)  # Required for UserRole.ADMIN (enforced in get_admin_user); optional self-service for everyone else
+    mfa_secret_encrypted = Column(Text, nullable=True)  # Fernet-encrypted TOTP secret (key derived from secret_key via HKDF)
+    mfa_backup_codes = Column(Text, nullable=True)  # JSON list of SHA-256 hashes of unused single-use backup codes
+    mfa_pending_secret_encrypted = Column(Text, nullable=True)  # Staged replacement secret while self-service "replace authenticator" is in progress; not live until confirmed
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

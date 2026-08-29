@@ -28,6 +28,8 @@ interface User {
   schedule_sort_order?: 'alpha' | 'date';
   theme?: string | null;
   role: string;
+  has_password?: boolean;
+  mfa_enabled?: boolean;
 }
 
 interface AuthContextType {

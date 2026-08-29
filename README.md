@@ -26,7 +26,7 @@ The responsive interface works beautifully on any device — from a phone in the
 
 ### Core Capabilities
 
-- **🔐 Secure Authentication** — Frictionless sign-in with magic link email authentication + OAuth (Google, Microsoft, GitHub)
+- **🔐 Secure Authentication** — Frictionless sign-in with magic link email authentication by default, with an optional password fallback for when email delivery is down. Two-factor authentication (TOTP) is optional for regular users and required for admins
 - **🔗 Shareable Net Links** — A net's view and report page work for someone with no account at all, so you can send a link to show a prospective member how a net runs before they sign up; phone numbers and email addresses typed into check-in notes or chat are hidden from anyone viewing without an account
 - **⚡ Real-Time Updates** — WebSocket-powered live check-ins, status updates, and chat messages
 - **👥 Role-Based Access** — Admin, NCS, Logger, User, and Guest roles
@@ -204,6 +204,8 @@ ECTLogger can be self-hosted on your own server. See the self-hosting documentat
 | ---------------------------------- | -------------------------------------- |
 | **[Security](docs/SECURITY.md)** | Security features and best practices |
 | **[Fail2Ban](docs/FAIL2BAN.md)** | Automatic IP banning setup           |
+| **[Password & Two-Factor Authentication](docs/PASSWORD-MFA.md)** | Password fallback login, TOTP MFA, rate limiting, recovery |
+| **[Privacy Policy](docs/PRIVACY.md)** | What data ECTLogger collects and why |
 
 ### Development
 

@@ -12,11 +12,13 @@ import PersonIcon from '@mui/icons-material/Person';
 import SettingsIcon from '@mui/icons-material/Settings';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import MapIcon from '@mui/icons-material/Map';
+import SecurityIcon from '@mui/icons-material/Security';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import { getErrorMessage } from '../utils/apiErrors';
 import ProfileTab from '../components/profile/ProfileTab';
 import SettingsTab from '../components/profile/SettingsTab';
+import SecurityTab from '../components/profile/SecurityTab';
 import NotificationsTab from '../components/profile/NotificationsTab';
 import ActivityTab from '../components/profile/ActivityTab';
 import CoverageTab from '../components/profile/CoverageTab';
@@ -30,7 +32,7 @@ interface TabPanelProps {
 // Named tab values for shareable URLs, e.g. /profile?tab=coverage. Index
 // order must match the <Tab> order below. Numeric ?tab=N is still accepted
 // on read for backward compatibility with links shared before this existed.
-const TAB_NAMES = ['profile', 'settings', 'notifications', 'activity', 'coverage'];
+const TAB_NAMES = ['profile', 'settings', 'security', 'notifications', 'activity', 'coverage'];
 
 function tabParamToIndex(param: string | null): number {
   if (!param) return 0;
@@ -96,11 +98,11 @@ const Profile: React.FC = () => {
     touchStartY.current = null;
     if (touchOnScrollable.current) return;
     if (Math.abs(deltaX) < 50 || Math.abs(deltaY) > Math.abs(deltaX)) return;
-    // Clamp to the last tab index (4: Profile, Settings, Notifications,
-    // Activity, Coverage) - this was hardcoded to 2 and stale ever since the
-    // Activity tab (index 3) was added, making it unreachable by swipe; keep
-    // raising it as tabs are added.
-    const next = deltaX < 0 ? Math.min(tabValue + 1, 4) : Math.max(tabValue - 1, 0);
+    // Clamp to the last tab index (5: Profile, Settings, Security,
+    // Notifications, Activity, Coverage) - this was hardcoded to 2 and stale
+    // ever since the Activity tab (index 3) was added, making it unreachable
+    // by swipe; keep raising it as tabs are added.
+    const next = deltaX < 0 ? Math.min(tabValue + 1, 5) : Math.max(tabValue - 1, 0);
     setTabValue(next);
     setSearchParams(next > 0 ? { tab: TAB_NAMES[next] } : {});
   };
@@ -177,25 +179,32 @@ const Profile: React.FC = () => {
               aria-controls="profile-tabpanel-1"
             />
             <Tab
+              icon={<SecurityIcon />}
+              iconPosition="start"
+              label="Security"
+              id="profile-tab-2"
+              aria-controls="profile-tabpanel-2"
+            />
+            <Tab
               icon={<NotificationsIcon />}
               iconPosition="start"
               label="Notifications"
-              id="profile-tab-2"
-              aria-controls="profile-tabpanel-2"
+              id="profile-tab-3"
+              aria-controls="profile-tabpanel-3"
             />
             <Tab
               icon={<BarChartIcon />}
               iconPosition="start"
               label="Activity"
-              id="profile-tab-3"
-              aria-controls="profile-tabpanel-3"
+              id="profile-tab-4"
+              aria-controls="profile-tabpanel-4"
             />
             <Tab
               icon={<MapIcon />}
               iconPosition="start"
               label="Coverage"
-              id="profile-tab-4"
-              aria-controls="profile-tabpanel-4"
+              id="profile-tab-5"
+              aria-controls="profile-tabpanel-5"
             />
           </Tabs>
         </Box>
@@ -226,8 +235,13 @@ const Profile: React.FC = () => {
           />
         </TabPanel>
 
-        {/* ========== Notifications Tab ========== */}
+        {/* ========== Security Tab ========== */}
         <TabPanel value={tabValue} index={2}>
+          <SecurityTab />
+        </TabPanel>
+
+        {/* ========== Notifications Tab ========== */}
+        <TabPanel value={tabValue} index={3}>
           <NotificationsTab
             formData={formData}
             setFormData={setFormData}
@@ -239,12 +253,12 @@ const Profile: React.FC = () => {
         </TabPanel>
 
         {/* ========== Activity Tab ========== */}
-        <TabPanel value={tabValue} index={3}>
+        <TabPanel value={tabValue} index={4}>
           <ActivityTab />
         </TabPanel>
 
         {/* ========== Coverage Tab ========== */}
-        <TabPanel value={tabValue} index={4}>
+        <TabPanel value={tabValue} index={5}>
           <CoverageTab />
         </TabPanel>
       </Paper>

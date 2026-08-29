@@ -4,7 +4,7 @@ so all existing callers continue to work without change.
 
 Implementation lives in:
   email/base.py          — send_email, send_email_with_attachment/s/binary_attachment, unsubscribe helpers
-  email/auth.py          — send_magic_link
+  email/auth.py          — send_magic_link, send_password_changed
   email/net_lifecycle.py — send_net_notification, send_net_invitation, send_net_cancellation
   email/reminders.py     — send_ncs_reminder, send_subscriber_reminder, send_staff_reminder,
                             send_ncs_duty_correction
@@ -13,7 +13,7 @@ Implementation lives in:
   email/traffic.py       — send_traffic_reminder, send_traffic_hxb_final_notice,
                             send_traffic_stale_digest
 """
-from app.email.auth import send_magic_link
+from app.email.auth import send_magic_link, send_password_changed
 from app.email.base import (
     get_unsubscribe_footer,
     get_unsubscribe_url,
@@ -52,6 +52,7 @@ class EmailService:
     send_email_with_attachments = staticmethod(send_email_with_attachments)
     send_email_with_binary_attachment = staticmethod(send_email_with_binary_attachment)
     send_magic_link = staticmethod(send_magic_link)
+    send_password_changed = staticmethod(send_password_changed)
     send_net_notification = staticmethod(send_net_notification)
     send_net_invitation = staticmethod(send_net_invitation)
     send_net_cancellation = staticmethod(send_net_cancellation)
