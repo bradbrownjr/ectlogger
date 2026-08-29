@@ -25,9 +25,10 @@ import BuildIcon from '@mui/icons-material/Build';
 import DescriptionIcon from '@mui/icons-material/Description';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import RssFeedIcon from '@mui/icons-material/RssFeed';
 import jsPDF from 'jspdf';
 import { useAuth } from '../contexts/AuthContext';
-import api from '../services/api';
+import api, { BACKEND_ORIGIN } from '../services/api';
 import changelogData from '../changelog.json';
 
 // Pulse animation for the changelog badge
@@ -728,6 +729,19 @@ const ChangelogNotification: React.FC = () => {
             <Tooltip title="Download entire changelog (PDF)">
               <IconButton onClick={handleDownloadAll} size="small" color="primary" aria-label="Download entire changelog as PDF">
                 <MenuBookIcon />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Subscribe to changelog (RSS)">
+              <IconButton
+                component="a"
+                href={`${BACKEND_ORIGIN}/feed/changelog.xml`}
+                target="_blank"
+                rel="noopener noreferrer"
+                size="small"
+                color="primary"
+                aria-label="Subscribe to changelog RSS feed"
+              >
+                <RssFeedIcon />
               </IconButton>
             </Tooltip>
           </Box>

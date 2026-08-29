@@ -7,7 +7,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from app.config import settings
 from app.database import init_db, AsyncSessionLocal
-from app.routers import auth, users, nets, check_ins, frequencies, templates, chat, ncs_rotation, security, statistics, geocode, contacts, feedback, can_hear, traffic
+from app.routers import auth, users, nets, check_ins, frequencies, templates, chat, ncs_rotation, security, statistics, geocode, contacts, feedback, can_hear, traffic, feeds
 from app.routers import settings as app_settings_router
 from app.security import sanitize_html
 from app.ncs_reminder_service import ncs_reminder_service
@@ -153,6 +153,10 @@ app.include_router(contacts.router, prefix="/api")
 app.include_router(feedback.router, prefix="/api")
 app.include_router(can_hear.router, prefix="/api")
 app.include_router(traffic.router, prefix="/api")
+
+# Feeds are mounted bare (no /api prefix) so URLs read as /feed/schedule.xml --
+# Caddy needs its own route pointing /feed/* at this backend, same as /api/* and /ws/*.
+app.include_router(feeds.router)
 
 # Serve uploaded chat images from backend/data/chat_images
 chat_images_dir = Path(__file__).resolve().parents[1] / "data" / "chat_images"

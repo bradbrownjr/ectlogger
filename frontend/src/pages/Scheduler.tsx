@@ -60,7 +60,8 @@ import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
-import { templateApi, netApi as _netApi, ncsRotationApi } from '../services/api';
+import RssFeedIcon from '@mui/icons-material/RssFeed';
+import { templateApi, netApi as _netApi, ncsRotationApi, BACKEND_ORIGIN } from '../services/api';
 import { getErrorMessage } from '../utils/apiErrors';
 import { useAuth } from '../contexts/AuthContext';
 import NCSStaffModal from '../components/NCSStaffModal';
@@ -547,6 +548,19 @@ const Scheduler: React.FC = () => {
               Times in {Intl.DateTimeFormat().resolvedOptions().timeZone}
             </Typography>
           )}
+          {/* RSS feed link - subscribe to upcoming nets in the next 14 days */}
+          <Tooltip title="Subscribe to upcoming nets (RSS)">
+            <IconButton
+              size="small"
+              component="a"
+              href={`${BACKEND_ORIGIN}/feed/schedule.xml`}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Subscribe to schedule RSS feed"
+            >
+              <RssFeedIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
           {/* Filter button */}
           <Tooltip title={showFilter ? 'Hide filter' : 'Filter schedules'}>
             <IconButton

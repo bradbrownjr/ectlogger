@@ -5,6 +5,11 @@ import axios from 'axios';
 // For production: https://yourdomain.com/api
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
+// Backend origin with the /api suffix stripped, for routes mounted outside it
+// (e.g. RSS feeds at /feed/*, which need to be reachable by plain HTTP GET
+// without a JWT, so they live alongside /api and /ws rather than under /api).
+export const BACKEND_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, '');
+
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {

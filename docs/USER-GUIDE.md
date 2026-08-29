@@ -918,6 +918,13 @@ This is handy for NCS operating split frequencies — focus on stations monitori
 
 Subscribe to nets you regularly participate in to receive email notifications when they start, close, or are about to begin. On the **Scheduler** page, click **Subscribe** on a schedule's card; the button becomes **Unsubscribe** once you're subscribed, so you can always tell your current state at a glance.
 
+### RSS Feeds
+
+Two RSS feeds let you follow ECTLogger from any feed reader, without opening the app:
+
+- **Schedule feed** — the RSS icon on the Scheduler page, next to the Filter button, links to a feed of nets scheduled in the next 14 days, ordered by date.
+- **Changelog feed** — the RSS icon in the What's New dialog (bottom-left, next to the PDF download buttons) links to a feed of the most recent changelog entries.
+
 ---
 
 ## Administration (Admin Role Only)

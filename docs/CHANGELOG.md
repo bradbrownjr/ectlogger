@@ -9,6 +9,7 @@ All notable changes to ECTLogger are documented here.
 ## New Features
 
 * **Help: Feedback becomes a trackable GitHub issue** — Bug reports and feature requests submitted through Submit Feedback are now also opened as public issues on the project's GitHub page (tagged with your callsign, not your email), so you can watch progress on what you reported instead of just sending it into an email.
+* **RSS Feeds: Subscribe to schedule and changelog updates** — New RSS icons on the Scheduler page (next to Filters) and in the What's New dialog let you subscribe in any feed reader to see nets scheduled in the next 14 days or new changelog entries, without having to check the app.
 
 ## Improvements
 
