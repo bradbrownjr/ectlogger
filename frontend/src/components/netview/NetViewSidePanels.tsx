@@ -406,8 +406,23 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
             <Box data-pane-key={pane.key} sx={{
               display: 'flex',
               flexDirection: 'column',
-              flex: paneFlex(pane.key, pane.minimized),
-              minHeight: pane.minimized ? 'auto' : 0,
+              // paneFlex's weighted flex-grow share only means anything
+              // against the column's own definite height (md+, height:'100%'
+              // above). On mobile the column is height:'auto' -- there's no
+              // "extra space" for flex-grow to distribute -- and with two or
+              // more grow:1/basis:0px siblings in an intrinsically-sized flex
+              // container, real browsers were observed giving every pane
+              // ahead of the last one a computed height of 0 rather than
+              // sharing content-based sizing evenly (verified via a
+              // Browserless screenshot: Chat, first in the stack, measured
+              // height 0 and was entirely invisible -- not just its message
+              // list -- while Activity Log after it rendered at its full
+              // height). '0 0 auto' sidesteps grow/shrink negotiation
+              // entirely: each pane just takes its own content height, which
+              // is exactly the "let the page scroll instead of an inner pane"
+              // model the column's height:'auto' already commits to.
+              flex: { xs: '0 0 auto', md: paneFlex(pane.key, pane.minimized) },
+              minHeight: { xs: 'auto', md: pane.minimized ? 'auto' : 0 },
               overflow: 'hidden',
             }}>
               {pane.content}
