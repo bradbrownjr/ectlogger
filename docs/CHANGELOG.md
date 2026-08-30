@@ -4,6 +4,19 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# August 30, 2026
+
+## Improvements
+
+* **Net View: Bulk check-in notice** — When someone is using Bulk Add to check in a list of stations, everyone watching the net now sees a heads-up that check-ins may arrive in a burst, instead of it looking like something's wrong.
+
+## Bug Fixes
+
+* **Net View: Live updates could silently stop** — A dropped connection, or a burst of check-ins from Bulk Add, could stop new check-ins from appearing for people watching a net until they reloaded the page. The page now reliably catches up on its own.
+* **Mobile: Chat and Activity Log showing empty** — On phones, the Chat and Activity Log panels could appear open but show no messages or event log, with no way to see them without reloading the page.
+
+---
+
 # August 29, 2026
 
 ## New Features

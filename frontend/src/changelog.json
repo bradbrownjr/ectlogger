@@ -1,6 +1,35 @@
 {
-  "version": "2026.08.29b",
+  "version": "2026.08.30",
   "entries": [
+    {
+      "version": "2026.08.30",
+      "date": "2026-08-30",
+      "sections": [
+        {
+          "title": "Improvements",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Net View: Bulk check-in notice — when someone is using Bulk Add to check in a list of stations, everyone watching the net now sees a heads-up that check-ins may arrive in a burst, instead of it looking like something's wrong."
+            }
+          ]
+        },
+        {
+          "title": "Bug Fixes",
+          "type": "bugfix",
+          "items": [
+            {
+              "text": "Net View: Live updates could silently stop — a dropped connection, or a burst of check-ins from Bulk Add, could stop new check-ins from appearing for people watching a net until they reloaded the page. The page now reliably catches up on its own.",
+              "userImpact": true
+            },
+            {
+              "text": "Mobile: Chat and Activity Log showing empty — on phones, the Chat and Activity Log panels could appear open but show no messages or event log, with no way to see them without reloading the page.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.08.29b",
       "date": "2026-08-29",
