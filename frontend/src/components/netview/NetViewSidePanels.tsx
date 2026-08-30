@@ -270,7 +270,13 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
               thread correctly. A definite pixel value here needs nothing
               from its ancestors, same fix CheckInMobileList.tsx already
               uses (maxHeight: 400) for the same mobile-stacking problem. */}
-          <Box sx={{ height: { xs: 450, md: '100%' }, display: 'flex', flexDirection: 'column' }}>
+          {/* xs height is 'auto' while minimized -- forcing 450 regardless
+              collapsed the minimized title row into a tall blank box
+              instead of letting it hug its own content (verified via a
+              Browserless screenshot after the mobile-default-minimized state
+              -- see mobileActivityLogMinimized in NetView.tsx -- exposed it
+              on Activity Log's identical wrapper below). */}
+          <Box sx={{ height: { xs: chatMinimized ? 'auto' : 450, md: '100%' }, display: 'flex', flexDirection: 'column' }}>
             <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
               <Chat netId={Number(netId)} netStartedAt={net?.started_at} netStatus={net?.status} searchQuery={searchQuery} canManage={canManage} onDetach={handleDetachChat} onPopOut={handlePopOutChat}
                 chatGracePeriodMinutes={net?.chat_grace_period_minutes ?? undefined} closedAt={net?.closed_at}
@@ -378,8 +384,12 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
         >
           {/* Same fix as Chat's wrapper above -- xs gets a real pixel height
               instead of '100%', which has nothing definite to resolve
-              against on mobile and collapses ActivityLog's message list. */}
-          <Box sx={{ height: { xs: 450, md: '100%' }, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              against on mobile and collapses ActivityLog's message list.
+              Minimized stays 'auto': Activity Log starts minimized by
+              default on mobile (mobileActivityLogMinimized in NetView.tsx),
+              and forcing 450 regardless rendered that as a tall blank box
+              instead of just its title row. */}
+          <Box sx={{ height: { xs: activityLogMinimized ? 'auto' : 450, md: '100%' }, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <ActivityLog netId={Number(netId)}
                 minimized={activityLogMinimized} onMinimize={() => setActivityLogMinimized(true)} onRestore={() => setActivityLogMinimized(false)} onDetach={() => setActivityLogDetached(true)} onPopOut={handlePopOutActivityLog} />
           </Box>
