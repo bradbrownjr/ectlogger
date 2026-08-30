@@ -256,7 +256,21 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
           minHeight={250}
           storageKey="chat"
         >
-          <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+          {/* xs gets a real pixel height instead of '100%' -- the right
+              column's Grid item is height:'auto' on mobile (it lets the page
+              scroll instead of each pane scrolling internally), so a
+              percentage height here has nothing definite to resolve
+              against and the flex:1/minHeight:0 chain below collapses to
+              nothing: header and input show (flexShrink:0, sized to their
+              own content) but the message list -- the only part actually
+              depending on that percentage chain -- renders at zero height.
+              Reported in production as Chat showing its header and input
+              with no messages between them, while the pop-out window (a
+              real height:100vh in NetPaneWindow.tsx) displayed the same
+              thread correctly. A definite pixel value here needs nothing
+              from its ancestors, same fix CheckInMobileList.tsx already
+              uses (maxHeight: 400) for the same mobile-stacking problem. */}
+          <Box sx={{ height: { xs: 450, md: '100%' }, display: 'flex', flexDirection: 'column' }}>
             <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
               <Chat netId={Number(netId)} netStartedAt={net?.started_at} netStatus={net?.status} searchQuery={searchQuery} canManage={canManage} onDetach={handleDetachChat} onPopOut={handlePopOutChat}
                 chatGracePeriodMinutes={net?.chat_grace_period_minutes ?? undefined} closedAt={net?.closed_at}
@@ -362,7 +376,10 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
           minHeight={250}
           storageKey="activityLog"
         >
-          <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          {/* Same fix as Chat's wrapper above -- xs gets a real pixel height
+              instead of '100%', which has nothing definite to resolve
+              against on mobile and collapses ActivityLog's message list. */}
+          <Box sx={{ height: { xs: 450, md: '100%' }, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <ActivityLog netId={Number(netId)}
                 minimized={activityLogMinimized} onMinimize={() => setActivityLogMinimized(true)} onRestore={() => setActivityLogMinimized(false)} onDetach={() => setActivityLogDetached(true)} onPopOut={handlePopOutActivityLog} />
           </Box>
