@@ -267,7 +267,7 @@ async def create_check_in(
         ci_suffix = ""
 
     # Post system message for check-in activity
-    from app.main import post_system_message
+    from app.main import post_system_message, manager as ws_manager
     if is_recheck:
         if location_changed:
             await post_system_message(net_id, f"{check_in_data.callsign} has rechecked from {new_location}{ci_suffix}", db)
@@ -278,7 +278,30 @@ async def create_check_in(
             await post_system_message(net_id, f"{check_in_data.callsign} has checked in from {check_in_data.location}{ci_suffix}", db)
         else:
             await post_system_message(net_id, f"{check_in_data.callsign} has checked in{ci_suffix}", db)
-    
+
+    # Broadcast the new check-in via WebSocket so every connected client
+    # refreshes its check-in table -- server-originated, unlike the old
+    # design which had the checking-in operator's own browser relay a
+    # 'check_in' message to everyone else after the REST call succeeded. That
+    # meant a brief hiccup on the *checking-in* client's socket (exactly the
+    # kind of blip the zombie-connection watchdog in useNetWebSocket.ts now
+    # guards against) silently broke live sync for every OTHER viewer, while
+    # the system chat message above kept arriving fine since it was already
+    # server-broadcast -- reported in production as the activity log
+    # bursting with new check-ins while the main table never moved. Update
+    # and delete already broadcast this way (see status_change and
+    # check_in_deleted below); this brings create in line with them.
+    await ws_manager.broadcast({
+        "type": "check_in",
+        "data": {
+            "id": check_in.id,
+            "net_id": net_id,
+            "callsign": check_in.callsign,
+        },
+        "timestamp": datetime.now(UTC).isoformat()
+    }, net_id)
+
+
     # Post system messages for poll/topic responses (if newly added)
     if check_in_data.topic_response and net.topic_of_week_enabled:
         # Only post if this is a new response (not on recheck with same answer)

@@ -1,6 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 
+// BulkCheckIn.tsx renews its 'bulk_check_in_status' ping every 8s while its
+// window is open (see that file). This just needs to comfortably outlast one
+// missed ping so a self-clear never races a healthy renewal; it also bounds
+// how long the indicator can be stuck on if a sender's tab vanishes (crash,
+// force-quit) without ever sending the active:false it sends on close.
+const BULK_STATUS_TIMEOUT_MS = 20000;
+
 // ========== useNetWebSocket ==========
 // Owns the net's real-time WebSocket: connection, message routing, exponential
 // backoff reconnect, and cleanup. Extracted verbatim from NetView so the page
@@ -26,6 +33,7 @@ interface NetWebSocketDeps {
   setCheckIns: Dispatch<SetStateAction<any[]>>;
   setToastMessage: Dispatch<SetStateAction<string>>;
   setHighlightCheckIn: Dispatch<SetStateAction<boolean>>;
+  setBulkCheckInActive: Dispatch<SetStateAction<boolean>>;
 }
 
 export function useNetWebSocket(deps: NetWebSocketDeps): WebSocket | null {
@@ -46,6 +54,21 @@ export function useNetWebSocket(deps: NetWebSocketDeps): WebSocket | null {
   // everything through useNetData.
   const hasConnectedRef = useRef(false);
 
+  // Timestamp of the last message received on the current socket (any type,
+  // including the server's 30s 'ping' heartbeat -- see STALE_CONNECTION_MS
+  // below). Used to detect a "zombie" connection: one where readyState still
+  // reports OPEN and neither onclose nor onerror ever fires, but the
+  // underlying path is dead (a NAT/proxy silently dropping an idle mapping,
+  // a phone locking its screen, a wifi<->cellular handoff). Without this the
+  // page can sit showing arbitrarily stale data -- in one case, a net from a
+  // week earlier -- because nothing else observes that the socket stopped
+  // delivering.
+  const lastMessageAtRef = useRef<number>(Date.now());
+
+  // Pending "clear the bulk check-in indicator" timeout -- see
+  // BULK_STATUS_TIMEOUT_MS below.
+  const bulkCheckInTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
     if (!netId) return;
     hasConnectedRef.current = false;
@@ -64,7 +87,7 @@ export function useNetWebSocket(deps: NetWebSocketDeps): WebSocket | null {
     const resyncAfterReconnect = () => {
       const {
         fetchNet, fetchCheckIns, fetchNetRoles, fetchNetStats,
-        fetchCanHearReports, setToastMessage,
+        fetchCanHearReports, setToastMessage, setBulkCheckInActive,
       } = depsRef.current;
 
       fetchNet();
@@ -72,6 +95,16 @@ export function useNetWebSocket(deps: NetWebSocketDeps): WebSocket | null {
       fetchNetRoles();
       fetchNetStats();
       fetchCanHearReports();
+
+      // Ephemeral relay state, not something a REST refetch can recover --
+      // an active:false sent while this socket was down would never be seen.
+      // Default to off and let a fresh renewal (every 8s while BulkCheckIn
+      // is actually still open) restore it within one interval if needed.
+      if (bulkCheckInTimeoutRef.current) {
+        clearTimeout(bulkCheckInTimeoutRef.current);
+        bulkCheckInTimeoutRef.current = null;
+      }
+      setBulkCheckInActive(false);
 
       if (typeof window !== 'undefined' && window.dispatchEvent) {
         window.dispatchEvent(new CustomEvent('netResync', { detail: { netId } }));
@@ -94,6 +127,7 @@ export function useNetWebSocket(deps: NetWebSocketDeps): WebSocket | null {
       websocket.onopen = () => {
         console.log('WebSocket connected to net', netId);
         wsRetryCountRef.current = 0;
+        lastMessageAtRef.current = Date.now();
         if (hasConnectedRef.current) {
           resyncAfterReconnect();
         } else {
@@ -113,7 +147,11 @@ export function useNetWebSocket(deps: NetWebSocketDeps): WebSocket | null {
           setCheckIns,
           setToastMessage,
           setHighlightCheckIn,
+          setBulkCheckInActive,
         } = depsRef.current;
+        // Proof of life for the watchdog below -- counts every message,
+        // including the server's unhandled 'ping' heartbeat type.
+        lastMessageAtRef.current = Date.now();
         const message = JSON.parse(event.data);
         if (message.type === 'check_in') {
           fetchCheckIns(); // Refresh check-ins on new check-in
@@ -124,6 +162,27 @@ export function useNetWebSocket(deps: NetWebSocketDeps): WebSocket | null {
         } else if (message.type === 'active_frequency') {
           if (message.data?.frequencyId !== undefined) {
             fetchNet();
+          }
+        } else if (message.type === 'bulk_check_in_status') {
+          // Client-relayed presence signal from BulkCheckIn.tsx -- purely
+          // cosmetic (it only controls a "may arrive in bursts" notice, not
+          // real check-in data, which the server now broadcasts reliably on
+          // its own), so a relay is an acceptable pattern here unlike the
+          // check-in broadcast itself. Self-clearing via BULK_STATUS_TIMEOUT_MS
+          // covers the case that relay is ever missed or the sender's tab
+          // vanishes mid-session.
+          if (bulkCheckInTimeoutRef.current) {
+            clearTimeout(bulkCheckInTimeoutRef.current);
+            bulkCheckInTimeoutRef.current = null;
+          }
+          if (message.data?.active) {
+            setBulkCheckInActive(true);
+            bulkCheckInTimeoutRef.current = setTimeout(() => {
+              bulkCheckInTimeoutRef.current = null;
+              setBulkCheckInActive(false);
+            }, BULK_STATUS_TIMEOUT_MS);
+          } else {
+            setBulkCheckInActive(false);
           }
         } else if (message.type === 'chat_message') {
           if (typeof window !== 'undefined' && window.dispatchEvent) {
@@ -274,8 +333,64 @@ export function useNetWebSocket(deps: NetWebSocketDeps): WebSocket | null {
     };
     window.addEventListener('online', handleOnline);
 
+    // ========== ZOMBIE-CONNECTION WATCHDOG ==========
+    // onclose/onerror only fire when the browser itself notices the socket
+    // died. A connection that goes silent without either -- a NAT/proxy
+    // dropping an idle mapping, a phone locking its screen, a wifi<->cellular
+    // handoff -- leaves readyState reporting OPEN forever with nothing to
+    // trigger the reconnect above. That's silently worse than a visible
+    // disconnect: reported in production as a page that just stopped
+    // updating (and separately, a tab left open across days landing back on
+    // a stale net) with no error in the console. The server sends a 'ping'
+    // every 30s specifically so something is always arriving on a healthy
+    // connection (see _ws_heartbeat_loop in main.py); STALE_CONNECTION_MS
+    // gives that two full intervals of margin before treating silence as
+    // proof the connection is dead.
+    const STALE_CONNECTION_MS = 60000;
+    const isStale = () => Date.now() - lastMessageAtRef.current > STALE_CONNECTION_MS;
+
+    const forceReconnect = (reason: string) => {
+      if (wsRetryTimeoutRef.current) {
+        clearTimeout(wsRetryTimeoutRef.current);
+        wsRetryTimeoutRef.current = null;
+      }
+      wsRetryCountRef.current = 0;
+      const live = wsRef.current;
+      if (live && live.readyState === WebSocket.OPEN) {
+        console.log(`WebSocket ${reason} - forcing reconnect`);
+        // A non-1000 code routes through onclose's reconnect branch, which
+        // reuses the existing backoff + resyncAfterReconnect flow below.
+        live.close(4000, reason);
+      } else if (!live || live.readyState === WebSocket.CLOSED) {
+        connectWebSocket();
+      }
+      // CONNECTING/CLOSING: already in flight, let it resolve on its own.
+    };
+
+    const staleCheckInterval = setInterval(() => {
+      if (isStale()) forceReconnect('no heartbeat received');
+    }, 15000);
+
+    // Catches the case a periodic check alone would leave stale the longest:
+    // a backgrounded/locked device where the connection died hours or days
+    // ago. Re-checking the instant the tab is looked at again means the
+    // operator never sees the stale content in the first place.
+    const handleVisibilityChange = () => {
+      if (document.visibilityState !== 'visible') return;
+      if (!wsRef.current || wsRef.current.readyState === WebSocket.CLOSED || isStale()) {
+        forceReconnect('tab regained visibility on a stale connection');
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => {
       window.removeEventListener('online', handleOnline);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      clearInterval(staleCheckInterval);
+      if (bulkCheckInTimeoutRef.current) {
+        clearTimeout(bulkCheckInTimeoutRef.current);
+        bulkCheckInTimeoutRef.current = null;
+      }
       // Cancel any pending reconnect before closing so onclose doesn't reschedule
       if (wsRetryTimeoutRef.current) {
         clearTimeout(wsRetryTimeoutRef.current);

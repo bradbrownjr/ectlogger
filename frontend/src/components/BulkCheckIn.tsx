@@ -30,6 +30,7 @@ interface BulkCheckInProps {
   netId: number;
   onCheckInsAdded: () => void;
   fieldConfig?: FieldConfig;
+  ws: WebSocket | null;
 }
 
 interface ParsedCheckIn {
@@ -56,12 +57,40 @@ const STATUS_SHORTCUTS: Record<string, string> = {
   'o': 'checked_out',     // Out / Checked Out
 };
 
-const BulkCheckIn: React.FC<BulkCheckInProps> = ({ open, onClose, netId, onCheckInsAdded, fieldConfig }) => {
+const BulkCheckIn: React.FC<BulkCheckInProps> = ({ open, onClose, netId, onCheckInsAdded, fieldConfig, ws }) => {
   const [minimized, setMinimized] = useState(false);
   const [bulkText, setBulkText] = useState('');
   const [processing, setProcessing] = useState(false);
   const [results, setResults] = useState<{ success: number; failed: number; errors: string[] }>({ success: 0, failed: 0, errors: [] });
   const [showResults, setShowResults] = useState(false);
+
+  // Tell every connected client this window is open, so they can show a
+  // "check-ins may arrive in bursts" notice instead of wondering why the
+  // list is moving in clumps (this is what NCS bulk-adding a roster looks
+  // like from someone else's screen). Purely cosmetic presence, not real
+  // check-in data -- that part is already broadcast reliably by the server
+  // in check_ins.py -- so a client relay (renewed every 8s while open) is
+  // an acceptable pattern here; useNetWebSocket.ts self-clears the notice
+  // if a renewal doesn't arrive, in case this tab closes without ever
+  // sending the active:false below (crash, force-quit).
+  useEffect(() => {
+    if (!open) return;
+    const sendStatus = (active: boolean) => {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: 'bulk_check_in_status',
+          data: { active },
+          timestamp: new Date().toISOString(),
+        }));
+      }
+    };
+    sendStatus(true);
+    const renewInterval = setInterval(() => sendStatus(true), 8000);
+    return () => {
+      clearInterval(renewInterval);
+      sendStatus(false);
+    };
+  }, [open, ws]);
 
   // Known standard field keys — anything else in fieldConfig is a custom field
   const STANDARD_FIELD_KEYS = ['name', 'location', 'skywarn_number', 'weather_observation', 'power_source', 'power', 'notes', 'feedback'];

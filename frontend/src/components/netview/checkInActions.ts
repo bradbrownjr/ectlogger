@@ -150,14 +150,10 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
         if (callsignInput) callsignInput.focus();
       }, 100);
 
-      // Broadcast via WebSocket
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({
-          type: 'check_in',
-          data: checkInForm,
-          timestamp: new Date().toISOString()
-        }));
-      }
+      // Other connected clients learn about this check-in from the server's
+      // own broadcast (routers/check_ins.py::create_check_in), not a relay
+      // sent from here -- see that broadcast's comment for why depending on
+      // this client's own socket to notify everyone else was the bug.
     } catch (error: any) {
       console.error('Failed to create check-in:', error);
       setToastMessage(getErrorMessage(error, 'Failed to check in station'));

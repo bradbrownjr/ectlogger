@@ -180,6 +180,10 @@ const NetView: React.FC = () => {
   const [selectedRole, setSelectedRole] = useState<string>('NCS');
   const [activeSpeakerId, setActiveSpeakerId] = useState<number | null>(null);
   const [toastMessage, setToastMessage] = useState<string>('');
+  // Live presence signal from BulkCheckIn.tsx (see useNetWebSocket.ts's
+  // 'bulk_check_in_status' handling) -- drives the "may arrive in bursts"
+  // notice below the check-in table.
+  const [bulkCheckInActive, setBulkCheckInActive] = useState(false);
   const checkInDialog = useDialog();
   // Mobile-only: collapsed-by-default New Check-in form. NCS/Loggers attending
   // someone else's net don't need the form expanded by default; they can open
@@ -791,6 +795,7 @@ const NetView: React.FC = () => {
     setCheckIns,
     setToastMessage,
     setHighlightCheckIn,
+    setBulkCheckInActive,
     fetchCanHearReports,
   });
 
@@ -1674,6 +1679,16 @@ const NetView: React.FC = () => {
               onOpenCanHearDialog={setCanHearDialogCheckInId}
             />
 
+            {/* Bulk check-in burst notice - see BulkCheckIn.tsx / useNetWebSocket.ts
+                'bulk_check_in_status'. Not breakpoint-gated: relevant on mobile too. */}
+            {bulkCheckInActive && (
+              <Box sx={{ p: 0.5, backgroundColor: 'action.hover', border: 1, borderColor: 'divider', borderTop: 0, flexShrink: 0 }}>
+                <Typography variant="caption" align="center" sx={{ display: 'block', color: 'info.main', fontWeight: 600 }}>
+                  ⚡ Bulk check-in in progress — new check-ins may arrive in bursts.
+                </Typography>
+              </Box>
+            )}
+
             {/* Legend - desktop only */}
             <Box sx={{ p: 0.5, backgroundColor: 'action.hover', border: 1, borderColor: 'divider', borderTop: 0, borderBottom: 0, flexShrink: 0, display: { xs: 'none', md: 'block' } }}>
               <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center' }}>
@@ -2490,7 +2505,17 @@ const NetView: React.FC = () => {
                 canHearReporterCheckInIds={canHearReporterCheckInIds}
                 onOpenCanHearDialog={setCanHearDialogCheckInId}
               />
-              
+
+              {/* Bulk check-in burst notice - see BulkCheckIn.tsx / useNetWebSocket.ts
+                  'bulk_check_in_status'. Detached-view counterpart of the notice above. */}
+              {bulkCheckInActive && (
+                <Box sx={{ p: 0.5, backgroundColor: 'action.hover', border: 1, borderColor: 'divider', borderTop: 0, flexShrink: 0 }}>
+                  <Typography variant="caption" align="center" sx={{ display: 'block', color: 'info.main', fontWeight: 600 }}>
+                    ⚡ Bulk check-in in progress — new check-ins may arrive in bursts.
+                  </Typography>
+                </Box>
+              )}
+
               {/* Legend */}
               <Box sx={{ p: 0.5, backgroundColor: 'action.hover', border: 1, borderColor: 'divider', borderTop: 0, flexShrink: 0 }}>
                 <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center' }}>
@@ -2683,6 +2708,7 @@ const NetView: React.FC = () => {
         netId={Number(netId)}
         onCheckInsAdded={fetchCheckIns}
         fieldConfig={net?.field_config}
+        ws={ws}
       />
 
       {/* CSV Import Dialog */}

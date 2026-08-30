@@ -62,6 +62,7 @@ const NetPaneWindow: React.FC = () => {
   const [toastMessage, setToastMessage] = useState('');
   const [, setHighlightCheckIn] = useState(false);
   const [activeSpeakerId, setActiveSpeakerId] = useState<number | null>(null);
+  const [bulkCheckInActive, setBulkCheckInActive] = useState(false);
   const [hideDuplicates, setHideDuplicates] = useState(false);
   const [filteredFrequencyIds, setFilteredFrequencyIds] = useState<number[]>([]);
   const [inlineEditingId, setInlineEditingId] = useState<number | null>(null);
@@ -139,6 +140,7 @@ const NetPaneWindow: React.FC = () => {
     setCheckIns,
     setToastMessage,
     setHighlightCheckIn,
+    setBulkCheckInActive,
   });
 
   // Must run every render (before any early return) so hook count never
@@ -438,6 +440,16 @@ const NetPaneWindow: React.FC = () => {
           onSaved={() => setCanHearDialogCheckInId(null)}
           onToast={setToastMessage}
         />
+      )}
+
+      {/* Bulk check-in burst notice - see BulkCheckIn.tsx / useNetWebSocket.ts
+          'bulk_check_in_status'. Pop-out counterpart of the notice in NetView.tsx. */}
+      {bulkCheckInActive && (
+        <Box sx={{ p: 0.5, backgroundColor: 'action.hover', border: 1, borderColor: 'divider', borderTop: 0, flexShrink: 0 }}>
+          <Typography variant="caption" align="center" sx={{ display: 'block', color: 'info.main', fontWeight: 600 }}>
+            ⚡ Bulk check-in in progress — new check-ins may arrive in bursts.
+          </Typography>
+        </Box>
       )}
 
       {/* Legend */}
