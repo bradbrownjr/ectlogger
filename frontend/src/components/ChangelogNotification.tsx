@@ -610,7 +610,11 @@ const ChangelogNotification: React.FC = () => {
         fullWidth
         disableRestoreFocus
         PaperProps={{
-          sx: { maxHeight: '80vh' },
+          // Default Dialog margin (32px/side) leaves too little width for the
+          // footer's icon + Subscribe + OK row to fit without horizontal
+          // scroll on a narrow phone -- match the tighter margin already used
+          // by other net-control dialogs on mobile.
+          sx: { maxHeight: '80vh', m: { xs: 1, sm: 4 } },
         }}
       >
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -717,17 +721,17 @@ const ChangelogNotification: React.FC = () => {
             </Typography>
           </Box>
         </DialogContent>
-        <DialogActions sx={{ justifyContent: 'space-between', px: 2 }}>
+        <DialogActions sx={{ justifyContent: 'space-between', px: { xs: 1, sm: 2 }, gap: 0.5 }}>
           {/* ========== LEFT GROUP: PDF download icon buttons ========== */}
           {/* Single page = latest day's changelog. Open book = entire changelog. */}
-          <Box sx={{ display: 'flex', gap: 0.5 }}>
+          <Box sx={{ display: 'flex', gap: { xs: 0, sm: 0.5 } }}>
             <Tooltip title="Download latest version's changelog (PDF)">
-              <IconButton onClick={handleDownloadLatest} size="small" color="primary" aria-label="Download latest changelog as PDF">
+              <IconButton onClick={handleDownloadLatest} size="small" color="primary" aria-label="Download latest changelog as PDF" sx={{ p: { xs: 0.5, sm: 1 } }}>
                 <DescriptionIcon />
               </IconButton>
             </Tooltip>
             <Tooltip title="Download entire changelog (PDF)">
-              <IconButton onClick={handleDownloadAll} size="small" color="primary" aria-label="Download entire changelog as PDF">
+              <IconButton onClick={handleDownloadAll} size="small" color="primary" aria-label="Download entire changelog as PDF" sx={{ p: { xs: 0.5, sm: 1 } }}>
                 <MenuBookIcon />
               </IconButton>
             </Tooltip>
@@ -740,6 +744,7 @@ const ChangelogNotification: React.FC = () => {
                 size="small"
                 color="primary"
                 aria-label="Subscribe to changelog RSS feed"
+                sx={{ p: { xs: 0.5, sm: 1 } }}
               >
                 <RssFeedIcon />
               </IconButton>
@@ -747,7 +752,7 @@ const ChangelogNotification: React.FC = () => {
           </Box>
 
           {/* ========== RIGHT GROUP: Subscribe + close ========== */}
-          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+          <Box sx={{ display: 'flex', gap: { xs: 0.5, sm: 1 }, alignItems: 'center' }}>
             {/* Subscribe button — only shown when authenticated. Sparkles when
                 NOT yet subscribed to draw the eye, calmly green when active. */}
             {user && (
@@ -765,6 +770,7 @@ const ChangelogNotification: React.FC = () => {
                     variant={subscribed ? 'contained' : 'outlined'}
                     color={subscribed ? 'success' : 'primary'}
                     size="small"
+                    sx={{ minWidth: 0, px: { xs: 1, sm: 2 } }}
                     startIcon={
                       <AutoAwesomeIcon
                         fontSize="small"
@@ -783,7 +789,7 @@ const ChangelogNotification: React.FC = () => {
             )}
             {/* Matches Subscribe's size so the two buttons in this group read
                 as one row, not two different scales. */}
-            <Button onClick={handleClose} variant="contained" size="small">
+            <Button onClick={handleClose} variant="contained" size="small" sx={{ minWidth: { xs: 48, sm: 64 } }}>
               OK
             </Button>
           </Box>

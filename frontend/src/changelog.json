@@ -1,8 +1,8 @@
 {
-  "version": "2026.08.30b",
+  "version": "2026.08.30c",
   "entries": [
     {
-      "version": "2026.08.30b",
+      "version": "2026.08.30c",
       "date": "2026-08-30",
       "sections": [
         {
@@ -29,6 +29,9 @@
             {
               "text": "Topic of the Week: Reliable end to end — the reminder to set a topic could get missed if a net's lobby opened on its own or was started from the dashboard, so NCS sometimes never saw it; starting or going live now always checks first. Setting the topic live also updates the schedule's topic history right away, and planning one ahead of time in that history now shows up on the net automatically instead of needing to be entered twice.",
               "userImpact": true
+            },
+            {
+              "text": "Mobile: What's New dialog — the footer buttons (downloads, RSS, Subscribe, OK) needed a sideways swipe to reach on narrow phones; they now all fit on one line without scrolling."
             }
           ]
         }

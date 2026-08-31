@@ -15,6 +15,7 @@ All notable changes to ECTLogger are documented here.
 * **Net View: Live updates could silently stop** — A dropped connection, or a burst of check-ins from Bulk Add, could stop new check-ins from appearing for people watching a net until they reloaded the page. The page now reliably catches up on its own.
 * **Mobile: Chat and Activity Log showing empty** — On phones, the Chat and Activity Log panels could appear open but show no messages or event log, with no way to see them without reloading the page.
 * **Topic of the Week: Reliable end to end** — The reminder to set a topic could get missed if a net's lobby opened on its own or was started from the dashboard, so NCS sometimes never saw it; starting or going live now always checks first. Setting the topic live also updates the schedule's topic history right away, and planning one ahead of time in that history now shows up on the net automatically instead of needing to be entered twice.
+* **Mobile: What's New dialog** — The footer buttons (downloads, RSS, Subscribe, OK) needed a sideways swipe to reach on narrow phones; they now all fit on one line without scrolling.
 
 ---
 
