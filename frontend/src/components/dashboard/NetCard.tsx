@@ -51,6 +51,10 @@ export interface Net {
   cancel_reason?: string | null;
   created_at: string;
   scheduled_start_time?: string;
+  topic_of_week_enabled?: boolean;
+  topic_of_week_prompt?: string | null;
+  poll_enabled?: boolean;
+  poll_question?: string | null;
   frequencies: any[];
   check_in_count?: number;
   can_manage?: boolean;

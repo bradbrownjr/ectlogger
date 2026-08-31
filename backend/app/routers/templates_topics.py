@@ -72,6 +72,12 @@ async def add_topic_history(
         net_id=None  # No associated net for manually added topics
     )
     db.add(topic_entry)
+
+    # If this entry is for a date that already has a not-yet-closed net
+    # under this template with no topic of its own, give it this one.
+    from app.services.topic_history import sync_topic_to_pending_nets
+    await sync_topic_to_pending_nets(db, template_id, topic_data.used_date.date(), topic_data.topic)
+
     await db.commit()
     await db.refresh(topic_entry)
 
@@ -120,6 +126,11 @@ async def update_topic_history(
         entry.topic = topic_data.topic
     if topic_data.used_date is not None:
         entry.used_date = topic_data.used_date
+
+    # Push the edited topic into any not-yet-closed net for this date that
+    # doesn't already have one of its own -- see sync_topic_to_pending_nets.
+    from app.services.topic_history import sync_topic_to_pending_nets
+    await sync_topic_to_pending_nets(db, template_id, entry.used_date.date(), entry.topic)
 
     await db.commit()
     await db.refresh(entry)

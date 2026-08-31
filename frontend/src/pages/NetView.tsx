@@ -231,6 +231,9 @@ const NetView: React.FC = () => {
   const topicPollDialog = useDialog();
   const [tempTopicPrompt, setTempTopicPrompt] = useState('');
   const [tempPollQuestion, setTempPollQuestion] = useState('');
+  // Which action to run once the dialog is saved -- it's opened from both the
+  // draft/scheduled "Start" flow and the lobby "Go live" flow.
+  const [topicPollAction, setTopicPollAction] = useState<'start' | 'go-live'>('start');
   // Check-in prompt for authenticated users viewing active/lobby nets
   const checkInPrompt = useDialog();
   const checkInPromptShownRef = useRef(false);
@@ -416,9 +419,12 @@ const NetView: React.FC = () => {
     
     const isOwner = net.owner_id === user.id;
     const isAdmin = user.role === 'admin';
-    
-    // Only show reminder for owner/admin (NCS check would require netRoles which causes re-renders)
-    if (isOwner || isAdmin) {
+    // net.is_owner_or_ncs is server-computed (owner, template staff, or active
+    // rotation NCS) and already available without a separate netRoles fetch,
+    // so a rotating NCS who isn't the template owner still gets this nudge.
+    const canManageNet = !!net.is_owner_or_ncs;
+
+    if (isOwner || isAdmin || canManageNet) {
       const timer = setTimeout(() => {
         // Build reminder message with topic/poll hints
         let message = 'Ready to start? Click the green play button to begin the net!';
@@ -458,7 +464,13 @@ const NetView: React.FC = () => {
 
     // Remove the param so a refresh doesn't re-trigger
     setSearchParams(prev => { prev.delete('open_lobby'); return prev; }, { replace: true });
-    handleStartNet();
+    // A topic/poll not yet configured gets the same dialog the in-page Start
+    // button would show, instead of silently starting without one.
+    if (needsTopicPollConfig()) {
+      handleOpenTopicPollConfig('start');
+    } else {
+      handleStartNet();
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [net?.id, net?.is_owner_or_ncs, user?.id]); // Re-check when server permissions arrive
 
@@ -851,13 +863,25 @@ const NetView: React.FC = () => {
 
   const handleStartNetClick = () => {
     if (needsTopicPollConfig()) {
-      handleOpenTopicPollConfig();
+      handleOpenTopicPollConfig('start');
     } else {
       handleStartNet();
     }
   };
 
-  const handleTopicPollSaveAndStart = async () => {
+  // "Go live" (LOBBY -> ACTIVE) needs the same topic/poll check as starting a
+  // draft/scheduled net -- a net that auto-opened its lobby never went
+  // through handleStartNetClick, so this is often the first and only chance
+  // to catch an unset topic before check-ins start.
+  const handleGoLiveClick = () => {
+    if (needsTopicPollConfig()) {
+      handleOpenTopicPollConfig('go-live');
+    } else {
+      handleGoLive();
+    }
+  };
+
+  const handleTopicPollSave = async () => {
     // Save the topic/poll configuration first
     try {
       const updates: any = {};
@@ -869,8 +893,12 @@ const NetView: React.FC = () => {
       }
       await netApi.update(Number(netId), updates);
       topicPollDialog.onClose();
-      // Then start the net
-      handleStartNet();
+      // Then resume whichever action opened this dialog
+      if (topicPollAction === 'go-live') {
+        handleGoLive();
+      } else {
+        handleStartNet();
+      }
     } catch (error) {
       console.error('Failed to save topic/poll config:', error);
       setToastMessage('Failed to save configuration');
@@ -1415,10 +1443,12 @@ const NetView: React.FC = () => {
     }
   };
 
-  // Open the Topic/Poll configuration dialog, seeded with current values
-  const handleOpenTopicPollConfig = () => {
+  // Open the Topic/Poll configuration dialog, seeded with current values.
+  // `action` is which button triggered this, so saving can resume the right one.
+  const handleOpenTopicPollConfig = (action: 'start' | 'go-live' = 'start') => {
     setTempTopicPrompt(net?.topic_of_week_prompt || '');
     setTempPollQuestion(net?.poll_question || '');
+    setTopicPollAction(action);
     topicPollDialog.onOpen();
   };
 
@@ -1529,7 +1559,7 @@ const NetView: React.FC = () => {
         onToggleNCSRole={handleToggleNCSRole}
         onCheckOut={handleCheckOut}
         onOpenCanHearDialog={setCanHearDialogCheckInId}
-        onGoLive={handleGoLive}
+        onGoLive={handleGoLiveClick}
         onExportCSV={handleExportCSV}
         onExportICS309={handleExportICS309}
         onExportICS309Pdf={handleExportICS309Pdf}
@@ -2633,7 +2663,8 @@ const NetView: React.FC = () => {
         setTempTopicPrompt={setTempTopicPrompt}
         tempPollQuestion={tempPollQuestion}
         setTempPollQuestion={setTempPollQuestion}
-        onSaveAndStart={handleTopicPollSaveAndStart}
+        onSaveAndStart={handleTopicPollSave}
+        topicPollAction={topicPollAction}
         frequencyDialog={frequencyDialog}
         frequencies={net?.frequencies}
         availableFrequencyIds={checkInForm.available_frequency_ids}

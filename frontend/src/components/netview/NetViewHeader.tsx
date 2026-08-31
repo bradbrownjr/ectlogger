@@ -218,7 +218,7 @@ interface NetViewHeaderProps {
   closeNetDialog: UseDialogResult;
 
   // Actions requiring parent-owned pre-processing or API calls
-  onOpenTopicPollConfig: () => void;
+  onOpenTopicPollConfig: (action?: 'start' | 'go-live') => void;
   onOpenRoleDialog: () => void;
   onOpenCheckIn: () => void;
   onStartNetClick: () => void;
@@ -735,12 +735,14 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
   };
 
   // Shared by both the info-group and management-group render loops so the
-  // "start-net" special case (the topic/poll-config warning badge) applies
-  // no matter which group start-net currently belongs to.
+  // topic/poll-config warning badge applies to whichever of "start-net" or
+  // "go-live" is currently on screen -- a net that auto-opened its lobby
+  // shows "go-live" instead of "start-net" and needs the same nudge, since
+  // it never passed through the draft/scheduled start flow.
   const renderGroupItem = (item: ToolbarItemDef) => {
     const mode = modes.get(item.key)!;
     if (mode === 'overflow') return null;
-    if (item.key === 'start-net') {
+    if (item.key === 'start-net' || item.key === 'go-live') {
       return (
         <React.Fragment key={item.key}>
           {renderItem(item, mode)}
@@ -748,7 +750,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
             <Tooltip title="Topic or poll question needs to be set before starting">
               <IconButton
                 size="small"
-                onClick={onOpenTopicPollConfig}
+                onClick={() => onOpenTopicPollConfig(item.key === 'go-live' ? 'go-live' : 'start')}
                 sx={{
                   p: 0.5,
                   borderRadius: '50%',

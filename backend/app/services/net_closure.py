@@ -89,16 +89,12 @@ async def close_net_and_notify(
             if times:
                 net.started_at = min(times)
 
-    # Log topic to history if topic was used and template is set
-    if net.topic_of_week_enabled and net.topic_of_week_prompt and net.template_id:
-        from app.models import TopicHistory
-        topic_entry = TopicHistory(
-            template_id=net.template_id,
-            topic=net.topic_of_week_prompt,
-            used_date=datetime.utcnow(),
-            net_id=net.id
-        )
-        db.add(topic_entry)
+    # Log topic to history if topic was used and template is set. Usually a
+    # no-op by this point -- update_net already upserts this the moment the
+    # topic is set live -- but this is the only history write a CSV-backfilled
+    # net (imported and closed without ever going through update_net) gets.
+    from app.services.topic_history import upsert_topic_history_from_net
+    await upsert_topic_history_from_net(db, net)
 
     await db.commit()
 

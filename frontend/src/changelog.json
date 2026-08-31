@@ -1,8 +1,8 @@
 {
-  "version": "2026.08.30",
+  "version": "2026.08.30b",
   "entries": [
     {
-      "version": "2026.08.30",
+      "version": "2026.08.30b",
       "date": "2026-08-30",
       "sections": [
         {
@@ -24,6 +24,10 @@
             },
             {
               "text": "Mobile: Chat and Activity Log showing empty — on phones, the Chat and Activity Log panels could appear open but show no messages or event log, with no way to see them without reloading the page.",
+              "userImpact": true
+            },
+            {
+              "text": "Topic of the Week: Reliable end to end — the reminder to set a topic could get missed if a net's lobby opened on its own or was started from the dashboard, so NCS sometimes never saw it; starting or going live now always checks first. Setting the topic live also updates the schedule's topic history right away, and planning one ahead of time in that history now shows up on the net automatically instead of needing to be entered twice.",
               "userImpact": true
             }
           ]

@@ -41,6 +41,9 @@ interface NetControlDialogsProps {
   tempPollQuestion: string;
   setTempPollQuestion: (v: string) => void;
   onSaveAndStart: () => void;
+  // Which action the save button resumes -- opened from either the
+  // draft/scheduled Start flow or the lobby Go Live flow.
+  topicPollAction: 'start' | 'go-live';
 
   // Available frequencies
   frequencyDialog: UseDialogResult;
@@ -66,6 +69,7 @@ const NetControlDialogs: React.FC<NetControlDialogsProps> = ({
   tempPollQuestion,
   setTempPollQuestion,
   onSaveAndStart,
+  topicPollAction,
   frequencyDialog,
   frequencies,
   availableFrequencyIds,
@@ -182,7 +186,7 @@ const NetControlDialogs: React.FC<NetControlDialogsProps> = ({
         <DialogActions>
           <Button onClick={topicPollDialog.onClose}>Cancel</Button>
           <Button onClick={onSaveAndStart} variant="contained" color="success">
-            Save & Start Net
+            {topicPollAction === 'go-live' ? 'Save & Go Live' : 'Save & Start Net'}
           </Button>
         </DialogActions>
       </Dialog>

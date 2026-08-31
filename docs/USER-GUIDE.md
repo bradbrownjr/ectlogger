@@ -642,6 +642,8 @@ Ask participants a discussion question:
 3. Responses appear in the check-in list's "Topic" column
 4. All responses are included in the emailed net log
 
+To plan a topic ahead of the net itself (so it's already set when the net starts, not something the NCS has to remember to type in live), open the **Topics** button on a net under a recurring schedule and add an entry dated for the upcoming occurrence. The net auto-created (or manually created) for that date picks it up automatically. Setting the topic live as NCS also logs it to this same history right away, so past topics stay available for reference under the schedule's Topics list without waiting for the net to close.
+
 #### Participant Poll
 
 Run a quick poll with predefined options:

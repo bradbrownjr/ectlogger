@@ -406,7 +406,13 @@ async def update_net(
         )
         frequencies = result.scalars().all()
         net.frequencies = frequencies
-    
+
+    # Record a topic set live by NCS into history right away, rather than
+    # only at close -- see app/services/topic_history.py.
+    if 'topic_of_week_prompt' in update_data or 'topic_of_week_enabled' in update_data:
+        from app.services.topic_history import upsert_topic_history_from_net
+        await upsert_topic_history_from_net(db, net)
+
     await db.commit()
     await db.refresh(net, ['frequencies'])
     

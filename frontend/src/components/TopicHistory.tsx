@@ -265,7 +265,7 @@ const TopicHistory: React.FC<TopicHistoryProps> = ({
               No topics have been used for this net yet.
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              Topics are logged when a net closes with the "Topic of the Week" feature enabled.
+              Topics are logged as soon as NCS sets one for a net with "Topic of the Week" enabled, or you can add one below for a future date to plan it ahead of time.
             </Typography>
           </Box>
         ) : filtered.length === 0 ? (

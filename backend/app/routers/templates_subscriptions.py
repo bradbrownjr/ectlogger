@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -268,7 +268,12 @@ async def create_net_from_template(
 
     # Create net from template
     from app.models import net_frequencies as net_freq_table
-    
+    from app.services.topic_history import seed_topic_from_history
+
+    topic_prompt = await seed_topic_from_history(
+        db, template, scheduled_start_time.date() if scheduled_start_time else date.today()
+    )
+
     net = Net(
         name=template.name,
         description=template.description,
@@ -298,7 +303,7 @@ async def create_net_from_template(
         self_checkin_enabled=template.self_checkin_enabled if template.self_checkin_enabled is not None else True,
         auto_lobby_minutes=template.auto_lobby_minutes,
         topic_of_week_enabled=template.topic_of_week_enabled or False,
-        topic_of_week_prompt=template.topic_of_week_prompt,
+        topic_of_week_prompt=topic_prompt,
         poll_enabled=template.poll_enabled or False,
         poll_question=template.poll_question,
         scheduled_start_time=scheduled_start_time

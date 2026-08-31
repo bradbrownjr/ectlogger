@@ -158,6 +158,9 @@ class NCSReminderService:
 
         # Auto-create the net from the template as SCHEDULED
         try:
+            from app.services.topic_history import seed_topic_from_history
+            topic_prompt = await seed_topic_from_history(db, template, scheduled_dt.date())
+
             net = Net(
                 name=template.name,
                 description=template.description,
@@ -188,7 +191,7 @@ class NCSReminderService:
                 # occurrence without editing the schedule.
                 auto_lobby_minutes=template.auto_lobby_minutes,
                 topic_of_week_enabled=template.topic_of_week_enabled or False,
-                topic_of_week_prompt=template.topic_of_week_prompt,
+                topic_of_week_prompt=topic_prompt,
                 poll_enabled=template.poll_enabled or False,
                 poll_question=template.poll_question,
                 scheduled_start_time=scheduled_dt,

@@ -180,11 +180,20 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const handleStartNet = async (netId: number) => {
+  const handleStartNet = async (net: Net) => {
+    // A net with an unset topic/poll needs that dialog before starting, and
+    // this list view has nowhere to show it -- hand off to NetView, which
+    // already prompts for it via the same badge/dialog flow used there.
+    const needsTopicOrPoll = (net.topic_of_week_enabled && !net.topic_of_week_prompt)
+      || (net.poll_enabled && !net.poll_question);
+    if (needsTopicOrPoll) {
+      navigate(`/nets/${net.id}`);
+      return;
+    }
     try {
-      await netApi.start(netId);
+      await netApi.start(net.id);
       // Navigate to the net view so owner is automatically "joined"
-      navigate(`/nets/${netId}`);
+      navigate(`/nets/${net.id}`);
     } catch (error) {
       console.error('Failed to start net:', error);
     }
@@ -439,7 +448,7 @@ const Dashboard: React.FC = () => {
             preferUtc={user?.prefer_utc ?? false}
             onStaffClick={() => { setSelectedNet(net); setStaffModalOpen(true); }}
             onDeleteClick={() => handleDeleteClick(net)}
-            onStartNet={() => handleStartNet(net.id)}
+            onStartNet={() => handleStartNet(net)}
             onEmailClick={() => handleEmailClick(net)}
             onExportCSV={() => handleExportCSV(net)}
             onArchiveNet={() => handleArchiveNet(net.id)}
@@ -559,7 +568,7 @@ const Dashboard: React.FC = () => {
                       </IconButton>
                     </Tooltip>
                     <Tooltip title="Start">
-                      <IconButton size="small" color="success" onClick={() => handleStartNet(net.id)}>
+                      <IconButton size="small" color="success" onClick={() => handleStartNet(net)}>
                         <PlayArrowIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
