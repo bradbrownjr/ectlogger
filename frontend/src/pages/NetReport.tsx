@@ -685,7 +685,12 @@ const NetReport: React.FC = () => {
   const chartMd = (chartCount === 3 ? 4 : chartCount === 2 ? 6 : 12) as 4 | 6 | 12;
 
   // Get NCS operators from net roles
-  const ncsOperators = netRoles.filter(r => r.role === 'ncs');
+  // NetRole.role is always stored uppercase ("NCS") -- every other role
+  // comparison in the frontend (NetView.tsx, NetPaneWindow.tsx,
+  // NCSStaffModal.tsx) matches on 'NCS'. This one compared against 'ncs'
+  // instead, so the "Net Control Station(s)" section below silently
+  // rendered nothing on every net report, for every net, until this fix.
+  const ncsOperators = netRoles.filter(r => r.role === 'NCS');
 
   // Split chat into user messages and system log entries
   const userChatMessages = chatMessages.filter(m => !m.is_system);
