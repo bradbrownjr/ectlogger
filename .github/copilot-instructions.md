@@ -338,7 +338,12 @@ For a multi-phase roadmap feature (the kind with its own "Design questions to re
 - **Deploy verification**: after every deploy, confirm prod git log matches local with `ssh ectlogger@app.ectlogger.us "cd ~/ectlogger && git log --oneline -3"`.
 
 ### Beta (ectbeta.lynwood.us)
-- **Host**: `bradb@10.6.26.3`
+- **Host**: `10.6.26.3` (`bradb@10.6.26.3`) — **NOT an SSH target.** This is the
+  same LXC container this coding session already runs in, as the same user
+  (`bradb`). Do not `ssh` here; it will fail (key not authorized) or, worse,
+  loop back to this same session. Run every beta command directly, exactly
+  like Alpha/Production commands but without the `ssh <host>` prefix. The
+  address is listed only so it's recognizable in logs/configs — never dial it.
 - **Python**: 3.13
 - **Purpose**: Testing new features before production deployment
 - **Note**: Deploy new/incomplete features to beta ONLY until tested and confirmed working
