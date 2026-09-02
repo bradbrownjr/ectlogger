@@ -1481,7 +1481,13 @@ const NetView: React.FC = () => {
         topic_response: '',
         poll_response: '',
         status: 'checked_in',
-        check_in_as_standard: false,
+        // Defaults to Standard participant, not NCS. This dialog can be
+        // reached without going through the NCS/Standard Snackbar prompt
+        // (e.g. the plain "Check In" button), so if the person doesn't
+        // touch the NCS/Standard radio in CheckInFormDialog (shown when
+        // net.current_user_ncs_eligible is true), submitting should never
+        // silently make them NCS -- becoming NCS must be an active choice.
+        check_in_as_standard: true,
       });
     }
     checkInDialog.onOpen();

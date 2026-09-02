@@ -42,6 +42,7 @@ import {
   Fullscreen as FullscreenIcon,
   Close as CloseIcon,
   Hearing as HearingIcon,
+  Download as DownloadIcon,
 } from '@mui/icons-material';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, Tooltip as LeafletTooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -177,7 +178,7 @@ import { chatApi, ChatMessage, formatChatMessageText } from '../api/chat';
 import { formatDateTime, formatTimeWithDate } from '../utils/dateUtils';
 import { getErrorMessage } from '../utils/apiErrors';
 import { useAuth } from '../contexts/AuthContext';
-import { exportElementToPdf } from '../utils/pdfExport';
+import { exportElementToPdf, exportElementToPng } from '../utils/pdfExport';
 import { computeCheckInTimeline } from '../utils/checkInTimeline';
 import CoverageReport, { CanHearReportEntry } from '../components/netview/CoverageReport';
 import ICS309PrintView, { Ics309LogData } from '../components/traffic/print/ICS309PrintView';
@@ -287,6 +288,10 @@ const NetReport: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
+  // Which report section is currently being captured to PNG, keyed by its
+  // element id -- lets each section's download button show its own spinner
+  // independently instead of one shared "exporting" flag for all three.
+  const [pngExportingId, setPngExportingId] = useState<string | null>(null);
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   // Opt-in, view-time only (not persisted) - per-station coverage maps make
   // an already-long report substantially longer, so they're off by default.
@@ -534,6 +539,26 @@ const NetReport: React.FC = () => {
       console.error('Failed to export PDF:', err);
     } finally {
       setExporting(false);
+    }
+  };
+
+  // ========== PNG EXPORT (per report section, for social media posts) ==========
+
+  const handleExportPng = async (elementId: string, label: string) => {
+    setPngExportingId(elementId);
+    // Let React re-render (hides the section's own Expand/Download buttons
+    // via the pngExportingId check) before html2canvas captures.
+    await new Promise(resolve => setTimeout(resolve, 60));
+    try {
+      const netLabel = net?.name ? net.name.replace(/[^a-zA-Z0-9]/g, '_') : 'Net';
+      await exportElementToPng(elementId, {
+        filename: `${netLabel}_${label}`,
+        scale: 2,
+      });
+    } catch (err) {
+      console.error(`Failed to export ${label} PNG:`, err);
+    } finally {
+      setPngExportingId(null);
     }
   };
 
@@ -828,10 +853,20 @@ const NetReport: React.FC = () => {
         </Paper>
 
         {/* ========== SECTION 2: STATISTICS SUMMARY ========== */}
-        <Typography variant="h6" sx={{ mt: 3, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <TrendingUp /> Statistics Summary
-        </Typography>
-        
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 3, mb: 2 }}>
+          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <TrendingUp /> Statistics Summary
+          </Typography>
+          {!exporting && !pngExportingId && chartCount > 0 && (
+            <Tooltip title="Download graphs as PNG">
+              <IconButton size="small" onClick={() => handleExportPng('net-report-charts', 'Graphs')} sx={{ ml: 'auto' }}>
+                <DownloadIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+          {pngExportingId === 'net-report-charts' && <CircularProgress size={18} sx={{ ml: 'auto' }} />}
+        </Box>
+
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={6} sm={3}>
             <Card variant="outlined">
@@ -884,7 +919,7 @@ const NetReport: React.FC = () => {
         </Grid>
 
         {/* Charts Row — all three charts fit one row */}
-        <Grid container spacing={3} sx={{ mb: 3 }}>
+        <Grid id="net-report-charts" container spacing={3} sx={{ mb: 3 }}>
           {/* Status Breakdown Pie Chart */}
           {statusData.length > 0 && (
             <Grid item xs={12} md={chartMd}>
@@ -1010,7 +1045,7 @@ const NetReport: React.FC = () => {
 
         {/* ========== SECTION 3: CHECK-IN MAP (if locations available) ========== */}
         {mappedCheckIns.length > 0 && (
-          <>
+          <Box id="net-report-map">
             <Box sx={{ mt: 3, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
               <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <MapIcon /> Check-in Map ({mappedCheckIns.length} locations)
@@ -1020,13 +1055,21 @@ const NetReport: React.FC = () => {
                   — split view: cluster detail (left) and full overview (right)
                 </Typography>
               )}
+              {!exporting && !pngExportingId && (
+                <Tooltip title="Download map as PNG">
+                  <IconButton size="small" onClick={() => handleExportPng('net-report-map', 'Map')} sx={{ ml: 'auto' }}>
+                    <DownloadIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              )}
               {!exporting && (
                 <Tooltip title="Expand">
-                  <IconButton size="small" onClick={() => setExpandedCard('map')} sx={{ ml: 'auto' }}>
+                  <IconButton size="small" onClick={() => setExpandedCard('map')} sx={pngExportingId ? { ml: 'auto' } : {}}>
                     <FullscreenIcon fontSize="small" />
                   </IconButton>
                 </Tooltip>
               )}
+              {pngExportingId === 'net-report-map' && <CircularProgress size={18} sx={{ ml: 'auto' }} />}
             </Box>
 
             {/* ---- Helper: shared marker list for a given MapContainer ---- */}
@@ -1206,7 +1249,7 @@ const NetReport: React.FC = () => {
                 </Box>
               </Paper>
             )}
-          </>
+          </Box>
         )}
         {mapLoading && (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
@@ -1228,10 +1271,21 @@ const NetReport: React.FC = () => {
         )}
 
         {/* ========== SECTION 4: CHECK-IN LOG ========== */}
-        <Typography variant="h6" sx={{ mt: 3, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Assignment /> Check-in Log ({checkIns.length} event{checkIns.length !== 1 ? 's' : ''} &mdash; {stats.unique_callsigns} unique station{stats.unique_callsigns !== 1 ? 's' : ''}{stats.rechecks > 0 ? `, ${stats.rechecks} re-check${stats.rechecks !== 1 ? 's' : ''}` : ''})
-        </Typography>
-        
+        <Box id="net-report-checkin-log">
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 3, mb: 2 }}>
+          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Assignment /> Check-in Log ({checkIns.length} event{checkIns.length !== 1 ? 's' : ''} &mdash; {stats.unique_callsigns} unique station{stats.unique_callsigns !== 1 ? 's' : ''}{stats.rechecks > 0 ? `, ${stats.rechecks} re-check${stats.rechecks !== 1 ? 's' : ''}` : ''})
+          </Typography>
+          {!exporting && !pngExportingId && (
+            <Tooltip title="Download check-in list as PNG">
+              <IconButton size="small" onClick={() => handleExportPng('net-report-checkin-log', 'CheckIn_List')} sx={{ ml: 'auto' }}>
+                <DownloadIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+          {pngExportingId === 'net-report-checkin-log' && <CircularProgress size={18} sx={{ ml: 'auto' }} />}
+        </Box>
+
         <TableContainer component={Paper} variant="outlined" sx={{ mb: 3, overflowX: 'auto' }}>
           <Table size="small">
             <TableHead>
@@ -1296,6 +1350,7 @@ const NetReport: React.FC = () => {
             </TableBody>
           </Table>
         </TableContainer>
+        </Box>
 
         {/* ========== SECTION 5: TOPIC OF THE WEEK (if enabled and responses exist) ========== */}
         {topicPrompt && (

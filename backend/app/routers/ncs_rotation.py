@@ -319,6 +319,57 @@ async def clear_all_rotation_members(
     await resync_pending_duty_ncs(db, template_id, background_tasks)
 
 
+class NCSRotationMemberUpdateRequest(BaseModel):
+    is_active: Optional[bool] = None
+
+
+@router.patch("/members/{member_id}", response_model=NCSRotationMemberResponse)
+async def update_rotation_member(
+    template_id: int,
+    member_id: int,
+    update: NCSRotationMemberUpdateRequest,
+    background_tasks: BackgroundTasks,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Toggle a rotation member's active status (skip/include them in the
+    computed schedule) without removing them from the roster. The frontend's
+    NCS Rotation list switch (StaffRotationTab.tsx) called this route as a
+    PUT before it existed here -- every toggle 405'd and failed silently."""
+    template = await get_template_or_404(template_id, db)
+
+    if not await check_template_permission(db, template, current_user):
+        raise HTTPException(status_code=403, detail="Permission denied")
+
+    result = await db.execute(
+        select(NCSRotationMember).where(
+            NCSRotationMember.id == member_id,
+            NCSRotationMember.template_id == template_id
+        )
+    )
+    member = result.scalar_one_or_none()
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+
+    if update.is_active is None:
+        raise HTTPException(status_code=400, detail="No update fields provided")
+
+    member.is_active = update.is_active
+    # Roster composition (who's actually cycling) changed -- restart from here.
+    stamp_rotation_anchor(template)
+    await db.commit()
+    await resync_pending_duty_ncs(db, template_id, background_tasks)
+
+    result = await db.execute(
+        select(NCSRotationMember)
+        .options(selectinload(NCSRotationMember.user))
+        .where(NCSRotationMember.id == member.id)
+    )
+    member = result.scalar_one()
+
+    return NCSRotationMemberResponse.from_orm_with_user(member)
+
+
 @router.put("/members/reorder", response_model=List[NCSRotationMemberResponse])
 async def reorder_rotation_members(
     template_id: int,

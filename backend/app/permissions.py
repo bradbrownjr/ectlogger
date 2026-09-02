@@ -81,11 +81,26 @@ async def is_eligible_for_ncs_auto_grant(db: AsyncSession, net: Net, user_id: in
     into *net*: an active co-manager or active NCS rotation member for the
     net's template, with no existing NetRole on this specific net occurrence
     yet (owner/admin/an already-assigned role don't need this -- they already
-    have access, or checking in wouldn't change anything for them).
+    have access, or checking in wouldn't change anything for them), AND no
+    one else is already an active NCS on this net.
+
+    That last condition is what makes this a *backup* grant rather than an
+    automatic co-NCS pile-on: the whole point is "pick up the net if the
+    assigned NCS is unavailable", not "any eligible rotation member who
+    happens to check in also becomes NCS". Without it, an off-week rotation
+    member self-checking in as a participant while the actual (e.g.
+    fifth-week) NCS is already running the net silently picks up NCS
+    permissions they never asked for or used -- which then shows up as a
+    second, wrong "Net Control Station" in the net's report. See the
+    2026-08-30 ME Dirigo Net incident (net 79: Cory Golob correctly assigned
+    NCS at check-in, then Peter -- an ordinary rotation member checking in as
+    a participant nearly an hour later -- was auto-granted NCS too).
 
     Shared by check_ins.py (to decide whether to actually grant) and
     nets_core.py (to expose the choice to the frontend before the user checks
-    in at all, e.g. the check-in dialog's NCS/Standard toggle).
+    in at all, e.g. the check-in dialog's NCS/Standard toggle) -- so gating
+    it here also makes that choice disappear once someone's already running
+    the net, instead of asking a question that no longer has a real answer.
     """
     if not net.template_id:
         return False
@@ -94,6 +109,16 @@ async def is_eligible_for_ncs_auto_grant(db: AsyncSession, net: Net, user_id: in
         select(NetRole).where(NetRole.net_id == net.id, NetRole.user_id == user_id)
     )
     if existing_result.scalar_one_or_none() is not None:
+        return False
+
+    active_ncs_result = await db.execute(
+        select(NetRole).where(
+            NetRole.net_id == net.id,
+            NetRole.role == "NCS",
+            NetRole.is_active == True,  # noqa: E712
+        )
+    )
+    if active_ncs_result.scalar_one_or_none() is not None:
         return False
 
     co_mgr_result = await db.execute(

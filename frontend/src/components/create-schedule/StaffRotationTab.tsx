@@ -154,6 +154,7 @@ const StaffRotationTab: React.FC = () => {
       setStaff(staff.map((s: StaffMember) => (s.id === staffId ? { ...s, is_active: !currentActive } : s)));
     } catch (error) {
       console.error('Failed to update staff:', error);
+      alert(getErrorMessage(error, 'Failed to update staff'));
     }
   };
 
@@ -219,6 +220,7 @@ const StaffRotationTab: React.FC = () => {
       ));
     } catch (error) {
       console.error('Failed to update rotation member:', error);
+      alert(getErrorMessage(error, 'Failed to update rotation member'));
     }
   };
 
@@ -444,11 +446,16 @@ const StaffRotationTab: React.FC = () => {
                     }
                   />
                   <ListItemSecondaryAction>
-                    <Switch
-                      checked={s.is_active}
-                      onChange={() => handleToggleStaffActive(s.id, s.is_active)}
-                      title={s.is_active ? 'Active (can run nets)' : 'Inactive (temporarily disabled)'}
-                    />
+                    <Box sx={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', mr: 1 }}>
+                      <Switch
+                        checked={s.is_active}
+                        onChange={() => handleToggleStaffActive(s.id, s.is_active)}
+                        title={s.is_active ? 'Active (can run nets)' : 'Inactive (temporarily disabled)'}
+                      />
+                      <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1 }}>
+                        {s.is_active ? 'Can run nets' : 'Disabled'}
+                      </Typography>
+                    </Box>
                     <IconButton
                       type="button"
                       edge="end"
@@ -557,11 +564,16 @@ const StaffRotationTab: React.FC = () => {
                     }
                   />
                   <ListItemSecondaryAction>
-                    <Switch
-                      checked={member.is_active}
-                      onChange={() => handleToggleRotationMemberActive(member.id, member.is_active)}
-                      title={member.is_active ? 'Active in rotation' : 'Inactive (skipped)'}
-                    />
+                    <Box sx={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', mr: 1 }}>
+                      <Switch
+                        checked={member.is_active}
+                        onChange={() => handleToggleRotationMemberActive(member.id, member.is_active)}
+                        title={member.is_active ? 'Active in rotation' : 'Inactive (skipped)'}
+                      />
+                      <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1 }}>
+                        {member.is_active ? 'In rotation' : 'Skipped'}
+                      </Typography>
+                    </Box>
                     <IconButton
                       type="button"
                       edge="end"

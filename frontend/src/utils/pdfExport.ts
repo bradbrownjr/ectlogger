@@ -148,8 +148,76 @@ const getCanvasSlice = (
 };
 
 /**
+ * Capture a DOM element to a canvas, forcing light-mode styling on an
+ * off-screen clone (default) so a dark-theme UI still exports print/social
+ * friendly. Shared by exportToPdf and exportElementToPng so there is exactly
+ * one place that knows how to deal with canvas-cloning (Leaflet maps) and
+ * CORS-tainted tiles.
+ */
+const captureElementAsCanvas = async (
+  element: HTMLElement,
+  scale: number,
+  captureMode: 'clone' | 'live' = 'clone'
+): Promise<HTMLCanvasElement> => {
+  let captureElement: HTMLElement = element;
+  let clone: HTMLElement | null = null;
+
+  // Default strategy uses an off-screen clone so we can force light mode
+  // without mutating the on-screen UI.
+  if (captureMode === 'clone') {
+    clone = element.cloneNode(true) as HTMLElement;
+
+    // cloneNode() copies a <canvas> element's attributes but never its
+    // drawn pixel content -- the clone starts blank. Anything rendered to
+    // canvas (e.g. a Leaflet map using preferCanvas for its vector layer)
+    // would otherwise capture as empty. Canvases appear in the same
+    // document order in both trees, so pairing by index is reliable.
+    const originalCanvases = element.querySelectorAll('canvas');
+    const clonedCanvases = clone.querySelectorAll('canvas');
+    originalCanvases.forEach((sourceCanvas, i) => {
+      const targetCanvas = clonedCanvases[i];
+      const ctx = targetCanvas?.getContext('2d');
+      if (ctx) ctx.drawImage(sourceCanvas, 0, 0);
+    });
+
+    clone.style.position = 'absolute';
+    clone.style.left = '-9999px';
+    clone.style.top = '0';
+    clone.style.width = `${element.offsetWidth}px`;
+    clone.style.backgroundColor = '#ffffff';
+    document.body.appendChild(clone);
+
+    // Apply light mode styles to the clone
+    applyLightModeStyles(clone);
+    captureElement = clone;
+  }
+
+  try {
+    // Note: Map tiles may not capture due to CORS restrictions
+    // html2canvas with useCORS and allowTaint helps but isn't guaranteed
+    return await html2canvas(captureElement, {
+      scale,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff',
+      logging: false,
+      // Wait for images to load
+      imageTimeout: 5000,
+      // Capture even problematic cross-origin content
+      foreignObjectRendering: false,
+      // Remove proxies - direct capture
+      removeContainer: true,
+    });
+  } finally {
+    if (clone) {
+      document.body.removeChild(clone);
+    }
+  }
+};
+
+/**
  * Export a DOM element to PDF
- * 
+ *
  * @param element - The DOM element to capture
  * @param options - Export options
  */
@@ -167,143 +235,160 @@ export const exportToPdf = async (
   } = options;
 
   try {
-    let captureElement: HTMLElement = element;
-    let clone: HTMLElement | null = null;
-
-    // Default strategy uses an off-screen clone so we can force light mode
-    // without mutating the on-screen UI.
-    if (captureMode === 'clone') {
-      clone = element.cloneNode(true) as HTMLElement;
-
-      // cloneNode() copies a <canvas> element's attributes but never its
-      // drawn pixel content -- the clone starts blank. Anything rendered to
-      // canvas (e.g. a Leaflet map using preferCanvas for its vector layer)
-      // would otherwise capture as empty. Canvases appear in the same
-      // document order in both trees, so pairing by index is reliable.
-      const originalCanvases = element.querySelectorAll('canvas');
-      const clonedCanvases = clone.querySelectorAll('canvas');
-      originalCanvases.forEach((sourceCanvas, i) => {
-        const targetCanvas = clonedCanvases[i];
-        const ctx = targetCanvas?.getContext('2d');
-        if (ctx) ctx.drawImage(sourceCanvas, 0, 0);
-      });
-
-      clone.style.position = 'absolute';
-      clone.style.left = '-9999px';
-      clone.style.top = '0';
-      clone.style.width = `${element.offsetWidth}px`;
-      clone.style.backgroundColor = '#ffffff';
-      document.body.appendChild(clone);
-
-      // Apply light mode styles to the clone
-      applyLightModeStyles(clone);
-      captureElement = clone;
-    }
-
     // Collect avoid-break element positions (table rows, plus anything a
     // caller opts in with data-pdf-avoid-break, e.g. a map card that would
     // otherwise render as two useless half-images if a page cut landed
     // inside it) so we can cut between them instead of through them.
-    const captureRect = captureElement.getBoundingClientRect();
-    const avoidEls = captureElement.querySelectorAll('tr, [data-pdf-avoid-break]') as NodeListOf<HTMLElement>;
-    // We'll compute scaled positions after we know the scale factor
+    // Measured against the live element -- geometry is identical on the
+    // clone since it's a same-width off-screen copy.
+    const captureRect = element.getBoundingClientRect();
+    const avoidEls = element.querySelectorAll('tr, [data-pdf-avoid-break]') as NodeListOf<HTMLElement>;
     const avoidElsArr = Array.from(avoidEls);
 
-    try {
-      // Create PDF
-      const pdf = new jsPDF({
-        orientation,
-        unit: 'mm',
-        format: 'a4',
-      });
+    // Create PDF
+    const pdf = new jsPDF({
+      orientation,
+      unit: 'mm',
+      format: 'a4',
+    });
 
-      const pageWidth = orientation === 'portrait' ? 210 : 297;
-      const pageHeight = orientation === 'portrait' ? 297 : 210;
-      const contentWidth = pageWidth - (margin * 2);
-      const contentHeight = pageHeight - (margin * 2);
+    const pageWidth = orientation === 'portrait' ? 210 : 297;
+    const pageHeight = orientation === 'portrait' ? 297 : 210;
+    const contentWidth = pageWidth - (margin * 2);
+    const contentHeight = pageHeight - (margin * 2);
 
-      // Capture the cloned element with light mode styles
-      // Note: Map tiles may not capture due to CORS restrictions
-      // html2canvas with useCORS and allowTaint helps but isn't guaranteed
-      const canvas = await html2canvas(captureElement, {
-        scale,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff',
-        logging: false,
-        // Wait for images to load
-        imageTimeout: 5000,
-        // Capture even problematic cross-origin content
-        foreignObjectRendering: false,
-        // Remove proxies - direct capture
-        removeContainer: true,
-      });
+    const canvas = await captureElementAsCanvas(element, scale, captureMode);
 
-      // Build DOM-aware avoid-break ranges in canvas pixels so page cuts
-      // never split a table row in the middle.
-      const avoidRanges: { top: number; bottom: number }[] = avoidElsArr.map(el => {
-        const r = el.getBoundingClientRect();
-        return {
-          top: (r.top - captureRect.top) * scale,
-          bottom: (r.bottom - captureRect.top) * scale,
-        };
-      });
+    // Build DOM-aware avoid-break ranges in canvas pixels so page cuts
+    // never split a table row in the middle.
+    const avoidRanges: { top: number; bottom: number }[] = avoidElsArr.map(el => {
+      const r = el.getBoundingClientRect();
+      return {
+        top: (r.top - captureRect.top) * scale,
+        bottom: (r.bottom - captureRect.top) * scale,
+      };
+    });
 
-      // Calculate dimensions
-      const imgWidthPx = canvas.width;
-      const imgHeightPx = canvas.height;
-      
-      // Calculate how the image will fit on the page (in mm)
-      void contentWidth; // imgWidthMm unused but kept for reference
-      const imgHeightMm = (imgHeightPx * contentWidth) / imgWidthPx;
-      
-      // Calculate page height in pixels (at the scale we captured)
-      const pageHeightPx = (contentHeight / imgHeightMm) * imgHeightPx;
-      
-      // Compute smart cut boundaries that avoid splitting table rows
-      const boundaries = computeSmartBoundaries(imgHeightPx, pageHeightPx, avoidRanges);
+    // Calculate dimensions
+    const imgWidthPx = canvas.width;
+    const imgHeightPx = canvas.height;
 
-      // Generate each page from the smart slice boundaries
-      for (let i = 0; i < boundaries.length - 1; i++) {
-        if (i > 0) {
-          pdf.addPage();
-        }
+    // Calculate how the image will fit on the page (in mm)
+    void contentWidth; // imgWidthMm unused but kept for reference
+    const imgHeightMm = (imgHeightPx * contentWidth) / imgWidthPx;
 
-        const sliceTop = boundaries[i];
-        const sliceHeight = boundaries[i + 1] - sliceTop;
+    // Calculate page height in pixels (at the scale we captured)
+    const pageHeightPx = (contentHeight / imgHeightMm) * imgHeightPx;
 
-        // Extract just this page's portion of the canvas
-        const pageCanvas = getCanvasSlice(canvas, sliceTop, sliceHeight);
-        // Use JPEG (0.85 quality) — dramatically smaller than PNG with minimal
-        // visible quality loss for text/table content (~70-80% size reduction).
-        const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.85);
-        
-        // Calculate the height for this page slice (may be shorter on last page)
-        const sliceHeightMm = (pageCanvas.height / imgHeightPx) * imgHeightMm;
+    // Compute smart cut boundaries that avoid splitting table rows
+    const boundaries = computeSmartBoundaries(imgHeightPx, pageHeightPx, avoidRanges);
 
-        // Add the slice to the PDF at the top margin
-        pdf.addImage(pageImgData, 'JPEG', margin, margin, contentWidth, sliceHeightMm);
+    // Generate each page from the smart slice boundaries
+    for (let i = 0; i < boundaries.length - 1; i++) {
+      if (i > 0) {
+        pdf.addPage();
       }
 
-      // Generate filename
-      let finalFilename = filename;
-      if (addTimestamp) {
-        const timestamp = new Date().toISOString().split('T')[0];
-        finalFilename = `${filename}_${timestamp}`;
-      }
+      const sliceTop = boundaries[i];
+      const sliceHeight = boundaries[i + 1] - sliceTop;
 
-      // Save the PDF
-      pdf.save(`${finalFilename}.pdf`);
-    } finally {
-      // Clean up the clone
-      if (clone) {
-        document.body.removeChild(clone);
-      }
+      // Extract just this page's portion of the canvas
+      const pageCanvas = getCanvasSlice(canvas, sliceTop, sliceHeight);
+      // Use JPEG (0.85 quality) — dramatically smaller than PNG with minimal
+      // visible quality loss for text/table content (~70-80% size reduction).
+      const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.85);
+
+      // Calculate the height for this page slice (may be shorter on last page)
+      const sliceHeightMm = (pageCanvas.height / imgHeightPx) * imgHeightMm;
+
+      // Add the slice to the PDF at the top margin
+      pdf.addImage(pageImgData, 'JPEG', margin, margin, contentWidth, sliceHeightMm);
     }
+
+    // Generate filename
+    let finalFilename = filename;
+    if (addTimestamp) {
+      const timestamp = new Date().toISOString().split('T')[0];
+      finalFilename = `${filename}_${timestamp}`;
+    }
+
+    // Save the PDF
+    pdf.save(`${finalFilename}.pdf`);
   } catch (error) {
     console.error('Failed to export PDF:', error);
     throw error;
   }
+};
+
+export interface PngExportOptions {
+  /** Filename without extension */
+  filename: string;
+  /** Add timestamp to filename */
+  addTimestamp?: boolean;
+  /** Scale factor for better quality (default: 2) */
+  scale?: number;
+  /** DOM capture strategy: clone (default, forces light mode) or live element */
+  captureMode?: 'clone' | 'live';
+}
+
+/**
+ * Export a DOM element to a single PNG image (e.g. a report section for a
+ * social media post) -- same clone/light-mode/canvas-copy capture as
+ * exportToPdf, minus the page-splitting.
+ */
+export const exportToPng = async (
+  element: HTMLElement,
+  options: PngExportOptions
+): Promise<void> => {
+  const {
+    filename,
+    addTimestamp = true,
+    scale = 2,
+    captureMode = 'clone',
+  } = options;
+
+  try {
+    const canvas = await captureElementAsCanvas(element, scale, captureMode);
+
+    let finalFilename = filename;
+    if (addTimestamp) {
+      const timestamp = new Date().toISOString().split('T')[0];
+      finalFilename = `${filename}_${timestamp}`;
+    }
+
+    const blob: Blob | null = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+    if (!blob) {
+      throw new Error('Failed to encode PNG');
+    }
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${finalFilename}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('Failed to export PNG:', error);
+    throw error;
+  }
+};
+
+/**
+ * Export a DOM element by ID to PNG
+ *
+ * @param elementId - The ID of the element to capture
+ * @param options - Export options
+ */
+export const exportElementToPng = async (
+  elementId: string,
+  options: PngExportOptions
+): Promise<void> => {
+  const element = document.getElementById(elementId);
+  if (!element) {
+    throw new Error(`Element with ID "${elementId}" not found`);
+  }
+  return exportToPng(element, options);
 };
 
 /**

@@ -1,6 +1,36 @@
 {
-  "version": "2026.09.01",
+  "version": "2026.09.02",
   "entries": [
+    {
+      "version": "2026.09.02",
+      "date": "2026-09-02",
+      "sections": [
+        {
+          "title": "New Features",
+          "type": "feature",
+          "items": [
+            {
+              "text": "Net Report: Download PNG images — the check-in graphs, map, and check-in list can each be downloaded as their own PNG image, ready to attach to a social media post.",
+              "userImpact": true
+            }
+          ]
+        },
+        {
+          "title": "Bug Fixes",
+          "type": "bugfix",
+          "items": [
+            {
+              "text": "Net Roles: Backup NCS no longer piles on — checking in as an eligible rotation member or co-manager while someone else was already running the net could silently give you NCS access too, even though you were just there as a participant. Becoming NCS now always requires an explicit choice, and the net's report correctly credits whoever actually ran it.",
+              "userImpact": true
+            },
+            {
+              "text": "Schedule: Staff and rotation switches — the on/off switch next to each operator in a schedule's NCS Rotation list didn't actually do anything when clicked. Toggling it now works, and both the staff and rotation switches show what they control instead of relying on a hover tooltip.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.09.01",
       "date": "2026-09-01",

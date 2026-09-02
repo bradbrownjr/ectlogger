@@ -4,6 +4,19 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# September 2, 2026
+
+## New Features
+
+* **Net Report: Download PNG images** — The check-in graphs, map, and check-in list can each be downloaded as their own PNG image, ready to attach to a social media post.
+
+## Bug Fixes
+
+* **Net Roles: Backup NCS no longer piles on** — Checking in as an eligible rotation member or co-manager while someone else was already running the net could silently give you NCS access too, even though you were just there as a participant. Becoming NCS now always requires an explicit choice, and the net's report correctly credits whoever actually ran it.
+* **Schedule: Staff and rotation switches** — The on/off switch next to each operator in a schedule's NCS Rotation list didn't actually do anything when clicked. Toggling it now works, and both the staff and rotation switches show what they control instead of relying on a hover tooltip.
+
+---
+
 # September 1, 2026
 
 ## Bug Fixes

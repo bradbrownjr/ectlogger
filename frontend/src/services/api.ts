@@ -240,8 +240,8 @@ export const ncsRotationApi = {
     api.delete(`/templates/${templateId}/ncs-rotation/members`),
   reorderMembers: (templateId: number, memberIds: number[]) => 
     api.put(`/templates/${templateId}/ncs-rotation/members/reorder`, { member_ids: memberIds }),
-  updateMember: (templateId: number, memberId: number, data: { is_active?: boolean; position?: number }) =>
-    api.put(`/templates/${templateId}/ncs-rotation/members/${memberId}`, data),
+  updateMember: (templateId: number, memberId: number, data: { is_active?: boolean }) =>
+    api.patch(`/templates/${templateId}/ncs-rotation/members/${memberId}`, data),
   
   // Schedule
   getSchedule: (templateId: number, weeks?: number) => 

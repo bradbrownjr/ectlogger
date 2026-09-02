@@ -764,6 +764,8 @@ Generate a comprehensive multi-page PDF report for closed or archived nets:
 
 The PDF is ideal for after-action reports, club records, or emergency management documentation.
 
+**Downloading a section as a PNG image** — The Statistics Summary charts, the Check-in Map, and the Check-in Log each have a small download icon next to their heading. Click it to save just that section as a PNG image, ready to attach to a Facebook post or other social media without pulling in the whole report.
+
 ### Sharing a Net With Someone Who Doesn't Have an Account
 
 A net's view page and its Report page both work for someone who isn't signed in — copy the
