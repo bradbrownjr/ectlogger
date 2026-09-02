@@ -167,12 +167,25 @@ async def create_check_in(
     root_check_in = next((ci for ci in existing_check_ins if ci.parent_check_in_id is None), None)
     is_recheck = root_check_in is not None
 
-    # A recheck is only meaningful once the station has checked out — that's
-    # the only way to leave a "current" row that isn't CHECKED_OUT. If the
-    # station's latest row is still active, this is a duplicate check-in
-    # attempt (self or NCS/logger re-adding someone already logged in), not
-    # a recheck, so reject it instead of creating a second live row.
-    if existing_check_ins and existing_check_ins[-1].status != StationStatus.CHECKED_OUT:
+    # A recheck is meaningful in two cases: the station has checked out and is
+    # rechecking in later, or the station is still checked in but is now being
+    # logged on a different frequency — e.g. a coverage check on the repeater
+    # followed by a simplex net, where NCS needs a timestamped record that the
+    # station was also reached on the second frequency. Otherwise this is a
+    # duplicate check-in attempt (self or NCS/logger re-adding someone already
+    # logged in on the same frequency), so reject it instead of creating a
+    # second live row.
+    latest_check_in = existing_check_ins[-1] if existing_check_ins else None
+    frequency_changed = (
+        latest_check_in is not None
+        and check_in_data.frequency_id is not None
+        and check_in_data.frequency_id != latest_check_in.frequency_id
+    )
+    if (
+        latest_check_in
+        and latest_check_in.status != StationStatus.CHECKED_OUT
+        and not frequency_changed
+    ):
         raise HTTPException(
             status_code=400,
             detail=f"{check_in_data.callsign} is already checked in"

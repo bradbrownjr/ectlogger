@@ -4,6 +4,14 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# September 1, 2026
+
+## Bug Fixes
+
+* **Check-in: Recheck on a different frequency** — NCS could not log a station that was already checked in again on a different frequency (for example, a repeater check followed by a simplex check) without checking them out first; it was rejected as a duplicate check-in with no way to record it. It's now logged as its own timestamped row under the same station, so there's a clear record of exactly when each frequency was confirmed.
+
+---
+
 # August 30, 2026
 
 ## Improvements

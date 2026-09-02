@@ -106,6 +106,60 @@ async def test_recheck_creates_child_row_not_duplicate(client, owner):
 
 
 @pytest.mark.asyncio
+async def test_recheck_on_different_frequency_allowed_while_still_checked_in(client, db, owner):
+    """Coverage-check nets run a repeater pass then a simplex pass on the
+    same net. A station still checked in on the repeater frequency must be
+    loggable again on the simplex frequency without checking out first —
+    that's a legitimate recheck (new linked row), not a duplicate."""
+    from app.models import Frequency, net_frequencies
+
+    net_id = await _active_net(client, owner)
+
+    repeater = Frequency(frequency="147.540", mode="FM", description="Repeater")
+    simplex = Frequency(frequency="147.345", mode="FM", description="Simplex")
+    db.add_all([repeater, simplex])
+    await db.flush()
+    await db.execute(net_frequencies.insert().values(net_id=net_id, frequency_id=repeater.id))
+    await db.execute(net_frequencies.insert().values(net_id=net_id, frequency_id=simplex.id))
+    await db.commit()
+
+    first = await client.post(
+        f"/api/check-ins/nets/{net_id}/check-ins",
+        json={"callsign": _CALLSIGN, "frequency_id": repeater.id},
+        headers=auth_headers(owner),
+    )
+    assert first.status_code == 201
+    root_id = first.json()["id"]
+
+    # Same station, same frequency, still checked in -> still a real duplicate.
+    dup = await client.post(
+        f"/api/check-ins/nets/{net_id}/check-ins",
+        json={"callsign": _CALLSIGN, "frequency_id": repeater.id},
+        headers=auth_headers(owner),
+    )
+    assert dup.status_code == 400
+
+    # Same station, different frequency, still checked in -> allowed as a recheck.
+    second = await client.post(
+        f"/api/check-ins/nets/{net_id}/check-ins",
+        json={"callsign": _CALLSIGN, "frequency_id": simplex.id},
+        headers=auth_headers(owner),
+    )
+    assert second.status_code == 201
+    data = second.json()
+    assert data["is_recheck"] is True
+    assert data["parent_check_in_id"] == root_id
+    assert data["frequency_id"] == simplex.id
+
+    listing = await client.get(
+        f"/api/check-ins/nets/{net_id}/check-ins",
+        headers=auth_headers(owner),
+    )
+    all_callsigns = [c["callsign"] for c in listing.json()]
+    assert all_callsigns.count(_CALLSIGN) == 2
+
+
+@pytest.mark.asyncio
 async def test_cannot_check_in_to_draft_net(client, owner):
     create = await client.post(
         "/api/nets/",
