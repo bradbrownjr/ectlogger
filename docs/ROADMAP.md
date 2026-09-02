@@ -397,6 +397,19 @@ This is separate from the standalone desktop client above. Both are back-burner 
 
 Its offline command queuing and replay overlaps directly with the Offline-Capable Web Client above. Design the queue semantics and the conflict rule once and share them across both clients — solving the same problem twice invites two different answers to "what happens when two operators logged the same callsign offline."
 
+### SSH-Hosted TUI
+
+**✨ Server-hosted terminal UI reachable over SSH** *(KC1JMH — idea capture)*  
+**Model:** Opus (lands in the auth path and stands up a new internet-facing network service; both are squarely in the Opus tier per the model guidance above).
+
+Full concept notes: [`docs/concepts/SSH-HOSTED-TUI.md`](concepts/SSH-HOSTED-TUI.md)
+
+Summary: an operator runs `ssh ectlogger.us`, authenticates against the existing user database, and gets a Textual TUI for checking into and running nets. Nothing is installed on their machine — the app runs on our server, one forked PTY per SSH session. Auth is password plus TOTP first (registered SSH public keys later), reusing `POST /auth/login` verbatim so the existing lockout, rate limiting, and Fail2Ban jail all apply unchanged.
+
+**Not the same thing as the TUI/Packet Client above, despite both being terminal UIs.** That one is installed on the operator's machine and targets packet radio and ~1200 baud links; this one is hosted by us and needs a working IP link end to end, so it does nothing for the degraded-connectivity scenario. Different transport, different auth model, no offline queue. The packet client's API-key decision does not carry over. Do not merge the two documents.
+
+Prerequisite worth knowing before scoping: only one of the 68 users in the current database has a password set, since everyone else logs in by magic link — which has no meaning without a browser. Any milestone that ships SSH access needs a companion push to get operators to set passwords, or it ships to an audience of one.
+
 ### Self-Hosting Enhancements
 
 **✨ Docker image for self-hosters**  

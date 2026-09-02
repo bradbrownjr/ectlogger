@@ -4,6 +4,19 @@ Last updated: 2026-06-08
 
 This document is a structured draft spec for a terminal-first ECTLogger client designed for low-bandwidth and degraded-link operations.
 
+> **Not the only terminal concept in this repo.** A separate idea, the server-hosted
+> SSH TUI ([`SSH-HOSTED-TUI.md`](SSH-HOSTED-TUI.md)), also puts ECTLogger in a
+> terminal, but it is a different product: it runs on our server, the operator
+> installs nothing, and it requires a working IP link end to end. This document's
+> client is installed on the operator's machine and targets packet radio and
+> intermittent links down to ~1200 baud.
+>
+> The two share no transport, no auth model, and no offline queue. In particular,
+> Decision A in section 13 (API keys as the primary auth model) is a consequence of
+> *this* document's low-bandwidth, unattended assumptions and **does not apply** to
+> the SSH-hosted concept, which uses password plus TOTP against the existing login
+> endpoint. Do not copy decisions between the two without re-deriving them.
+
 ## 1. Problem Statement
 
 Web UI workflows assume stable browser access and sufficient bandwidth. Emergency comms operations may require:
