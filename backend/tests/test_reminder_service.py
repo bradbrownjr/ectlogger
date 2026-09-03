@@ -220,21 +220,26 @@ async def test_staff_reminder_includes_duty_ncs_name(db, owner):
     roles = (await db.execute(select(NetRole).where(NetRole.net_id == net_id))).scalars().all()
     assert any(r.role == "NCS" for r in roles), "duty NCS was not assigned"
 
-    # Query the duty NCS using the same pattern as _check_and_send_staff_reminders
+    # Resolve the duty NCS through the SAME helper the reminder service uses
+    # (app.utils.format_ncs_attribution). This test used to re-implement the
+    # query inline with `assigned_at DESC LIMIT 1`, which meant it passed no
+    # matter what the service actually did -- it was asserting against a copy.
+    # That is precisely how the 2026-09-03 misattribution survived a green
+    # suite. Assert against the shared rule instead.
+    from app.utils import format_ncs_attribution
+
     ncs_result = await db.execute(
         select(User.callsign, User.name)
         .join(NetRole, NetRole.user_id == User.id)
         .where(NetRole.net_id == net_id)
         .where(NetRole.role == "NCS")
-        .order_by(NetRole.assigned_at.desc())
-        .limit(1)
+        .where(NetRole.is_active == True)  # noqa: E712
+        .order_by(NetRole.assigned_at.asc())
     )
-    ncs_row = ncs_result.first()
+    ncs_callsign, ncs_name = format_ncs_attribution(ncs_result.all())
 
-    # Verify the query found the owner
-    assert ncs_row is not None
-    assert ncs_row[0] == owner.callsign
-    assert ncs_row[1] == owner.name
+    assert ncs_callsign == owner.callsign
+    assert ncs_name == owner.name
 
 
 @pytest.mark.parametrize(
