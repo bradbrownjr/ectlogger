@@ -415,6 +415,9 @@ For a multi-phase roadmap feature (the kind with its own "Design questions to re
   `NODE_OPTIONS=--max-old-space-size=1024` and always verify `dist/index.html` exists
   afterward. If a build is ever killed, **re-run it immediately** — the site is down until
   one completes. Never walk away from a production build without checking its last lines.
+  Adding swap to the host is tracked as Milestone 0.8 in [`docs/ROADMAP.md`](../docs/ROADMAP.md)
+  — it needs an interactive sudo password, so it is Brad's task, not the agent's. Once swap
+  is live, keep the heap cap and the post-build check anyway.
 
 ### Beta (ectbeta.lynwood.us)
 - **Host**: `10.6.26.3` (`bradb@10.6.26.3`) — **NOT an SSH target.** This is the

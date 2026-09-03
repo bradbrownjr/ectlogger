@@ -38,6 +38,60 @@ Rule of thumb: Haiku and Sonnet can only maintain this codebase safely once file
 
 ***Milestone 0 is complete as of 2026-07-29.** Every section has shipped and been pruned. Section numbers are not reused, so commit messages and docs referencing "Milestone 0.4" or "Milestone 0.7" still resolve against the changelog. New codebase-health work should open a new section here rather than reopening a pruned one.*
 
+### 0.8 — Add swap to the production host *(operator task — needs root)*
+
+**⚠️ Manual task for Brad.** Not a code change and not something the agent can do: the
+deploy account's passwordless sudo covers only the `ectlogger` service, so these need an
+interactive sudo password.
+
+**Why:** on 2026-09-03 a routine `npm run build` on production was OOM-killed partway
+through. Vite empties `frontend/dist/` before it writes anything, so the kill left the site
+with **no `index.html` at all** — a full outage (Caddy's `try_files {path} /index.html` had
+nothing to serve) whose only symptom was the single word `Killed` at the end of otherwise
+normal build output. The API stayed up; the web app did not. Recovery was a rebuild, about
+three minutes.
+
+The host is **1880 MB with no swap**, and the frontend is a single ~2.9 MB chunk that keeps
+growing. The immediate mitigation is already in place and documented in
+`.github/copilot-instructions.md`: builds now run with
+`NODE_OPTIONS=--max-old-space-size=1024` plus a mandatory post-build check that
+`dist/index.html` exists. That narrows the window but doesn't remove it — the bundle will
+eventually outgrow the cap.
+
+**Before running:** take a snapshot/backup of the VPS first. These commands write a 2 GB
+file to `/` (79 GB total, 63 GB free as of 2026-09-03) and edit `/etc/fstab` and
+`/etc/sysctl.conf`. A bad `/etc/fstab` line can prevent the host from booting cleanly, so
+have a way back.
+
+```bash
+ssh ectlogger@app.ectlogger.us
+
+sudo fallocate -l 2G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+
+# Persist across reboots
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+
+# Only fall back to swap under real pressure (default 60 is too eager for a server)
+sudo sysctl -w vm.swappiness=10
+echo 'vm.swappiness=10' | sudo tee -a /etc/sysctl.conf
+
+# Verify
+swapon --show
+free -m
+```
+
+**Verify `/etc/fstab` before rebooting:** `sudo findmnt --verify --verbose` should report no
+errors. Once swap is live, an unbounded build should no longer be able to take the site
+down, though the heap cap and post-build check are worth keeping either way.
+
+**Follow-up worth considering separately:** the 2.9 MB single chunk is the underlying cause.
+Code-splitting it (`manualChunks` / dynamic imports) would cut build memory *and* speed up
+first load for users. That's a real refactor with its own regression risk, so it belongs on
+its own rather than bundled into this.
+
 ---
 
 ## Milestone 1 — Medium-term
