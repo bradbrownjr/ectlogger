@@ -25,6 +25,16 @@ const VerifyMagicLink: React.FC = () => {
       return;
     }
 
+    // Already have a valid session in this browser -- clicking a stale/bookmarked
+    // magic link shouldn't re-run login (and, for an admin, shouldn't surface an
+    // MFA prompt that the still-live Navbar menu makes trivially skippable). Magic
+    // links are meant to sign in a *different* browser/session; if this one is
+    // already authenticated, just go where they were headed.
+    if (isAuthenticated) {
+      navigate(redirect || '/dashboard');
+      return;
+    }
+
     try {
       const response = await authApi.verifyMagicLink(token, code);
       const { login_status, access_token } = response.data;
