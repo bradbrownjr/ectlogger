@@ -389,7 +389,13 @@ For a multi-phase roadmap feature (the kind with its own "Design questions to re
   ssh ectlogger@app.ectlogger.us "cd ~/ectlogger && git pull origin main"
   
   # 2. Build frontend (REQUIRED after any frontend change — git pull alone is not enough)
-  ssh ectlogger@app.ectlogger.us "cd ~/ectlogger/frontend && npm run build"
+  #    Cap the Node heap: production is a 1.8 GB VPS with NO swap, and an
+  #    unbounded build gets OOM-killed partway through (see the warning below).
+  ssh ectlogger@app.ectlogger.us "cd ~/ectlogger/frontend && NODE_OPTIONS=--max-old-space-size=1024 npm run build"
+
+  # 2b. ALWAYS confirm the build actually produced a page — a killed build is
+  #     silent apart from the word "Killed" in the log.
+  ssh ectlogger@app.ectlogger.us "ls ~/ectlogger/frontend/dist/index.html ~/ectlogger/frontend/dist/assets/"
   
   # 3. Restart backend (for backend changes and migrations)
   ssh ectlogger@app.ectlogger.us "sudo -n /usr/bin/systemctl restart ectlogger"
@@ -400,6 +406,15 @@ For a multi-phase roadmap feature (the kind with its own "Design questions to re
   ssh ectlogger@app.ectlogger.us "cd ~/ectlogger && git log --oneline -3"
   ```
 - **Deploy verification**: after every deploy, confirm prod git log matches local with `ssh ectlogger@app.ectlogger.us "cd ~/ectlogger && git log --oneline -3"`.
+- **A killed frontend build takes the whole site down (happened 2026-09-03).** Production
+  has 1880 MB RAM and **no swap**, and the bundle is ~2.9 MB unminified-chunk sized, so
+  `npm run build` can be OOM-killed during "rendering chunks". Vite **empties `dist/`
+  before it writes anything**, so a killed build leaves `dist/` with no `index.html` at
+  all and Caddy serves nothing — a full outage, from a command whose only symptom was the
+  single word `Killed` at the end of otherwise-normal build output. Always build with
+  `NODE_OPTIONS=--max-old-space-size=1024` and always verify `dist/index.html` exists
+  afterward. If a build is ever killed, **re-run it immediately** — the site is down until
+  one completes. Never walk away from a production build without checking its last lines.
 
 ### Beta (ectbeta.lynwood.us)
 - **Host**: `10.6.26.3` (`bradb@10.6.26.3`) — **NOT an SSH target.** This is the
