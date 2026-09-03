@@ -1017,7 +1017,10 @@ const NetReport: React.FC = () => {
         </Grid>
 
         {/* Charts Row — all three charts fit one row */}
-        <Grid id="net-report-charts" container spacing={3} sx={{ mb: 3 }}>
+        {/* Pinned to the same export width as the map: stacked full-bleed at
+            the report's own width leaves the pie stranded in a very wide box,
+            and both sections should post at a consistent size. */}
+        <Grid id="net-report-charts" container spacing={3} sx={{ mb: 3, ...(isChartPngExport && { width: PNG_EXPORT_WIDTH_PX, mb: 0 }) }}>
           {/* Status Breakdown Pie Chart */}
           {statusData.length > 0 && (
             <Grid item xs={12} md={isChartPngExport ? 12 : chartMd}>
