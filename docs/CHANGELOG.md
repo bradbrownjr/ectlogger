@@ -12,7 +12,9 @@ All notable changes to ECTLogger are documented here.
 
 ## Bug Fixes
 
-* **Net Roles: Backup NCS no longer piles on** — Checking in as an eligible rotation member or co-manager while someone else was already running the net could silently give you NCS access too, even though you were just there as a participant. Becoming NCS now always requires an explicit choice, and the net's report correctly credits whoever actually ran it.
+* **Net Roles: Backup NCS no longer piles on** — Checking in as an eligible rotation member or co-manager while someone else was already running the net could silently give you NCS access too, even though you were just there as a participant. Becoming NCS now always requires an explicit choice.
+* **Net Report: The right net control operator is credited** — Nets that had more than one person holding net control credited the wrong one everywhere they appeared: the net card, the report, and the ICS-309 export all named whoever was added most recently rather than whoever actually ran the net, and an operator who had stepped back down to participant was still listed. Each net now credits its actual net control operator, and stepping down removes you from the listing.
+* **Net Report: Multi-operator nets list everyone** — Nets run from several positions at once, like a SKYWARN activation with a desk per region, only ever showed one operator's callsign. All of the net's active net control operators are now listed together.
 * **Schedule: Staff and rotation switches** — The on/off switch next to each operator in a schedule's NCS Rotation list didn't actually do anything when clicked. Toggling it now works, and both the staff and rotation switches show what they control instead of relying on a hover tooltip.
 
 ---

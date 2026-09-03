@@ -1,8 +1,8 @@
 {
-  "version": "2026.09.02",
+  "version": "2026.09.02b",
   "entries": [
     {
-      "version": "2026.09.02",
+      "version": "2026.09.02b",
       "date": "2026-09-02",
       "sections": [
         {
@@ -20,7 +20,15 @@
           "type": "bugfix",
           "items": [
             {
-              "text": "Net Roles: Backup NCS no longer piles on — checking in as an eligible rotation member or co-manager while someone else was already running the net could silently give you NCS access too, even though you were just there as a participant. Becoming NCS now always requires an explicit choice, and the net's report correctly credits whoever actually ran it.",
+              "text": "Net Roles: Backup NCS no longer piles on — checking in as an eligible rotation member or co-manager while someone else was already running the net could silently give you NCS access too, even though you were just there as a participant. Becoming NCS now always requires an explicit choice.",
+              "userImpact": true
+            },
+            {
+              "text": "Net Report: The right net control operator is credited — nets that had more than one person holding net control credited the wrong one everywhere they appeared: the net card, the report, and the ICS-309 export all named whoever was added most recently rather than whoever actually ran the net, and an operator who had stepped back down to participant was still listed. Each net now credits its actual net control operator, and stepping down removes you from the listing.",
+              "userImpact": true
+            },
+            {
+              "text": "Net Report: Multi-operator nets list everyone — nets run from several positions at once, like a SKYWARN activation with a desk per region, only ever showed one operator's callsign. All of the net's active net control operators are now listed together.",
               "userImpact": true
             },
             {
