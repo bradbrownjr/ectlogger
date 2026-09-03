@@ -4,6 +4,14 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# September 3, 2026
+
+## Improvements
+
+* **Net Report: One-click PNG export** — A new Export PNG button downloads the graphs, map and check-in list together, and the images are now shaped for a social post: the graphs stack, the map is 4:3, and the expand arrows no longer appear in the picture.
+
+---
+
 # September 2, 2026
 
 ## New Features

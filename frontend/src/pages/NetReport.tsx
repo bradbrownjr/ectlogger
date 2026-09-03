@@ -175,15 +175,14 @@ const PNG_EXPORT_WIDTH_PX = 960;
 // natural height and the map pane absorbs whatever is left, so the ratio holds
 // regardless of how tall the text wraps.
 const PNG_EXPORT_MAP_ASPECT = '4 / 3';
-// Dual-map nets stack their two panes, so the block is portrait. 2:3 (1:1.5)
-// stays inside a 16:10 cap (1:1.6) while leaving each pane close to 4:3.
-const PNG_EXPORT_DUAL_MAP_ASPECT = '2 / 3';
-// Overrides MUI Grid's md={6} basis so a stacked pane spans the full width and
-// shares the leftover height evenly with its sibling.
-const PNG_EXPORT_MAP_PANE_SX = { flex: 1, minHeight: 0, maxWidth: '100%', flexBasis: 'auto' } as const;
-// The pane's card has to become a flex column too, or the map inside it has no
-// height to fill.
-const PNG_EXPORT_MAP_PAPER_SX = { height: '100%', display: 'flex', flexDirection: 'column' } as const;
+// Dual-map nets stack their two panes, and are sized by giving each pane a
+// fixed height rather than by pinning the block's aspect ratio. The flex
+// approach above cannot reach through the panes: they are MUI Grid items, whose
+// own `MuiGrid-grid-xs-*` class sets `flex-basis: 100%; flex-grow: 0` and wins
+// over an `sx` override, which collapsed both panes to 16px. Two 600px panes
+// plus the headings and legend land near 960x1380 (1:1.44), inside the 16:10
+// (1:1.6) cap with ~150px of slack for a net name long enough to wrap.
+const PNG_EXPORT_DUAL_PANE_HEIGHT_PX = 600;
 
 // Coverage line colors - matches the live overlay in CheckInMap.tsx (kept as
 // a local copy rather than a cross-import; this file already duplicates the
@@ -1146,6 +1145,15 @@ const NetReport: React.FC = () => {
 
         {/* ========== SECTION 3: CHECK-IN MAP (if locations available) ========== */}
         {mappedCheckIns.length > 0 && (
+          <Box sx={{ position: 'relative' }}>
+          {/* Progress sits OUTSIDE #net-report-map: the map's heading row is
+              inside the captured element, so a spinner in that row lands in the
+              exported PNG. The chart and log sections keep theirs inline
+              because their heading rows are siblings of the captured element,
+              not part of it. */}
+          {isMapPngExport && (
+            <CircularProgress size={18} sx={{ position: 'absolute', top: 30, right: 0, zIndex: 2 }} />
+          )}
           <Box
             id="net-report-map"
             // Pinned to a fixed width and aspect ratio only while being
@@ -1153,9 +1161,16 @@ const NetReport: React.FC = () => {
             // legend keep their natural height and the map pane takes the rest.
             sx={isMapPngExport ? {
               width: PNG_EXPORT_WIDTH_PX,
-              aspectRatio: dualMapData ? PNG_EXPORT_DUAL_MAP_ASPECT : PNG_EXPORT_MAP_ASPECT,
-              display: 'flex',
-              flexDirection: 'column',
+              // Single map only: flex column + a pinned ratio lets the map pane
+              // absorb whatever the heading and legend don't use, so the block
+              // is exactly 4:3 however the text wraps. The dual layout can't do
+              // this (see PNG_EXPORT_DUAL_PANE_HEIGHT_PX) and sizes its panes
+              // directly instead.
+              ...(dualMapData ? {} : {
+                aspectRatio: PNG_EXPORT_MAP_ASPECT,
+                display: 'flex',
+                flexDirection: 'column',
+              }),
             } : undefined}
           >
             <Box sx={{ mt: 3, mb: 2, display: 'flex', alignItems: 'center', gap: 1, ...(isMapPngExport && { mt: 0, flexShrink: 0 }) }}>
@@ -1164,7 +1179,11 @@ const NetReport: React.FC = () => {
               </Typography>
               {dualMapData && (
                 <Typography variant="caption" color="text.secondary">
-                  — split view: cluster detail (left) and full overview (right)
+                  {/* The panes stack for the PNG export, so "left/right" would
+                      be wrong in the exported image. */}
+                  {isMapPngExport
+                    ? '— split view: cluster detail (top) and full overview (bottom)'
+                    : '— split view: cluster detail (left) and full overview (right)'}
                 </Typography>
               )}
               {!exporting && !pngExportingId && (
@@ -1184,7 +1203,6 @@ const NetReport: React.FC = () => {
                   </IconButton>
                 </Tooltip>
               )}
-              {pngExportingId === 'net-report-map' && <CircularProgress size={18} sx={{ ml: 'auto' }} />}
             </Box>
 
             {/* ---- Helper: shared marker list for a given MapContainer ---- */}
@@ -1192,16 +1210,16 @@ const NetReport: React.FC = () => {
 
             {dualMapData ? (
               // ---- DUAL MAP: cluster detail + full overview side-by-side ----
-              <Grid container spacing={2} sx={{ mb: 3, ...(isMapPngExport && { mb: 0, flex: 1, minHeight: 0, flexDirection: 'column', flexWrap: 'nowrap' }) }}>
+              <Grid container spacing={2} sx={{ mb: 3, ...(isMapPngExport && { mb: 0 }) }}>
                 {/* Left: cluster zoom (stacked on top during a PNG export) */}
-                <Grid item xs={12} md={isMapPngExport ? 12 : 6} sx={isMapPngExport ? PNG_EXPORT_MAP_PANE_SX : undefined}>
-                  <Paper variant="outlined" sx={{ overflow: 'hidden', ...(isMapPngExport && PNG_EXPORT_MAP_PAPER_SX) }}>
-                    <Box sx={{ p: 1, borderBottom: `1px solid ${theme.palette.divider}`, ...(isMapPngExport && { flexShrink: 0 }) }}>
+                <Grid item xs={12} md={isMapPngExport ? 12 : 6}>
+                  <Paper variant="outlined" sx={{ overflow: 'hidden' }}>
+                    <Box sx={{ p: 1, borderBottom: `1px solid ${theme.palette.divider}` }}>
                       <Typography variant="caption" fontWeight="medium">
                         📍 Cluster Detail ({dualMapData.clusterPositions.length} stations)
                       </Typography>
                     </Box>
-                    <Box sx={{ position: 'relative', width: '100%', ...(isMapPngExport ? { flex: 1, minHeight: 0 } : { height: 320 }) }}>
+                    <Box sx={{ position: 'relative', width: '100%', height: isMapPngExport ? PNG_EXPORT_DUAL_PANE_HEIGHT_PX : 320 }}>
                       {!mapTilesReady && (
                         <Box sx={{ position: 'absolute', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, backgroundColor: 'background.paper' }}>
                           <CircularProgress size={16} />
@@ -1242,14 +1260,14 @@ const NetReport: React.FC = () => {
                 </Grid>
 
                 {/* Right: full overview (stacked underneath during a PNG export) */}
-                <Grid item xs={12} md={isMapPngExport ? 12 : 6} sx={isMapPngExport ? PNG_EXPORT_MAP_PANE_SX : undefined}>
-                  <Paper variant="outlined" sx={{ overflow: 'hidden', ...(isMapPngExport && PNG_EXPORT_MAP_PAPER_SX) }}>
-                    <Box sx={{ p: 1, borderBottom: `1px solid ${theme.palette.divider}`, ...(isMapPngExport && { flexShrink: 0 }) }}>
+                <Grid item xs={12} md={isMapPngExport ? 12 : 6}>
+                  <Paper variant="outlined" sx={{ overflow: 'hidden' }}>
+                    <Box sx={{ p: 1, borderBottom: `1px solid ${theme.palette.divider}` }}>
                       <Typography variant="caption" fontWeight="medium">
                         🌐 Full Overview ({dualMapData.allPositions.length} stations)
                       </Typography>
                     </Box>
-                    <Box sx={{ position: 'relative', width: '100%', ...(isMapPngExport ? { flex: 1, minHeight: 0 } : { height: 320 }) }}>
+                    <Box sx={{ position: 'relative', width: '100%', height: isMapPngExport ? PNG_EXPORT_DUAL_PANE_HEIGHT_PX : 320 }}>
                       {!mapTilesReady && (
                         <Box sx={{ position: 'absolute', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, backgroundColor: 'background.paper' }}>
                           <CircularProgress size={16} />
@@ -1290,7 +1308,7 @@ const NetReport: React.FC = () => {
                 </Grid>
 
                 {/* Shared legend below both maps */}
-                <Grid item xs={12} sx={isMapPngExport ? { flexShrink: 0 } : undefined}>
+                <Grid item xs={12}>
                   <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                       <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: theme.palette.success.main }} />
@@ -1367,6 +1385,7 @@ const NetReport: React.FC = () => {
                 </Box>
               </Paper>
             )}
+          </Box>
           </Box>
         )}
         {mapLoading && (

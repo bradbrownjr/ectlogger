@@ -1,6 +1,22 @@
 {
-  "version": "2026.09.02b",
+  "version": "2026.09.03",
   "entries": [
+    {
+      "version": "2026.09.03",
+      "date": "2026-09-03",
+      "sections": [
+        {
+          "title": "Improvements",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Net Report: One-click PNG export — a new Export PNG button downloads the graphs, map and check-in list together, and the images are now shaped for a social post: the graphs stack, the map is 4:3, and the expand arrows no longer appear in the picture.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.09.02b",
       "date": "2026-09-02",
