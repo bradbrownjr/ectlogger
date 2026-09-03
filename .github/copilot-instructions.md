@@ -394,8 +394,9 @@ For a multi-phase roadmap feature (the kind with its own "Design questions to re
   ssh ectlogger@app.ectlogger.us "cd ~/ectlogger/frontend && NODE_OPTIONS=--max-old-space-size=1024 npm run build"
 
   # 2b. ALWAYS confirm the build actually produced a page — a killed build is
-  #     silent apart from the word "Killed" in the log.
-  ssh ectlogger@app.ectlogger.us "ls ~/ectlogger/frontend/dist/index.html ~/ectlogger/frontend/dist/assets/"
+  #     silent apart from the word "Killed" in the log. Check version.json too:
+  #     it is written last, so it is the first thing a late kill loses.
+  ssh ectlogger@app.ectlogger.us "ls ~/ectlogger/frontend/dist/index.html ~/ectlogger/frontend/dist/assets/ && cat ~/ectlogger/frontend/dist/version.json"
   
   # 3. Restart backend (for backend changes and migrations)
   ssh ectlogger@app.ectlogger.us "sudo -n /usr/bin/systemctl restart ectlogger"
@@ -418,6 +419,19 @@ For a multi-phase roadmap feature (the kind with its own "Design questions to re
   Adding swap to the host is tracked as Milestone 0.8 in [`docs/ROADMAP.md`](../docs/ROADMAP.md)
   — it needs an interactive sudo password, so it is Brad's task, not the agent's. Once swap
   is live, keep the heap cap and the post-build check anyway.
+- **A build can also be killed LATE, which looks like success (happened 2026-09-03, second
+  incident the same day).** `vite.config.ts` now sets `build.reportCompressedSize: false`
+  because the gzip-size report was the build's peak-memory moment and got killed even at
+  `--max-old-space-size=1024`. **Never turn that back on.** The lesson is the failure
+  shape, not the setting: the kill landed *after* every chunk was written, so `dist/` had
+  `index.html`, correct assets, a correct on-disk size, and the site served **200** — but
+  `writeVersionFile`'s `closeBundle` hook runs after the size report, so `dist/version.json`
+  was never written. Caddy's `try_files {path} /index.html` then answered `/version.json`
+  with **index.html at HTTP 200**, so update detection was silently dead for every open tab
+  while every check short of reading the body passed. When verifying a deploy, check
+  `version.json`'s **content**, not its status code:
+  `curl -s https://app.ectlogger.us/version.json` must print `{"buildId":"<prod HEAD>"}`,
+  not HTML. A 200 from an SPA-fallback host proves nothing about whether a file exists.
 
 ### Beta (ectbeta.lynwood.us)
 - **Host**: `10.6.26.3` (`bradb@10.6.26.3`) — **NOT an SSH target.** This is the
