@@ -13,6 +13,7 @@ import pytest
 from sqlalchemy import select
 
 from app.models import Frequency, NetRole, NetTemplate, NCSRotationMember, net_template_frequencies
+from app.permissions import is_eligible_for_ncs_auto_grant
 from tests.conftest import auth_headers
 
 
@@ -109,3 +110,34 @@ async def test_rotation_member_still_auto_granted_ncs_when_no_active_ncs_yet(cli
     )
     ncs_user_ids = {r.user_id for r in roles.scalars().all()}
     assert other_id in ncs_user_ids
+
+
+@pytest.mark.asyncio
+async def test_gate_tolerates_multiple_existing_active_ncs_rows(db, owner, other, admin):
+    """Production data (e.g. net 79) can already hold more than one active
+    NCS NetRole on the same net -- co-NCS/backup arrangements predate this
+    gate. The gate's own "is anyone already NCS" existence check must not
+    assume at most one row: `scalar_one_or_none()` raises MultipleResultsFound
+    in that case, which took down GET /nets/{id} (net report/net view) for
+    every net with 2+ active NCS rows, 18 of them on production. Must return
+    False (not raise) rather than assume uniqueness."""
+    from app.models import Net
+
+    template = NetTemplate(
+        name="Multi-NCS Template", owner_id=owner.id, schedule_type="ad_hoc", schedule_config="{}"
+    )
+    db.add(template)
+    await db.flush()
+
+    # template_id is required to reach the active-NCS existence check at all
+    # (the function returns False immediately for template-less/ad-hoc nets).
+    net = Net(name="Multi-NCS Net", owner_id=owner.id, status="active", template_id=template.id)
+    db.add(net)
+    await db.flush()
+    db.add(NetRole(net_id=net.id, user_id=owner.id, role="NCS", is_active=True))
+    db.add(NetRole(net_id=net.id, user_id=other.id, role="NCS", is_active=True))
+    await db.commit()
+    await db.refresh(net)
+
+    result = await is_eligible_for_ncs_auto_grant(db, net, admin.id)
+    assert result is False

@@ -112,11 +112,11 @@ async def is_eligible_for_ncs_auto_grant(db: AsyncSession, net: Net, user_id: in
         return False
 
     active_ncs_result = await db.execute(
-        select(NetRole).where(
+        select(NetRole.id).where(
             NetRole.net_id == net.id,
             NetRole.role == "NCS",
             NetRole.is_active == True,  # noqa: E712
-        )
+        ).limit(1)
     )
     if active_ncs_result.scalar_one_or_none() is not None:
         return False
