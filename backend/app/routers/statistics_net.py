@@ -332,6 +332,10 @@ async def get_template_statistics(
     # ===== INSTANCES (history log) =====
     # Include NCS callsign(s) per instance so the schedule history log can
     # show who ran each net. We do this in one query rather than N+1.
+    # Active roles only, oldest assignment first -- the same rule the rest of
+    # the app uses for NCS attribution (see utils.format_ncs_attribution and
+    # the Feature Registry). Without the is_active filter this credited
+    # operators who had since stepped back down to participant.
     ncs_by_net: dict[int, list[str]] = {}
     if net_ids:
         ncs_rows = await db.execute(
@@ -339,6 +343,8 @@ async def get_template_statistics(
             .join(User, User.id == NetRole.user_id)
             .where(NetRole.net_id.in_(net_ids))
             .where(NetRole.role == "NCS")
+            .where(NetRole.is_active == True)  # noqa: E712
+            .order_by(NetRole.assigned_at.asc())
         )
         for net_id, callsign in ncs_rows.all():
             if callsign:
