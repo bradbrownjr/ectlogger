@@ -316,6 +316,80 @@ Two rules fall out of that and both are load-bearing:
 
 **Trigger:** Phase 1 stands alone and delivers most of the value. Phase 2 is small and independent. Phase 3 should not start until someone actually asks for a live-updating subscription, since it adds a permanently reachable unauthenticated URL to the attack surface for a convenience the first two phases mostly cover.
 
+### Account Deletion, Anonymization & Right to Erasure
+
+**🔒 Replace hard user deletion with anonymization, and add a separate erasure action**
+**Model:** Opus for the design and the erasure semantics; Sonnet for the implementation once the shape is agreed.
+
+**The problem.** `DELETE /users/{id}` (`routers/users.py::delete_user`) is a bare
+`await db.delete(user)` — no cleanup, no reassignment, no anonymization. Everything that
+referenced that user is left pointing at an id that no longer exists.
+
+Two things make that worse than it looks:
+
+- **The `ondelete` rules in `models.py` are not actually enforced.** `PRAGMA foreign_keys`
+  is `0` (SQLite's default) and nothing in `database.py` turns it on, so all 16 existing
+  `ondelete="CASCADE"` / `"SET NULL"` declarations are decorative in the current
+  deployment. Nine further FKs to `users.id` have no rule at all, including
+  `nets.owner_id`, `net_templates.owner_id`, `net_roles.user_id`,
+  `check_ins.checked_in_by_id` and `chat_messages.user_id`.
+- **Display paths hide the damage.** Every NCS/attribution query joins to `users`, and an
+  inner join silently drops a row pointing at a missing user — so an orphan is invisible in
+  the UI and only shows up in queries that count without joining. One such row existed
+  (net 1, from a user deleted in 2025) and was removed 2026-09-03; it was found by accident
+  while debugging something else.
+
+**Chosen approach: anonymize in place, don't hard-delete.** Blank the identifying fields on
+the `users` row rather than removing it — `name`, `location`, `avatar_url`,
+`skywarn_number`, `sms_gateway`, live location; `email` to a unique non-identifying value
+(the column is `NOT NULL UNIQUE`); `callsign` to a placeholder; clear `gmrs_callsign`,
+`callsigns`, `previous_callsigns`, `oauth_id`, `unsubscribe_token`, password and MFA
+material. Set `is_active = False` and add a `deleted_at` column.
+
+Why this over hard-delete plus `SET NULL` everywhere:
+
+- Every foreign key stays valid, so **no row can ever orphan again** — without enabling the
+  pragma, rebuilding ~9 tables (SQLite cannot `ALTER` a constraint), making columns
+  nullable, and adding NULL handling to every join.
+- The anonymized row **is** the placeholder. Historical nets render "(deleted)" as the NCS
+  with no new plumbing in the ~25 places that display a user.
+- Properly anonymized data falls outside GDPR's scope (Recital 26), which is why this is the
+  standard pattern for records that retain operational value. It satisfies CCPA-style
+  deletion requests on the same basis.
+
+**Callsigns in historical logs: keep by default, scrub on explicit request.** A callsign is
+personal data — it maps to a named licensee in public FCC records — and `check_ins.callsign`
+is a denormalized string that survives account deletion regardless of what happens to the
+`users` row. Decision (2026-09-03):
+
+- **Routine account deletion** anonymizes the account and **leaves historical check-ins and
+  chat intact**. A completed net log and its ICS-309 export are emergency-communications
+  records whose value depends on the callsigns being present; retaining them is justified as
+  records retention.
+- **An explicit right-to-erasure request** is a *separate* admin action that additionally
+  replaces the callsign in historical `check_ins` and authored `chat_messages` with a
+  placeholder. Kept separate precisely because it degrades completed operational records, so
+  it should be a deliberate act with a clear audit trail, not a side effect of tidying up an
+  account.
+
+**Open questions to resolve before building:**
+
+- What exactly does an erased check-in row render as — a fixed string, or a per-user
+  pseudonym so multiple entries by the same person still correlate within one net log?
+- Does erasure touch free-text `chat_messages.message` bodies (which can name people), or
+  only the authorship link and callsign? Scanning message text is a much larger problem.
+- Should already-sent net log emails and generated PDFs be considered out of reach? (They
+  should — but say so explicitly rather than leaving it implied.)
+- Is enabling `PRAGMA foreign_keys=ON` worth doing anyway as a guardrail once deletion no
+  longer orphans, given it would start enforcing 16 rules that have never actually run?
+  Needs an audit of what would begin cascading before it is switched on — this is its own
+  risk, not a freebie.
+- Admin UX: the Users tab currently offers "Delete". That likely becomes "Deactivate" /
+  "Anonymize" / "Erase", which needs wording that a net manager can reason about without
+  reading a privacy policy.
+
+---
+
 ### Trivia Integration
 
 **✨ Net trivia support** *(back-burner, pending spec)*  
