@@ -175,6 +175,14 @@ const PNG_EXPORT_WIDTH_PX = 960;
 // natural height and the map pane absorbs whatever is left, so the ratio holds
 // regardless of how tall the text wraps.
 const PNG_EXPORT_MAP_ASPECT = '4 / 3';
+// Charts are short on the page because they sit in narrow grid columns. Stacked
+// full width for the export they would otherwise read as a sparse strip -- a
+// 60px-radius pie floating in a 960px box, which is what the first version
+// shipped. These export-only sizes let the content fill the frame and bring two
+// stacked charts to roughly 4:3, matching the single-map export.
+const PNG_EXPORT_PIE_HEIGHT_PX = 340;
+const PNG_EXPORT_PIE_RADIUS_PX = 130;
+const PNG_EXPORT_CHART_HEIGHT_PX = 300;
 // Dual-map nets stack their two panes, and are sized by giving each pane a
 // fixed height rather than by pinning the block's aspect ratio. The flex
 // approach above cannot reach through the panes: they are MUI Grid items, whose
@@ -1034,13 +1042,13 @@ const NetReport: React.FC = () => {
                     </Tooltip>
                   )}
                 </Box>
-                <ResponsiveContainer width="100%" height={200}>
+                <ResponsiveContainer width="100%" height={isChartPngExport ? PNG_EXPORT_PIE_HEIGHT_PX : 200}>
                   <PieChart>
                     <Pie
                       data={statusData}
                       cx="50%"
                       cy="45%"
-                      outerRadius={60}
+                      outerRadius={isChartPngExport ? PNG_EXPORT_PIE_RADIUS_PX : 60}
                       fill="#8884d8"
                       dataKey="value"
                       label={({ percent }) => percent > 0.04 ? `${(percent * 100).toFixed(0)}%` : ''}
@@ -1078,7 +1086,7 @@ const NetReport: React.FC = () => {
                 <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
                   Check-ins per {binSize}-min window
                 </Typography>
-                <ResponsiveContainer width="100%" height={170}>
+                <ResponsiveContainer width="100%" height={isChartPngExport ? PNG_EXPORT_CHART_HEIGHT_PX : 170}>
                   <AreaChart data={timelineData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
                     <defs>
                       <linearGradient id="reportActivityGradient" x1="0" y1="0" x2="0" y2="1">
@@ -1129,7 +1137,7 @@ const NetReport: React.FC = () => {
                     </Tooltip>
                   )}
                 </Box>
-                <ResponsiveContainer width="100%" height={200}>
+                <ResponsiveContainer width="100%" height={isChartPngExport ? PNG_EXPORT_CHART_HEIGHT_PX : 200}>
                   <BarChart data={frequencyData} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
                     <XAxis type="number" />
