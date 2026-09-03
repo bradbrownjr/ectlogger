@@ -1026,8 +1026,20 @@ const NetReport: React.FC = () => {
         {/* Charts Row — all three charts fit one row */}
         {/* Pinned to the same export width as the map: stacked full-bleed at
             the report's own width leaves the pie stranded in a very wide box,
-            and both sections should post at a consistent size. */}
-        <Grid id="net-report-charts" container spacing={3} sx={{ mb: 3, ...(isChartPngExport && { width: PNG_EXPORT_WIDTH_PX, mb: 0 }) }}>
+            and both sections should post at a consistent size. During export
+            a stats sidebar joins the charts inside the same captured box, so
+            the id moves from the Grid to this wrapping Box; the Grid itself
+            just becomes the flex-1 left column. */}
+        <Box
+          id="net-report-charts"
+          sx={{
+            mb: 3,
+            display: 'flex',
+            gap: isChartPngExport ? 3 : 0,
+            ...(isChartPngExport && { width: PNG_EXPORT_WIDTH_PX, mb: 0 }),
+          }}
+        >
+        <Grid container spacing={3} sx={{ flex: 1, minWidth: 0 }}>
           {/* Status Breakdown Pie Chart */}
           {statusData.length > 0 && (
             <Grid item xs={12} md={isChartPngExport ? 12 : chartMd}>
@@ -1150,6 +1162,33 @@ const NetReport: React.FC = () => {
             </Grid>
           )}
         </Grid>
+        {/* Stats sidebar: only rendered during export -- on screen these
+            numbers already appear in the Statistics Summary cards above, so
+            duplicating them here would just repeat the page. The graphs
+            export is a standalone image with no cards around it, so it needs
+            its own copy to be self-contained. */}
+        {isChartPngExport && (
+          <Box sx={{ flex: '0 0 216px', display: 'flex', flexDirection: 'column', gap: 2, justifyContent: 'space-between' }}>
+            {[
+              { value: stats.total_check_ins, label: 'Total Check-ins', color: 'primary.main' },
+              { value: stats.unique_callsigns, label: 'Unique Operators', color: 'info.main' },
+              { value: stats.rechecks, label: 'Re-checks', color: 'warning.main' },
+              { value: stats.duration_minutes ? formatDuration(stats.duration_minutes) : '—', label: 'Duration', color: 'secondary.main' },
+            ].map((s) => (
+              <Card key={s.label} variant="outlined">
+                <CardContent sx={{ textAlign: 'center', py: 2 }}>
+                  <Typography variant="h4" fontWeight="bold" sx={{ color: s.color }}>
+                    {s.value}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {s.label}
+                  </Typography>
+                </CardContent>
+              </Card>
+            ))}
+          </Box>
+        )}
+        </Box>
 
         {/* ========== SECTION 3: CHECK-IN MAP (if locations available) ========== */}
         {mappedCheckIns.length > 0 && (

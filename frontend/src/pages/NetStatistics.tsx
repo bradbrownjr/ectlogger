@@ -675,12 +675,22 @@ const NetStatistics: React.FC = () => {
               included a sliver of the "Graphs" heading text (2026-09-03: gap
               between this Grid and its previous sibling measured -16px). A
               plain Box absorbs the negative margin instead of exposing it. */}
-          <Box sx={{ pt: 2 }}>
-          <Grid
+          {/* During export a stats sidebar joins the charts inside the same
+              captured box, so the id and the pt:2 bleed-fix (see above) move
+              to this wrapping Box; the Grid becomes its flex-1 left column. */}
+          <Box
             id="net-stats-charts"
+            sx={{
+              pt: 2,
+              display: 'flex',
+              gap: isChartPngExport ? 3 : 0,
+              ...(isChartPngExport && { width: PNG_EXPORT_WIDTH_PX }),
+            }}
+          >
+          <Grid
             container
             spacing={3}
-            sx={isChartPngExport ? { width: PNG_EXPORT_WIDTH_PX } : undefined}
+            sx={{ flex: 1, minWidth: 0 }}
           >
         {/* Status Breakdown */}
         {statusData.length > 0 && (
@@ -816,6 +826,29 @@ const NetStatistics: React.FC = () => {
           </Grid>
         )}
           </Grid>
+          {/* Stats sidebar: only rendered during export -- on screen these
+              numbers already appear in the Summary Cards above, so
+              duplicating them here would just repeat the page. The graphs
+              export is a standalone image with no cards around it, so it
+              needs its own copy to be self-contained. */}
+          {isChartPngExport && (
+            <Box sx={{ flex: '0 0 216px', display: 'flex', flexDirection: 'column', gap: 2, justifyContent: 'space-between' }}>
+              {[
+                { icon: <TrendingUp color="primary" sx={{ fontSize: 28 }} />, value: stats.total_check_ins, label: 'Total Check-ins' },
+                { icon: <People color="info" sx={{ fontSize: 28 }} />, value: stats.unique_callsigns, label: 'Unique Operators' },
+                { icon: <Refresh color="warning" sx={{ fontSize: 28 }} />, value: stats.rechecks, label: 'Re-checks' },
+                { icon: <Timer color="secondary" sx={{ fontSize: 28 }} />, value: stats.duration_minutes ? formatDuration(stats.duration_minutes) : '—', label: 'Duration' },
+              ].map((s) => (
+                <Card key={s.label}>
+                  <CardContent sx={{ textAlign: 'center' }}>
+                    {s.icon}
+                    <Typography variant="h4" fontWeight="bold">{s.value}</Typography>
+                    <Typography variant="body2" color="text.secondary">{s.label}</Typography>
+                  </CardContent>
+                </Card>
+              ))}
+            </Box>
+          )}
           </Box>
         </Grid>
         )}

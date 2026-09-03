@@ -8,7 +8,7 @@ All notable changes to ECTLogger are documented here.
 
 ## Improvements
 
-* **Net Report and Statistics: One-click PNG export** — A new Export PNG button on both pages downloads every section at once, and the images are now shaped for a social post: the graphs stack, the map is 4:3, and the buttons and expand arrows no longer appear in the picture. Both pages now label their export buttons the same way.
+* **Net Report and Statistics: One-click PNG export** — A new Export PNG button on both pages downloads every section at once, and the images are now shaped for a social post: the graphs stack, the map is 4:3, and the buttons and expand arrows no longer appear in the picture. The graphs image also shows the total check-ins, unique operators, re-checks, and duration numbers alongside the charts, so it stands on its own without the rest of the page. Both pages now label their export buttons the same way.
 
 ---
 
