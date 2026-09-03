@@ -36,7 +36,7 @@ from app.traffic.ics309 import (
     traffic_to_station,
 )
 from app.traffic.rri_strip import make_nts_safe
-from app.utils import display_callsign, format_time_for_net, redact_contact_info, resolve_display_tz, to_display_tz
+from app.utils import display_callsign, format_ncs_attribution, format_time_for_net, redact_contact_info, resolve_display_tz, to_display_tz
 
 router = APIRouter()
 
@@ -450,9 +450,10 @@ async def _build_ics309_data(db: AsyncSession, net: Net, current_user: Optional[
         .where(NetRole.is_active == True)  # noqa: E712
         .order_by(NetRole.assigned_at.asc())
     )
-    ncs_role_rows = ncs_role_result.all()
-    ncs_callsign = ", ".join(r[0] for r in ncs_role_rows if r[0]) or (display_callsign(net.owner) if net.owner else "Unknown")
-    ncs_name = ", ".join(r[1] for r in ncs_role_rows if r[1]) or (net.owner.name or display_callsign(net.owner) if net.owner else "Unknown")
+    ncs_callsign, ncs_name = format_ncs_attribution(ncs_role_result.all())
+    if not ncs_callsign:
+        ncs_callsign = display_callsign(net.owner) if net.owner else "Unknown"
+        ncs_name = (net.owner.name or None) if net.owner else None
 
     # Display times in the requesting user's timezone preference (falls back to
     # UTC if they prefer UTC or haven't got a timezone on file yet)
@@ -523,7 +524,10 @@ async def _build_ics309_data(db: AsyncSession, net: Net, current_user: Optional[
         'incident_name': net.name,
         'operational_period_from': started_at,
         'operational_period_to': closed_at,
-        'radio_operator': f"{ncs_name} / {ncs_callsign}",
+        # "Cory / KU1U" when a single named NCS ran the net; just the callsign
+        # list when there are several (or no name on file), since repeating the
+        # list on both sides of the slash reads as an error on the form.
+        'radio_operator': f"{ncs_name} / {ncs_callsign}" if ncs_name else ncs_callsign,
         'channel': freq_list,
         'entries': log_entries,
         'prepared_by': "ECTLogger - Automated Log",

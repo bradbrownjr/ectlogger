@@ -62,9 +62,8 @@ async def test_rotation_net_reports_scheduled_ncs_not_a_later_grant(client, db, 
     db.add(NetRole(net_id=net.id, user_id=peter.id, role="NCS", is_active=True))
     await db.commit()
 
-    callsign, name = await _fetch_ncs_fields(client, net.id, owner)
+    callsign, _name = await _fetch_ncs_fields(client, net.id, owner)
     assert callsign.split(", ")[0] == "KU1U", f"scheduled NCS must lead, got {callsign!r}"
-    assert name.split(", ")[0] == "Cory Golob"
 
 
 @pytest.mark.asyncio
@@ -97,7 +96,11 @@ async def test_multi_ncs_net_reports_all_of_them_in_order(client, db, owner):
 
     callsign, name = await _fetch_ncs_fields(client, net.id, owner)
     assert callsign == "WO1J, NB1T, N1HPR"
-    assert name == "First Desk, Second Desk, Third Desk"
+    # Name is suppressed for multi-NCS nets. Most accounts have no name on
+    # file, so joining names independently produced a shorter list that no
+    # longer lined up with the callsigns -- net 15 really did render as eight
+    # callsigns followed by one unrelated name before this was caught.
+    assert name is None
 
 
 @pytest.mark.asyncio
@@ -115,6 +118,42 @@ async def test_logger_role_is_never_reported_as_ncs(client, db, owner):
     callsign, _ = await _fetch_ncs_fields(client, net.id, owner)
     assert callsign == "KU1U"
     assert "W1BKW" not in callsign
+
+
+@pytest.mark.asyncio
+async def test_ncs_name_is_kept_for_a_single_named_ncs(client, db, owner):
+    """The common case must be unchanged: one NCS with a name on file still
+    reports both, so cards keep rendering "KU1U (Cory Golob)"."""
+    cory = await _make_user(db, "KU1U", "Cory Golob")
+    net = await _make_net(db, owner.id)
+    db.add(NetRole(net_id=net.id, user_id=cory.id, role="NCS", is_active=True))
+    await db.commit()
+
+    callsign, name = await _fetch_ncs_fields(client, net.id, owner)
+    assert callsign == "KU1U"
+    assert name == "Cory Golob"
+
+
+@pytest.mark.asyncio
+async def test_ics309_radio_operator_never_repeats_the_callsign_list(client, db, owner):
+    """ICS-309 is an official form. A single named NCS reads "Name / CALL";
+    several NCS read as just the callsign list, never "CALLS / CALLS" and
+    never one unrelated name against a list of callsigns."""
+    from app.utils import format_ncs_attribution
+
+    single = format_ncs_attribution([("KU1U", "Cory Golob")])
+    assert single == ("KU1U", "Cory Golob")
+
+    multi_callsign, multi_name = format_ncs_attribution(
+        [("WO1J", None), ("NB1T", None), ("N1HPR", "Peter")]
+    )
+    assert multi_callsign == "WO1J, NB1T, N1HPR"
+    assert multi_name is None
+
+    unnamed = format_ncs_attribution([("KU1U", None)])
+    assert unnamed == ("KU1U", None)
+
+    assert format_ncs_attribution([]) == (None, None)
 
 
 @pytest.mark.asyncio

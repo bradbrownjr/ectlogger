@@ -146,6 +146,29 @@ def display_callsign(user) -> str:
     )
 
 
+def format_ncs_attribution(rows) -> tuple:
+    """Turn ordered (callsign, name) rows for a net's active NCS roles into the
+    (ncs_callsign, ncs_name) pair the API exposes.
+
+    A net can legitimately have several NCS at once (multi-desk exercises, or a
+    manager who assigns the whole staff roster), so the callsign field is every
+    active NCS comma-joined, oldest assignment first.
+
+    The name is only returned when there is exactly ONE NCS. Most accounts have
+    no `name` on file, so comma-joining names independently produced lists of
+    different lengths that no longer lined up: net 15 rendered as eight
+    callsigns followed by a single unrelated name, and the ICS-309's
+    "radio_operator" field became "Peter / WO1J, NB1T, N1HPR, ...". Callsigns
+    are the unambiguous operator identifier, so for multi-NCS nets the name is
+    dropped rather than shown misaligned. Callers that need a non-empty name
+    (the ICS-309) fall back to the callsigns themselves.
+    """
+    callsigns = [r[0] for r in rows if r[0]]
+    ncs_callsign = ", ".join(callsigns) or None
+    ncs_name = rows[0][1] if len(rows) == 1 and rows[0][1] else None
+    return ncs_callsign, ncs_name
+
+
 _EMAIL_RE = re.compile(r'[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}')
 # Matches common US phone formats -- (555) 123-4567, 555-123-4567,
 # 555.123.4567, +1 555 123 4567, or a bare 5551234567 -- while the

@@ -31,7 +31,7 @@ from app.schemas import (
     public_display_name,
 )
 from app.services.net_closure import close_net_and_notify
-from app.utils import display_callsign
+from app.utils import display_callsign, format_ncs_attribution
 
 router = APIRouter()
 
@@ -188,14 +188,9 @@ async def list_nets(
         )
         accumulated: dict = {}
         for net_id_row, callsign, name, _assigned_at in ncs_users_result.fetchall():
-            entry = accumulated.setdefault(net_id_row, ([], []))
-            if callsign:
-                entry[0].append(callsign)
-            if name:
-                entry[1].append(name)
+            accumulated.setdefault(net_id_row, []).append((callsign, name))
         ncs_by_net = {
-            nid: (", ".join(callsigns) or None, ", ".join(names) or None)
-            for nid, (callsigns, names) in accumulated.items()
+            nid: format_ncs_attribution(rows) for nid, rows in accumulated.items()
         }
 
     responses = []
@@ -312,9 +307,7 @@ async def get_net(
         .where(NetRole.is_active == True)  # noqa: E712
         .order_by(NetRole.assigned_at.asc())
     )
-    current_ncs_rows = current_ncs_result.all()
-    ncs_callsign = ", ".join(r[0] for r in current_ncs_rows if r[0]) or None
-    ncs_name = ", ".join(r[1] for r in current_ncs_rows if r[1]) or None
+    ncs_callsign, ncs_name = format_ncs_attribution(current_ncs_result.all())
 
     return NetResponse.from_orm(
         net,
