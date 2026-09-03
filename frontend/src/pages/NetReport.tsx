@@ -180,6 +180,7 @@ import { getErrorMessage } from '../utils/apiErrors';
 import { useAuth } from '../contexts/AuthContext';
 import { exportElementToPdf, exportElementToPng } from '../utils/pdfExport';
 import { computeCheckInTimeline } from '../utils/checkInTimeline';
+import CardActionButton from '../components/CardActionButton';
 import CoverageReport, { CanHearReportEntry } from '../components/netview/CoverageReport';
 import ICS309PrintView, { Ics309LogData } from '../components/traffic/print/ICS309PrintView';
 
@@ -862,12 +863,18 @@ const NetReport: React.FC = () => {
           <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <TrendingUp /> Statistics Summary
           </Typography>
+          {/* Labelled, not icon-only: an unlabelled icon relies on a hover
+              tooltip that never appears on a phone, which made these
+              effectively invisible. See DESIGN.md "Touch targets". */}
           {!exporting && !pngExportingId && chartCount > 0 && (
-            <Tooltip title="Download graphs as PNG">
-              <IconButton size="small" onClick={() => handleExportPng('net-report-charts', 'Graphs')} sx={{ ml: 'auto' }}>
-                <DownloadIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
+            <Box sx={{ ml: 'auto' }}>
+              <CardActionButton
+                icon={<DownloadIcon fontSize="small" />}
+                label="PNG"
+                tooltip="Download graphs as a PNG image"
+                onClick={() => handleExportPng('net-report-charts', 'Graphs')}
+              />
+            </Box>
           )}
           {pngExportingId === 'net-report-charts' && <CircularProgress size={18} sx={{ ml: 'auto' }} />}
         </Box>
@@ -1061,11 +1068,14 @@ const NetReport: React.FC = () => {
                 </Typography>
               )}
               {!exporting && !pngExportingId && (
-                <Tooltip title="Download map as PNG">
-                  <IconButton size="small" onClick={() => handleExportPng('net-report-map', 'Map')} sx={{ ml: 'auto' }}>
-                    <DownloadIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
+                <Box sx={{ ml: 'auto' }}>
+                  <CardActionButton
+                    icon={<DownloadIcon fontSize="small" />}
+                    label="PNG"
+                    tooltip="Download the map as a PNG image"
+                    onClick={() => handleExportPng('net-report-map', 'Map')}
+                  />
+                </Box>
               )}
               {!exporting && (
                 <Tooltip title="Expand">
@@ -1282,11 +1292,14 @@ const NetReport: React.FC = () => {
             <Assignment /> Check-in Log ({checkIns.length} event{checkIns.length !== 1 ? 's' : ''} &mdash; {stats.unique_callsigns} unique station{stats.unique_callsigns !== 1 ? 's' : ''}{stats.rechecks > 0 ? `, ${stats.rechecks} re-check${stats.rechecks !== 1 ? 's' : ''}` : ''})
           </Typography>
           {!exporting && !pngExportingId && (
-            <Tooltip title="Download check-in list as PNG">
-              <IconButton size="small" onClick={() => handleExportPng('net-report-checkin-log', 'CheckIn_List')} sx={{ ml: 'auto' }}>
-                <DownloadIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
+            <Box sx={{ ml: 'auto' }}>
+              <CardActionButton
+                icon={<DownloadIcon fontSize="small" />}
+                label="PNG"
+                tooltip="Download the check-in list as a PNG image"
+                onClick={() => handleExportPng('net-report-checkin-log', 'CheckIn_List')}
+              />
+            </Box>
           )}
           {pngExportingId === 'net-report-checkin-log' && <CircularProgress size={18} sx={{ ml: 'auto' }} />}
         </Box>

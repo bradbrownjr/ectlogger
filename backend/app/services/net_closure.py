@@ -29,7 +29,7 @@ from app.traffic.ics309 import (
     traffic_to_station,
 )
 from app.traffic.log import compute_net_traffic_counts
-from app.utils import display_callsign, format_time_for_net, resolve_display_tz, to_display_tz
+from app.utils import display_callsign, format_ncs_attribution, format_time_for_net, resolve_display_tz, to_display_tz
 
 
 async def close_net_and_notify(
@@ -282,18 +282,26 @@ async def close_net_and_notify(
         elif freq.network:
             freq_strings.append(f"{freq.network} TG{freq.talkgroup or ''}")
 
-    # Send log email to all recipients based on their preference
-    # Use the most recently assigned NCS role; fall back to owner if none is recorded.
+    # Send log email to all recipients based on their preference.
+    # Every *active* NCS, oldest assignment first (see utils.format_ncs_attribution
+    # and the NCS attribution row in the Feature Registry) -- falling back to the
+    # owner when the net recorded none. This email and its ICS-309 attachment go
+    # to every participant, so crediting the wrong operator here is the most
+    # visible form of the 2026-08-30 net 79 misattribution.
     ncs_role_result = await db.execute(
         select(User.callsign, User.name)
         .join(NetRole, NetRole.user_id == User.id)
         .where(NetRole.net_id == net_id, NetRole.role == "NCS")
-        .order_by(NetRole.assigned_at.desc())
-        .limit(1)
+        .where(NetRole.is_active == True)  # noqa: E712
+        .order_by(NetRole.assigned_at.asc())
     )
-    ncs_role_row = ncs_role_result.first()
-    ncs_callsign = ncs_role_row[0] if ncs_role_row else (display_callsign(owner) if owner else "Unknown")
-    ncs_name = ncs_role_row[1] if ncs_role_row else (owner.name or display_callsign(owner) if owner else "Unknown")
+    ncs_callsign, ncs_name = format_ncs_attribution(ncs_role_result.all())
+    if not ncs_callsign:
+        ncs_callsign = display_callsign(owner) if owner else "Unknown"
+        ncs_name = (owner.name or display_callsign(owner)) if owner else "Unknown"
+    # Several NCS (or no name on file): the callsign list is the operator
+    # identity. Keeps the templates from rendering "NCS: None".
+    ncs_name = ncs_name or ncs_callsign
 
     for email, recipient in recipients_to_notify:
         try:

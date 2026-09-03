@@ -490,7 +490,7 @@ async def send_ics309_log(
                 </div>
                 <div class="header-cell">
                     <div class="header-label">3. Radio Operator Name/Callsign:</div>
-                    <div class="header-value">{{ ncs_name }} / {{ ncs_callsign }}</div>
+                    <div class="header-value">{{ radio_operator }}</div>
                 </div>
                 <div class="header-cell">
                     <div class="header-label">4. Radio Channel/Frequency:</div>
@@ -581,11 +581,17 @@ async def send_ics309_log(
     # Sort all entries by time
     log_entries.sort(key=lambda x: x.get('time', ''))
     
+    # "Cory Golob / KU1U" for a single named NCS. When a net has several NCS the
+    # caller passes the callsign list as both values (there is no single name to
+    # show), so print it once instead of "WO1J, NB1T / WO1J, NB1T".
+    radio_operator = ncs_name if ncs_name == ncs_callsign else f"{ncs_name} / {ncs_callsign}"
+
     html_content = html_template.render(
         app_name=settings.app_name,
         net_name=net_name,
         ncs_name=ncs_name,
         ncs_callsign=ncs_callsign,
+        radio_operator=radio_operator,
         started_at=started_at,
         closed_at=closed_at,
         frequencies=freq_list,
@@ -604,7 +610,7 @@ async def send_ics309_log(
     writer.writerow([""])
     writer.writerow(["1. Incident Name:", net_name])
     writer.writerow(["2. Operational Period:", f"{started_at} to {closed_at}"])
-    writer.writerow(["3. Radio Operator:", f"{ncs_name} / {ncs_callsign}"])
+    writer.writerow(["3. Radio Operator:", radio_operator])
     writer.writerow(["4. Channel/Frequency:", freq_list])
     writer.writerow([""])
     writer.writerow(["TIME", "FROM", "TO", "SUBJECT/MESSAGE"])

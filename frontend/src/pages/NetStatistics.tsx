@@ -67,6 +67,7 @@ import { parseLocation, geocodeAddress, ParsedLocation } from '../utils/location
 import { formatDateTime } from '../utils/dateUtils';
 import { getErrorMessage } from '../utils/apiErrors';
 import { useAuth } from '../contexts/AuthContext';
+import CardActionButton from '../components/CardActionButton';
 import { exportElementToPdf, exportElementToPng } from '../utils/pdfExport';
 import { computeCheckInTimeline } from '../utils/checkInTimeline';
 
@@ -540,11 +541,14 @@ const NetStatistics: React.FC = () => {
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                 <Typography variant="h6">Check-in Status</Typography>
                 {!pngExportingId && (
-                  <Tooltip title="Download as PNG">
-                    <IconButton size="small" onClick={() => handleExportPng('net-stats-chart-status', 'Check-in_Status')} sx={{ ml: 'auto' }}>
-                      <DownloadIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
+                  <Box sx={{ ml: 'auto' }}>
+                    <CardActionButton
+                      icon={<DownloadIcon fontSize="small" />}
+                      label="PNG"
+                      tooltip="Download this chart as a PNG image"
+                      onClick={() => handleExportPng('net-stats-chart-status', 'Check-in_Status')}
+                    />
+                  </Box>
                 )}
                 <Tooltip title="Expand">
                   <IconButton size="small" onClick={() => setExpandedCard('status')} sx={pngExportingId ? { ml: 'auto' } : {}}>
@@ -588,11 +592,14 @@ const NetStatistics: React.FC = () => {
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
                 <Typography variant="h6">Check-in Activity</Typography>
                 {!pngExportingId && (
-                  <Tooltip title="Download as PNG">
-                    <IconButton size="small" onClick={() => handleExportPng('net-stats-chart-activity', 'Check-in_Activity')} sx={{ ml: 'auto' }}>
-                      <DownloadIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
+                  <Box sx={{ ml: 'auto' }}>
+                    <CardActionButton
+                      icon={<DownloadIcon fontSize="small" />}
+                      label="PNG"
+                      tooltip="Download this chart as a PNG image"
+                      onClick={() => handleExportPng('net-stats-chart-activity', 'Check-in_Activity')}
+                    />
+                  </Box>
                 )}
                 <Tooltip title="Expand">
                   <IconButton size="small" onClick={() => setExpandedCard('activity')} sx={pngExportingId ? { ml: 'auto' } : {}}>
@@ -652,11 +659,14 @@ const NetStatistics: React.FC = () => {
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                 <Typography variant="h6">Check-ins by Frequency</Typography>
                 {!pngExportingId && (
-                  <Tooltip title="Download as PNG">
-                    <IconButton size="small" onClick={() => handleExportPng('net-stats-chart-frequency', 'Check-ins_by_Frequency')} sx={{ ml: 'auto' }}>
-                      <DownloadIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
+                  <Box sx={{ ml: 'auto' }}>
+                    <CardActionButton
+                      icon={<DownloadIcon fontSize="small" />}
+                      label="PNG"
+                      tooltip="Download this chart as a PNG image"
+                      onClick={() => handleExportPng('net-stats-chart-frequency', 'Check-ins_by_Frequency')}
+                    />
+                  </Box>
                 )}
                 <Tooltip title="Expand">
                   <IconButton size="small" onClick={() => setExpandedCard('frequency')} sx={pngExportingId ? { ml: 'auto' } : {}}>
@@ -702,11 +712,12 @@ const NetStatistics: React.FC = () => {
                   {mapLoading && <CircularProgress size={14} />}
                   {pngExportingId === 'net-stats-map' && <CircularProgress size={14} />}
                   {mappedCheckIns.length > 0 && !mapLoading && !pngExportingId && (
-                    <Tooltip title="Download as PNG">
-                      <IconButton size="small" onClick={() => handleExportPng('net-stats-map', 'Check-in_Locations')}>
-                        <DownloadIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
+                    <CardActionButton
+                      icon={<DownloadIcon fontSize="small" />}
+                      label="PNG"
+                      tooltip="Download the map as a PNG image"
+                      onClick={() => handleExportPng('net-stats-map', 'Check-in_Locations')}
+                    />
                   )}
                   {mappedCheckIns.length > 0 && !mapLoading && (
                     <Tooltip title="Expand">
@@ -827,11 +838,14 @@ const NetStatistics: React.FC = () => {
                 Operators ({stats.top_operators.length})
               </Typography>
               {!pngExportingId && (
-                <Tooltip title="Download as PNG">
-                  <IconButton size="small" onClick={() => handleExportPng('net-stats-operators', 'Operators')} sx={{ ml: 'auto' }}>
-                    <DownloadIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
+                <Box sx={{ ml: 'auto' }}>
+                  <CardActionButton
+                    icon={<DownloadIcon fontSize="small" />}
+                    label="PNG"
+                    tooltip="Download the operators table as a PNG image"
+                    onClick={() => handleExportPng('net-stats-operators', 'Operators')}
+                  />
+                </Box>
               )}
               {pngExportingId === 'net-stats-operators' && <CircularProgress size={16} sx={{ ml: 'auto' }} />}
             </Box>

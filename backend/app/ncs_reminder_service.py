@@ -11,7 +11,7 @@ from sqlalchemy import select, and_, or_
 from sqlalchemy.orm import selectinload
 from app.database import AsyncSessionLocal
 from app.net_start import auto_open_lobby, lobby_open_due
-from app.utils import display_callsign
+from app.utils import display_callsign, format_ncs_attribution
 from app.models import CheckIn, NetTemplate, NCSRotationMember, NCSReminderLog, NCSScheduleOverride, User, NetTemplateSubscription, Net, NetStatus, TemplateStaff, NetRole
 from app.email_service import EmailService
 from app.config import settings
@@ -515,7 +515,11 @@ class NCSReminderService:
                             'talkgroup_id': freq.talkgroup,
                         })
 
-                # Query the on-duty NCS for this net
+                # Query the on-duty NCS for this net: every *active* NCS,
+                # oldest assignment first (see utils.format_ncs_attribution).
+                # ASC matters here -- _assign_duty_ncs stamps the rotation's
+                # scheduled pick ~24h ahead, so most-recent-wins would let any
+                # later grant displace the operator actually on duty.
                 ncs_name = None
                 ncs_callsign = None
                 if net_id:
@@ -524,13 +528,14 @@ class NCSReminderService:
                         .join(NetRole, NetRole.user_id == User.id)
                         .where(NetRole.net_id == net_id)
                         .where(NetRole.role == "NCS")
-                        .order_by(NetRole.assigned_at.desc())
-                        .limit(1)
+                        .where(NetRole.is_active == True)  # noqa: E712
+                        .order_by(NetRole.assigned_at.asc())
                     )
-                    ncs_row = ncs_result.first()
-                    if ncs_row:
-                        ncs_callsign = ncs_row[0]
-                        ncs_name = ncs_row[1]
+                    ncs_callsign, ncs_name = format_ncs_attribution(ncs_result.all())
+                    if ncs_callsign and not ncs_name:
+                        # Several on duty (or no name on file): show the
+                        # callsign list alone rather than "None (WO1J, NB1T)".
+                        ncs_name, ncs_callsign = ncs_callsign, None
 
                 for staff_entry in active_staff:
                     user = staff_entry.user
