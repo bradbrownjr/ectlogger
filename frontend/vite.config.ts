@@ -51,6 +51,18 @@ export default defineConfig(({ mode }) => {
     define: {
       __BUILD_ID__: JSON.stringify(buildId),
     },
+    build: {
+      // Production is a 1.8 GB VPS with no swap, and gzip-sizing a ~3 MB bundle
+      // is the peak-memory moment of the whole build. It is pure console
+      // reporting -- nothing consumes the number -- but being killed there is
+      // NOT harmless: the writeVersionFile plugin's closeBundle hook runs after
+      // it, so a kill at that point leaves dist/ complete except for
+      // version.json, and every open tab silently loses update detection while
+      // the site itself looks perfectly healthy. That happened on 2026-09-03,
+      // even with NODE_OPTIONS=--max-old-space-size=1024. Keep the heap cap and
+      // the post-build checks anyway; this just removes the biggest spike.
+      reportCompressedSize: false,
+    },
     server: {
       port: 3000,
       // Restrict hosts to configured list for security
