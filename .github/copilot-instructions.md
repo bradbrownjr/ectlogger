@@ -254,12 +254,76 @@ Users see a red badge on the info icon (lower-left) until they view the changelo
    ```
 4. Deploy to beta via `git pull`
 5. Test on beta
-6. When confirmed working, deploy to production via `git pull`
+6. **For a backend change whose correctness depends on an assumption about existing data** (uniqueness, non-null, at-most-one-row, etc.) — not every change, see below — **run it against beta's real database before promoting to prod**, not just fresh test fixtures
+7. When confirmed working, deploy to production via `git pull`
 
 ### Why This Matters
 - Direct SCP to servers causes drift between repo and deployed code
 - Production deploys via `git pull` - if repo is stale, wrong code gets deployed
 - Keeps full history of changes for rollback if needed
+
+### Real-Data Smoke Testing (Before Promoting a Data-Assumption Change to Prod)
+
+Unit tests build their own fixtures, which means the developer controls the data shape — so a
+test can only catch a bad assumption ("there's at most one active X per Y") if the developer
+happens to construct a fixture that violates it. Production data routinely doesn't match a
+clean mental model. **A pytest pass against synthetic fixtures is not evidence a data-shape
+assumption is safe against production's actual rows.**
+
+Concrete incident (2026-09-03): a new eligibility check used `scalar_one_or_none()` to test "does
+an active NCS already exist on this net" — correct against every hand-built test fixture (which
+never had more than one), but wrong against real data, where 18 production nets already had 2+
+simultaneous active NCS roles (a legitimate pattern, not corrupt data — see net 15's multi-desk
+SKYWARN exercise). `GET /nets/{id}` 500'd for all 18 nets for about 3.5 hours before a user report
+caught it. Two unit tests with clean fixtures and a UI screenshot of one unrelated net had already
+been called "tested on beta" — neither ever exercised the real duplicate-row shape sitting in
+beta's own database the whole time.
+
+**When to run this step**: any backend change to a function whose logic depends on how many rows
+match a query, whether a field is ever null, or similar "this should always be true of the data"
+assumptions — not routine feature work with no such assumption.
+
+**How**: write a short throwaway script (see the pattern below) that imports the real function and
+runs it against every relevant row already in beta's `ectlogger.db` (not a temp/in-memory test
+DB), catching and reporting any exception instead of raising on first failure. Run it, read the
+output, then discard the script — it doesn't need to become a permanent test suite member unless
+the same assumption is worth guarding going forward with a real pytest case (do that too, as
+happened here — see `backend/tests/test_ncs_auto_grant_gate.py`).
+
+```python
+# Adapt per-change: import the real function, iterate the real rows it touches,
+# run it, and collect exceptions instead of stopping at the first one.
+import asyncio, sys
+sys.path.insert(0, "/home/bradb/ectlogger/backend")  # beta's actual backend path
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from app.models import Net, NetRole                       # whatever the function touches
+from app.permissions import is_eligible_for_ncs_auto_grant  # the function under test
+
+async def main():
+    engine = create_async_engine("sqlite+aiosqlite:////home/bradb/ectlogger/backend/ectlogger.db")
+    errors = []
+    async with AsyncSession(engine) as db:
+        nets = (await db.execute(select(Net))).scalars().all()
+        for net in nets:
+            user_ids = (await db.execute(
+                select(NetRole.user_id).where(NetRole.net_id == net.id).distinct()
+            )).scalars().all()
+            for user_id in user_ids:
+                try:
+                    await is_eligible_for_ncs_auto_grant(db, net, user_id)
+                except Exception as e:
+                    errors.append((net.id, net.name, user_id, repr(e)))
+    print(f"{len(errors)} errors" if errors else "No errors.")
+    for e in errors: print(e)
+
+asyncio.run(main())
+```
+
+Run the same check against production's own database (read-only, no writes — it just calls the
+function and reports exceptions) as part of the pre-deploy safety check, before restarting the
+production service, since beta's copy can itself be stale (see "Refreshing beta's database from
+production" below) and production can have rows beta doesn't have yet.
 
 ### Long-Running Feature Branches (Substantial Roadmap Items)
 
@@ -366,6 +430,37 @@ For a multi-phase roadmap feature (the kind with its own "Design questions to re
 - **Sudo**: passwordless sudo configured for `stop`, `start`, `restart`, `is-active`, `status` on the `ectlogger` service via `/etc/sudoers.d/ectlogger`. Use `sudo -n` (non-interactive).
 - **Email**: two independent guards, and **both must stay in place**. `EMAIL_ENABLED=false` in `.env` makes every send a logged no-op before any connection is attempted, and `SMTP_HOST=127.0.0.1` makes connections fail anyway. Never set `EMAIL_ENABLED=true` on beta or alpha without the user explicitly asking — beta's database holds real user addresses. See `docs/DEVELOPMENT.md` "Enabling and disabling outbound email" for the temporary-enable procedure.
 - **Database**: SQLite at `/home/bradb/ectlogger/backend/ectlogger.db`
+
+#### Refreshing beta's database from production
+
+Beta has held a copy of production's database since 2026-08-11 (see `docs/DEVELOPMENT.md` if it
+documents the original sync). It drifts further behind with every real production net, so
+real-data smoke testing (above) against beta can silently miss rows that only exist in
+production. Refresh it occasionally — there's no fixed schedule, just do it when beta feels stale
+or before testing a change where recent data matters:
+
+```bash
+# 1. Back up beta's current DB first (never overwrite without a restorable copy)
+cp /home/bradb/ectlogger/backend/ectlogger.db \
+   /home/bradb/ectlogger/backend/ectlogger.db.bak-$(date +%Y%m%d)
+
+# 2. Copy production's DB down (small SQLite file, ~1MB as of 2026-09-03)
+scp ectlogger@app.ectlogger.us:~/ectlogger/backend/ectlogger.db \
+    /home/bradb/ectlogger/backend/ectlogger.db
+
+# 3. Restart beta's backend so it picks up the new file
+sudo -n systemctl restart ectlogger
+sudo -n systemctl is-active ectlogger
+```
+
+**This carries real user PII to a second host** — same tradeoff already accepted for beta since
+2026-08-11, not a new one, but worth remembering each time. `EMAIL_ENABLED=false` /
+`SMTP_HOST=127.0.0.1` in beta's `.env` live outside the DB file, so a DB-only copy never touches
+them — but never set `EMAIL_ENABLED=true` on beta regardless (see the Email note above). Don't
+automate this on a cron/timer without the user asking for it explicitly — it's a manual,
+occasional refresh, not standing infrastructure, per the same "confirm before recurring
+actions that touch shared/production-derived state" judgment as any other production-adjacent
+change.
 
 ### Alpha (10.6.26.6)
 - **Host**: `bradb@10.6.26.6`
