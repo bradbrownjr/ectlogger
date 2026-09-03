@@ -1,18 +1,31 @@
 """
-Regression tests for the backup NCS auto-grant gate
+Regression tests for NCS check-in eligibility
 (permissions.is_eligible_for_ncs_auto_grant).
 
 2026-08-30 ME Dirigo Net incident (net 79): Cory Golob correctly checked in
 and held the active NCS role; about 50 minutes later Peter, an ordinary
 off-week rotation member, self-checked in purely as a participant and was
-silently auto-granted NCS too, because eligibility never considered whether
-the net already had an active NCS. That extra role then showed up as a
-second, wrong "Net Control Station" attribution in the net's report.
+silently auto-granted NCS too, with no choice presented. Root-caused to the
+grant being fully automatic and silent, not to multiple NCS being possible --
+fixed at the two call sites (check_ins.py's Snackbar-triggered check-in now
+defaults check_in_as_standard=true; CheckInFormDialog's NCS/Standard radio
+defaults to Standard), so becoming NCS always requires an affirmative,
+deliberate choice.
+
+An earlier version of this function also blocked eligibility outright once
+anyone else held an active NCS role, on the theory that multiple NCS was
+itself the bug. That broke a legitimate, pre-existing pattern: net 15 ("GYX
+SKYWARN / Emergency Communications Exercise") has 8 different eligible staff
+who each deliberately self-checked-in as NCS for their own desk within
+minutes of each other. It also crashed GET /nets/{id} outright for every
+net with 2+ active NCS rows (18 on production, including net 79 itself)
+via scalar_one_or_none() on a query that was never actually unique. See
+2026-09-03.
 """
 import pytest
 from sqlalchemy import select
 
-from app.models import Frequency, NetRole, NetTemplate, NCSRotationMember, net_template_frequencies
+from app.models import Frequency, Net, NetRole, NetTemplate, NCSRotationMember, net_template_frequencies
 from app.permissions import is_eligible_for_ncs_auto_grant
 from tests.conftest import auth_headers
 
@@ -50,11 +63,14 @@ async def _create_and_start_net(client, owner, template_id: int) -> int:
 
 
 @pytest.mark.asyncio
-async def test_rotation_member_not_auto_granted_ncs_when_another_ncs_already_active(client, db, owner, other):
+async def test_rotation_member_can_become_additional_ncs_when_requested(client, db, owner, other):
     """`other` is an eligible off-week rotation member. Starting the net
     already auto-assigns `owner` as its active NCS (see
-    nets_core.py::start_net), so `other` self-checking in afterward as a
-    participant must NOT also become NCS."""
+    nets_core.py::start_net). `other` self-checking in and explicitly
+    requesting NCS (check_in_as_standard omitted/false, matching the full
+    dialog's deliberate "Check in as NCS" choice) must still be granted it --
+    a second simultaneous active NCS is a legitimate, wanted pattern (see
+    net 15's multi-desk SKYWARN exercise), not something to block."""
     owner_id, other_id = owner.id, other.id
     template = await _template_with_rotation_member(db, owner_id, other_id)
     net_id = await _create_and_start_net(client, owner, template.id)
@@ -71,6 +87,32 @@ async def test_rotation_member_not_auto_granted_ncs_when_another_ncs_already_act
     # (owner_id/other_id were captured above, before expiring -- touching an
     # expired ORM attribute like owner.id triggers a *sync* lazy-load under
     # async SQLAlchemy and blows up.)
+    db.expire_all()
+    roles = await db.execute(
+        select(NetRole).where(NetRole.net_id == net_id, NetRole.role == "NCS", NetRole.is_active == True)  # noqa: E712
+    )
+    ncs_user_ids = {r.user_id for r in roles.scalars().all()}
+    assert ncs_user_ids == {owner_id, other_id}
+
+
+@pytest.mark.asyncio
+async def test_rotation_member_not_auto_granted_when_declining_via_standard_checkin(client, db, owner, other):
+    """The actual silent-grant incident this guards against: `other`
+    self-checking in with check_in_as_standard=true (the Snackbar's current
+    default, and what the dialog sends when Standard stays selected) must
+    never pick up NCS regardless of eligibility or of whether anyone else is
+    already NCS."""
+    owner_id, other_id = owner.id, other.id
+    template = await _template_with_rotation_member(db, owner_id, other_id)
+    net_id = await _create_and_start_net(client, owner, template.id)
+
+    resp = await client.post(
+        f"/api/check-ins/nets/{net_id}/check-ins",
+        json={"callsign": "KC1OTH", "check_in_as_standard": True},
+        headers=auth_headers(other),
+    )
+    assert resp.status_code == 201
+
     db.expire_all()
     roles = await db.execute(
         select(NetRole).where(NetRole.net_id == net_id, NetRole.role == "NCS", NetRole.is_active == True)  # noqa: E712
@@ -113,24 +155,18 @@ async def test_rotation_member_still_auto_granted_ncs_when_no_active_ncs_yet(cli
 
 
 @pytest.mark.asyncio
-async def test_gate_tolerates_multiple_existing_active_ncs_rows(db, owner, other, admin):
-    """Production data (e.g. net 79) can already hold more than one active
-    NCS NetRole on the same net -- co-NCS/backup arrangements predate this
-    gate. The gate's own "is anyone already NCS" existence check must not
-    assume at most one row: `scalar_one_or_none()` raises MultipleResultsFound
-    in that case, which took down GET /nets/{id} (net report/net view) for
-    every net with 2+ active NCS rows, 18 of them on production. Must return
-    False (not raise) rather than assume uniqueness."""
-    from app.models import Net
-
+async def test_eligibility_check_tolerates_multiple_existing_active_ncs_rows(db, owner, other, admin):
+    """Guards against reintroducing a uniqueness assumption: production data
+    (e.g. net 79, net 15) can hold many active NCS NetRole rows on the same
+    net at once. Any future query added here for an "already active NCS"
+    style check must not use scalar_one_or_none() / assume at most one row
+    -- that took down GET /nets/{id} for 18 nets on 2026-09-03."""
     template = NetTemplate(
         name="Multi-NCS Template", owner_id=owner.id, schedule_type="ad_hoc", schedule_config="{}"
     )
     db.add(template)
     await db.flush()
 
-    # template_id is required to reach the active-NCS existence check at all
-    # (the function returns False immediately for template-less/ad-hoc nets).
     net = Net(name="Multi-NCS Net", owner_id=owner.id, status="active", template_id=template.id)
     db.add(net)
     await db.flush()
@@ -139,5 +175,9 @@ async def test_gate_tolerates_multiple_existing_active_ncs_rows(db, owner, other
     await db.commit()
     await db.refresh(net)
 
+    from app.models import TemplateStaff
+    db.add(TemplateStaff(template_id=template.id, user_id=admin.id, is_active=True, is_co_manager=True))
+    await db.commit()
+
     result = await is_eligible_for_ncs_auto_grant(db, net, admin.id)
-    assert result is False
+    assert result is True

@@ -77,30 +77,39 @@ async def check_net_permission(
 
 
 async def is_eligible_for_ncs_auto_grant(db: AsyncSession, net: Net, user_id: int) -> bool:
-    """Return True when *user_id* would be auto-granted NCS access on checking
+    """Return True when *user_id* is eligible to be granted NCS on checking
     into *net*: an active co-manager or active NCS rotation member for the
     net's template, with no existing NetRole on this specific net occurrence
     yet (owner/admin/an already-assigned role don't need this -- they already
-    have access, or checking in wouldn't change anything for them), AND no
-    one else is already an active NCS on this net.
+    have access, or checking in wouldn't change anything for them).
 
-    That last condition is what makes this a *backup* grant rather than an
-    automatic co-NCS pile-on: the whole point is "pick up the net if the
-    assigned NCS is unavailable", not "any eligible rotation member who
-    happens to check in also becomes NCS". Without it, an off-week rotation
-    member self-checking in as a participant while the actual (e.g.
-    fifth-week) NCS is already running the net silently picks up NCS
-    permissions they never asked for or used -- which then shows up as a
-    second, wrong "Net Control Station" in the net's report. See the
-    2026-08-30 ME Dirigo Net incident (net 79: Cory Golob correctly assigned
-    NCS at check-in, then Peter -- an ordinary rotation member checking in as
-    a participant nearly an hour later -- was auto-granted NCS too).
+    Deliberately does NOT depend on whether someone else already holds an
+    active NCS role on this net -- a large multi-desk exercise (e.g. net 15,
+    "GYX SKYWARN / Emergency Communications Exercise": 8 different eligible
+    staff self-checked in as NCS within minutes of each other) is a
+    legitimate, wanted pattern, not a pile-on. An earlier version of this
+    function blocked eligibility once anyone else was active NCS, which
+    quietly broke that pattern going forward (no self-service way to become
+    an additional NCS afterward -- toggle_self_net_role only toggles a role
+    you already hold) and also crashed GET /nets/{id} outright on 18
+    production nets that already had 2+ active NCS rows, via
+    scalar_one_or_none() on a query that was never actually unique.
 
-    Shared by check_ins.py (to decide whether to actually grant) and
-    nets_core.py (to expose the choice to the frontend before the user checks
-    in at all, e.g. the check-in dialog's NCS/Standard toggle) -- so gating
-    it here also makes that choice disappear once someone's already running
-    the net, instead of asking a question that no longer has a real answer.
+    The 2026-08-30 ME Dirigo Net incident this function guards against (net
+    79: Cory Golob correctly checked in as NCS, then Peter -- an ordinary
+    rotation member checking in as a participant nearly an hour later -- was
+    auto-granted NCS too, with no choice presented) was root-caused to the
+    grant being fully silent and automatic, not to multiple NCS being
+    possible. That's fixed at the two call sites instead: the check-in
+    Snackbar now defaults check_in_as_standard=true and
+    CheckInFormDialog's NCS/Standard radio defaults to Standard, so becoming
+    NCS always requires an affirmative, deliberate choice -- eligibility
+    alone (this function) no longer silently grants anything.
+
+    Shared by check_ins.py (to decide whether to actually grant, gated on
+    the caller having explicitly requested NCS) and nets_core.py (to expose
+    the choice to the frontend, e.g. the check-in dialog's NCS/Standard
+    toggle).
     """
     if not net.template_id:
         return False
@@ -109,16 +118,6 @@ async def is_eligible_for_ncs_auto_grant(db: AsyncSession, net: Net, user_id: in
         select(NetRole).where(NetRole.net_id == net.id, NetRole.user_id == user_id)
     )
     if existing_result.scalar_one_or_none() is not None:
-        return False
-
-    active_ncs_result = await db.execute(
-        select(NetRole.id).where(
-            NetRole.net_id == net.id,
-            NetRole.role == "NCS",
-            NetRole.is_active == True,  # noqa: E712
-        ).limit(1)
-    )
-    if active_ncs_result.scalar_one_or_none() is not None:
         return False
 
     co_mgr_result = await db.execute(
