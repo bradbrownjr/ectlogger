@@ -114,8 +114,15 @@ async def is_eligible_for_ncs_auto_grant(db: AsyncSession, net: Net, user_id: in
     if not net.template_id:
         return False
 
+    # Existence check, bounded with limit(1) -- a user can hold more than one
+    # NetRole on the same net (e.g. NCS *and* LOGGER), so scalar_one_or_none()
+    # on this filter would raise MultipleResultsFound. That is exactly the
+    # defect that took GET /nets/{id} down on 2026-09-03; no such rows exist
+    # today, but assign_role can create them.
     existing_result = await db.execute(
-        select(NetRole).where(NetRole.net_id == net.id, NetRole.user_id == user_id)
+        select(NetRole.id)
+        .where(NetRole.net_id == net.id, NetRole.user_id == user_id)
+        .limit(1)
     )
     if existing_result.scalar_one_or_none() is not None:
         return False

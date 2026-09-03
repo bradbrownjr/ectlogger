@@ -169,11 +169,13 @@ async def list_nets(
             user_attended_net_ids = set(row[0] for row in attended_result.fetchall())
 
     # ========== CURRENT NCS PER NET ==========
-    # For each net, find the most recently-assigned NCS user. The Net Manager
-    # is the net's owner; the NCS is whoever is actually running the net on
-    # the air, tracked via NetRole(role='NCS'). They are often different
-    # people (e.g. a club's net manager schedules nets for other operators
-    # to run). We surface both on the cards so users can tell them apart.
+    # For each net, every *active* NCS, oldest assignment first. The Net
+    # Manager is the net's owner; the NCS is whoever is actually running the
+    # net on the air, tracked via NetRole(role='NCS'). They are often
+    # different people (e.g. a club's net manager schedules nets for other
+    # operators to run). We surface both on the cards so users can tell them
+    # apart. Same all-of-them / is_active rules as get_net above -- see the
+    # comment there for why a single most-recent row was wrong.
     ncs_by_net: dict = {}
     if net_ids:
         ncs_users_result = await db.execute(
@@ -181,12 +183,20 @@ async def list_nets(
             .join(User, User.id == NetRole.user_id)
             .where(NetRole.net_id.in_(net_ids))
             .where(NetRole.role == "NCS")
-            .order_by(NetRole.assigned_at.desc())
+            .where(NetRole.is_active == True)  # noqa: E712
+            .order_by(NetRole.assigned_at.asc())
         )
+        accumulated: dict = {}
         for net_id_row, callsign, name, _assigned_at in ncs_users_result.fetchall():
-            # First row per net wins (descending assigned_at => most recent)
-            if net_id_row not in ncs_by_net:
-                ncs_by_net[net_id_row] = (callsign, name)
+            entry = accumulated.setdefault(net_id_row, ([], []))
+            if callsign:
+                entry[0].append(callsign)
+            if name:
+                entry[1].append(name)
+        ncs_by_net = {
+            nid: (", ".join(callsigns) or None, ", ".join(names) or None)
+            for nid, (callsigns, names) in accumulated.items()
+        }
 
     responses = []
     for net in nets:
@@ -277,19 +287,34 @@ async def get_net(
         current_user_ncs_eligible = await is_eligible_for_ncs_auto_grant(db, net, current_user.id)
 
     # ========== CURRENT NCS ==========
-    # Look up the most-recently-assigned NCS user for this net so the UI
-    # can display the Net Manager (owner) and NCS as separate entities.
+    # Every *active* NCS on this net, oldest assignment first, so the UI can
+    # display the Net Manager (owner) and the NCS separately.
+    #
+    # All of them, not just one: a net legitimately can have several NCS at
+    # once (net 15, "GYX SKYWARN / Emergency Communications Exercise", had 8
+    # desks running simultaneously), and picking a single row misreported
+    # those nets. It also actively misreported single-NCS rotation nets --
+    # the rotation's scheduled pick is pre-assigned ~24h ahead by
+    # _assign_duty_ncs, so ordering by assigned_at DESC meant *any* later
+    # grant outranked the person actually running the net (net 79,
+    # 2026-08-30: reported Peter, an erroneous 13:53 grant, instead of Cory,
+    # the scheduled NCS assigned at 13:00).
+    #
+    # is_active is filtered because stepping down via the Acting as
+    # NCS/Standard toggle (nets_roles.py::toggle_self_net_role) flips that
+    # flag rather than deleting the row -- an operator who stepped down is
+    # not the NCS any more.
     current_ncs_result = await db.execute(
         select(User.callsign, User.name)
         .join(NetRole, NetRole.user_id == User.id)
         .where(NetRole.net_id == net_id)
         .where(NetRole.role == "NCS")
-        .order_by(NetRole.assigned_at.desc())
-        .limit(1)
+        .where(NetRole.is_active == True)  # noqa: E712
+        .order_by(NetRole.assigned_at.asc())
     )
-    current_ncs_row = current_ncs_result.first()
-    ncs_callsign = current_ncs_row[0] if current_ncs_row else None
-    ncs_name = current_ncs_row[1] if current_ncs_row else None
+    current_ncs_rows = current_ncs_result.all()
+    ncs_callsign = ", ".join(r[0] for r in current_ncs_rows if r[0]) or None
+    ncs_name = ", ".join(r[1] for r in current_ncs_rows if r[1]) or None
 
     return NetResponse.from_orm(
         net,

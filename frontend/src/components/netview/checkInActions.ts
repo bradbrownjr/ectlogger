@@ -130,7 +130,11 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
         topic_response: '',
         poll_response: '',
         status: 'checked_in',
-        check_in_as_standard: false,
+        // Reset to Standard, never NCS. This form is reused for every
+        // subsequent check-in (staff logging stations by voice), so leaving
+        // an NCS request latched here would silently promote an eligible
+        // operator who later types their own callsign into it.
+        check_in_as_standard: true,
       });
 
       // Append the new row from the response instead of re-reading the list.

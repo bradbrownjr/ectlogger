@@ -354,7 +354,12 @@ const NetView: React.FC = () => {
     topic_response: '',
     poll_response: '',
     status: 'checked_in',
-    check_in_as_standard: false,
+    // Standard, not NCS. This is also the state the inline check-in form
+    // (staff logging stations by voice) starts in, so an eligible
+    // co-manager/rotation member typing their own callsign here must not be
+    // silently promoted -- becoming NCS is only ever an affirmative choice
+    // via the "Check in as NCS" control.
+    check_in_as_standard: true,
   });
 
   // Fetches the full "can hear" report list for this net. Called once on mount
@@ -929,7 +934,7 @@ const NetView: React.FC = () => {
         topic_response: '',
         poll_response: '',
         status: 'checked_in',
-        check_in_as_standard: false,
+        check_in_as_standard: true,  // Standard by default -- see the initial form state above
       });
     } catch (error) {
       console.error('Failed to start net:', error);
@@ -2924,7 +2929,7 @@ const NetView: React.FC = () => {
                   checkInPrompt.onClose();
                   if (user) {
                     const locationValue = (user.location_awareness && gridSquare) ? gridSquare : (user.location || '');
-                    setCheckInForm({ callsign: getAppropriateCallsign(), name: user.name || '', location: locationValue, skywarn_number: '', weather_observation: '', power_source: '', power: '', feedback: '', notes: '', relayed_by: '', available_frequency_ids: [], custom_fields: {}, topic_response: '', poll_response: '', status: 'checked_in', check_in_as_standard: false });
+                    setCheckInForm({ callsign: getAppropriateCallsign(), name: user.name || '', location: locationValue, skywarn_number: '', weather_observation: '', power_source: '', power: '', feedback: '', notes: '', relayed_by: '', available_frequency_ids: [], custom_fields: {}, topic_response: '', poll_response: '', status: 'checked_in', check_in_as_standard: true });
                   }
                   checkInDialog.onOpen();
                 }}

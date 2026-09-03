@@ -436,17 +436,23 @@ async def _build_ics309_data(db: AsyncSession, net: Net, current_user: Optional[
     freq_strings = [format_freq(f) for f in net.frequencies]
     freq_list = ", ".join(freq_strings) if freq_strings else "Multiple"
 
-    # Get NCS info — prefer the most recently assigned NCS role; fall back to owner.
+    # Get NCS info — every *active* NCS, oldest assignment first; fall back to
+    # owner when the net has none. All of them rather than a single row: a net
+    # can legitimately be run by several NCS at once (see nets_core.py::get_net
+    # for the full reasoning), and picking the most-recently-assigned one put
+    # the wrong operator on the official ICS-309 for both multi-NCS nets and
+    # single-NCS rotation nets (the rotation's scheduled pick is assigned ~24h
+    # ahead, so any later grant outranked them).
     ncs_role_result = await db.execute(
         select(User.callsign, User.name)
         .join(NetRole, NetRole.user_id == User.id)
         .where(NetRole.net_id == net.id, NetRole.role == "NCS")
-        .order_by(NetRole.assigned_at.desc())
-        .limit(1)
+        .where(NetRole.is_active == True)  # noqa: E712
+        .order_by(NetRole.assigned_at.asc())
     )
-    ncs_role_row = ncs_role_result.first()
-    ncs_callsign = ncs_role_row[0] if ncs_role_row else (display_callsign(net.owner) if net.owner else "Unknown")
-    ncs_name = ncs_role_row[1] if ncs_role_row else (net.owner.name or display_callsign(net.owner) if net.owner else "Unknown")
+    ncs_role_rows = ncs_role_result.all()
+    ncs_callsign = ", ".join(r[0] for r in ncs_role_rows if r[0]) or (display_callsign(net.owner) if net.owner else "Unknown")
+    ncs_name = ", ".join(r[1] for r in ncs_role_rows if r[1]) or (net.owner.name or display_callsign(net.owner) if net.owner else "Unknown")
 
     # Display times in the requesting user's timezone preference (falls back to
     # UTC if they prefer UTC or haven't got a timezone on file yet)

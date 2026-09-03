@@ -77,7 +77,7 @@ async def test_rotation_member_can_become_additional_ncs_when_requested(client, 
 
     resp = await client.post(
         f"/api/check-ins/nets/{net_id}/check-ins",
-        json={"callsign": "KC1OTH"},
+        json={"callsign": "KC1OTH", "check_in_as_standard": False},
         headers=auth_headers(other),
     )
     assert resp.status_code == 201
@@ -93,6 +93,86 @@ async def test_rotation_member_can_become_additional_ncs_when_requested(client, 
     )
     ncs_user_ids = {r.user_id for r in roles.scalars().all()}
     assert ncs_user_ids == {owner_id, other_id}
+
+
+@pytest.mark.asyncio
+async def test_omitting_the_flag_never_grants_ncs(client, db, owner, other):
+    """Fail-safe default. `check_in_as_standard` defaults to True, and the
+    grant requires an explicit False, so any caller that simply doesn't send
+    the field checks in as a Standard participant.
+
+    This is the structural guard against the 2026-08-30 incident recurring
+    through a new entry point: before 2026-09-03 the field defaulted to
+    False, so *omitting* it requested NCS, and correctness depended on every
+    one of ~7 scattered frontend literals staying right. Three of them (the
+    initial check-in form state and two form resets) were still false, which
+    silently promoted an eligible operator who typed their own callsign into
+    the inline check-in form."""
+    owner_id, other_id = owner.id, other.id
+    template = await _template_with_rotation_member(db, owner_id, other_id)
+    net_id = await _create_and_start_net(client, owner, template.id)
+
+    resp = await client.post(
+        f"/api/check-ins/nets/{net_id}/check-ins",
+        json={"callsign": "KC1OTH"},  # deliberately omits check_in_as_standard
+        headers=auth_headers(other),
+    )
+    assert resp.status_code == 201
+
+    db.expire_all()
+    roles = await db.execute(
+        select(NetRole).where(NetRole.net_id == net_id, NetRole.role == "NCS", NetRole.is_active == True)  # noqa: E712
+    )
+    ncs_user_ids = {r.user_id for r in roles.scalars().all()}
+    assert other_id not in ncs_user_ids, "omitting the flag must never grant NCS"
+    assert ncs_user_ids == {owner_id}
+
+
+@pytest.mark.asyncio
+async def test_explicit_null_never_grants_ncs(client, db, owner, other):
+    """`null` is not an affirmative request either -- the grant tests
+    `is False`, so an explicit null falls through to Standard rather than
+    sneaking past a `not None` truthiness check."""
+    owner_id, other_id = owner.id, other.id
+    template = await _template_with_rotation_member(db, owner_id, other_id)
+    net_id = await _create_and_start_net(client, owner, template.id)
+
+    resp = await client.post(
+        f"/api/check-ins/nets/{net_id}/check-ins",
+        json={"callsign": "KC1OTH", "check_in_as_standard": None},
+        headers=auth_headers(other),
+    )
+    assert resp.status_code == 201
+
+    db.expire_all()
+    roles = await db.execute(
+        select(NetRole).where(NetRole.net_id == net_id, NetRole.role == "NCS", NetRole.is_active == True)  # noqa: E712
+    )
+    assert other_id not in {r.user_id for r in roles.scalars().all()}
+
+
+@pytest.mark.asyncio
+async def test_staff_entered_checkin_never_grants_ncs(client, db, owner, other):
+    """An NCS/Logger logging someone else in by voice is never that person's
+    own choice, so it must not grant NCS even with an explicit request --
+    the `current_user.id == linked_user_id` guard in check_ins.py."""
+    owner_id, other_id = owner.id, other.id
+    template = await _template_with_rotation_member(db, owner_id, other_id)
+    net_id = await _create_and_start_net(client, owner, template.id)
+
+    # owner (already NCS) enters other's callsign on their behalf
+    resp = await client.post(
+        f"/api/check-ins/nets/{net_id}/check-ins",
+        json={"callsign": "KC1OTH", "check_in_as_standard": False},
+        headers=auth_headers(owner),
+    )
+    assert resp.status_code == 201
+
+    db.expire_all()
+    roles = await db.execute(
+        select(NetRole).where(NetRole.net_id == net_id, NetRole.role == "NCS", NetRole.is_active == True)  # noqa: E712
+    )
+    assert other_id not in {r.user_id for r in roles.scalars().all()}
 
 
 @pytest.mark.asyncio
@@ -141,7 +221,7 @@ async def test_rotation_member_still_auto_granted_ncs_when_no_active_ncs_yet(cli
 
     resp = await client.post(
         f"/api/check-ins/nets/{net_id}/check-ins",
-        json={"callsign": "KC1OTH"},
+        json={"callsign": "KC1OTH", "check_in_as_standard": False},
         headers=auth_headers(other),
     )
     assert resp.status_code == 201

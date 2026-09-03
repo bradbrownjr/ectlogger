@@ -378,10 +378,13 @@ async def create_check_in(
     # above, using state from before this grant, so a co-manager's own check-in
     # doesn't itself count as "the NCS arrived" confirmation to subscribers --
     # only an already-assigned NCS does.
+    # `is False` rather than `not ...`: the grant must be an affirmative,
+    # explicit request. An omitted field defaults to True (Standard) and an
+    # explicit null would otherwise sneak through `not None` as a request.
     if (
         linked_user_id
         and current_user.id == linked_user_id
-        and not check_in_data.check_in_as_standard
+        and check_in_data.check_in_as_standard is False
     ):
         is_eligible = await is_eligible_for_ncs_auto_grant(db, net, linked_user_id)
         if is_eligible:

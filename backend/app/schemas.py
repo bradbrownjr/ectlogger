@@ -452,8 +452,10 @@ class NetResponse(NetBase):
     owner_id: int
     owner_callsign: Optional[str] = None
     owner_name: Optional[str] = None
-    # Currently-assigned Net Control Station for this net (most recently
-    # added user with NetRole.role == "NCS"). May differ from the owner
+    # Net Control Station(s) for this net: every active NetRole.role == "NCS",
+    # oldest assignment first, comma-joined ("KU1U" or "WO1J, NB1T, N1HPR").
+    # A net can legitimately have several at once (multi-desk SKYWARN
+    # exercises), so this is not a single operator. May differ from the owner
     # (the "Net Manager"), since the manager is whoever created/owns the
     # net while the NCS is whoever is actually running it on the air.
     ncs_callsign: Optional[str] = None
@@ -802,10 +804,21 @@ class CheckInCreate(CheckInBase):
     available_frequency_ids: Optional[List[int]] = Field(default_factory=list)
     custom_fields: Optional[dict] = Field(default_factory=dict, max_length=50)
     status: Optional[StationStatus] = None
-    # Opt-out of the co-manager/rotation-member NCS auto-grant on self-check-in
-    # (see is_eligible_for_ncs_auto_grant / check_ins.py's auto-grant block).
-    # Ignored for staff-entered check-ins, which never auto-grant regardless.
-    check_in_as_standard: Optional[bool] = False
+    # Whether this self-check-in declines the co-manager/rotation-member NCS
+    # grant (see is_eligible_for_ncs_auto_grant / check_ins.py's grant block).
+    # Ignored for staff-entered check-ins, which never grant regardless.
+    #
+    # Defaults to True (fail SAFE): omitting the field checks in as a Standard
+    # participant. Becoming NCS requires this to be explicitly False -- an
+    # affirmative "Check in as NCS" choice. It defaulted to False until
+    # 2026-09-03, which meant any caller that forgot to send the field
+    # requested NCS, and the whole safety of the flow rested on ~7 scattered
+    # literals in the frontend staying correct. Three of them (the initial
+    # check-in form state and two form resets) were in fact still false, so an
+    # eligible operator typing their own callsign into the inline check-in
+    # form was silently made NCS -- the same failure as the 2026-08-30 ME
+    # Dirigo Net incident, through a different entry point.
+    check_in_as_standard: Optional[bool] = True
     
     @field_validator('custom_fields')
     @classmethod
