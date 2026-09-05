@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 import { useCreateNetContext } from '../../contexts/CreateNetContext';
 import TrafficSettingsPanel from '../forms/TrafficSettingsPanel';
+import NetLogoSection from '../NetLogoSection';
 
 // ========== TAB 0: BASIC INFO ==========
 // Net name, description, URLs, stream URL, scheduled start time,
@@ -24,6 +25,7 @@ const BasicInfoTab: React.FC = () => {
     description, setDescription,
     infoUrl, setInfoUrl,
     streamUrl, setStreamUrl,
+    logoUrl, setLogoUrl,
     ics309Enabled, setIcs309Enabled,
     propagationLoggingEnabled, setPropagationLoggingEnabled,
     selfCanHearEnabled, setSelfCanHearEnabled,
@@ -47,6 +49,8 @@ const BasicInfoTab: React.FC = () => {
     closedAt, setClosedAt,
     onSaveTimes,
     isInfoMode,
+    netId,
+    isEditMode,
   } = useCreateNetContext();
 
   return (
@@ -89,6 +93,17 @@ const BasicInfoTab: React.FC = () => {
         helperText="Optional. Direct audio stream URL (Shoutcast, Broadcastify, etc.) for net listeners"
         InputProps={{ readOnly: isInfoMode }}
       />
+
+      {/* Logo — only once the net exists (upload needs an id). Shown on net
+          cards and to the left of the net name on the check-in page. */}
+      {!isInfoMode && isEditMode && netId && (
+        <NetLogoSection
+          entityType="net"
+          entityId={Number(netId)}
+          logoUrl={logoUrl}
+          onLogoChange={setLogoUrl}
+        />
+      )}
 
       {/* Scheduled Start Time — countdown timer */}
       {!isInfoMode && (

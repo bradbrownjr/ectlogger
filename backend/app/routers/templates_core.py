@@ -1,8 +1,10 @@
 import json
 from datetime import datetime, timezone
+from io import BytesIO
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from PIL import Image, ImageOps
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -27,6 +29,13 @@ from app.schemas import (
     NetTemplateUpdate,
     public_display_name,
 )
+from app.utils import NET_LOGO_DIR
+
+# Same limits/pattern as the net logo upload (routers/nets_core.py) and the
+# profile avatar upload (routers/users.py).
+TEMPLATE_LOGO_MAX_BYTES = 2 * 1024 * 1024  # 2 MB
+TEMPLATE_LOGO_MAX_DIM = 256
+TEMPLATE_LOGO_ALLOWED_MIME = {"image/png", "image/jpeg", "image/webp"}
 
 router = APIRouter()
 
@@ -470,6 +479,83 @@ async def update_template(
     # actually owner/staff of is exactly the case this field exists for).
     is_owner_or_staff = await check_template_staff_access(db, template, current_user)
     return NetTemplateResponse.from_orm(template, subscriber_count=subscriber_count, is_subscribed=is_subscribed, can_manage=True, can_create_net=True, is_owner_or_staff=is_owner_or_staff)
+
+
+@router.post("/{template_id}/logo", response_model=NetTemplateResponse)
+async def upload_template_logo(
+    template_id: int,
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Upload this schedule's logo image. Replaces any existing upload and
+    seeds Net.logo_url for nets created from this schedule going forward.
+    Accepted: PNG, JPEG, WebP. Max 2 MB. Resized to 256x256 max."""
+    result = await db.execute(select(NetTemplate).where(NetTemplate.id == template_id))
+    template = result.scalar_one_or_none()
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+    if not await check_template_permission(db, template, current_user):
+        raise HTTPException(status_code=403, detail="Not authorized to update this template")
+
+    if file.content_type not in TEMPLATE_LOGO_ALLOWED_MIME:
+        raise HTTPException(status_code=400, detail="Unsupported image type. Use PNG, JPEG, or WebP.")
+
+    file_bytes = await file.read()
+    if len(file_bytes) > TEMPLATE_LOGO_MAX_BYTES:
+        raise HTTPException(status_code=400, detail="Image too large (max 2 MB).")
+
+    try:
+        pil_image = Image.open(BytesIO(file_bytes))
+        pil_image.load()
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail="Invalid or corrupt image.") from exc
+
+    pil_image = ImageOps.exif_transpose(pil_image)
+    if pil_image.mode in {"RGBA", "LA", "P"}:
+        pil_image = pil_image.convert("RGB")
+    pil_image.thumbnail((TEMPLATE_LOGO_MAX_DIM, TEMPLATE_LOGO_MAX_DIM), Image.Resampling.LANCZOS)
+
+    dest = NET_LOGO_DIR / f"template-{template.id}.jpg"
+    pil_image.save(str(dest), format="JPEG", quality=90)
+
+    template.logo_url = f"/api/net-logos/{dest.name}"
+    await db.commit()
+    result = await db.execute(
+        select(NetTemplate)
+        .options(selectinload(NetTemplate.frequencies), selectinload(NetTemplate.fifth_week_user))
+        .where(NetTemplate.id == template.id)
+    )
+    template = result.scalar_one()
+    return NetTemplateResponse.from_orm(template)
+
+
+@router.delete("/{template_id}/logo", response_model=NetTemplateResponse)
+async def delete_template_logo(
+    template_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Remove this schedule's uploaded logo."""
+    result = await db.execute(select(NetTemplate).where(NetTemplate.id == template_id))
+    template = result.scalar_one_or_none()
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+    if not await check_template_permission(db, template, current_user):
+        raise HTTPException(status_code=403, detail="Not authorized to update this template")
+
+    dest = NET_LOGO_DIR / f"template-{template.id}.jpg"
+    if dest.exists():
+        dest.unlink()
+    template.logo_url = None
+    await db.commit()
+    result = await db.execute(
+        select(NetTemplate)
+        .options(selectinload(NetTemplate.frequencies), selectinload(NetTemplate.fifth_week_user))
+        .where(NetTemplate.id == template.id)
+    )
+    template = result.scalar_one()
+    return NetTemplateResponse.from_orm(template)
 
 
 @router.delete("/{template_id}", status_code=status.HTTP_204_NO_CONTENT)

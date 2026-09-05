@@ -80,6 +80,7 @@ export interface CreateScheduleContextValue {
   name: string; setName: Dispatch<SetStateAction<string>>;
   description: string; setDescription: Dispatch<SetStateAction<string>>;
   infoUrl: string; setInfoUrl: Dispatch<SetStateAction<string>>;
+  logoUrl: string | null; setLogoUrl: Dispatch<SetStateAction<string | null>>;
   script: string; setScript: Dispatch<SetStateAction<string>>;
   announcements: string; setAnnouncements: Dispatch<SetStateAction<string>>;
 

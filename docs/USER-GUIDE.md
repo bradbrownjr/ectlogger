@@ -239,6 +239,7 @@ The Create Net form has five tabs to configure your net:
 - **Name** — Net name (e.g., "Monday Evening SKYWARN Net")
 - **Description** — Purpose, scope, and any special instructions
 - **Info URL** — Optional link to your club or organization's website
+- **Logo** — Optional club or net logo, uploaded and cropped square once the net has been saved (from the Edit Net page). Shows on the net's card and next to its name on the check-in page.
 - **Scheduled Start Time** — Optional. If set, a countdown timer displays before the net starts
 - **Enable ICS-309 format** — Use official FEMA communications log format for net closure emails
 - **Enable Station-to-Station Coverage Logging** — Adds an ear icon action to each check-in row. Any station can record its own reception; NCS, Logger, and Relay can also record on behalf of any station. See "Station-to-Station Coverage Logging" below.
@@ -306,7 +307,9 @@ For nets that run regularly (weekly club nets, SKYWARN practice nets, etc.), cre
 
 ### Schedules act as templates
 
-A **schedule** is also the *template* that nets are opened from. When the system (or you) opens a net from a schedule, the net is seeded with the schedule's name, description, info URL, stream URL, script, announcements, frequencies, check-in field configuration, ICS-309/Topic/Poll settings, self check-in and self-report coverage settings, and staff list.
+A **schedule** is also the *template* that nets are opened from. When the system (or you) opens a net from a schedule, the net is seeded with the schedule's name, description, info URL, stream URL, logo, script, announcements, frequencies, check-in field configuration, ICS-309/Topic/Poll settings, self check-in and self-report coverage settings, and staff list.
+
+A schedule's logo is uploaded separately, from the schedule editor's Basic Info tab, and doesn't travel through **Save to Schedule** — upload it directly on the schedule if you want new nets to carry it automatically.
 
 After a net is opened, edits you make to the net stay on **that net only** by default. The schedule isn't touched unless you explicitly push your changes back to it. This keeps in-the-moment edits (a one-off frequency change, a session-specific announcement) from rewriting the schedule's defaults.
 
@@ -656,7 +659,7 @@ Run a quick poll with predefined options:
 4. Poll results are shown in the "Poll" column
 5. The emailed net log includes a bar chart of poll results with percentages
 
-Both Topic and Poll columns are only visible when configured for the net. System messages in chat announce when participants submit answers.
+Both Topic and Poll columns are only visible when configured for the net. System messages in chat announce when participants submit answers. When either is set, its question also stays pinned above the chat messages for the whole net, so participants can always see what's being asked without scrolling back through the activity log.
 
 ### Closing the Net
 

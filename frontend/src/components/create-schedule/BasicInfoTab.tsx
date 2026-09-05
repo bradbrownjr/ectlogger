@@ -9,15 +9,19 @@ import {
 } from '@mui/material';
 import { useCreateScheduleContext } from '../../contexts/CreateScheduleContext';
 import TrafficSettingsPanel from '../forms/TrafficSettingsPanel';
+import NetLogoSection from '../NetLogoSection';
 
 // ========== TAB 0: BASIC INFO ==========
 // Name, description, general net features, community features, ARES/EmComm features, active flag
 
 const BasicInfoTab: React.FC = () => {
   const {
+    isEdit,
+    scheduleId,
     name, setName,
     description, setDescription,
     infoUrl, setInfoUrl,
+    logoUrl, setLogoUrl,
     ics309Enabled, setIcs309Enabled,
     propagationLoggingEnabled, setPropagationLoggingEnabled,
     selfCanHearEnabled, setSelfCanHearEnabled,
@@ -66,6 +70,17 @@ const BasicInfoTab: React.FC = () => {
         placeholder="https://example.com/net-info"
         helperText="Optional URL for net, club or organization info"
       />
+
+      {/* Logo — only once the schedule exists (upload needs an id). Seeds the
+          logo for nets created from this schedule and shows on the schedule card. */}
+      {isEdit && scheduleId && (
+        <NetLogoSection
+          entityType="template"
+          entityId={Number(scheduleId)}
+          logoUrl={logoUrl}
+          onLogoChange={setLogoUrl}
+        />
+      )}
 
       {/* ========== General Net Features ========== */}
       <Typography variant="subtitle1" sx={{ mt: 3, mb: 1, fontWeight: 'bold' }}>

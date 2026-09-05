@@ -1,8 +1,10 @@
 import json
 from datetime import datetime
+from io import BytesIO
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from PIL import Image, ImageOps
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -31,7 +33,13 @@ from app.schemas import (
     public_display_name,
 )
 from app.services.net_closure import close_net_and_notify
-from app.utils import display_callsign, format_ncs_attribution
+from app.utils import NET_LOGO_DIR, display_callsign, format_ncs_attribution
+
+# Same limits as the profile avatar upload (routers/users.py) -- square,
+# cropped client-side, re-validated and re-resized here as a safety net.
+NET_LOGO_MAX_BYTES = 2 * 1024 * 1024  # 2 MB
+NET_LOGO_MAX_DIM = 256
+NET_LOGO_ALLOWED_MIME = {"image/png", "image/jpeg", "image/webp"}
 
 router = APIRouter()
 
@@ -433,7 +441,73 @@ async def update_net(
 
     await db.commit()
     await db.refresh(net, ['frequencies'])
-    
+
+    return NetResponse.from_orm(net)
+
+
+@router.post("/{net_id}/logo", response_model=NetResponse)
+async def upload_net_logo(
+    net_id: int,
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Upload this net's logo image. Replaces any existing upload.
+    Accepted: PNG, JPEG, WebP. Max 2 MB. Resized to 256x256 max."""
+    result = await db.execute(select(Net).where(Net.id == net_id))
+    net = result.scalar_one_or_none()
+    if not net:
+        raise HTTPException(status_code=404, detail="Net not found")
+    if not await check_net_permission(db, net, current_user, ["NCS"]):
+        raise HTTPException(status_code=403, detail="Not authorized to update this net")
+
+    if file.content_type not in NET_LOGO_ALLOWED_MIME:
+        raise HTTPException(status_code=400, detail="Unsupported image type. Use PNG, JPEG, or WebP.")
+
+    file_bytes = await file.read()
+    if len(file_bytes) > NET_LOGO_MAX_BYTES:
+        raise HTTPException(status_code=400, detail="Image too large (max 2 MB).")
+
+    try:
+        pil_image = Image.open(BytesIO(file_bytes))
+        pil_image.load()
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail="Invalid or corrupt image.") from exc
+
+    pil_image = ImageOps.exif_transpose(pil_image)
+    if pil_image.mode in {"RGBA", "LA", "P"}:
+        pil_image = pil_image.convert("RGB")
+    pil_image.thumbnail((NET_LOGO_MAX_DIM, NET_LOGO_MAX_DIM), Image.Resampling.LANCZOS)
+
+    dest = NET_LOGO_DIR / f"net-{net.id}.jpg"
+    pil_image.save(str(dest), format="JPEG", quality=90)
+
+    net.logo_url = f"/api/net-logos/{dest.name}"
+    await db.commit()
+    await db.refresh(net, ['frequencies'])
+    return NetResponse.from_orm(net)
+
+
+@router.delete("/{net_id}/logo", response_model=NetResponse)
+async def delete_net_logo(
+    net_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Remove this net's uploaded logo."""
+    result = await db.execute(select(Net).where(Net.id == net_id))
+    net = result.scalar_one_or_none()
+    if not net:
+        raise HTTPException(status_code=404, detail="Net not found")
+    if not await check_net_permission(db, net, current_user, ["NCS"]):
+        raise HTTPException(status_code=403, detail="Not authorized to update this net")
+
+    dest = NET_LOGO_DIR / f"net-{net.id}.jpg"
+    if dest.exists():
+        dest.unlink()
+    net.logo_url = None
+    await db.commit()
+    await db.refresh(net, ['frequencies'])
     return NetResponse.from_orm(net)
 
 

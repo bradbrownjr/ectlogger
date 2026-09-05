@@ -167,6 +167,12 @@ export const netApi = {
   // Draws from the same _build_ics309_data() as the CSV download so the two
   // never diverge -- see routers/nets_export.py.
   getIcs309Log: (id: number) => api.get(`/nets/${id}/export/ics309`, { params: { format: 'json' } }),
+  uploadLogo: (id: number, file: Blob) => {
+    const form = new FormData();
+    form.append('file', file, 'logo.jpg');
+    return api.post(`/nets/${id}/logo`, form, { headers: { 'Content-Type': 'multipart/form-data' } });
+  },
+  deleteLogo: (id: number) => api.delete(`/nets/${id}/logo`),
 };
 
 // Check-in API
@@ -215,6 +221,12 @@ export const templateApi = {
   // attached to this template.
   linkableNets: (templateId: number) =>
     api.get(`/templates/${templateId}/linkable-nets`),
+  uploadLogo: (id: number, file: Blob) => {
+    const form = new FormData();
+    form.append('file', file, 'logo.jpg');
+    return api.post(`/templates/${id}/logo`, form, { headers: { 'Content-Type': 'multipart/form-data' } });
+  },
+  deleteLogo: (id: number) => api.delete(`/templates/${id}/logo`),
 };
 
 

@@ -185,6 +185,10 @@ const NetPaneWindow: React.FC = () => {
           canManage={user?.role === 'admin' || !!net.is_owner_or_ncs}
           chatGracePeriodMinutes={net.chat_grace_period_minutes ?? undefined}
           closedAt={net.closed_at}
+          topicOfWeekEnabled={net.topic_of_week_enabled}
+          topicOfWeekPrompt={net.topic_of_week_prompt}
+          pollEnabled={net.poll_enabled}
+          pollQuestion={net.poll_question}
         />
         <Snackbar open={toastMessage !== ''} autoHideDuration={6000} onClose={() => setToastMessage('')} message={toastMessage} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }} />
       </Box>
@@ -285,9 +289,21 @@ const NetPaneWindow: React.FC = () => {
     ? checkIns.find((ci: any) => ci.id === canHearDialogCheckInId) || null
     : null;
 
+  // Currently-active NCS only -- a stepped-down NCS's role row persists as
+  // inactive rather than being deleted (see toggle_self_net_role), so without
+  // this filter they'd keep the crown icon and stay pinned to the top below.
   const ncsRoles = netRoles
-    .filter((role: any) => role.role === 'NCS')
+    .filter((role: any) => role.role === 'NCS' && role.is_active !== false)
     .sort((a: any, b: any) => new Date(a.assigned_at).getTime() - new Date(b.assigned_at).getTime());
+
+  // Anyone holding an active staffed role (NCS, Logger, or Relay) -- used to
+  // keep mobile-priority sort from ranking a mobile station above a staffed
+  // position, which it did when only NCS (not Logger/Relay) counted.
+  const staffedUserIds = new Set(
+    netRoles
+      .filter((role: any) => ['NCS', 'LOGGER', 'Relay'].includes(role.role) && role.is_active !== false)
+      .map((role: any) => role.user_id)
+  );
 
   const { getStatusIcon, getStatusTooltip, getStatusLabel, getNcsIcon } =
     getCheckInStatusHelpers({ net, netRoles, checkIns, ncsRoles });
@@ -345,12 +361,6 @@ const NetPaneWindow: React.FC = () => {
     fetchCheckIns, fetchNetRoles, fetchPollResponses,
   });
 
-  // Only promote NCS users who checked in before the first non-NCS station —
-  // see NetView.tsx for why (template-staff bulk role assignment).
-  const firstNonNcsCheckInTime = checkIns
-    .filter((ci: any) => !ncsRoles.some((r: any) => r.user_id === ci.user_id))
-    .reduce((min: number, ci: any) => Math.min(min, new Date(ci.checked_in_at).getTime()), Infinity);
-
   const filteredCheckIns = checkIns.filter((checkIn: any) => {
     if (filteredFrequencyIds.length > 0) {
       const isNcsUser = ncsRoles.some((r: any) => r.user_id === checkIn.user_id);
@@ -366,11 +376,12 @@ const NetPaneWindow: React.FC = () => {
     }
     return true;
   }).sort((a: any, b: any) => {
-    const aIsNcs = ncsRoles.some((r: any) => r.user_id === a.user_id) &&
-                   new Date(a.checked_in_at).getTime() < firstNonNcsCheckInTime;
-    const bIsNcs = ncsRoles.some((r: any) => r.user_id === b.user_id) &&
-                   new Date(b.checked_in_at).getTime() < firstNonNcsCheckInTime;
-    if (aIsNcs !== bIsNcs) return aIsNcs ? -1 : 1;
+    // Staffed positions (NCS/Logger/Relay) stay pinned to the top, regardless
+    // of when they checked in. Mobile-priority sort must never rank a mobile
+    // station above a staffed position -- see staffedUserIds.
+    const aIsStaffed = staffedUserIds.has(a.user_id);
+    const bIsStaffed = staffedUserIds.has(b.user_id);
+    if (aIsStaffed !== bIsStaffed) return aIsStaffed ? -1 : 1;
     if (net?.mobile_priority_sort !== false) {
       const aIsMobile = a.status === 'mobile';
       const bIsMobile = b.status === 'mobile';

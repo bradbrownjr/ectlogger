@@ -48,12 +48,16 @@ interface ChatProps {
   minimized?: boolean;
   onMinimize?: () => void;
   onRestore?: () => void;
+  topicOfWeekEnabled?: boolean;
+  topicOfWeekPrompt?: string | null;
+  pollEnabled?: boolean;
+  pollQuestion?: string | null;
 }
 
 const REACTION_EMOJIS = ['👍', '🙂', '🙁', '❤️', '✅'];
 const CHAT_IMAGE_PREFIX = '__CHAT_IMAGE__';
 
-const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery, canManage, chatGracePeriodMinutes, closedAt, onlineUserIds = [], onProfileClick, onNewMessage, onDetach, onPopOut, minimized, onMinimize, onRestore }) => {
+const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery, canManage, chatGracePeriodMinutes, closedAt, onlineUserIds = [], onProfileClick, onNewMessage, onDetach, onPopOut, minimized, onMinimize, onRestore, topicOfWeekEnabled, topicOfWeekPrompt, pollEnabled, pollQuestion }) => {
   const { user } = useAuth();
   const theme = useTheme();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -341,7 +345,30 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
 
       {!minimized && (
         <>
-      <List 
+      {((topicOfWeekEnabled && topicOfWeekPrompt) || (pollEnabled && pollQuestion)) && (
+        <Box
+          sx={{
+            flexShrink: 0,
+            px: 1.5,
+            py: 1,
+            borderBottom: 1,
+            borderColor: 'divider',
+            backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
+          }}
+        >
+          {topicOfWeekEnabled && topicOfWeekPrompt && (
+            <Typography variant="body2">
+              <strong>Topic of the Week:</strong> {topicOfWeekPrompt}
+            </Typography>
+          )}
+          {pollEnabled && pollQuestion && (
+            <Typography variant="body2" sx={{ mt: (topicOfWeekEnabled && topicOfWeekPrompt) ? 0.5 : 0 }}>
+              <strong>Poll:</strong> {pollQuestion}
+            </Typography>
+          )}
+        </Box>
+      )}
+      <List
         ref={messagesContainerRef}
         sx={{ 
           flex: '1 1 auto',

@@ -1261,8 +1261,9 @@ const NetView: React.FC = () => {
 
   const canStartNet = canManage;
   
-  // Check if net has any NCS assigned
-  const hasNCS = netRoles.some((role: any) => role.role === 'NCS');
+  // Check if net has any actively-serving NCS (a stepped-down NCS's role row
+  // stays in netRoles with is_active=false, not deleted -- see toggle_self_net_role).
+  const hasNCS = netRoles.some((role: any) => role.role === 'NCS' && role.is_active !== false);
 
   // Is there an NCS other than the current user actively acting as NCS right
   // now? Used to warn before stepping away leaves the net with no one
@@ -1271,10 +1272,22 @@ const NetView: React.FC = () => {
     (role: any) => role.role === 'NCS' && role.user_id !== user?.id && role.is_active !== false
   );
 
-  // Get NCS roles sorted by assigned_at for consistent color assignment
+  // Currently-active NCS, sorted by assigned_at for consistent color assignment.
+  // Must filter is_active: a stepped-down NCS's role row persists as inactive
+  // rather than being deleted, so without this filter they'd keep the crown
+  // icon and stay pinned to the top of the check-in list after stepping down.
   const ncsRoles = netRoles
-    .filter((role: any) => role.role === 'NCS')
+    .filter((role: any) => role.role === 'NCS' && role.is_active !== false)
     .sort((a, b) => new Date(a.assigned_at).getTime() - new Date(b.assigned_at).getTime());
+
+  // Anyone holding an active staffed role (NCS, Logger, or Relay) -- used to
+  // keep mobile-priority sort from ranking a mobile station above a staffed
+  // position, which it did when only NCS (not Logger/Relay) counted.
+  const staffedUserIds = new Set(
+    netRoles
+      .filter((role: any) => ['NCS', 'LOGGER', 'Relay'].includes(role.role) && role.is_active !== false)
+      .map((role: any) => role.user_id)
+  );
 
   // Status display helpers (icon/tooltip/label/NCS crown) shared by all three
   // check-in tables. Depends on ncsRoles, so it's constructed here.
@@ -1329,15 +1342,6 @@ const NetView: React.FC = () => {
     fetchCheckIns, fetchNetRoles, fetchPollResponses,
   });
 
-  // Only promote NCS users who checked in before the first non-NCS station.
-  // Template staff are bulk-assigned NCS roles at the same timestamp when a net
-  // is created from a template, which would otherwise promote all of them above
-  // chronological order. An NCS who joins late (after regular stations) stays
-  // in their natural check-in position.
-  const firstNonNcsCheckInTime = checkIns
-    .filter((ci: CheckIn) => !ncsRoles.some((r: any) => r.user_id === ci.user_id))
-    .reduce((min: number, ci: CheckIn) => Math.min(min, new Date(ci.checked_in_at).getTime()), Infinity);
-
   // Filter check-ins based on search query AND frequency filter
   const filteredCheckIns = checkIns.filter((checkIn: CheckIn) => {
     // First apply search filter
@@ -1371,14 +1375,15 @@ const NetView: React.FC = () => {
     
     return true;
   }).sort((a: CheckIn, b: CheckIn) => {
-    // Sort order: NCS first → Mobile second → then original checked_in_at order.
-    // Mobile stations may only be reachable briefly, so they surface immediately
-    // after NCS to ensure their comments are captured before they drop off.
-    const aIsNcs = ncsRoles.some((r: any) => r.user_id === a.user_id) &&
-                   new Date(a.checked_in_at).getTime() < firstNonNcsCheckInTime;
-    const bIsNcs = ncsRoles.some((r: any) => r.user_id === b.user_id) &&
-                   new Date(b.checked_in_at).getTime() < firstNonNcsCheckInTime;
-    if (aIsNcs !== bIsNcs) return aIsNcs ? -1 : 1;
+    // Sort order: staffed positions (NCS/Logger/Relay) first → Mobile second
+    // → then original checked_in_at order. Whoever currently holds an active
+    // staffed role stays pinned to the top, regardless of when they checked
+    // in. Mobile stations may only be reachable briefly, so they surface
+    // right after staff to ensure their comments are captured before they
+    // drop off -- but never ahead of a staffed position (see staffedUserIds).
+    const aIsStaffed = staffedUserIds.has(a.user_id);
+    const bIsStaffed = staffedUserIds.has(b.user_id);
+    if (aIsStaffed !== bIsStaffed) return aIsStaffed ? -1 : 1;
     if (net?.mobile_priority_sort !== false) {
       const aIsMobile = a.status === 'mobile';
       const bIsMobile = b.status === 'mobile';

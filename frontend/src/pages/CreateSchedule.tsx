@@ -74,6 +74,7 @@ const CreateSchedule: React.FC = () => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [infoUrl, setInfoUrl] = useState('');
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [script, setScript] = useState('');
   const [announcements, setAnnouncements] = useState('');
 
@@ -201,6 +202,7 @@ const CreateSchedule: React.FC = () => {
       setName(schedule.name);
       setDescription(schedule.description || '');
       setInfoUrl(schedule.info_url || '');
+      setLogoUrl(schedule.logo_url || null);
       setScript(schedule.script || '');
       setIcs309Enabled(schedule.ics309_enabled || false);
       setPropagationLoggingEnabled(schedule.propagation_logging_enabled || false);
@@ -355,7 +357,7 @@ const CreateSchedule: React.FC = () => {
   // ---- Context value ----
   const contextValue: CreateScheduleContextValue = {
     isEdit, scheduleId, currentUser, timezoneAbbr,
-    name, setName, description, setDescription, infoUrl, setInfoUrl,
+    name, setName, description, setDescription, infoUrl, setInfoUrl, logoUrl, setLogoUrl,
     script, setScript, announcements, setAnnouncements,
     ics309Enabled, setIcs309Enabled, mobilePrioritySort, setMobilePrioritySort,
     propagationLoggingEnabled, setPropagationLoggingEnabled,

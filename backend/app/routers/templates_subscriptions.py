@@ -279,6 +279,7 @@ async def create_net_from_template(
         description=template.description,
         info_url=template.info_url,
         stream_url=template.stream_url,
+        logo_url=template.logo_url,
         script=template.script,
         # Deliberately NOT copying template.announcements: Net.announcements
         # is Net Notes now (per-net, meant to start blank), separate from

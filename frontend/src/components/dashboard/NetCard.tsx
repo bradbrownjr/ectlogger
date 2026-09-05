@@ -26,6 +26,7 @@ import GroupsIcon from '@mui/icons-material/Groups';
 import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
 import EmailIcon from '@mui/icons-material/Email';
+import Avatar from '@mui/material/Avatar';
 import ExpandableDescription from '../ExpandableDescription';
 import CardActionButton from '../CardActionButton';
 import { formatDateTime } from '../../utils/dateUtils';
@@ -44,6 +45,7 @@ export interface Net {
   // Assigned NCS for this net (most recent NetRole with role='NCS')
   ncs_callsign?: string | null;
   ncs_name?: string | null;
+  logo_url?: string | null;
   template_id?: number | null;
   started_at?: string;
   closed_at?: string;
@@ -135,6 +137,9 @@ const NetCard: React.FC<NetCardProps> = ({
             {net.name}
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
+            {net.logo_url && (
+              <Avatar variant="rounded" src={net.logo_url} sx={{ width: 28, height: 28 }} />
+            )}
             <Chip label={net.status} color={getStatusColor(net.status)} size="small" />
             {net.template_id != null && (
               <Tooltip title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}>

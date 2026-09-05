@@ -460,6 +460,9 @@ class NetResponse(NetBase):
     # net while the NCS is whoever is actually running it on the air.
     ncs_callsign: Optional[str] = None
     ncs_name: Optional[str] = None
+    # Uploaded via POST /nets/{id}/logo, not settable through NetCreate/NetUpdate
+    # (mirrors User.avatar_url) -- see routers/nets_core.py.
+    logo_url: Optional[str] = None
     template_id: Optional[int] = None  # ID of the template this net was created from
     active_frequency_id: Optional[int] = None
     field_config: Optional[dict] = None
@@ -513,6 +516,7 @@ class NetResponse(NetBase):
             'owner_name': owner_name,
             'ncs_callsign': ncs_callsign,
             'ncs_name': ncs_name,
+            'logo_url': net.logo_url,
             'template_id': net.template_id,
             'active_frequency_id': net.active_frequency_id,
             'field_config': json.loads(net.field_config) if net.field_config else None,
@@ -631,6 +635,9 @@ class NetTemplateResponse(NetTemplateBase):
     owner_name: Optional[str] = None
     fifth_week_user_callsign: Optional[str] = None
     fifth_week_user_name: Optional[str] = None
+    # Uploaded via POST /templates/{id}/logo, not settable through
+    # NetTemplateCreate/Update (mirrors User.avatar_url and NetResponse.logo_url).
+    logo_url: Optional[str] = None
     is_active: bool
     created_at: datetime
     frequencies: List[FrequencyResponse] = []
@@ -661,6 +668,7 @@ class NetTemplateResponse(NetTemplateBase):
             'fifth_week_user_id': template.fifth_week_user_id,
             'fifth_week_user_callsign': template.fifth_week_user.callsign if template.fifth_week_user else None,
             'fifth_week_user_name': template.fifth_week_user.name if template.fifth_week_user else None,
+            'logo_url': template.logo_url,
             'field_config': json.loads(template.field_config) if template.field_config else None,
             'schedule_type': template.schedule_type,
             'schedule_config': json.loads(template.schedule_config) if template.schedule_config else {},

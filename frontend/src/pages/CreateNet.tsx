@@ -79,6 +79,7 @@ const CreateNet: React.FC = () => {
   const [description, setDescription] = useState('');
   const [infoUrl, setInfoUrl] = useState('');
   const [streamUrl, setStreamUrl] = useState('');
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [script, setScript] = useState('');
   const [announcements, setAnnouncements] = useState('');
 
@@ -200,6 +201,7 @@ const CreateNet: React.FC = () => {
       setDescription(net.description || '');
       setInfoUrl(net.info_url || '');
       setStreamUrl(net.stream_url || '');
+      setLogoUrl(net.logo_url || null);
       setScript(net.script || '');
       setAnnouncements(net.announcements || '');
       setIcs309Enabled(net.ics309_enabled || false);
@@ -405,6 +407,7 @@ const CreateNet: React.FC = () => {
     description, setDescription,
     infoUrl, setInfoUrl,
     streamUrl, setStreamUrl,
+    logoUrl, setLogoUrl,
     script, setScript,
     announcements, setAnnouncements,
     ics309Enabled, setIcs309Enabled,

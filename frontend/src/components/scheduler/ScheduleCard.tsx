@@ -23,6 +23,7 @@ import LanguageIcon from '@mui/icons-material/Language';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
+import Avatar from '@mui/material/Avatar';
 import ExpandableDescription from '../ExpandableDescription';
 import CardActionButton from '../CardActionButton';
 
@@ -40,6 +41,7 @@ export interface Schedule {
   name: string;
   description: string;
   info_url?: string;
+  logo_url?: string | null;
   owner_id: number;
   owner_callsign?: string | null;
   owner_name?: string | null;
@@ -206,6 +208,9 @@ const ScheduleCard: React.FC<ScheduleCardProps> = ({
             {schedule.name}
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
+            {schedule.logo_url && (
+              <Avatar variant="rounded" src={schedule.logo_url} sx={{ width: 28, height: 28 }} />
+            )}
             {!schedule.is_active && <Chip label="Inactive" color="default" size="small" />}
             <Tooltip title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}>
               <IconButton

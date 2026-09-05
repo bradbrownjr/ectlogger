@@ -281,6 +281,8 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
               <Chat netId={Number(netId)} netStartedAt={net?.started_at} netStatus={net?.status} searchQuery={searchQuery} canManage={canManage} onDetach={handleDetachChat} onPopOut={handlePopOutChat}
                 chatGracePeriodMinutes={net?.chat_grace_period_minutes ?? undefined} closedAt={net?.closed_at}
                 onlineUserIds={onlineUserIds} onProfileClick={(id) => setProfileUserId(id)}
+                topicOfWeekEnabled={net?.topic_of_week_enabled} topicOfWeekPrompt={net?.topic_of_week_prompt}
+                pollEnabled={net?.poll_enabled} pollQuestion={net?.poll_question}
                 minimized={chatMinimized} onMinimize={() => setChatMinimized(true)} onRestore={() => setChatMinimized(false)} />
             </Box>
           </Box>
@@ -457,7 +459,9 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
         >
           <Chat netId={Number(netId)} netStartedAt={net?.started_at} netStatus={net?.status} searchQuery={searchQuery} canManage={canManage}
             chatGracePeriodMinutes={net?.chat_grace_period_minutes ?? undefined} closedAt={net?.closed_at}
-            onlineUserIds={onlineUserIds} onProfileClick={(id) => setProfileUserId(id)} />
+            onlineUserIds={onlineUserIds} onProfileClick={(id) => setProfileUserId(id)}
+            topicOfWeekEnabled={net?.topic_of_week_enabled} topicOfWeekPrompt={net?.topic_of_week_prompt}
+            pollEnabled={net?.poll_enabled} pollQuestion={net?.poll_question} />
         </FloatingWindow>
       )}
 

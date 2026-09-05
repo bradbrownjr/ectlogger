@@ -17,6 +17,12 @@ AVATAR_DIR.mkdir(parents=True, exist_ok=True)
 LOGO_DIR = Path(__file__).resolve().parents[1] / "data" / "logo"
 LOGO_DIR.mkdir(parents=True, exist_ok=True)
 
+# Uploaded per-net and per-template (schedule) logos. Distinct from LOGO_DIR
+# above (the single instance-wide branding logo) -- routers/nets_core.py and
+# templates_core.py import this rather than redefining it.
+NET_LOGO_DIR = Path(__file__).resolve().parents[1] / "data" / "net_logos"
+NET_LOGO_DIR.mkdir(parents=True, exist_ok=True)
+
 
 def _custom_avatar_file_ok(custom_url: str) -> bool:
     """Check that an uploaded avatar's file still exists on disk and isn't empty.

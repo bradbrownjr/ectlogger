@@ -1,6 +1,42 @@
 {
-  "version": "2026.09.03b",
+  "version": "2026.09.04",
   "entries": [
+    {
+      "version": "2026.09.04",
+      "date": "2026-09-04",
+      "sections": [
+        {
+          "title": "New Features",
+          "type": "feature",
+          "items": [
+            {
+              "text": "Net & Schedule: Logo upload — add a club or net logo from the net or schedule editor. It shows on net and schedule cards and next to the net name on the check-in page, so your net is recognizable at a glance.",
+              "userImpact": true
+            }
+          ]
+        },
+        {
+          "title": "Improvements",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Chat: Topic and poll shown at the top — when a net has a Topic of the Week or Poll question set, it now stays pinned above the chat messages, so participants always know what's being asked.",
+              "userImpact": true
+            }
+          ]
+        },
+        {
+          "title": "Bug Fixes",
+          "type": "bugfix",
+          "items": [
+            {
+              "text": "Check-in: Staffed roles stay on top — Net Control, Logger, and Relay now stay pinned to the top of the check-in list no matter when they checked in or if they later step down, and mobile-priority sort no longer pushes a mobile station above them.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.09.03b",
       "date": "2026-09-03",

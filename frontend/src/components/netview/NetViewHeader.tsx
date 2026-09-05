@@ -21,6 +21,7 @@ import {
   DialogContentText,
   DialogActions,
   Popover,
+  Avatar,
 } from '@mui/material';
 import { keyframes } from '@mui/system';
 import EditIcon from '@mui/icons-material/Edit';
@@ -797,6 +798,9 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
       {measurementBlock}
       {/* ===== TITLE ROW: net name, description, status/stat/frequency chips ===== */}
       <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.25, flexWrap: 'wrap', px: 2, pt: 1.25, pb: 0.75 }}>
+        {net.logo_url && (
+          <Avatar variant="rounded" src={net.logo_url} sx={{ width: 32, height: 32, alignSelf: 'center' }} />
+        )}
         <Typography variant="h5" component="h1" sx={{ flex: '0 0 auto', whiteSpace: 'nowrap' }}>
           {net.name}
         </Typography>

@@ -42,6 +42,7 @@ The responsive interface works beautifully on any device — from a phone in the
 ### Net Management
 
 - **📅 Scheduling** — Schedule recurring nets with automatic NCS rotation
+- **🖼️ Net & Schedule Logo** — Upload a club or net logo from the net or schedule editor; it shows on net and schedule cards and next to the net name on the check-in page
 - **📡 RSS Feeds** — Subscribe to upcoming nets (next 14 days) via the RSS icon on the Scheduler page, or to the changelog via the RSS icon in the What's New dialog, in any feed reader
 - **🚫 Net Cancellation** — Cancel a draft/scheduled net that isn't happening (in-person meeting, work conflict, etc.) with an optional reason; it's logged as Cancelled in Archived Nets instead of silently disappearing, the recurring schedule won't recreate it, and it can be restored later if plans change
 - **🚪 Automatic Lobby** — Optionally open a scheduled net's lobby a set number of minutes early so stations can check in before Net Control arrives

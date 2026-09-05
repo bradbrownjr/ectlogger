@@ -173,6 +173,11 @@ logo_dir = Path(__file__).resolve().parents[1] / "data" / "logo"
 logo_dir.mkdir(parents=True, exist_ok=True)
 app.mount("/api/logo", StaticFiles(directory=str(logo_dir)), name="logo")
 
+# Serve uploaded net/schedule logos from backend/data/net_logos
+net_logos_dir = Path(__file__).resolve().parents[1] / "data" / "net_logos"
+net_logos_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/api/net-logos", StaticFiles(directory=str(net_logos_dir)), name="net-logos")
+
 
 # WebSocket connection manager
 class ConnectionManager:

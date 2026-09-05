@@ -170,6 +170,7 @@ class Net(Base):
     description = Column(Text)
     info_url = Column(String(500))  # URL for net, club, or organization info
     stream_url = Column(String(500))  # Audio stream URL (Shoutcast, Broadcastify, etc.)
+    logo_url = Column(String(500), nullable=True)  # Uploaded club/net logo; shown on net cards and the check-in header
     script = Column(Text)  # Net script for NCS to follow during net operations
     announcements = Column(Text)  # General traffic/announcements for NCS to reference during net
     status = Column(Enum(NetStatus), default=NetStatus.DRAFT)
@@ -251,6 +252,7 @@ class NetTemplate(Base):
     description = Column(Text)
     info_url = Column(String(500))  # URL for net, club, or organization info
     stream_url = Column(String(500))  # Audio stream URL (Shoutcast, Broadcastify, etc.) - default for nets created from this schedule
+    logo_url = Column(String(500), nullable=True)  # Seeds Net.logo_url for nets created from this template; also shown on the schedule card
     script = Column(Text)  # Net script template
     announcements = Column(Text)  # Default announcements/traffic carried forward to nets created from this schedule
     owner_id = Column(Integer, ForeignKey("users.id"))

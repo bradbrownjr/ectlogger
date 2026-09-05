@@ -4,6 +4,22 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# September 4, 2026
+
+## New Features
+
+* **Net & Schedule: Logo upload** — Add a club or net logo from the net or schedule editor. It shows on net and schedule cards and next to the net name on the check-in page, so your net is recognizable at a glance.
+
+## Improvements
+
+* **Chat: Topic and poll shown at the top** — When a net has a Topic of the Week or Poll question set, it now stays pinned above the chat messages, so participants always know what's being asked.
+
+## Bug Fixes
+
+* **Check-in: Staffed roles stay on top** — Net Control, Logger, and Relay now stay pinned to the top of the check-in list no matter when they checked in or if they later step down, and mobile-priority sort no longer pushes a mobile station above them.
+
+---
+
 # September 3, 2026
 
 ## Improvements
