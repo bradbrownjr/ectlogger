@@ -11,7 +11,7 @@ from app.models import CheckIn, Net, NetStatus, User, UserRole, StationStatus, N
 from app.schemas import CheckInCreate, CheckInUpdate, CheckInResponse
 from app.dependencies import get_current_user, get_current_user_optional
 from app.utils import display_callsign
-from app.permissions import check_net_permission, is_eligible_for_ncs_auto_grant
+from app.permissions import check_net_permission, is_eligible_for_logger_self_grant, is_eligible_for_ncs_auto_grant
 
 logger = logging.getLogger(__name__)
 
@@ -357,38 +357,43 @@ async def create_check_in(
             from app.net_start import send_net_start_notifications
             await send_net_start_notifications(db, net)
 
-    # ========== AUTO-GRANT NCS ACCESS FOR CO-MANAGERS / ROTATION MEMBERS ==========
+    # ========== AUTO-GRANT NCS/LOGGER ACCESS ON SELF-CHECK-IN ==========
     # A co-manager or active NCS-rotation member should have the same net-level
     # privileges as the scheduled/on-duty NCS the moment they check themselves
     # in, so they can pick up the net if the assigned NCS is unavailable,
-    # without a separate "claim" step. They can step back down to Standard at
-    # any time via the existing Acting as NCS/Standard toggle
-    # (toggle_self_net_role in nets_roles.py), which flips is_active rather
-    # than deleting the row -- or decline it up front via check_in_as_standard
-    # (the NCS/Standard choice on the check-in dialog, offered when
-    # is_eligible_for_ncs_auto_grant is true for the current user).
+    # without a separate "claim" step. The net's owner (or that same
+    # co-manager/rotation pool) can likewise self-grant Logger -- e.g. opening
+    # a lobby as Logger while waiting for the scheduled NCS to arrive (added
+    # 2026-09-05 for exactly that workflow). Either can step back down at any
+    # time via the existing Acting as NCS/Standard toggle (toggle_self_net_role
+    # in nets_roles.py), which flips is_active rather than deleting the row --
+    # or decline it up front via self_role_choice (the role choice on the
+    # check-in dialog, offered when is_eligible_for_ncs_auto_grant and/or
+    # is_eligible_for_logger_self_grant is true for the current user).
     #
     # Restricted to self-check-in (current_user.id == linked_user_id): a
     # staff-entered check-in (radio traffic logged by NCS/Logger on someone
     # else's behalf) is never the eligible person's own choice, so it's always
-    # treated as Standard -- they can promote themselves afterward if needed.
+    # treated as Standard -- they can promote themselves afterward if needed
+    # (e.g. via the check-in row's status dropdown).
     #
-    # Scoped to template-based nets only -- ad hoc nets have no co-manager or
-    # rotation concept. Deliberately placed after the auto-opened-lobby check
-    # above, using state from before this grant, so a co-manager's own check-in
-    # doesn't itself count as "the NCS arrived" confirmation to subscribers --
-    # only an already-assigned NCS does.
-    # `is False` rather than `not ...`: the grant must be an affirmative,
-    # explicit request. An omitted field defaults to True (Standard) and an
-    # explicit null would otherwise sneak through `not None` as a request.
-    if (
-        linked_user_id
-        and current_user.id == linked_user_id
-        and check_in_data.check_in_as_standard is False
-    ):
-        is_eligible = await is_eligible_for_ncs_auto_grant(db, net, linked_user_id)
+    # NCS eligibility is scoped to template-based nets only -- ad hoc nets
+    # have no co-manager or rotation concept. Deliberately placed after the
+    # auto-opened-lobby check above, using state from before this grant, so a
+    # co-manager's own check-in doesn't itself count as "the NCS arrived"
+    # confirmation to subscribers -- only an already-assigned NCS does.
+    # Compared against the literal string, not truthiness: the grant must be
+    # an affirmative, explicit request. An omitted field defaults to
+    # 'standard' and nothing else is ever treated as a request.
+    if linked_user_id and current_user.id == linked_user_id and check_in_data.self_role_choice in ("ncs", "logger"):
+        role_name = "NCS" if check_in_data.self_role_choice == "ncs" else "LOGGER"
+        is_eligible = (
+            await is_eligible_for_ncs_auto_grant(db, net, linked_user_id)
+            if role_name == "NCS"
+            else await is_eligible_for_logger_self_grant(db, net, linked_user_id)
+        )
         if is_eligible:
-            db.add(NetRole(net_id=net_id, user_id=linked_user_id, role="NCS"))
+            db.add(NetRole(net_id=net_id, user_id=linked_user_id, role=role_name))
             await db.commit()
 
             from app.main import manager as ws_manager, post_system_message
@@ -397,13 +402,14 @@ async def create_check_in(
                 "data": {
                     "net_id": net_id,
                     "user_id": linked_user_id,
-                    "role": "NCS",
+                    "role": role_name,
                     "removed": False,
                     "assigned_at": datetime.now(UTC).isoformat()
                 },
                 "timestamp": datetime.now(UTC).isoformat()
             }, net_id)
-            await post_system_message(net_id, f"{display_callsign(matching_user)} has been granted NCS access (schedule co-manager/rotation)", db)
+            grant_reason = "schedule co-manager/rotation" if role_name == "NCS" else "net owner/schedule co-manager/rotation"
+            await post_system_message(net_id, f"{display_callsign(matching_user)} has been granted {role_name} access ({grant_reason})", db)
 
     # Re-fetch with user relationship loaded (needed for avatar_url in response)
     result = await db.execute(

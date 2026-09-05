@@ -274,6 +274,28 @@ async def close_net_and_notify(
             if subscriber.email and subscriber.email not in existing_emails:
                 recipients_to_notify.append((subscriber.email, subscriber))
 
+    # Add this net's own active NCS/Logger/Relay -- previously only the owner
+    # and explicit schedule subscribers got the closure email, so a rotation
+    # member who ran the net as NCS but never separately subscribed to the
+    # schedule got no copy of the log they just produced (reported 2026-09-04,
+    # net 84: Josh/N1VKQ ran as NCS and is active staff, but has no
+    # NetTemplateSubscription row, so he was silently excluded). Still respects
+    # each user's own notify_net_close opt-out -- running the net doesn't
+    # override an explicit "don't email me net closures" preference.
+    role_result = await db.execute(
+        select(User)
+        .join(NetRole, NetRole.user_id == User.id)
+        .where(NetRole.net_id == net_id, NetRole.role.in_(["NCS", "LOGGER", "Relay"]))
+        .where(NetRole.is_active == True)  # noqa: E712
+        .where(User.email_notifications == True)  # noqa: E712
+        .where(User.notify_net_close == True)  # noqa: E712
+    )
+    existing_emails = {r[0] for r in recipients_to_notify}
+    for role_holder in role_result.scalars().unique():
+        if role_holder.email and role_holder.email not in existing_emails:
+            recipients_to_notify.append((role_holder.email, role_holder))
+            existing_emails.add(role_holder.email)
+
     # Format frequencies for ICS-309
     freq_strings = []
     for freq in net.frequencies:

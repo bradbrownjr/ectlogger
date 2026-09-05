@@ -303,7 +303,11 @@ For nets that run regularly (weekly club nets, SKYWARN practice nets, etc.), cre
 - Request coverage or swap dates with other operators
 - Override specific dates when needed
 
-**Backup NCS access.** An active co-manager or rotation member is automatically granted acting-NCS access the moment they check themselves into any net from that schedule, even on a week that isn't theirs — so they can pick up net control if the scheduled NCS is unavailable or has to step away, without waiting on the owner or an admin to assign a role. When checking in, they'll see a **Check in as NCS / Check in as Participant** choice (both in the check-in prompt and the check-in form) to decide up front, and the toolbar's **Acting as NCS / Acting as Standard** control lets them change their mind at any time afterward. Only applies to a co-manager or rotation member checking *themselves* in — a station logged in by NCS or Logger (e.g. checked in by voice) is always recorded as a standard participant; they can promote themselves afterward if needed.
+**Backup NCS access.** An active co-manager or rotation member is automatically granted acting-NCS access the moment they check themselves into any net from that schedule, even on a week that isn't theirs — so they can pick up net control if the scheduled NCS is unavailable or has to step away, without waiting on the owner or an admin to assign a role. When checking in, they'll see a **Check in as NCS / Check in as Participant** choice (both in the check-in prompt and the check-in form) to decide up front, and the toolbar's **Acting as NCS / Acting as Standard** control lets them change their mind at any time afterward.
+
+**Backup Logger access.** The net's owner can likewise check themselves in as **Logger** — useful for opening a lobby and stepping in to log stations while waiting for the scheduled NCS to arrive. The same active co-manager/rotation members eligible for NCS above can choose Logger instead if that's the more useful role that day. Unlike NCS, this doesn't require a schedule at all — it works on an ad hoc net too, since being the owner is enough on its own.
+
+Neither NCS nor Logger self-grant applies to a station checked in by someone else (e.g. NCS or Logger logging a station in by voice) — that always lands as a standard participant. If the actual NCS is heard on the radio but isn't using the app themselves, whoever is logging can check them in normally, then open that row's **Status** dropdown and pick **NCS** (or **Logger**) to grant the role after the fact — the same dropdown every check-in row already has for changing status.
 
 ### Schedules act as templates
 
@@ -659,7 +663,7 @@ Run a quick poll with predefined options:
 4. Poll results are shown in the "Poll" column
 5. The emailed net log includes a bar chart of poll results with percentages
 
-Both Topic and Poll columns are only visible when configured for the net. System messages in chat announce when participants submit answers. When either is set, its question also stays pinned above the chat messages for the whole net, so participants can always see what's being asked without scrolling back through the activity log.
+Both Topic and Poll columns are only visible when configured for the net. System messages in chat announce when participants submit answers. When either is set, its question also stays pinned above the chat messages for the whole net, so participants can always see what's being asked without scrolling back through the activity log. The question text also shows next to the answer field itself wherever a check-in is entered — the self-check-in dialog, the inline check-in row, and the check-in table's Topic/Poll column headers (hover for the full question) — so whoever is logging check-ins doesn't need to already know what was asked.
 
 ### Closing the Net
 

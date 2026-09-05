@@ -24,7 +24,12 @@ from app.models import (
     net_frequencies,
 )
 from app.net_start import send_net_start_notifications
-from app.permissions import check_net_permission, is_admin, is_eligible_for_ncs_auto_grant
+from app.permissions import (
+    check_net_permission,
+    is_admin,
+    is_eligible_for_logger_self_grant,
+    is_eligible_for_ncs_auto_grant,
+)
 from app.schemas import (
     NetCreate,
     NetResponse,
@@ -286,8 +291,10 @@ async def get_net(
     # can_manage above -- an eligible co-manager/rotation member with no
     # NetRole here yet isn't a manager until they actually check in.
     current_user_ncs_eligible = False
+    current_user_logger_eligible = False
     if current_user:
         current_user_ncs_eligible = await is_eligible_for_ncs_auto_grant(db, net, current_user.id)
+        current_user_logger_eligible = await is_eligible_for_logger_self_grant(db, net, current_user.id)
 
     # ========== CURRENT NCS ==========
     # Every *active* NCS on this net, oldest assignment first, so the UI can
@@ -324,6 +331,7 @@ async def get_net(
         can_manage=can_manage,
         is_owner_or_ncs=is_owner_or_ncs,
         current_user_ncs_eligible=current_user_ncs_eligible,
+        current_user_logger_eligible=current_user_logger_eligible,
         ncs_callsign=ncs_callsign,
         ncs_name=public_display_name(ncs_name, current_user is not None),
         template_schedule_type=net.template.schedule_type if net.template else None,

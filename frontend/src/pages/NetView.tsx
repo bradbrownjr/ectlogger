@@ -354,12 +354,13 @@ const NetView: React.FC = () => {
     topic_response: '',
     poll_response: '',
     status: 'checked_in',
-    // Standard, not NCS. This is also the state the inline check-in form
-    // (staff logging stations by voice) starts in, so an eligible
-    // co-manager/rotation member typing their own callsign here must not be
-    // silently promoted -- becoming NCS is only ever an affirmative choice
-    // via the "Check in as NCS" control.
-    check_in_as_standard: true,
+    // Standard, not NCS or Logger. This is also the state the inline
+    // check-in form (staff logging stations by voice) starts in, so an
+    // eligible co-manager/rotation member typing their own callsign here
+    // must not be silently promoted -- becoming NCS or Logger is only ever
+    // an affirmative choice via the "Check in as NCS"/"Check in as Logger"
+    // control.
+    self_role_choice: 'standard' as 'standard' | 'ncs' | 'logger',
   });
 
   // Fetches the full "can hear" report list for this net. Called once on mount
@@ -934,7 +935,7 @@ const NetView: React.FC = () => {
         topic_response: '',
         poll_response: '',
         status: 'checked_in',
-        check_in_as_standard: true,  // Standard by default -- see the initial form state above
+        self_role_choice: 'standard',  // Standard by default -- see the initial form state above
       });
     } catch (error) {
       console.error('Failed to start net:', error);
@@ -1491,13 +1492,14 @@ const NetView: React.FC = () => {
         topic_response: '',
         poll_response: '',
         status: 'checked_in',
-        // Defaults to Standard participant, not NCS. This dialog can be
-        // reached without going through the NCS/Standard Snackbar prompt
-        // (e.g. the plain "Check In" button), so if the person doesn't
-        // touch the NCS/Standard radio in CheckInFormDialog (shown when
-        // net.current_user_ncs_eligible is true), submitting should never
-        // silently make them NCS -- becoming NCS must be an active choice.
-        check_in_as_standard: true,
+        // Defaults to Standard participant, not NCS or Logger. This dialog
+        // can be reached without going through the Snackbar prompt (e.g.
+        // the plain "Check In" button), so if the person doesn't touch the
+        // role radio in CheckInFormDialog (shown when
+        // net.current_user_ncs_eligible or current_user_logger_eligible is
+        // true), submitting should never silently grant a role -- becoming
+        // NCS or Logger must be an active choice.
+        self_role_choice: 'standard',
       });
     }
     checkInDialog.onOpen();
@@ -2044,9 +2046,12 @@ const NetView: React.FC = () => {
                         )}
                       </TableCell>
                     ))}
-                    {/* Topic of the Week input */}
+                    {/* Topic of the Week input -- title shows the live question text,
+                        since "Topic response" alone gave whoever is logging check-ins
+                        no way to know what's actually being asked (see the Chat.tsx
+                        banner for the same fix in the chat panel). */}
                     {net?.topic_of_week_enabled && (
-                      <TableCell>
+                      <TableCell title={net.topic_of_week_prompt ? `Topic of the Week: ${net.topic_of_week_prompt}` : undefined}>
                         <TextField
                           size="small"
                           value={checkInForm.topic_response}
@@ -2057,7 +2062,7 @@ const NetView: React.FC = () => {
                               handleCheckIn();
                             }
                           }}
-                          placeholder="Topic response"
+                          placeholder={net.topic_of_week_prompt || 'Topic response'}
                           inputProps={{ style: { fontSize: '0.875rem' } }}
                           fullWidth
                           multiline
@@ -2069,7 +2074,7 @@ const NetView: React.FC = () => {
                     {/* NOTE: No onKeyDown Enter handler here - selecting from dropdown would submit prematurely */}
                     {/* User should press Enter in another field or click Add button */}
                     {net?.poll_enabled && (
-                      <TableCell>
+                      <TableCell title={net.poll_question ? `Poll: ${net.poll_question}` : undefined}>
                         <Autocomplete
                           freeSolo
                           size="small"
@@ -2080,7 +2085,7 @@ const NetView: React.FC = () => {
                           renderInput={(params) => (
                             <TextField
                               {...params}
-                              placeholder="Poll answer"
+                              placeholder={net.poll_question || 'Poll answer'}
                               inputProps={{ ...params.inputProps, style: { fontSize: '0.875rem' } }}
                             />
                           )}
@@ -2616,32 +2621,36 @@ const NetView: React.FC = () => {
                       <TextField size="small" value={checkInForm.notes} onChange={(e) => setCheckInForm({ ...checkInForm, notes: e.target.value })} placeholder="Notes" sx={{ flex: 1, minWidth: 150 }} />
                     )}
                     {net?.topic_of_week_enabled && (
-                      <Autocomplete
-                        freeSolo
-                        size="small"
-                        options={topicResponses.responses.map(r => r.response)}
-                        value={checkInForm.topic_response || ''}
-                        onChange={(_, newValue) => setCheckInForm({ ...checkInForm, topic_response: newValue || '' })}
-                        onInputChange={(_, newInputValue) => setCheckInForm({ ...checkInForm, topic_response: newInputValue })}
-                        renderInput={(params) => (
-                          <TextField {...params} placeholder={net?.topic_of_week_prompt?.substring(0, 15) + '...' || 'Topic...'} sx={{ width: 120 }} />
-                        )}
-                        sx={{ width: 120 }}
-                      />
+                      <Tooltip title={net.topic_of_week_prompt ? `Topic of the Week: ${net.topic_of_week_prompt}` : ''}>
+                        <Autocomplete
+                          freeSolo
+                          size="small"
+                          options={topicResponses.responses.map(r => r.response)}
+                          value={checkInForm.topic_response || ''}
+                          onChange={(_, newValue) => setCheckInForm({ ...checkInForm, topic_response: newValue || '' })}
+                          onInputChange={(_, newInputValue) => setCheckInForm({ ...checkInForm, topic_response: newInputValue })}
+                          renderInput={(params) => (
+                            <TextField {...params} placeholder={net?.topic_of_week_prompt?.substring(0, 15) + '...' || 'Topic...'} sx={{ width: 120 }} />
+                          )}
+                          sx={{ width: 120 }}
+                        />
+                      </Tooltip>
                     )}
                     {net?.poll_enabled && (
-                      <Autocomplete
-                        freeSolo
-                        size="small"
-                        options={pollResponses}
-                        value={checkInForm.poll_response || ''}
-                        onChange={(_, newValue) => setCheckInForm({ ...checkInForm, poll_response: newValue || '' })}
-                        onInputChange={(_, newInputValue) => setCheckInForm({ ...checkInForm, poll_response: newInputValue })}
-                        renderInput={(params) => (
-                          <TextField {...params} placeholder={net?.poll_question?.substring(0, 15) + '...' || 'Poll...'} sx={{ width: 120 }} />
-                        )}
-                        sx={{ width: 120 }}
-                      />
+                      <Tooltip title={net.poll_question ? `Poll: ${net.poll_question}` : ''}>
+                        <Autocomplete
+                          freeSolo
+                          size="small"
+                          options={pollResponses}
+                          value={checkInForm.poll_response || ''}
+                          onChange={(_, newValue) => setCheckInForm({ ...checkInForm, poll_response: newValue || '' })}
+                          onInputChange={(_, newInputValue) => setCheckInForm({ ...checkInForm, poll_response: newInputValue })}
+                          renderInput={(params) => (
+                            <TextField {...params} placeholder={net?.poll_question?.substring(0, 15) + '...' || 'Poll...'} sx={{ width: 120 }} />
+                          )}
+                          sx={{ width: 120 }}
+                        />
+                      </Tooltip>
                     )}
                     <TextField
                       size="small"
@@ -2724,6 +2733,12 @@ const NetView: React.FC = () => {
         onCheckIn={handleCheckIn}
         formatFrequency={formatFrequencyDisplay}
         showNcsChoice={!!net?.current_user_ncs_eligible}
+        showLoggerChoice={!!net?.current_user_logger_eligible}
+        topicOfWeekEnabled={net?.topic_of_week_enabled}
+        topicOfWeekPrompt={net?.topic_of_week_prompt}
+        pollEnabled={net?.poll_enabled}
+        pollQuestion={net?.poll_question}
+        pollResponses={pollResponses}
       />
 
       {/* Check-in Location Map - docked version lives in NetViewSidePanels */}
@@ -2891,23 +2906,42 @@ const NetView: React.FC = () => {
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
         action={
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-            {(isNCS || net?.current_user_ncs_eligible) ? (
+            {(isNCS || net?.current_user_ncs_eligible || net?.current_user_logger_eligible) ? (
               <>
-                <Button
-                  color="primary"
-                  size="small"
-                  variant="contained"
-                  onClick={() => {
-                    checkInPrompt.onClose();
-                    if (user) {
-                      const locationValue = (user.location_awareness && gridSquare) ? gridSquare : (user.location || '');
-                      setCheckInForm({ callsign: getAppropriateCallsign(), name: user.name || '', location: locationValue, skywarn_number: '', weather_observation: '', power_source: '', power: '', feedback: '', notes: '', relayed_by: '', available_frequency_ids: [], custom_fields: {}, topic_response: '', poll_response: '', status: 'checked_in', check_in_as_standard: false });
-                    }
-                    checkInDialog.onOpen();
-                  }}
-                >
-                  Check In as NCS
-                </Button>
+                {(isNCS || net?.current_user_ncs_eligible) && (
+                  <Button
+                    color="primary"
+                    size="small"
+                    variant="contained"
+                    onClick={() => {
+                      checkInPrompt.onClose();
+                      if (user) {
+                        const locationValue = (user.location_awareness && gridSquare) ? gridSquare : (user.location || '');
+                        setCheckInForm({ callsign: getAppropriateCallsign(), name: user.name || '', location: locationValue, skywarn_number: '', weather_observation: '', power_source: '', power: '', feedback: '', notes: '', relayed_by: '', available_frequency_ids: [], custom_fields: {}, topic_response: '', poll_response: '', status: 'checked_in', self_role_choice: 'ncs' });
+                      }
+                      checkInDialog.onOpen();
+                    }}
+                  >
+                    Check In as NCS
+                  </Button>
+                )}
+                {net?.current_user_logger_eligible && (
+                  <Button
+                    color="primary"
+                    size="small"
+                    variant="contained"
+                    onClick={() => {
+                      checkInPrompt.onClose();
+                      if (user) {
+                        const locationValue = (user.location_awareness && gridSquare) ? gridSquare : (user.location || '');
+                        setCheckInForm({ callsign: getAppropriateCallsign(), name: user.name || '', location: locationValue, skywarn_number: '', weather_observation: '', power_source: '', power: '', feedback: '', notes: '', relayed_by: '', available_frequency_ids: [], custom_fields: {}, topic_response: '', poll_response: '', status: 'checked_in', self_role_choice: 'logger' });
+                      }
+                      checkInDialog.onOpen();
+                    }}
+                  >
+                    Check In as Logger
+                  </Button>
+                )}
                 <Button
                   color="inherit"
                   size="small"
@@ -2917,7 +2951,7 @@ const NetView: React.FC = () => {
                     checkInPrompt.onClose();
                     if (user) {
                       const locationValue = (user.location_awareness && gridSquare) ? gridSquare : (user.location || '');
-                      setCheckInForm({ callsign: getAppropriateCallsign(), name: user.name || '', location: locationValue, skywarn_number: '', weather_observation: '', power_source: '', power: '', feedback: '', notes: '', relayed_by: '', available_frequency_ids: [], custom_fields: {}, topic_response: '', poll_response: '', status: 'checked_in', check_in_as_standard: true });
+                      setCheckInForm({ callsign: getAppropriateCallsign(), name: user.name || '', location: locationValue, skywarn_number: '', weather_observation: '', power_source: '', power: '', feedback: '', notes: '', relayed_by: '', available_frequency_ids: [], custom_fields: {}, topic_response: '', poll_response: '', status: 'checked_in', self_role_choice: 'standard' });
                     }
                     checkInDialog.onOpen();
                   }}
@@ -2934,7 +2968,7 @@ const NetView: React.FC = () => {
                   checkInPrompt.onClose();
                   if (user) {
                     const locationValue = (user.location_awareness && gridSquare) ? gridSquare : (user.location || '');
-                    setCheckInForm({ callsign: getAppropriateCallsign(), name: user.name || '', location: locationValue, skywarn_number: '', weather_observation: '', power_source: '', power: '', feedback: '', notes: '', relayed_by: '', available_frequency_ids: [], custom_fields: {}, topic_response: '', poll_response: '', status: 'checked_in', check_in_as_standard: true });
+                    setCheckInForm({ callsign: getAppropriateCallsign(), name: user.name || '', location: locationValue, skywarn_number: '', weather_observation: '', power_source: '', power: '', feedback: '', notes: '', relayed_by: '', available_frequency_ids: [], custom_fields: {}, topic_response: '', poll_response: '', status: 'checked_in', self_role_choice: 'standard' });
                   }
                   checkInDialog.onOpen();
                 }}

@@ -35,6 +35,7 @@ The responsive interface works beautifully on any device — from a phone in the
 - **🎨 Color Themes & Branding** — Pick a personal color theme (or follow the admin-set system default), each with a coordinated light/dark pair that works with the existing dark mode toggle; admins can fully customize a self-hosted instance with a custom color theme and logo
 - **📻 Multi-Frequency Support** — Track stations across multiple frequencies and modes
 - **👥 Multi-NCS Support** - Multiple NCS operators can check in and track stations across multiple frequencies and modes simultaneously
+- **📋 Check In as Logger** — A net's owner or active co-manager/rotation member can check themselves in as Logger, not just NCS, so someone can open a lobby and start logging stations while waiting for the scheduled NCS
 - **⏸️ Paused-Net Indicator** — If the NCS steps away with no co-NCS covering, the net shows a blue border and banner so everyone knows no one is actively running it, and the recorded duration excludes that time
 - **🔄 New-Version Notice** — A tab left open across a deploy shows a banner offering to reload once a new version has shipped, so you're never troubleshooting on outdated code without knowing it
 - **🩺 Diagnostics & Feedback** — The Help menu's Diagnostics tool summarizes your browser, window, and recent errors for a support request; the Submit Feedback form can include that same snapshot with one checkbox and a screenshot you attach, so bug reports arrive with the context needed to track them down

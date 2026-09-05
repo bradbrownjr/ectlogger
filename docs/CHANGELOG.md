@@ -9,14 +9,16 @@ All notable changes to ECTLogger are documented here.
 ## New Features
 
 * **Net & Schedule: Logo upload** — Add a club or net logo from the net or schedule editor. It shows on net and schedule cards and next to the net name on the check-in page, so your net is recognizable at a glance.
+* **Check-in: Check in as Logger** — A net's owner (or an active co-manager/rotation member) can now check themselves in as Logger, the same way NCS already worked, so you can open a lobby and start logging stations while waiting for the scheduled NCS to arrive.
 
 ## Improvements
 
-* **Chat: Topic and poll shown at the top** — When a net has a Topic of the Week or Poll question set, it now stays pinned above the chat messages, so participants always know what's being asked.
+* **Topic and poll question shown everywhere it's needed** — When a net has a Topic of the Week or Poll question set, it now stays pinned above the chat messages, and the actual question also shows next to the answer field in the check-in dialog, the check-in row, and the check-in table's column headers, so whoever is checking a station in always knows what's being asked.
 
 ## Bug Fixes
 
 * **Check-in: Staffed roles stay on top** — Net Control, Logger, and Relay now stay pinned to the top of the check-in list no matter when they checked in or if they later step down, and mobile-priority sort no longer pushes a mobile station above them.
+* **Net closure email now reaches the net's own staff** — Net Control, Logger, and Relay on a net now get its closure log email even if they never separately subscribed to the schedule, so running a net as staff is enough to get a copy of what you just logged.
 
 ---
 

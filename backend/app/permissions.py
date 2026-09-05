@@ -148,6 +148,57 @@ async def is_eligible_for_ncs_auto_grant(db: AsyncSession, net: Net, user_id: in
     return rotation_result.scalar_one_or_none() is not None
 
 
+async def is_eligible_for_logger_self_grant(db: AsyncSession, net: Net, user_id: int) -> bool:
+    """Return True when *user_id* is eligible to be granted LOGGER on checking
+    into *net*, with no existing NetRole on this specific net occurrence yet
+    (same existence check as is_eligible_for_ncs_auto_grant, and for the same
+    reason -- an already-assigned role doesn't need this).
+
+    Eligible: the net's owner (e.g. opening a lobby and stepping in as Logger
+    while waiting for the scheduled NCS -- the workflow this was added for,
+    2026-09-05), or the same population eligible for NCS auto-grant (active
+    co-manager or active NCS rotation member for the net's template). Logger
+    is lower-stakes than NCS but still grants check-in management power, so
+    it uses the same trust bar plus the owner rather than being open to
+    anyone -- unlike NCS eligibility, which requires a template, the owner
+    path here also covers ad hoc nets (no template, no rotation/co-manager
+    concept, but still the owner's own net).
+    """
+    existing_result = await db.execute(
+        select(NetRole.id)
+        .where(NetRole.net_id == net.id, NetRole.user_id == user_id)
+        .limit(1)
+    )
+    if existing_result.scalar_one_or_none() is not None:
+        return False
+
+    if net.owner_id == user_id:
+        return True
+
+    if not net.template_id:
+        return False
+
+    co_mgr_result = await db.execute(
+        select(TemplateStaff).where(
+            TemplateStaff.template_id == net.template_id,
+            TemplateStaff.user_id == user_id,
+            TemplateStaff.is_active == True,  # noqa: E712
+            TemplateStaff.is_co_manager == True,  # noqa: E712
+        )
+    )
+    if co_mgr_result.scalar_one_or_none() is not None:
+        return True
+
+    rotation_result = await db.execute(
+        select(NCSRotationMember).where(
+            NCSRotationMember.template_id == net.template_id,
+            NCSRotationMember.user_id == user_id,
+            NCSRotationMember.is_active == True,  # noqa: E712
+        )
+    )
+    return rotation_result.scalar_one_or_none() is not None
+
+
 async def check_net_lifecycle_permission(
     db: AsyncSession, net: Net, user: User
 ) -> bool:

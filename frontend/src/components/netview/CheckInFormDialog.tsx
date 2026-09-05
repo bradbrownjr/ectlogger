@@ -39,10 +39,13 @@ export interface CheckInFormState {
   topic_response: string;
   poll_response: string;
   status: string;
-  // Opt-out of the NCS auto-grant for co-managers/rotation members checking
-  // themselves in -- see backend permissions.is_eligible_for_ncs_auto_grant.
-  // Meaningless (ignored server-side) unless showNcsChoice is true below.
-  check_in_as_standard?: boolean;
+  // Which role this self-check-in requests -- see backend
+  // permissions.is_eligible_for_ncs_auto_grant /
+  // is_eligible_for_logger_self_grant. Meaningless (ignored server-side)
+  // unless showNcsChoice or showLoggerChoice below is true. Always defaults
+  // to 'standard' -- see the fail-safe history in schemas.py's
+  // CheckInCreate.self_role_choice.
+  self_role_choice?: 'standard' | 'ncs' | 'logger';
 }
 
 interface CheckInFormDialogProps {
@@ -57,8 +60,24 @@ interface CheckInFormDialogProps {
   formatFrequency: (freq: any) => string;
   // True when checking in would auto-grant the current user NCS (an active
   // co-manager or NCS rotation member for this net's schedule, with no
-  // NetRole here yet) -- shows the NCS/Standard choice when true.
+  // NetRole here yet) -- shows the NCS choice when true.
   showNcsChoice?: boolean;
+  // True when checking in would auto-grant the current user LOGGER (the net
+  // owner, or the same co-manager/rotation population as NCS, with no
+  // NetRole here yet) -- shows the Logger choice when true.
+  showLoggerChoice?: boolean;
+  // Live topic/poll question text, shown as context above the answer field
+  // so whoever is checking in (or logging someone in) knows what's being
+  // asked -- previously only visible via the schedule's historical Topics
+  // planning tool or the chat banner, not here where the answer is entered.
+  topicOfWeekEnabled?: boolean;
+  topicOfWeekPrompt?: string | null;
+  pollEnabled?: boolean;
+  pollQuestion?: string | null;
+  // Prior poll answers for this net, offered as Autocomplete suggestions so
+  // self-check-in answers stay consistent with staff-entered ones (see the
+  // identical pattern in NetView.tsx's inline check-in rows).
+  pollResponses?: string[];
 }
 
 const CheckInFormDialog: React.FC<CheckInFormDialogProps> = ({
@@ -72,6 +91,12 @@ const CheckInFormDialog: React.FC<CheckInFormDialogProps> = ({
   onCheckIn,
   formatFrequency,
   showNcsChoice,
+  showLoggerChoice,
+  topicOfWeekEnabled,
+  topicOfWeekPrompt,
+  pollEnabled,
+  pollQuestion,
+  pollResponses,
 }) => {
   const submit = () => {
     onCheckIn();
@@ -106,19 +131,24 @@ const CheckInFormDialog: React.FC<CheckInFormDialogProps> = ({
             inputProps={{ style: { textTransform: 'uppercase' } }}
           />
 
-          {showNcsChoice && (
+          {(showNcsChoice || showLoggerChoice) && (
             <FormControl>
               <FormLabel sx={{ fontSize: '0.9rem' }}>Check in as</FormLabel>
               <RadioGroup
                 row
-                value={checkInForm.check_in_as_standard ? 'standard' : 'ncs'}
-                onChange={(e) => setCheckInForm({ ...checkInForm, check_in_as_standard: e.target.value === 'standard' })}
+                value={checkInForm.self_role_choice || 'standard'}
+                onChange={(e) => setCheckInForm({ ...checkInForm, self_role_choice: e.target.value as 'standard' | 'ncs' | 'logger' })}
               >
-                <FormControlLabel value="ncs" control={<Radio size="small" />} label="NCS (backup net control)" />
+                {showNcsChoice && (
+                  <FormControlLabel value="ncs" control={<Radio size="small" />} label="NCS (backup net control)" />
+                )}
+                {showLoggerChoice && (
+                  <FormControlLabel value="logger" control={<Radio size="small" />} label="Logger" />
+                )}
                 <FormControlLabel value="standard" control={<Radio size="small" />} label="Standard participant" />
               </RadioGroup>
               <Typography variant="caption" color="text.secondary">
-                You're a co-manager or rotation member for this schedule, so you can help run this net. Choose Standard if you're just checking in as a participant this time.
+                You're a co-manager, rotation member, or the net owner, so you can help run this net. Choose Standard if you're just checking in as a participant this time.
               </Typography>
             </FormControl>
           )}
@@ -194,6 +224,35 @@ const CheckInFormDialog: React.FC<CheckInFormDialogProps> = ({
               multiline
               rows={2}
               required={fieldConfig.notes.required}
+            />
+          )}
+
+          {topicOfWeekEnabled && topicOfWeekPrompt && (
+            <TextField
+              label="Your Response"
+              value={checkInForm.topic_response}
+              onChange={(e) => setCheckInForm({ ...checkInForm, topic_response: e.target.value })}
+              fullWidth
+              multiline
+              rows={2}
+              helperText={`Topic of the Week: ${topicOfWeekPrompt}`}
+            />
+          )}
+
+          {pollEnabled && pollQuestion && (
+            <Autocomplete
+              freeSolo
+              options={pollResponses || []}
+              value={checkInForm.poll_response}
+              onChange={(_, newValue) => setCheckInForm({ ...checkInForm, poll_response: newValue || '' })}
+              onInputChange={(_, newInputValue) => setCheckInForm({ ...checkInForm, poll_response: newInputValue })}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Your Answer"
+                  helperText={`Poll: ${pollQuestion}`}
+                />
+              )}
             />
           )}
 

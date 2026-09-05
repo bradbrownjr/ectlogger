@@ -489,6 +489,7 @@ class NetResponse(NetBase):
     can_manage: bool = False  # True if current user can edit (owner, admin, or NCS)
     is_owner_or_ncs: bool = False  # True if user has non-admin access (owner/NCS/staff) — used by admin simulation mode
     current_user_ncs_eligible: bool = False  # True if checking in would auto-grant current user NCS (see permissions.is_eligible_for_ncs_auto_grant) — drives the NCS/Standard choice on the check-in prompt/dialog
+    current_user_logger_eligible: bool = False  # True if checking in would auto-grant current user LOGGER (see permissions.is_eligible_for_logger_self_grant) — drives the Logger choice on the check-in prompt/dialog
     user_attended: Optional[bool] = None  # True if current user checked into this net
     user_ran: Optional[bool] = None       # True if current user owned/ran this net
     # schedule_type of the template this net was created from ('ad_hoc',
@@ -500,7 +501,7 @@ class NetResponse(NetBase):
     template_schedule_type: Optional[str] = None
 
     @classmethod
-    def from_orm(cls, net, owner_callsign: str = None, owner_name: str = None, check_in_count: int = None, can_manage: bool = False, is_owner_or_ncs: bool = False, current_user_ncs_eligible: bool = False, ncs_callsign: str = None, ncs_name: str = None, user_attended: bool = None, user_ran: bool = None, template_schedule_type: str = None):
+    def from_orm(cls, net, owner_callsign: str = None, owner_name: str = None, check_in_count: int = None, can_manage: bool = False, is_owner_or_ncs: bool = False, current_user_ncs_eligible: bool = False, current_user_logger_eligible: bool = False, ncs_callsign: str = None, ncs_name: str = None, user_attended: bool = None, user_ran: bool = None, template_schedule_type: str = None):
         import json
         data = {
             'id': net.id,
@@ -548,6 +549,7 @@ class NetResponse(NetBase):
             'can_manage': can_manage,
             'is_owner_or_ncs': is_owner_or_ncs,
             'current_user_ncs_eligible': current_user_ncs_eligible,
+            'current_user_logger_eligible': current_user_logger_eligible,
             'user_attended': user_attended,
             'user_ran': user_ran,
             'template_schedule_type': template_schedule_type,
@@ -812,21 +814,25 @@ class CheckInCreate(CheckInBase):
     available_frequency_ids: Optional[List[int]] = Field(default_factory=list)
     custom_fields: Optional[dict] = Field(default_factory=dict, max_length=50)
     status: Optional[StationStatus] = None
-    # Whether this self-check-in declines the co-manager/rotation-member NCS
-    # grant (see is_eligible_for_ncs_auto_grant / check_ins.py's grant block).
-    # Ignored for staff-entered check-ins, which never grant regardless.
+    # Which role this self-check-in requests, when the caller is eligible for
+    # one (see is_eligible_for_ncs_auto_grant / is_eligible_for_logger_self_grant
+    # and check_ins.py's grant block). Ignored for staff-entered check-ins,
+    # which never grant regardless of this value.
     #
-    # Defaults to True (fail SAFE): omitting the field checks in as a Standard
-    # participant. Becoming NCS requires this to be explicitly False -- an
-    # affirmative "Check in as NCS" choice. It defaulted to False until
-    # 2026-09-03, which meant any caller that forgot to send the field
-    # requested NCS, and the whole safety of the flow rested on ~7 scattered
-    # literals in the frontend staying correct. Three of them (the initial
-    # check-in form state and two form resets) were in fact still false, so an
-    # eligible operator typing their own callsign into the inline check-in
-    # form was silently made NCS -- the same failure as the 2026-08-30 ME
-    # Dirigo Net incident, through a different entry point.
-    check_in_as_standard: Optional[bool] = True
+    # Defaults to 'standard' (fail SAFE): omitting the field checks in as a
+    # Standard participant. Becoming NCS or Logger requires this to be
+    # explicitly set to that value -- an affirmative choice. This field used
+    # to be a bool (check_in_as_standard, default True) with the same
+    # fail-safe intent; that default was itself False until 2026-09-03, which
+    # meant any caller that forgot to send the field requested NCS, and the
+    # whole safety of the flow rested on ~7 scattered frontend literals
+    # staying correct -- three of them (the initial check-in form state and
+    # two form resets) were in fact still false, so an eligible operator
+    # typing their own callsign into the inline check-in form was silently
+    # made NCS (the same failure as the 2026-08-30 ME Dirigo Net incident,
+    # through a different entry point). Keep the same discipline here: never
+    # make anything other than 'standard' the default.
+    self_role_choice: Optional[Literal['standard', 'ncs', 'logger']] = 'standard'
     
     @field_validator('custom_fields')
     @classmethod

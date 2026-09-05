@@ -1,8 +1,8 @@
 {
-  "version": "2026.09.04",
+  "version": "2026.09.04b",
   "entries": [
     {
-      "version": "2026.09.04",
+      "version": "2026.09.04b",
       "date": "2026-09-04",
       "sections": [
         {
@@ -12,6 +12,10 @@
             {
               "text": "Net & Schedule: Logo upload — add a club or net logo from the net or schedule editor. It shows on net and schedule cards and next to the net name on the check-in page, so your net is recognizable at a glance.",
               "userImpact": true
+            },
+            {
+              "text": "Check-in: Check in as Logger — a net's owner (or an active co-manager/rotation member) can now check themselves in as Logger, the same way NCS already worked, so you can open a lobby and start logging stations while waiting for the scheduled NCS to arrive.",
+              "userImpact": true
             }
           ]
         },
@@ -20,7 +24,7 @@
           "type": "improvement",
           "items": [
             {
-              "text": "Chat: Topic and poll shown at the top — when a net has a Topic of the Week or Poll question set, it now stays pinned above the chat messages, so participants always know what's being asked.",
+              "text": "Topic and poll question shown everywhere it's needed — when a net has a Topic of the Week or Poll question set, it now stays pinned above the chat messages, and the actual question also shows next to the answer field in the check-in dialog, the check-in row, and the check-in table's column headers, so whoever is checking a station in always knows what's being asked.",
               "userImpact": true
             }
           ]
@@ -31,6 +35,10 @@
           "items": [
             {
               "text": "Check-in: Staffed roles stay on top — Net Control, Logger, and Relay now stay pinned to the top of the check-in list no matter when they checked in or if they later step down, and mobile-priority sort no longer pushes a mobile station above them.",
+              "userImpact": true
+            },
+            {
+              "text": "Net closure email now reaches the net's own staff — Net Control, Logger, and Relay on a net now get its closure log email even if they never separately subscribed to the schedule, so running a net as staff is enough to get a copy of what you just logged.",
               "userImpact": true
             }
           ]

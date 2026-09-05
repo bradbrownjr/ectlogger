@@ -218,8 +218,20 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                           {field.label} {isFieldRequired(field.name) && '*'}
                         </TableCell>
                       ))}
-                      {net?.topic_of_week_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Topic</TableCell>}
-                      {net?.poll_enabled && <TableCell sx={{ whiteSpace: 'nowrap' }}>Poll</TableCell>}
+                      {net?.topic_of_week_enabled && (
+                        <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                          <Tooltip title={net.topic_of_week_prompt ? `Topic of the Week: ${net.topic_of_week_prompt}` : 'No topic set yet'}>
+                            <span>Topic</span>
+                          </Tooltip>
+                        </TableCell>
+                      )}
+                      {net?.poll_enabled && (
+                        <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                          <Tooltip title={net.poll_question ? `Poll: ${net.poll_question}` : 'No poll set yet'}>
+                            <span>Poll</span>
+                          </Tooltip>
+                        </TableCell>
+                      )}
                       {hasAnyRelayedBy && <TableCell sx={{ whiteSpace: 'nowrap' }}>Relayed By</TableCell>}
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>Time</TableCell>
                       <TableCell
