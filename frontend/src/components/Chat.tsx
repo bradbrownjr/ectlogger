@@ -59,9 +59,14 @@ interface ChatProps {
   topicOfWeekPrompt?: string | null;
   pollEnabled?: boolean;
   pollQuestion?: string | null;
-  /** This net's check-ins, the source of the @mention roster. Passed raw
-   *  rather than pre-derived so all three Chat placements (attached, floating,
-   *  popped-out window) hand over the same thing they already hold. */
+  /** This net's check-ins, cross-referenced with onlineUserIds to build the
+   *  @mention roster (see mentionRoster below). Passed raw rather than
+   *  pre-derived so all three Chat placements (attached, floating,
+   *  popped-out window) hand over the same thing they already hold. The
+   *  popped-out window doesn't track online presence at all (its check-in
+   *  table already hardcodes onlineUserIds to []), so its mention list is
+   *  always empty rather than silently wrong -- a real fix needs that
+   *  window to track presence, which is out of scope here. */
   checkIns?: any[];
 }
 
@@ -129,16 +134,23 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
     return () => { timers.forEach((timer) => clearTimeout(timer)); };
   }, []);
 
-  // Stations that can be @mentioned: checked in, with an account to highlight.
-  // A guest or paper check-in has no user id, so it is not offered.
+  // Stations that can be @mentioned: checked in, with an account, AND
+  // currently signed into the app (onlineUserIds) -- someone checked in by
+  // voice with the app closed has no session to highlight anything on, and
+  // offering them in the autocomplete just invites a mention nobody will
+  // ever see flash. The backend's own mention resolution still matches
+  // against the full roster regardless of online status (so a mention typed
+  // by hand still tags them for whenever they next open the message), this
+  // only narrows what the autocomplete *suggests*.
   const mentionRoster = useMemo(() => {
     const byUserId = new Map<number, string>();
     for (const checkIn of checkIns) {
       if (checkIn.user_id == null || !checkIn.callsign) continue;
+      if (!onlineUserIds.includes(checkIn.user_id)) continue;
       if (!byUserId.has(checkIn.user_id)) byUserId.set(checkIn.user_id, checkIn.callsign);
     }
     return Array.from(byUserId, ([id, callsign]) => ({ id, callsign }));
-  }, [checkIns]);
+  }, [checkIns, onlineUserIds]);
 
   const mentionMatches = useMemo(() => {
     if (mentionQuery === null) return [];
