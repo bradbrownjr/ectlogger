@@ -53,6 +53,7 @@ The responsive interface works beautifully on any device — from a phone in the
 - **🦔 Speed Entry** - Hit the ⏩ button to enter a string of check-ins in fast-moving nets
 - **🔄 Recheck Tracking** — Track stations as they check in and out, on different frequencies if needed
 - **🚫 Self Check-In Toggle** — Disable self check-in per schedule or net so only NCS/logging staff add check-ins, for nets where voice roll call and app check-in together cause confusion
+- **✨ Sneak-In Arrival Alert** — When a station checks itself in without staff typing it in, its row briefly flashes gold, with a small arrow pointing the way if it landed off-screen, so NCS/Logger notice new arrivals even while running the net mostly by voice
 - **📊 Custom Fields** — Admins can create custom fields for specific net requirements
 - **📊 Poll Questions** — Add poll questions to nets with real-time results chart
 - **💬 Topic of the Week** — Prompt participants to share on a topic during check-in and track their answers

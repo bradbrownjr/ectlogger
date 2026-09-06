@@ -1011,6 +1011,40 @@ WebSocket message), not polled — no interval needed since it's pushed live.
 
 ---
 
+## Sneak-In Arrival Highlight (`sneakInHighlight.ts`)
+
+When a station checks itself in through the app — as opposed to NCS/Logger
+typing it in on their behalf — the check-in tables (`CheckInTable.tsx`,
+`CheckInMobileList.tsx`) draw a brief, inobtrusive attention cue so staff
+running the net largely by voice still notice the new arrival:
+
+- The row plays a **single-shot fade** (`sneakInFade` keyframe: transparent →
+  `rgba(255, 193, 7, 0.55)` at 15% → transparent, `2500ms ease-out`, no
+  `infinite`) instead of a looping shimmer — it should settle back to the
+  row's normal styling once it's had its moment, not keep pulsing.
+- If the row isn't currently within the table's visible scroll bounds when
+  it arrives, a small `KeyboardArrowDownIcon` badge fades in/out at the
+  bottom-right of the table (`position: absolute` inside the `position:
+  relative` scroll container — this keeps it pinned to the visible viewport
+  edge instead of scrolling away with the content, the same technique used
+  for a "scroll to bottom" button over a scrollable chat panel) for the same
+  2500ms duration.
+- Reuses the same yellow "needs attention" hue as `NetViewHeader.tsx`'s
+  `shimmerYellow`, so the color reads consistently across the app even
+  though this animation is one-shot rather than looping.
+
+"Self check-in" is detected purely from data already on `CheckInResponse` —
+`user_id != null && user_id === checked_in_by_id` — the same signal the
+backend uses to gate NCS/Logger self-grant eligibility. A staff-entered
+check-in naturally has `checked_in_by_id` pointing at the staff member
+instead, so no extra flag is needed. The viewer's own check-in never
+triggers the highlight (no point flashing "you checked in" back at
+yourself), and the very first population of the check-in list (page load,
+reconnect, net switch) never flashes either — only genuinely new arrivals
+after a baseline is established do.
+
+---
+
 ## What's New / Changelog (`frontend/src/changelog.json`)
 
 Add an entry to the **current release version** object whenever a user-facing

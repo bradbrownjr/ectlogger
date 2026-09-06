@@ -11,6 +11,7 @@ import CheckInFormDialog, { CheckInFormState } from '../components/netview/Check
 import NetControlDialogs from '../components/netview/NetControlDialogs';
 import NetViewHeader from '../components/netview/NetViewHeader';
 import { getCheckInStatusHelpers } from '../components/netview/checkInStatusHelpers';
+import { useSneakInHighlight } from '../components/netview/sneakInHighlight';
 import { STATUS_SELECT_MENU_PROPS } from '../components/netview/statusSelectMenuProps';
 import { getCheckInActions } from '../components/netview/checkInActions';
 import CheckInMobileList from '../components/netview/CheckInMobileList';
@@ -336,6 +337,13 @@ const NetView: React.FC = () => {
   const { user, isAuthenticated } = useAuth();
   const { gridSquare } = useLocation();
   const navigate = useNavigate();
+
+  // Which check-ins are currently mid-flash for having self-checked-in
+  // without staff aid -- see sneakInHighlight.ts. Called unconditionally,
+  // same rule as every other hook here, ahead of the `if (!net) return`
+  // below (checkInStatusHelpers avoids this by being a plain factory
+  // function instead of a hook -- see its own comment for why).
+  const sneakInHighlightIds = useSneakInHighlight(checkIns, user?.id);
 
   // Check-in form state - includes custom_fields for dynamic fields
   const [checkInForm, setCheckInForm] = useState<CheckInFormState>({
@@ -1696,8 +1704,9 @@ const NetView: React.FC = () => {
                 canReportCanHear={canReportCanHear}
                 canHearReporterCheckInIds={canHearReporterCheckInIds}
                 onOpenCanHearDialog={setCanHearDialogCheckInId}
+                highlightedCheckInIds={sneakInHighlightIds}
               />
-            
+
             {/* ========== CHECK-IN LIST TABLE 2: Mobile View (xs only) ========== */}
             <CheckInMobileList
               net={net}
@@ -1725,6 +1734,7 @@ const NetView: React.FC = () => {
               canReportCanHear={canReportCanHear}
               canHearReporterCheckInIds={canHearReporterCheckInIds}
               onOpenCanHearDialog={setCanHearDialogCheckInId}
+              highlightedCheckInIds={sneakInHighlightIds}
             />
 
             {/* Bulk check-in burst notice - see BulkCheckIn.tsx / useNetWebSocket.ts
@@ -2555,6 +2565,7 @@ const NetView: React.FC = () => {
                 canReportCanHear={canReportCanHear}
                 canHearReporterCheckInIds={canHearReporterCheckInIds}
                 onOpenCanHearDialog={setCanHearDialogCheckInId}
+                highlightedCheckInIds={sneakInHighlightIds}
               />
 
               {/* Bulk check-in burst notice - see BulkCheckIn.tsx / useNetWebSocket.ts

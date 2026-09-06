@@ -24,6 +24,7 @@ import CheckInTable from '../components/netview/CheckInTable';
 import CanHearDialog from '../components/netview/CanHearDialog';
 import { getCheckInActions } from '../components/netview/checkInActions';
 import { getCheckInStatusHelpers } from '../components/netview/checkInStatusHelpers';
+import { useSneakInHighlight } from '../components/netview/sneakInHighlight';
 import { CheckInFormState } from '../components/netview/CheckInFormDialog';
 import { canHearApi } from '../services/api';
 
@@ -103,6 +104,15 @@ const NetPaneWindow: React.FC = () => {
     pollResponses, topicResponses,
     fetchNet, fetchCheckIns, fetchNetRoles, fetchNetStats, fetchPollResponses,
   } = useNetData(netId);
+
+  // Which check-ins are currently mid-flash for having self-checked-in
+  // without staff aid -- see sneakInHighlight.ts. Called unconditionally,
+  // ahead of the `if (!net) return` below, same rule as every other hook
+  // here (checkInStatusHelpers avoids this by being a plain factory
+  // function instead of a hook -- see its own comment for why). This
+  // pop-out window is a separate browser tab with its own state, so it
+  // needs its own instance rather than sharing NetView's.
+  const sneakInHighlightIds = useSneakInHighlight(checkIns, user?.id);
 
   useEffect(() => {
     const label = PANE_LABELS[paneType || ''] || 'Net';
@@ -435,6 +445,7 @@ const NetPaneWindow: React.FC = () => {
         canReportCanHear={canReportCanHear}
         canHearReporterCheckInIds={canHearReporterCheckInIds}
         onOpenCanHearDialog={setCanHearDialogCheckInId}
+        highlightedCheckInIds={sneakInHighlightIds}
       />
 
       {/* "Who can this station hear?" dialog - same component NetView.tsx uses */}

@@ -19,6 +19,7 @@ import {
 import DeleteIcon from '@mui/icons-material/Delete';
 import GroupIcon from '@mui/icons-material/Group';
 import HearingIcon from '@mui/icons-material/Hearing';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import PanToolIcon from '@mui/icons-material/PanTool';
 import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutline';
@@ -26,6 +27,7 @@ import PictureInPictureAltIcon from '@mui/icons-material/PictureInPictureAlt';
 import UserAvatar from '../UserAvatar';
 import { formatTimeWithDate } from '../../utils/dateUtils';
 import { STATUS_SELECT_MENU_PROPS } from './statusSelectMenuProps';
+import { isRowOutsideView, sneakInFade, SNEAK_IN_HIGHLIGHT_MS } from './sneakInHighlight';
 
 // ========== CHECK-IN LIST TABLE 1: Desktop Inline (attached) ==========
 // The full-featured desktop check-in table: sticky header, inline click-to-edit
@@ -89,6 +91,10 @@ interface CheckInTableProps {
   canReportCanHear: boolean;
   canHearReporterCheckInIds: number[];
   onOpenCanHearDialog: (checkInId: number) => void;
+  // Check-in ids currently playing the "sneak-in" arrival flash -- see
+  // sneakInHighlight.ts. Optional so existing callers aren't forced to wire
+  // it up immediately.
+  highlightedCheckInIds?: Set<number>;
 }
 
 const CheckInTable: React.FC<CheckInTableProps> = ({
@@ -133,6 +139,7 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
   canReportCanHear,
   canHearReporterCheckInIds,
   onOpenCanHearDialog,
+  highlightedCheckInIds,
 }) => {
   // Frozen (sticky) trailing column: Actions and the hide-duplicates/detach
   // icons share a single pinned column at the right edge so per-row controls
@@ -167,12 +174,43 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
     };
   }, [detached, filteredCheckIns.length]);
 
+  // Every row registers its DOM node here (cheap -- just a ref write) so
+  // that when a row starts a sneak-in flash, we can check whether it's
+  // actually visible in the current scroll position. See the effect below.
+  const rowElRefs = useRef<Map<number, HTMLTableRowElement>>(new Map());
+  const prevHighlightedRef = useRef<Set<number>>(new Set());
+  const [showOffscreenArrow, setShowOffscreenArrow] = useState(false);
+
+  useEffect(() => {
+    const current = highlightedCheckInIds ?? new Set<number>();
+    const previous = prevHighlightedRef.current;
+    const justArrived: number[] = [];
+    current.forEach((id) => {
+      if (!previous.has(id)) justArrived.push(id);
+    });
+    prevHighlightedRef.current = current;
+    if (justArrived.length === 0) return;
+
+    const container = containerRef.current;
+    if (!container) return;
+    const anyOffscreen = justArrived.some((id) => {
+      const rowEl = rowElRefs.current.get(id);
+      return !rowEl || isRowOutsideView(container, rowEl);
+    });
+    if (!anyOffscreen) return;
+
+    setShowOffscreenArrow(true);
+    const timer = setTimeout(() => setShowOffscreenArrow(false), SNEAK_IN_HIGHLIGHT_MS);
+    return () => clearTimeout(timer);
+  }, [highlightedCheckInIds]);
+
   // Outer container styling differs by placement. Attached: hidden on mobile
   // (CheckInMobileList shows instead) with a fully-rounded border. Detached:
   // always visible, fills the floating window, top-rounded border only. Both
   // preserve the exact styling each placement had before unification.
   const containerSx = detached
     ? {
+        position: 'relative' as const,
         flex: 1,
         overflow: 'auto',
         minHeight: 0,
@@ -184,6 +222,7 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
         '&::-webkit-scrollbar-thumb': { backgroundColor: (thm: any) => thm.palette.mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)', borderRadius: 4 },
       }
     : {
+        position: 'relative' as const,
         flex: { xs: 'none', md: 1 },
         overflow: 'auto',
         border: 1,
@@ -197,6 +236,30 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
       };
   return (
               <TableContainer ref={containerRef} sx={containerSx}>
+                {/* ========== SNEAK-IN OFF-SCREEN ARROW ========== */}
+                {/* Fades in/out to say "a new self check-in just landed below the
+                    fold" -- only shown when that row isn't currently in view. See
+                    sneakInHighlight.ts. Positioned relative to the scroll
+                    container's own box, so it stays pinned at the visible bottom
+                    edge instead of scrolling away with the table content. */}
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    bottom: 6,
+                    right: 12,
+                    zIndex: 3,
+                    pointerEvents: 'none',
+                    opacity: showOffscreenArrow ? 1 : 0,
+                    transition: 'opacity 0.4s ease',
+                    display: 'flex',
+                    color: 'warning.main',
+                    backgroundColor: 'background.paper',
+                    borderRadius: '50%',
+                    boxShadow: 2,
+                  }}
+                >
+                  <KeyboardArrowDownIcon />
+                </Box>
                 {/* ========== CHECK-IN LIST TABLE 1: Desktop Inline (attached) ========== */}
                 {/* This table displays when check-in list is NOT detached, on medium+ screens */}
                 <Table size="small" sx={{ borderCollapse: 'collapse' }}>
@@ -343,10 +406,18 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                       backgroundImage: rowBgColor !== 'transparent' ? `linear-gradient(${rowBgColor}, ${rowBgColor})` : 'none',
                     };
 
+                    const isSneakInHighlighted = !!highlightedCheckInIds?.has(checkIn.id);
+
                     return (
                     <React.Fragment key={checkIn.id}>
                     <TableRow
-                      ref={isInlineEditing ? inlineEditRowRef : undefined}
+                      ref={(el: HTMLTableRowElement | null) => {
+                        if (isInlineEditing && inlineEditRowRef && typeof inlineEditRowRef !== 'function') {
+                          (inlineEditRowRef as { current: HTMLTableRowElement | null }).current = el;
+                        }
+                        if (el) rowElRefs.current.set(checkIn.id, el);
+                        else rowElRefs.current.delete(checkIn.id);
+                      }}
                       onClick={(e) => {
                         // Don't start editing if clicking on interactive elements
                         const target = e.target as HTMLElement;
@@ -376,6 +447,12 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                         ...(isInlineEditing && {
                           outline: '2px solid',
                           outlineColor: 'primary.main',
+                        }),
+                        // A station checked itself in without staff typing it in --
+                        // single-shot fade to catch the eye, then settle back to
+                        // rowBgColor. See sneakInHighlight.ts.
+                        ...(isSneakInHighlighted && {
+                          animation: `${sneakInFade} ${SNEAK_IN_HIGHLIGHT_MS}ms ease-out`,
                         }),
                         '& td, & th': {
                           ...(checkIn.id === activeSpeakerId ? { fontWeight: 'bold' } : {}),

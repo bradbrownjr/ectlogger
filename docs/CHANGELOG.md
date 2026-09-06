@@ -6,6 +6,10 @@ All notable changes to ECTLogger are documented here.
 
 # September 6, 2026
 
+## New Features
+
+* **Check-in: Sneak-in arrival alert** — When a station checks itself in without NCS or Logger typing it in, its row briefly flashes gold so you notice the new arrival even if you're running the net mostly by voice. If it lands below what you're currently viewing, a small arrow fades in at the bottom of the table to point you there.
+
 ## Improvements
 
 * **Check-in: Check In as Participant stands out** — The plain participant option in the lobby check-in prompt is now a filled green button instead of a faint outline, so it's just as easy to spot as the NCS/Logger buttons next to it.

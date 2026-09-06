@@ -485,6 +485,8 @@ As NCS, you can:
 
 **Rechecking a station on a different frequency:** For nets that run a coverage check on one frequency and then move to another (for example, a repeater check followed by a simplex check), you can log an already-checked-in station again on the second frequency without checking them out first — click that frequency's chip to claim it, then check the station in again as usual. It's added as a new, timestamped entry linked to their original check-in, so you get a separate record of when each frequency was confirmed. Trying to log the same station again on the same frequency they're already on still shows "already checked in."
 
+**Sneak-in arrival alert:** When a station checks itself in through the app — without NCS or Logger typing it in — its row briefly flashes gold, so you notice the new arrival even if you're mostly working the net by voice. If that row lands below what you're currently scrolled to, a small arrow fades in at the bottom of the table to point you toward it. A check-in someone on staff enters for a station (for example, logging a voice check-in) doesn't trigger the flash — you already know about that one.
+
 #### Speed Entry (Bulk Check-In)
 
 For fast-moving nets, use the ⏩ Speed Entry button to check in multiple stations at once:

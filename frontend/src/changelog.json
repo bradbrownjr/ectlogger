@@ -6,6 +6,16 @@
       "date": "2026-09-06",
       "sections": [
         {
+          "title": "New Features",
+          "type": "feature",
+          "items": [
+            {
+              "text": "Check-in: Sneak-in arrival alert — when a station checks itself in without NCS or Logger typing it in, its row briefly flashes gold so you notice the new arrival even if you're running the net mostly by voice. If it lands below what you're currently viewing, a small arrow fades in at the bottom of the table to point you there.",
+              "userImpact": true
+            }
+          ]
+        },
+        {
           "title": "Improvements",
           "type": "improvement",
           "items": [
