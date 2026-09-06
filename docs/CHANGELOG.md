@@ -10,6 +10,7 @@ All notable changes to ECTLogger are documented here.
 
 * **Check-in: Sneak-in arrival alert** — When a station checks itself in without NCS or Logger typing it in, its row briefly flashes gold so you notice the new arrival even if you're running the net mostly by voice. If it lands below what you're currently viewing, a small arrow fades in at the bottom of the table to point you there.
 * **Net View: Just Listening button** — Mark yourself as monitoring only with one click from the toolbar, instead of typing "just listening" into the Topic of the Week answer or check-in notes.
+* **Chat: Edit, @mention, and reply** — Fix a typo or a wrong frequency by editing your own message in place (marked "(edited)"), tag a station with @callsign so the message flashes on their screen instead of scrolling past, and quote a message to reply to it, which tags the original sender the same way.
 
 ## Improvements
 

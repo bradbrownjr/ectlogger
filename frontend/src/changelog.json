@@ -16,6 +16,10 @@
             {
               "text": "Net View: Just Listening button — Mark yourself as monitoring only with one click from the toolbar, instead of typing \"just listening\" into the Topic of the Week answer or check-in notes.",
               "userImpact": true
+            },
+            {
+              "text": "Chat: Edit, @mention, and reply — Fix a typo or a wrong frequency by editing your own message in place (marked \"(edited)\"), tag a station with @callsign so the message flashes on their screen instead of scrolling past, and quote a message to reply to it, which tags the original sender the same way.",
+              "userImpact": true
             }
           ]
         },
