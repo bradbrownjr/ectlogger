@@ -92,6 +92,22 @@ Code-splitting it (`manualChunks` / dynamic imports) would cut build memory *and
 first load for users. That's a real refactor with its own regression risk, so it belongs on
 its own rather than bundled into this.
 
+### 0.9 — Three pre-existing backend test failures
+
+Found 2026-09-06 while verifying the `feature/chat-edit-mention-reply` branch (full backend
+suite: 379 passed / 3 failed) — confirmed these three fail identically on unmodified `main`,
+so they're not a regression from that branch, just latent breakage nobody had caught yet:
+
+- `backend/tests/test_net_csv_import.py::test_close_on_import_posts_no_system_chat_message`
+- `backend/tests/test_traffic_arl.py::test_arl_messages_requires_auth`
+- `backend/tests/test_traffic_import.py::test_import_preview_requires_auth`
+
+Not yet root-caused. The first name is chat-adjacent, which is worth double-checking isn't
+actually related to the chat migration once that branch merges (it shouldn't be — the failure
+reproduces without the branch's changes at all — but confirm rather than assume). The other
+two both end in `_requires_auth`, suggesting a shared cause (an auth dependency change, a
+fixture drift) rather than three unrelated bugs.
+
 ---
 
 ## Milestone 1 — Medium-term
