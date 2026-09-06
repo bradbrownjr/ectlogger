@@ -4,6 +4,18 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# September 6, 2026
+
+## Improvements
+
+* **Check-in: Check In as Participant stands out** — The plain participant option in the lobby check-in prompt is now a filled green button instead of a faint outline, so it's just as easy to spot as the NCS/Logger buttons next to it.
+
+## Bug Fixes
+
+* **Check-in: NCS crown no longer follows net ownership** — A net owner who checked in as a plain participant was still shown wearing the NCS crown, and it demoted the real Net Control Station to a secondary crown the whole time they were checked in. Both now depend on who actually holds the NCS role, not who owns the net.
+
+---
+
 # September 4, 2026
 
 ## New Features

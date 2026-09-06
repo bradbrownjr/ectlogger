@@ -1,6 +1,32 @@
 {
-  "version": "2026.09.04b",
+  "version": "2026.09.06",
   "entries": [
+    {
+      "version": "2026.09.06",
+      "date": "2026-09-06",
+      "sections": [
+        {
+          "title": "Improvements",
+          "type": "improvement",
+          "items": [
+            {
+              "text": "Check-in: Check In as Participant stands out — the plain participant option in the lobby check-in prompt is now a filled green button instead of a faint outline, so it's just as easy to spot as the NCS/Logger buttons next to it.",
+              "userImpact": true
+            }
+          ]
+        },
+        {
+          "title": "Bug Fixes",
+          "type": "bugfix",
+          "items": [
+            {
+              "text": "Check-in: NCS crown no longer follows net ownership — a net owner who checked in as a plain participant was still shown wearing the NCS crown, and it demoted the real Net Control Station to a secondary crown the whole time they were checked in. Both now depend on who actually holds the NCS role, not who owns the net.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.09.04b",
       "date": "2026-09-04",

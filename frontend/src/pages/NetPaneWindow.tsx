@@ -306,7 +306,7 @@ const NetPaneWindow: React.FC = () => {
   );
 
   const { getStatusIcon, getStatusTooltip, getStatusLabel, getNcsIcon } =
-    getCheckInStatusHelpers({ net, netRoles, checkIns, ncsRoles });
+    getCheckInStatusHelpers({ netRoles, checkIns, ncsRoles });
 
   const getNcsColor = (userId: number) => {
     const index = ncsRoles.findIndex((r: any) => r.user_id === userId);

@@ -1293,7 +1293,7 @@ const NetView: React.FC = () => {
   // Status display helpers (icon/tooltip/label/NCS crown) shared by all three
   // check-in tables. Depends on ncsRoles, so it's constructed here.
   const { getStatusIcon, getStatusTooltip, getStatusLabel, getNcsIcon } =
-    getCheckInStatusHelpers({ net, netRoles, checkIns, ncsRoles });
+    getCheckInStatusHelpers({ netRoles, checkIns, ncsRoles });
 
   // Helper to get NCS color by user_id
   const getNcsColor = (userId: number) => {

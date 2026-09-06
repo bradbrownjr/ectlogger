@@ -9,7 +9,6 @@
 // the four functions. Behavior is identical to the previous inline definitions.
 
 interface StatusHelperContext {
-  net: any;
   netRoles: any[];
   checkIns: any[];
   // NCS roles sorted by assigned_at (for primary vs secondary crown logic).
@@ -24,7 +23,6 @@ export interface CheckInStatusHelpers {
 }
 
 export function getCheckInStatusHelpers({
-  net,
   netRoles,
   checkIns,
   ncsRoles,
@@ -42,30 +40,24 @@ export function getCheckInStatusHelpers({
   const getStatusIcon = (status: string, checkIn?: any) => {
     // Show role icons for users with active roles
     if (checkIn && roleBadgeApplies(status)) {
-      // Owner always gets the primary crown
-      if (net?.owner_id === checkIn.user_id) return '👑';
-
       const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id && r.is_active !== false);
       if (userRole?.role?.toUpperCase() === 'NCS') {
-        // Check if owner is checked in - if so, this NCS is secondary
-        const ownerCheckedIn = net?.owner_id && checkIns.some(c => c.user_id === net.owner_id && c.status !== 'checked_out');
-        if (ownerCheckedIn) {
-          // Owner is present - all other NCS are secondary
-          return '🤴';
-        }
-
-        // Owner not present - check if this is first NCS in the list (acting primary)
+        // First-assigned active NCS is primary; any other active NCS is
+        // secondary while the primary is still checked in. Matches the
+        // backend's format_ncs_attribution, which is keyed on active NetRole
+        // rows ordered by assigned_at, not on net ownership -- the net owner
+        // gets no special treatment here unless they hold an active NCS
+        // role like anyone else (see the ME Dirigo Net report, 2026-09-06:
+        // an owner who checked in as Standard was still shown with the NCS
+        // crown, and it demoted the real NCS to secondary).
         const ncsIndex = ncsRoles.findIndex((r: any) => r.user_id === checkIn.user_id && r.is_active !== false);
         if (ncsIndex > 0) {
-          // This is a secondary NCS - check if primary NCS is checked in
           const primaryNCS = ncsRoles[0];
           const primaryCheckedIn = checkIns.some(c => c.user_id === primaryNCS.user_id && c.status !== 'checked_out');
           if (primaryCheckedIn) {
-            // Primary NCS is present - show 2nd crown for secondary
             return '🤴';
           }
         }
-        // Primary NCS or acting primary (primary not present)
         return '👑';
       }
       if (userRole?.role?.toUpperCase() === 'LOGGER') return '📋';
@@ -94,15 +86,8 @@ export function getCheckInStatusHelpers({
     // icon above, so the tooltip never describes a station's role while the
     // icon beside it is showing that station's current status.
     if (checkIn && roleBadgeApplies(status)) {
-      if (net?.owner_id === checkIn.user_id) return 'Net Control Station - manages the net';
       const userRole = netRoles.find((r: any) => r.user_id === checkIn.user_id && r.is_active !== false);
       if (userRole?.role?.toUpperCase() === 'NCS') {
-        // Check if owner is checked in - if so, this NCS is secondary
-        const ownerCheckedIn = net?.owner_id && checkIns.some(c => c.user_id === net.owner_id && c.status !== 'checked_out');
-        if (ownerCheckedIn) {
-          return '2nd NCS - assists primary Net Control Station';
-        }
-
         // Check if this is a secondary NCS (not first in the list)
         const ncsIndex = ncsRoles.findIndex((r: any) => r.user_id === checkIn.user_id && r.is_active !== false);
         if (ncsIndex > 0) {
@@ -153,14 +138,6 @@ export function getCheckInStatusHelpers({
 
   // Helper to get the NCS icon for a specific check-in (primary crown or secondary prince)
   const getNcsIcon = (checkIn: any) => {
-    // Owner is always primary
-    if (net?.owner_id === checkIn.user_id) return '👑';
-
-    // Check if owner is checked in - if so, all other NCS are secondary
-    const ownerCheckedIn = net?.owner_id && checkIns.some(c => c.user_id === net.owner_id && c.status !== 'checked_out');
-    if (ownerCheckedIn) return '🤴';
-
-    // Owner not present - check if this is first NCS in the list
     const ncsIndex = ncsRoles.findIndex((r: any) => r.user_id === checkIn.user_id && r.is_active !== false);
     if (ncsIndex > 0) {
       const primaryNCS = ncsRoles[0];

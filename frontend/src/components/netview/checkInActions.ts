@@ -67,7 +67,7 @@ export interface CheckInActions {
 
 export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
   const {
-    netId, net, checkIns, netRoles, user, isOwner, isAdmin, owner,
+    netId, net, checkIns, netRoles, user, isOwner, isAdmin,
     canManageCheckIns, userNetRole, ws,
     checkInForm, inlineEditingId, inlineEditValues, activeSpeakerId, inlineEditRowRef,
     setCheckInForm, setToastMessage, setInlineEditingId, setInlineEditFocusField,
@@ -218,10 +218,15 @@ export function getCheckInActions(deps: CheckInActionsDeps): CheckInActions {
 
         // Only owner/admin may revoke a role when changing to a non-role status.
         // Regular NCS users changing their own status must not trigger a DELETE they
-        // can't authorize (the backend rejects it with 403).
+        // can't authorize (the backend rejects it with 403). The net owner is not
+        // exempted here: an owner holding an NCS/Logger/Relay role who picks a
+        // plain status must actually lose that role like anyone else, or the
+        // check-in row keeps showing the old role icon forever (reported on the
+        // ME Dirigo Net, 2026-09-06). The backend's own remove_net_role guard
+        // already blocks removing the last active NCS from an active net.
         if (checkIn.user_id && (isOwner || isAdmin)) {
           const existingRole = netRoles.find((r: any) => r.user_id === checkIn.user_id);
-          if (existingRole && owner?.id !== checkIn.user_id) {
+          if (existingRole) {
             await api.delete(`/nets/${netId}/roles/${existingRole.id}`);
             await fetchNetRoles();
           }
