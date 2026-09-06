@@ -62,11 +62,14 @@ interface ChatProps {
   /** This net's check-ins, cross-referenced with onlineUserIds to build the
    *  @mention roster (see mentionRoster below). Passed raw rather than
    *  pre-derived so all three Chat placements (attached, floating,
-   *  popped-out window) hand over the same thing they already hold. The
-   *  popped-out window doesn't track online presence at all (its check-in
-   *  table already hardcodes onlineUserIds to []), so its mention list is
-   *  always empty rather than silently wrong -- a real fix needs that
-   *  window to track presence, which is out of scope here. */
+   *  popped-out window) hand over the same thing they already hold.
+   *  onlineUserIds itself comes from useNetData's own GET /nets/{id}/stats
+   *  fetch (manager.get_online_users on the backend -- real live-socket
+   *  presence, not a last-active timestamp), which every consumer of that
+   *  hook gets for free on mount/reconnect. The popped-out window
+   *  (NetPaneWindow.tsx) used to hardcode onlineUserIds to [] instead of
+   *  reading it out of the hook it already calls -- fixed 2026-09-06, so
+   *  presence (and therefore the mention roster) now works there too. */
   checkIns?: any[];
 }
 

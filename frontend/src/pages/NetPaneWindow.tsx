@@ -100,7 +100,7 @@ const NetPaneWindow: React.FC = () => {
   });
 
   const {
-    net, setNet, checkIns, setCheckIns, netRoles, fieldDefinitions, owner,
+    net, setNet, checkIns, setCheckIns, netRoles, onlineUserIds, fieldDefinitions, owner,
     pollResponses, topicResponses,
     fetchNet, fetchCheckIns, fetchNetRoles, fetchNetStats, fetchPollResponses,
   } = useNetData(netId);
@@ -195,6 +195,7 @@ const NetPaneWindow: React.FC = () => {
           canManage={user?.role === 'admin' || !!net.is_owner_or_ncs}
           chatGracePeriodMinutes={net.chat_grace_period_minutes ?? undefined}
           closedAt={net.closed_at}
+          onlineUserIds={onlineUserIds}
           checkIns={checkIns}
           topicOfWeekEnabled={net.topic_of_week_enabled}
           topicOfWeekPrompt={net.topic_of_week_prompt}
@@ -412,7 +413,7 @@ const NetPaneWindow: React.FC = () => {
         netRoles={netRoles}
         ncsRoles={ncsRoles}
         user={user}
-        onlineUserIds={[]}
+        onlineUserIds={onlineUserIds}
         activeSpeakerId={activeSpeakerId}
         latestCheckedInAtByCallsign={latestCheckedInAtByCallsign}
         hasAnyRelayedBy={hasAnyRelayedBy}
