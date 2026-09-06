@@ -195,6 +195,7 @@ const NetPaneWindow: React.FC = () => {
           canManage={user?.role === 'admin' || !!net.is_owner_or_ncs}
           chatGracePeriodMinutes={net.chat_grace_period_minutes ?? undefined}
           closedAt={net.closed_at}
+          checkIns={checkIns}
           topicOfWeekEnabled={net.topic_of_week_enabled}
           topicOfWeekPrompt={net.topic_of_week_prompt}
           pollEnabled={net.poll_enabled}
