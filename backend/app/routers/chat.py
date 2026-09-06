@@ -190,7 +190,7 @@ async def delete_message(
     return None
 
 
-ALLOWED_EMOJIS = {'👍', '🙂', '🙁', '❤️', '✅'}
+ALLOWED_EMOJIS = {'👍', '🙂', '🤣', '🙁', '❤️', '✅'}
 
 
 async def _get_message_reactions(db: AsyncSession, message_id: int) -> dict:

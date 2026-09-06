@@ -228,6 +228,8 @@ After checking in, you can update your status:
 - ⏸️ **Away** — Temporarily unavailable
 - 👋 **Checked Out** — Leaving the net
 
+The **Just Listening** button in the net toolbar is a one-click way to set your own status to Listening (and back to Checked In) without opening the status dropdown on your own row — use it instead of typing "just listening" into the Topic of the Week answer or your check-in notes, which only shows up there instead of on your status.
+
 ## Running a Net (NCS)
 
 ### Creating a Net

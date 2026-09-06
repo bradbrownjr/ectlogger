@@ -32,6 +32,7 @@ import ArchiveIcon from '@mui/icons-material/Archive';
 import UnarchiveIcon from '@mui/icons-material/Unarchive';
 import MapIcon from '@mui/icons-material/Map';
 import HearingIcon from '@mui/icons-material/Hearing';
+import HeadphonesIcon from '@mui/icons-material/Headphones';
 // Envelope, matching what Navbar.tsx already uses for the Traffic section.
 import MailIcon from '@mui/icons-material/Mail';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
@@ -565,6 +566,24 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
         onStatusChange(userActiveCheckIn?.id, goingAway ? 'away' : 'checked_in');
       },
       active: userActiveCheckIn?.status === 'away', activeTone: 'warning',
+    },
+    {
+      // Self-service status toggle for a station that's monitoring only, not
+      // transmitting -- added so people stop typing "just listening" into the
+      // Topic of the Week answer field instead of setting their own status.
+      // Deliberately a different icon (headphones, not an ear) and tone from
+      // "I hear" below (HearingIcon, propagation/coverage reporting) so the
+      // two don't get confused with each other.
+      key: 'just-listening', group: 'management', priority: 3,
+      visible: isAuthenticated && isActiveOrLobby && !!userActiveCheckIn,
+      Icon: HeadphonesIcon, color: neutralIconColor,
+      label: userActiveCheckIn?.status === 'listening' ? 'Listening' : 'Just listening',
+      tooltip: userActiveCheckIn?.status === 'listening' ? 'Back to checked in' : 'Mark yourself as just listening (not transmitting)',
+      onClick: () => {
+        const goingListening = userActiveCheckIn?.status !== 'listening';
+        onStatusChange(userActiveCheckIn?.id, goingListening ? 'listening' : 'checked_in');
+      },
+      active: userActiveCheckIn?.status === 'listening', activeTone: 'primary',
     },
     {
       // Self-service path to the same "can hear" dialog available per-row in

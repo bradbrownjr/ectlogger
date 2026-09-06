@@ -14,6 +14,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import { useAuth } from '../../contexts/AuthContext';
 import ProfileAvatarSection from './ProfileAvatarSection';
 import type { ProfileFormData } from './profileFormTypes';
+import { looksLikeEmail, NAME_FIELD_EMAIL_WARNING } from '../../utils/nameFieldGuard';
 
 // ========== PROFILE TAB ==========
 // Identity form: avatar section, name/callsign/gmrs/skywarn/location fields,
@@ -61,7 +62,8 @@ const ProfileTab: React.FC<ProfileTabProps> = ({
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           margin="normal"
           required
-          helperText="Your full name or preferred display name"
+          error={looksLikeEmail(formData.name)}
+          helperText={looksLikeEmail(formData.name) ? NAME_FIELD_EMAIL_WARNING : "Your full name or preferred display name"}
         />
 
         <TextField

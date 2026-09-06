@@ -9,14 +9,18 @@ All notable changes to ECTLogger are documented here.
 ## New Features
 
 * **Check-in: Sneak-in arrival alert** — When a station checks itself in without NCS or Logger typing it in, its row briefly flashes gold so you notice the new arrival even if you're running the net mostly by voice. If it lands below what you're currently viewing, a small arrow fades in at the bottom of the table to point you there.
+* **Net View: Just Listening button** — Mark yourself as monitoring only with one click from the toolbar, instead of typing "just listening" into the Topic of the Week answer or check-in notes.
 
 ## Improvements
 
 * **Check-in: Check In as Participant stands out** — The plain participant option in the lobby check-in prompt is now a filled green button instead of a faint outline, so it's just as easy to spot as the NCS/Logger buttons next to it.
+* **Profile & Check-in: Email address warning on Name** — The Name field now warns you if what you typed looks like an email address, so it doesn't end up shown on the public check-in list or a shareable net link.
+* **Chat: More reactions** — Added a 🤣 laughing reaction alongside the existing emoji options.
 
 ## Bug Fixes
 
 * **Check-in: NCS crown no longer follows net ownership** — A net owner who checked in as a plain participant was still shown wearing the NCS crown, and it demoted the real Net Control Station to a secondary crown the whole time they were checked in. Both now depend on who actually holds the NCS role, not who owns the net.
+* **Net View: Poll and Topic results reachable on closed nets** — The Poll Results and Topic of the Week summary below the check-in list could be clipped off the page with no way to scroll to it. The page now scrolls so you can actually see it.
 
 ---
 

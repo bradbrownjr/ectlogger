@@ -1529,7 +1529,23 @@ const NetView: React.FC = () => {
       <Paper
         sx={{
           p: 0.5, flex: { xs: 'none', md: 1 }, display: 'flex', flexDirection: 'column',
-          overflow: { xs: 'visible', md: 'hidden' }, minHeight: 0,
+          // A live/lobby net keeps the fixed-viewport "dashboard" layout --
+          // overflow:hidden here, so the check-in table/chat/activity log
+          // each scroll independently inside their own fixed-height panel.
+          // A closed/archived net adds the Poll Results/Topic Responses
+          // summary Box (and, on some nets, more) *after* the check-in
+          // table in this same flex column -- but the check-in table's
+          // FloatingWindow wrapper is height:'100%', so it always claims
+          // the whole column's height regardless of content, leaving zero
+          // room for anything after it. With this stuck at 'hidden', that
+          // summary was clipped out of the page entirely, with no
+          // scrollbar anywhere able to reach it (reported on the ME Dirigo
+          // Net, 2026-09-06). Closed/archived nets don't need the
+          // independently-scrolling-panels treatment anymore -- there's no
+          // live check-in entry happening -- so let the whole column
+          // scroll as one normal page instead.
+          overflow: { xs: 'visible', md: (net.status === 'closed' || net.status === 'archived') ? 'auto' : 'hidden' },
+          minHeight: 0,
         }}
       >
       <NetViewHeader

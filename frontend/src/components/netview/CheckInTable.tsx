@@ -28,6 +28,7 @@ import UserAvatar from '../UserAvatar';
 import { formatTimeWithDate } from '../../utils/dateUtils';
 import { STATUS_SELECT_MENU_PROPS } from './statusSelectMenuProps';
 import { isRowOutsideView, sneakInFade, SNEAK_IN_HIGHLIGHT_MS } from './sneakInHighlight';
+import { looksLikeEmail, NAME_FIELD_EMAIL_WARNING } from '../../utils/nameFieldGuard';
 
 // ========== CHECK-IN LIST TABLE 1: Desktop Inline (attached) ==========
 // The full-featured desktop check-in table: sticky header, inline click-to-edit
@@ -577,16 +578,19 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                       {net?.field_config?.name?.enabled && (
                         <TableCell data-field="name">
                           {isInlineEditing ? (
-                            <TextField
-                              size="small"
-                              value={inlineEditValues.name || ''}
-                              onChange={(e) => handleInlineFieldChange('name', e.target.value)}
-                              onKeyDown={handleInlineKeyDown} 
-                              onBlur={handleInlineBlur}
-                              autoFocus={inlineEditFocusField === 'name'}
-                              inputProps={{ style: { padding: '4px 8px' } }}
-                              sx={{ width: '100%' }}
-                            />
+                            <Tooltip title={looksLikeEmail(inlineEditValues.name || '') ? NAME_FIELD_EMAIL_WARNING : ''} open={looksLikeEmail(inlineEditValues.name || '')} placement="top" arrow>
+                              <TextField
+                                size="small"
+                                value={inlineEditValues.name || ''}
+                                onChange={(e) => handleInlineFieldChange('name', e.target.value)}
+                                onKeyDown={handleInlineKeyDown}
+                                onBlur={handleInlineBlur}
+                                autoFocus={inlineEditFocusField === 'name'}
+                                error={looksLikeEmail(inlineEditValues.name || '')}
+                                inputProps={{ style: { padding: '4px 8px' } }}
+                                sx={{ width: '100%' }}
+                              />
+                            </Tooltip>
                           ) : checkIn.name}
                         </TableCell>
                       )}

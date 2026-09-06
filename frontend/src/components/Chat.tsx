@@ -54,7 +54,7 @@ interface ChatProps {
   pollQuestion?: string | null;
 }
 
-const REACTION_EMOJIS = ['👍', '🙂', '🙁', '❤️', '✅'];
+const REACTION_EMOJIS = ['👍', '🙂', '🤣', '🙁', '❤️', '✅'];
 const CHAT_IMAGE_PREFIX = '__CHAT_IMAGE__';
 
 const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery, canManage, chatGracePeriodMinutes, closedAt, onlineUserIds = [], onProfileClick, onNewMessage, onDetach, onPopOut, minimized, onMinimize, onRestore, topicOfWeekEnabled, topicOfWeekPrompt, pollEnabled, pollQuestion }) => {
