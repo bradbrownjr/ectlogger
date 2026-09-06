@@ -188,6 +188,12 @@ export function useNetWebSocket(deps: NetWebSocketDeps): WebSocket | null {
           if (typeof window !== 'undefined' && window.dispatchEvent) {
             window.dispatchEvent(new CustomEvent('newChatMessage', { detail: message.data }));
           }
+        } else if (message.type === 'chat_message_edited') {
+          // Full updated message, same shape as chat_message, so listeners
+          // replace their copy by id rather than patching individual fields.
+          if (typeof window !== 'undefined' && window.dispatchEvent) {
+            window.dispatchEvent(new CustomEvent('chatMessageEdited', { detail: message.data }));
+          }
         } else if (message.type === 'chat_reaction') {
           if (typeof window !== 'undefined' && window.dispatchEvent) {
             window.dispatchEvent(new CustomEvent('chatReactionUpdate', { detail: message.data }));

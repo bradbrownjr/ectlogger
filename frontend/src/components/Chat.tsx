@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   Box,
   Paper,
@@ -9,6 +9,9 @@ import {
   ListItem,
   ListItemText,
   Divider,
+  MenuItem,
+  MenuList,
+  Popper,
   Table,
   TableHead,
   TableRow,
@@ -27,9 +30,13 @@ import PictureInPictureAltIcon from '@mui/icons-material/PictureInPictureAlt';
 import MinimizeIcon from '@mui/icons-material/Minimize';
 import CropSquareIcon from '@mui/icons-material/CropSquare';
 import CloseIcon from '@mui/icons-material/Close';
-import { chatApi, ChatMessage, ChatImagePayload } from '../api/chat';
+import CheckIcon from '@mui/icons-material/Check';
+import EditIcon from '@mui/icons-material/Edit';
+import ReplyIcon from '@mui/icons-material/Reply';
+import { chatApi, ChatMessage, ChatImagePayload, ChatReplyPreview, formatChatMessageText } from '../api/chat';
 import { useAuth } from '../contexts/AuthContext';
 import { formatTimeWithDate } from '../utils/dateUtils';
+import { sneakInFade, SNEAK_IN_HIGHLIGHT_MS } from './netview/sneakInHighlight';
 import UserAvatar from './UserAvatar';
 
 interface ChatProps {
@@ -52,12 +59,30 @@ interface ChatProps {
   topicOfWeekPrompt?: string | null;
   pollEnabled?: boolean;
   pollQuestion?: string | null;
+  /** This net's check-ins, cross-referenced with onlineUserIds to build the
+   *  @mention roster (see mentionRoster below). Passed raw rather than
+   *  pre-derived so all three Chat placements (attached, floating,
+   *  popped-out window) hand over the same thing they already hold. The
+   *  popped-out window doesn't track online presence at all (its check-in
+   *  table already hardcodes onlineUserIds to []), so its mention list is
+   *  always empty rather than silently wrong -- a real fix needs that
+   *  window to track presence, which is out of scope here. */
+  checkIns?: any[];
 }
 
 const REACTION_EMOJIS = ['👍', '🙂', '🤣', '🙁', '❤️', '✅'];
 const CHAT_IMAGE_PREFIX = '__CHAT_IMAGE__';
 
-const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery, canManage, chatGracePeriodMinutes, closedAt, onlineUserIds = [], onProfileClick, onNewMessage, onDetach, onPopOut, minimized, onMinimize, onRestore, topicOfWeekEnabled, topicOfWeekPrompt, pollEnabled, pollQuestion }) => {
+// The partial @token the caret is sitting on, matched at the end of the
+// composer's text. Deliberately end-of-string rather than caret-aware: a
+// multiline TextField makes true caret parsing fiddly, and typing a mention
+// mid-sentence and then going back to edit it is rare enough that the
+// autocomplete simply staying closed is an acceptable outcome. Token charset
+// matches the backend's (callsigns carry digits and portable /P, /M suffixes).
+const MENTION_TOKEN_AT_END = /(^|\s)@([A-Za-z0-9/_-]*)$/;
+const MAX_MENTION_SUGGESTIONS = 6;
+
+const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery, canManage, chatGracePeriodMinutes, closedAt, onlineUserIds = [], onProfileClick, onNewMessage, onDetach, onPopOut, minimized, onMinimize, onRestore, topicOfWeekEnabled, topicOfWeekPrompt, pollEnabled, pollQuestion, checkIns = [] }) => {
   const { user } = useAuth();
   const theme = useTheme();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -69,8 +94,73 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
   const [hoveredMessageId, setHoveredMessageId] = useState<number | null>(null);
   const [lightboxImage, setLightboxImage] = useState<ChatImagePayload | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  // Inline edit of your own message (see the hover pencil below)
+  const [editingMessageId, setEditingMessageId] = useState<number | null>(null);
+  const [editingText, setEditingText] = useState('');
+  const [savingEdit, setSavingEdit] = useState(false);
+  // The message the composer is currently answering, if any
+  const [replyingTo, setReplyingTo] = useState<ChatReplyPreview | null>(null);
+  // Partial @token being typed, or null when the mention list is closed
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [mentionIndex, setMentionIndex] = useState(0);
+  // Messages briefly flashing gold: you were mentioned, or you jumped here
+  // from a reply's quote block
+  const [flashedMessageIds, setFlashedMessageIds] = useState<Set<number>>(new Set());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLUListElement>(null);
+  const composerRef = useRef<HTMLDivElement>(null);
+  const messageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+  const flashTimers = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
+
+  // Same one-shot gold flash the check-in table uses for a self check-in, so
+  // "look here" reads identically across the app.
+  const flashMessage = useCallback((messageId: number) => {
+    setFlashedMessageIds((prev) => new Set(prev).add(messageId));
+    const existing = flashTimers.current.get(messageId);
+    if (existing) clearTimeout(existing);
+    flashTimers.current.set(messageId, setTimeout(() => {
+      flashTimers.current.delete(messageId);
+      setFlashedMessageIds((prev) => {
+        if (!prev.has(messageId)) return prev;
+        const next = new Set(prev);
+        next.delete(messageId);
+        return next;
+      });
+    }, SNEAK_IN_HIGHLIGHT_MS));
+  }, []);
+
+  useEffect(() => {
+    const timers = flashTimers.current;
+    return () => { timers.forEach((timer) => clearTimeout(timer)); };
+  }, []);
+
+  // Stations that can be @mentioned: checked in, with an account, AND
+  // currently signed into the app (onlineUserIds) -- someone checked in by
+  // voice with the app closed has no session to highlight anything on, and
+  // offering them in the autocomplete just invites a mention nobody will
+  // ever see flash. The backend's own mention resolution still matches
+  // against the full roster regardless of online status (so a mention typed
+  // by hand still tags them for whenever they next open the message), this
+  // only narrows what the autocomplete *suggests*.
+  const mentionRoster = useMemo(() => {
+    const byUserId = new Map<number, string>();
+    for (const checkIn of checkIns) {
+      if (checkIn.user_id == null || !checkIn.callsign) continue;
+      if (!onlineUserIds.includes(checkIn.user_id)) continue;
+      if (!byUserId.has(checkIn.user_id)) byUserId.set(checkIn.user_id, checkIn.callsign);
+    }
+    return Array.from(byUserId, ([id, callsign]) => ({ id, callsign }));
+  }, [checkIns, onlineUserIds]);
+
+  const mentionMatches = useMemo(() => {
+    if (mentionQuery === null) return [];
+    const query = mentionQuery.toLowerCase();
+    return mentionRoster
+      .filter((entry) => entry.callsign.toLowerCase().includes(query))
+      .slice(0, MAX_MENTION_SUGGESTIONS);
+  }, [mentionQuery, mentionRoster]);
+
+  const mentionOpen = mentionQuery !== null && mentionMatches.length > 0;
 
   // Tick every 30 s so grace period expiry is reflected without a page reload
   useEffect(() => {
@@ -104,7 +194,26 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
         }
         return [...prev, chatMsg];
       });
+      // Flash only messages that arrive live. The initial fetchMessages()
+      // load deliberately never flashes -- every past mention would light up
+      // at once on every page load or reconnect, which is exactly the noise
+      // the highlight is meant to cut through.
+      if (user?.id && chatMsg.mentioned_user_ids?.includes(user.id)) {
+        flashMessage(chatMsg.id);
+      }
       if (onNewMessage) onNewMessage(chatMsg);
+    };
+
+    // An edit re-resolves mentions server-side, so an edit is also how someone
+    // can end up mentioned by a message they already have on screen.
+    const handleChatMessageEdited = (event: any) => {
+      const updated = event.detail;
+      setMessages((prev) =>
+        prev.map((msg) => msg.id === updated.id ? { ...msg, ...updated } : msg)
+      );
+      if (user?.id && updated.mentioned_user_ids?.includes(user.id)) {
+        flashMessage(updated.id);
+      }
     };
 
     // Listen for reaction updates dispatched from NetView WebSocket
@@ -124,14 +233,16 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
     };
 
     window.addEventListener('newChatMessage', handleNewChatMessage);
+    window.addEventListener('chatMessageEdited', handleChatMessageEdited);
     window.addEventListener('chatReactionUpdate', handleReactionUpdate);
     window.addEventListener('netResync', handleResync);
     return () => {
       window.removeEventListener('newChatMessage', handleNewChatMessage);
+      window.removeEventListener('chatMessageEdited', handleChatMessageEdited);
       window.removeEventListener('chatReactionUpdate', handleReactionUpdate);
       window.removeEventListener('netResync', handleResync);
     };
-  }, [user?.id, netId]);
+  }, [user?.id, netId, flashMessage]);
 
   const scrollToBottom = () => {
     if (messagesContainerRef.current) {
@@ -178,8 +289,10 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
 
     setSending(true);
     try {
-      await chatApi.create(netId, { message: newMessage.trim() });
+      await chatApi.create(netId, { message: newMessage.trim(), reply_to_message_id: replyingTo?.id ?? null });
       setNewMessage('');
+      setReplyingTo(null);
+      setMentionQuery(null);
       // Do NOT add message here; rely on WebSocket event to update chat for all clients
       // if (onNewMessage) onNewMessage(response.data);
     } catch (error) {
@@ -189,11 +302,112 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  // ========== @MENTION AUTOCOMPLETE ==========
+
+  const handleComposerChange = (value: string) => {
+    setNewMessage(value);
+    const match = value.match(MENTION_TOKEN_AT_END);
+    setMentionQuery(match ? match[2] : null);
+    setMentionIndex(0);
+  };
+
+  const applyMention = (callsign: string) => {
+    setNewMessage((prev) => prev.replace(/@([A-Za-z0-9/_-]*)$/, `@${callsign} `));
+    setMentionQuery(null);
+    setMentionIndex(0);
+  };
+
+  const handleComposerKeyDown = (e: React.KeyboardEvent) => {
+    // While the mention list is open it owns Enter/Tab/arrows, or picking a
+    // callsign with the keyboard would send the half-typed message instead.
+    if (mentionOpen) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setMentionIndex((prev) => (prev + 1) % mentionMatches.length);
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setMentionIndex((prev) => (prev - 1 + mentionMatches.length) % mentionMatches.length);
+        return;
+      }
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault();
+        applyMention(mentionMatches[mentionIndex].callsign);
+        return;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setMentionQuery(null);
+        return;
+      }
+    }
+    if (e.key === 'Escape' && replyingTo) {
+      e.preventDefault();
+      setReplyingTo(null);
+      return;
+    }
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
+  };
+
+  // ========== INLINE EDIT (OWN MESSAGES) ==========
+
+  const startEdit = (message: ChatMessage) => {
+    setEditingMessageId(message.id);
+    setEditingText(message.message);
+  };
+
+  const cancelEdit = () => {
+    setEditingMessageId(null);
+    setEditingText('');
+  };
+
+  const handleSaveEdit = async () => {
+    if (editingMessageId === null || !editingText.trim() || savingEdit) return;
+    setSavingEdit(true);
+    try {
+      await chatApi.update(netId, editingMessageId, editingText.trim());
+      // The chat_message_edited broadcast updates every client including this
+      // one, matching how sending and reacting already work.
+      cancelEdit();
+    } catch (error) {
+      console.error('Failed to edit message:', error);
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const handleEditKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSaveEdit();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      cancelEdit();
+    }
+  };
+
+  // ========== REPLY ==========
+
+  const startReply = (message: ChatMessage) => {
+    setReplyingTo({
+      id: message.id,
+      callsign: message.callsign,
+      message: formatChatMessageText(message.message),
+    });
+  };
+
+  // Jumps to the quoted message when its quote block is clicked. Does nothing
+  // if that message isn't currently rendered (filtered out by search, or older
+  // than the loaded thread) rather than fetching it specially.
+  const scrollToMessage = (messageId: number) => {
+    const node = messageRefs.current.get(messageId);
+    if (!node) return;
+    node.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    flashMessage(messageId);
   };
 
   const handleReaction = async (messageId: number, emoji: string) => {
@@ -401,9 +615,20 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
           filteredMessages.map((message, index) => (
             <Box
               key={message.id}
+              ref={(node: HTMLDivElement | null) => {
+                if (node) messageRefs.current.set(message.id, node);
+                else messageRefs.current.delete(message.id);
+              }}
               onMouseEnter={() => setHoveredMessageId(message.id)}
               onMouseLeave={() => setHoveredMessageId(null)}
-              sx={{ position: 'relative' }}
+              sx={{
+                position: 'relative',
+                // Gold flash: you were just mentioned, or you jumped here from
+                // a reply's quote block. Same keyframe as the check-in table.
+                ...(flashedMessageIds.has(message.id)
+                  ? { animation: `${sneakInFade} ${SNEAK_IN_HIGHLIGHT_MS}ms ease-out`, borderRadius: 1 }
+                  : {}),
+              }}
             >
               {message.is_system ? (
                 // System message - IRC-style activity log
@@ -439,7 +664,12 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
                   sx={{ 
                     px: 0.5,
                     py: 0.25,
-                    backgroundColor: message.user_id === user?.id ? 'action.selected' : 'transparent',
+                    // Own messages carry a tint, but it paints over the gold
+                    // flash on the wrapper (a child always wins), so it steps
+                    // aside while this message is flashing.
+                    backgroundColor: message.user_id === user?.id && !flashedMessageIds.has(message.id)
+                      ? 'action.selected'
+                      : 'transparent',
                     borderRadius: 1,
                   }}
                 >
@@ -475,12 +705,85 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
                           >
                             {formatTimeWithDate(message.created_at, user?.prefer_utc || false, netStartedAt)}
                           </Typography>
+                          {/* Marks a message whose text was overwritten after sending */}
+                          {message.edited_at && (
+                            <Typography
+                              component="span"
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{ fontStyle: 'italic', whiteSpace: 'nowrap' }}
+                            >
+                              (edited)
+                            </Typography>
+                          )}
                         </Box>
                       </Box>
                     }
+                    secondaryTypographyProps={{ component: 'div' }}
                     secondary={
                       <Box component="span">
-                        {(() => {
+                        {/* Quoted message this one replies to (Signal-style:
+                            the quote sits above the reply's own text, not in a
+                            nested thread). Click jumps to the original. */}
+                        {message.reply_to && (
+                          <Box
+                            component="span"
+                            onClick={() => scrollToMessage(message.reply_to!.id)}
+                            sx={{
+                              display: 'block',
+                              borderLeft: 3,
+                              borderColor: 'primary.main',
+                              borderRadius: '0 4px 4px 0',
+                              backgroundColor: 'action.hover',
+                              px: 1,
+                              py: 0.25,
+                              mb: 0.5,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            <Typography component="span" variant="caption" color="primary" sx={{ display: 'block', fontWeight: 'bold' }}>
+                              {message.reply_to.callsign}
+                            </Typography>
+                            <Typography
+                              component="span"
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                            >
+                              {formatChatMessageText(message.reply_to.message)}
+                            </Typography>
+                          </Box>
+                        )}
+                        {editingMessageId === message.id ? (
+                          /* Inline edit: Enter saves, Escape cancels */
+                          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.5, mt: 0.5 }}>
+                            <TextField
+                              fullWidth
+                              size="small"
+                              autoFocus
+                              multiline
+                              maxRows={4}
+                              value={editingText}
+                              onChange={(e) => setEditingText(e.target.value)}
+                              onKeyDown={handleEditKeyDown}
+                              disabled={savingEdit}
+                            />
+                            <Tooltip title="Save">
+                              <span>
+                                <IconButton size="small" color="primary" onClick={handleSaveEdit} disabled={!editingText.trim() || savingEdit}>
+                                  <CheckIcon fontSize="small" />
+                                </IconButton>
+                              </span>
+                            </Tooltip>
+                            <Tooltip title="Cancel">
+                              <span>
+                                <IconButton size="small" onClick={cancelEdit} disabled={savingEdit}>
+                                  <CloseIcon fontSize="small" />
+                                </IconButton>
+                              </span>
+                            </Tooltip>
+                          </Box>
+                        ) : (() => {
                           const imagePayload = parseChatImage(message.message);
                           if (!imagePayload) {
                             return (
@@ -556,8 +859,13 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
                       </Box>
                     }
                   />
-                  {/* Hover emoji toolbar — hidden on your own messages and on closed/archived nets */}
-                  {hoveredMessageId === message.id && user && message.user_id !== user.id && !netClosed && (
+                  {/* Hover action toolbar — hidden on closed/archived nets and
+                      while this message is being edited. Reactions only appear
+                      on other people's messages (the backend rejects reacting
+                      to your own); reply appears on every message; the edit
+                      pencil only on your own text messages, since an uploaded
+                      image has no text to rewrite. */}
+                  {hoveredMessageId === message.id && user && !netClosed && editingMessageId !== message.id && (
                     <Box
                       sx={{
                         position: 'absolute',
@@ -576,7 +884,7 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
                         zIndex: 1,
                       }}
                     >
-                      {REACTION_EMOJIS.map((emoji) => (
+                      {message.user_id !== user.id && REACTION_EMOJIS.map((emoji) => (
                         <Tooltip key={emoji} title={emoji}>
                           <IconButton
                             size="small"
@@ -593,6 +901,18 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
                           </IconButton>
                         </Tooltip>
                       ))}
+                      <Tooltip title="Reply">
+                        <IconButton size="small" onClick={() => startReply(message)} sx={{ p: 0.25 }}>
+                          <ReplyIcon sx={{ fontSize: '1rem' }} />
+                        </IconButton>
+                      </Tooltip>
+                      {message.user_id === user.id && !parseChatImage(message.message) && (
+                        <Tooltip title="Edit">
+                          <IconButton size="small" onClick={() => startEdit(message)} sx={{ p: 0.25 }}>
+                            <EditIcon sx={{ fontSize: '1rem' }} />
+                          </IconButton>
+                        </Tooltip>
+                      )}
                     </Box>
                   )}
                 </ListItem>
@@ -605,22 +925,53 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
       </List>
 
       {!netClosed && (
-        <Box sx={{ p: 1, borderTop: 1, borderColor: 'divider', flexShrink: 0 }}>
+        <Box ref={composerRef} sx={{ p: 1, borderTop: 1, borderColor: 'divider', flexShrink: 0 }}>
+          {/* Reply target bar — shown while the composer is answering a
+              message, dismissible with the X or Escape */}
+          {replyingTo && (
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                mb: 0.5,
+                px: 1,
+                py: 0.5,
+                borderLeft: 3,
+                borderColor: 'primary.main',
+                borderRadius: '0 4px 4px 0',
+                backgroundColor: 'action.hover',
+              }}
+            >
+              <ReplyIcon fontSize="small" color="primary" />
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography variant="caption" color="primary" sx={{ display: 'block', fontWeight: 'bold' }}>
+                  Replying to {replyingTo.callsign}
+                </Typography>
+                <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
+                  {replyingTo.message}
+                </Typography>
+              </Box>
+              <IconButton size="small" onClick={() => setReplyingTo(null)} title="Cancel reply">
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            </Box>
+          )}
           <Box sx={{ display: 'flex', gap: 1 }}>
             <TextField
               fullWidth
               size="small"
-              placeholder={user ? "Type a message or paste an image..." : "Sign in to send messages"}
+              placeholder={user ? "Type a message, @callsign, or paste an image..." : "Sign in to send messages"}
               value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
+              onChange={(e) => handleComposerChange(e.target.value)}
+              onKeyDown={handleComposerKeyDown}
               onPaste={handlePaste}
               disabled={sending || uploadingImage || !user}
               multiline
               maxRows={3}
             />
-            <IconButton 
-              color="primary" 
+            <IconButton
+              color="primary"
               onClick={handleSend}
               disabled={!newMessage.trim() || sending || uploadingImage || !user}
             >
@@ -630,6 +981,28 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
             {uploadingImage ? 'Uploading pasted image...' : 'Tip: paste PNG/JPEG/WEBP images directly into chat.'}
           </Typography>
+
+          {/* ========== @MENTION AUTOCOMPLETE ==========
+              Opens above the composer while an @token is being typed. Only
+              stations checked into this net with an account are listed, since
+              those are the only ones the backend will resolve to a highlight.
+              onMouseDown (not onClick) so picking with the mouse never blurs
+              the composer first. */}
+          <Popper open={mentionOpen} anchorEl={composerRef.current} placement="top-start" sx={{ zIndex: theme.zIndex.modal }}>
+            <Paper elevation={6} sx={{ minWidth: 160, maxHeight: 200, overflowY: 'auto' }}>
+              <MenuList dense>
+                {mentionMatches.map((entry, index) => (
+                  <MenuItem
+                    key={entry.id}
+                    selected={index === mentionIndex}
+                    onMouseDown={(e) => { e.preventDefault(); applyMention(entry.callsign); }}
+                  >
+                    {entry.callsign}
+                  </MenuItem>
+                ))}
+              </MenuList>
+            </Paper>
+          </Popper>
         </Box>
       )}
       </>)}

@@ -1,5 +1,13 @@
 import api from '../services/api';
 
+/** Denormalized quote of the message a reply answers, so rendering the quote
+ *  block never needs a second lookup. Null once the quoted message is gone. */
+export interface ChatReplyPreview {
+  id: number;
+  callsign: string;
+  message: string;
+}
+
 export interface ChatMessage {
   id: number;
   net_id: number;
@@ -9,9 +17,13 @@ export interface ChatMessage {
   sender_display_name?: string;
   message: string;
   created_at: string;
+  edited_at?: string | null;
   is_system: boolean;
   reactions?: Record<string, number[]>;  // emoji -> [user_ids]
   avatar_url?: string | null;
+  mentioned_user_ids?: number[];
+  reply_to_message_id?: number | null;
+  reply_to?: ChatReplyPreview | null;
 }
 
 export interface ChatImagePayload {
@@ -35,6 +47,7 @@ export interface ChatImageUploadResponse {
 
 export interface ChatMessageCreate {
   message: string;
+  reply_to_message_id?: number | null;
 }
 
 const CHAT_IMAGE_PREFIX = '__CHAT_IMAGE__';
@@ -81,6 +94,11 @@ export const chatApi = {
 
   create: (netId: number, data: ChatMessageCreate) =>
     api.post<ChatMessage>(`/chat/nets/${netId}/messages`, data),
+
+  // Overwrite-only edit: the server replaces the text and stamps edited_at,
+  // then broadcasts chat_message_edited so every viewer swaps it in by id.
+  update: (netId: number, messageId: number, message: string) =>
+    api.put<ChatMessage>(`/chat/nets/${netId}/messages/${messageId}`, { message }),
 
   delete: (netId: number, messageId: number) =>
     api.delete(`/chat/nets/${netId}/messages/${messageId}`),

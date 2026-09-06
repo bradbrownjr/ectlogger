@@ -706,10 +706,24 @@ class ChatMessage(Base):
     message = Column(Text, nullable=False)
     is_system = Column(Boolean, default=False)  # True for activity messages (check-in, check-out, etc.)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    # Overwrite-only edit: the text is replaced in place and this stamps when.
+    # No version history table on purpose -- a net log wants the corrected
+    # wording, not an audit trail of typos.
+    edited_at = Column(DateTime(timezone=True), nullable=True)
+    # JSON list of user ids this message @mentions, resolved against the net's
+    # checked-in roster when the message is sent or edited. Same JSON-as-Text
+    # pattern as CheckIn.custom_fields.
+    mentioned_user_ids = Column(Text, nullable=True)
+    # Signal-style quote reply (one level, no threads). SET NULL so deleting
+    # the quoted message leaves the reply readable instead of cascading it
+    # away, though SQLite does not enforce this without PRAGMA foreign_keys,
+    # so the serializers treat a missing parent as "no quote block".
+    reply_to_message_id = Column(Integer, ForeignKey("chat_messages.id", ondelete="SET NULL"), nullable=True)
 
     # Relationships
     net = relationship("Net", back_populates="chat_messages")
     user = relationship("User", back_populates="chat_messages")
+    reply_to = relationship("ChatMessage", remote_side=[id], foreign_keys=[reply_to_message_id])
     reactions = relationship("ChatReaction", back_populates="message", cascade="all, delete-orphan")
     images = relationship("ChatImage", back_populates="message", cascade="all, delete-orphan")
 

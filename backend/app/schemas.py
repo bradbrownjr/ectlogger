@@ -3,6 +3,7 @@ from typing import Optional, List, Literal, Dict, Any, Union
 from datetime import datetime
 from app.models import UserRole, NetStatus, StationStatus, FormDisposition, TrafficAction, RelayMethod, TrafficTestCategory
 from app.auth import validate_password_strength
+import json
 import re
 
 
@@ -957,7 +958,54 @@ class CustomFieldResponse(CustomFieldBase):
 
 
 # Chat Message Schemas
+# Length of the quoted-message preview carried on a reply. Long enough to
+# recognize which message is being answered, short enough that a wall-of-text
+# original doesn't dominate the reply that quotes it.
+REPLY_PREVIEW_MAX_CHARS = 140
+
+
+def decode_mentioned_user_ids(raw) -> List[int]:
+    """ChatMessage.mentioned_user_ids is JSON-as-Text (same pattern as
+    CheckIn.custom_fields). Rows written before migration 067, or by anything
+    that ever wrote a non-list, decode to an empty list rather than raising:
+    a mention is a highlight cue, never worth failing a message fetch over."""
+    if not raw:
+        return []
+    try:
+        parsed = json.loads(raw)
+    except (ValueError, TypeError):
+        return []
+    if not isinstance(parsed, list):
+        return []
+    return [value for value in parsed if isinstance(value, int)]
+
+
+def build_reply_preview(parent, redact: bool = False) -> Optional[dict]:
+    """Denormalized quote block for a reply, so the frontend never has to look
+    the original message up separately. Returns None when the quoted message is
+    gone (deleted, or a dangling id -- SQLite does not enforce the SET NULL),
+    which the UI renders as a reply with no quote rather than an error."""
+    if parent is None:
+        return None
+    from app.utils import redact_contact_info
+    text = parent.message or ''
+    if redact:
+        text = redact_contact_info(text)
+    if len(text) > REPLY_PREVIEW_MAX_CHARS:
+        text = text[:REPLY_PREVIEW_MAX_CHARS] + '...'
+    return {
+        'id': parent.id,
+        'callsign': parent.user.callsign if parent.user and parent.user.callsign else ('System' if parent.is_system else 'Unknown'),
+        'message': text,
+    }
+
+
 class ChatMessageCreate(BaseModel):
+    message: str = Field(max_length=5000, min_length=1)
+    reply_to_message_id: Optional[int] = None
+
+
+class ChatMessageEdit(BaseModel):
     message: str = Field(max_length=5000, min_length=1)
 
 
@@ -979,12 +1027,16 @@ class ChatMessageResponse(BaseModel):
     message: str
     is_system: bool = False
     created_at: datetime
+    edited_at: Optional[datetime] = None
     reactions: dict = {}  # emoji -> list of user_ids
     avatar_url: Optional[str] = None
+    mentioned_user_ids: List[int] = []
+    reply_to_message_id: Optional[int] = None
+    reply_to: Optional[dict] = None  # {id, callsign, message} preview of the quoted message
 
     class Config:
         from_attributes = True
-    
+
     @classmethod
     def from_orm(cls, obj, redact: bool = False):
         from app.utils import get_avatar_url, redact_contact_info
@@ -1011,8 +1063,12 @@ class ChatMessageResponse(BaseModel):
             'message': redact_contact_info(obj.message) if redact else obj.message,
             'is_system': obj.is_system if hasattr(obj, 'is_system') else False,
             'created_at': obj.created_at,
+            'edited_at': getattr(obj, 'edited_at', None),
             'reactions': reactions,
             'avatar_url': avatar_url,
+            'mentioned_user_ids': decode_mentioned_user_ids(getattr(obj, 'mentioned_user_ids', None)),
+            'reply_to_message_id': getattr(obj, 'reply_to_message_id', None),
+            'reply_to': build_reply_preview(getattr(obj, 'reply_to', None), redact=redact),
         }
         return cls(**data)
 
