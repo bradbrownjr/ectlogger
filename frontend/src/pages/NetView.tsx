@@ -2943,10 +2943,9 @@ const NetView: React.FC = () => {
                   </Button>
                 )}
                 <Button
-                  color="inherit"
+                  color="success"
                   size="small"
-                  variant="outlined"
-                  sx={{ borderColor: 'rgba(255,255,255,0.5)', color: 'inherit' }}
+                  variant="contained"
                   onClick={() => {
                     checkInPrompt.onClose();
                     if (user) {
