@@ -1,6 +1,6 @@
 # ECT Logger — Product Roadmap
 
-*Last updated: 2026-08-20*  
+*Last updated: 2026-09-08*  
 *Compiled from user feedback: AA1GM, KC1UIX, W1BKW, W1MTW, N1GSK, KC1JMH*
 
 > **Canonical location:** `docs/ROADMAP.md`.
@@ -107,6 +107,89 @@ actually related to the chat migration once that branch merges (it shouldn't be 
 reproduces without the branch's changes at all — but confirm rather than assume). The other
 two both end in `_requires_auth`, suggesting a shared cause (an auth dependency change, a
 fixture drift) rather than three unrelated bugs.
+
+---
+
+## Confirmed Bugs
+
+*Reproduced defects in behavior that has already shipped to users. These are not milestone work
+— an item here is meant to be fixed next and then deleted from this section, with a changelog
+entry (a released bug users could actually hit is one of the few defects the changelog rules do
+want logged).*
+
+### The sneak-in off-screen arrow never clears, scrolls away with the table, and does nothing when clicked
+
+**🐛 Bug** *(KC1JMH, 2026-09-08)*  
+**Model:** Sonnet. Three independent defects in one small surface, each root-caused below; the
+only real judgment call is the dismissal rule.
+
+Shipped with the sneak-in arrival alert (`docs/CHANGELOG.md`, "Check-in: Sneak-in arrival
+alert"). The arrow is the small warning-colored `KeyboardArrowDownIcon` that fades in at the
+bottom of the check-in table when a self check-in lands outside the visible scroll area. Three
+things are wrong with it, and each is wrong **twice** — the block is duplicated near-verbatim in
+`frontend/src/components/netview/CheckInTable.tsx` (~`:180-262`) and
+`frontend/src/components/netview/CheckInMobileList.tsx` (~`:128-198`), with a "see CheckInTable.tsx
+for the full rationale" comment standing in for the shared code that was never extracted. Fix the
+duplication first or every fix has to be made twice and will drift.
+
+**1. It never disappears.** Both copies key one `useEffect` off `highlightedCheckInIds` and, inside
+it, set a `SNEAK_IN_HIGHLIGHT_MS` (2500 ms) dismissal timer whose `clearTimeout` is the effect's
+cleanup. But `useSneakInHighlight` (`sneakInHighlight.ts`) expires each highlighted id on its *own*
+2500 ms timer, and doing so produces a new `Set` — a dependency change. React runs the previous
+cleanup, killing the arrow's pending dismissal timer, then re-runs the effect, which exits at
+`if (justArrived.length === 0) return;` without scheduling a replacement. The arrow is left visible
+with nothing remaining that can hide it. The hook's timer is registered first, so it reliably wins
+the race: in practice the arrow never clears again for the life of the page. Tying the arrow's
+lifetime to the highlight set is the design error — that set exists precisely in order to expire.
+
+**2. It scrolls away with the table content.** The arrow is `position: absolute` with `bottom: 6`
+*inside* the scrolling `TableContainer`. An absolutely positioned descendant of a scroll container
+is placed against that container's padding box and then scrolls with its content, so `bottom: 6`
+means "6 px above the bottom of the entire scrollable table", not "6 px above the visible bottom
+edge". The code comment in `CheckInTable.tsx` asserts the opposite ("stays pinned at the visible
+bottom edge instead of scrolling away with the table content") — it documents the intent, not the
+behavior, and must be corrected along with the code.
+
+**3. It looks like a button and is explicitly not one.** It is a circular `Box` with `boxShadow: 2`
+on a `background.paper` disc — the visual vocabulary of a floating action button — carrying
+`pointerEvents: 'none'`. Users click it; nothing can happen. This is the one part that is a design
+decision rather than a defect: the arrow should either stop looking actionable, or become
+actionable. Recommend the latter — pointing at an arrival the operator cannot see and offering no
+way to reach it is the weaker half of the feature.
+
+**Also wrong: the arrow always points down.** `isRowOutsideView` returns true for a row above the
+container's top edge as well as below its bottom edge, and the sort comparator in
+`NetView.tsx:1386` pins staffed roles first and (with `mobile_priority_sort`, the default) mobile
+stations second. A self check-in whose status is `mobile`, or one from a station holding a staffed
+role, is inserted at the **top** of the list. If the operator has scrolled down, the arrow fades in
+at the bottom pointing away from the row it is announcing.
+
+**Fix checklist** *(not started)*
+- [ ] Extract one shared `OffscreenArrivalIndicator` used by both tables, next to the existing
+      shared `isRowOutsideView` helper. Delete both inline copies rather than patching them in
+      parallel
+- [ ] Give the indicator its own state that does not borrow the highlight set's lifetime: track
+      the ids of arrivals that landed off-screen, and clear when that set empties, when the row
+      scrolls into view, or when the user dismisses it. Prefer an `IntersectionObserver` on the
+      tracked rows over a fresh timer — "the operator has now seen it" is the actual dismissal
+      condition, and a timer only approximates it
+- [ ] Render the indicator in a non-scrolling `position: relative` wrapper around the
+      `TableContainer` so it stays at the visible edge, and correct the comment that claims the
+      current placement already does this
+- [ ] Make it a real control: remove `pointerEvents: 'none'`, use an `IconButton` with an
+      `aria-label`, honor DESIGN.md's 44 x 44 px minimum touch target, and scroll the newest
+      off-screen arrival into view on click (`scrollIntoView` with block: 'nearest' and smooth
+      behavior)
+- [ ] Point it the right way — up when the tracked row is above the visible area, down when below
+      — or track only below-the-fold arrivals and let the top case be handled by the row flash
+      alone. Either is defensible; picking neither is what ships the current bug
+- [ ] Cover the "highlight expires while the arrow is still showing" sequence in a test. It is the
+      exact interleaving that produced this report and it is invisible to any test that renders a
+      single arrival and stops
+
+**Verify on all three placements**, not just the one that is easy to reach: the attached desktop
+table, the detached floating table (both `NetViewSidePanels.tsx`), and the popped-out window
+(`NetPaneWindow.tsx`), plus the mobile list.
 
 ---
 
@@ -286,6 +369,9 @@ Top financial supporters and community contributors are acknowledged directly in
 ### Schedule Visibility & Calendar
 
 **✨ Month calendar view on the Schedule page, and calendar subscription** *(KC1JMH)*  
+*Re-requested 2026-09-08 as "calendar view of schedule" — that is Phase 1 below and nothing more,
+so this section already covers it. Treat the repeat ask as a priority signal: Phase 1 is the whole
+of what was wanted, and it stands alone without Phases 2-3.*  
 **Model:** Sonnet for the month view and the single-event link (Phases 1-2, established UI patterns against one new read endpoint); **Opus for Phase 3**, the subscribable feed — its URL must be fetchable by Google's unauthenticated servers, which makes it an auth design task rather than a UI one.  
 
 Two related capabilities. The first is a **month grid on the Schedule page** with next/previous month arrows, showing which nets fall on which day and, where the schedule has a rotation, who is NCS. The second is **getting a net onto the operator's own calendar** so it shows up next to the rest of their week.
@@ -331,6 +417,257 @@ Two rules fall out of that and both are load-bearing:
 - [ ] `docs/DEVELOPMENT.md` — the past-versus-projected boundary rule and the iCalendar naming rule
 
 **Trigger:** Phase 1 stands alone and delivers most of the value. Phase 2 is small and independent. Phase 3 should not start until someone actually asks for a live-updating subscription, since it adds a permanently reachable unauthenticated URL to the attack surface for a convenience the first two phases mostly cover.
+
+### Chat Moderation
+
+**✨ Mute a station in chat, personally or net-wide** *(KC1JMH, 2026-09-08, from field reports)*  
+**Model:** Opus for the design — this is a moderation capability on a record-keeping system, and
+the "does the muted station know" question below has legal and social consequences that outlast
+the code. Sonnet for implementation once the shape is settled.
+
+The reported problem is specific: meme spammers drown out real net feedback and annoy other
+participants, and today the only tool available is deleting individual messages after the fact.
+The request is a mute control next to Reply, with two scopes — **net staff can mute a station for
+everyone or just for themselves; any participant can mute a station for just themselves.**
+
+**The load-bearing decision is whether the muted station is told.** The request is explicit that
+they should not be: *"they won't know they're not getting received, and may just get bored"* — a
+shadow mute, which avoids the argument a visible mute starts and is genuinely the humane option
+for someone who is merely tiresome. That is a defensible product call and it is the recommended
+default, but it has to be made deliberately rather than by omission, because ECTLogger is not a
+social app:
+
+- A net log is an **emergency-communications record**. A message that some participants saw and
+  others did not, with no marking, makes the exported log a record of a conversation that never
+  happened in that form for anyone.
+- Shadow-muting is a decision **one staff member takes about another operator's participation**,
+  invisible to the operator and, unless designed otherwise, invisible to the rest of the staff.
+  It needs an audit trail even if the muted station never sees one.
+- A muted station can still be transmitting **on the air**. Muting them in chat does not mute
+  them on the net, and NCS must not be led to believe otherwise.
+
+**Recommended shape (argue it before building it):**
+
+- Personal mutes hide messages **for the muting viewer only** and are the operator's own business
+  — no audit trail, no notification, revocable from the same control. Client-side filtering is
+  acceptable here: the payload already reached that browser and simply is not rendered.
+- Net-wide mutes are **server-enforced** — a muted station's message is stored and echoed back to
+  its own author (so the mute stays silent) but never broadcast to other viewers.
+  `ConnectionManager.broadcast` (`backend/app/main.py:213`) already carries per-connection
+  `user_id` and already sends a different payload to one audience than another (the `guest_message`
+  redaction path), so this extends an existing mechanism rather than inventing one.
+- **Net staff always see muted messages**, visually marked as muted, and so does the exported net
+  log. Hiding them from the record is the version that cannot be defended after an incident.
+
+**Requirements / open questions:**
+- New `chat_mutes` table: muted user (or guest callsign — see below), `net_id`, scope
+  (`personal` / `net`), the user who set it, `created_at`, and an optional expiry.
+- **Does a net-wide mute expire with the net?** Recommend yes — mutes are per-net, and a standing
+  cross-net ban is a different feature (the existing `PUT /users/{id}/ban` already covers the
+  serious case). A recurring schedule wanting to carry mutes forward is a separate ask.
+- **Guests.** Chat already redacts contact info for unauthenticated viewers, and a guest has no
+  `user_id`. Decide whether guests can be muted at all, and whether guests can mute (they have no
+  account to store a personal mute list against — likely session-local or not offered).
+- Mute control placement: beside Reply in the per-message action row (`Chat.tsx` ~`:907`), with
+  the scope choice offered only to staff. A participant sees one action, staff see two.
+- A muted-message count or "N messages hidden" affordance so a viewer knows their own filter is
+  on and can undo it. A personal mute the user forgets they set becomes a bug report.
+- Does muting hide the station's `@mentions` and reply quotes of that station too? A quoted meme
+  reappearing inside someone else's reply defeats the mute.
+
+**Trigger:** the personal-mute half solves the annoyance for the person annoyed and carries none
+of the record-keeping questions. It can ship first and alone. Net-wide mute should not ship until
+the audit-trail and export questions above have answers.
+
+### Net View Usability
+
+**🔧 Let a station change its own Topic of the Week answer from the toolbar** *(KC1JMH, 2026-09-08)*  
+**Model:** Haiku, once the icon is chosen — the permission and persistence paths both already exist.
+
+A station that answers the topic question at check-in has no obvious way to change its answer
+afterward; the answer lives in `check_ins.topic_response` and is reachable only by finding your own
+row and editing it inline, which is exactly the hunt the "I hear" and "Just listening" toolbar
+buttons were added to remove. Add a toolbar action alongside them.
+
+Nothing new is needed underneath: `update_check_in`
+(`backend/app/routers/check_ins.py:464`) already permits a user to edit their own check-in
+(`is_own_check_in`), and the toolbar entry follows the existing action-descriptor pattern in
+`NetViewHeader.tsx` (~`:500-600`) — key, group, priority, visible, Icon, color, label, tooltip,
+onClick.
+
+- [ ] Visible only when `isAuthenticated`, the net is active or in lobby, the viewer has an active
+      check-in, **and** `net.topic_of_week_enabled` — the button must not appear on a net with no
+      topic set, and must not appear for a viewer who is not checked in
+- [ ] Small dialog prefilled with the current answer, showing `net.topic_of_week_prompt` as its
+      label so the operator can see the question they are answering
+- [ ] **Icon choice is the open question.** The topic column header uses a plain tooltip today and
+      the toolbar's neutral icons are already dense. Candidates worth comparing in place:
+      `RateReviewOutlined`, `ChatBubbleOutline` (too close to Chat), `QuestionAnswerOutlined`,
+      `EditNoteOutlined`. Pick against the icon-color table in DESIGN.md, and check it is not
+      confusable with Chat, Announcements, or the poll surfaces at icon-only width
+- [ ] Consider covering the poll answer with the same control, or deliberately not. Both live on
+      the same row and a station that wants to change one usually wants the other
+
+**🔧 Separate "stepped away" from "no answer when called", and flash the row on return** *(KC1JMH, 2026-09-08)*  
+**Model:** Sonnet — a new `StationStatus` member touches the status dropdowns, the row tint logic,
+exports, and statistics, so it is a small-but-wide change rather than a one-file one.
+
+Two different facts currently share one status. A station that sets itself `away` is saying "I am
+stepping out, call me later." NCS marking a station `away` after calling it with no response is
+recording something else entirely: the station may be off the air, out of range, or gone. Both
+render as the same yellow row, so a net log cannot distinguish an operator who told the net they
+were leaving from one who vanished mid-net — a distinction ARES/SKYWARN after-action review
+actually cares about.
+
+- [ ] New `StationStatus` member for the NCS-set case (`NO_ANSWER`, label "No answer") alongside
+      the existing self-set `AWAY`. Existing rows keep meaning `away`; nothing is migrated
+- [ ] Distinct row tint and status-menu entry for each, in `CheckInTable.tsx` (`rowBgColor`,
+      ~`:388`) and `CheckInMobileList.tsx`. The two hard-coded `validValues` status arrays in those
+      files both need the new member — they are the kind of list that silently drops an unknown
+      status
+- [ ] Only staff can set "No answer"; only the station itself sets "Step away". The toolbar's
+      step-away toggle stays self-only and never produces the new status
+- [ ] **Toolbar icon change:** the self step-away action currently uses `PauseCircleOutline`. Swap
+      it for a walking/boot glyph so the two states read differently at a glance — MUI has
+      `DirectionsWalk` and `Hiking`; `Hiking` is the closer match to the requested hiking boot.
+      Keep the active/warning tone it already has
+- [ ] Include both statuses distinctly in the net report, the ICS-309 export, and the check-in
+      status counts, or the split buys nothing outside the live view
+
+**Return-from-away flash.** When a station comes back — its status leaves `away` — briefly
+highlight the row so NCS notices without watching the table, then let it fade. Reuse
+`sneakInFade` / `SNEAK_IN_HIGHLIGHT_MS` from `sneakInHighlight.ts` rather than inventing a second
+flash: the app should have exactly one "something just happened in this row" animation.
+
+- [ ] Fire only on a live WebSocket `status_change`, never on the initial load or a reconnect
+      resync — the same rule the sneak-in highlight and the chat mention highlights already
+      follow, and the reason neither of them flashes the whole table on every reload
+- [ ] **Read the request the other way before building.** "Add a timeout for the highlighted row
+      when someone comes back from away" can also mean *the away tint itself should time out* —
+      a station that steps away and never returns stays yellow for the rest of the net. If that is
+      the actual complaint, the fix is an auto-expiry on the away state (or an "away for 20 min"
+      age badge), not a return flash. Confirm which before writing code; they are different
+      features and only one was asked for
+- [ ] Whichever it is, do not build it on the arrow's broken pattern — see the sneak-in arrow bug
+      above, whose root cause is exactly a flash timer whose lifetime was borrowed from another
+      component's state
+
+**🔧 Make net logos openable at full size** *(KC1JMH, 2026-09-08)*  
+**Model:** Haiku — one small shared component, three call sites.
+
+Net and schedule logos render at 28-32 px (`NetCard.tsx:141`, `ScheduleCard.tsx:212`,
+`NetViewHeader.tsx:821`). Club logos routinely carry the club name, a repeater frequency, or a
+callsign as part of the artwork, and none of it is legible at that size. Clicking should open the
+uploaded image at its natural size.
+
+- [ ] One shared click-to-enlarge wrapper used by all three sites, not three separate dialogs.
+      A plain MUI `Dialog` with the image at `max-width: 100%` and a close affordance is enough;
+      no lightbox dependency
+- [ ] Keyboard reachable and dismissible on Escape, with the logo carrying alt text naming the net
+      or schedule — it is currently a decorative `Avatar` with no label
+- [ ] Do not swallow the card click. On `NetCard`/`ScheduleCard` the logo sits inside a card whose
+      body already navigates; the enlarge click has to stop propagation or clicking the logo will
+      both open the image and leave the page
+- [ ] Serve the original upload, not the resized avatar, or the enlarged view is just a blurry
+      28 px image — confirm what `NetLogoSection.tsx`'s upload path actually stores before
+      promising full resolution
+
+### Operator Identity & Profiles
+
+**🔧 QRZ links, clickable callsigns, and a profile for stations without an account** *(KC1JMH, 2026-09-08)*  
+**Model:** Sonnet — the guest-profile half needs a new callsign-keyed read endpoint and a decision
+about what a station with no account is allowed to reveal.
+
+Three related gaps in the same surface. `UserProfileDialog.tsx` opens today from an avatar click in
+NetView and NCSStaffModal, keyed strictly on `userId: number | null`.
+
+- [ ] **QRZ link.** Add a link to `https://www.qrz.com/db/<callsign>` at the bottom of the profile
+      dialog, opening in a new tab. QRZ is where hams look each other up, and the callsign the
+      dialog already displays is the whole of the lookup key. Note `routers/users.py:629` already
+      carries a "Future: QRZ lookup as tertiary source (roadmap)" comment — that is a different,
+      larger idea (calling the QRZ API server-side, which needs credentials and a subscription).
+      This item is only an outbound link and needs neither
+- [ ] **Clickable callsign in chat.** Only the avatar opens the profile today; the callsign beside
+      it is inert text. Extend the clickable region to the callsign — it is the larger and more
+      obvious target, and on a phone the avatar alone is under the 44 px minimum DESIGN.md sets
+- [ ] **A profile for stations with no account.** A guest or NCS-entered check-in has no
+      `user_id`, so its avatar opens nothing at all. Show a callsign-keyed profile instead: the
+      callsign, the stats that can be computed from `check_ins.callsign` across nets, and the QRZ
+      link. This is the version of the dialog that needs the most thought — see below
+
+**Open questions for the callsign-keyed profile:**
+- What can it show? Aggregating every check-in that shares a callsign string means aggregating
+  rows nobody has verified belong to the same operator, and it silently merges an account holder's
+  guest check-ins with their account's. Decide whether it reports "this callsign in this app" or
+  refuses to aggregate across nets at all.
+- It exposes a station's participation history **to unauthenticated viewers** if the dialog is
+  reachable from a public net view. `GET /users/{user_id}/popup` is behind auth today; a
+  callsign-keyed sibling needs the same decision made explicitly, not inherited.
+- When the callsign *does* belong to an account (including via `User.callsigns` aliases), the
+  dialog should show the real profile rather than a thinner duplicate. That resolution already
+  exists in `GET /users/lookup/{callsign}` (`routers/users.py:619`) — reuse it rather than writing
+  a second matching rule that can disagree with the first.
+
+### Statistics & Recognition
+
+**✨ Most-attended nets scoreboard on the global statistics page** *(KC1JMH, 2026-09-08)*  
+**Model:** Sonnet — one new aggregate query plus a table, against an established page.
+
+The global statistics page (`frontend/src/pages/Statistics.tsx`, backed by
+`routers/statistics_global.py`) reports totals, activity windows, and time series, but never ranks
+anything. Add a scoreboard of the nets with the most check-ins, which is both the question people
+ask and a quiet nudge toward the nets worth joining.
+
+Per-net leaderboards already exist and set the pattern to follow — `statistics_net.py` builds
+`check_in_leaderboard`, `ncs_leaderboard`, and `relay_leaderboard` for a schedule's series.
+
+- [ ] Extend `GlobalStatsResponse` (`schemas.py:1548`) with a `top_nets` list, and compute it in
+      `statistics_global.py` as one grouped aggregate — not a per-net fan-out
+- [ ] **Decide what a row is: one net, or one schedule.** A single well-attended weekly net will
+      otherwise fill the whole board with its own occurrences. Recommend ranking by *schedule*
+      (net template) with the occurrence count alongside, and offering single-net ranking as a
+      secondary view if it is still wanted
+- [ ] Exclude DEMO/test nets, and exclude nets whose status makes them meaningless in a ranking
+      (draft, cancelled). `models.py:102` already documents DEMO as throwaway data excluded from
+      reporting — honor that here rather than discovering it later
+- [ ] Decide the time window. An all-time board freezes within a year and stops rewarding current
+      activity; a rolling 12-month or 90-day window keeps moving. Recommend a rolling window with
+      the period stated on the card, since every other panel on that page is already windowed
+- [ ] Link each row to the net or schedule statistics page, and make sure it does not leak a net
+      the viewer could not otherwise see — the page is readable before login
+
+### Exports & Printing
+
+**✨ Export net announcements and the net script to PDF with their formatting intact** *(KC1JMH, 2026-09-08)*  
+**Model:** Sonnet.
+
+Announcements and the net script are Markdown (`nets.announcements`, `nets.script`, with template
+defaults on `net_templates`), edited through the formatting toolbars in `Announcements.tsx` and
+`NetScript.tsx` and rendered with react-markdown plus remark-breaks. There is no way to get either
+onto paper, which is what an NCS running a net from a printed script actually needs, and copying
+the raw Markdown out yields asterisks and hash marks instead of headings and bullets.
+
+The mechanism already exists and must be reused, not re-invented: `exportElementToPdf`
+(`frontend/src/utils/pdfExport.ts`) captures a rendered DOM element through html2canvas and jsPDF,
+forces light-mode styling, and handles page boundaries. NetReport, Statistics, the traffic panel,
+and the ICS-309 view all go through it. Exporting the **already-rendered preview** is therefore
+both the least code and the only approach that guarantees the PDF matches what the editor's
+preview showed.
+
+- [ ] Export action on both the announcements and net script panels, at all their placements
+      (inline, docked, and detached — both components support undocking)
+- [ ] Render off-screen at a fixed print width rather than capturing the panel at its on-screen
+      size. A detached panel is a few hundred pixels wide and would produce a PDF of a narrow
+      column
+- [ ] Header identifying the net, the date, and which document it is, so a printed script found on
+      a desk says what net it belongs to
+- [ ] Filename following the convention the existing exports use
+- [ ] Verify the Markdown features the editor toolbars actually offer survive the round trip —
+      headings, bold, italic, the `==highlight==` extension, links, both list types, and the
+      horizontal rule. The highlight extension is custom, so it is the one most likely to render
+      as literal equals signs
+- [ ] Consider a combined "net paperwork" export (script plus announcements in one document)
+      before building two separate buttons. An NCS printing one usually wants both
 
 ### Account Deletion, Anonymization & Right to Erasure
 
