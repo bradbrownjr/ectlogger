@@ -391,7 +391,7 @@ For a multi-phase roadmap feature (the kind with its own "Design questions to re
   # 2. Build frontend (REQUIRED after any frontend change — git pull alone is not enough)
   #    Cap the Node heap: production is a 1.8 GB VPS with NO swap, and an
   #    unbounded build gets OOM-killed partway through (see the warning below).
-  ssh ectlogger@app.ectlogger.us "cd ~/ectlogger/frontend && NODE_OPTIONS=--max-old-space-size=1024 npm run build"
+  ssh ectlogger@app.ectlogger.us "cd ~/ectlogger/frontend && NODE_OPTIONS=--max-old-space-size=896 npm run build"
 
   # 2b. ALWAYS confirm the build actually produced a page — a killed build is
   #     silent apart from the word "Killed" in the log. Check version.json too:
@@ -412,13 +412,23 @@ For a multi-phase roadmap feature (the kind with its own "Design questions to re
   `npm run build` can be OOM-killed during "rendering chunks". Vite **empties `dist/`
   before it writes anything**, so a killed build leaves `dist/` with no `index.html` at
   all and Caddy serves nothing — a full outage, from a command whose only symptom was the
-  single word `Killed` at the end of otherwise-normal build output. Always build with
-  `NODE_OPTIONS=--max-old-space-size=1024` and always verify `dist/index.html` exists
-  afterward. If a build is ever killed, **re-run it immediately** — the site is down until
-  one completes. Never walk away from a production build without checking its last lines.
-  Adding swap to the host is tracked as Milestone 0.8 in [`docs/ROADMAP.md`](../docs/ROADMAP.md)
-  — it needs an interactive sudo password, so it is Brad's task, not the agent's. Once swap
-  is live, keep the heap cap and the post-build check anyway.
+  single word `Killed` at the end of otherwise-normal build output. Always build with the
+  current heap cap below and always verify `dist/index.html` exists afterward. If a build is
+  ever killed, **re-run it immediately** — the site is down until one completes. Never walk
+  away from a production build without checking its last lines. Adding swap to the host is
+  tracked as Milestone 0.8 in [`docs/ROADMAP.md`](../docs/ROADMAP.md) — it needs an
+  interactive sudo password, so it is Brad's task, not the agent's. Once swap is live, keep
+  the heap cap and the post-build check anyway.
+- **The working heap cap has already needed lowering once (2026-09-08).** A same-day deploy
+  hit three consecutive `Killed` builds at `--max-old-space-size=1024` (the value that had
+  worked on retry every previous time) with 1.2 GB free at rest per `free -m` — the transient
+  peak during "rendering chunks" is now exceeding what it used to. A fourth attempt at
+  `--max-old-space-size=896` succeeded first try. Likely cause: another app (`mepn`, ~120 MB
+  RSS) now shares this host and wasn't part of the original 1.8 GB budget the 1024 cap was
+  tuned against, and/or the bundle has grown since. **Current default is 896** (updated in the
+  deploy command above); if builds start failing at 896 too, try a lower value before assuming
+  something else broke, and treat that as another signal to prioritize Milestone 0.8 (swap) or
+  finally code-split the bundle rather than keep chasing the cap downward indefinitely.
 - **A build can also be killed LATE, which looks like success (happened 2026-09-03, second
   incident the same day).** `vite.config.ts` now sets `build.reportCompressedSize: false`
   because the gzip-size report was the build's peak-memory moment and got killed even at
