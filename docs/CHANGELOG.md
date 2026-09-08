@@ -6,6 +6,10 @@ All notable changes to ECTLogger are documented here.
 
 # September 8, 2026
 
+## New Features
+
+* **Chat: Mute a station** — Hide one station's chat messages from your own view of a net, without affecting anyone else's view or the net log. Mute from the message action row and manage or undo it anytime from the banner that appears above chat.
+
 ## Bug Fixes
 
 * **Check-in: Sneak-in arrival arrow now clears** — The off-screen arrival arrow could get stuck on screen, scroll away from the edge it was supposed to stay pinned to, and didn't respond to clicks. It now disappears once you've seen the new check-in, stays pinned to the table's visible edge while you scroll, and clicking it jumps you straight to the row, pointing up or down depending on which way it actually is.

@@ -1,10 +1,20 @@
 {
-  "version": "2026.09.08",
+  "version": "2026.09.08b",
   "entries": [
     {
-      "version": "2026.09.08",
+      "version": "2026.09.08b",
       "date": "2026-09-08",
       "sections": [
+        {
+          "title": "New Features",
+          "type": "feature",
+          "items": [
+            {
+              "text": "Chat: Mute a station — hide one station's chat messages from your own view of a net, without affecting anyone else's view or the net log. Mute from the message action row and manage or undo it anytime from the banner that appears above chat.",
+              "userImpact": true
+            }
+          ]
+        },
         {
           "title": "Bug Fixes",
           "type": "bugfix",

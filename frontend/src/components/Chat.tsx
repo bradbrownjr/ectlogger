@@ -20,7 +20,10 @@ import {
   Alert,
   Tooltip,
   Dialog,
+  DialogTitle,
   DialogContent,
+  DialogActions,
+  Button,
   CircularProgress,
   useTheme,
 } from '@mui/material';
@@ -33,6 +36,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import CheckIcon from '@mui/icons-material/Check';
 import EditIcon from '@mui/icons-material/Edit';
 import ReplyIcon from '@mui/icons-material/Reply';
+import VolumeOffIcon from '@mui/icons-material/VolumeOff';
 import { chatApi, ChatMessage, ChatImagePayload, ChatReplyPreview, formatChatMessageText } from '../api/chat';
 import { useAuth } from '../contexts/AuthContext';
 import { formatTimeWithDate } from '../utils/dateUtils';
@@ -109,6 +113,13 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
   // Messages briefly flashing gold: you were mentioned, or you jumped here
   // from a reply's quote block
   const [flashedMessageIds, setFlashedMessageIds] = useState<Set<number>>(new Set());
+  // Personal, per-net mutes this viewer has set (user_id -> callsign). Hides
+  // that station's messages from this browser's view only -- see
+  // chat_mutes in the backend and the "Chat Moderation" roadmap item for the
+  // deferred net-wide/staff-set half of this feature.
+  const [mutedUsers, setMutedUsers] = useState<Map<number, string>>(new Map());
+  const [muteManagerOpen, setMuteManagerOpen] = useState(false);
+  const [muteFeedback, setMuteFeedback] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLUListElement>(null);
   const composerRef = useRef<HTMLDivElement>(null);
@@ -164,6 +175,15 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
   }, [mentionQuery, mentionRoster]);
 
   const mentionOpen = mentionQuery !== null && mentionMatches.length > 0;
+
+  // A quoted reply preview carries only a callsign, not a user_id, so muted
+  // detection there matches by callsign rather than id -- keeps a muted
+  // station's words from reappearing inside someone else's reply quote,
+  // which would otherwise defeat the mute.
+  const mutedCallsigns = useMemo(
+    () => new Set(Array.from(mutedUsers.values()).map((callsign) => callsign.toUpperCase())),
+    [mutedUsers]
+  );
 
   // Tick every 30 s so grace period expiry is reflected without a page reload
   useEffect(() => {
@@ -257,6 +277,20 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
     fetchMessages();
   }, [netId]);
 
+  // Guests can't set mutes (no account to store a list against), and there's
+  // nothing to fetch for them.
+  useEffect(() => {
+    if (!user?.id) {
+      setMutedUsers(new Map());
+      return;
+    }
+    chatApi.listMutes(netId)
+      .then((response) => {
+        setMutedUsers(new Map(response.data.map((m) => [m.muted_user_id, m.callsign || `User ${m.muted_user_id}`])));
+      })
+      .catch((error) => console.error('Failed to fetch chat mutes:', error));
+  }, [netId, user?.id]);
+
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
@@ -267,6 +301,9 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
 
   const filteredMessages = messages.filter(m => {
       if (m.is_system) return false;
+      // A muted station's messages are hidden from this viewer only -- the
+      // payload already reached the browser, it just isn't rendered.
+      if (m.user_id != null && mutedUsers.has(m.user_id)) return false;
     // Then filter by search query if present
     if (searchQuery && searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
@@ -411,6 +448,31 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
     if (!node) return;
     node.scrollIntoView({ block: 'center', behavior: 'smooth' });
     flashMessage(messageId);
+  };
+
+  // ========== PERSONAL MUTE ==========
+
+  const handleMute = async (targetUserId: number, callsign: string) => {
+    try {
+      await chatApi.mute(netId, targetUserId);
+      setMutedUsers((prev) => new Map(prev).set(targetUserId, callsign));
+      setMuteFeedback(`${callsign} muted in this net. Manage mutes from the banner above the chat.`);
+    } catch (error) {
+      console.error('Failed to mute station:', error);
+    }
+  };
+
+  const handleUnmute = async (targetUserId: number) => {
+    try {
+      await chatApi.unmute(netId, targetUserId);
+      setMutedUsers((prev) => {
+        const next = new Map(prev);
+        next.delete(targetUserId);
+        return next;
+      });
+    } catch (error) {
+      console.error('Failed to unmute station:', error);
+    }
   };
 
   const handleReaction = async (messageId: number, emoji: string) => {
@@ -585,6 +647,31 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
           )}
         </Box>
       )}
+      {mutedUsers.size > 0 && (
+        // Tells the viewer their own filter is on and lets them undo it --
+        // without this, a mute set once and forgotten reads as a bug report.
+        <Box
+          sx={{
+            flexShrink: 0,
+            px: 1.5,
+            py: 0.5,
+            borderBottom: 1,
+            borderColor: 'divider',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
+          }}
+        >
+          <Typography variant="caption" color="text.secondary">
+            <VolumeOffIcon sx={{ fontSize: '0.9rem', verticalAlign: 'text-bottom', mr: 0.5 }} />
+            {mutedUsers.size} station{mutedUsers.size !== 1 ? 's' : ''} muted here (only for you)
+          </Typography>
+          <Button size="small" onClick={() => setMuteManagerOpen(true)} sx={{ minWidth: 'unset', py: 0 }}>
+            Manage
+          </Button>
+        </Box>
+      )}
       <List
         ref={messagesContainerRef}
         sx={{ 
@@ -728,35 +815,38 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
                         {/* Quoted message this one replies to (Signal-style:
                             the quote sits above the reply's own text, not in a
                             nested thread). Click jumps to the original. */}
-                        {message.reply_to && (
-                          <Box
-                            component="span"
-                            onClick={() => scrollToMessage(message.reply_to!.id)}
-                            sx={{
-                              display: 'block',
-                              borderLeft: 3,
-                              borderColor: 'primary.main',
-                              borderRadius: '0 4px 4px 0',
-                              backgroundColor: 'action.hover',
-                              px: 1,
-                              py: 0.25,
-                              mb: 0.5,
-                              cursor: 'pointer',
-                            }}
-                          >
-                            <Typography component="span" variant="caption" color="primary" sx={{ display: 'block', fontWeight: 'bold' }}>
-                              {message.reply_to.callsign}
-                            </Typography>
-                            <Typography
+                        {message.reply_to && (() => {
+                          const replyMuted = mutedCallsigns.has(message.reply_to.callsign.toUpperCase());
+                          return (
+                            <Box
                               component="span"
-                              variant="caption"
-                              color="text.secondary"
-                              sx={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                              onClick={replyMuted ? undefined : () => scrollToMessage(message.reply_to!.id)}
+                              sx={{
+                                display: 'block',
+                                borderLeft: 3,
+                                borderColor: 'primary.main',
+                                borderRadius: '0 4px 4px 0',
+                                backgroundColor: 'action.hover',
+                                px: 1,
+                                py: 0.25,
+                                mb: 0.5,
+                                cursor: replyMuted ? 'default' : 'pointer',
+                              }}
                             >
-                              {formatChatMessageText(message.reply_to.message)}
-                            </Typography>
-                          </Box>
-                        )}
+                              <Typography component="span" variant="caption" color="primary" sx={{ display: 'block', fontWeight: 'bold' }}>
+                                {replyMuted ? 'Muted station' : message.reply_to.callsign}
+                              </Typography>
+                              <Typography
+                                component="span"
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontStyle: replyMuted ? 'italic' : 'normal' }}
+                              >
+                                {replyMuted ? 'Message hidden (muted)' : formatChatMessageText(message.reply_to.message)}
+                              </Typography>
+                            </Box>
+                          );
+                        })()}
                         {editingMessageId === message.id ? (
                           /* Inline edit: Enter saves, Escape cancels */
                           <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.5, mt: 0.5 }}>
@@ -909,6 +999,13 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
                           <ReplyIcon sx={{ fontSize: '1rem' }} />
                         </IconButton>
                       </Tooltip>
+                      {message.user_id !== user.id && message.user_id != null && (
+                        <Tooltip title="Mute this station (only for you)">
+                          <IconButton size="small" onClick={() => handleMute(message.user_id!, message.callsign)} sx={{ p: 0.25 }}>
+                            <VolumeOffIcon sx={{ fontSize: '1rem' }} />
+                          </IconButton>
+                        </Tooltip>
+                      )}
                       {message.user_id === user.id && !parseChatImage(message.message) && (
                         <Tooltip title="Edit">
                           <IconButton size="small" onClick={() => startEdit(message)} sx={{ p: 0.25 }}>
@@ -1054,6 +1151,39 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
           )}
         </DialogContent>
       </Dialog>
+
+      <Dialog open={muteManagerOpen} onClose={() => setMuteManagerOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Muted Stations</DialogTitle>
+        <DialogContent>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+            Hides a station's chat messages from your own view of this net only -- nobody else is affected.
+          </Typography>
+          {mutedUsers.size === 0 ? (
+            <Typography variant="body2" color="text.secondary">No stations muted in this net.</Typography>
+          ) : (
+            Array.from(mutedUsers.entries()).map(([userId, callsign]) => (
+              <Box key={userId} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 0.5 }}>
+                <Typography variant="body2">{callsign}</Typography>
+                <Button size="small" onClick={() => handleUnmute(userId)}>Unmute</Button>
+              </Box>
+            ))
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setMuteManagerOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Snackbar
+        open={!!muteFeedback}
+        autoHideDuration={4000}
+        onClose={() => setMuteFeedback(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={() => setMuteFeedback(null)} severity="info" sx={{ width: '100%' }}>
+          {muteFeedback}
+        </Alert>
+      </Snackbar>
 
       <Snackbar
         open={!!uploadError}

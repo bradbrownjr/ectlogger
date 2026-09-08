@@ -335,22 +335,29 @@ Two rules fall out of that and both are load-bearing:
 
 ### Chat Moderation
 
-**✨ Mute a station in chat, personally or net-wide** *(KC1JMH, 2026-09-08, from field reports)*  
+**✨ Net-wide chat mute (staff-set, server-enforced)** *(KC1JMH, 2026-09-08, from field reports)*  
 **Model:** Opus for the design — this is a moderation capability on a record-keeping system, and
 the "does the muted station know" question below has legal and social consequences that outlast
 the code. Sonnet for implementation once the shape is settled.
 
-The reported problem is specific: meme spammers drown out real net feedback and annoy other
-participants, and today the only tool available is deleting individual messages after the fact.
-The request is a mute control next to Reply, with two scopes — **net staff can mute a station for
-everyone or just for themselves; any participant can mute a station for just themselves.**
+**Shipped 2026-09-08: the personal-mute half.** Any participant can mute a station's chat messages
+for their own view only, from a control beside Reply in the message action row
+(`backend/app/routers/chat.py` `/nets/{net_id}/mutes`, `frontend/src/components/Chat.tsx`). Hidden
+messages are simply not rendered client-side; nobody else's view and never the exported net log is
+affected. A banner above the chat panel shows how many stations are muted and opens a manage/unmute
+list, so a mute set once and forgotten doesn't become a bug report. See `docs/CHANGELOG.md`.
 
-**The load-bearing decision is whether the muted station is told.** The request is explicit that
-they should not be: *"they won't know they're not getting received, and may just get bored"* — a
-shadow mute, which avoids the argument a visible mute starts and is genuinely the humane option
-for someone who is merely tiresome. That is a defensible product call and it is the recommended
-default, but it has to be made deliberately rather than by omission, because ECTLogger is not a
-social app:
+**Still open: the net-wide half**, for the case a mute needs to hold for everyone, not just the
+person annoyed by it. The reported problem is specific: meme spammers drown out real net feedback,
+and today the only tool beyond the new personal mute is deleting individual messages after the
+fact. Net staff would set this scope from the same control the personal mute already added.
+
+**The load-bearing decision is whether the muted station is told.** The original request is
+explicit that they should not be: *"they won't know they're not getting received, and may just get
+bored"* — a shadow mute, which avoids the argument a visible mute starts and is genuinely the
+humane option for someone who is merely tiresome. That is a defensible product call and it is the
+recommended default, but it has to be made deliberately rather than by omission, because ECTLogger
+is not a social app:
 
 - A net log is an **emergency-communications record**. A message that some participants saw and
   others did not, with no marking, makes the exported log a record of a conversation that never
@@ -363,9 +370,6 @@ social app:
 
 **Recommended shape (argue it before building it):**
 
-- Personal mutes hide messages **for the muting viewer only** and are the operator's own business
-  — no audit trail, no notification, revocable from the same control. Client-side filtering is
-  acceptable here: the payload already reached that browser and simply is not rendered.
 - Net-wide mutes are **server-enforced** — a muted station's message is stored and echoed back to
   its own author (so the mute stays silent) but never broadcast to other viewers.
   `ConnectionManager.broadcast` (`backend/app/main.py:213`) already carries per-connection
@@ -375,24 +379,24 @@ social app:
   log. Hiding them from the record is the version that cannot be defended after an incident.
 
 **Requirements / open questions:**
-- New `chat_mutes` table: muted user (or guest callsign — see below), `net_id`, scope
-  (`personal` / `net`), the user who set it, `created_at`, and an optional expiry.
+- Extend `chat_mutes` (already shipped for the personal scope) with a `scope` (`personal` / `net`)
+  column and the user who set it, or add a sibling table if a net-wide mute's shape ends up
+  different enough (e.g. an expiry) not to share rows cleanly with the personal ones.
 - **Does a net-wide mute expire with the net?** Recommend yes — mutes are per-net, and a standing
   cross-net ban is a different feature (the existing `PUT /users/{id}/ban` already covers the
   serious case). A recurring schedule wanting to carry mutes forward is a separate ask.
-- **Guests.** Chat already redacts contact info for unauthenticated viewers, and a guest has no
-  `user_id`. Decide whether guests can be muted at all, and whether guests can mute (they have no
-  account to store a personal mute list against — likely session-local or not offered).
-- Mute control placement: beside Reply in the per-message action row (`Chat.tsx` ~`:907`), with
-  the scope choice offered only to staff. A participant sees one action, staff see two.
-- A muted-message count or "N messages hidden" affordance so a viewer knows their own filter is
-  on and can undo it. A personal mute the user forgets they set becomes a bug report.
-- Does muting hide the station's `@mentions` and reply quotes of that station too? A quoted meme
-  reappearing inside someone else's reply defeats the mute.
+- **Guests.** Chat already redacts contact info for unauthenticated viewers. Posting requires
+  auth, so every message has a real `user_id` — there is no guest-authored message to mute, and a
+  guest viewer has no account to mute from either (the personal mute above is offered only to
+  authenticated viewers for this reason).
+- Scope choice offered only to staff on the mute control the personal half already added
+  (`Chat.tsx`, message action row) — a participant sees one action, staff see two.
+- Does muting hide the station's `@mentions` and reply quotes of that station too for *other*
+  viewers, not just the muter? The personal mute already redacts a muted author's quoted text in
+  someone else's reply for the muter alone; a net-wide mute needs the same rule applied
+  server-side for every viewer, or a quoted meme reappearing there defeats the mute.
 
-**Trigger:** the personal-mute half solves the annoyance for the person annoyed and carries none
-of the record-keeping questions. It can ship first and alone. Net-wide mute should not ship until
-the audit-trail and export questions above have answers.
+**Trigger:** should not ship until the audit-trail and export questions above have answers.
 
 ### Net View Usability
 

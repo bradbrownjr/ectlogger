@@ -13,12 +13,14 @@ from typing import List, Optional
 from PIL import Image
 
 from app.database import get_db
-from app.models import ChatMessage, ChatReaction, ChatImage, CheckIn, Net, User
+from app.models import ChatMessage, ChatMute, ChatReaction, ChatImage, CheckIn, Net, User
 from app.schemas import (
     ChatMessageCreate,
     ChatMessageEdit,
     ChatMessageResponse,
     ChatImageUploadResponse,
+    ChatMuteCreate,
+    ChatMuteResponse,
     build_reply_preview,
     decode_mentioned_user_ids,
 )
@@ -511,3 +513,91 @@ async def upload_chat_image(
         size_bytes=row.size_bytes,
         marker=marker,
     )
+
+
+# ========== PERSONAL CHAT MUTES ==========
+# A viewer hiding one station's messages from their own view of this net's
+# chat only -- nobody else's view, and never the exported net log. See
+# ROADMAP.md "Chat Moderation" for why net-wide (staff-set, server-enforced)
+# muting is a separate, not-yet-built capability with its own audit-trail
+# requirements. Every chat message has a real user_id (posting requires
+# auth -- guests can only view), so there is no guest-callsign case to handle
+# here.
+
+@router.get("/nets/{net_id}/mutes", response_model=List[ChatMuteResponse])
+async def list_my_mutes(
+    net_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """The current viewer's own personal mutes for this net, so the client can
+    filter its message list and offer an unmute affordance on load."""
+    result = await db.execute(
+        select(ChatMute)
+        .options(selectinload(ChatMute.muted))
+        .where(ChatMute.net_id == net_id, ChatMute.muter_user_id == current_user.id)
+    )
+    return [
+        ChatMuteResponse(
+            muted_user_id=mute.muted_user_id,
+            callsign=mute.muted.callsign if mute.muted else None,
+            created_at=mute.created_at,
+        )
+        for mute in result.scalars().all()
+    ]
+
+
+@router.post("/nets/{net_id}/mutes", response_model=ChatMuteResponse, status_code=status.HTTP_201_CREATED)
+async def mute_station(
+    net_id: int,
+    body: ChatMuteCreate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Personally mute a station's chat messages in this net. Idempotent --
+    muting an already-muted station just returns the existing mute."""
+    if body.muted_user_id == current_user.id:
+        raise HTTPException(status_code=400, detail="Cannot mute yourself")
+
+    target_result = await db.execute(select(User).where(User.id == body.muted_user_id))
+    target_user = target_result.scalar_one_or_none()
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    existing = await db.execute(
+        select(ChatMute).where(
+            ChatMute.net_id == net_id,
+            ChatMute.muter_user_id == current_user.id,
+            ChatMute.muted_user_id == body.muted_user_id,
+        )
+    )
+    mute = existing.scalar_one_or_none()
+    if not mute:
+        mute = ChatMute(net_id=net_id, muter_user_id=current_user.id, muted_user_id=body.muted_user_id)
+        db.add(mute)
+        await db.commit()
+        await db.refresh(mute)
+
+    return ChatMuteResponse(muted_user_id=mute.muted_user_id, callsign=target_user.callsign, created_at=mute.created_at)
+
+
+@router.delete("/nets/{net_id}/mutes/{muted_user_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def unmute_station(
+    net_id: int,
+    muted_user_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Remove a personal mute. No-op (still 204) if it was never set."""
+    result = await db.execute(
+        select(ChatMute).where(
+            ChatMute.net_id == net_id,
+            ChatMute.muter_user_id == current_user.id,
+            ChatMute.muted_user_id == muted_user_id,
+        )
+    )
+    mute = result.scalar_one_or_none()
+    if mute:
+        await db.delete(mute)
+        await db.commit()
+    return None

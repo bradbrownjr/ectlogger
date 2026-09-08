@@ -765,6 +765,29 @@ class ChatImage(Base):
     net = relationship("Net")
 
 
+class ChatMute(Base):
+    """A viewer's personal chat mute of another station, scoped to one net.
+    Hides the muted station's messages from the muter's own view only -- no
+    other viewer, and not the exported net log, is affected. Net-wide
+    (staff-set, server-enforced) mutes are a separate, not-yet-built
+    capability with its own audit-trail requirements (see ROADMAP.md)."""
+    __tablename__ = "chat_mutes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    net_id = Column(Integer, ForeignKey("nets.id", ondelete="CASCADE"), nullable=False)
+    muter_user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    muted_user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint('net_id', 'muter_user_id', 'muted_user_id', name='uq_chat_mute'),
+    )
+
+    net = relationship("Net")
+    muter = relationship("User", foreign_keys=[muter_user_id])
+    muted = relationship("User", foreign_keys=[muted_user_id])
+
+
 class FieldDefinition(Base):
     """Admin-defined check-in fields that can be enabled per-net"""
     __tablename__ = "field_definitions"

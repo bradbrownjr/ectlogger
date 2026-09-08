@@ -1009,6 +1009,21 @@ class ChatMessageEdit(BaseModel):
     message: str = Field(max_length=5000, min_length=1)
 
 
+class ChatMuteCreate(BaseModel):
+    muted_user_id: int
+
+
+class ChatMuteResponse(BaseModel):
+    """A personal, per-net chat mute. `callsign` is denormalized at read time
+    so the client never needs a second lookup to render the manage-mutes list."""
+    muted_user_id: int
+    callsign: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
 class ChatImageUploadResponse(BaseModel):
     id: int
     image_url: str

@@ -50,6 +50,14 @@ export interface ChatMessageCreate {
   reply_to_message_id?: number | null;
 }
 
+/** A viewer's own personal chat mute for one net -- hides that station's
+ *  messages from this viewer only. See chatApi.listMutes/mute/unmute below. */
+export interface ChatMute {
+  muted_user_id: number;
+  callsign: string | null;
+  created_at: string;
+}
+
 const CHAT_IMAGE_PREFIX = '__CHAT_IMAGE__';
 
 /** Returns a display-safe version of a chat message, replacing image payloads with "[Photo]". */
@@ -113,4 +121,12 @@ export const chatApi = {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
   },
+
+  listMutes: (netId: number) => api.get<ChatMute[]>(`/chat/nets/${netId}/mutes`),
+
+  mute: (netId: number, mutedUserId: number) =>
+    api.post<ChatMute>(`/chat/nets/${netId}/mutes`, { muted_user_id: mutedUserId }),
+
+  unmute: (netId: number, mutedUserId: number) =>
+    api.delete(`/chat/nets/${netId}/mutes/${mutedUserId}`),
 };
