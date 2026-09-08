@@ -381,42 +381,6 @@ uploaded image at its natural size.
       28 px image — confirm what `NetLogoSection.tsx`'s upload path actually stores before
       promising full resolution
 
-### Operator Identity & Profiles
-
-**🔧 QRZ links, clickable callsigns, and a profile for stations without an account** *(KC1JMH, 2026-09-08)*  
-**Model:** Sonnet — the guest-profile half needs a new callsign-keyed read endpoint and a decision
-about what a station with no account is allowed to reveal.
-
-Three related gaps in the same surface. `UserProfileDialog.tsx` opens today from an avatar click in
-NetView and NCSStaffModal, keyed strictly on `userId: number | null`.
-
-- [ ] **QRZ link.** Add a link to `https://www.qrz.com/db/<callsign>` at the bottom of the profile
-      dialog, opening in a new tab. QRZ is where hams look each other up, and the callsign the
-      dialog already displays is the whole of the lookup key. Note `routers/users.py:629` already
-      carries a "Future: QRZ lookup as tertiary source (roadmap)" comment — that is a different,
-      larger idea (calling the QRZ API server-side, which needs credentials and a subscription).
-      This item is only an outbound link and needs neither
-- [ ] **Clickable callsign in chat.** Only the avatar opens the profile today; the callsign beside
-      it is inert text. Extend the clickable region to the callsign — it is the larger and more
-      obvious target, and on a phone the avatar alone is under the 44 px minimum DESIGN.md sets
-- [ ] **A profile for stations with no account.** A guest or NCS-entered check-in has no
-      `user_id`, so its avatar opens nothing at all. Show a callsign-keyed profile instead: the
-      callsign, the stats that can be computed from `check_ins.callsign` across nets, and the QRZ
-      link. This is the version of the dialog that needs the most thought — see below
-
-**Open questions for the callsign-keyed profile:**
-- What can it show? Aggregating every check-in that shares a callsign string means aggregating
-  rows nobody has verified belong to the same operator, and it silently merges an account holder's
-  guest check-ins with their account's. Decide whether it reports "this callsign in this app" or
-  refuses to aggregate across nets at all.
-- It exposes a station's participation history **to unauthenticated viewers** if the dialog is
-  reachable from a public net view. `GET /users/{user_id}/popup` is behind auth today; a
-  callsign-keyed sibling needs the same decision made explicitly, not inherited.
-- When the callsign *does* belong to an account (including via `User.callsigns` aliases), the
-  dialog should show the real profile rather than a thinner duplicate. That resolution already
-  exists in `GET /users/lookup/{callsign}` (`routers/users.py:619`) — reuse it rather than writing
-  a second matching rule that can disagree with the first.
-
 ### Statistics & Recognition
 
 **✨ Most-attended nets scoreboard on the global statistics page** *(KC1JMH, 2026-09-08)*  
