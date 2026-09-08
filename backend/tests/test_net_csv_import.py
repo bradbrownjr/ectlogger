@@ -519,7 +519,10 @@ async def test_close_on_import_sets_status_and_exact_times(client, db, owner):
 
 
 @pytest.mark.asyncio
-async def test_close_on_import_posts_no_system_chat_message(client, db, owner):
+async def test_close_on_import_posts_no_close_summary_chat_message(client, db, owner):
+    """close_net_and_notify's own close-summary message must stay suppressed on this path
+    (it would be stamped after closed_at and render out of order), but the CSV-import
+    Activity Log message is a separate, always-on message and is expected here."""
     net = await make_net(db, owner, status=NetStatus.SCHEDULED)
 
     await client.post(
@@ -535,7 +538,9 @@ async def test_close_on_import_posts_no_system_chat_message(client, db, owner):
     )
 
     messages = (await db.execute(select(ChatMessage).where(ChatMessage.net_id == net.id))).scalars().all()
-    assert messages == []
+    assert len(messages) == 1
+    assert messages[0].is_system
+    assert "imported 1 check-in(s) from CSV" in messages[0].message
 
 
 @pytest.mark.asyncio

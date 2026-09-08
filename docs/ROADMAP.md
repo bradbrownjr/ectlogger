@@ -92,44 +92,15 @@ Code-splitting it (`manualChunks` / dynamic imports) would cut build memory *and
 first load for users. That's a real refactor with its own regression risk, so it belongs on
 its own rather than bundled into this.
 
-### 0.9 — Three pre-existing backend test failures
-
-Found 2026-09-06 while verifying the `feature/chat-edit-mention-reply` branch (full backend
-suite: 379 passed / 3 failed) — confirmed these three fail identically on unmodified `main`,
-so they're not a regression from that branch, just latent breakage nobody had caught yet:
-
-- `backend/tests/test_net_csv_import.py::test_close_on_import_posts_no_system_chat_message`
-- `backend/tests/test_traffic_arl.py::test_arl_messages_requires_auth`
-- `backend/tests/test_traffic_import.py::test_import_preview_requires_auth`
-
-Not yet root-caused. The first name is chat-adjacent, which is worth double-checking isn't
-actually related to the chat migration once that branch merges (it shouldn't be — the failure
-reproduces without the branch's changes at all — but confirm rather than assume). The other
-two both end in `_requires_auth`, suggesting a shared cause (an auth dependency change, a
-fixture drift) rather than three unrelated bugs.
-
 ## Milestone 1 — Medium-term
 
 *Meaningful new capabilities that don't require architectural changes.*
 
 ### Security & Authentication
 
-**✨ MFA / TOTP authenticator support** *(KC1JMH)*  
-**Model:** Opus for the security design (secret at-rest encryption, recovery-code storage/hashing, login-flow changes); Sonnet for implementation against that design. Do not hand any part of this to Haiku — auth mistakes are silent until exploited.  
-Let users enroll a TOTP authenticator as a second factor. During enrollment, show **both** the QR code **and** the plain-text preshared secret (base32) with a copy button, so users can store the secret in a password vault (Bitwarden, 1Password) instead of a dedicated authenticator app if they prefer.
-
-Requirements:
-- New columns on `User`: `totp_secret` (with at-rest encryption considerations), `totp_enabled` (bool), and storage for backup/recovery codes.
-- Enrollment flow: generate a secret, render the QR from an `otpauth://` URI **and** display the secret string with a copy button, then verify a code before enabling.
-- Verification step at login (after magic-link / OAuth) when `totp_enabled` is set.
-- Backup/recovery codes for account recovery, plus a disable-MFA flow.
-- Suggested libraries: `pyotp` for TOTP, `qrcode` for QR generation (or render the `otpauth://` URI to a QR client-side).
-
-**Downstream (was its own "Admin Tooling" roadmap section; folded in here 2026-07-30 since it's entirely blocked on this feature):** once `totp_enabled` exists, add an MFA-enrolled badge to the Admin → Users list (Model: Haiku — a single read of the new column plus a badge column, no query design work) so the operator can see who can participate in authenticated nets. Surface it as a padlock badge consistent with the check-in authentication indicator (see Authenticated nets below). The NCS and changelog-subscriber indicators that shipped alongside this item 2026-07-30 are already live (see `docs/CHANGELOG.md`).
-
 **✨ Authenticated nets — station identity verification via TOTP** *(KC1JMH)*  
 **Model:** Sonnet for implementation, with an Opus review gate on the expected-code endpoint (it deliberately reveals a station's current TOTP to NCS — the permission gating and never-send-the-secret rule must be airtight).  
-Builds directly on MFA. Adds a per-net "Authenticated net" toggle in the Edit Net settings, with subtext explaining that it lets check-ins prove their identity to net control. When enabled, a checked-in user can read the current code from their authenticator to NCS; an action button on the check-in row shows NCS the **expected** code for that station so they can confirm it matches and mark the station as identity-verified for the net.
+Builds directly on MFA/TOTP (shipped — see the Feature Registry in `.github/copilot-instructions.md`). Adds a per-net "Authenticated net" toggle in the Edit Net settings, with subtext explaining that it lets check-ins prove their identity to net control. When enabled, a checked-in user can read the current code from their authenticator to NCS; an action button on the check-in row shows NCS the **expected** code for that station so they can confirm it matches and mark the station as identity-verified for the net.
 
 Requirements / design questions:
 - New `authenticated` (bool) toggle on the net/template, with descriptive subtext in the Edit Net toggles section.
@@ -139,7 +110,6 @@ Requirements / design questions:
 - **Authentication status indicator** — each check-in row shows a padlock next to (or overlaid on) the station's profile icon: a closed padlock once identity is verified, an open padlock when it is not. This makes a station's authentication state readable at a glance for everyone viewing the net.
 - **Unenrolled stations** — if a user checks into an authenticated net without having enrolled MFA, they simply show the open-padlock (unauthenticated) state. ECTLogger does not block or auto-reject them; it is left to NCS to decide how to respond. The indicator just makes the unauthenticated status visible.
 - Verification is only offered on nets flagged `authenticated`; on all other nets no padlock is shown.
-- **Dependency:** requires the MFA / TOTP support above to exist first.
 
 ### Public Service Event Support
 
@@ -332,61 +302,6 @@ Two rules fall out of that and both are load-bearing:
 - [ ] `docs/DEVELOPMENT.md` — the past-versus-projected boundary rule and the iCalendar naming rule
 
 **Trigger:** Phase 1 stands alone and delivers most of the value. Phase 2 is small and independent. Phase 3 should not start until someone actually asks for a live-updating subscription, since it adds a permanently reachable unauthenticated URL to the attack surface for a convenience the first two phases mostly cover.
-
-### Chat Moderation
-
-**✅ Shipped 2026-09-08: chat mute, personal and net-wide** *(KC1JMH, from field reports)*
-
-**Personal half.** Any participant can mute a station's chat messages for their own view only,
-from a control beside Reply in the message action row (`POST/DELETE /chat/nets/{net_id}/mutes`,
-`frontend/src/components/Chat.tsx`). Hidden messages are simply not rendered client-side; nobody
-else's view and never the exported net log is affected.
-
-**Net-wide half.** Shift+click the same mute icon, NCS/Logger only, mutes a station for *every*
-viewer of this net's chat (`POST/DELETE /chat/nets/{net_id}/net-mutes`,
-`backend/app/models.py::ChatNetMute`, migration 069). A plain click still means "just for me"; the
-server re-checks `check_net_permission(..., ["NCS", "LOGGER"])` itself regardless of what the
-client sends, so a non-staff shift+click just falls back to a personal mute rather than erroring.
-It's one canonical row per `(net, muted user)`, not per-applier — any active NCS/Logger can lift a
-mute someone else applied. Doesn't persist past the net; a recurring template's next occurrence
-starts clean.
-
-This resolved the design questions the item originally shipped with open:
-
-- **Is the muted station told?** No — a shadow mute, matching the recommended default. They simply
-  stop getting through; nothing in the UI announces it to them.
-- **Is it server-enforced or just hidden client-side?** Server-enforced, per the original
-  recommendation: `_broadcast_chat_message` (`backend/app/routers/chat.py`) checks whether the
-  author is currently net-wide muted before broadcasting, and if so passes a new
-  `only_for_user_ids={author_id}` argument to `ConnectionManager.broadcast`
-  (`backend/app/main.py:213`) — the message is echoed back to the author's own connection only
-  and never put on the wire to any other connection at all, extending the same per-connection
-  mechanism the guest-PII-redaction path (`guest_message`) already used. This also means a muted
-  spammer's images are never even fetched by anyone else's browser in real time, not just hidden
-  after arriving.
-- **Is it in the exported/stored record?** Yes, unaffected — `GET /chat/nets/{id}/messages` and
-  every export always return the message; only the *live* broadcast and each client's own
-  rendering of an already-fetched list hide it. A net log is an emergency-communications record,
-  and this was the one property that could not be defended after an incident.
-- **Audit trail?** Yes, staff-visible: `GET /chat/nets/{net_id}/net-mutes` returns who applied each
-  mute and when; the Manage dialog (`Chat.tsx`) shows this to NCS/Logger, and shows non-staff only
-  that a station is muted for everyone (not who did it).
-- **Does staff still see the muted message live?** No, deliberately — a conscious departure from
-  this item's original recommendation ("net staff always see muted messages, visually marked").
-  Live rendering hides a net-wide-muted message for every viewer including the staff who applied
-  the mute, same as everyone else; only the stored log/export still has it, which is where a
-  disputed mute gets reviewed. Revisit if that turns out to be too opaque in practice.
-- **Reply quotes / mentions?** A muted station's quoted text is redacted in someone else's reply
-  preview for every viewer (the personal mute's redaction already worked this way for the muter
-  alone; net-wide mutes reuse the same client-side check against a list every viewer now fetches,
-  not just the muter).
-- **Does an already-connected viewer find out live?** Yes — applying or lifting a net-wide mute
-  broadcasts a `chat_net_mute_changed` WebSocket event so an open tab's banner/manage list updates
-  immediately, separate from the message-level broadcast suppression above. Caught during live
-  verification: without it, the suppression itself worked correctly but an already-open tab's own
-  mute-list UI would silently go stale until the page was reloaded.
-
-See `docs/CHANGELOG.md` and `backend/tests/test_chat_mute.py` / `test_chat_net_mute.py`.
 
 ### Net View Usability
 
