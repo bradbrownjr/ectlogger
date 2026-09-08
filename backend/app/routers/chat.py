@@ -641,6 +641,22 @@ async def _get_net_or_404(db: AsyncSession, net_id: int) -> Net:
     return net
 
 
+async def _broadcast_net_mute_changed(net_id: int, data: dict) -> None:
+    """Push a net-wide mute change to every connected viewer immediately.
+
+    Without this, an already-open tab only fetches the net-wide mute list
+    once on load -- its banner/manage list would silently go stale until a
+    reload, even though the broadcast-suppression in _broadcast_chat_message
+    is already correctly hiding the muted author's *messages* live. Carries
+    no message content, so it's safe to send to every connection including
+    guests -- nothing here needs the guest_message redaction path."""
+    from app.main import manager
+    await manager.broadcast(
+        {"type": "chat_net_mute_changed", "data": data, "timestamp": datetime.now(UTC).isoformat()},
+        net_id,
+    )
+
+
 @router.get("/nets/{net_id}/net-mutes", response_model=List[ChatNetMuteResponse])
 async def list_net_mutes(
     net_id: int,
@@ -706,13 +722,15 @@ async def net_mute_station(
     await db.commit()
     await db.refresh(mute)
 
-    return ChatNetMuteResponse(
+    response = ChatNetMuteResponse(
         muted_user_id=mute.muted_user_id,
         callsign=target_user.callsign,
         applied_by_user_id=current_user.id,
         applied_by_callsign=current_user.callsign,
         created_at=mute.created_at,
     )
+    await _broadcast_net_mute_changed(net_id, {**response.model_dump(mode="json"), "active": True})
+    return response
 
 
 @router.delete("/nets/{net_id}/net-mutes/{muted_user_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -739,4 +757,5 @@ async def net_unmute_station(
     if mute:
         await db.delete(mute)
         await db.commit()
+        await _broadcast_net_mute_changed(net_id, {"muted_user_id": muted_user_id, "active": False})
     return None

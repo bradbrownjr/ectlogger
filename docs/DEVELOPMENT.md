@@ -584,6 +584,7 @@ write. These are the authoritative events:
 | `role_change` | `routers/nets_roles.py` |
 | `can_hear_changed` | `routers/can_hear.py` — a "who can this station hear?" report was saved |
 | `chat_message`, `chat_message_edited`, `chat_reaction`, `chat_image` | `routers/chat.py` — `chat_message_edited` carries the whole updated message (same shape as `chat_message`), so `Chat.tsx` replaces its copy by id instead of patching fields |
+| `chat_net_mute_changed` | `routers/chat.py` — a staff member applied or lifted a net-wide chat mute (`data.active` true/false); keeps every already-open tab's mute banner/manage list live instead of only updating on next page load. Separate from `chat_message`'s own per-connection `only_for_user_ids` restriction, which is what actually keeps a net-wide-muted author's message off the wire to other viewers in the first place |
 | `traffic_logged` | `routers/traffic_forms.py` — a form was filed on this net (`net_id` set); the per-net Traffic panel refetches its list and summary. Only fires when the form has a net; a standalone form has no connection group to notify |
 | `traffic_log_changed` | `routers/traffic_log.py` — a chain-of-custody hop was appended to a form on this net (`net_id` set); the Traffic panel and the inbox badge refetch. Same not-fired-for-standalone-forms rule as `traffic_logged` |
 | `ping` | `main.py` keepalive |

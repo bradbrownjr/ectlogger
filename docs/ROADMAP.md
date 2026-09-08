@@ -371,10 +371,20 @@ This resolved the design questions the item originally shipped with open:
 - **Audit trail?** Yes, staff-visible: `GET /chat/nets/{net_id}/net-mutes` returns who applied each
   mute and when; the Manage dialog (`Chat.tsx`) shows this to NCS/Logger, and shows non-staff only
   that a station is muted for everyone (not who did it).
+- **Does staff still see the muted message live?** No, deliberately — a conscious departure from
+  this item's original recommendation ("net staff always see muted messages, visually marked").
+  Live rendering hides a net-wide-muted message for every viewer including the staff who applied
+  the mute, same as everyone else; only the stored log/export still has it, which is where a
+  disputed mute gets reviewed. Revisit if that turns out to be too opaque in practice.
 - **Reply quotes / mentions?** A muted station's quoted text is redacted in someone else's reply
   preview for every viewer (the personal mute's redaction already worked this way for the muter
   alone; net-wide mutes reuse the same client-side check against a list every viewer now fetches,
   not just the muter).
+- **Does an already-connected viewer find out live?** Yes — applying or lifting a net-wide mute
+  broadcasts a `chat_net_mute_changed` WebSocket event so an open tab's banner/manage list updates
+  immediately, separate from the message-level broadcast suppression above. Caught during live
+  verification: without it, the suppression itself worked correctly but an already-open tab's own
+  mute-list UI would silently go stale until the page was reloaded.
 
 See `docs/CHANGELOG.md` and `backend/tests/test_chat_mute.py` / `test_chat_net_mute.py`.
 

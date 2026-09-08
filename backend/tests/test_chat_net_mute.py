@@ -297,6 +297,59 @@ async def test_connection_manager_only_for_user_ids_skips_other_connections():
     guest_ws.send_json.assert_not_called()
 
 
+@pytest.mark.asyncio
+async def test_applying_a_net_mute_pushes_a_live_update(client, db, owner, other):
+    """Without this broadcast, an already-open tab's own mute banner/manage
+    list would only learn about a new net-wide mute on its next page load --
+    caught during live verification on beta, since the message-suppression
+    broadcast alone gives no signal that the mute *list* itself changed."""
+    net = await _make_net(db, owner)
+
+    with patch("app.main.manager.broadcast", new_callable=AsyncMock) as mock_broadcast:
+        resp = await client.post(
+            f"/api/chat/nets/{net.id}/net-mutes",
+            json={"muted_user_id": other.id},
+            headers=auth_headers(owner),
+        )
+        assert resp.status_code == 201
+        mock_broadcast.assert_called_once()
+        call = mock_broadcast.call_args.args[0]
+        assert call["type"] == "chat_net_mute_changed"
+        assert call["data"]["muted_user_id"] == other.id
+        assert call["data"]["active"] is True
+
+
+@pytest.mark.asyncio
+async def test_lifting_a_net_mute_pushes_a_live_update(client, db, owner, other):
+    net = await _make_net(db, owner)
+    await client.post(
+        f"/api/chat/nets/{net.id}/net-mutes",
+        json={"muted_user_id": other.id},
+        headers=auth_headers(owner),
+    )
+
+    with patch("app.main.manager.broadcast", new_callable=AsyncMock) as mock_broadcast:
+        resp = await client.delete(f"/api/chat/nets/{net.id}/net-mutes/{other.id}", headers=auth_headers(owner))
+        assert resp.status_code == 204
+        mock_broadcast.assert_called_once()
+        call = mock_broadcast.call_args.args[0]
+        assert call["type"] == "chat_net_mute_changed"
+        assert call["data"]["muted_user_id"] == other.id
+        assert call["data"]["active"] is False
+
+
+@pytest.mark.asyncio
+async def test_lifting_a_mute_that_was_never_set_does_not_broadcast(client, db, owner):
+    """No-op unmute (already covered for the 204 itself) must also not fire a
+    spurious live-update event."""
+    net = await _make_net(db, owner)
+
+    with patch("app.main.manager.broadcast", new_callable=AsyncMock) as mock_broadcast:
+        resp = await client.delete(f"/api/chat/nets/{net.id}/net-mutes/999999", headers=auth_headers(owner))
+        assert resp.status_code == 204
+        mock_broadcast.assert_not_called()
+
+
 async def _make_extra_user(db, callsign: str):
     from app.models import User, UserRole
     user = User(email=f"{callsign.lower()}@test.com", callsign=callsign, role=UserRole.USER, is_active=True)

@@ -198,6 +198,16 @@ export function useNetWebSocket(deps: NetWebSocketDeps): WebSocket | null {
           if (typeof window !== 'undefined' && window.dispatchEvent) {
             window.dispatchEvent(new CustomEvent('chatReactionUpdate', { detail: message.data }));
           }
+        } else if (message.type === 'chat_net_mute_changed') {
+          // A net-wide mute was applied or lifted by staff. Relayed as a
+          // window event (Chat.tsx isn't known to this hook) so an
+          // already-open tab's banner/manage list updates immediately --
+          // without this, only the message-level broadcast suppression in
+          // _broadcast_chat_message would be live; the mute-list UI itself
+          // would silently go stale until a reload.
+          if (typeof window !== 'undefined' && window.dispatchEvent) {
+            window.dispatchEvent(new CustomEvent('chatNetMuteChanged', { detail: message.data }));
+          }
         } else if (message.type === 'role_change') {
           // Always refresh roles and check-ins for all clients
           fetchNetRoles();

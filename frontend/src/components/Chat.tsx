@@ -263,22 +263,49 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
       );
     };
 
+    // A net-wide mute was applied or lifted by staff -- update this tab's
+    // filter/banner immediately. Without this, only the message-broadcast
+    // suppression itself would be live; an already-open tab's own mute list
+    // would silently go stale until reloaded.
+    const handleNetMuteChanged = (event: any) => {
+      const data = event.detail;
+      setNetMutes((prev) => {
+        const next = new Map(prev);
+        if (data.active) {
+          next.set(data.muted_user_id, data);
+        } else {
+          next.delete(data.muted_user_id);
+        }
+        return next;
+      });
+    };
+
     // The socket dropped and came back, so every message sent during the gap
     // was broadcast to nobody here. Refetch the thread wholesale rather than
-    // trying to reason about what was missed -- see useNetWebSocket.ts.
+    // trying to reason about what was missed -- see useNetWebSocket.ts. Also
+    // re-fetch net-wide mutes for the same reason: a mute applied or lifted
+    // during the gap would otherwise be missed since it's a one-shot event,
+    // not something the refetched message list itself would reveal.
     const handleResync = (event: any) => {
       if (event.detail?.netId && String(event.detail.netId) !== String(netId)) return;
       fetchMessages();
+      if (user?.id) {
+        chatApi.listNetMutes(netId)
+          .then((response) => setNetMutes(new Map(response.data.map((m) => [m.muted_user_id, m]))))
+          .catch((error) => console.error('Failed to re-fetch net-wide chat mutes on resync:', error));
+      }
     };
 
     window.addEventListener('newChatMessage', handleNewChatMessage);
     window.addEventListener('chatMessageEdited', handleChatMessageEdited);
     window.addEventListener('chatReactionUpdate', handleReactionUpdate);
+    window.addEventListener('chatNetMuteChanged', handleNetMuteChanged);
     window.addEventListener('netResync', handleResync);
     return () => {
       window.removeEventListener('newChatMessage', handleNewChatMessage);
       window.removeEventListener('chatMessageEdited', handleChatMessageEdited);
       window.removeEventListener('chatReactionUpdate', handleReactionUpdate);
+      window.removeEventListener('chatNetMuteChanged', handleNetMuteChanged);
       window.removeEventListener('netResync', handleResync);
     };
   }, [user?.id, netId, flashMessage]);
