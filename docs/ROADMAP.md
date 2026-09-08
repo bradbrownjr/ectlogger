@@ -96,21 +96,6 @@ its own rather than bundled into this.
 
 *Meaningful new capabilities that don't require architectural changes.*
 
-### Security & Authentication
-
-**✨ Authenticated nets — station identity verification via TOTP** *(KC1JMH)*  
-**Model:** Sonnet for implementation, with an Opus review gate on the expected-code endpoint (it deliberately reveals a station's current TOTP to NCS — the permission gating and never-send-the-secret rule must be airtight).  
-Builds directly on MFA/TOTP (shipped — see the Feature Registry in `.github/copilot-instructions.md`). Adds a per-net "Authenticated net" toggle in the Edit Net settings, with subtext explaining that it lets check-ins prove their identity to net control. When enabled, a checked-in user can read the current code from their authenticator to NCS; an action button on the check-in row shows NCS the **expected** code for that station so they can confirm it matches and mark the station as identity-verified for the net.
-
-Requirements / design questions:
-- New `authenticated` (bool) toggle on the net/template, with descriptive subtext in the Edit Net toggles section.
-- Action button on check-in rows (NCS-only) that displays the currently-valid expected TOTP for the station's account.
-- Server endpoint: given the net and the check-in's user, return the currently-valid expected code(s) with a small skew window — permission-gated to NCS (and possibly Logger). The raw secret must **never** be sent to the client; only the computed code.
-- Record an "identity verified" state on the check-in once NCS affirms the match.
-- **Authentication status indicator** — each check-in row shows a padlock next to (or overlaid on) the station's profile icon: a closed padlock once identity is verified, an open padlock when it is not. This makes a station's authentication state readable at a glance for everyone viewing the net.
-- **Unenrolled stations** — if a user checks into an authenticated net without having enrolled MFA, they simply show the open-padlock (unauthenticated) state. ECTLogger does not block or auto-reject them; it is left to NCS to decide how to respond. The indicator just makes the unauthenticated status visible.
-- Verification is only offered on nets flagged `authenticated`; on all other nets no padlock is shown.
-
 ### Public Service Event Support
 
 **✨ Tactical-callsign posts, shift staffing, and event management for public service events** *(KC1JMH, from a Manchester ARES request via Ken)*
