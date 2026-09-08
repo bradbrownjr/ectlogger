@@ -17,8 +17,11 @@ interface ImageLightboxProps {
 const ImageLightbox: React.FC<ImageLightboxProps> = ({ imageUrl, alt, onClose }) => {
   return (
     <Dialog open={!!imageUrl} onClose={onClose} maxWidth="lg">
-      <DialogContent sx={{ p: 1, bgcolor: 'background.default', position: 'relative' }}>
-        <Box sx={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 0.5 }}>
+      <DialogContent sx={{ p: 1, bgcolor: 'background.default' }}>
+        {/* A row above the image, not an overlay on top of it -- an overlay
+            covered a meaningful chunk of a small logo (and clipped a corner
+            of even a large photo). */}
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.5, mb: 0.5 }}>
           {imageUrl && (
             <IconButton
               size="small"

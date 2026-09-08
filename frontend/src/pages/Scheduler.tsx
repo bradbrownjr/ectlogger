@@ -692,7 +692,7 @@ const Scheduler: React.FC = () => {
               <Fab
                 color="default"
                 aria-label="merge schedules"
-                sx={{ position: 'fixed', bottom: 16, right: 144 }}
+                sx={{ position: 'fixed', bottom: 16, right: 80 }}
                 onClick={() => setMergeMode(true)}
               >
                 <CallMergeIcon />
@@ -705,7 +705,7 @@ const Scheduler: React.FC = () => {
               <Fab
                 color="default"
                 aria-label="cancel merge"
-                sx={{ position: 'fixed', bottom: 16, right: 144 }}
+                sx={{ position: 'fixed', bottom: 16, right: 80 }}
                 onClick={handleExitMergeMode}
               >
                 <ClearIcon />
