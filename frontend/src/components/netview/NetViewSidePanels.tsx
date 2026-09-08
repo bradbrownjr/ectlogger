@@ -40,6 +40,10 @@ interface NetViewSidePanelsProps {
   netId: string | undefined;
   net: any;
   canManage: boolean;
+  // NCS or Logger (a superset of canManage, which excludes Logger) -- gates
+  // the net-wide chat mute control in <Chat>, matching the backend's
+  // check_net_permission(..., ["NCS", "LOGGER"]) gate exactly.
+  canManageCheckIns: boolean;
   searchQuery: string;
   onlineUserIds: number[];
   width: number;
@@ -133,6 +137,7 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
   netId,
   net,
   canManage,
+  canManageCheckIns,
   searchQuery,
   onlineUserIds,
   width,
@@ -278,7 +283,7 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
               on Activity Log's identical wrapper below). */}
           <Box sx={{ height: { xs: chatMinimized ? 'auto' : 450, md: '100%' }, display: 'flex', flexDirection: 'column' }}>
             <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-              <Chat netId={Number(netId)} netStartedAt={net?.started_at} netStatus={net?.status} searchQuery={searchQuery} canManage={canManage} onDetach={handleDetachChat} onPopOut={handlePopOutChat}
+              <Chat netId={Number(netId)} netStartedAt={net?.started_at} netStatus={net?.status} searchQuery={searchQuery} canManage={canManage} canManageCheckIns={canManageCheckIns} onDetach={handleDetachChat} onPopOut={handlePopOutChat}
                 chatGracePeriodMinutes={net?.chat_grace_period_minutes ?? undefined} closedAt={net?.closed_at}
                 onlineUserIds={onlineUserIds} onProfileClick={(id) => setProfileUserId(id)}
                 checkIns={filteredCheckIns}
@@ -458,7 +463,7 @@ const NetViewSidePanels: React.FC<NetViewSidePanelsProps> = ({
           minHeight={250}
           storageKey="chat"
         >
-          <Chat netId={Number(netId)} netStartedAt={net?.started_at} netStatus={net?.status} searchQuery={searchQuery} canManage={canManage}
+          <Chat netId={Number(netId)} netStartedAt={net?.started_at} netStatus={net?.status} searchQuery={searchQuery} canManage={canManage} canManageCheckIns={canManageCheckIns}
             chatGracePeriodMinutes={net?.chat_grace_period_minutes ?? undefined} closedAt={net?.closed_at}
             onlineUserIds={onlineUserIds} onProfileClick={(id) => setProfileUserId(id)}
             checkIns={filteredCheckIns}

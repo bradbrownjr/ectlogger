@@ -8,7 +8,7 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Chat: Mute a station** — Hide one station's chat messages from your own view of a net, without affecting anyone else's view or the net log. Mute from the message action row and manage or undo it anytime from the banner that appears above chat.
+* **Chat: Mute a station** — Hide one station's chat messages from your own view of a net, without affecting anyone else's view or the net log, from a control in the message action row. NCS and Logger can shift+click the same control to mute a spammer for everyone in the net's chat instead, without notifying them or touching the net's saved log or export. Manage or undo any mute anytime from the banner above chat.
 
 ## Bug Fixes
 

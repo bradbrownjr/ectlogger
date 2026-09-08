@@ -2455,6 +2455,7 @@ const NetView: React.FC = () => {
               netId={netId}
               net={net}
               canManage={canManage}
+              canManageCheckIns={canManageCheckIns}
               searchQuery={searchQuery}
               onlineUserIds={onlineUserIds}
               width={columnWidths.right}

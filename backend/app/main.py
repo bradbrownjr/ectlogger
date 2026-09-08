@@ -210,17 +210,33 @@ class ConnectionManager:
             return 0
         return sum(1 for _, user_id in self.active_connections[net_id] if user_id == 0)
     
-    async def broadcast(self, message: dict, net_id: int, guest_message: Optional[dict] = None):
+    async def broadcast(
+        self,
+        message: dict,
+        net_id: int,
+        guest_message: Optional[dict] = None,
+        only_for_user_ids: Optional[set] = None,
+    ):
         """Broadcast message to all connections for a net, cleaning up dead connections.
 
         If guest_message is given, unauthenticated connections (user_id == 0,
         the guest-viewer sentinel) receive it instead of message -- used to
-        send a PII-redacted copy of a chat message to anonymous viewers."""
+        send a PII-redacted copy of a chat message to anonymous viewers.
+
+        If only_for_user_ids is given, connections whose user_id is not in
+        that set are skipped entirely -- nothing is sent to them for this
+        call, not even a guest_message. Used to echo a net-wide-muted
+        station's own chat message back to their own connection only, so the
+        mute stays silent to them, while genuinely never putting the content
+        on the wire to any other viewer (server-enforced, not just hidden
+        client-side after delivery)."""
         if net_id not in self.active_connections:
             return
 
         dead_connections = []
         for connection, user_id in self.active_connections[net_id]:
+            if only_for_user_ids is not None and user_id not in only_for_user_ids:
+                continue
             payload = guest_message if (guest_message is not None and user_id == 0) else message
             try:
                 await connection.send_json(payload)

@@ -37,7 +37,7 @@ import CheckIcon from '@mui/icons-material/Check';
 import EditIcon from '@mui/icons-material/Edit';
 import ReplyIcon from '@mui/icons-material/Reply';
 import VolumeOffIcon from '@mui/icons-material/VolumeOff';
-import { chatApi, ChatMessage, ChatImagePayload, ChatReplyPreview, formatChatMessageText } from '../api/chat';
+import { chatApi, ChatMessage, ChatImagePayload, ChatReplyPreview, ChatNetMute, formatChatMessageText } from '../api/chat';
 import { useAuth } from '../contexts/AuthContext';
 import { formatTimeWithDate } from '../utils/dateUtils';
 import { sneakInFade, SNEAK_IN_HIGHLIGHT_MS } from './netview/sneakInHighlight';
@@ -49,6 +49,11 @@ interface ChatProps {
   netStatus?: string;
   searchQuery?: string;
   canManage?: boolean;
+  // NCS or Logger on this net -- gates the net-wide mute control
+  // (shift+click the mute icon). A superset of canManage, which excludes
+  // Logger. Matches the backend's check_net_permission(..., ["NCS", "LOGGER"])
+  // gate on POST/DELETE /chat/nets/{id}/net-mutes.
+  canManageCheckIns?: boolean;
   chatGracePeriodMinutes?: number;
   closedAt?: string;
   onlineUserIds?: number[];
@@ -89,7 +94,7 @@ const CHAT_IMAGE_PREFIX = '__CHAT_IMAGE__';
 const MENTION_TOKEN_AT_END = /(^|\s)@([A-Za-z0-9/_-]*)$/;
 const MAX_MENTION_SUGGESTIONS = 6;
 
-const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery, canManage, chatGracePeriodMinutes, closedAt, onlineUserIds = [], onProfileClick, onNewMessage, onDetach, onPopOut, minimized, onMinimize, onRestore, topicOfWeekEnabled, topicOfWeekPrompt, pollEnabled, pollQuestion, checkIns = [] }) => {
+const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery, canManage, canManageCheckIns, chatGracePeriodMinutes, closedAt, onlineUserIds = [], onProfileClick, onNewMessage, onDetach, onPopOut, minimized, onMinimize, onRestore, topicOfWeekEnabled, topicOfWeekPrompt, pollEnabled, pollQuestion, checkIns = [] }) => {
   const { user } = useAuth();
   const theme = useTheme();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -114,10 +119,13 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
   // from a reply's quote block
   const [flashedMessageIds, setFlashedMessageIds] = useState<Set<number>>(new Set());
   // Personal, per-net mutes this viewer has set (user_id -> callsign). Hides
-  // that station's messages from this browser's view only -- see
-  // chat_mutes in the backend and the "Chat Moderation" roadmap item for the
-  // deferred net-wide/staff-set half of this feature.
+  // that station's messages from this browser's view only. See netMutes
+  // below for the net-wide, staff-applied counterpart -- hides for every
+  // viewer, not just this one.
   const [mutedUsers, setMutedUsers] = useState<Map<number, string>>(new Map());
+  // Net-wide mutes, visible to every viewer regardless of role -- everyone's
+  // client has to filter these out of its own view, not just staff's.
+  const [netMutes, setNetMutes] = useState<Map<number, ChatNetMute>>(new Map());
   const [muteManagerOpen, setMuteManagerOpen] = useState(false);
   const [muteFeedback, setMuteFeedback] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -179,10 +187,18 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
   // A quoted reply preview carries only a callsign, not a user_id, so muted
   // detection there matches by callsign rather than id -- keeps a muted
   // station's words from reappearing inside someone else's reply quote,
-  // which would otherwise defeat the mute.
-  const mutedCallsigns = useMemo(
-    () => new Set(Array.from(mutedUsers.values()).map((callsign) => callsign.toUpperCase())),
-    [mutedUsers]
+  // which would otherwise defeat the mute. Merges personal and net-wide.
+  const mutedCallsigns = useMemo(() => {
+    const callsigns = Array.from(mutedUsers.values());
+    const netCallsigns = Array.from(netMutes.values()).map((m) => m.callsign || `User ${m.muted_user_id}`);
+    return new Set([...callsigns, ...netCallsigns].map((c) => c.toUpperCase()));
+  }, [mutedUsers, netMutes]);
+
+  // Distinct count across both kinds, for the single combined banner below --
+  // a station could in principle be both personally and net-wide muted.
+  const totalMutedCount = useMemo(
+    () => new Set([...mutedUsers.keys(), ...netMutes.keys()]).size,
+    [mutedUsers, netMutes]
   );
 
   // Tick every 30 s so grace period expiry is reflected without a page reload
@@ -291,6 +307,20 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
       .catch((error) => console.error('Failed to fetch chat mutes:', error));
   }, [netId, user?.id]);
 
+  // Net-wide mutes affect every viewer's rendering, not just staff's, so this
+  // fetches regardless of role -- only applying/lifting one is staff-gated.
+  useEffect(() => {
+    if (!user?.id) {
+      setNetMutes(new Map());
+      return;
+    }
+    chatApi.listNetMutes(netId)
+      .then((response) => {
+        setNetMutes(new Map(response.data.map((m) => [m.muted_user_id, m])));
+      })
+      .catch((error) => console.error('Failed to fetch net-wide chat mutes:', error));
+  }, [netId, user?.id]);
+
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
@@ -301,9 +331,11 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
 
   const filteredMessages = messages.filter(m => {
       if (m.is_system) return false;
-      // A muted station's messages are hidden from this viewer only -- the
-      // payload already reached the browser, it just isn't rendered.
-      if (m.user_id != null && mutedUsers.has(m.user_id)) return false;
+      // A muted station's messages are hidden -- personal mutes from this
+      // viewer's own rendering only, net-wide mutes from everyone's -- but
+      // never from the author's own view of their own words, even if staff
+      // muted them net-wide.
+      if (m.user_id != null && m.user_id !== user?.id && (mutedUsers.has(m.user_id) || netMutes.has(m.user_id))) return false;
     // Then filter by search query if present
     if (searchQuery && searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
@@ -472,6 +504,35 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
       });
     } catch (error) {
       console.error('Failed to unmute station:', error);
+    }
+  };
+
+  // ========== NET-WIDE MUTE (NCS/Logger) ==========
+  // Shift+click on the mute icon, staff only -- hides the station for every
+  // viewer, not just this one. The server re-checks NCS/Logger itself, so a
+  // non-staff shift+click (canManageCheckIns false) is never even attempted
+  // here -- see the onClick handler below, which falls back to handleMute.
+
+  const handleNetMute = async (targetUserId: number, callsign: string) => {
+    try {
+      const response = await chatApi.netMute(netId, targetUserId);
+      setNetMutes((prev) => new Map(prev).set(targetUserId, response.data));
+      setMuteFeedback(`${callsign} muted for everyone in this net. Manage from the banner above the chat.`);
+    } catch (error) {
+      console.error('Failed to net-wide mute station:', error);
+    }
+  };
+
+  const handleNetUnmute = async (targetUserId: number) => {
+    try {
+      await chatApi.netUnmute(netId, targetUserId);
+      setNetMutes((prev) => {
+        const next = new Map(prev);
+        next.delete(targetUserId);
+        return next;
+      });
+    } catch (error) {
+      console.error('Failed to lift net-wide mute:', error);
     }
   };
 
@@ -647,9 +708,11 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
           )}
         </Box>
       )}
-      {mutedUsers.size > 0 && (
+      {totalMutedCount > 0 && (
         // Tells the viewer their own filter is on and lets them undo it --
         // without this, a mute set once and forgotten reads as a bug report.
+        // Deliberately doesn't say "(only for you)" here -- a net-wide mute
+        // hides the station for everyone, not just this viewer.
         <Box
           sx={{
             flexShrink: 0,
@@ -665,7 +728,7 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
         >
           <Typography variant="caption" color="text.secondary">
             <VolumeOffIcon sx={{ fontSize: '0.9rem', verticalAlign: 'text-bottom', mr: 0.5 }} />
-            {mutedUsers.size} station{mutedUsers.size !== 1 ? 's' : ''} muted here (only for you)
+            {totalMutedCount} station{totalMutedCount !== 1 ? 's' : ''} muted in this net's chat
           </Typography>
           <Button size="small" onClick={() => setMuteManagerOpen(true)} sx={{ minWidth: 'unset', py: 0 }}>
             Manage
@@ -1000,8 +1063,18 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
                         </IconButton>
                       </Tooltip>
                       {message.user_id !== user.id && message.user_id != null && (
-                        <Tooltip title="Mute this station (only for you)">
-                          <IconButton size="small" onClick={() => handleMute(message.user_id!, message.callsign)} sx={{ p: 0.25 }}>
+                        <Tooltip title={canManageCheckIns ? 'Mute this station (only for you) — Shift+click to mute for everyone' : 'Mute this station (only for you)'}>
+                          <IconButton
+                            size="small"
+                            onClick={(e) => {
+                              if (e.shiftKey && canManageCheckIns) {
+                                handleNetMute(message.user_id!, message.callsign);
+                              } else {
+                                handleMute(message.user_id!, message.callsign);
+                              }
+                            }}
+                            sx={{ p: 0.25 }}
+                          >
                             <VolumeOffIcon sx={{ fontSize: '1rem' }} />
                           </IconButton>
                         </Tooltip>
@@ -1155,6 +1228,7 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
       <Dialog open={muteManagerOpen} onClose={() => setMuteManagerOpen(false)} maxWidth="xs" fullWidth>
         <DialogTitle>Muted Stations</DialogTitle>
         <DialogContent>
+          <Typography variant="subtitle2" sx={{ mt: 0.5 }}>Your personal mutes</Typography>
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
             Hides a station's chat messages from your own view of this net only -- nobody else is affected.
           </Typography>
@@ -1167,6 +1241,39 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
                 <Button size="small" onClick={() => handleUnmute(userId)}>Unmute</Button>
               </Box>
             ))
+          )}
+
+          {(netMutes.size > 0 || canManageCheckIns) && (
+            <>
+              <Typography variant="subtitle2" sx={{ mt: 2 }}>Muted for everyone</Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                {canManageCheckIns
+                  ? "Hides a station's messages live for every viewer in this net. NCS/Logger only -- doesn't carry over to the net's next occurrence."
+                  : "Hidden from every viewer in this net by staff."}
+              </Typography>
+              {netMutes.size === 0 ? (
+                <Typography variant="body2" color="text.secondary">No stations muted for everyone.</Typography>
+              ) : canManageCheckIns ? (
+                Array.from(netMutes.values()).map((mute) => (
+                  <Box key={mute.muted_user_id} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 0.5 }}>
+                    <Box>
+                      <Typography variant="body2">{mute.callsign || `User ${mute.muted_user_id}`}</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        by {mute.applied_by_callsign || `User ${mute.applied_by_user_id}`} · {formatTimeWithDate(mute.created_at)}
+                      </Typography>
+                    </Box>
+                    <Button size="small" onClick={() => handleNetUnmute(mute.muted_user_id)}>Unmute</Button>
+                  </Box>
+                ))
+              ) : (
+                // Non-staff sees that a net-wide mute is in effect (so a
+                // vanished station doesn't read as a bug), but not who
+                // applied it -- that audit detail is staff-only.
+                <Typography variant="body2" color="text.secondary">
+                  {netMutes.size} station{netMutes.size !== 1 ? 's' : ''} muted for everyone by staff.
+                </Typography>
+              )}
+            </>
           )}
         </DialogContent>
         <DialogActions>

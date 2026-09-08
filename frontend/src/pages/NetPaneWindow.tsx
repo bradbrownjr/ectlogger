@@ -181,6 +181,13 @@ const NetPaneWindow: React.FC = () => {
   }
 
   if (paneType === 'chat') {
+    // Computed fresh here rather than reusing the isNCSOrLogger/
+    // canManageCheckIns declared further down this file -- those sit after
+    // this early return, so they're out of scope at this point. Mirrors the
+    // same formula (NetView.tsx and NetPaneWindow.tsx further below).
+    const paneUserNetRole = netRoles.find((role: any) => role.user_id === user?.id);
+    const paneIsNCSOrLogger = !!(paneUserNetRole && ((paneUserNetRole.role === 'NCS' && paneUserNetRole.is_active !== false) || paneUserNetRole.role === 'LOGGER'));
+    const paneCanManage = user?.role === 'admin' || !!net.is_owner_or_ncs;
     return (
       <Box sx={{ height: '100vh', width: '100vw', p: 0.5, boxSizing: 'border-box', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <Chat
@@ -192,7 +199,8 @@ const NetPaneWindow: React.FC = () => {
           // NOT net.can_manage, which does and would leak a simulating
           // admin's real access back in. Matches the canManage formula
           // further down this file and in NetView.tsx.
-          canManage={user?.role === 'admin' || !!net.is_owner_or_ncs}
+          canManage={paneCanManage}
+          canManageCheckIns={paneCanManage || paneIsNCSOrLogger}
           chatGracePeriodMinutes={net.chat_grace_period_minutes ?? undefined}
           closedAt={net.closed_at}
           onlineUserIds={onlineUserIds}

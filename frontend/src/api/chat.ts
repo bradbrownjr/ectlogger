@@ -58,6 +58,17 @@ export interface ChatMute {
   created_at: string;
 }
 
+/** A net-wide, staff-applied chat mute -- hides that station's messages live
+ *  for every viewer of this net, staff and non-staff alike. Never affects the
+ *  stored log/export. See chatApi.listNetMutes/netMute/netUnmute below. */
+export interface ChatNetMute {
+  muted_user_id: number;
+  callsign: string | null;
+  applied_by_user_id: number;
+  applied_by_callsign: string | null;
+  created_at: string;
+}
+
 const CHAT_IMAGE_PREFIX = '__CHAT_IMAGE__';
 
 /** Returns a display-safe version of a chat message, replacing image payloads with "[Photo]". */
@@ -129,4 +140,12 @@ export const chatApi = {
 
   unmute: (netId: number, mutedUserId: number) =>
     api.delete(`/chat/nets/${netId}/mutes/${mutedUserId}`),
+
+  listNetMutes: (netId: number) => api.get<ChatNetMute[]>(`/chat/nets/${netId}/net-mutes`),
+
+  netMute: (netId: number, mutedUserId: number) =>
+    api.post<ChatNetMute>(`/chat/nets/${netId}/net-mutes`, { muted_user_id: mutedUserId }),
+
+  netUnmute: (netId: number, mutedUserId: number) =>
+    api.delete(`/chat/nets/${netId}/net-mutes/${mutedUserId}`),
 };

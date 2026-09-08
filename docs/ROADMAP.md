@@ -335,68 +335,48 @@ Two rules fall out of that and both are load-bearing:
 
 ### Chat Moderation
 
-**✨ Net-wide chat mute (staff-set, server-enforced)** *(KC1JMH, 2026-09-08, from field reports)*  
-**Model:** Opus for the design — this is a moderation capability on a record-keeping system, and
-the "does the muted station know" question below has legal and social consequences that outlast
-the code. Sonnet for implementation once the shape is settled.
+**✅ Shipped 2026-09-08: chat mute, personal and net-wide** *(KC1JMH, from field reports)*
 
-**Shipped 2026-09-08: the personal-mute half.** Any participant can mute a station's chat messages
-for their own view only, from a control beside Reply in the message action row
-(`backend/app/routers/chat.py` `/nets/{net_id}/mutes`, `frontend/src/components/Chat.tsx`). Hidden
-messages are simply not rendered client-side; nobody else's view and never the exported net log is
-affected. A banner above the chat panel shows how many stations are muted and opens a manage/unmute
-list, so a mute set once and forgotten doesn't become a bug report. See `docs/CHANGELOG.md`.
+**Personal half.** Any participant can mute a station's chat messages for their own view only,
+from a control beside Reply in the message action row (`POST/DELETE /chat/nets/{net_id}/mutes`,
+`frontend/src/components/Chat.tsx`). Hidden messages are simply not rendered client-side; nobody
+else's view and never the exported net log is affected.
 
-**Still open: the net-wide half**, for the case a mute needs to hold for everyone, not just the
-person annoyed by it. The reported problem is specific: meme spammers drown out real net feedback,
-and today the only tool beyond the new personal mute is deleting individual messages after the
-fact. Net staff would set this scope from the same control the personal mute already added.
+**Net-wide half.** Shift+click the same mute icon, NCS/Logger only, mutes a station for *every*
+viewer of this net's chat (`POST/DELETE /chat/nets/{net_id}/net-mutes`,
+`backend/app/models.py::ChatNetMute`, migration 069). A plain click still means "just for me"; the
+server re-checks `check_net_permission(..., ["NCS", "LOGGER"])` itself regardless of what the
+client sends, so a non-staff shift+click just falls back to a personal mute rather than erroring.
+It's one canonical row per `(net, muted user)`, not per-applier — any active NCS/Logger can lift a
+mute someone else applied. Doesn't persist past the net; a recurring template's next occurrence
+starts clean.
 
-**The load-bearing decision is whether the muted station is told.** The original request is
-explicit that they should not be: *"they won't know they're not getting received, and may just get
-bored"* — a shadow mute, which avoids the argument a visible mute starts and is genuinely the
-humane option for someone who is merely tiresome. That is a defensible product call and it is the
-recommended default, but it has to be made deliberately rather than by omission, because ECTLogger
-is not a social app:
+This resolved the design questions the item originally shipped with open:
 
-- A net log is an **emergency-communications record**. A message that some participants saw and
-  others did not, with no marking, makes the exported log a record of a conversation that never
-  happened in that form for anyone.
-- Shadow-muting is a decision **one staff member takes about another operator's participation**,
-  invisible to the operator and, unless designed otherwise, invisible to the rest of the staff.
-  It needs an audit trail even if the muted station never sees one.
-- A muted station can still be transmitting **on the air**. Muting them in chat does not mute
-  them on the net, and NCS must not be led to believe otherwise.
+- **Is the muted station told?** No — a shadow mute, matching the recommended default. They simply
+  stop getting through; nothing in the UI announces it to them.
+- **Is it server-enforced or just hidden client-side?** Server-enforced, per the original
+  recommendation: `_broadcast_chat_message` (`backend/app/routers/chat.py`) checks whether the
+  author is currently net-wide muted before broadcasting, and if so passes a new
+  `only_for_user_ids={author_id}` argument to `ConnectionManager.broadcast`
+  (`backend/app/main.py:213`) — the message is echoed back to the author's own connection only
+  and never put on the wire to any other connection at all, extending the same per-connection
+  mechanism the guest-PII-redaction path (`guest_message`) already used. This also means a muted
+  spammer's images are never even fetched by anyone else's browser in real time, not just hidden
+  after arriving.
+- **Is it in the exported/stored record?** Yes, unaffected — `GET /chat/nets/{id}/messages` and
+  every export always return the message; only the *live* broadcast and each client's own
+  rendering of an already-fetched list hide it. A net log is an emergency-communications record,
+  and this was the one property that could not be defended after an incident.
+- **Audit trail?** Yes, staff-visible: `GET /chat/nets/{net_id}/net-mutes` returns who applied each
+  mute and when; the Manage dialog (`Chat.tsx`) shows this to NCS/Logger, and shows non-staff only
+  that a station is muted for everyone (not who did it).
+- **Reply quotes / mentions?** A muted station's quoted text is redacted in someone else's reply
+  preview for every viewer (the personal mute's redaction already worked this way for the muter
+  alone; net-wide mutes reuse the same client-side check against a list every viewer now fetches,
+  not just the muter).
 
-**Recommended shape (argue it before building it):**
-
-- Net-wide mutes are **server-enforced** — a muted station's message is stored and echoed back to
-  its own author (so the mute stays silent) but never broadcast to other viewers.
-  `ConnectionManager.broadcast` (`backend/app/main.py:213`) already carries per-connection
-  `user_id` and already sends a different payload to one audience than another (the `guest_message`
-  redaction path), so this extends an existing mechanism rather than inventing one.
-- **Net staff always see muted messages**, visually marked as muted, and so does the exported net
-  log. Hiding them from the record is the version that cannot be defended after an incident.
-
-**Requirements / open questions:**
-- Extend `chat_mutes` (already shipped for the personal scope) with a `scope` (`personal` / `net`)
-  column and the user who set it, or add a sibling table if a net-wide mute's shape ends up
-  different enough (e.g. an expiry) not to share rows cleanly with the personal ones.
-- **Does a net-wide mute expire with the net?** Recommend yes — mutes are per-net, and a standing
-  cross-net ban is a different feature (the existing `PUT /users/{id}/ban` already covers the
-  serious case). A recurring schedule wanting to carry mutes forward is a separate ask.
-- **Guests.** Chat already redacts contact info for unauthenticated viewers. Posting requires
-  auth, so every message has a real `user_id` — there is no guest-authored message to mute, and a
-  guest viewer has no account to mute from either (the personal mute above is offered only to
-  authenticated viewers for this reason).
-- Scope choice offered only to staff on the mute control the personal half already added
-  (`Chat.tsx`, message action row) — a participant sees one action, staff see two.
-- Does muting hide the station's `@mentions` and reply quotes of that station too for *other*
-  viewers, not just the muter? The personal mute already redacts a muted author's quoted text in
-  someone else's reply for the muter alone; a net-wide mute needs the same rule applied
-  server-side for every viewer, or a quoted meme reappearing there defeats the mute.
-
-**Trigger:** should not ship until the audit-trail and export questions above have answers.
+See `docs/CHANGELOG.md` and `backend/tests/test_chat_mute.py` / `test_chat_net_mute.py`.
 
 ### Net View Usability
 

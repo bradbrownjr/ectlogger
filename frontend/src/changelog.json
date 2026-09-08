@@ -1,8 +1,8 @@
 {
-  "version": "2026.09.08b",
+  "version": "2026.09.08c",
   "entries": [
     {
-      "version": "2026.09.08b",
+      "version": "2026.09.08c",
       "date": "2026-09-08",
       "sections": [
         {
@@ -10,7 +10,7 @@
           "type": "feature",
           "items": [
             {
-              "text": "Chat: Mute a station — hide one station's chat messages from your own view of a net, without affecting anyone else's view or the net log. Mute from the message action row and manage or undo it anytime from the banner that appears above chat.",
+              "text": "Chat: Mute a station — hide one station's chat messages from your own view of a net, without affecting anyone else's view or the net log, from a control in the message action row. NCS and Logger can shift+click the same control to mute a spammer for everyone in the net's chat instead, without notifying them or touching the net's saved log or export. Manage or undo any mute anytime from the banner above chat.",
               "userImpact": true
             }
           ]

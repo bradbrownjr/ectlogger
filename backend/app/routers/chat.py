@@ -13,7 +13,7 @@ from typing import List, Optional
 from PIL import Image
 
 from app.database import get_db
-from app.models import ChatMessage, ChatMute, ChatReaction, ChatImage, CheckIn, Net, User
+from app.models import ChatMessage, ChatMute, ChatNetMute, ChatReaction, ChatImage, CheckIn, Net, User
 from app.schemas import (
     ChatMessageCreate,
     ChatMessageEdit,
@@ -21,10 +21,13 @@ from app.schemas import (
     ChatImageUploadResponse,
     ChatMuteCreate,
     ChatMuteResponse,
+    ChatNetMuteCreate,
+    ChatNetMuteResponse,
     build_reply_preview,
     decode_mentioned_user_ids,
 )
 from app.dependencies import get_current_user, get_current_user_optional
+from app.permissions import check_net_permission
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
@@ -114,16 +117,35 @@ async def _load_chat_message(db: AsyncSession, message_id: int) -> ChatMessage:
     return result.scalar_one()
 
 
-async def _broadcast_chat_message(net_id: int, chat_message: ChatMessage, event_type: str) -> None:
+async def _broadcast_chat_message(db: AsyncSession, net_id: int, chat_message: ChatMessage, event_type: str) -> None:
     """Broadcast a new (`chat_message`) or edited (`chat_message_edited`)
     message. Guest connections (WS allows anonymous viewers) get a redacted
     copy of the message text and of any quoted preview -- same rule as the REST
     GET below -- so a live guest can't see contact info arrive in real time
     that the REST list would have scrubbed. Edits go through the identical path
     on purpose: an edit that reintroduced an email address would otherwise
-    reach guests unredacted."""
+    reach guests unredacted.
+
+    If the author is currently net-wide muted on this net, the message is
+    echoed back to their own connection only (so the mute stays silent to
+    them) and never sent to any other viewer's connection at all -- server-
+    enforced, not just hidden client-side after delivery. GET /messages still
+    returns it unfiltered (the stored log/export is never touched), and
+    every client also filters its own rendering from that fetch -- this only
+    changes what goes out over an *active* WebSocket while the mute holds."""
     from app.main import manager
     from app.utils import get_avatar_url, redact_contact_info
+
+    only_for_user_ids = None
+    if chat_message.user_id is not None:
+        net_mute_result = await db.execute(
+            select(ChatNetMute).where(
+                ChatNetMute.net_id == net_id,
+                ChatNetMute.muted_user_id == chat_message.user_id,
+            )
+        )
+        if net_mute_result.scalar_one_or_none() is not None:
+            only_for_user_ids = {chat_message.user_id}
 
     avatar_url = None
     if chat_message.user:
@@ -163,6 +185,7 @@ async def _broadcast_chat_message(net_id: int, chat_message: ChatMessage, event_
             },
             "timestamp": timestamp,
         },
+        only_for_user_ids=only_for_user_ids,
     )
 
 
@@ -232,7 +255,7 @@ async def create_message(
     # Load user + reactions + reply relationships for response
     chat_message = await _load_chat_message(db, chat_message.id)
 
-    await _broadcast_chat_message(net_id, chat_message, "chat_message")
+    await _broadcast_chat_message(db, net_id, chat_message, "chat_message")
     return ChatMessageResponse.from_orm(chat_message)
 
 
@@ -284,7 +307,7 @@ async def edit_message(
 
     message = await _load_chat_message(db, message_id)
 
-    await _broadcast_chat_message(net_id, message, "chat_message_edited")
+    await _broadcast_chat_message(db, net_id, message, "chat_message_edited")
     return ChatMessageResponse.from_orm(message)
 
 
@@ -517,11 +540,11 @@ async def upload_chat_image(
 
 # ========== PERSONAL CHAT MUTES ==========
 # A viewer hiding one station's messages from their own view of this net's
-# chat only -- nobody else's view, and never the exported net log. See
-# ROADMAP.md "Chat Moderation" for why net-wide (staff-set, server-enforced)
-# muting is a separate, not-yet-built capability with its own audit-trail
-# requirements. Every chat message has a real user_id (posting requires
-# auth -- guests can only view), so there is no guest-callsign case to handle
+# chat only -- nobody else's view, and never the exported net log. See the
+# NET-WIDE CHAT MUTES section below for the staff-applied counterpart, and
+# ROADMAP.md "Chat Moderation" for the design history. Every chat message has
+# a real user_id (posting requires auth -- guests can only view), so there is
+# no guest-callsign case to handle
 # here.
 
 @router.get("/nets/{net_id}/mutes", response_model=List[ChatMuteResponse])
@@ -594,6 +617,122 @@ async def unmute_station(
             ChatMute.net_id == net_id,
             ChatMute.muter_user_id == current_user.id,
             ChatMute.muted_user_id == muted_user_id,
+        )
+    )
+    mute = result.scalar_one_or_none()
+    if mute:
+        await db.delete(mute)
+        await db.commit()
+    return None
+
+
+# ========== NET-WIDE CHAT MUTES ==========
+# NCS/Logger hiding a station's messages live for every viewer of this net's
+# chat -- not just the staff member who applied it. Same "hide, don't erase"
+# rule as personal mutes: chat_messages is never touched, so the net's log
+# and export are unaffected. Doesn't persist past this net -- a recurring
+# template's next occurrence starts clean. See ROADMAP.md "Chat Moderation".
+
+async def _get_net_or_404(db: AsyncSession, net_id: int) -> Net:
+    result = await db.execute(select(Net).where(Net.id == net_id))
+    net = result.scalar_one_or_none()
+    if not net:
+        raise HTTPException(status_code=404, detail="Net not found")
+    return net
+
+
+@router.get("/nets/{net_id}/net-mutes", response_model=List[ChatNetMuteResponse])
+async def list_net_mutes(
+    net_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Every net-wide mute currently active on this net, with who applied it.
+    Any authenticated participant can fetch this -- everyone's client needs
+    the muted-id set to filter its own view, not just staff -- but only the
+    NCS/Logger management UI actually surfaces the applied-by audit fields."""
+    result = await db.execute(
+        select(ChatNetMute)
+        .options(selectinload(ChatNetMute.muted), selectinload(ChatNetMute.applied_by))
+        .where(ChatNetMute.net_id == net_id)
+    )
+    return [
+        ChatNetMuteResponse(
+            muted_user_id=mute.muted_user_id,
+            callsign=mute.muted.callsign if mute.muted else None,
+            applied_by_user_id=mute.applied_by_user_id,
+            applied_by_callsign=mute.applied_by.callsign if mute.applied_by else None,
+            created_at=mute.created_at,
+        )
+        for mute in result.scalars().all()
+    ]
+
+
+@router.post("/nets/{net_id}/net-mutes", response_model=ChatNetMuteResponse, status_code=status.HTTP_201_CREATED)
+async def net_mute_station(
+    net_id: int,
+    body: ChatNetMuteCreate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Net-wide mute a station's chat messages (NCS/Logger only). Idempotent
+    -- re-muting an already-muted station just updates who/when it was most
+    recently applied by."""
+    net = await _get_net_or_404(db, net_id)
+    if not await check_net_permission(db, net, current_user, ["NCS", "LOGGER"]):
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    if body.muted_user_id == current_user.id:
+        raise HTTPException(status_code=400, detail="Cannot mute yourself")
+
+    target_result = await db.execute(select(User).where(User.id == body.muted_user_id))
+    target_user = target_result.scalar_one_or_none()
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    existing = await db.execute(
+        select(ChatNetMute).where(
+            ChatNetMute.net_id == net_id,
+            ChatNetMute.muted_user_id == body.muted_user_id,
+        )
+    )
+    mute = existing.scalar_one_or_none()
+    if mute:
+        mute.applied_by_user_id = current_user.id
+        mute.created_at = datetime.now(UTC)
+    else:
+        mute = ChatNetMute(net_id=net_id, muted_user_id=body.muted_user_id, applied_by_user_id=current_user.id)
+        db.add(mute)
+    await db.commit()
+    await db.refresh(mute)
+
+    return ChatNetMuteResponse(
+        muted_user_id=mute.muted_user_id,
+        callsign=target_user.callsign,
+        applied_by_user_id=current_user.id,
+        applied_by_callsign=current_user.callsign,
+        created_at=mute.created_at,
+    )
+
+
+@router.delete("/nets/{net_id}/net-mutes/{muted_user_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def net_unmute_station(
+    net_id: int,
+    muted_user_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Lift a net-wide mute (NCS/Logger only). Any active NCS/Logger may lift
+    it, not just whoever applied it -- it's a moderation action on the net,
+    not a personal setting. No-op (still 204) if it was never set."""
+    net = await _get_net_or_404(db, net_id)
+    if not await check_net_permission(db, net, current_user, ["NCS", "LOGGER"]):
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    result = await db.execute(
+        select(ChatNetMute).where(
+            ChatNetMute.net_id == net_id,
+            ChatNetMute.muted_user_id == muted_user_id,
         )
     )
     mute = result.scalar_one_or_none()

@@ -1024,6 +1024,25 @@ class ChatMuteResponse(BaseModel):
         from_attributes = True
 
 
+class ChatNetMuteCreate(BaseModel):
+    muted_user_id: int
+
+
+class ChatNetMuteResponse(BaseModel):
+    """A net-wide, staff-applied chat mute. Unlike ChatMuteResponse this
+    carries who applied it, since the audit trail is part of the feature
+    (any NCS/Logger can see who muted whom and lift it, not just the one
+    who applied it)."""
+    muted_user_id: int
+    callsign: Optional[str] = None
+    applied_by_user_id: int
+    applied_by_callsign: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
 class ChatImageUploadResponse(BaseModel):
     id: int
     image_url: str

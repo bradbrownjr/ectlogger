@@ -768,9 +768,8 @@ class ChatImage(Base):
 class ChatMute(Base):
     """A viewer's personal chat mute of another station, scoped to one net.
     Hides the muted station's messages from the muter's own view only -- no
-    other viewer, and not the exported net log, is affected. Net-wide
-    (staff-set, server-enforced) mutes are a separate, not-yet-built
-    capability with its own audit-trail requirements (see ROADMAP.md)."""
+    other viewer, and not the exported net log, is affected. See ChatNetMute
+    below for the net-wide, staff-applied counterpart."""
     __tablename__ = "chat_mutes"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -786,6 +785,32 @@ class ChatMute(Base):
     net = relationship("Net")
     muter = relationship("User", foreign_keys=[muter_user_id])
     muted = relationship("User", foreign_keys=[muted_user_id])
+
+
+class ChatNetMute(Base):
+    """A net-wide chat mute applied by NCS/Logger staff, scoped to one net.
+    Unlike ChatMute this is a single row per (net, muted user) rather than
+    per-viewer -- it's a moderation action, not a personal preference, so any
+    active NCS/Logger can see it and lift it, not just whoever applied it.
+    Hides the muted station's messages live for every viewer (staff and
+    non-staff alike), same as ChatMute; never touches the stored messages
+    table, so the net's chat log/export is unaffected. Does not persist past
+    this net -- a recurring template's next occurrence starts clean."""
+    __tablename__ = "chat_net_mutes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    net_id = Column(Integer, ForeignKey("nets.id", ondelete="CASCADE"), nullable=False)
+    muted_user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    applied_by_user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    __table_args__ = (
+        UniqueConstraint('net_id', 'muted_user_id', name='uq_chat_net_mute'),
+    )
+
+    net = relationship("Net")
+    muted = relationship("User", foreign_keys=[muted_user_id])
+    applied_by = relationship("User", foreign_keys=[applied_by_user_id])
 
 
 class FieldDefinition(Base):
