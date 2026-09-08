@@ -91,7 +91,7 @@ const ProfileSetupDialog: React.FC = () => {
         <Box component="form" onSubmit={handleSubmit} id="profile-setup-form">
           <TextField
             fullWidth
-            label="Name *"
+            label="Name"
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             margin="normal"
