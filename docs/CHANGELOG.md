@@ -9,6 +9,7 @@ All notable changes to ECTLogger are documented here.
 ## New Features
 
 * **Chat: Mute a station** — Hide one station's chat messages from your own view of a net, without affecting anyone else's view or the net log, from a control in the message action row. NCS and Logger can shift+click the same control to mute a spammer for everyone in the net's chat instead, without notifying them or touching the net's saved log or export. Manage or undo any mute anytime from the banner above chat.
+* **Security: Authenticated nets** — On a net with the new Authenticated Net setting, NCS and Logger can confirm a checked-in station's identity by comparing the code on their authenticator app to the one ECTLogger computes for that account, turning the check-in row's padlock icon from open to locked once confirmed. Participants need an ECT Logger account with two-factor authentication (MFA) set up under Profile → Security for this to work; a station without it simply shows as unverified.
 
 ## Bug Fixes
 
