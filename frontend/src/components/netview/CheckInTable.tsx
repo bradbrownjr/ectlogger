@@ -19,7 +19,6 @@ import {
 import DeleteIcon from '@mui/icons-material/Delete';
 import GroupIcon from '@mui/icons-material/Group';
 import HearingIcon from '@mui/icons-material/Hearing';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import PanToolIcon from '@mui/icons-material/PanTool';
 import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutline';
@@ -27,7 +26,8 @@ import PictureInPictureAltIcon from '@mui/icons-material/PictureInPictureAlt';
 import UserAvatar from '../UserAvatar';
 import { formatTimeWithDate } from '../../utils/dateUtils';
 import { STATUS_SELECT_MENU_PROPS } from './statusSelectMenuProps';
-import { isRowOutsideView, sneakInFade, SNEAK_IN_HIGHLIGHT_MS } from './sneakInHighlight';
+import { sneakInFade, SNEAK_IN_HIGHLIGHT_MS, useOffscreenArrivalIndicator } from './sneakInHighlight';
+import OffscreenArrivalArrow from './OffscreenArrivalArrow';
 import { looksLikeEmail, NAME_FIELD_EMAIL_WARNING } from '../../utils/nameFieldGuard';
 
 // ========== CHECK-IN LIST TABLE 1: Desktop Inline (attached) ==========
@@ -177,41 +177,26 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
 
   // Every row registers its DOM node here (cheap -- just a ref write) so
   // that when a row starts a sneak-in flash, we can check whether it's
-  // actually visible in the current scroll position. See the effect below.
+  // actually visible in the current scroll position. See sneakInHighlight.ts.
   const rowElRefs = useRef<Map<number, HTMLTableRowElement>>(new Map());
-  const prevHighlightedRef = useRef<Set<number>>(new Set());
-  const [showOffscreenArrow, setShowOffscreenArrow] = useState(false);
-
-  useEffect(() => {
-    const current = highlightedCheckInIds ?? new Set<number>();
-    const previous = prevHighlightedRef.current;
-    const justArrived: number[] = [];
-    current.forEach((id) => {
-      if (!previous.has(id)) justArrived.push(id);
-    });
-    prevHighlightedRef.current = current;
-    if (justArrived.length === 0) return;
-
-    const container = containerRef.current;
-    if (!container) return;
-    const anyOffscreen = justArrived.some((id) => {
-      const rowEl = rowElRefs.current.get(id);
-      return !rowEl || isRowOutsideView(container, rowEl);
-    });
-    if (!anyOffscreen) return;
-
-    setShowOffscreenArrow(true);
-    const timer = setTimeout(() => setShowOffscreenArrow(false), SNEAK_IN_HIGHLIGHT_MS);
-    return () => clearTimeout(timer);
-  }, [highlightedCheckInIds]);
+  const offscreenArrival = useOffscreenArrivalIndicator(containerRef, rowElRefs, highlightedCheckInIds);
 
   // Outer container styling differs by placement. Attached: hidden on mobile
   // (CheckInMobileList shows instead) with a fully-rounded border. Detached:
   // always visible, fills the floating window, top-rounded border only. Both
   // preserve the exact styling each placement had before unification.
+  //
+  // Split into an outer non-scrolling wrapper (owns the flex sizing plus
+  // `position: relative`) and the inner scrolling TableContainer, so the
+  // off-screen arrival arrow can be a sibling of the scroll container rather
+  // than a descendant of it -- an absolutely positioned child of the scroll
+  // container itself scrolls away with the table content instead of staying
+  // pinned to the visible edge.
+  const wrapperSx = detached
+    ? { position: 'relative' as const, flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' as const }
+    : { position: 'relative' as const, flex: { xs: 'none', md: 1 }, minHeight: 0, display: { xs: 'none', md: 'flex' }, flexDirection: 'column' as const };
   const containerSx = detached
     ? {
-        position: 'relative' as const,
         flex: 1,
         overflow: 'auto',
         minHeight: 0,
@@ -223,44 +208,27 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
         '&::-webkit-scrollbar-thumb': { backgroundColor: (thm: any) => thm.palette.mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)', borderRadius: 4 },
       }
     : {
-        position: 'relative' as const,
-        flex: { xs: 'none', md: 1 },
+        flex: 1,
         overflow: 'auto',
         border: 1,
         borderColor: 'divider',
         borderRadius: '4px',
         minHeight: 0,
-        display: { xs: 'none', md: 'block' },
         '&::-webkit-scrollbar': { width: 8, height: 8 },
         '&::-webkit-scrollbar-track': { backgroundColor: (theme: any) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' },
         '&::-webkit-scrollbar-thumb': { backgroundColor: (theme: any) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)', borderRadius: 4, '&:hover': { backgroundColor: (theme: any) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)' } },
       };
   return (
+            <Box sx={wrapperSx}>
+              {/* ========== SNEAK-IN OFF-SCREEN ARROW ========== */}
+              {/* Says "a new self check-in just landed outside the visible area"
+                  and scrolls it into view on click. See sneakInHighlight.ts. */}
+              <OffscreenArrivalArrow
+                visible={offscreenArrival.visible}
+                direction={offscreenArrival.direction}
+                onClick={offscreenArrival.onClick}
+              />
               <TableContainer ref={containerRef} sx={containerSx}>
-                {/* ========== SNEAK-IN OFF-SCREEN ARROW ========== */}
-                {/* Fades in/out to say "a new self check-in just landed below the
-                    fold" -- only shown when that row isn't currently in view. See
-                    sneakInHighlight.ts. Positioned relative to the scroll
-                    container's own box, so it stays pinned at the visible bottom
-                    edge instead of scrolling away with the table content. */}
-                <Box
-                  sx={{
-                    position: 'absolute',
-                    bottom: 6,
-                    right: 12,
-                    zIndex: 3,
-                    pointerEvents: 'none',
-                    opacity: showOffscreenArrow ? 1 : 0,
-                    transition: 'opacity 0.4s ease',
-                    display: 'flex',
-                    color: 'warning.main',
-                    backgroundColor: 'background.paper',
-                    borderRadius: '50%',
-                    boxShadow: 2,
-                  }}
-                >
-                  <KeyboardArrowDownIcon />
-                </Box>
                 {/* ========== CHECK-IN LIST TABLE 1: Desktop Inline (attached) ========== */}
                 {/* This table displays when check-in list is NOT detached, on medium+ screens */}
                 <Table size="small" sx={{ borderCollapse: 'collapse' }}>
@@ -918,7 +886,8 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                   )})}
                 </TableBody>
               </Table>
-            </TableContainer>
+              </TableContainer>
+            </Box>
   );
 };
 

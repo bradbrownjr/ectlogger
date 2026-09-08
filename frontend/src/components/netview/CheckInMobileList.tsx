@@ -15,11 +15,11 @@ import {
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import HearingIcon from '@mui/icons-material/Hearing';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import UserAvatar from '../UserAvatar';
 import { formatTimeWithDate } from '../../utils/dateUtils';
 import { STATUS_SELECT_MENU_PROPS } from './statusSelectMenuProps';
-import { isRowOutsideView, sneakInFade, SNEAK_IN_HIGHLIGHT_MS } from './sneakInHighlight';
+import { sneakInFade, SNEAK_IN_HIGHLIGHT_MS, useOffscreenArrivalIndicator } from './sneakInHighlight';
+import OffscreenArrivalArrow from './OffscreenArrivalArrow';
 
 // ========== CHECK-IN LIST TABLE 2: Mobile View ==========
 // The small-screen (xs only) check-in table. Intentionally simpler than the
@@ -125,39 +125,23 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
     };
   }, [filteredCheckIns.length]);
 
-  // Sneak-in off-screen arrow -- see CheckInTable.tsx for the full rationale
-  // and technique; same logic here against this list's own scroll container.
+  // Sneak-in off-screen arrow -- see sneakInHighlight.ts for the shared
+  // arrival-detection/dismissal hook, and OffscreenArrivalArrow.tsx for the
+  // shared visual, both used identically by CheckInTable.tsx.
   const rowElRefs = useRef<Map<number, HTMLTableRowElement>>(new Map());
-  const prevHighlightedRef = useRef<Set<number>>(new Set());
-  const [showOffscreenArrow, setShowOffscreenArrow] = useState(false);
-
-  useEffect(() => {
-    const current = highlightedCheckInIds ?? new Set<number>();
-    const previous = prevHighlightedRef.current;
-    const justArrived: number[] = [];
-    current.forEach((id) => {
-      if (!previous.has(id)) justArrived.push(id);
-    });
-    prevHighlightedRef.current = current;
-    if (justArrived.length === 0) return;
-
-    const container = containerRef.current;
-    if (!container) return;
-    const anyOffscreen = justArrived.some((id) => {
-      const rowEl = rowElRefs.current.get(id);
-      return !rowEl || isRowOutsideView(container, rowEl);
-    });
-    if (!anyOffscreen) return;
-
-    setShowOffscreenArrow(true);
-    const timer = setTimeout(() => setShowOffscreenArrow(false), SNEAK_IN_HIGHLIGHT_MS);
-    return () => clearTimeout(timer);
-  }, [highlightedCheckInIds]);
+  const offscreenArrival = useOffscreenArrivalIndicator(containerRef, rowElRefs, highlightedCheckInIds);
 
   return (
-    <TableContainer ref={containerRef} sx={{
-      position: 'relative',
-      display: { xs: 'block', md: 'none' },
+    <Box sx={{ position: 'relative', display: { xs: 'block', md: 'none' }, maxHeight: 400 }}>
+      {/* ========== SNEAK-IN OFF-SCREEN ARROW ========== */}
+      {/* Says "a new self check-in just landed outside the visible area" and
+          scrolls it into view on click. See sneakInHighlight.ts. */}
+      <OffscreenArrivalArrow
+        visible={offscreenArrival.visible}
+        direction={offscreenArrival.direction}
+        onClick={offscreenArrival.onClick}
+      />
+      <TableContainer ref={containerRef} sx={{
       overflow: 'auto',
       border: 1,
       borderColor: 'divider',
@@ -178,26 +162,6 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
         },
       },
     }}>
-      {/* ========== SNEAK-IN OFF-SCREEN ARROW ========== */}
-      {/* See CheckInTable.tsx for the full rationale -- same technique here. */}
-      <Box
-        sx={{
-          position: 'absolute',
-          bottom: 6,
-          right: 12,
-          zIndex: 3,
-          pointerEvents: 'none',
-          opacity: showOffscreenArrow ? 1 : 0,
-          transition: 'opacity 0.4s ease',
-          display: 'flex',
-          color: 'warning.main',
-          backgroundColor: 'background.paper',
-          borderRadius: '50%',
-          boxShadow: 2,
-        }}
-      >
-        <KeyboardArrowDownIcon />
-      </Box>
       <Table size="small">
         <TableHead sx={{ position: 'sticky', top: 0, backgroundColor: 'background.default', zIndex: 1 }}>
           <TableRow>
@@ -410,7 +374,8 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
           })}
         </TableBody>
       </Table>
-    </TableContainer>
+      </TableContainer>
+    </Box>
   );
 };
 

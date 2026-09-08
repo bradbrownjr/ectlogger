@@ -4,6 +4,14 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# September 8, 2026
+
+## Bug Fixes
+
+* **Check-in: Sneak-in arrival arrow now clears** — The off-screen arrival arrow could get stuck on screen, scroll away from the edge it was supposed to stay pinned to, and didn't respond to clicks. It now disappears once you've seen the new check-in, stays pinned to the table's visible edge while you scroll, and clicking it jumps you straight to the row, pointing up or down depending on which way it actually is.
+
+---
+
 # September 6, 2026
 
 ## New Features

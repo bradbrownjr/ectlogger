@@ -1,6 +1,22 @@
 {
-  "version": "2026.09.06",
+  "version": "2026.09.08",
   "entries": [
+    {
+      "version": "2026.09.08",
+      "date": "2026-09-08",
+      "sections": [
+        {
+          "title": "Bug Fixes",
+          "type": "bugfix",
+          "items": [
+            {
+              "text": "Check-in: Sneak-in arrival arrow now clears — the off-screen arrival arrow could get stuck on screen, scroll away from the edge it was supposed to stay pinned to, and didn't respond to clicks. It now disappears once you've seen the new check-in, stays pinned to the table's visible edge while you scroll, and clicking it jumps you straight to the row, pointing up or down depending on which way it actually is.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.09.06",
       "date": "2026-09-06",
