@@ -232,6 +232,14 @@ export function useNetWebSocket(deps: NetWebSocketDeps): WebSocket | null {
               ? { ...ci, hand_raised: message.data.hand_raised }
               : ci
           ));
+        } else if (message.type === 'identity_verified_changed') {
+          // NCS/Logger confirmed or rejected a station's TOTP match on an
+          // authenticated net -- keep every viewer's padlock icon live.
+          setCheckIns(prev => prev.map(ci =>
+            ci.id === message.data?.id
+              ? { ...ci, identity_verified: message.data.identity_verified }
+              : ci
+          ));
         } else if (message.type === 'net_started') {
           // Net has been started - refresh everything first, then highlight check-in
           // Use a small delay to ensure the net status update renders before highlighting

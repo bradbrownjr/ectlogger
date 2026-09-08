@@ -1,7 +1,7 @@
 import base64
 import hashlib
 import secrets
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 import bcrypt
 import pyotp
@@ -108,6 +108,17 @@ def verify_totp_code(secret: str, code: str) -> bool:
         return False
     # valid_window=1 tolerates ~30s of clock drift on either side.
     return pyotp.TOTP(secret).verify(code, valid_window=1)
+
+
+def current_totp_codes(secret: str) -> tuple[str, str]:
+    """(current_code, previous_code) for display to NCS during over-the-air
+    identity verification -- the previous window is included because the
+    code can roll over mid-sentence while the operator is reading it aloud.
+    Unlike verify_totp_code, this never accepts caller input; it only reads
+    the server's own clock, so there is no untrusted data to validate."""
+    totp = pyotp.TOTP(secret)
+    now = datetime.now(timezone.utc)
+    return totp.now(), totp.at(now - timedelta(seconds=30))
 
 
 def generate_backup_codes(count: int = BACKUP_CODE_COUNT) -> list[str]:

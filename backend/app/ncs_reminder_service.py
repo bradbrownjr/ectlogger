@@ -195,6 +195,7 @@ class NCSReminderService:
                 topic_of_week_prompt=topic_prompt,
                 poll_enabled=template.poll_enabled or False,
                 poll_question=template.poll_question,
+                authenticated=template.authenticated or False,
                 scheduled_start_time=scheduled_dt,
             )
             db.add(net)

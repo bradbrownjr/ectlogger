@@ -19,6 +19,8 @@ import {
 import DeleteIcon from '@mui/icons-material/Delete';
 import GroupIcon from '@mui/icons-material/Group';
 import HearingIcon from '@mui/icons-material/Hearing';
+import LockIcon from '@mui/icons-material/Lock';
+import LockOpenIcon from '@mui/icons-material/LockOpen';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import PanToolIcon from '@mui/icons-material/PanTool';
 import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutline';
@@ -96,6 +98,9 @@ interface CheckInTableProps {
   // sneakInHighlight.ts. Optional so existing callers aren't forced to wire
   // it up immediately.
   highlightedCheckInIds?: Set<number>;
+  // Authenticated nets (net.authenticated): opens IdentityVerifyDialog for a
+  // row's padlock icon. Optional so existing callers aren't forced to wire it.
+  onOpenIdentityVerify?: (checkIn: any) => void;
 }
 
 const CheckInTable: React.FC<CheckInTableProps> = ({
@@ -141,6 +146,7 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
   canHearReporterCheckInIds,
   onOpenCanHearDialog,
   highlightedCheckInIds,
+  onOpenIdentityVerify,
 }) => {
   // Frozen (sticky) trailing column: Actions and the hide-duplicates/detach
   // icons share a single pinned column at the right edge so per-row controls
@@ -538,6 +544,48 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                               <Tooltip title={`Relayed by ${checkIn.relayed_by}`} arrow>
                                 <span style={{ cursor: 'help' }}>📡</span>
                               </Tooltip>
+                            )}
+                            {/* Authenticated net: identity padlock. Visible to everyone;
+                                clickable (opens IdentityVerifyDialog) only for NCS/Logger
+                                on a station with MFA enrolled. */}
+                            {net?.authenticated && (
+                              canManageCheckIns && checkIn.user_id ? (
+                                <Tooltip
+                                  title={
+                                    !checkIn.identity_verifiable
+                                      ? `${checkIn.callsign} has not set up two-factor authentication`
+                                      : checkIn.identity_verified
+                                        ? 'Identity verified — click to re-check'
+                                        : 'Identity not verified — click to check TOTP code'
+                                  }
+                                  arrow
+                                >
+                                  <span>
+                                    <IconButton
+                                      size="small"
+                                      sx={{ p: 0.25 }}
+                                      disabled={!checkIn.identity_verifiable}
+                                      onClick={() => onOpenIdentityVerify?.(checkIn)}
+                                      color={checkIn.identity_verified ? 'success' : 'default'}
+                                    >
+                                      {checkIn.identity_verified
+                                        ? <LockIcon fontSize="small" />
+                                        : <LockOpenIcon fontSize="small" />}
+                                    </IconButton>
+                                  </span>
+                                </Tooltip>
+                              ) : (
+                                <Tooltip
+                                  title={checkIn.identity_verified ? 'Identity verified' : 'Identity not verified'}
+                                  arrow
+                                >
+                                  <span style={{ display: 'inline-flex', cursor: 'help', opacity: 0.7 }}>
+                                    {checkIn.identity_verified
+                                      ? <LockIcon fontSize="small" color="success" />
+                                      : <LockOpenIcon fontSize="small" />}
+                                  </span>
+                                </Tooltip>
+                              )
                             )}
                           </Box>
                         )}

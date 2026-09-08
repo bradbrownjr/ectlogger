@@ -51,6 +51,7 @@ def _compare_template_fields(target: NetTemplate, source: NetTemplate) -> list:
         ("topic_of_week_prompt", "Topic prompt"),
         ("poll_enabled", "Poll enabled"),
         ("poll_question", "Poll question"),
+        ("authenticated", "Authenticated net enabled"),
         ("script", "Net script"),
         ("info_url", "Info URL"),
     ]

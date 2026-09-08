@@ -82,6 +82,7 @@ const CreateSchedule: React.FC = () => {
   const [ics309Enabled, setIcs309Enabled] = useState(false);
   const [propagationLoggingEnabled, setPropagationLoggingEnabled] = useState(false);
   const [selfCanHearEnabled, setSelfCanHearEnabled] = useState(true);
+  const [authenticated, setAuthenticated] = useState(false);
   // Assisted Traffic Handling. Seeds the same four settings on every net
   // opened from this schedule -- see components/forms/TrafficSettingsPanel.tsx.
   const [trafficEnabled, setTrafficEnabled] = useState(false);
@@ -205,6 +206,7 @@ const CreateSchedule: React.FC = () => {
       setLogoUrl(schedule.logo_url || null);
       setScript(schedule.script || '');
       setIcs309Enabled(schedule.ics309_enabled || false);
+      setAuthenticated(schedule.authenticated || false);
       setPropagationLoggingEnabled(schedule.propagation_logging_enabled || false);
       setSelfCanHearEnabled(schedule.self_can_hear_enabled !== false);
       setTrafficEnabled(schedule.traffic_enabled || false);
@@ -289,6 +291,7 @@ const CreateSchedule: React.FC = () => {
       ics309_enabled: ics309Enabled,
       propagation_logging_enabled: propagationLoggingEnabled,
       self_can_hear_enabled: selfCanHearEnabled,
+      authenticated,
       traffic_enabled: trafficEnabled,
       traffic_form_types: trafficFormTypes,
       traffic_strip_form_type: trafficStripFormType || null,
@@ -362,6 +365,7 @@ const CreateSchedule: React.FC = () => {
     ics309Enabled, setIcs309Enabled, mobilePrioritySort, setMobilePrioritySort,
     propagationLoggingEnabled, setPropagationLoggingEnabled,
     selfCanHearEnabled, setSelfCanHearEnabled,
+    authenticated, setAuthenticated,
     trafficEnabled, setTrafficEnabled,
     trafficFormTypes, setTrafficFormTypes,
     trafficStripFormType, setTrafficStripFormType,
