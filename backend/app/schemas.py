@@ -394,6 +394,8 @@ class NetBase(BaseModel):
     topic_of_week_prompt: Optional[str] = Field(None, max_length=500)
     poll_enabled: Optional[bool] = False
     poll_question: Optional[str] = Field(None, max_length=500)
+    # Lets NCS/Logger reveal a station's current TOTP code to confirm identity
+    authenticated: Optional[bool] = False
     # Scheduled start time for countdown display
     scheduled_start_time: Optional[datetime] = None
 
@@ -433,6 +435,7 @@ class NetUpdate(BaseModel):
     topic_of_week_prompt: Optional[str] = Field(None, max_length=500)
     poll_enabled: Optional[bool] = None
     poll_question: Optional[str] = Field(None, max_length=500)
+    authenticated: Optional[bool] = None
     # Scheduled start time for countdown display
     scheduled_start_time: Optional[datetime] = None
     # Allow NCS/admin to adjust actual start/end timestamps
@@ -537,6 +540,7 @@ class NetResponse(NetBase):
             'topic_of_week_prompt': net.topic_of_week_prompt,
             'poll_enabled': net.poll_enabled or False,
             'poll_question': net.poll_question,
+            'authenticated': net.authenticated or False,
             'scheduled_start_time': net.scheduled_start_time,
             'started_at': net.started_at,
             'closed_at': net.closed_at,
@@ -592,6 +596,7 @@ class NetTemplateBase(BaseModel):
     topic_of_week_prompt: Optional[str] = Field(None, max_length=500)
     poll_enabled: Optional[bool] = False
     poll_question: Optional[str] = Field(None, max_length=500)
+    authenticated: Optional[bool] = False
 
 
 class NetTemplateCreate(NetTemplateBase):
@@ -629,6 +634,7 @@ class NetTemplateUpdate(BaseModel):
     topic_of_week_prompt: Optional[str] = Field(None, max_length=500)
     poll_enabled: Optional[bool] = None
     poll_question: Optional[str] = Field(None, max_length=500)
+    authenticated: Optional[bool] = None
 
 
 class NetTemplateResponse(NetTemplateBase):
@@ -690,6 +696,7 @@ class NetTemplateResponse(NetTemplateBase):
             'topic_of_week_prompt': template.topic_of_week_prompt,
             'poll_enabled': template.poll_enabled or False,
             'poll_question': template.poll_question,
+            'authenticated': template.authenticated or False,
             'is_active': template.is_active,
             'created_at': template.created_at,
             'frequencies': [FrequencyResponse.model_validate(f) for f in template.frequencies],
@@ -888,10 +895,17 @@ class CheckInResponse(CheckInBase):
     checked_in_at: datetime
     checked_out_at: Optional[datetime] = None
     avatar_url: Optional[str] = None
+    # Authenticated nets (Net.authenticated) -- meaningless otherwise.
+    identity_verified: bool = False
+    identity_verified_at: Optional[datetime] = None
+    # Whether the linked account has MFA enrolled, so the client can grey out
+    # the verify action rather than offering it and failing. False (not just
+    # absent) for guest/unlinked check-ins, which have no account to check.
+    identity_verifiable: bool = False
 
     class Config:
         from_attributes = True
-    
+
     @classmethod
     def from_orm(cls, obj, redact: bool = False):
         import json
@@ -920,6 +934,7 @@ class CheckInResponse(CheckInBase):
             )
         else:
             obj.avatar_url = None
+        obj.identity_verifiable = bool(obj.user and getattr(obj.user, 'mfa_enabled', False))
         result = super().from_orm(obj)
         if redact:
             from app.utils import redact_contact_info
@@ -935,6 +950,18 @@ class CheckInResponse(CheckInBase):
                 },
             })
         return result
+
+
+class ExpectedCodeResponse(BaseModel):
+    """NCS/Logger-only: the station's currently-valid TOTP code(s), computed
+    server-side. Never carries the secret itself."""
+    enrolled: bool
+    current_code: Optional[str] = None
+    previous_code: Optional[str] = None
+
+
+class VerifyIdentityRequest(BaseModel):
+    verified: bool
 
 
 # Custom Field Schemas

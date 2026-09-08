@@ -8,10 +8,11 @@ import json
 import logging
 from app.database import get_db
 from app.models import CheckIn, Net, NetStatus, User, UserRole, StationStatus, NetRole, Contact, Frequency
-from app.schemas import CheckInCreate, CheckInUpdate, CheckInResponse
+from app.schemas import CheckInCreate, CheckInUpdate, CheckInResponse, ExpectedCodeResponse, VerifyIdentityRequest
 from app.dependencies import get_current_user, get_current_user_optional
 from app.utils import display_callsign
 from app.permissions import check_net_permission, is_eligible_for_logger_self_grant, is_eligible_for_ncs_auto_grant
+from app.auth import decrypt_mfa_secret, current_totp_codes
 
 logger = logging.getLogger(__name__)
 
@@ -699,5 +700,90 @@ async def toggle_hand_raised(
         },
         "timestamp": datetime.datetime.utcnow().isoformat()
     }, check_in.net_id)
-    
+
+    return CheckInResponse.from_orm(check_in)
+
+
+async def _load_check_in_and_net_for_auth(db: AsyncSession, check_in_id: int, current_user: User):
+    """Shared lookup + permission gate for the two authenticated-net endpoints
+    below. Raises the appropriate HTTPException; otherwise returns (check_in, net)
+    with check_in.user eager-loaded."""
+    result = await db.execute(
+        select(CheckIn).options(selectinload(CheckIn.user)).where(CheckIn.id == check_in_id)
+    )
+    check_in = result.scalar_one_or_none()
+    if not check_in:
+        raise HTTPException(status_code=404, detail="Check-in not found")
+
+    result = await db.execute(select(Net).where(Net.id == check_in.net_id))
+    net = result.scalar_one_or_none()
+    if not net:
+        raise HTTPException(status_code=404, detail="Net not found")
+
+    if not await check_net_permission(db, net, current_user, ["NCS", "LOGGER"]):
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    if not net.authenticated:
+        raise HTTPException(status_code=400, detail="This net is not an authenticated net")
+
+    return check_in, net
+
+
+@router.get("/check-ins/{check_in_id}/expected-code", response_model=ExpectedCodeResponse)
+async def get_expected_code(
+    check_in_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """NCS/Logger only. Returns the station's currently-valid TOTP code(s) so
+    they can be compared to what the operator reads aloud over the air. The
+    raw secret is decrypted server-side and never leaves this function."""
+    check_in, _net = await _load_check_in_and_net_for_auth(db, check_in_id, current_user)
+
+    if not check_in.user_id or not check_in.user or not check_in.user.mfa_enabled or not check_in.user.mfa_secret_encrypted:
+        return ExpectedCodeResponse(enrolled=False)
+
+    secret = decrypt_mfa_secret(check_in.user.mfa_secret_encrypted)
+    if not secret:
+        return ExpectedCodeResponse(enrolled=False)
+
+    current_code, previous_code = current_totp_codes(secret)
+    return ExpectedCodeResponse(enrolled=True, current_code=current_code, previous_code=previous_code)
+
+
+@router.post("/check-ins/{check_in_id}/verify-identity", response_model=CheckInResponse)
+async def verify_identity(
+    check_in_id: int,
+    payload: VerifyIdentityRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """NCS/Logger only. Records whether the station's live TOTP code matched
+    what NCS was just shown. A reject (verified=False) clears any prior
+    verification rather than merely leaving the dialog with no effect."""
+    check_in, net = await _load_check_in_and_net_for_auth(db, check_in_id, current_user)
+
+    check_in.identity_verified = payload.verified
+    check_in.identity_verified_at = datetime.now(UTC) if payload.verified else None
+    check_in.identity_verified_by_id = current_user.id if payload.verified else None
+    await db.commit()
+
+    result = await db.execute(
+        select(CheckIn).options(selectinload(CheckIn.user)).where(CheckIn.id == check_in.id)
+    )
+    check_in = result.scalar_one()
+
+    from app.main import manager
+    import datetime as _datetime
+    await manager.broadcast({
+        "type": "identity_verified_changed",
+        "data": {
+            "id": check_in.id,
+            "net_id": check_in.net_id,
+            "callsign": check_in.callsign,
+            "identity_verified": check_in.identity_verified,
+        },
+        "timestamp": _datetime.datetime.utcnow().isoformat()
+    }, check_in.net_id)
+
     return CheckInResponse.from_orm(check_in)

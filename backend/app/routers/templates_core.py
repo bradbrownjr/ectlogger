@@ -156,7 +156,8 @@ async def create_template(
         topic_of_week_enabled=template_data.topic_of_week_enabled or False,
         topic_of_week_prompt=template_data.topic_of_week_prompt,
         poll_enabled=template_data.poll_enabled or False,
-        poll_question=template_data.poll_question
+        poll_question=template_data.poll_question,
+        authenticated=template_data.authenticated or False,
     )
     db.add(template)
     await db.flush()
@@ -406,7 +407,9 @@ async def update_template(
         template.poll_enabled = template_data.poll_enabled
     if template_data.poll_question is not None:
         template.poll_question = template_data.poll_question
-    
+    if template_data.authenticated is not None:
+        template.authenticated = template_data.authenticated
+
     # Update owner if provided (owner/admin/co-manager can transfer ownership)
     if template_data.owner_id is not None and template_data.owner_id != template.owner_id:
         is_admin = current_user.role == UserRole.ADMIN

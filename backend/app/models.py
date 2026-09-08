@@ -197,6 +197,11 @@ class Net(Base):
     mobile_priority_sort = Column(Boolean, default=True)  # Promote mobile stations above chronological order
     chat_grace_period_minutes = Column(Integer, nullable=True)  # Minutes to keep chat open after close; null = disabled
     self_checkin_enabled = Column(Boolean, default=True)  # If False, only NCS/logger-entered check-ins are accepted
+    # Lets NCS/Logger reveal a checked-in station's current TOTP code (never the
+    # secret) to confirm they are who they claim over the air. Requires the
+    # station's own account to have MFA enrolled; unenrolled stations just show
+    # as unverified. See app/auth.py::current_totp_codes.
+    authenticated = Column(Boolean, default=False)
 
     # Auto-open lobby: minutes before scheduled_start_time that the scheduler
     # moves this net to LOBBY on its own. Null = disabled (the default). Copied
@@ -271,6 +276,7 @@ class NetTemplate(Base):
     mobile_priority_sort = Column(Boolean, default=True)  # Promote mobile stations above chronological order
     chat_grace_period_minutes = Column(Integer, nullable=True)  # Minutes to keep chat open after close; null = disabled
     self_checkin_enabled = Column(Boolean, default=True)  # If False, nets from this schedule accept only NCS/logger-entered check-ins
+    authenticated = Column(Boolean, default=False)  # Seeds Net.authenticated for nets created from this template
     # Default auto-open-lobby offset for nets created from this schedule, in
     # minutes before the scheduled start. Null = disabled (the default).
     auto_lobby_minutes = Column(Integer, nullable=True)
@@ -416,6 +422,13 @@ class CheckIn(Base):
     hand_raised = Column(Boolean, default=False)  # Hand raised to indicate comments/questions
     operating_position = Column(String(50), nullable=True)  # Classifier for the reporting station, e.g. "Home"/"Field Deployed" (freeSolo, not an enum)
 
+    # Authenticated nets: set once NCS/Logger has compared the station's live
+    # TOTP code to the server-computed expected code and confirmed a match.
+    # Only meaningful when Net.authenticated is True; otherwise unused.
+    identity_verified = Column(Boolean, default=False)
+    identity_verified_at = Column(DateTime(timezone=True), nullable=True)
+    identity_verified_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+
     checked_in_at = Column(DateTime(timezone=True), server_default=func.now())
     checked_out_at = Column(DateTime(timezone=True))
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -424,6 +437,7 @@ class CheckIn(Base):
     net = relationship("Net", back_populates="check_ins")
     user = relationship("User", foreign_keys=[user_id], back_populates="check_ins")
     checked_in_by = relationship("User", foreign_keys=[checked_in_by_id])
+    identity_verified_by = relationship("User", foreign_keys=[identity_verified_by_id])
     frequency = relationship("Frequency")
     parent_check_in = relationship("CheckIn", remote_side="CheckIn.id", foreign_keys=[parent_check_in_id])
     custom_values = relationship("CustomFieldValue", back_populates="check_in", cascade="all, delete-orphan")

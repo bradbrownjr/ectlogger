@@ -15,6 +15,8 @@ import {
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import HearingIcon from '@mui/icons-material/Hearing';
+import LockIcon from '@mui/icons-material/Lock';
+import LockOpenIcon from '@mui/icons-material/LockOpen';
 import UserAvatar from '../UserAvatar';
 import { formatTimeWithDate } from '../../utils/dateUtils';
 import { STATUS_SELECT_MENU_PROPS } from './statusSelectMenuProps';
@@ -62,6 +64,9 @@ interface CheckInMobileListProps {
   // Check-in ids currently playing the "sneak-in" arrival flash -- see
   // sneakInHighlight.ts.
   highlightedCheckInIds?: Set<number>;
+  // Authenticated nets (net.authenticated): opens IdentityVerifyDialog for a
+  // row's padlock icon. Optional so existing callers aren't forced to wire it.
+  onOpenIdentityVerify?: (checkIn: any) => void;
 }
 
 const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
@@ -91,6 +96,7 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
   canHearReporterCheckInIds,
   onOpenCanHearDialog,
   highlightedCheckInIds,
+  onOpenIdentityVerify,
 }) => {
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
@@ -321,6 +327,37 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
                       <Tooltip title={`Relayed by ${checkIn.relayed_by}`} arrow>
                         <span>📡</span>
                       </Tooltip>
+                    )}
+                    {net?.authenticated && (
+                      canManageCheckIns && checkIn.user_id ? (
+                        <IconButton
+                          size="small"
+                          sx={{ p: 0.25 }}
+                          disabled={!checkIn.identity_verifiable}
+                          onClick={() => onOpenIdentityVerify?.(checkIn)}
+                          color={checkIn.identity_verified ? 'success' : 'default'}
+                          title={
+                            !checkIn.identity_verifiable
+                              ? `${checkIn.callsign} has not set up two-factor authentication`
+                              : checkIn.identity_verified
+                                ? 'Identity verified — tap to re-check'
+                                : 'Identity not verified — tap to check TOTP code'
+                          }
+                        >
+                          {checkIn.identity_verified
+                            ? <LockIcon fontSize="small" />
+                            : <LockOpenIcon fontSize="small" />}
+                        </IconButton>
+                      ) : (
+                        <span
+                          title={checkIn.identity_verified ? 'Identity verified' : 'Identity not verified'}
+                          style={{ display: 'inline-flex', opacity: 0.7 }}
+                        >
+                          {checkIn.identity_verified
+                            ? <LockIcon fontSize="small" color="success" />
+                            : <LockOpenIcon fontSize="small" />}
+                        </span>
+                      )
                     )}
                   </Box>
                 </TableCell>

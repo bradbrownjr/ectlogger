@@ -187,6 +187,10 @@ export const checkInApi = {
     api.delete(`/check-ins/check-ins/${id}`),
   toggleHand: (id: number) =>
     api.post(`/check-ins/check-ins/${id}/toggle-hand`),
+  getExpectedCode: (id: number) =>
+    api.get(`/check-ins/check-ins/${id}/expected-code`),
+  verifyIdentity: (id: number, verified: boolean) =>
+    api.post(`/check-ins/check-ins/${id}/verify-identity`, { verified }),
 };
 
 // "Can hear" propagation logging API

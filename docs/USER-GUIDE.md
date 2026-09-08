@@ -489,6 +489,25 @@ As NCS, you can:
 
 **Sneak-in arrival alert:** When a station checks itself in through the app — without NCS or Logger typing it in — its row briefly flashes gold, so you notice the new arrival even if you're mostly working the net by voice. If that row lands below what you're currently scrolled to, a small arrow fades in at the bottom of the table to point you toward it. A check-in someone on staff enters for a station (for example, logging a voice check-in) doesn't trigger the flash — you already know about that one.
 
+#### Authenticated Nets (Identity Verification)
+
+Turn on **Authenticated Net** in the net or schedule editor to let NCS or Logger confirm that a
+checked-in station is really who they say they are, over the air, using two-factor authentication
+(MFA) rather than just trusting a callsign typed into a form.
+
+**What participants need:** an ECT Logger account with two-factor authentication set up under
+**Profile → Security** (see "Two-Factor Authentication" above). A station checked in without an
+account, or with MFA not set up, simply shows as unverified — ECTLogger never blocks a check-in
+over this, it's left to NCS's judgment.
+
+**How to verify a station:** each check-in row on an authenticated net shows a padlock — open if
+unverified, closed if verified. Click it (NCS/Logger only) to open a small window with the code
+ECTLogger currently expects from that station's authenticator app (plus the previous 30-second
+code, in case it rolls over mid-sentence while they're reading it to you). Ask the station to read
+their own code aloud, compare it, and click **Confirm Match** or **Reject**. The padlock updates
+live for everyone viewing the net. The raw authenticator secret is never shown to anyone, NCS
+included — only the current 6-digit code.
+
 #### Speed Entry (Bulk Check-In)
 
 For fast-moving nets, use the ⏩ Speed Entry button to check in multiple stations at once:

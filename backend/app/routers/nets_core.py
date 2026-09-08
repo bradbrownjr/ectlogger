@@ -79,6 +79,7 @@ async def create_net(
         topic_of_week_prompt=net_data.topic_of_week_prompt,
         poll_enabled=net_data.poll_enabled or False,
         poll_question=net_data.poll_question,
+        authenticated=net_data.authenticated or False,
         scheduled_start_time=net_data.scheduled_start_time,
     )
     db.add(net)

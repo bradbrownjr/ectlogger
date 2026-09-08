@@ -29,6 +29,7 @@ const BasicInfoTab: React.FC = () => {
     ics309Enabled, setIcs309Enabled,
     propagationLoggingEnabled, setPropagationLoggingEnabled,
     selfCanHearEnabled, setSelfCanHearEnabled,
+    authenticated, setAuthenticated,
     trafficEnabled, setTrafficEnabled,
     trafficFormTypes, setTrafficFormTypes,
     trafficStripFormType, setTrafficStripFormType,
@@ -325,6 +326,18 @@ const BasicInfoTab: React.FC = () => {
                 </Typography>
               </Box>
             )}
+          </Box>
+
+          <Box sx={{ mt: 2 }}>
+            <FormControlLabel
+              control={<Switch checked={authenticated} onChange={(e) => setAuthenticated(e.target.checked)} />}
+              label="Authenticated Net"
+            />
+            <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
+              Lets NCS or Logger verify a checked-in station's identity by comparing the code on their
+              authenticator app to the one ECTLogger computes for their account. Stations without
+              two-factor authentication set up simply show as unverified.
+            </Typography>
           </Box>
 
           {/* Assisted Traffic Handling — shared with the Schedule editor */}

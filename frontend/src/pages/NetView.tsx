@@ -74,6 +74,7 @@ import ScheduleAnnouncements from '../components/ScheduleAnnouncements';
 import TopicHistory from '../components/TopicHistory';
 import FloatingWindow from '../components/FloatingWindow';
 import UserProfileDialog from '../components/UserProfileDialog';
+import IdentityVerifyDialog from '../components/netview/IdentityVerifyDialog';
 import CanHearDialog from '../components/netview/CanHearDialog';
 import FileTrafficDialog from '../components/netview/FileTrafficDialog';
 import { watchZoomAwarePopovers } from '../utils/zoomAwarePopovers';
@@ -215,6 +216,10 @@ const NetView: React.FC = () => {
   // reaction is always a full refetch rather than a local patch (see fetchCanHearReports).
   const [canHearDialogCheckInId, setCanHearDialogCheckInId] = useState<number | null>(null);
   const [canHearReports, setCanHearReports] = useState<any[]>([]);
+  // Authenticated nets: the check-in currently being identity-verified
+  // (dialog open when non-null). Holds {id, callsign} directly rather than
+  // just an id since IdentityVerifyDialog only needs those two fields.
+  const [identityVerifyCheckIn, setIdentityVerifyCheckIn] = useState<{ id: number; callsign: string } | null>(null);
   const [subscribing, setSubscribing] = useState(false);
   const [startingNet, setStartingNet] = useState(false);
   const script = usePersistedDialog(STORAGE_KEYS.SCRIPT_OPEN);
@@ -1720,6 +1725,7 @@ const NetView: React.FC = () => {
                 canReportCanHear={canReportCanHear}
                 canHearReporterCheckInIds={canHearReporterCheckInIds}
                 onOpenCanHearDialog={setCanHearDialogCheckInId}
+                onOpenIdentityVerify={setIdentityVerifyCheckIn}
                 highlightedCheckInIds={sneakInHighlightIds}
               />
 
@@ -1750,6 +1756,7 @@ const NetView: React.FC = () => {
               canReportCanHear={canReportCanHear}
               canHearReporterCheckInIds={canHearReporterCheckInIds}
               onOpenCanHearDialog={setCanHearDialogCheckInId}
+              onOpenIdentityVerify={setIdentityVerifyCheckIn}
               highlightedCheckInIds={sneakInHighlightIds}
             />
 
@@ -2582,6 +2589,7 @@ const NetView: React.FC = () => {
                 canReportCanHear={canReportCanHear}
                 canHearReporterCheckInIds={canHearReporterCheckInIds}
                 onOpenCanHearDialog={setCanHearDialogCheckInId}
+                onOpenIdentityVerify={setIdentityVerifyCheckIn}
                 highlightedCheckInIds={sneakInHighlightIds}
               />
 
@@ -2883,6 +2891,13 @@ const NetView: React.FC = () => {
         userId={profileUserId}
         netId={netId ? Number(netId) : undefined}
         onClose={() => setProfileUserId(null)}
+      />
+
+      {/* ========== AUTHENTICATED NET: IDENTITY VERIFICATION DIALOG ========== */}
+      <IdentityVerifyDialog
+        checkIn={identityVerifyCheckIn}
+        onClose={() => setIdentityVerifyCheckIn(null)}
+        onVerified={(updated) => setCheckIns((prev: any[]) => prev.map(ci => (ci.id === updated.id ? updated : ci)))}
       />
 
       {/* ========== "WHO CAN THIS STATION HEAR?" COVERAGE REPORTING DIALOG ========== */}

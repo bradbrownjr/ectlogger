@@ -22,6 +22,7 @@ import TrafficPanel from '../components/netview/TrafficPanel';
 import FileTrafficDialog from '../components/netview/FileTrafficDialog';
 import CheckInTable from '../components/netview/CheckInTable';
 import CanHearDialog from '../components/netview/CanHearDialog';
+import IdentityVerifyDialog from '../components/netview/IdentityVerifyDialog';
 import { getCheckInActions } from '../components/netview/checkInActions';
 import { getCheckInStatusHelpers } from '../components/netview/checkInStatusHelpers';
 import { useSneakInHighlight } from '../components/netview/sneakInHighlight';
@@ -75,6 +76,8 @@ const NetPaneWindow: React.FC = () => {
   // report list for this net, refetched on mount and on can_hear_changed.
   const [canHearDialogCheckInId, setCanHearDialogCheckInId] = useState<number | null>(null);
   const [canHearReports, setCanHearReports] = useState<any[]>([]);
+  // Authenticated nets: same shape as NetView.tsx.
+  const [identityVerifyCheckIn, setIdentityVerifyCheckIn] = useState<{ id: number; callsign: string } | null>(null);
   // Coverage overlay on/off for the standalone popped-out map window - a
   // plain local toggle since there's no Coverage panel in this isolated
   // window to cross-link with (see CheckInMap.tsx's lifted-state comment).
@@ -455,6 +458,7 @@ const NetPaneWindow: React.FC = () => {
         canReportCanHear={canReportCanHear}
         canHearReporterCheckInIds={canHearReporterCheckInIds}
         onOpenCanHearDialog={setCanHearDialogCheckInId}
+        onOpenIdentityVerify={setIdentityVerifyCheckIn}
         highlightedCheckInIds={sneakInHighlightIds}
       />
 
@@ -473,6 +477,13 @@ const NetPaneWindow: React.FC = () => {
           onToast={setToastMessage}
         />
       )}
+
+      {/* Authenticated net identity verification - same component NetView.tsx uses */}
+      <IdentityVerifyDialog
+        checkIn={identityVerifyCheckIn}
+        onClose={() => setIdentityVerifyCheckIn(null)}
+        onVerified={(updated) => setCheckIns((prev: any[]) => prev.map(ci => (ci.id === updated.id ? updated : ci)))}
+      />
 
       {/* Bulk check-in burst notice - see BulkCheckIn.tsx / useNetWebSocket.ts
           'bulk_check_in_status'. Pop-out counterpart of the notice in NetView.tsx. */}
