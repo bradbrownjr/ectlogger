@@ -17,7 +17,7 @@ import {
   Typography,
 } from '@mui/material';
 import type { UseDialogResult } from '../../hooks/useDialog';
-import { looksLikeEmail, NAME_FIELD_EMAIL_WARNING } from '../../utils/nameFieldGuard';
+import { looksLikeEmailOrUrl, NAME_FIELD_EMAIL_WARNING } from '../../utils/nameFieldGuard';
 
 // ========== CHECK-IN FORM DIALOG ==========
 // The "Check In to {net}" modal. Renders the dynamic check-in form (fields shown
@@ -161,8 +161,8 @@ const CheckInFormDialog: React.FC<CheckInFormDialogProps> = ({
               onChange={(e) => setCheckInForm({ ...checkInForm, name: e.target.value })}
               fullWidth
               required={fieldConfig.name.required}
-              error={looksLikeEmail(checkInForm.name)}
-              helperText={looksLikeEmail(checkInForm.name) ? NAME_FIELD_EMAIL_WARNING : undefined}
+              error={looksLikeEmailOrUrl(checkInForm.name)}
+              helperText={looksLikeEmailOrUrl(checkInForm.name) ? NAME_FIELD_EMAIL_WARNING : undefined}
             />
           )}
 

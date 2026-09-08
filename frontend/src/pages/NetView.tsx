@@ -210,6 +210,9 @@ const NetView: React.FC = () => {
   const archiveHelp = useDialog();
   const archiveDeleteConfirm = useDialog();
   const [profileUserId, setProfileUserId] = useState<number | null>(null);
+  // Guest/accountless popup (check-in with no user_id) -- callsign-keyed
+  // counterpart to profileUserId, shown by the same UserProfileDialog.
+  const [profileCallsign, setProfileCallsign] = useState<string | null>(null);
   // "Can hear" propagation logging: the check-in currently being reported for
   // (dialog open when non-null), and the full list of reports for this net.
   // A save can insert/delete/touch a variable number of edges, so the WebSocket
@@ -1722,6 +1725,7 @@ const NetView: React.FC = () => {
                 handleSetActiveSpeaker={handleSetActiveSpeaker}
                 handleDeleteCheckIn={handleDeleteCheckIn}
                 setProfileUserId={setProfileUserId}
+                onShowGuestProfile={setProfileCallsign}
                 canReportCanHear={canReportCanHear}
                 canHearReporterCheckInIds={canHearReporterCheckInIds}
                 onOpenCanHearDialog={setCanHearDialogCheckInId}
@@ -1753,6 +1757,7 @@ const NetView: React.FC = () => {
               onRefreshCheckIns={fetchCheckIns}
               onDeleteCheckIn={handleDeleteCheckIn}
               onShowProfile={setProfileUserId}
+              onShowGuestProfile={setProfileCallsign}
               canReportCanHear={canReportCanHear}
               canHearReporterCheckInIds={canHearReporterCheckInIds}
               onOpenCanHearDialog={setCanHearDialogCheckInId}
@@ -2586,6 +2591,7 @@ const NetView: React.FC = () => {
                 handleSetActiveSpeaker={handleSetActiveSpeaker}
                 handleDeleteCheckIn={handleDeleteCheckIn}
                 setProfileUserId={setProfileUserId}
+                onShowGuestProfile={setProfileCallsign}
                 canReportCanHear={canReportCanHear}
                 canHearReporterCheckInIds={canHearReporterCheckInIds}
                 onOpenCanHearDialog={setCanHearDialogCheckInId}
@@ -2889,8 +2895,9 @@ const NetView: React.FC = () => {
       {/* ========== WHO IS THIS? PROFILE POPUP ========== */}
       <UserProfileDialog
         userId={profileUserId}
+        callsign={profileCallsign}
         netId={netId ? Number(netId) : undefined}
-        onClose={() => setProfileUserId(null)}
+        onClose={() => { setProfileUserId(null); setProfileCallsign(null); }}
       />
 
       {/* ========== AUTHENTICATED NET: IDENTITY VERIFICATION DIALOG ========== */}

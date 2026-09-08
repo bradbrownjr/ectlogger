@@ -11,6 +11,7 @@ interface User {
   previous_callsigns?: string[];
   location?: string;
   skywarn_number?: string;
+  website_url?: string;
   prefer_utc?: boolean;
   walkthrough_seen?: boolean;
   show_activity_in_chat?: boolean;

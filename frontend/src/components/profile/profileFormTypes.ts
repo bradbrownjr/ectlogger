@@ -8,6 +8,7 @@ export interface ProfileFormData {
   callsigns: string[];
   skywarn_number: string;
   location: string;
+  website_url: string;
   prefer_utc: boolean;
   show_activity_in_chat: boolean;
   location_awareness: boolean;

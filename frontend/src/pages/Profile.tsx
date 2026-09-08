@@ -114,6 +114,7 @@ const Profile: React.FC = () => {
     callsigns: user?.callsigns || [],
     skywarn_number: user?.skywarn_number || '',
     location: user?.location || '',
+    website_url: user?.website_url || '',
     prefer_utc: user?.prefer_utc || false,
     show_activity_in_chat: user?.show_activity_in_chat ?? true,
     location_awareness: user?.location_awareness ?? false,

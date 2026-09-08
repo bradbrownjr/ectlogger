@@ -23,15 +23,16 @@ authenticator app) — see the [Security Tab](#security-tab) section below.
 
 After signing in, complete your profile by clicking your name in the top-right corner and selecting **Profile**. The profile page has six tabs: **Profile**, **Settings**, **Security**, **Notifications**, **Activity**, and **Coverage**.
 
-#### Settings Tab
+#### Profile Tab
 
 **Basic Information**
 
-- **Name** — Your full name or preferred display name (required)
-- **Amateur Radio Call Sign** — Your FCC amateur radio callsign (e.g., KC1JMH)
+- **Name** — Your full name or preferred display name (required). If this looks like an email address or a link, you'll be asked to move it to the Website field below and enter your name here instead — a link in this field is public on the check-in list and can force Net Control to scroll sideways to read it.
+- **Amateur Radio Call Sign** — Your FCC amateur radio callsign (e.g., KC1JMH). Once set, a "view on QRZ.com" link appears next to the field.
 - **GMRS Call Sign** — Your FCC GMRS callsign (e.g., WROP123) for GMRS frequency nets
 - **SKYWARN Spotter Number** — Your NWS spotter ID (e.g., DFW-1234) — auto-fills when checking into SKYWARN nets
 - **Default Location** — Your home location or Maidenhead grid square (e.g., FN43pp) — auto-fills when NCS checks you in
+- **Website / YouTube Channel** — Optional link to your personal site, YouTube channel, etc. Shown on your profile popup (see "Viewing an Operator's Profile" below), not the check-in list.
 
 **Additional Callsigns**
 
@@ -40,6 +41,8 @@ Add other callsigns you use (tactical callsigns, club calls, etc.). Type a calls
 **Previous Callsigns**
 
 If you update your primary Amateur Radio Call Sign, the old callsign is automatically saved here. Your full check-in history and statistics carry over — useful when upgrading your license class, requesting a vanity callsign, or changing regions. This list is read-only and managed by the system.
+
+#### Settings Tab
 
 **Display Preferences**
 
@@ -488,6 +491,8 @@ As NCS, you can:
 **Rechecking a station on a different frequency:** For nets that run a coverage check on one frequency and then move to another (for example, a repeater check followed by a simplex check), you can log an already-checked-in station again on the second frequency without checking them out first — click that frequency's chip to claim it, then check the station in again as usual. It's added as a new, timestamped entry linked to their original check-in, so you get a separate record of when each frequency was confirmed. Trying to log the same station again on the same frequency they're already on still shows "already checked in."
 
 **Sneak-in arrival alert:** When a station checks itself in through the app — without NCS or Logger typing it in — its row briefly flashes gold, so you notice the new arrival even if you're mostly working the net by voice. If that row lands below what you're currently scrolled to, a small arrow fades in at the bottom of the table to point you toward it. A check-in someone on staff enters for a station (for example, logging a voice check-in) doesn't trigger the flash — you already know about that one.
+
+**Viewing an operator's profile:** Click a station's avatar or callsign in the check-in list or chat to open a "Who is this?" popup — name, check-in stats, most-attended nets, and a link to their QRZ.com listing plus their Website field if they've set one. This works even for a check-in with no linked account (a guest, or one NCS/Logger typed in by voice), using its check-in history instead of an account. NCS and Logger don't get this click on the check-in list — for staff, clicking a callsign there starts editing it instead, the same as it always has.
 
 #### Authenticated Nets (Identity Verification)
 

@@ -873,7 +873,8 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
                             component="span"
                             variant="subtitle2"
                             color="primary"
-                            sx={{ fontWeight: 'bold' }}
+                            onClick={() => message.user_id && onProfileClick?.(message.user_id)}
+                            sx={{ fontWeight: 'bold', cursor: message.user_id && onProfileClick ? 'pointer' : 'default' }}
                           >
                             {message.callsign}
                           </Typography>

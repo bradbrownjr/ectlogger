@@ -124,6 +124,9 @@ export const userApi = {
   adminResetMfa: (userId: number) => api.post(`/users/${userId}/mfa/reset`),
   getPopup: (userId: number, netId?: number) =>
     api.get(`/users/${userId}/popup${netId ? `?net_id=${netId}` : ''}`),
+  // Guest/accountless callsign popup -- for a check-in with no linked user_id.
+  getPopupByCallsign: (callsign: string) =>
+    api.get(`/users/callsign/${encodeURIComponent(callsign)}/popup`),
 };
 
 // Net API

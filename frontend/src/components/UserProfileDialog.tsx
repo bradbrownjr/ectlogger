@@ -8,9 +8,12 @@ import {
   DialogContent,
   Divider,
   IconButton,
+  Link,
   Typography,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import LanguageIcon from '@mui/icons-material/Language';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { userApi } from '../services/api';
 
 interface PopupNetEntry {
@@ -21,10 +24,11 @@ interface PopupNetEntry {
 }
 
 interface UserPopup {
-  user_id: number;
+  user_id: number | null;
   callsign: string;
   name?: string;
   avatar_url?: string;
+  website_url?: string;
   net_role?: string;
   total_check_ins: number;
   unique_nets: number;
@@ -33,7 +37,11 @@ interface UserPopup {
 }
 
 interface UserProfileDialogProps {
+  // Exactly one of userId/callsign should be set at a time -- userId for a
+  // registered account, callsign for a guest/accountless check-in (no
+  // user_id to look up by). netId only applies to the userId path.
   userId: number | null;
+  callsign?: string | null;
   netId?: number;
   onClose: () => void;
 }
@@ -56,24 +64,25 @@ function formatDate(iso?: string): string {
   return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
-const UserProfileDialog: React.FC<UserProfileDialogProps> = ({ userId, netId, onClose }) => {
+const UserProfileDialog: React.FC<UserProfileDialogProps> = ({ userId, callsign, netId, onClose }) => {
   const [popup, setPopup] = useState<UserPopup | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!userId) {
+    if (!userId && !callsign) {
       setPopup(null);
       return;
     }
     setLoading(true);
     setPopup(null);
-    userApi.getPopup(userId, netId)
+    const request = userId ? userApi.getPopup(userId, netId) : userApi.getPopupByCallsign(callsign!);
+    request
       .then(res => setPopup(res.data))
       .catch(() => setPopup(null))
       .finally(() => setLoading(false));
-  }, [userId, netId]);
+  }, [userId, callsign, netId]);
 
-  const open = userId !== null;
+  const open = userId !== null || !!callsign;
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth PaperProps={{ sx: { m: { xs: 1, sm: 3 } } }}>
@@ -89,7 +98,7 @@ const UserProfileDialog: React.FC<UserProfileDialogProps> = ({ userId, netId, on
           </Box>
         )}
 
-        {!loading && !popup && userId && (
+        {!loading && !popup && (userId || callsign) && (
           <Typography color="text.secondary" sx={{ py: 2 }}>
             Could not load profile.
           </Typography>
@@ -129,6 +138,30 @@ const UserProfileDialog: React.FC<UserProfileDialogProps> = ({ userId, netId, on
                     sx={{ mt: 0.5, fontSize: '0.7rem' }}
                   />
                 )}
+                <Box sx={{ display: 'flex', gap: 1.5, mt: 0.5, flexWrap: 'wrap' }}>
+                  {popup.callsign && (
+                    <Link
+                      href={`https://www.qrz.com/db/${encodeURIComponent(popup.callsign)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      variant="caption"
+                      sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.3 }}
+                    >
+                      QRZ.com <OpenInNewIcon sx={{ fontSize: 12 }} />
+                    </Link>
+                  )}
+                  {popup.website_url && (
+                    <Link
+                      href={popup.website_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      variant="caption"
+                      sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.3 }}
+                    >
+                      <LanguageIcon sx={{ fontSize: 12 }} /> Website
+                    </Link>
+                  )}
+                </Box>
               </Box>
             </Box>
 

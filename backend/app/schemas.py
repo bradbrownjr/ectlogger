@@ -96,6 +96,7 @@ class UserUpdate(BaseModel):
     dashboard_sort_order: Optional[Literal['status', 'alpha']] = None
     schedule_sort_order: Optional[Literal['alpha', 'date']] = None
     theme: Optional[str] = Field(None, max_length=32)  # Null = follow system default
+    website_url: Optional[str] = Field(None, max_length=500)  # Personal website / YouTube channel link
 
     @model_validator(mode='before')
     @classmethod
@@ -172,6 +173,7 @@ class UserResponse(UserBase):
     live_location: Optional[str] = None
     live_location_updated: Optional[datetime] = None
     avatar_url: Optional[str] = None
+    website_url: Optional[str] = None
     # Never the hash itself -- just whether a password fallback is set up,
     # so the frontend knows whether to ask for a "current password" on
     # change and whether to offer password login at all.
@@ -294,10 +296,13 @@ class PopupNetEntry(BaseModel):
 
 
 class UserPopupResponse(BaseModel):
-    user_id: int
+    # None for a guest/accountless callsign (GET /users/callsign/{callsign}/popup) --
+    # everything else in this shape is identical between the two popup endpoints.
+    user_id: Optional[int] = None
     callsign: str
     name: Optional[str] = None
     avatar_url: Optional[str] = None
+    website_url: Optional[str] = None
     net_role: Optional[str] = None
     total_check_ins: int = 0
     unique_nets: int = 0

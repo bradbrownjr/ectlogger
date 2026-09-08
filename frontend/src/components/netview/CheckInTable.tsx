@@ -30,7 +30,7 @@ import { formatTimeWithDate } from '../../utils/dateUtils';
 import { STATUS_SELECT_MENU_PROPS } from './statusSelectMenuProps';
 import { sneakInFade, SNEAK_IN_HIGHLIGHT_MS, useOffscreenArrivalIndicator } from './sneakInHighlight';
 import OffscreenArrivalArrow from './OffscreenArrivalArrow';
-import { looksLikeEmail, NAME_FIELD_EMAIL_WARNING } from '../../utils/nameFieldGuard';
+import { looksLikeEmailOrUrl, NAME_FIELD_EMAIL_WARNING } from '../../utils/nameFieldGuard';
 
 // ========== CHECK-IN LIST TABLE 1: Desktop Inline (attached) ==========
 // The full-featured desktop check-in table: sticky header, inline click-to-edit
@@ -88,6 +88,10 @@ interface CheckInTableProps {
   handleSetActiveSpeaker: (checkInId: number | null) => void;
   handleDeleteCheckIn: (checkInId: number) => void;
   setProfileUserId: (userId: number | null) => void;
+  // Opens the guest/accountless profile popup for a check-in with no linked
+  // user_id (callsign-keyed, backed by the Contact table). Only offered to
+  // standard/view-only users -- see the callsign-cell onClick below for why.
+  onShowGuestProfile?: (callsign: string) => void;
   // "Can hear" propagation logging: whether the current user (NCS/Logger/Relay)
   // may open the reporting dialog, which check-ins already have at least one
   // report (for the row indicator), and the handler to open the dialog for a row.
@@ -142,6 +146,7 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
   handleSetActiveSpeaker,
   handleDeleteCheckIn,
   setProfileUserId,
+  onShowGuestProfile,
   canReportCanHear,
   canHearReporterCheckInIds,
   onOpenCanHearDialog,
@@ -525,8 +530,14 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                         ) : (
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                             <Box
-                              onClick={() => checkIn.user_id && setProfileUserId(checkIn.user_id)}
-                              sx={{ cursor: checkIn.user_id ? 'pointer' : 'default', display: 'inline-flex' }}
+                              onClick={() => {
+                                // Staff click here to correct the callsign (row onClick
+                                // above starts inline edit) -- don't also open a popup.
+                                if (canManageCheckIns) return;
+                                if (checkIn.user_id) setProfileUserId(checkIn.user_id);
+                                else onShowGuestProfile?.(checkIn.callsign);
+                              }}
+                              sx={{ cursor: !canManageCheckIns ? 'pointer' : 'default', display: 'inline-flex' }}
                             >
                               <UserAvatar
                                 avatarUrl={checkIn.avatar_url}
@@ -537,7 +548,14 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                               isOnline={!!(checkIn.user_id && onlineUserIds.includes(checkIn.user_id))}
                               />
                             </Box>
-                            <Box sx={{ fontWeight: 500 }}>
+                            <Box
+                              onClick={() => {
+                                if (canManageCheckIns) return;
+                                if (checkIn.user_id) setProfileUserId(checkIn.user_id);
+                                else onShowGuestProfile?.(checkIn.callsign);
+                              }}
+                              sx={{ fontWeight: 500, cursor: !canManageCheckIns ? 'pointer' : 'default' }}
+                            >
                               {checkIn.callsign}
                             </Box>
                             {checkIn.relayed_by && (
@@ -594,7 +612,7 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                       {net?.field_config?.name?.enabled && (
                         <TableCell data-field="name">
                           {isInlineEditing ? (
-                            <Tooltip title={looksLikeEmail(inlineEditValues.name || '') ? NAME_FIELD_EMAIL_WARNING : ''} open={looksLikeEmail(inlineEditValues.name || '')} placement="top" arrow>
+                            <Tooltip title={looksLikeEmailOrUrl(inlineEditValues.name || '') ? NAME_FIELD_EMAIL_WARNING : ''} open={looksLikeEmailOrUrl(inlineEditValues.name || '')} placement="top" arrow>
                               <TextField
                                 size="small"
                                 value={inlineEditValues.name || ''}
@@ -602,7 +620,7 @@ const CheckInTable: React.FC<CheckInTableProps> = ({
                                 onKeyDown={handleInlineKeyDown}
                                 onBlur={handleInlineBlur}
                                 autoFocus={inlineEditFocusField === 'name'}
-                                error={looksLikeEmail(inlineEditValues.name || '')}
+                                error={looksLikeEmailOrUrl(inlineEditValues.name || '')}
                                 inputProps={{ style: { padding: '4px 8px' } }}
                                 sx={{ width: '100%' }}
                               />

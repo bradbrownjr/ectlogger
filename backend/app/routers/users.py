@@ -452,7 +452,83 @@ async def get_user_popup(
         callsign=user.callsign or "",
         name=user.name,
         avatar_url=avatar_url,
+        website_url=user.website_url,
         net_role=net_role,
+        total_check_ins=total_check_ins,
+        unique_nets=unique_nets,
+        recent_nets=recent_nets,
+        top_nets=top_nets,
+    )
+
+
+@router.get("/callsign/{callsign}/popup", response_model=UserPopupResponse)
+async def get_user_popup_by_callsign(
+    callsign: str,
+    db: AsyncSession = Depends(get_db)
+):
+    """'Who is this?' popup for a check-in with no linked account (guest, or
+    NCS/Logger-entered by voice). Same public/unauthenticated shape as
+    GET /{user_id}/popup, sourced from the Contact table (auto-populated on a
+    callsign's first check-in) plus check-ins matched directly by callsign
+    instead of by a User's set of aliases. 404 if the callsign has never
+    checked into any net -- same "unknown identity" behavior as an unknown
+    user_id, not a new enumeration surface. No net_role: a guest/accountless
+    callsign can never hold a NetRole (NCS/Logger grants require an account --
+    see permissions.py's is_eligible_for_ncs_auto_grant)."""
+    from sqlalchemy.orm import selectinload
+    from app.models import CheckIn
+    from app.utils import get_avatar_url
+
+    callsign_upper = callsign.upper()
+
+    contact_result = await db.execute(select(Contact).where(Contact.callsign == callsign_upper))
+    contact = contact_result.scalar_one_or_none()
+
+    ci_result = await db.execute(
+        select(CheckIn)
+        .options(selectinload(CheckIn.net))
+        .where(CheckIn.callsign == callsign_upper)
+        .order_by(CheckIn.checked_in_at.desc())
+    )
+    check_ins = ci_result.scalars().all()
+
+    if not contact and not check_ins:
+        raise HTTPException(status_code=404, detail="Callsign not found")
+
+    total_check_ins = len(check_ins)
+
+    net_data: dict = {}
+    for ci in check_ins:
+        if ci.net_id not in net_data:
+            net_data[ci.net_id] = {
+                "net_id": ci.net_id,
+                "net_name": ci.net.name if ci.net else "Unknown",
+                "date": ci.checked_in_at,
+                "check_in_count": 0,
+            }
+        net_data[ci.net_id]["check_in_count"] += 1
+
+    unique_nets = len(net_data)
+    recent_nets = sorted(net_data.values(), key=lambda x: x["date"], reverse=True)[:5]
+
+    by_name: dict = {}
+    for entry in net_data.values():
+        name = entry["net_name"]
+        if name not in by_name:
+            by_name[name] = {"net_id": entry["net_id"], "net_name": name,
+                             "date": entry["date"], "check_in_count": 0}
+        by_name[name]["check_in_count"] += entry["check_in_count"]
+    top_nets = sorted(by_name.values(), key=lambda x: x["check_in_count"], reverse=True)[:5]
+
+    avatar_url = get_avatar_url(contact.email, None) if contact else None
+
+    return UserPopupResponse(
+        user_id=None,
+        callsign=callsign_upper,
+        name=contact.name if contact else None,
+        avatar_url=avatar_url,
+        website_url=None,
+        net_role=None,
         total_check_ins=total_check_ins,
         unique_nets=unique_nets,
         recent_nets=recent_nets,

@@ -10,10 +10,13 @@ All notable changes to ECTLogger are documented here.
 
 * **Chat: Mute a station** — Hide one station's chat messages from your own view of a net, without affecting anyone else's view or the net log, from a control in the message action row. NCS and Logger can shift+click the same control to mute a spammer for everyone in the net's chat instead, without notifying them or touching the net's saved log or export. Manage or undo any mute anytime from the banner above chat.
 * **Security: Authenticated nets** — On a net with the new Authenticated Net setting, NCS and Logger can confirm a checked-in station's identity by comparing the code on their authenticator app to the one ECTLogger computes for that account, turning the check-in row's padlock icon from open to locked once confirmed. Participants need an ECT Logger account with two-factor authentication (MFA) set up under Profile → Security for this to work; a station without it simply shows as unverified.
+* **Profile: Website or YouTube Channel link** — Add a link to your personal site or YouTube channel in your profile, and it shows up when someone taps your callsign to see who you are. Your callsign there also now links out to your QRZ.com listing.
+* **Net View & Chat: Tap any callsign for a profile** — Callsigns are now clickable next to the avatar in chat and the check-in list, not just the avatar itself, and a check-in with no linked account now opens a profile too, showing its check-in history, so no one on the list is a dead end to click on.
 
 ## Bug Fixes
 
 * **Check-in: Sneak-in arrival arrow now clears** — The off-screen arrival arrow could get stuck on screen, scroll away from the edge it was supposed to stay pinned to, and didn't respond to clicks. It now disappears once you've seen the new check-in, stays pinned to the table's visible edge while you scroll, and clicking it jumps you straight to the row, pointing up or down depending on which way it actually is.
+* **Profile & Check-in: Name field also catches links** — The warning that flags an email address in the Name field now also catches web links, so a URL doesn't end up shown on the public check-in list either.
 
 ---
 

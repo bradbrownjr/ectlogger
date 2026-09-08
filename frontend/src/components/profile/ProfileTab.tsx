@@ -7,14 +7,16 @@ import {
   Button,
   Alert,
   Chip,
+  Link,
   Stack,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { useAuth } from '../../contexts/AuthContext';
 import ProfileAvatarSection from './ProfileAvatarSection';
 import type { ProfileFormData } from './profileFormTypes';
-import { looksLikeEmail, NAME_FIELD_EMAIL_WARNING } from '../../utils/nameFieldGuard';
+import { looksLikeEmailOrUrl, NAME_FIELD_EMAIL_WARNING } from '../../utils/nameFieldGuard';
 
 // ========== PROFILE TAB ==========
 // Identity form: avatar section, name/callsign/gmrs/skywarn/location fields,
@@ -62,8 +64,8 @@ const ProfileTab: React.FC<ProfileTabProps> = ({
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           margin="normal"
           required
-          error={looksLikeEmail(formData.name)}
-          helperText={looksLikeEmail(formData.name) ? NAME_FIELD_EMAIL_WARNING : "Your full name or preferred display name"}
+          error={looksLikeEmailOrUrl(formData.name)}
+          helperText={looksLikeEmailOrUrl(formData.name) ? NAME_FIELD_EMAIL_WARNING : "Your full name or preferred display name"}
         />
 
         <TextField
@@ -72,7 +74,21 @@ const ProfileTab: React.FC<ProfileTabProps> = ({
           value={formData.callsign}
           onChange={(e) => setFormData({ ...formData, callsign: e.target.value.toUpperCase() })}
           margin="normal"
-          helperText="Your FCC amateur radio callsign (e.g., KC1JMH)"
+          helperText={
+            formData.callsign ? (
+              <>
+                Your FCC amateur radio callsign (e.g., KC1JMH) —{' '}
+                <Link
+                  href={`https://www.qrz.com/db/${encodeURIComponent(formData.callsign)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.3 }}
+                >
+                  view on QRZ.com <OpenInNewIcon sx={{ fontSize: 12 }} />
+                </Link>
+              </>
+            ) : "Your FCC amateur radio callsign (e.g., KC1JMH)"
+          }
           inputProps={{ style: { textTransform: 'uppercase' } }}
         />
 
@@ -118,6 +134,15 @@ const ProfileTab: React.FC<ProfileTabProps> = ({
           margin="normal"
           helperText="Your default location or Maidenhead grid square (e.g., FN43pp) - auto-fills when NCS checks you in"
           inputProps={{ style: { textTransform: 'uppercase' } }}
+        />
+
+        <TextField
+          fullWidth
+          label="Website / YouTube Channel"
+          value={formData.website_url}
+          onChange={(e) => setFormData({ ...formData, website_url: e.target.value })}
+          margin="normal"
+          helperText="Optional link to your personal site, YouTube channel, etc. — shown on your profile popup, not the check-in list"
         />
 
         <Box sx={{ mt: 3, mb: 2 }}>
@@ -183,7 +208,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({
           <Button
             type="submit"
             variant="contained"
-            disabled={saving || !formData.name}
+            disabled={saving || !formData.name || looksLikeEmailOrUrl(formData.name)}
             fullWidth
           >
             {saving ? 'Saving...' : 'Save Changes'}

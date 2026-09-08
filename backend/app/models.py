@@ -141,6 +141,7 @@ class User(Base):
     schedule_age_bypass = Column(Boolean, default=False)  # Admin-granted early access to schedule creation
     walkthrough_seen = Column(Boolean, default=False)  # Set true after user dismisses the onboarding walkthrough
     avatar_url = Column(String(500), nullable=True)  # Custom profile image URL; overrides Gravatar when set
+    website_url = Column(String(500), nullable=True)  # Personal website / YouTube channel link, shown on profile popup
     dashboard_sort_order = Column(String(16), nullable=False, default='status', server_default='status')  # 'status' (active first, then next up) or 'alpha'
     schedule_sort_order = Column(String(16), nullable=False, default='date', server_default='date')  # 'date' (next occurrence first) or 'alpha'
     theme = Column(String(32), nullable=True)  # Named color theme key; null = follow system default

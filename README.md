@@ -30,6 +30,7 @@ The responsive interface works beautifully on any device — from a phone in the
 - **🔗 Shareable Net Links** — A net's view and report page work for someone with no account at all, so you can send a link to show a prospective member how a net runs before they sign up; phone numbers and email addresses typed into check-in notes or chat are hidden from anyone viewing without an account
 - **⚡ Real-Time Updates** — WebSocket-powered live check-ins, status updates, and chat messages
 - **💬 Chat That Keeps Up With a Busy Net** — Fix a typo or a wrong frequency by editing your own message in place, quote a message to reply to it, tag a station with @callsign so the message they need flashes on their screen instead of scrolling past, and mute a distracting station from just your own view — or, if you're NCS or Logger, mute a spammer for everyone in the net
+- **🪪 Operator Profiles** — Click any callsign in chat or the check-in list to see who it is: name, check-in stats, most-attended nets, a QRZ.com link, and an optional personal website or YouTube channel link — works even for a check-in with no linked account
 - **👥 Role-Based Access** — Admin, NCS, Logger, User, and Guest roles
 - **📧 Email Notifications** — Automatic net reminders, start notifications, and invitations
 - **📱 Mobile Responsive** — Works seamlessly on phones, tablets, and desktops, with labeled controls and generous touch targets sized for gloved or one-handed field use

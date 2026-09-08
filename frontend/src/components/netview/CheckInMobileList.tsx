@@ -55,6 +55,10 @@ interface CheckInMobileListProps {
   onRefreshCheckIns: () => Promise<any> | void;
   onDeleteCheckIn: (checkInId: number) => void;
   onShowProfile: (userId: number) => void;
+  // Opens the guest/accountless profile popup for a check-in with no linked
+  // user_id. Only offered to standard/view-only users, matching the desktop
+  // table -- staff use the callsign cell to correct entries, not to browse.
+  onShowGuestProfile?: (callsign: string) => void;
   // "Can hear" propagation logging: whether the current user (NCS/Logger/Relay)
   // may open the reporting dialog, which check-ins already have at least one
   // report (for the row indicator), and the handler to open the dialog for a row.
@@ -92,6 +96,7 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
   onRefreshCheckIns,
   onDeleteCheckIn,
   onShowProfile,
+  onShowGuestProfile,
   canReportCanHear,
   canHearReporterCheckInIds,
   onOpenCanHearDialog,
@@ -310,8 +315,12 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
                 <TableCell sx={{ whiteSpace: 'nowrap' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     <Box
-                      onClick={() => checkIn.user_id && onShowProfile(checkIn.user_id)}
-                      sx={{ cursor: checkIn.user_id ? 'pointer' : 'default', display: 'inline-flex' }}
+                      onClick={() => {
+                        if (canManageCheckIns) return;
+                        if (checkIn.user_id) onShowProfile(checkIn.user_id);
+                        else onShowGuestProfile?.(checkIn.callsign);
+                      }}
+                      sx={{ cursor: !canManageCheckIns ? 'pointer' : 'default', display: 'inline-flex' }}
                     >
                       <UserAvatar
                         avatarUrl={checkIn.avatar_url}
@@ -322,7 +331,17 @@ const CheckInMobileList: React.FC<CheckInMobileListProps> = ({
                       isOnline={!!(checkIn.user_id && onlineUserIds.includes(checkIn.user_id))}
                       />
                     </Box>
-                    {checkIn.callsign}
+                    <Box
+                      component="span"
+                      onClick={() => {
+                        if (canManageCheckIns) return;
+                        if (checkIn.user_id) onShowProfile(checkIn.user_id);
+                        else onShowGuestProfile?.(checkIn.callsign);
+                      }}
+                      sx={{ cursor: !canManageCheckIns ? 'pointer' : 'default' }}
+                    >
+                      {checkIn.callsign}
+                    </Box>
                     {checkIn.relayed_by && (
                       <Tooltip title={`Relayed by ${checkIn.relayed_by}`} arrow>
                         <span>📡</span>
