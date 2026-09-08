@@ -33,6 +33,7 @@ import UnarchiveIcon from '@mui/icons-material/Unarchive';
 import MapIcon from '@mui/icons-material/Map';
 import HearingIcon from '@mui/icons-material/Hearing';
 import HeadphonesIcon from '@mui/icons-material/Headphones';
+import EditNoteIcon from '@mui/icons-material/EditNote';
 // Envelope, matching what Navbar.tsx already uses for the Traffic section.
 import MailIcon from '@mui/icons-material/Mail';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
@@ -60,6 +61,7 @@ import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutline';
 import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium';
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import type { UseDialogResult } from '../../hooks/useDialog';
+import ImageLightbox from '../ImageLightbox';
 
 // ========== NET VIEW HEADER ==========
 // Title row (name, description, status/stat/frequency chips) plus a full-width
@@ -230,6 +232,7 @@ interface NetViewHeaderProps {
   onToggleNCSRole: () => void;
   onCheckOut: () => void;
   onOpenCanHearDialog: (checkInId: number) => void;
+  onOpenEditTopicDialog: (checkInId: number) => void;
   onGoLive: () => void;
   onExportCSV: () => void;
   onExportICS309: () => void;
@@ -344,6 +347,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
   onToggleNCSRole,
   onCheckOut,
   onOpenCanHearDialog,
+  onOpenEditTopicDialog,
   onGoLive,
   onExportCSV,
   onExportICS309,
@@ -359,6 +363,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
   const descriptionExpanded = !!descriptionAnchorEl;
   const [moreMenuAnchor, setMoreMenuAnchor] = useState<null | HTMLElement>(null);
   const [stepAwayConfirmOpen, setStepAwayConfirmOpen] = useState(false);
+  const [logoLightboxOpen, setLogoLightboxOpen] = useState(false);
 
   // Touch-target sizing only (26px dense vs 30px comfortable) — unrelated to
   // the content-driven collapse logic below, which reacts to the bar's own
@@ -598,6 +603,17 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
       tooltip: 'Record which stations you can hear', onClick: () => onOpenCanHearDialog(userActiveCheckIn?.id),
     },
     {
+      // Self-service edit for the topic answer given at check-in -
+      // CheckInFormDialog only ever offers the field once, during check-in
+      // itself, so there was previously no way to fix a typo or add more
+      // after the fact.
+      key: 'edit-topic', group: 'management', priority: 3,
+      visible: isAuthenticated && isActiveOrLobby && !!userActiveCheckIn
+        && net.topic_of_week_enabled && !!net.topic_of_week_prompt,
+      Icon: EditNoteIcon, color: neutralIconColor, label: 'Edit topic',
+      tooltip: 'Edit your topic of the week answer', onClick: () => onOpenEditTopicDialog(userActiveCheckIn?.id),
+    },
+    {
       key: 'check-out', group: 'management', priority: 3,
       visible: isAuthenticated && isActiveOrLobby && !!userActiveCheckIn,
       Icon: LogoutIcon, color: '#d32f2f', label: 'Check out',
@@ -818,7 +834,12 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
       {/* ===== TITLE ROW: net name, description, status/stat/frequency chips ===== */}
       <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.25, flexWrap: 'wrap', px: 2, pt: 1.25, pb: 0.75 }}>
         {net.logo_url && (
-          <Avatar variant="rounded" src={net.logo_url} sx={{ width: 32, height: 32, alignSelf: 'center' }} />
+          <Avatar
+            variant="rounded"
+            src={net.logo_url}
+            onClick={() => setLogoLightboxOpen(true)}
+            sx={{ width: 32, height: 32, alignSelf: 'center', cursor: 'pointer' }}
+          />
         )}
         <Typography variant="h5" component="h1" sx={{ flex: '0 0 auto', whiteSpace: 'nowrap' }}>
           {net.name}
@@ -1129,6 +1150,14 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
           </Button>
         </DialogActions>
       </Dialog>
+
+      {net.logo_url && (
+        <ImageLightbox
+          imageUrl={logoLightboxOpen ? net.logo_url : null}
+          alt={`${net.name} logo`}
+          onClose={() => setLogoLightboxOpen(false)}
+        />
+      )}
     </Box>
   );
 };

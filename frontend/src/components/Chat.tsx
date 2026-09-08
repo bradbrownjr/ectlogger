@@ -42,6 +42,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { formatTimeWithDate } from '../utils/dateUtils';
 import { sneakInFade, SNEAK_IN_HIGHLIGHT_MS } from './netview/sneakInHighlight';
 import UserAvatar from './UserAvatar';
+import ImageLightbox from './ImageLightbox';
 
 interface ChatProps {
   netId: number;
@@ -1208,50 +1209,11 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
       )}
       </>)}
 
-      <Dialog
-        open={!!lightboxImage}
+      <ImageLightbox
+        imageUrl={lightboxImage?.image_url ?? null}
+        alt="Full chat upload"
         onClose={() => setLightboxImage(null)}
-        maxWidth="lg"
-      >
-        <DialogContent sx={{ p: 1, bgcolor: 'background.default', position: 'relative' }}>
-          <Box sx={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 0.5 }}>
-            {lightboxImage && (
-              <IconButton
-                size="small"
-                component="a"
-                href={lightboxImage.image_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                sx={{ bgcolor: 'background.paper', border: 1, borderColor: 'divider' }}
-              >
-                <OpenInNewIcon fontSize="small" />
-              </IconButton>
-            )}
-            <IconButton
-              size="small"
-              onClick={() => setLightboxImage(null)}
-              sx={{ bgcolor: 'background.paper', border: 1, borderColor: 'divider' }}
-            >
-              <CloseIcon fontSize="small" />
-            </IconButton>
-          </Box>
-          {lightboxImage && (
-            <Box
-              component="img"
-              src={lightboxImage.image_url}
-              alt="Full chat upload"
-              sx={{
-                display: 'block',
-                maxWidth: '90vw',
-                maxHeight: '85vh',
-                width: 'auto',
-                height: 'auto',
-                borderRadius: 1,
-              }}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+      />
 
       <Dialog open={muteManagerOpen} onClose={() => setMuteManagerOpen(false)} maxWidth="xs" fullWidth>
         <DialogTitle>Muted Stations</DialogTitle>

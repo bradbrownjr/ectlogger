@@ -1,14 +1,22 @@
 {
-  "version": "2026.09.08d",
+  "version": "2026.09.08e",
   "entries": [
     {
-      "version": "2026.09.08d",
+      "version": "2026.09.08e",
       "date": "2026-09-08",
       "sections": [
         {
           "title": "New Features",
           "type": "feature",
           "items": [
+            {
+              "text": "Net View: Edit your topic answer — change your Topic of the Week response after checking in, from a new toolbar button, instead of being stuck with what you typed on your way in.",
+              "userImpact": true
+            },
+            {
+              "text": "Logos: Tap to see full size — net and club logos on the dashboard, schedule list, and net view were too small to make out. Tap one to see it full size.",
+              "userImpact": true
+            },
             {
               "text": "Chat: Mute a station — hide one station's chat messages from your own view of a net, without affecting anyone else's view or the net log, from a control in the message action row. NCS and Logger can shift+click the same control to mute a spammer for everyone in the net's chat instead, without notifying them or touching the net's saved log or export. Manage or undo any mute anytime from the banner above chat.",
               "userImpact": true

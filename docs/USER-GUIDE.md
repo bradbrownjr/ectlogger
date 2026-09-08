@@ -244,7 +244,7 @@ The Create Net form has five tabs to configure your net:
 - **Name** — Net name (e.g., "Monday Evening SKYWARN Net")
 - **Description** — Purpose, scope, and any special instructions
 - **Info URL** — Optional link to your club or organization's website
-- **Logo** — Optional club or net logo, uploaded and cropped square once the net has been saved (from the Edit Net page). Shows on the net's card and next to its name on the check-in page.
+- **Logo** — Optional club or net logo, uploaded and cropped square once the net has been saved (from the Edit Net page). Shows on the net's card and next to its name on the check-in page; tap it anywhere it appears (dashboard card, schedule card, or net view) to see it full size.
 - **Scheduled Start Time** — Optional. If set, a countdown timer displays before the net starts
 - **Enable ICS-309 format** — Use official FEMA communications log format for net closure emails
 - **Enable Station-to-Station Coverage Logging** — Adds an ear icon action to each check-in row. Any station can record its own reception; NCS, Logger, and Relay can also record on behalf of any station. See "Station-to-Station Coverage Logging" below.
@@ -682,6 +682,8 @@ Ask participants a discussion question:
 2. When checking in, participants see the question and can type their response
 3. Responses appear in the check-in list's "Topic" column
 4. All responses are included in the emailed net log
+
+Changed your mind after checking in? Use the **Edit topic** button in the net toolbar to update your own answer at any time while the net is active — no need to have gotten it right the first time.
 
 To plan a topic ahead of the net itself (so it's already set when the net starts, not something the NCS has to remember to type in live), open the **Topics** button on a net under a recurring schedule and add an entry dated for the upcoming occurrence. The net auto-created (or manually created) for that date picks it up automatically. Setting the topic live as NCS also logs it to this same history right away, so past topics stay available for reference under the schedule's Topics list without waiting for the net to close.
 

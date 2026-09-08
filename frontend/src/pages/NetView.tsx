@@ -76,6 +76,7 @@ import FloatingWindow from '../components/FloatingWindow';
 import UserProfileDialog from '../components/UserProfileDialog';
 import IdentityVerifyDialog from '../components/netview/IdentityVerifyDialog';
 import CanHearDialog from '../components/netview/CanHearDialog';
+import EditTopicResponseDialog from '../components/netview/EditTopicResponseDialog';
 import FileTrafficDialog from '../components/netview/FileTrafficDialog';
 import { watchZoomAwarePopovers } from '../utils/zoomAwarePopovers';
 
@@ -219,6 +220,9 @@ const NetView: React.FC = () => {
   // reaction is always a full refetch rather than a local patch (see fetchCanHearReports).
   const [canHearDialogCheckInId, setCanHearDialogCheckInId] = useState<number | null>(null);
   const [canHearReports, setCanHearReports] = useState<any[]>([]);
+  // Self-service edit of the current user's own topic-of-week answer
+  // (dialog open when non-null).
+  const [editTopicCheckInId, setEditTopicCheckInId] = useState<number | null>(null);
   // Authenticated nets: the check-in currently being identity-verified
   // (dialog open when non-null). Holds {id, callsign} directly rather than
   // just an id since IdentityVerifyDialog only needs those two fields.
@@ -1276,6 +1280,11 @@ const NetView: React.FC = () => {
     ? checkIns.find((ci: CheckIn) => ci.id === canHearDialogCheckInId) || null
     : null;
 
+  // The check-in the "Edit topic answer" dialog is currently open for.
+  const editTopicCheckIn = editTopicCheckInId !== null
+    ? checkIns.find((ci: CheckIn) => ci.id === editTopicCheckInId) || null
+    : null;
+
   const canStartNet = canManage;
   
   // Check if net has any actively-serving NCS (a stepped-down NCS's role row
@@ -1609,6 +1618,7 @@ const NetView: React.FC = () => {
         onToggleNCSRole={handleToggleNCSRole}
         onCheckOut={handleCheckOut}
         onOpenCanHearDialog={setCanHearDialogCheckInId}
+        onOpenEditTopicDialog={setEditTopicCheckInId}
         onGoLive={handleGoLiveClick}
         onExportCSV={handleExportCSV}
         onExportICS309={handleExportICS309}
@@ -2919,6 +2929,23 @@ const NetView: React.FC = () => {
           allCheckIns={checkIns}
           existingReports={canHearReports}
           onSaved={() => setCanHearDialogCheckInId(null)}
+          onToast={setToastMessage}
+        />
+      )}
+
+      {/* ========== EDIT OWN TOPIC OF THE WEEK ANSWER ========== */}
+      {editTopicCheckIn && net?.topic_of_week_prompt && (
+        <EditTopicResponseDialog
+          key={editTopicCheckIn.id}
+          open
+          onClose={() => setEditTopicCheckInId(null)}
+          checkInId={editTopicCheckIn.id}
+          currentResponse={editTopicCheckIn.topic_response}
+          topicPrompt={net.topic_of_week_prompt}
+          onSaved={(newResponse) => {
+            setCheckIns((prev: any[]) => prev.map(ci => (ci.id === editTopicCheckIn.id ? { ...ci, topic_response: newResponse } : ci)));
+            setEditTopicCheckInId(null);
+          }}
           onToast={setToastMessage}
         />
       )}

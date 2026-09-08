@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Card,
@@ -29,6 +29,7 @@ import EmailIcon from '@mui/icons-material/Email';
 import Avatar from '@mui/material/Avatar';
 import ExpandableDescription from '../ExpandableDescription';
 import CardActionButton from '../CardActionButton';
+import ImageLightbox from '../ImageLightbox';
 import { formatDateTime } from '../../utils/dateUtils';
 
 // ---- Types ----
@@ -113,6 +114,7 @@ const NetCard: React.FC<NetCardProps> = ({
 }) => {
   const navigate = useNavigate();
   const isFavorite = net.template_id != null && favorites.has(net.template_id);
+  const [logoLightboxOpen, setLogoLightboxOpen] = useState(false);
 
   return (
     <Card sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
@@ -138,7 +140,12 @@ const NetCard: React.FC<NetCardProps> = ({
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
             {net.logo_url && (
-              <Avatar variant="rounded" src={net.logo_url} sx={{ width: 28, height: 28 }} />
+              <Avatar
+                variant="rounded"
+                src={net.logo_url}
+                onClick={(e) => { e.stopPropagation(); setLogoLightboxOpen(true); }}
+                sx={{ width: 28, height: 28, cursor: 'pointer' }}
+              />
             )}
             <Chip label={net.status} color={getStatusColor(net.status)} size="small" />
             {net.template_id != null && (
@@ -373,6 +380,13 @@ const NetCard: React.FC<NetCardProps> = ({
           )}
         </Box>
       </CardActions>
+      {net.logo_url && (
+        <ImageLightbox
+          imageUrl={logoLightboxOpen ? net.logo_url : null}
+          alt={`${net.name} logo`}
+          onClose={() => setLogoLightboxOpen(false)}
+        />
+      )}
     </Card>
   );
 };

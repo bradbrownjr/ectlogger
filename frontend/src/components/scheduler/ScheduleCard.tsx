@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Card,
@@ -26,6 +26,7 @@ import StarBorderIcon from '@mui/icons-material/StarBorder';
 import Avatar from '@mui/material/Avatar';
 import ExpandableDescription from '../ExpandableDescription';
 import CardActionButton from '../CardActionButton';
+import ImageLightbox from '../ImageLightbox';
 
 // ---- Types ----
 
@@ -185,6 +186,7 @@ const ScheduleCard: React.FC<ScheduleCardProps> = ({
 }) => {
   const navigate = useNavigate();
   const isFavorite = favorites.has(schedule.id);
+  const [logoLightboxOpen, setLogoLightboxOpen] = useState(false);
 
   return (
     // height: 100% stretches sibling cards to equal height in a Grid row.
@@ -209,7 +211,12 @@ const ScheduleCard: React.FC<ScheduleCardProps> = ({
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
             {schedule.logo_url && (
-              <Avatar variant="rounded" src={schedule.logo_url} sx={{ width: 28, height: 28 }} />
+              <Avatar
+                variant="rounded"
+                src={schedule.logo_url}
+                onClick={(e) => { e.stopPropagation(); setLogoLightboxOpen(true); }}
+                sx={{ width: 28, height: 28, cursor: 'pointer' }}
+              />
             )}
             {!schedule.is_active && <Chip label="Inactive" color="default" size="small" />}
             <Tooltip title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}>
@@ -388,6 +395,13 @@ const ScheduleCard: React.FC<ScheduleCardProps> = ({
           )}
         </Box>
       </CardActions>
+      {schedule.logo_url && (
+        <ImageLightbox
+          imageUrl={logoLightboxOpen ? schedule.logo_url : null}
+          alt={`${schedule.name} logo`}
+          onClose={() => setLogoLightboxOpen(false)}
+        />
+      )}
     </Card>
   );
 };
