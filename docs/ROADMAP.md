@@ -623,10 +623,12 @@ Per-net leaderboards already exist and set the pattern to follow — `statistics
 
 - [ ] Extend `GlobalStatsResponse` (`schemas.py:1548`) with a `top_nets` list, and compute it in
       `statistics_global.py` as one grouped aggregate — not a per-net fan-out
-- [ ] **Decide what a row is: one net, or one schedule.** A single well-attended weekly net will
-      otherwise fill the whole board with its own occurrences. Recommend ranking by *schedule*
-      (net template) with the occurrence count alongside, and offering single-net ranking as a
-      secondary view if it is still wanted
+- [ ] **A row is one schedule (net template), not one net occurrence** (decided 2026-09-08) — a
+      single well-attended weekly net would otherwise fill the whole board with its own
+      occurrences. Rank by total check-ins aggregated across a schedule's nets within the window,
+      and show the occurrence count alongside the total so the reader can see whether a high total
+      comes from broad turnout or from meeting often. Ad hoc nets with no template are excluded
+      from this board — there is no series for them to accumulate into
 - [ ] Exclude DEMO/test nets, and exclude nets whose status makes them meaningless in a ranking
       (draft, cancelled). `models.py:102` already documents DEMO as throwaway data excluded from
       reporting — honor that here rather than discovering it later
