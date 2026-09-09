@@ -32,7 +32,7 @@ the same "only an explicit affirmative choice grants anything" guarantee.
 import pytest
 from sqlalchemy import select
 
-from app.models import Frequency, Net, NetRole, NetTemplate, NCSRotationMember, net_template_frequencies
+from app.models import Frequency, Net, NetRole, NetTemplate, NCSRotationMember, User, UserRole, net_template_frequencies
 from app.permissions import is_eligible_for_logger_self_grant, is_eligible_for_ncs_auto_grant
 from tests.conftest import auth_headers
 
@@ -331,6 +331,71 @@ async def test_non_eligible_user_cannot_self_grant_logger(client, db, owner, oth
         select(NetRole).where(NetRole.net_id == net_id, NetRole.role == "LOGGER", NetRole.is_active == True)  # noqa: E712
     )
     assert admin_id not in {r.user_id for r in roles.scalars().all()}
+
+
+@pytest.mark.asyncio
+async def test_eligible_rotation_member_can_self_grant_logger_when_self_checkin_disabled(client, db, owner, other):
+    """2026-09-09 net 88 incident: `other` is an eligible co-manager/rotation
+    member, but the net has self_checkin_enabled=False. Before this fix, the
+    self-checkin-disabled gate in check_ins.py ran check_net_permission
+    (owner/admin/active NetRole only -- it doesn't know about template
+    co-manager/rotation status) *before* the self-grant logic ever got a
+    chance to run, so an eligible person with no NetRole yet was 403'd
+    outright and had no self-service way to become Logger -- W1WNS had to be
+    manually promoted by the net's owner. The gate must let an eligible
+    self-check-in requesting NCS/Logger through despite disabled self-checkin."""
+    owner_id, other_id = owner.id, other.id
+    template = await _template_with_rotation_member(db, owner_id, other_id)
+    net_id = await _create_and_start_net(client, owner, template.id)
+
+    net = (await db.execute(select(Net).where(Net.id == net_id))).scalar_one()
+    net.self_checkin_enabled = False
+    await db.commit()
+
+    resp = await client.post(
+        f"/api/check-ins/nets/{net_id}/check-ins",
+        json={"callsign": "KC1OTH", "self_role_choice": "logger"},
+        headers=auth_headers(other),
+    )
+    assert resp.status_code == 201
+
+    db.expire_all()
+    roles = await db.execute(
+        select(NetRole).where(NetRole.net_id == net_id, NetRole.role == "LOGGER", NetRole.is_active == True)  # noqa: E712
+    )
+    assert other_id in {r.user_id for r in roles.scalars().all()}
+
+
+@pytest.mark.asyncio
+async def test_non_eligible_user_still_blocked_when_self_checkin_disabled(client, db, owner, other):
+    """The self-checkin-disabled exception above is scoped to genuine
+    self-grant eligibility, not a blanket bypass: a user who isn't the
+    owner or an active co-manager/rotation member for the net's template
+    still gets 403 even when explicitly requesting 'logger', and even
+    though they're checking themselves in under their own callsign.
+
+    Deliberately not the `admin` fixture -- a global admin already bypasses
+    check_net_permission outright (is_admin(user) short-circuits to True),
+    so it would trivially pass the gate for reasons unrelated to this fix
+    and never actually exercise the eligibility check."""
+    bystander = User(email="bystander@test.com", callsign="KC1BYS", role=UserRole.USER, is_active=True)
+    db.add(bystander)
+    await db.commit()
+    await db.refresh(bystander)
+
+    template = await _template_with_rotation_member(db, owner.id, other.id)
+    net_id = await _create_and_start_net(client, owner, template.id)
+
+    net = (await db.execute(select(Net).where(Net.id == net_id))).scalar_one()
+    net.self_checkin_enabled = False
+    await db.commit()
+
+    resp = await client.post(
+        f"/api/check-ins/nets/{net_id}/check-ins",
+        json={"callsign": "KC1BYS", "self_role_choice": "logger"},
+        headers=auth_headers(bystander),
+    )
+    assert resp.status_code == 403
 
 
 @pytest.mark.asyncio

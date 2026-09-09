@@ -113,10 +113,37 @@ async def create_check_in(
     if net.status not in (NetStatus.ACTIVE, NetStatus.LOBBY):
         raise HTTPException(status_code=400, detail="Net is not active")
 
+    # Try to automatically link to existing user by callsign (amateur or GMRS).
+    # Computed early (used below by the self-checkin-disabled gate, then again
+    # by the recheck/creation logic and the self-grant block further down).
+    matching_user = await _find_user_by_callsign(db, check_in_data.callsign)
+    linked_user_id = matching_user.id if matching_user else None
+
     # When self check-in is disabled for this net, only NCS/logger/owner/admin
     # may add check-ins — regular participants must be logged by voice/staff.
+    # Exception: a self-check-in explicitly requesting NCS or LOGGER
+    # (self_role_choice) from someone actually eligible for that self-grant
+    # (owner/co-manager/rotation member -- the same eligibility functions the
+    # grant below uses) is let through despite holding no NetRole yet.
+    # Otherwise the grant below can never be reached: the very check-in that
+    # would trigger it is rejected by this same gate first, and an eligible
+    # person with no role yet has no self-service way to get one -- someone
+    # who already holds NCS/Logger has to grant it for them by hand. This is
+    # exactly what happened on net 88 (2026-09-09): W1WNS was an eligible
+    # co-manager, but self-check-in as Logger kept 403ing until AA1GM
+    # manually assigned the NetRole.
     if net.self_checkin_enabled is False and not await check_net_permission(db, net, current_user, ["NCS", "LOGGER"]):
-        raise HTTPException(status_code=403, detail="Self check-in is disabled for this net. Please check in with Net Control.")
+        self_grant_requested = (
+            linked_user_id == current_user.id
+            and check_in_data.self_role_choice in ("ncs", "logger")
+        )
+        self_grant_eligible = self_grant_requested and (
+            await is_eligible_for_ncs_auto_grant(db, net, current_user.id)
+            if check_in_data.self_role_choice == "ncs"
+            else await is_eligible_for_logger_self_grant(db, net, current_user.id)
+        )
+        if not self_grant_eligible:
+            raise HTTPException(status_code=403, detail="Self check-in is disabled for this net. Please check in with Net Control.")
 
     # Validate and process frequency_id
     # First check if current user is NCS with a claimed frequency
@@ -191,10 +218,6 @@ async def create_check_in(
             status_code=400,
             detail=f"{check_in_data.callsign} is already checked in"
         )
-    
-    # Try to automatically link to existing user by callsign (amateur or GMRS)
-    matching_user = await _find_user_by_callsign(db, check_in_data.callsign)
-    linked_user_id = matching_user.id if matching_user else None
     
     # Every check-in — whether first or re-check — creates a new row.
     # Re-checks link back to the root (original) check-in via parent_check_in_id.

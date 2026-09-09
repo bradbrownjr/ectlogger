@@ -4,6 +4,14 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# September 9, 2026
+
+## Bug Fixes
+
+* **Check-in: Self-check-in as NCS/Logger on staff-only nets** — On a net where self check-in is turned off, an eligible co-manager or on-duty rotation member trying to check themselves in as NCS or Logger was blocked outright, with no way to get the role except asking someone who already had it to grant it to them by hand. That self-check-in now goes through when the requester is genuinely eligible for the role.
+
+---
+
 # September 8, 2026
 
 ## New Features
