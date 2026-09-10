@@ -20,6 +20,7 @@ import ArchiveIcon from '@mui/icons-material/Archive';
 import DownloadIcon from '@mui/icons-material/Download';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import DeleteIcon from '@mui/icons-material/Delete';
+import ReportIcon from '@mui/icons-material/Report';
 import LanguageIcon from '@mui/icons-material/Language';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import GroupsIcon from '@mui/icons-material/Groups';
@@ -281,7 +282,7 @@ const NetCard: React.FC<NetCardProps> = ({
                   onClick={() => navigate(`/nets/${net.id}/edit`)}
                 />
                 <CardActionButton
-                  icon={<DeleteIcon />}
+                  icon={<ReportIcon />}
                   label="Cancel"
                   color="error"
                   tooltip="Cancel this net"

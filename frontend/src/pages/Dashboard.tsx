@@ -47,6 +47,7 @@ import UnarchiveIcon from '@mui/icons-material/Unarchive';
 import DownloadIcon from '@mui/icons-material/Download';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import DeleteIcon from '@mui/icons-material/Delete';
+import ReportIcon from '@mui/icons-material/Report';
 import CloseIcon from '@mui/icons-material/Close';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import GroupsIcon from '@mui/icons-material/Groups';
@@ -575,7 +576,7 @@ const Dashboard: React.FC = () => {
                     {/* Delete scheduled net (cancel this instance) */}
                     <Tooltip title="Cancel this net">
                       <IconButton size="small" color="error" onClick={() => handleDeleteClick(net)}>
-                        <DeleteIcon fontSize="small" />
+                        <ReportIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
                   </>
@@ -1097,7 +1098,7 @@ const Dashboard: React.FC = () => {
                 onClick={handleCancelConfirm}
                 variant="contained"
                 color="warning"
-                startIcon={<DeleteIcon />}
+                startIcon={<ReportIcon />}
               >
                 Cancel Net
               </Button>
