@@ -11,7 +11,7 @@ from app.database import get_db
 from app.dependencies import get_current_user, get_current_user_optional
 from app.email_service import EmailService
 from app.models import Net, NetRole, NetStatus, NetTemplateSubscription, TemplateStaff, User, UserRole
-from app.permissions import is_admin
+from app.permissions import can_manage_net_roles, is_admin
 from app.schemas import public_display_name
 from app.utils import display_callsign, get_avatar_url
 
@@ -31,9 +31,11 @@ async def assign_net_role(
     
     if not net:
         raise HTTPException(status_code=404, detail="Net not found")
-    
-    # Only owner or admin can assign roles
-    if net.owner_id != current_user.id and not is_admin(current_user):
+
+    # Owner, admin, or net staff (co-manager/rotation member) currently
+    # holding an active NCS or LOGGER role on this net -- see
+    # can_manage_net_roles for the full trust model.
+    if not await can_manage_net_roles(db, net, current_user):
         raise HTTPException(status_code=403, detail="Not authorized to assign roles")
     
     # Verify user exists
@@ -100,9 +102,11 @@ async def remove_net_role(
     
     if not net:
         raise HTTPException(status_code=404, detail="Net not found")
-    
-    # Only owner or admin can remove roles
-    if net.owner_id != current_user.id and not is_admin(current_user):
+
+    # Owner, admin, or net staff (co-manager/rotation member) currently
+    # holding an active NCS or LOGGER role on this net -- see
+    # can_manage_net_roles for the full trust model.
+    if not await can_manage_net_roles(db, net, current_user):
         raise HTTPException(status_code=403, detail="Not authorized to remove roles")
     
     result = await db.execute(select(NetRole).where(NetRole.id == role_id))

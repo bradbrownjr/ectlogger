@@ -76,6 +76,81 @@ async def check_net_permission(
     return False
 
 
+async def _is_active_template_staff(db: AsyncSession, template_id: int, user_id: int) -> bool:
+    """Return True when user_id is an active co-manager or active NCS rotation
+    member for template_id -- the "net staff" trust bar shared by the
+    self-grant eligibility checks below and can_manage_net_roles."""
+    co_mgr_result = await db.execute(
+        select(TemplateStaff).where(
+            TemplateStaff.template_id == template_id,
+            TemplateStaff.user_id == user_id,
+            TemplateStaff.is_active == True,  # noqa: E712
+            TemplateStaff.is_co_manager == True,  # noqa: E712
+        )
+    )
+    if co_mgr_result.scalar_one_or_none() is not None:
+        return True
+
+    rotation_result = await db.execute(
+        select(NCSRotationMember).where(
+            NCSRotationMember.template_id == template_id,
+            NCSRotationMember.user_id == user_id,
+            NCSRotationMember.is_active == True,  # noqa: E712
+        )
+    )
+    return rotation_result.scalar_one_or_none() is not None
+
+
+async def can_manage_net_roles(db: AsyncSession, net: Net, user: User) -> bool:
+    """Return True when *user* may assign/remove NetRoles on *net* (the
+    "Manage Net Control Staff" dialog's assign/remove actions).
+
+    Grants access to the owner, any admin, or a "net staff" member (active
+    co-manager or active NCS rotation member for the net's template) who
+    currently holds an active NCS or LOGGER role on this specific net.
+
+    Deliberately narrower than "any NCS/Logger on this net": the dialog's own
+    copy promises backup NCS/Logger can manage net control as a group, but
+    that trust should follow *staff membership*, not whichever role someone
+    happens to be wearing right now. A Logger who isn't net staff (handed the
+    role ad hoc by the NCS running the net) is not trusted to reassign roles;
+    a Logger who *is* net staff -- just filling Logger for this occurrence
+    because another staff NCS is already running the net -- inherits the same
+    trust an NCS would. The same staff check applies to an NCS role holder
+    too, closing the same gap for a non-staff person an owner manually
+    appointed NCS on a templated net. Ad hoc nets (no template, no staff
+    concept) are unaffected -- they stay owner/admin-only, same as before.
+
+    Root-caused from a 2026-09-11 report (net 90): KC1DLN, an active NCS
+    rotation member, self-granted NCS on check-in and was then shown the
+    Roles dialog (NetView's canManage includes any NCS), but
+    assign_net_role/remove_net_role only ever accepted owner-or-admin --
+    every click silently 403'd. The net's owner also hit an unrelated but
+    compounding bug trying to work around it: removing the report's sole
+    active NCS returned a 400 ("cannot remove the last NCS from an active
+    net"), and NetView.tsx's handleRemoveRole showed a generic toast instead
+    of that actual detail, so neither error ever explained itself.
+    """
+    if net.owner_id == user.id or is_admin(user):
+        return True
+
+    if not net.template_id:
+        return False
+
+    role_result = await db.execute(
+        select(NetRole.id).where(
+            NetRole.net_id == net.id,
+            NetRole.user_id == user.id,
+            NetRole.role.in_(["NCS", "LOGGER"]),
+            NetRole.is_active == True,  # noqa: E712
+        )
+    )
+    if role_result.scalar_one_or_none() is None:
+        return False
+
+    return await _is_active_template_staff(db, net.template_id, user.id)
+
+
 async def is_eligible_for_ncs_auto_grant(db: AsyncSession, net: Net, user_id: int) -> bool:
     """Return True when *user_id* is eligible to be granted NCS on checking
     into *net*: an active co-manager or active NCS rotation member for the
@@ -127,25 +202,7 @@ async def is_eligible_for_ncs_auto_grant(db: AsyncSession, net: Net, user_id: in
     if existing_result.scalar_one_or_none() is not None:
         return False
 
-    co_mgr_result = await db.execute(
-        select(TemplateStaff).where(
-            TemplateStaff.template_id == net.template_id,
-            TemplateStaff.user_id == user_id,
-            TemplateStaff.is_active == True,  # noqa: E712
-            TemplateStaff.is_co_manager == True,  # noqa: E712
-        )
-    )
-    if co_mgr_result.scalar_one_or_none() is not None:
-        return True
-
-    rotation_result = await db.execute(
-        select(NCSRotationMember).where(
-            NCSRotationMember.template_id == net.template_id,
-            NCSRotationMember.user_id == user_id,
-            NCSRotationMember.is_active == True,  # noqa: E712
-        )
-    )
-    return rotation_result.scalar_one_or_none() is not None
+    return await _is_active_template_staff(db, net.template_id, user_id)
 
 
 async def is_eligible_for_logger_self_grant(db: AsyncSession, net: Net, user_id: int) -> bool:
@@ -178,25 +235,7 @@ async def is_eligible_for_logger_self_grant(db: AsyncSession, net: Net, user_id:
     if not net.template_id:
         return False
 
-    co_mgr_result = await db.execute(
-        select(TemplateStaff).where(
-            TemplateStaff.template_id == net.template_id,
-            TemplateStaff.user_id == user_id,
-            TemplateStaff.is_active == True,  # noqa: E712
-            TemplateStaff.is_co_manager == True,  # noqa: E712
-        )
-    )
-    if co_mgr_result.scalar_one_or_none() is not None:
-        return True
-
-    rotation_result = await db.execute(
-        select(NCSRotationMember).where(
-            NCSRotationMember.template_id == net.template_id,
-            NCSRotationMember.user_id == user_id,
-            NCSRotationMember.is_active == True,  # noqa: E712
-        )
-    )
-    return rotation_result.scalar_one_or_none() is not None
+    return await _is_active_template_staff(db, net.template_id, user_id)
 
 
 async def check_net_lifecycle_permission(

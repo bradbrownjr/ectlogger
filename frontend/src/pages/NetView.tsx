@@ -873,9 +873,9 @@ const NetView: React.FC = () => {
     try {
       await api.delete(`/nets/${netId}/roles/${roleId}`);
       fetchNetRoles();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to remove role:', error);
-      setToastMessage('Failed to remove role');
+      setToastMessage(getErrorMessage(error, 'Failed to remove role'));
     }
   };
 
