@@ -7,6 +7,8 @@ from pathlib import Path
 from typing import Optional
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
+from PIL import Image, ImageOps
+
 # Single source of truth for where uploaded avatar files live on disk.
 # routers/users.py imports this rather than redefining it.
 AVATAR_DIR = Path(__file__).resolve().parents[1] / "data" / "avatars"
@@ -22,6 +24,58 @@ LOGO_DIR.mkdir(parents=True, exist_ok=True)
 # templates_core.py import this rather than redefining it.
 NET_LOGO_DIR = Path(__file__).resolve().parents[1] / "data" / "net_logos"
 NET_LOGO_DIR.mkdir(parents=True, exist_ok=True)
+
+# Maps an opened image's detected PIL format to the (extension, save format)
+# used by save_resized_logo below. Anything not in this map (an unusual or
+# missing format) falls back to PNG, the safest lossless default.
+_LOGO_FORMATS = {
+    "JPEG": ("jpg", "JPEG"),
+    "PNG": ("png", "PNG"),
+    "WEBP": ("webp", "WEBP"),
+}
+
+
+def save_resized_logo(pil_image: Image.Image, dest_dir: Path, base_name: str, max_dim: int) -> Path:
+    """Resize an uploaded net/schedule logo and save it back in the format
+    it was uploaded in, rather than normalizing every upload to JPEG.
+
+    PNG, JPEG, and WebP are all natively viewable in a standard browser, so
+    there's no reason to convert between them -- forcing everything to JPEG
+    (the previous behavior) flattened any alpha channel onto black, so a
+    transparent PNG logo came back with a solid black background instead
+    of staying transparent. JPEG has no alpha channel at all, so a JPEG
+    source is still flattened to RGB; PNG/WebP sources keep whatever
+    transparency they arrived with.
+
+    Deletes any stale file left by a previous upload in a different format
+    (e.g. an old net-12.jpg after net-12.png replaces it) so switching
+    formats never leaves an orphaned file behind.
+    """
+    # Capture format before exif_transpose: when it actually rotates pixels
+    # (portrait phone photos with an EXIF orientation tag), it returns a new
+    # Image object that doesn't carry over .format, which would otherwise
+    # silently fall back to PNG for a real JPEG/WebP upload.
+    original_format = pil_image.format
+    pil_image = ImageOps.exif_transpose(pil_image)
+    ext, save_format = _LOGO_FORMATS.get(original_format or "", ("png", "PNG"))
+
+    if save_format == "JPEG":
+        if pil_image.mode in {"RGBA", "LA", "P"}:
+            pil_image = pil_image.convert("RGB")
+    elif pil_image.mode == "P":
+        # A palette image (e.g. an 8-bit PNG) can carry transparency via a
+        # tRNS chunk that only survives if promoted to RGBA before saving.
+        pil_image = pil_image.convert("RGBA")
+
+    pil_image.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
+
+    for stale in dest_dir.glob(f"{base_name}.*"):
+        stale.unlink()
+
+    dest = dest_dir / f"{base_name}.{ext}"
+    save_kwargs = {"quality": 90} if save_format == "JPEG" else {}
+    pil_image.save(str(dest), format=save_format, **save_kwargs)
+    return dest
 
 
 def normalize_email(email: str) -> str:

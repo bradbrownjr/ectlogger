@@ -4,7 +4,7 @@ from io import BytesIO
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
-from PIL import Image, ImageOps
+from PIL import Image
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -38,7 +38,7 @@ from app.schemas import (
     public_display_name,
 )
 from app.services.net_closure import close_net_and_notify, compute_auto_close_at
-from app.utils import NET_LOGO_DIR, display_callsign, format_ncs_attribution
+from app.utils import NET_LOGO_DIR, display_callsign, format_ncs_attribution, save_resized_logo
 
 # Same limits as the profile avatar upload (routers/users.py) -- square,
 # cropped client-side, re-validated and re-resized here as a safety net.
@@ -487,13 +487,7 @@ async def upload_net_logo(
     except Exception as exc:
         raise HTTPException(status_code=400, detail="Invalid or corrupt image.") from exc
 
-    pil_image = ImageOps.exif_transpose(pil_image)
-    if pil_image.mode in {"RGBA", "LA", "P"}:
-        pil_image = pil_image.convert("RGB")
-    pil_image.thumbnail((NET_LOGO_MAX_DIM, NET_LOGO_MAX_DIM), Image.Resampling.LANCZOS)
-
-    dest = NET_LOGO_DIR / f"net-{net.id}.jpg"
-    pil_image.save(str(dest), format="JPEG", quality=90)
+    dest = save_resized_logo(pil_image, NET_LOGO_DIR, f"net-{net.id}", NET_LOGO_MAX_DIM)
 
     net.logo_url = f"/api/net-logos/{dest.name}"
     await db.commit()
@@ -515,9 +509,8 @@ async def delete_net_logo(
     if not await check_net_permission(db, net, current_user, ["NCS"]):
         raise HTTPException(status_code=403, detail="Not authorized to update this net")
 
-    dest = NET_LOGO_DIR / f"net-{net.id}.jpg"
-    if dest.exists():
-        dest.unlink()
+    for existing in NET_LOGO_DIR.glob(f"net-{net.id}.*"):
+        existing.unlink()
     net.logo_url = None
     await db.commit()
     await db.refresh(net, ['frequencies'])

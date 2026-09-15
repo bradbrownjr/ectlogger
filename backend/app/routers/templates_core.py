@@ -4,7 +4,7 @@ from io import BytesIO
 from typing import List
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
-from PIL import Image, ImageOps
+from PIL import Image
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -29,7 +29,7 @@ from app.schemas import (
     NetTemplateUpdate,
     public_display_name,
 )
-from app.utils import NET_LOGO_DIR
+from app.utils import NET_LOGO_DIR, save_resized_logo
 
 # Same limits/pattern as the net logo upload (routers/nets_core.py) and the
 # profile avatar upload (routers/users.py).
@@ -517,13 +517,7 @@ async def upload_template_logo(
     except Exception as exc:
         raise HTTPException(status_code=400, detail="Invalid or corrupt image.") from exc
 
-    pil_image = ImageOps.exif_transpose(pil_image)
-    if pil_image.mode in {"RGBA", "LA", "P"}:
-        pil_image = pil_image.convert("RGB")
-    pil_image.thumbnail((TEMPLATE_LOGO_MAX_DIM, TEMPLATE_LOGO_MAX_DIM), Image.Resampling.LANCZOS)
-
-    dest = NET_LOGO_DIR / f"template-{template.id}.jpg"
-    pil_image.save(str(dest), format="JPEG", quality=90)
+    dest = save_resized_logo(pil_image, NET_LOGO_DIR, f"template-{template.id}", TEMPLATE_LOGO_MAX_DIM)
 
     template.logo_url = f"/api/net-logos/{dest.name}"
     await db.commit()
@@ -550,9 +544,8 @@ async def delete_template_logo(
     if not await check_template_permission(db, template, current_user):
         raise HTTPException(status_code=403, detail="Not authorized to update this template")
 
-    dest = NET_LOGO_DIR / f"template-{template.id}.jpg"
-    if dest.exists():
-        dest.unlink()
+    for existing in NET_LOGO_DIR.glob(f"template-{template.id}.*"):
+        existing.unlink()
     template.logo_url = None
     await db.commit()
     result = await db.execute(

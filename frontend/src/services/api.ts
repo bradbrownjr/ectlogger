@@ -10,6 +10,13 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
 // without a JWT, so they live alongside /api and /ws rather than under /api).
 export const BACKEND_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, '');
 
+// Filename extension only (the backend goes by the multipart part's actual
+// Content-Type, not this), kept accurate so a saved/inspected upload isn't
+// mislabeled -- net/schedule logo blobs are now PNG/WebP when the source had
+// one, not always JPEG (see NetLogoSection.tsx).
+const logoExtension = (mimeType: string) =>
+  mimeType === 'image/png' ? 'png' : mimeType === 'image/webp' ? 'webp' : 'jpg';
+
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -172,7 +179,7 @@ export const netApi = {
   getIcs309Log: (id: number) => api.get(`/nets/${id}/export/ics309`, { params: { format: 'json' } }),
   uploadLogo: (id: number, file: Blob) => {
     const form = new FormData();
-    form.append('file', file, 'logo.jpg');
+    form.append('file', file, `logo.${logoExtension(file.type)}`);
     return api.post(`/nets/${id}/logo`, form, { headers: { 'Content-Type': 'multipart/form-data' } });
   },
   deleteLogo: (id: number) => api.delete(`/nets/${id}/logo`),
@@ -230,7 +237,7 @@ export const templateApi = {
     api.get(`/templates/${templateId}/linkable-nets`),
   uploadLogo: (id: number, file: Blob) => {
     const form = new FormData();
-    form.append('file', file, 'logo.jpg');
+    form.append('file', file, `logo.${logoExtension(file.type)}`);
     return api.post(`/templates/${id}/logo`, form, { headers: { 'Content-Type': 'multipart/form-data' } });
   },
   deleteLogo: (id: number) => api.delete(`/templates/${id}/logo`),

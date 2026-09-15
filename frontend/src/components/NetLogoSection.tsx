@@ -29,7 +29,12 @@ import { getErrorMessage } from '../utils/apiErrors';
 // ProfileAvatarSection.tsx, but cropShape="rect" (not "round") so a net logo
 // reads as a badge, distinct from circular user avatars.
 
-async function getCroppedImg(imageSrc: string, pixelCrop: Area): Promise<Blob> {
+// Crops to a JPEG unless the source has an alpha channel (PNG/WebP), in
+// which case it stays that same format -- JPEG has no alpha channel, so
+// cropping a transparent logo through it flattened the transparent areas
+// onto a solid black background even before the file reached the backend.
+async function getCroppedImg(imageSrc: string, pixelCrop: Area, mimeType: string): Promise<Blob> {
+  const outputType = mimeType === 'image/png' || mimeType === 'image/webp' ? mimeType : 'image/jpeg';
   const image = new window.Image();
   image.src = imageSrc;
   await new Promise<void>((resolve) => { image.onload = () => resolve(); });
@@ -39,7 +44,7 @@ async function getCroppedImg(imageSrc: string, pixelCrop: Area): Promise<Blob> {
   const ctx = canvas.getContext('2d')!;
   ctx.drawImage(image, pixelCrop.x, pixelCrop.y, pixelCrop.width, pixelCrop.height, 0, 0, pixelCrop.width, pixelCrop.height);
   return new Promise((resolve, reject) => {
-    canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('Canvas is empty')), 'image/jpeg', 0.95);
+    canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('Canvas is empty')), outputType, 0.95);
   });
 }
 
@@ -60,6 +65,7 @@ const NetLogoSection: React.FC<NetLogoSectionProps> = ({ entityType, entityId, l
 
   const [cropDialogOpen, setCropDialogOpen] = useState(false);
   const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [fileType, setFileType] = useState<string>('image/jpeg');
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
@@ -68,6 +74,7 @@ const NetLogoSection: React.FC<NetLogoSectionProps> = ({ entityType, entityId, l
     const file = e.target.files?.[0];
     if (!file) return;
     if (fileInputRef.current) fileInputRef.current.value = '';
+    setFileType(file.type);
     const reader = new FileReader();
     reader.onload = () => {
       setImageSrc(reader.result as string);
@@ -89,7 +96,7 @@ const NetLogoSection: React.FC<NetLogoSectionProps> = ({ entityType, entityId, l
     setUploading(true);
     setCropDialogOpen(false);
     try {
-      const blob = await getCroppedImg(imageSrc, croppedAreaPixels);
+      const blob = await getCroppedImg(imageSrc, croppedAreaPixels, fileType);
       const response = await api.uploadLogo(entityId, blob);
       onLogoChange(response.data.logo_url ?? null);
     } catch (err: any) {
