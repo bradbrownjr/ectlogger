@@ -387,26 +387,58 @@ For a multi-phase roadmap feature (the kind with its own "Design questions to re
   ```bash
   # 1. Pull latest from GitHub
   ssh ectlogger@app.ectlogger.us "cd ~/ectlogger && git pull origin main"
-  
-  # 2. Build frontend (REQUIRED after any frontend change — git pull alone is not enough)
-  #    Cap the Node heap: production is a 1.8 GB VPS with NO swap, and an
-  #    unbounded build gets OOM-killed partway through (see the warning below).
-  ssh ectlogger@app.ectlogger.us "cd ~/ectlogger/frontend && NODE_OPTIONS=--max-old-space-size=896 npm run build"
 
-  # 2b. ALWAYS confirm the build actually produced a page — a killed build is
-  #     silent apart from the word "Killed" in the log. Check version.json too:
-  #     it is written last, so it is the first thing a late kill loses.
+  # 2. Build frontend on BETA (not production — see "Building the production
+  #    frontend on beta" below for why), targeting production's own API URL,
+  #    then ship the built dist/ over as a tarball:
+  cd /home/bradb/ectlogger/frontend && git pull origin main
+  VITE_API_URL=https://app.ectlogger.us/api npx vite build --outDir dist-prod
+  tar czf /tmp/prod-dist.tar.gz -C dist-prod .
+  scp /tmp/prod-dist.tar.gz ectlogger@app.ectlogger.us:/tmp/prod-dist.tar.gz
+  ssh ectlogger@app.ectlogger.us "cd ~/ectlogger/frontend && rm -rf dist && mkdir dist && tar xzf /tmp/prod-dist.tar.gz -C dist && rm /tmp/prod-dist.tar.gz"
+  rm -rf /home/bradb/ectlogger/frontend/dist-prod /tmp/prod-dist.tar.gz
+
+  # 2b. ALWAYS confirm the build actually produced a page, and that
+  #     version.json is real JSON with the right commit, not an SPA fallback:
   ssh ectlogger@app.ectlogger.us "ls ~/ectlogger/frontend/dist/index.html ~/ectlogger/frontend/dist/assets/ && cat ~/ectlogger/frontend/dist/version.json"
-  
+  curl -s https://app.ectlogger.us/version.json   # must print {"buildId":"<prod HEAD>"}, not HTML
+
   # 3. Restart backend (for backend changes and migrations)
   ssh ectlogger@app.ectlogger.us "sudo -n /usr/bin/systemctl restart ectlogger"
-  
+
   # 4. Verify
   ssh ectlogger@app.ectlogger.us "sudo -n /usr/bin/systemctl is-active ectlogger"
   ssh ectlogger@app.ectlogger.us "sudo -n /usr/bin/systemctl status ectlogger"
   ssh ectlogger@app.ectlogger.us "cd ~/ectlogger && git log --oneline -3"
   ```
 - **Deploy verification**: after every deploy, confirm prod git log matches local with `ssh ectlogger@app.ectlogger.us "cd ~/ectlogger && git log --oneline -3"`.
+- **Building the production frontend on beta, not production (standard since 2026-09-15).**
+  Beta has plenty of RAM; production is a memory-constrained 1.8 GB VPS with no swap where the
+  build itself was repeatedly OOM-killed (see the heap-cap incident history below — by
+  2026-09-15 even `--max-old-space-size=1024` was killed at "rendering chunks" and lower caps
+  hit V8's own heap-limit abort even earlier, with the site fully down — no `dist/index.html`
+  at all — the whole time). Building on beta and shipping the artifact over avoids the OOM
+  entirely and stops loading production's CPU/RAM for every frontend deploy.
+  **The one thing that must not be skipped: override `VITE_API_URL` (and any other `VITE_*`
+  env var) to production's own value when building.** Vite bakes `import.meta.env.VITE_*`
+  values into the JS bundle at build time from whatever `.env` is present on the machine doing
+  the build — beta's `.env` points at `https://ectbeta.lynwood.us/api`. A first attempt at this
+  workflow (before 2026-09-15) copied a build made with beta's own `.env` straight to
+  production, which shipped a bundle that called beta's API from production's origin and broke
+  the site (CORS/wrong-backend errors) despite `dist/index.html` looking completely normal.
+  Always pass `VITE_API_URL=https://app.ectlogger.us/api` (production's value from its own
+  `frontend/.env`, check it hasn't changed) explicitly on the build command — never rely on
+  beta's `.env` being right for a production build. `VITE_ALLOWED_HOSTS` does NOT need this
+  treatment: it's only consumed by `vite.config.ts`'s dev/preview `server`/`preview` blocks,
+  never baked into the built client bundle, and production serves the static build via Caddy
+  (never `vite preview`), so it's irrelevant to the artifact being shipped.
+  Build into `--outDir dist-prod` (not the default `dist/`) so this doesn't clobber beta's own
+  live `vite preview` build. `writeVersionFile` in `vite.config.ts` reads the resolved
+  `build.outDir` via `configResolved` (fixed 2026-09-15 — it used to hardcode `dist/version.json`
+  regardless of `--outDir`, which silently omitted `version.json` from a custom-outDir build),
+  so `dist-prod/version.json` is written automatically; no manual copy step needed. Always still
+  do the 2b content-check above before considering the deploy done — a bundle built with the
+  wrong API URL still produces a normal-looking `index.html` and a 200 status.
 - **A killed frontend build takes the whole site down (happened 2026-09-03).** Production
   has 1880 MB RAM and **no swap**, and the bundle is ~2.9 MB unminified-chunk sized, so
   `npm run build` can be OOM-killed during "rendering chunks". Vite **empties `dist/`

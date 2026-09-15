@@ -19,15 +19,24 @@ function getBuildId(): string {
   }
 }
 
-// Writes dist/version.json after the build so a running tab can poll it to
-// learn the server's current build id. This must be a plain static file,
+// Writes <outDir>/version.json after the build so a running tab can poll it
+// to learn the server's current build id. This must be a plain static file,
 // never embedded in the hashed JS bundle -- the whole point is for an old,
 // already-loaded tab (running old JS) to detect a NEW id without reloading.
+// Reads the resolved outDir via configResolved rather than hardcoding
+// "dist" -- a build with a custom --outDir (e.g. building a prod-targeted
+// bundle on beta into dist-prod/ so version.json ships in the same tarball
+// as everything else) used to silently write into dist/ instead, leaving
+// the actual output directory without one.
 function writeVersionFile(buildId: string): Plugin {
+  let outDir = 'dist'
   return {
     name: 'write-version-file',
+    configResolved(config) {
+      outDir = config.build.outDir
+    },
     closeBundle() {
-      writeFileSync(resolve(__dirname, 'dist/version.json'), JSON.stringify({ buildId }))
+      writeFileSync(resolve(__dirname, outDir, 'version.json'), JSON.stringify({ buildId }))
     },
   }
 }
