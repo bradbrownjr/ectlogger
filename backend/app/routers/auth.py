@@ -5,7 +5,7 @@ import json
 import qrcode
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from authlib.integrations.starlette_client import OAuth
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -95,8 +95,10 @@ async def get_or_create_user(db: AsyncSession, email: str, name: str, provider: 
             await db.refresh(user)
         return user
     
-    # Check if user exists by email
-    result = await db.execute(select(User).where(User.email == email))
+    # Check if user exists by email. Case-insensitive comparison guards
+    # against any pre-existing row still holding a mixed-case address from
+    # before email normalization was enforced at every write site.
+    result = await db.execute(select(User).where(func.lower(User.email) == email))
     user = result.scalar_one_or_none()
     
     if user:
@@ -116,7 +118,7 @@ async def get_or_create_user(db: AsyncSession, email: str, name: str, provider: 
     
     # Check if a contact with this email exists — auto-populate name, callsign, location
     contact_result = await db.execute(
-        select(Contact).where(Contact.email == email)
+        select(Contact).where(func.lower(Contact.email) == email)
     )
     contact = contact_result.scalar_one_or_none()
     
@@ -235,8 +237,8 @@ async def request_magic_link(
     client_ip = get_client_ip(request)
     logger.info("API", f"Magic link request received for {payload.email}", ip=client_ip)
 
-    # Check if user exists and is banned
-    result = await db.execute(select(User).where(User.email == payload.email))
+    # Check if user exists and is banned. Case-insensitive: see get_or_create_user.
+    result = await db.execute(select(User).where(func.lower(User.email) == payload.email))
     existing_user = result.scalar_one_or_none()
     if existing_user and not existing_user.is_active:
         logger.banned_access(payload.email, client_ip)

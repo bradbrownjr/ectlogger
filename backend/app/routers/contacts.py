@@ -7,7 +7,7 @@ When a contact creates an account, their user_id is linked here.
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from typing import List
 from app.database import get_db
 from app.models import Contact, User
@@ -166,9 +166,10 @@ async def invite_contact(
     if contact.user_id:
         raise HTTPException(status_code=400, detail="Contact already has a linked user account")
     
-    # Check if a user with this email already exists
+    # Check if a user with this email already exists (case-insensitive: see
+    # app.utils.normalize_email)
     existing_user = await db.execute(
-        select(User).where(User.email == contact.email)
+        select(User).where(func.lower(User.email) == contact.email.lower())
     )
     if existing_user.scalar_one_or_none():
         raise HTTPException(

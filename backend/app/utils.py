@@ -24,6 +24,17 @@ NET_LOGO_DIR = Path(__file__).resolve().parents[1] / "data" / "net_logos"
 NET_LOGO_DIR.mkdir(parents=True, exist_ok=True)
 
 
+def normalize_email(email: str) -> str:
+    """Single source of truth for email normalization: strip + lowercase.
+
+    users.email is a plain case-sensitive unique index, so two logins that
+    differ only in case are treated as different addresses unless every
+    write and lookup normalizes first. Every schema/route that accepts an
+    email must call this rather than comparing/storing it raw.
+    """
+    return email.strip().lower()
+
+
 def _custom_avatar_file_ok(custom_url: str) -> bool:
     """Check that an uploaded avatar's file still exists on disk and isn't empty.
 

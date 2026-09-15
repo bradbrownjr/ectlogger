@@ -11,6 +11,7 @@ import CheckInFormDialog, { CheckInFormState } from '../components/netview/Check
 import NetControlDialogs from '../components/netview/NetControlDialogs';
 import NetViewHeader from '../components/netview/NetViewHeader';
 import { getCheckInStatusHelpers } from '../components/netview/checkInStatusHelpers';
+import { buildStaffRoleRankByUserId, compareCheckInsByRole } from '../components/netview/checkInSort';
 import { useSneakInHighlight } from '../components/netview/sneakInHighlight';
 import { STATUS_SELECT_MENU_PROPS } from '../components/netview/statusSelectMenuProps';
 import { getCheckInActions } from '../components/netview/checkInActions';
@@ -1306,14 +1307,9 @@ const NetView: React.FC = () => {
     .filter((role: any) => role.role === 'NCS' && role.is_active !== false)
     .sort((a, b) => new Date(a.assigned_at).getTime() - new Date(b.assigned_at).getTime());
 
-  // Anyone holding an active staffed role (NCS, Logger, or Relay) -- used to
-  // keep mobile-priority sort from ranking a mobile station above a staffed
-  // position, which it did when only NCS (not Logger/Relay) counted.
-  const staffedUserIds = new Set(
-    netRoles
-      .filter((role: any) => ['NCS', 'LOGGER', 'Relay'].includes(role.role) && role.is_active !== false)
-      .map((role: any) => role.user_id)
-  );
+  // Rank by staffed role (NCS -> Logger -> Relay -> unstaffed), used to order
+  // the check-in list. See checkInSort.ts.
+  const staffRoleRankByUserId = buildStaffRoleRankByUserId(netRoles);
 
   // Status display helpers (icon/tooltip/label/NCS crown) shared by all three
   // check-in tables. Depends on ncsRoles, so it's constructed here.
@@ -1400,24 +1396,9 @@ const NetView: React.FC = () => {
     }
     
     return true;
-  }).sort((a: CheckIn, b: CheckIn) => {
-    // Sort order: staffed positions (NCS/Logger/Relay) first → Mobile second
-    // → then original checked_in_at order. Whoever currently holds an active
-    // staffed role stays pinned to the top, regardless of when they checked
-    // in. Mobile stations may only be reachable briefly, so they surface
-    // right after staff to ensure their comments are captured before they
-    // drop off -- but never ahead of a staffed position (see staffedUserIds).
-    const aIsStaffed = staffedUserIds.has(a.user_id);
-    const bIsStaffed = staffedUserIds.has(b.user_id);
-    if (aIsStaffed !== bIsStaffed) return aIsStaffed ? -1 : 1;
-    if (net?.mobile_priority_sort !== false) {
-      const aIsMobile = a.status === 'mobile';
-      const bIsMobile = b.status === 'mobile';
-      if (aIsMobile !== bIsMobile) return aIsMobile ? -1 : 1;
-    }
-    // Preserve server order (checked_in_at ascending)
-    return new Date(a.checked_in_at).getTime() - new Date(b.checked_in_at).getTime();
-  });
+  }).sort((a: CheckIn, b: CheckIn) =>
+    compareCheckInsByRole(a, b, staffRoleRankByUserId, net?.mobile_priority_sort !== false)
+  );
 
   // Shared by the floating and docked CheckInMap instances below.
   const ncsUserIds = netRoles.filter((r: any) => r.role === 'NCS').map((r: any) => r.user_id);

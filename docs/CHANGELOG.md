@@ -4,6 +4,15 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# September 14, 2026
+
+## Bug Fixes
+
+* **Net View: NCS sorts above Logger** — The check-in list could show a Logger above the NCS if the Logger happened to check in first. NCS now always sorts to the top of the list, then Logger, then Relay, regardless of check-in order.
+* **Login: Case-insensitive email** — Signing in with your email address is no longer case-sensitive, so retyping it with different capitalization always finds your existing account instead of risking a duplicate one.
+
+---
+
 # September 9, 2026
 
 ## Bug Fixes

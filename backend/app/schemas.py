@@ -3,6 +3,7 @@ from typing import Optional, List, Literal, Dict, Any, Union
 from datetime import datetime
 from app.models import UserRole, NetStatus, StationStatus, FormDisposition, TrafficAction, RelayMethod, TrafficTestCategory
 from app.auth import validate_password_strength
+from app.utils import normalize_email
 import json
 import re
 
@@ -36,7 +37,12 @@ class UserBase(BaseModel):
     callsign: Optional[str] = Field(None, max_length=20, min_length=3, pattern=r'^[A-Z0-9/]+$')
     callsigns: Optional[List[str]] = Field(default_factory=list)
     role: UserRole = UserRole.USER
-    
+
+    @field_validator('email')
+    @classmethod
+    def normalize_email_field(cls, v: str) -> str:
+        return normalize_email(v)
+
     @field_validator('callsign')
     @classmethod
     def validate_callsign(cls, v: Optional[str]) -> Optional[str]:
@@ -65,7 +71,12 @@ class AdminUserCreate(BaseModel):
     name: Optional[str] = Field(None, max_length=100)
     callsign: Optional[str] = Field(None, max_length=20, pattern=r'^[A-Z0-9/]+$')
     role: UserRole = UserRole.USER
-    
+
+    @field_validator('email')
+    @classmethod
+    def normalize_email_field(cls, v: str) -> str:
+        return normalize_email(v)
+
     @field_validator('callsign')
     @classmethod
     def validate_callsign(cls, v: Optional[str]) -> Optional[str]:
@@ -248,6 +259,11 @@ class ContactBase(BaseModel):
     skywarn_number: Optional[str] = Field(None, max_length=50)
     notes: Optional[str] = None
 
+    @field_validator('email')
+    @classmethod
+    def normalize_email_field(cls, v: Optional[str]) -> Optional[str]:
+        return normalize_email(v) if v else v
+
     @field_validator('callsign')
     @classmethod
     def validate_callsign(cls, v: str) -> str:
@@ -268,6 +284,11 @@ class ContactUpdate(BaseModel):
     email: Optional[EmailStr] = None
     skywarn_number: Optional[str] = Field(None, max_length=50)
     notes: Optional[str] = None
+
+    @field_validator('email')
+    @classmethod
+    def normalize_email_field(cls, v: Optional[str]) -> Optional[str]:
+        return normalize_email(v) if v else v
 
     @field_validator('callsign')
     @classmethod
@@ -1148,6 +1169,11 @@ class Token(BaseModel):
 
 class MagicLinkRequest(BaseModel):
     email: EmailStr
+
+    @field_validator('email')
+    @classmethod
+    def normalize_email_field(cls, v: str) -> str:
+        return normalize_email(v)
 
 
 class MagicLinkVerify(BaseModel):

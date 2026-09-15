@@ -25,6 +25,7 @@ import CanHearDialog from '../components/netview/CanHearDialog';
 import IdentityVerifyDialog from '../components/netview/IdentityVerifyDialog';
 import { getCheckInActions } from '../components/netview/checkInActions';
 import { getCheckInStatusHelpers } from '../components/netview/checkInStatusHelpers';
+import { buildStaffRoleRankByUserId, compareCheckInsByRole } from '../components/netview/checkInSort';
 import { useSneakInHighlight } from '../components/netview/sneakInHighlight';
 import { CheckInFormState } from '../components/netview/CheckInFormDialog';
 import { canHearApi } from '../services/api';
@@ -319,14 +320,9 @@ const NetPaneWindow: React.FC = () => {
     .filter((role: any) => role.role === 'NCS' && role.is_active !== false)
     .sort((a: any, b: any) => new Date(a.assigned_at).getTime() - new Date(b.assigned_at).getTime());
 
-  // Anyone holding an active staffed role (NCS, Logger, or Relay) -- used to
-  // keep mobile-priority sort from ranking a mobile station above a staffed
-  // position, which it did when only NCS (not Logger/Relay) counted.
-  const staffedUserIds = new Set(
-    netRoles
-      .filter((role: any) => ['NCS', 'LOGGER', 'Relay'].includes(role.role) && role.is_active !== false)
-      .map((role: any) => role.user_id)
-  );
+  // Rank by staffed role (NCS -> Logger -> Relay -> unstaffed), used to order
+  // the check-in list. See checkInSort.ts.
+  const staffRoleRankByUserId = buildStaffRoleRankByUserId(netRoles);
 
   const { getStatusIcon, getStatusTooltip, getStatusLabel, getNcsIcon } =
     getCheckInStatusHelpers({ netRoles, checkIns, ncsRoles });
@@ -398,20 +394,9 @@ const NetPaneWindow: React.FC = () => {
       if (latest && checkIn.checked_in_at < latest) return false;
     }
     return true;
-  }).sort((a: any, b: any) => {
-    // Staffed positions (NCS/Logger/Relay) stay pinned to the top, regardless
-    // of when they checked in. Mobile-priority sort must never rank a mobile
-    // station above a staffed position -- see staffedUserIds.
-    const aIsStaffed = staffedUserIds.has(a.user_id);
-    const bIsStaffed = staffedUserIds.has(b.user_id);
-    if (aIsStaffed !== bIsStaffed) return aIsStaffed ? -1 : 1;
-    if (net?.mobile_priority_sort !== false) {
-      const aIsMobile = a.status === 'mobile';
-      const bIsMobile = b.status === 'mobile';
-      if (aIsMobile !== bIsMobile) return aIsMobile ? -1 : 1;
-    }
-    return new Date(a.checked_in_at).getTime() - new Date(b.checked_in_at).getTime();
-  });
+  }).sort((a: any, b: any) =>
+    compareCheckInsByRole(a, b, staffRoleRankByUserId, net?.mobile_priority_sort !== false)
+  );
 
   const showCheckInForm = (net.status === 'active' || net.status === 'lobby') && canManageCheckIns;
 

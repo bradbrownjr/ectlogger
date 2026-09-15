@@ -89,7 +89,7 @@ export default api;
 // Auth API
 export const authApi = {
   requestMagicLink: (email: string) =>
-    api.post('/auth/magic-link/request', { email }),
+    api.post('/auth/magic-link/request', { email: email.trim().toLowerCase() }),
   verifyMagicLink: (token: string, totp_code?: string) =>
     api.post('/auth/magic-link/verify', { token, totp_code }),
   passwordLogin: (identifier: string, password: string, totp_code?: string) =>

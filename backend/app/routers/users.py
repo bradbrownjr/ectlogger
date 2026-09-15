@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, nullslast, and_
+from sqlalchemy import select, nullslast, and_, func
 from sqlalchemy.orm import aliased
 from sqlalchemy.exc import IntegrityError
 from typing import List, Optional
@@ -314,8 +314,8 @@ async def create_user(
     db: AsyncSession = Depends(get_db)
 ):
     """Create/invite a new user (admin only)"""
-    # Check if user already exists
-    result = await db.execute(select(User).where(User.email == user_data.email))
+    # Check if user already exists (case-insensitive: see app.utils.normalize_email)
+    result = await db.execute(select(User).where(func.lower(User.email) == user_data.email))
     existing_user = result.scalar_one_or_none()
     
     if existing_user:
