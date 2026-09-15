@@ -37,7 +37,7 @@ from app.schemas import (
     NetUpdate,
     public_display_name,
 )
-from app.services.net_closure import close_net_and_notify
+from app.services.net_closure import close_net_and_notify, compute_auto_close_at
 from app.utils import NET_LOGO_DIR, display_callsign, format_ncs_attribution
 
 # Same limits as the profile avatar upload (routers/users.py) -- square,
@@ -326,6 +326,8 @@ async def get_net(
     )
     ncs_callsign, ncs_name = format_ncs_attribution(current_ncs_result.all())
 
+    auto_close_at = await compute_auto_close_at(db, net)
+
     return NetResponse.from_orm(
         net,
         owner_callsign=net.owner.callsign if net.owner else None,
@@ -337,6 +339,7 @@ async def get_net(
         ncs_callsign=ncs_callsign,
         ncs_name=public_display_name(ncs_name, current_user is not None),
         template_schedule_type=net.template.schedule_type if net.template else None,
+        auto_close_at=auto_close_at,
     )
 
 

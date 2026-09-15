@@ -10,6 +10,7 @@ import RoleAssignmentDialog from '../components/netview/RoleAssignmentDialog';
 import CheckInFormDialog, { CheckInFormState } from '../components/netview/CheckInFormDialog';
 import NetControlDialogs from '../components/netview/NetControlDialogs';
 import NetViewHeader from '../components/netview/NetViewHeader';
+import AutoCloseWarningBanner from '../components/netview/AutoCloseWarningBanner';
 import { getCheckInStatusHelpers } from '../components/netview/checkInStatusHelpers';
 import { buildStaffRoleRankByUserId, compareCheckInsByRole } from '../components/netview/checkInSort';
 import { useSneakInHighlight } from '../components/netview/sneakInHighlight';
@@ -139,6 +140,10 @@ const NCS_COLORS = [
   { bg: 'rgba(0, 188, 212, 0.15)', border: '#00bcd4', text: '#00bcd4' },   // Cyan
 ];
 
+// How far ahead of net.auto_close_at (see the auto-close countdown effect
+// below) the warning banner starts showing.
+const AUTO_CLOSE_WARNING_WINDOW_MS = 15 * 60 * 1000;
+
 // 12-column grid split across up to 3 docked slots: left (Script/
 // Announcements, ultrawide-only), center (check-in list), right (Chat/
 // Activity Log/Map). Preserves today's exact 8/4 split when only center+
@@ -241,6 +246,10 @@ const NetView: React.FC = () => {
   const [countdownTime, setCountdownTime] = useState<string | null>(null);
   const [durationTime, setDurationTime] = useState<string | null>(null);
   const [lobbyOpensCountdown, setLobbyOpensCountdown] = useState<string | null>(null);
+  // Auto-close-on-inactivity warning: mm:ss remaining, only set once inside
+  // AUTO_CLOSE_WARNING_WINDOW_MS of net.auto_close_at (server-computed, see
+  // services/net_closure.py::compute_auto_close_at). Null hides the banner.
+  const [autoCloseCountdown, setAutoCloseCountdown] = useState<string | null>(null);
   // Topic/Poll configuration dialog state
   const topicPollDialog = useDialog();
   const [tempTopicPrompt, setTempTopicPrompt] = useState('');
@@ -648,16 +657,38 @@ const NetView: React.FC = () => {
       } else {
         setDurationTime(null);
       }
+
+      // Auto-close-on-inactivity warning: net.auto_close_at is a
+      // server-computed timestamp (services/net_closure.py::
+      // compute_auto_close_at) already null unless the net is ACTIVE with
+      // the feature on, so no extra status/feature check is needed here.
+      // Only surfaced once inside the warning window -- outside it (or once
+      // it's passed, since the scheduler itself only ticks once a minute)
+      // the banner stays hidden rather than showing a stale/negative time.
+      if (net.auto_close_at) {
+        const closeAtStr = net.auto_close_at.endsWith('Z') ? net.auto_close_at : net.auto_close_at + 'Z';
+        const diff = new Date(closeAtStr).getTime() - now.getTime();
+
+        if (diff > 0 && diff <= AUTO_CLOSE_WARNING_WINDOW_MS) {
+          const minutes = Math.floor(diff / (1000 * 60));
+          const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+          setAutoCloseCountdown(`${minutes}:${seconds.toString().padStart(2, '0')}`);
+        } else {
+          setAutoCloseCountdown(null);
+        }
+      } else {
+        setAutoCloseCountdown(null);
+      }
     };
-    
+
     // Update immediately
     updateTimers();
-    
+
     // Update every second
     const interval = setInterval(updateTimers, 1000);
-    
+
     return () => clearInterval(interval);
-  }, [net?.scheduled_start_time, net?.started_at, net?.status, net?.owner_id, net?.id, net?.paused_at, net?.total_paused_seconds, user?.id, user?.role, netRoles]);
+  }, [net?.scheduled_start_time, net?.started_at, net?.status, net?.owner_id, net?.id, net?.paused_at, net?.total_paused_seconds, net?.auto_close_at, user?.id, user?.role, netRoles]);
 
   // Show check-in prompt for authenticated users viewing an active/lobby net they haven't checked into
   useEffect(() => {
@@ -826,6 +857,7 @@ const NetView: React.FC = () => {
   const ws = useNetWebSocket({
     netId,
     user,
+    autoCloseEnabled: net?.auto_close_after_minutes != null,
     fetchCheckIns,
     fetchNet,
     fetchNetRoles,
@@ -1546,6 +1578,9 @@ const NetView: React.FC = () => {
           minHeight: 0,
         }}
       >
+      {autoCloseCountdown && (
+        <AutoCloseWarningBanner autoCloseAt={net.auto_close_at} remainingLabel={autoCloseCountdown} />
+      )}
       <NetViewHeader
         net={net}
         netId={netId}

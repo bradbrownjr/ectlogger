@@ -533,9 +533,15 @@ class NetResponse(NetBase):
     # ongoing schedule" without a second request — see NetViewHeader.tsx's
     # edit-net visibility and the post-close subscribe prompt in NetView.tsx.
     template_schedule_type: Optional[str] = None
+    # When this net will close itself if nothing resets the inactivity clock
+    # first (routers/nets_core.py::get_net computes this via
+    # services/net_closure.py::compute_auto_close_at). None whenever
+    # auto_close_after_minutes is off, the net isn't ACTIVE, or this response
+    # wasn't built with a value (only get_net computes it, not the list view).
+    auto_close_at: Optional[datetime] = None
 
     @classmethod
-    def from_orm(cls, net, owner_callsign: str = None, owner_name: str = None, check_in_count: int = None, can_manage: bool = False, is_owner_or_ncs: bool = False, current_user_ncs_eligible: bool = False, current_user_logger_eligible: bool = False, ncs_callsign: str = None, ncs_name: str = None, user_attended: bool = None, user_ran: bool = None, template_schedule_type: str = None):
+    def from_orm(cls, net, owner_callsign: str = None, owner_name: str = None, check_in_count: int = None, can_manage: bool = False, is_owner_or_ncs: bool = False, current_user_ncs_eligible: bool = False, current_user_logger_eligible: bool = False, ncs_callsign: str = None, ncs_name: str = None, user_attended: bool = None, user_ran: bool = None, template_schedule_type: str = None, auto_close_at: datetime = None):
         import json
         data = {
             'id': net.id,
@@ -589,6 +595,7 @@ class NetResponse(NetBase):
             'user_attended': user_attended,
             'user_ran': user_ran,
             'template_schedule_type': template_schedule_type,
+            'auto_close_at': auto_close_at,
         }
         return cls(**data)
 

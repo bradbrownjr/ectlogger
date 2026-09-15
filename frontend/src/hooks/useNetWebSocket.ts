@@ -24,6 +24,12 @@ const BULK_STATUS_TIMEOUT_MS = 20000;
 interface NetWebSocketDeps {
   netId: string | undefined;
   user: { id?: number } | null;
+  // True when the net has auto-close-on-inactivity turned on. A check-in or
+  // chat message resets that timer server-side, but the net object isn't
+  // otherwise refreshed on those events (see the check_in/chat_message
+  // handlers below) -- gated on this flag so nets without the feature (the
+  // default) never pay for an extra fetchNet() on every message.
+  autoCloseEnabled: boolean;
   fetchCheckIns: () => void;
   fetchNet: () => void;
   fetchNetRoles: () => void;
@@ -138,6 +144,7 @@ export function useNetWebSocket(deps: NetWebSocketDeps): WebSocket | null {
       websocket.onmessage = (event) => {
         const {
           user,
+          autoCloseEnabled,
           fetchCheckIns,
           fetchNet,
           fetchNetRoles,
@@ -155,6 +162,11 @@ export function useNetWebSocket(deps: NetWebSocketDeps): WebSocket | null {
         const message = JSON.parse(event.data);
         if (message.type === 'check_in') {
           fetchCheckIns(); // Refresh check-ins on new check-in
+          // A check-in resets the auto-close inactivity clock server-side;
+          // pull the updated auto_close_at so the warning banner stays live.
+          if (autoCloseEnabled) {
+            fetchNet();
+          }
         } else if (message.type === 'active_speaker') {
           if (message.data?.checkInId !== undefined) {
             setActiveSpeakerId(message.data.checkInId);
@@ -187,6 +199,11 @@ export function useNetWebSocket(deps: NetWebSocketDeps): WebSocket | null {
         } else if (message.type === 'chat_message') {
           if (typeof window !== 'undefined' && window.dispatchEvent) {
             window.dispatchEvent(new CustomEvent('newChatMessage', { detail: message.data }));
+          }
+          // Same reasoning as check_in above -- a chat message also resets
+          // the auto-close inactivity clock server-side.
+          if (autoCloseEnabled) {
+            fetchNet();
           }
         } else if (message.type === 'chat_message_edited') {
           // Full updated message, same shape as chat_message, so listeners

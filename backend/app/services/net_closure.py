@@ -13,15 +13,15 @@ timestamp overrides and post_chat_message; with all three left at their
 defaults this is byte-for-byte the original close.
 """
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.email_service import EmailService
-from app.models import Net, NetRole, NetStatus, User
+from app.models import ChatMessage, CheckIn, Net, NetRole, NetStatus, User
 from app.traffic.ics309 import (
     format_traffic_ics309_message,
     get_net_traffic_log_entries,
@@ -30,6 +30,42 @@ from app.traffic.ics309 import (
 )
 from app.traffic.log import compute_net_traffic_counts
 from app.utils import display_callsign, format_ncs_attribution, format_time_for_net, resolve_display_tz, to_display_tz
+
+
+async def get_last_activity_at(db: AsyncSession, net_id: int, started_at: Optional[datetime]) -> Optional[datetime]:
+    """Most recent of: a check-in/recheck, a chat message, or the net's own start.
+
+    Shared by the auto-close scheduler (ncs_reminder_service.py) and
+    compute_auto_close_at below, so the "will close at" time a viewer sees on
+    the net page always matches what the scheduler itself will act on.
+    """
+    check_in_result = await db.execute(
+        select(func.max(func.coalesce(CheckIn.updated_at, CheckIn.checked_in_at)))
+        .where(CheckIn.net_id == net_id)
+    )
+    chat_result = await db.execute(
+        select(func.max(ChatMessage.created_at)).where(ChatMessage.net_id == net_id)
+    )
+    candidates = [started_at, check_in_result.scalar(), chat_result.scalar()]
+    candidates = [c for c in candidates if c is not None]
+    return max(candidates) if candidates else None
+
+
+async def compute_auto_close_at(db: AsyncSession, net: Net) -> Optional[datetime]:
+    """When this net will close itself if nothing resets the clock first.
+
+    None when the feature is off, the net isn't ACTIVE, or (shouldn't happen,
+    since started_at is always a fallback) there's truly no activity to
+    measure from yet -- None just means "don't show a countdown".
+    """
+    if net.auto_close_after_minutes is None or net.status != NetStatus.ACTIVE:
+        return None
+    last_activity = await get_last_activity_at(db, net.id, net.started_at)
+    if last_activity is None:
+        return None
+    if last_activity.tzinfo is None:
+        last_activity = last_activity.replace(tzinfo=timezone.utc)
+    return last_activity + timedelta(minutes=net.auto_close_after_minutes)
 
 
 async def close_net_and_notify(

@@ -14,7 +14,7 @@ from app.net_start import auto_open_lobby, lobby_open_due
 from app.utils import display_callsign, format_ncs_attribution
 from app.models import CheckIn, ChatMessage, NetTemplate, NCSRotationMember, NCSReminderLog, NCSScheduleOverride, User, NetTemplateSubscription, Net, NetStatus, TemplateStaff, NetRole
 from app.email_service import EmailService
-from app.services.net_closure import close_net_and_notify
+from app.services.net_closure import close_net_and_notify, get_last_activity_at
 from app.config import settings
 from app.logger import logger
 
@@ -1065,20 +1065,14 @@ class NCSReminderService:
     async def _last_activity_at(self, db, net_id: int, started_at):
         """Most recent of: a check-in/recheck, a chat message, or the net's own start.
 
-        The started_at fallback means a net with zero check-ins and zero chat
-        (opened and then completely forgotten) still has a baseline to count
-        from, rather than never becoming eligible for auto-close at all.
+        Delegates to the shared implementation in net_closure.py so the
+        scheduler and the net-detail endpoint's auto_close_at preview
+        (routers/nets_core.py) never drift apart. The started_at fallback
+        means a net with zero check-ins and zero chat (opened and then
+        completely forgotten) still has a baseline to count from, rather than
+        never becoming eligible for auto-close at all.
         """
-        check_in_result = await db.execute(
-            select(func.max(func.coalesce(CheckIn.updated_at, CheckIn.checked_in_at)))
-            .where(CheckIn.net_id == net_id)
-        )
-        chat_result = await db.execute(
-            select(func.max(ChatMessage.created_at)).where(ChatMessage.net_id == net_id)
-        )
-        candidates = [started_at, check_in_result.scalar(), chat_result.scalar()]
-        candidates = [c for c in candidates if c is not None]
-        return max(candidates) if candidates else None
+        return await get_last_activity_at(db, net_id, started_at)
 
     async def _check_and_close_inactive_nets(self):
         """Close an ACTIVE net that opted into auto-close once it's been quiet

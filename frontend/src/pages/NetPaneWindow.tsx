@@ -145,6 +145,7 @@ const NetPaneWindow: React.FC = () => {
   const ws = useNetWebSocket({
     netId,
     user,
+    autoCloseEnabled: net?.auto_close_after_minutes != null,
     fetchCheckIns,
     fetchNet,
     fetchNetRoles,

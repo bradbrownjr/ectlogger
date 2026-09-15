@@ -465,6 +465,7 @@ Details worth knowing:
 - The clock resets on any check-in, recheck, or chat message, so an active but quiet net (someone monitoring, occasional chatter) is not closed out from under you.
 - The close looks exactly like a normal manual close: the usual closing chat message is posted, and the log/ICS-309 email goes out the same as always. A separate chat message notes that the net closed itself automatically, so anyone reading back through the log can see why nobody clicked Close.
 - The underlying check runs every minute, so the net may close shortly after the timeout is reached rather than the instant it ticks over.
+- Anyone viewing the net sees a dismissible warning banner once it's within 15 minutes of closing, with a live countdown, so there's a last chance to check in, post to chat, or otherwise act before it happens. Dismissing it only hides that one warning -- if the net goes quiet again after new activity pushes the deadline back out, the banner returns.
 
 ### Canceling or Deleting a Net
 

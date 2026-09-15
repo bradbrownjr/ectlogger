@@ -24,6 +24,7 @@ from sqlalchemy import select
 
 from app.models import ChatMessage, CheckIn, Net, NetStatus, StationStatus
 from app.ncs_reminder_service import NCSReminderService
+from app.services.net_closure import compute_auto_close_at
 
 
 async def _make_net(db, owner, **kwargs):
@@ -146,6 +147,52 @@ async def test_find_candidates_only_active_with_minutes_set(db, owner):
     candidates = await service._find_auto_close_candidates(db)
 
     assert [n.id for n in candidates] == [active_opted_in.id]
+
+
+# ========== compute_auto_close_at (net_closure.py) ==========
+# Used by GET /nets/{id} (routers/nets_core.py::get_net) to surface the
+# warning banner's countdown target; must agree with the scheduler's own
+# _last_activity_at above since they share the same implementation.
+
+@pytest.mark.asyncio
+async def test_compute_auto_close_at_disabled_returns_none(db, owner):
+    net = await _make_net(
+        db, owner,
+        started_at=datetime.now(timezone.utc) - timedelta(hours=1),
+        auto_close_after_minutes=None,
+    )
+
+    assert await compute_auto_close_at(db, net) is None
+
+
+@pytest.mark.asyncio
+async def test_compute_auto_close_at_non_active_returns_none(db, owner):
+    net = await _make_net(
+        db, owner,
+        status=NetStatus.LOBBY,
+        started_at=datetime.now(timezone.utc) - timedelta(hours=1),
+        auto_close_after_minutes=60,
+    )
+
+    assert await compute_auto_close_at(db, net) is None
+
+
+@pytest.mark.asyncio
+async def test_compute_auto_close_at_adds_minutes_to_last_activity(db, owner):
+    started_at = datetime.now(timezone.utc) - timedelta(hours=5)
+    net = await _make_net(
+        db, owner,
+        started_at=started_at,
+        auto_close_after_minutes=60,
+    )
+    chat_at = datetime.now(timezone.utc) - timedelta(minutes=10)
+    db.add(ChatMessage(net_id=net.id, user_id=owner.id, message="hi", created_at=chat_at))
+    await db.commit()
+
+    result = await compute_auto_close_at(db, net)
+
+    expected = chat_at + timedelta(minutes=60)
+    assert result.replace(tzinfo=None) == expected.replace(tzinfo=None)
 
 
 # ========== Full _check_and_close_inactive_nets() ==========
