@@ -123,7 +123,11 @@ const NetLogoSection: React.FC<NetLogoSectionProps> = ({ entityType, entityId, l
   return (
     <>
       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 3, p: 3, border: 1, borderColor: 'divider', borderRadius: 1 }}>
-        <Avatar variant="rounded" src={logoUrl ?? undefined} sx={{ width: 96, height: 96, bgcolor: 'action.hover' }}>
+        {/* No background behind a loaded logo -- a transparent PNG/WebP should
+            show as transparent here, not tinted by a placeholder color. The
+            placeholder background only applies when there's no logo yet, so
+            the empty-state icon still has contrast. */}
+        <Avatar variant="rounded" src={logoUrl ?? undefined} sx={{ width: 96, height: 96, bgcolor: logoUrl ? 'transparent' : 'action.hover' }}>
           <ImageIcon sx={{ fontSize: 40, color: 'text.disabled' }} />
         </Avatar>
         <Typography variant="subtitle2" sx={{ mt: 2 }}>{label}</Typography>
@@ -166,7 +170,19 @@ const NetLogoSection: React.FC<NetLogoSectionProps> = ({ entityType, entityId, l
         <DialogContent sx={{ p: 0 }}>
           {imageSrc && (
             <>
-              <Box sx={{ position: 'relative', width: '100%', height: 360, bgcolor: 'black' }}>
+              {/* Checkerboard, not a solid color, behind the crop area -- a
+                  solid black backdrop made a transparent source image look
+                  like the transparency wasn't preserved, when it actually
+                  was (the crop tool was just showing its own background
+                  color through it). */}
+              <Box
+                sx={{
+                  position: 'relative',
+                  width: '100%',
+                  height: 360,
+                  background: 'repeating-conic-gradient(#808080 0% 25%, #bdbdbd 0% 50%) 0 0 / 20px 20px',
+                }}
+              >
                 <Cropper
                   image={imageSrc}
                   crop={crop}
