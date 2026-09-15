@@ -102,6 +102,12 @@ const CreateNet: React.FC = () => {
   // overridable here for this net alone. Off by default.
   const [autoLobbyEnabled, setAutoLobbyEnabled] = useState(false);
   const [autoLobbyMinutes, setAutoLobbyMinutes] = useState(15);
+  // Auto-close on inactivity: closes this net on its own once it's been
+  // quiet (no check-in/recheck/chat) past the chosen threshold. Off by
+  // default -- a long SKYWARN/ARES activation can legitimately go hours
+  // between check-ins.
+  const [autoCloseEnabled, setAutoCloseEnabled] = useState(false);
+  const [autoCloseAfterMinutes, setAutoCloseAfterMinutes] = useState(120);
 
   // ---- Community net features ----
   const [topicOfWeekEnabled, setTopicOfWeekEnabled] = useState(false);
@@ -221,6 +227,9 @@ const CreateNet: React.FC = () => {
       const autoLobby = net.auto_lobby_minutes;
       setAutoLobbyEnabled(!!autoLobby);
       if (autoLobby) setAutoLobbyMinutes(autoLobby);
+      const autoClose = net.auto_close_after_minutes;
+      setAutoCloseEnabled(!!autoClose);
+      if (autoClose) setAutoCloseAfterMinutes(autoClose);
       setTopicOfWeekEnabled(net.topic_of_week_enabled || false);
       setTopicOfWeekPrompt(net.topic_of_week_prompt || '');
       if (net.template_id) {
@@ -315,6 +324,7 @@ const CreateNet: React.FC = () => {
         chat_grace_period_minutes: chatGracePeriodEnabled ? chatGracePeriodMinutes : null,
         self_checkin_enabled: selfCheckinEnabled,
         auto_lobby_minutes: autoLobbyEnabled ? autoLobbyMinutes : null,
+        auto_close_after_minutes: autoCloseEnabled ? autoCloseAfterMinutes : null,
         topic_of_week_enabled: topicOfWeekEnabled,
         topic_of_week_prompt: topicOfWeekPrompt || null,
         poll_enabled: pollEnabled,
@@ -365,6 +375,7 @@ const CreateNet: React.FC = () => {
         traffic_strip_form_type: trafficStripFormType || null,
         traffic_strip_template: trafficStripTemplate || null,
         auto_lobby_minutes: autoLobbyEnabled ? autoLobbyMinutes : null,
+        auto_close_after_minutes: autoCloseEnabled ? autoCloseAfterMinutes : null,
         topic_of_week_enabled: topicOfWeekEnabled,
         topic_of_week_prompt: topicOfWeekPrompt || null,
         poll_enabled: pollEnabled,
@@ -428,6 +439,8 @@ const CreateNet: React.FC = () => {
     selfCheckinEnabled, setSelfCheckinEnabled,
     autoLobbyEnabled, setAutoLobbyEnabled,
     autoLobbyMinutes, setAutoLobbyMinutes,
+    autoCloseEnabled, setAutoCloseEnabled,
+    autoCloseAfterMinutes, setAutoCloseAfterMinutes,
     topicOfWeekEnabled, setTopicOfWeekEnabled,
     topicOfWeekPrompt, setTopicOfWeekPrompt,
     pollEnabled, setPollEnabled,

@@ -7,13 +7,14 @@ Background task service that sends email reminders to NCS operators
 
 import asyncio
 from datetime import datetime, timedelta, timezone
-from sqlalchemy import select, and_, or_
+from sqlalchemy import select, and_, or_, func
 from sqlalchemy.orm import selectinload
 from app.database import AsyncSessionLocal
 from app.net_start import auto_open_lobby, lobby_open_due
 from app.utils import display_callsign, format_ncs_attribution
-from app.models import CheckIn, NetTemplate, NCSRotationMember, NCSReminderLog, NCSScheduleOverride, User, NetTemplateSubscription, Net, NetStatus, TemplateStaff, NetRole
+from app.models import CheckIn, ChatMessage, NetTemplate, NCSRotationMember, NCSReminderLog, NCSScheduleOverride, User, NetTemplateSubscription, Net, NetStatus, TemplateStaff, NetRole
 from app.email_service import EmailService
+from app.services.net_closure import close_net_and_notify
 from app.config import settings
 from app.logger import logger
 
@@ -100,6 +101,7 @@ class NCSReminderService:
                 await self._check_and_send_staff_reminders()
                 await self._check_and_send_subscriber_reminders()
                 await self._check_and_archive_stale_scheduled_nets()
+                await self._check_and_close_inactive_nets()
             except Exception as e:
                 logger.error("NCS_REMINDER", f"Error in reminder loop: {str(e)}")
 
@@ -191,6 +193,7 @@ class NCSReminderService:
                 # Copied forward so the NCS can turn auto-lobby off for this one
                 # occurrence without editing the schedule.
                 auto_lobby_minutes=template.auto_lobby_minutes,
+                auto_close_after_minutes=template.auto_close_after_minutes,
                 topic_of_week_enabled=template.topic_of_week_enabled or False,
                 topic_of_week_prompt=topic_prompt,
                 poll_enabled=template.poll_enabled or False,
@@ -1037,6 +1040,120 @@ class NCSReminderService:
 
             await db.commit()
             logger.info("NCS_REMINDER", f"Auto-archived {len(stale)} stale scheduled net(s)")
+
+    async def _find_auto_close_candidates(self, db):
+        """ACTIVE nets that opted into auto-close-on-inactivity.
+
+        Scoped to ACTIVE only -- a quiet LOBBY nobody attended is already
+        handled by the stale-net sweep above (archived, not closed, since it
+        never really happened). A net that's paused mid-net (net.paused_at
+        set) is left alone here too: NCS stepping away is exactly why pause
+        exists, and it doesn't move net.status off ACTIVE, but the pause
+        itself is not "activity" that should reset the clock either -- see
+        _last_activity_at below, which only looks at check-ins and chat.
+        """
+        result = await db.execute(
+            select(Net).where(
+                and_(
+                    Net.status == NetStatus.ACTIVE,
+                    Net.auto_close_after_minutes.isnot(None),
+                )
+            )
+        )
+        return result.scalars().all()
+
+    async def _last_activity_at(self, db, net_id: int, started_at):
+        """Most recent of: a check-in/recheck, a chat message, or the net's own start.
+
+        The started_at fallback means a net with zero check-ins and zero chat
+        (opened and then completely forgotten) still has a baseline to count
+        from, rather than never becoming eligible for auto-close at all.
+        """
+        check_in_result = await db.execute(
+            select(func.max(func.coalesce(CheckIn.updated_at, CheckIn.checked_in_at)))
+            .where(CheckIn.net_id == net_id)
+        )
+        chat_result = await db.execute(
+            select(func.max(ChatMessage.created_at)).where(ChatMessage.net_id == net_id)
+        )
+        candidates = [started_at, check_in_result.scalar(), chat_result.scalar()]
+        candidates = [c for c in candidates if c is not None]
+        return max(candidates) if candidates else None
+
+    async def _check_and_close_inactive_nets(self):
+        """Close an ACTIVE net that opted into auto-close once it's been quiet
+        past its own configured threshold.
+
+        Off by default (Net.auto_close_after_minutes is null) -- added after
+        the ME Dirigo Net (net 92, 2026-09-14) was left open for hours after
+        the NCS said the net was complete and forgot to press Close. Goes
+        through the exact same close_net_and_notify() a manual close uses (so
+        the log email/ICS-309/broadcast are all identical to a human closing
+        it), just with its own system chat message in place of the default
+        "closed by X" line, since there is no human actor to credit.
+        """
+        logger.debug("NCS_REMINDER", "Checking for inactive nets to auto-close...")
+
+        # Imported here, not at module scope: app.main imports the routers,
+        # which (transitively) import this module, so a top-level import
+        # would be circular -- same reasoning as net_start.py.
+        from app.main import post_system_message
+
+        async with AsyncSessionLocal() as db:
+            candidates = await self._find_auto_close_candidates(db)
+            if not candidates:
+                return
+
+            now = datetime.now(timezone.utc)
+            closed = 0
+            for net in candidates:
+                try:
+                    last_activity = await self._last_activity_at(db, net.id, net.started_at)
+                    if last_activity is None:
+                        continue
+                    if last_activity.tzinfo is None:
+                        last_activity = last_activity.replace(tzinfo=timezone.utc)
+
+                    elapsed_minutes = (now - last_activity).total_seconds() / 60
+                    if elapsed_minutes < net.auto_close_after_minutes:
+                        continue
+
+                    # Re-fetch with the eager loads close_net_and_notify needs
+                    # (frequencies, check-ins) -- the candidate query above is
+                    # deliberately unadorned since most ticks close nothing.
+                    result = await db.execute(
+                        select(Net).options(
+                            selectinload(Net.frequencies),
+                            selectinload(Net.check_ins).selectinload(CheckIn.frequency),
+                        ).where(Net.id == net.id)
+                    )
+                    full_net = result.scalar_one_or_none()
+                    if not full_net or full_net.status != NetStatus.ACTIVE:
+                        continue
+
+                    hours = net.auto_close_after_minutes / 60
+                    hours_label = f"{hours:g} hour" + ("s" if hours != 1 else "")
+                    await post_system_message(
+                        full_net.id,
+                        f"Net automatically closed after {hours_label} of inactivity.",
+                        db,
+                    )
+
+                    owner_result = await db.execute(select(User).where(User.id == full_net.owner_id))
+                    owner = owner_result.scalar_one_or_none()
+                    await close_net_and_notify(db, full_net, owner, post_chat_message=False)
+
+                    closed += 1
+                    logger.info(
+                        "NCS_REMINDER",
+                        f"Auto-closed inactive net {full_net.id} ({full_net.name}) "
+                        f"after {elapsed_minutes:.0f} min with no check-in/chat activity",
+                    )
+                except Exception as e:
+                    logger.error("NCS_REMINDER", f"Error auto-closing net {net.id}: {str(e)}")
+
+            if closed:
+                logger.info("NCS_REMINDER", f"Auto-closed {closed} inactive net(s)")
 
 
 # Global instance

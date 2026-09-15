@@ -49,6 +49,7 @@ The responsive interface works beautifully on any device — from a phone in the
 - **📡 RSS Feeds** — Subscribe to upcoming nets (next 14 days) via the RSS icon on the Scheduler page, or to the changelog via the RSS icon in the What's New dialog, in any feed reader
 - **🚫 Net Cancellation** — Cancel a draft/scheduled net that isn't happening (in-person meeting, work conflict, etc.) with an optional reason; it's logged as Cancelled in Archived Nets instead of silently disappearing, the recurring schedule won't recreate it, and it can be restored later if plans change
 - **🚪 Automatic Lobby** — Optionally open a scheduled net's lobby a set number of minutes early so stations can check in before Net Control arrives
+- **⏱️ Automatic Close on Inactivity** — Optional per-net/schedule toggle that closes a net on its own after a chosen period (1-4 hours) with no check-ins or chat activity, so a net Net Control forgot to close doesn't sit open indefinitely. Off by default so long SKYWARN/ARES activations are never cut short
 - **📜 Net Scripts** — Create formatted scripts for NCS operators to follow during nets
 - **🗒️ Net Notes** — Jot down something specific to one net (e.g. a repeater running weak) separately from your schedule's standing announcements
 - **✏️ Inline Editing** — NCS/Loggers can click any check-in row to edit fields directly

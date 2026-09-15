@@ -40,6 +40,8 @@ const BasicInfoTab: React.FC = () => {
     selfCheckinEnabled, setSelfCheckinEnabled,
     autoLobbyEnabled, setAutoLobbyEnabled,
     autoLobbyMinutes, setAutoLobbyMinutes,
+    autoCloseEnabled, setAutoCloseEnabled,
+    autoCloseAfterMinutes, setAutoCloseAfterMinutes,
     topicOfWeekEnabled, setTopicOfWeekEnabled,
     topicOfWeekPrompt, setTopicOfWeekPrompt,
     topicHistory,
@@ -220,6 +222,32 @@ const BasicInfoTab: React.FC = () => {
               )}
             </Box>
           )}
+
+          {/* Auto-close on inactivity — independent of a scheduled start time,
+              unlike auto-open lobby above; based on the last check-in/recheck
+              or chat message instead of the clock. */}
+          <Box sx={{ mt: 2 }}>
+            <FormControlLabel
+              control={<Switch checked={autoCloseEnabled} onChange={(e) => setAutoCloseEnabled(e.target.checked)} />}
+              label="Close this net automatically after inactivity"
+            />
+            <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5, mb: autoCloseEnabled ? 1 : 0 }}>
+              If nobody checks in, rechecks, or chats for this long, the net closes itself and the usual closing log still goes out. Off by default — leave off for a SKYWARN/ARES activation that may go hours between check-ins.
+            </Typography>
+            {autoCloseEnabled && (
+              <Box sx={{ ml: 4.5 }}>
+                <Select
+                  size="small" value={autoCloseAfterMinutes}
+                  onChange={(e) => setAutoCloseAfterMinutes(Number(e.target.value))}
+                >
+                  <MenuItem value={60}>1 hour of inactivity</MenuItem>
+                  <MenuItem value={120}>2 hours of inactivity</MenuItem>
+                  <MenuItem value={180}>3 hours of inactivity</MenuItem>
+                  <MenuItem value={240}>4 hours of inactivity</MenuItem>
+                </Select>
+              </Box>
+            )}
+          </Box>
         </>
       )}
 

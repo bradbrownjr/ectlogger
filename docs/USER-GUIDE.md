@@ -458,6 +458,14 @@ Details worth knowing:
 - If a lobby opened on its own and nobody ever checked in, it is archived off the dashboard a day later, the same as a scheduled net that was never opened.
 - While waiting for it to fire, the net's page shows a live **Lobby opens in** countdown next to the existing **Starts in** countdown, so nobody has to guess whether or when it will happen. The underlying check runs every minute, so the lobby may open shortly after the countdown reaches zero.
 
+**Closing a net automatically after inactivity** — it's easy for Net Control to sign off the air and forget to click **Close** on the site, leaving the net showing as active indefinitely. Turn on **Close this net automatically after inactivity** and pick how long (1, 2, 3, or 4 hours) and the net will close itself once that much time has passed with no check-ins, rechecks, or chat messages.
+
+- The control appears on the **Basic Info** tab of both the Create/Edit Net page and the Create/Edit Schedule page. On a schedule, it sets the default for every net created from it; on an individual net, it can be overridden without affecting the schedule.
+- It is off by default. A long SKYWARN or ARES activation can legitimately go hours between check-ins, so nothing closes on its own unless you turn this on.
+- The clock resets on any check-in, recheck, or chat message, so an active but quiet net (someone monitoring, occasional chatter) is not closed out from under you.
+- The close looks exactly like a normal manual close: the usual closing chat message is posted, and the log/ICS-309 email goes out the same as always. A separate chat message notes that the net closed itself automatically, so anyone reading back through the log can see why nobody clicked Close.
+- The underlying check runs every minute, so the net may close shortly after the timeout is reached rather than the instant it ticks over.
+
 ### Canceling or Deleting a Net
 
 Draft and scheduled nets use **Cancel**, a soft, reversible action; active, lobby, and closed nets use **Delete**, which is permanent. Both appear only to net owners, NCS, and admins.

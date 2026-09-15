@@ -415,6 +415,9 @@ class NetBase(BaseModel):
     self_checkin_enabled: Optional[bool] = True
     # Minutes before the scheduled start to auto-open the lobby; null = disabled
     auto_lobby_minutes: Optional[int] = Field(None, ge=0, le=1440)
+    # Minutes of inactivity (no check-in/recheck/chat) after which an ACTIVE
+    # net closes itself; null = disabled (the default)
+    auto_close_after_minutes: Optional[int] = Field(None, ge=15, le=1440)
     # Topic of the Week / Poll features
     topic_of_week_enabled: Optional[bool] = False
     topic_of_week_prompt: Optional[str] = Field(None, max_length=500)
@@ -456,6 +459,7 @@ class NetUpdate(BaseModel):
     chat_grace_period_minutes: Optional[int] = None
     self_checkin_enabled: Optional[bool] = None
     auto_lobby_minutes: Optional[int] = Field(None, ge=0, le=1440)
+    auto_close_after_minutes: Optional[int] = Field(None, ge=15, le=1440)
     # Topic of the Week / Poll features
     topic_of_week_enabled: Optional[bool] = None
     topic_of_week_prompt: Optional[str] = Field(None, max_length=500)
@@ -562,6 +566,7 @@ class NetResponse(NetBase):
             'chat_grace_period_minutes': net.chat_grace_period_minutes,
             'self_checkin_enabled': net.self_checkin_enabled if net.self_checkin_enabled is not None else True,
             'auto_lobby_minutes': net.auto_lobby_minutes,
+            'auto_close_after_minutes': net.auto_close_after_minutes,
             'topic_of_week_enabled': net.topic_of_week_enabled or False,
             'topic_of_week_prompt': net.topic_of_week_prompt,
             'poll_enabled': net.poll_enabled or False,
@@ -617,6 +622,9 @@ class NetTemplateBase(BaseModel):
     # Default minutes before the scheduled start to auto-open the lobby for nets
     # created from this schedule; null = disabled
     auto_lobby_minutes: Optional[int] = Field(None, ge=0, le=1440)
+    # Default auto-close-on-inactivity minutes for nets created from this
+    # schedule; null = disabled (the default)
+    auto_close_after_minutes: Optional[int] = Field(None, ge=15, le=1440)
     # Topic of the Week / Poll features
     topic_of_week_enabled: Optional[bool] = False
     topic_of_week_prompt: Optional[str] = Field(None, max_length=500)
@@ -655,6 +663,7 @@ class NetTemplateUpdate(BaseModel):
     chat_grace_period_minutes: Optional[int] = None
     self_checkin_enabled: Optional[bool] = None
     auto_lobby_minutes: Optional[int] = Field(None, ge=0, le=1440)
+    auto_close_after_minutes: Optional[int] = Field(None, ge=15, le=1440)
     # Topic of the Week / Poll features
     topic_of_week_enabled: Optional[bool] = None
     topic_of_week_prompt: Optional[str] = Field(None, max_length=500)
@@ -718,6 +727,7 @@ class NetTemplateResponse(NetTemplateBase):
             'chat_grace_period_minutes': template.chat_grace_period_minutes,
             'self_checkin_enabled': template.self_checkin_enabled if template.self_checkin_enabled is not None else True,
             'auto_lobby_minutes': template.auto_lobby_minutes,
+            'auto_close_after_minutes': template.auto_close_after_minutes,
             'topic_of_week_enabled': template.topic_of_week_enabled or False,
             'topic_of_week_prompt': template.topic_of_week_prompt,
             'poll_enabled': template.poll_enabled or False,

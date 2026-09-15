@@ -153,6 +153,7 @@ async def create_template(
         traffic_strip_template=template_data.traffic_strip_template,
         self_checkin_enabled=template_data.self_checkin_enabled if template_data.self_checkin_enabled is not None else True,
         auto_lobby_minutes=template_data.auto_lobby_minutes,
+        auto_close_after_minutes=template_data.auto_close_after_minutes,
         topic_of_week_enabled=template_data.topic_of_week_enabled or False,
         topic_of_week_prompt=template_data.topic_of_week_prompt,
         poll_enabled=template_data.poll_enabled or False,
@@ -399,6 +400,8 @@ async def update_template(
     # model_fields_set, not "is not None": null is the meaningful "disabled" value
     if 'auto_lobby_minutes' in template_data.model_fields_set:
         template.auto_lobby_minutes = template_data.auto_lobby_minutes
+    if 'auto_close_after_minutes' in template_data.model_fields_set:
+        template.auto_close_after_minutes = template_data.auto_close_after_minutes
     if template_data.topic_of_week_enabled is not None:
         template.topic_of_week_enabled = template_data.topic_of_week_enabled
     if template_data.topic_of_week_prompt is not None:

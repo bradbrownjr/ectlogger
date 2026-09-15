@@ -103,6 +103,10 @@ export interface CreateScheduleContextValue {
   // disabled; 0 = "enabled, no offset" for ad-hoc and a one-time net with no start time).
   autoLobbyEnabled: boolean; setAutoLobbyEnabled: Dispatch<SetStateAction<boolean>>;
   autoLobbyMinutes: number; setAutoLobbyMinutes: Dispatch<SetStateAction<number>>;
+  // Default auto-close-on-inactivity for nets created from this schedule;
+  // collapses to nullable auto_close_after_minutes, same null-disabled shape.
+  autoCloseEnabled: boolean; setAutoCloseEnabled: Dispatch<SetStateAction<boolean>>;
+  autoCloseAfterMinutes: number; setAutoCloseAfterMinutes: Dispatch<SetStateAction<number>>;
   // One-time only: an optional real start time for the net, independent of the lobby
   // toggle. Blank keeps today's "create now" behavior; filled in, it becomes the
   // net's scheduled_start_time and unlocks the offset-style lobby control.

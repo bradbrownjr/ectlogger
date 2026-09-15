@@ -32,6 +32,8 @@ const ScheduleTab: React.FC = () => {
     isEdit,
     autoLobbyEnabled, setAutoLobbyEnabled,
     autoLobbyMinutes, setAutoLobbyMinutes,
+    autoCloseEnabled, setAutoCloseEnabled,
+    autoCloseAfterMinutes, setAutoCloseAfterMinutes,
     oneTimeScheduledStartTime, setOneTimeScheduledStartTime,
     chatGracePeriodEnabled, setChatGracePeriodEnabled,
     chatGracePeriodMinutes, setChatGracePeriodMinutes,
@@ -283,6 +285,35 @@ const ScheduleTab: React.FC = () => {
           )}
         </Box>
       )}
+
+      {/* ========== Auto-close on inactivity ==========
+          Default for nets created from this schedule; unlike auto-lobby above
+          this needs no scheduled time to count from, since it's based on the
+          last check-in/recheck or chat message instead of the clock. Each
+          occurrence can still override it from that net's own settings. */}
+      <Box sx={{ ml: 1, mt: 3 }}>
+        <FormControlLabel
+          control={<Switch checked={autoCloseEnabled} onChange={(e) => setAutoCloseEnabled(e.target.checked)} />}
+          label="Close nets automatically after inactivity"
+        />
+        <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5, mb: autoCloseEnabled ? 1 : 0 }}>
+          If nobody checks in, rechecks, or chats for this long, the net closes itself and the usual closing log still goes out. Off by default — leave off for a SKYWARN/ARES activation that may go hours between check-ins.
+        </Typography>
+        {autoCloseEnabled && (
+          <Box sx={{ ml: 4.5 }}>
+            <Select
+              size="small"
+              value={autoCloseAfterMinutes}
+              onChange={(e) => setAutoCloseAfterMinutes(Number(e.target.value))}
+            >
+              <MenuItem value={60}>1 hour of inactivity</MenuItem>
+              <MenuItem value={120}>2 hours of inactivity</MenuItem>
+              <MenuItem value={180}>3 hours of inactivity</MenuItem>
+              <MenuItem value={240}>4 hours of inactivity</MenuItem>
+            </Select>
+          </Box>
+        )}
+      </Box>
 
       {/* ========== Keep chat open after closing ========== */}
       <Box sx={{ ml: 1, mt: 3 }}>

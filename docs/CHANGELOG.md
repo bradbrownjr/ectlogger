@@ -4,6 +4,14 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# September 15, 2026
+
+## New Features
+
+* **Net Settings: Close automatically after inactivity** — Turn on an optional timeout (1-4 hours) so a net with no new check-ins, rechecks, or chat closes itself, instead of sitting open for hours after net control forgets to close it. Off by default, so a long SKYWARN or ARES activation with quiet stretches is never closed out from under you. Set a default for a whole schedule from Create/Edit Schedule, or turn it on for a single net from that net's own settings.
+
+---
+
 # September 14, 2026
 
 ## Bug Fixes

@@ -303,6 +303,7 @@ async def create_net_from_template(
         chat_grace_period_minutes=template.chat_grace_period_minutes,
         self_checkin_enabled=template.self_checkin_enabled if template.self_checkin_enabled is not None else True,
         auto_lobby_minutes=template.auto_lobby_minutes,
+        auto_close_after_minutes=template.auto_close_after_minutes,
         topic_of_week_enabled=template.topic_of_week_enabled or False,
         topic_of_week_prompt=topic_prompt,
         poll_enabled=template.poll_enabled or False,

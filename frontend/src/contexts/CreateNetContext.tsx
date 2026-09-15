@@ -46,6 +46,9 @@ export interface CreateNetContextValue {
   // Auto-open lobby for this net only; sent as a nullable auto_lobby_minutes
   autoLobbyEnabled: boolean; setAutoLobbyEnabled: Dispatch<SetStateAction<boolean>>;
   autoLobbyMinutes: number; setAutoLobbyMinutes: Dispatch<SetStateAction<number>>;
+  // Auto-close this net after inactivity; sent as a nullable auto_close_after_minutes
+  autoCloseEnabled: boolean; setAutoCloseEnabled: Dispatch<SetStateAction<boolean>>;
+  autoCloseAfterMinutes: number; setAutoCloseAfterMinutes: Dispatch<SetStateAction<number>>;
 
   // Community features
   topicOfWeekEnabled: boolean; setTopicOfWeekEnabled: Dispatch<SetStateAction<boolean>>;

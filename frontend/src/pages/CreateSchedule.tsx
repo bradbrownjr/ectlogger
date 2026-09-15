@@ -96,6 +96,10 @@ const CreateSchedule: React.FC = () => {
   // Auto-open lobby is off by default; existing schedules keep their current behavior
   const [autoLobbyEnabled, setAutoLobbyEnabled] = useState(false);
   const [autoLobbyMinutes, setAutoLobbyMinutes] = useState(15);
+  // Default for nets created from this schedule; each occurrence can still
+  // override it (see CreateNet.tsx). Off by default.
+  const [autoCloseEnabled, setAutoCloseEnabled] = useState(false);
+  const [autoCloseAfterMinutes, setAutoCloseAfterMinutes] = useState(120);
   const [oneTimeScheduledStartTime, setOneTimeScheduledStartTime] = useState('');
 
   // ---- Community net features ----
@@ -221,6 +225,9 @@ const CreateSchedule: React.FC = () => {
       const autoLobby = schedule.auto_lobby_minutes;
       setAutoLobbyEnabled(!!autoLobby);
       if (autoLobby) setAutoLobbyMinutes(autoLobby);
+      const autoClose = schedule.auto_close_after_minutes;
+      setAutoCloseEnabled(!!autoClose);
+      if (autoClose) setAutoCloseAfterMinutes(autoClose);
       setTopicOfWeekEnabled(schedule.topic_of_week_enabled || false);
       setTopicOfWeekPrompt(schedule.topic_of_week_prompt || '');
       setPollEnabled(schedule.poll_enabled || false);
@@ -300,6 +307,7 @@ const CreateSchedule: React.FC = () => {
       chat_grace_period_minutes: chatGracePeriodEnabled ? chatGracePeriodMinutes : null,
       self_checkin_enabled: selfCheckinEnabled,
       auto_lobby_minutes: effectiveAutoLobbyMinutes,
+      auto_close_after_minutes: autoCloseEnabled ? autoCloseAfterMinutes : null,
       topic_of_week_enabled: topicOfWeekEnabled,
       topic_of_week_prompt: topicOfWeekPrompt || null,
       poll_enabled: pollEnabled,
@@ -375,6 +383,8 @@ const CreateSchedule: React.FC = () => {
     selfCheckinEnabled, setSelfCheckinEnabled,
     autoLobbyEnabled, setAutoLobbyEnabled,
     autoLobbyMinutes, setAutoLobbyMinutes,
+    autoCloseEnabled, setAutoCloseEnabled,
+    autoCloseAfterMinutes, setAutoCloseAfterMinutes,
     oneTimeScheduledStartTime, setOneTimeScheduledStartTime,
     topicOfWeekEnabled, setTopicOfWeekEnabled, topicOfWeekPrompt, setTopicOfWeekPrompt,
     pollEnabled, setPollEnabled, pollQuestion, setPollQuestion,

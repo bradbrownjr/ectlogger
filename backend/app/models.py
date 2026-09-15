@@ -209,6 +209,14 @@ class Net(Base):
     # from the template at auto-create time; the per-net value is authoritative
     # so an NCS can switch it off for a single occurrence.
     auto_lobby_minutes = Column(Integer, nullable=True)
+    # Auto-close on inactivity: minutes since the last check-in/recheck/chat
+    # message (falling back to started_at if the net has neither) after which
+    # the scheduler closes an ACTIVE net on its own. Null = disabled (the
+    # default) -- a long SKYWARN/ARES activation can legitimately go hours
+    # between check-ins, so this must never close a net nobody asked it to.
+    # Copied from the template at auto-create time; the per-net value is
+    # authoritative, same pattern as auto_lobby_minutes above.
+    auto_close_after_minutes = Column(Integer, nullable=True)
     # True only when the scheduler opened the lobby. Lets the stale sweep archive
     # a lobby nobody attended without ever undoing a human's manual open.
     lobby_opened_automatically = Column(Boolean, nullable=False, default=False)
@@ -281,6 +289,9 @@ class NetTemplate(Base):
     # Default auto-open-lobby offset for nets created from this schedule, in
     # minutes before the scheduled start. Null = disabled (the default).
     auto_lobby_minutes = Column(Integer, nullable=True)
+    # Default auto-close-on-inactivity minutes for nets created from this
+    # schedule. Null = disabled (the default). See Net.auto_close_after_minutes.
+    auto_close_after_minutes = Column(Integer, nullable=True)
 
     # Topic of the Week / Poll features for community nets
     topic_of_week_enabled = Column(Boolean, default=False)

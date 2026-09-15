@@ -1,6 +1,22 @@
 {
-  "version": "2026.09.14",
+  "version": "2026.09.15",
   "entries": [
+    {
+      "version": "2026.09.15",
+      "date": "2026-09-15",
+      "sections": [
+        {
+          "title": "New Features",
+          "type": "feature",
+          "items": [
+            {
+              "text": "Net Settings: Close automatically after inactivity — turn on an optional timeout (1-4 hours) so a net with no new check-ins, rechecks, or chat closes itself, instead of sitting open for hours after net control forgets to close it. Off by default, so a long SKYWARN or ARES activation with quiet stretches is never closed out from under you. Set a default for a whole schedule from Create/Edit Schedule, or turn it on for a single net from that net's own settings.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.09.14",
       "date": "2026-09-14",
