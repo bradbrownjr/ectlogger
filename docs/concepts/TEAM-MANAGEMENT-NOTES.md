@@ -1,6 +1,6 @@
 # Team Management Spec Draft (Back-Burner)
 
-Last updated: 2026-09-15
+Last updated: 2026-09-16
 
 This document is a structured draft spec for a future Team Management module. It is intentionally scoped as back-burner work while core web app stability and self-hosting priorities are completed.
 
@@ -235,6 +235,7 @@ EC/AEC are organizational appointments; NCS is an operational role. Neither a ti
 | TM-32 | As a qualified relief operator, I want to use a team kit without relying on its usual operator. | I can access its approved, printable configuration-specific guide, reconcile the manifest, connect and test the setup, and report missing or outdated instructions. |
 | TM-33 | As a reporting coordinator, I want an NH-style timecard without duplicate entry. | Approved mappings include off-air work, preserve recorded time, apply export-only rounding, and trace totals to canonical activity without double-counting. |
 | TM-34 | As an exercise lead, I want station-specific findings to improve the next operation. | Observations link to the affected configuration, kit, site, or procedure; a corrective action has an owner, due date, and retest evidence without automatically certifying an operator. |
+| TM-35 | As a team net manager creating or editing a team-linked net, I want the team's PACE frequencies/channels at the top of the frequency options. | The authorized team's approved radio entries appear first, labeled and ordered Primary, Alternate, Contingency, Emergency; remaining permitted choices stay available, and suggestions never silently select or replace a net frequency. |
 
 ## 5. Functional Requirements
 
@@ -288,6 +289,17 @@ EC/AEC are organizational appointments; NCS is an operational role. Neither a ti
 - Require authority over both the net/schedule and the destination team to create or change the association; an association grants no additional net or traffic permissions.
 - Keep membership effective dates and the report's attribution rule. Backdated/imported participation requires review rather than assigning every historical check-in to today's roster.
 - Do not treat a check-in count, website login, or NCS appointment as proof of current training, willingness to deploy, or equipment readiness.
+
+#### PACE-Aware Frequency Selection
+
+When an authorized net manager creates or edits a net connected to a team, automatically present that team's approved PACE radio frequencies/channels at the top of the frequency selection list. This applies whether the team association is selected directly or inherited from a schedule/template. Reuse the section 5.14 PACE entries and existing `Frequency` choices rather than maintaining a separate favorites list.
+
+- Show a labeled team PACE group before the remaining permitted frequency options, ordered Primary, Alternate, Contingency, Emergency. Include channel name, frequency, mode, relevant channel settings, and PACE role so similarly named or numerically identical channels can be distinguished.
+- If the team has multiple approved mission/path plans, identify the plan/path on each entry; where a plan is explicitly selected for the net, prioritize that plan within the PACE group. Preserve configured order within a role. Non-radio methods such as telephone/SMS do not become frequency options.
+- Resolve approved PACE radio entries to selectable channel records without duplicating them in the remaining list. Deduplicate by channel identity/settings, not frequency number alone; retain all applicable plan/role labels. Unresolved or incomplete entries are visibly flagged for authorized review, not silently fabricated into usable channels.
+- Keep normal search/filter behavior, showing matching PACE entries first and other matching choices afterward. Prioritization is a convenience, not a restriction, automatic selection, or authorization to transmit.
+- Recompute suggestions when the team association changes or is cleared. Preserve already selected net frequencies; flag any access/validity problem for explicit resolution rather than silently replacing or deleting a selection. Later PACE revisions do not rewrite saved net settings.
+- Enforce team/plan visibility for suggestions, labels, and channel details. Draft, superseded, or unauthorized plans must not be exposed as current recommendations. A team with no approved radio entries, or a net without a team, retains the ordinary frequency list. Selecting a restricted entry does not authorize publishing its private details in public net outputs; apply the document/channel disclosure rules before saving or exporting.
 
 ### 5.5 Reporting
 
@@ -940,12 +952,15 @@ TM-32 passes when a qualified relief operator uses the approved guide and manife
 This work depends on M1/M2 permissions, membership, and contact preferences; it can proceed independently of asset reporting and Events.
 
 - **First release:** versioned local procedures, agency/deputy responsibilities, approved PACE/rendezvous cards, alert stages, manual radio/phone callouts and assisted response recording. Publish/distribute through an explicit local adoption workflow; the app is not a prerequisite for listening under a previously issued plan.
+- Add section 5.4 PACE-aware frequency selection to team-linked net creation/editing, including inherited team associations, labeled role ordering, authorized channel resolution, and refresh on team changes. This convenience does not depend on SMS or the incident planner.
 - **Optional provider release:** implement Twilio configuration, sender/team isolation, consent/suppression, recipient previews, individual queued sends, budget/expiry controls, signed reply/status callbacks, and response/follow-up views. Keep provider delivery distinct from human acknowledgment and authority. No SMS feature is complete until opt-out, cancellation, uncertain delivery, and stale-job behavior are handled.
 - Pilot first with a simulated provider and synthetic recipients; conduct any real test only with an approved sender and explicitly enrolled participants. Rehearse app/internet/provider failure using the distributed radio card, and record phone/radio acknowledgments.
 - Deliver privacy/consent documentation and self-hosted setup guidance with the provider feature. Include the procedure library, document owner/deputy handover, review reminders, and open-action dashboard.
 - Add seasonal/member-prestorm/leadership-prestorm checklist templates and instances, owners/deadlines, assisted completion, and links to station tests when M3 is available. Keep personal details minimal and outstanding blockers visible. Needs/gap collection can ship here; primary/backup staffing integration follows in M5.
 
 **Exit:** TM-22 through TM-24 and the procedure-handover portion of TM-28 pass. STOP during a queued broadcast prevents subsequent sends; callback replays and out-of-order events cannot create false acknowledgments or reverse suppression; a submission timeout does not trigger blind duplicate alerts. A coordinator can identify unresolved recipients and a non-SMS member can participate. No test turns an advisory, availability response, or message delivery into deployment authorization.
+
+TM-35 passes in both net creation and editing: direct and inherited team associations prioritize approved PACE channels, search retains that priority among matches, shared entries are not duplicated, and distinct channel settings remain distinguishable. Test multiple plans, switching/clearing teams, missing or unresolved PACE entries, revoked access, and a later plan revision. Existing selections remain unchanged unless explicitly edited, and restricted plan/channel details do not leak through suggestions or public outputs.
 
 ### M4 — Participation, Coordinator Reports, and Coverage
 
