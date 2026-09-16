@@ -71,6 +71,7 @@ Primary implementation references: [models](../../backend/app/models.py), [permi
 ### Goals
 
 - Replace spreadsheet-based team tracking.
+- Ease new-team onboarding with downloadable, versioned CSV templates and guided imports for supported record types, not just member rosters.
 - Let users safely maintain their own profile/team data.
 - Restrict cross-user edits to staff with the relevant delegated team permission.
 - Link net participation to team records and reporting.
@@ -236,6 +237,7 @@ EC/AEC are organizational appointments; NCS is an operational role. Neither a ti
 | TM-33 | As a reporting coordinator, I want an NH-style timecard without duplicate entry. | Approved mappings include off-air work, preserve recorded time, apply export-only rounding, and trace totals to canonical activity without double-counting. |
 | TM-34 | As an exercise lead, I want station-specific findings to improve the next operation. | Observations link to the affected configuration, kit, site, or procedure; a corrective action has an owner, due date, and retest evidence without automatically certifying an operator. |
 | TM-35 | As a team net manager creating or editing a team-linked net, I want the team's PACE frequencies/channels at the top of the frequency options. | The authorized team's approved radio entries appear first, labeled and ordered Primary, Alternate, Contingency, Emergency; remaining permitted choices stay available, and suggestions never silently select or replace a net frequency. |
+| TM-36 | As a coordinator onboarding a team with existing records, I want downloadable CSV templates for each supported record type. | I can download a blank template and synthetic example, map existing columns, preview validation and relationships, and import authorized records in dependency order; corrections/re-imports do not duplicate records or silently overwrite data. |
 
 ## 5. Functional Requirements
 
@@ -492,7 +494,7 @@ Demonstrated-readiness scenarios:
 
 **Freshness:** distinguish last edited, last member/assisted confirmation, and last staff verification. Confirming a phone number does not refresh equipment or training evidence. Offer configurable section-level review intervals (a proposed pilot default is six months for contact/capability confirmation), a one-click "still correct" action, and a manager queue for overdue or undeliverable requests. Reminders respect contact preferences and historical status, avoid duplicate sends, and support recorded phone/paper follow-up. Never mark a person inactive solely because they did not log in or answer email.
 
-**Spreadsheet transition:** initially accept CSV exports of Contact, Training, and Capabilities tabs with a guided mapping/preview. Native workbook import can follow if the pilot needs it.
+**Spreadsheet transition:** accept CSV exports of Contact, Training, and Capabilities tabs with a guided mapping/preview, alongside the reusable record-type templates below. Native workbook import can follow if the pilot needs it; templates must not require a particular spreadsheet application.
 
 1. Select the team/unit and map source columns, including repeated headings and composite band fields, to the dictionary in section 6.2. Preview how Y/N, blank, F/M/P, and compound cells will be interpreted.
 2. Match tabs using manager-confirmed stable identifiers where possible. Use callsign/email/name only to suggest matches; duplicate names, shared calls, and conflicting fields need review. Do not assume that matching row numbers across tabs identifies the same person.
@@ -500,6 +502,29 @@ Demonstrated-readiness scenarios:
 4. Commit only accepted mappings/rows, retaining an import batch, row outcomes, and reconciliation totals. Importing data neither invites people nor grants membership access nor verifies qualifications automatically.
 5. Re-import with a batch/source key and explicit update policy so the same data does not duplicate members or training. Permit reversal of untouched imported changes; later edits require conflict-aware review rather than blind rollback.
 6. Export a reviewed roster and compare it with the spreadsheet before cutover. Retain the original securely for the agreed transition period, then apply the retention policy.
+
+#### Multi-Record CSV Import and Downloadable Templates
+
+Provide a permission-scoped Teams → Import area with a catalog of supported record types, dependencies, template versions, and import history. Each available type offers a downloadable **blank CSV template**, a separate **synthetic example CSV**, and a field guide identifying required/optional columns, accepted values, units, date/time formats, and reference keys. Do not ship real member data in examples or advertise an importer before its destination feature exists. Existing spreadsheets can use column mapping instead of being manually reformatted to match the template.
+
+| Record type / template family | Relationships and import boundary | Delivery phase |
+|---|---|---|
+| Organizational units and members/contact profiles | Parent-unit references, stable member source keys, contact preferences and membership classifications; no account creation or permission grants | M2 |
+| Training/completion records | Member key, course/version, completion date and evidence reference; reported/unreviewed until an authorized reviewer acts | M3; legacy training columns can be staged during M2 |
+| Personal equipment, station configurations, configuration-item links, and capability entries | Separate item/configuration keys; repeated capability rows preserve service/band/mode/setting combinations and shared equipment | M3; legacy capability columns can be staged during M2 |
+| Named team locations, team assets, kit contents, and initial assignment snapshots | Location/member/item keys, legal owner, managing team, parent kit, condition and observed custody date; unresolved custody becomes an accountable discrepancy, not an invented handoff | M3A |
+| Team channel definitions and PACE plan entries | Channel/settings keys, plan/path and P/A/C/E role; imported plans remain drafts pending local approval and channel/disclosure validation | M3B |
+| Historical participation/manual activity | Member key, source activity key, type, dates and actual duration if known; reviewed attribution and overlap reconciliation, with no fabricated nets or attendance | M4 |
+
+These are related CSV files, not one oversized sheet: import units/members before their training and activity, items/locations before dependent configurations/kit assignments, and channels before PACE references. Allow a staged onboarding batch to validate references across its files before committing them in dependency order. Unresolved or ambiguous references block the affected rows and their dependents, while unrelated valid rows may be explicitly accepted. Show exactly what remains pending after a partial import; never create placeholder people, assets, or channels silently.
+
+Use a team-scoped source namespace plus stable external record keys for updates and cross-file relationships; do not require users to discover database IDs. Provide authorized reference-key exports for existing records and keep callsigns, names, and emails as match suggestions only. Validate parent cycles, duplicate keys, cross-team references, conflicting ownership/custody, and required capability combinations. An initial custody snapshot records the importer's observation and provenance, not a fabricated checkout acknowledgment or service history.
+
+Use UTF-8 CSV, accept common BOM/line-ending variations, and correctly handle quoted commas, quotes, and multiline fields. Preserve identifiers as text, document decimal units and ISO date/time formats, and make the reporting/import timezone explicit. Reject ambiguous conversions for review rather than guessing. Templates include a documented version marker; retain the selected schema version with the batch and offer mapping/rejection for obsolete versions. Team-local custom fields appear only in authorized team-specific templates, with their definitions and visibility preserved.
+
+Extend the shared preview with per-row/column errors, proposed creates/updates/unchanged/skips, missing dependencies, and a downloadable correction CSV. Blank cells leave existing values unchanged by default; clearing a value requires an explicit reviewed operation. Revalidate permissions, references, and concurrent changes at commit. Retry/re-import must be idempotent, with reconciled totals and dependency-aware, conflict-checked reversal; deleting records by omission is not supported.
+
+Apply field-level permissions and file/row/size limits, keep uploads and error reports private with retention controls, and prevent spreadsheet-formula execution through spreadsheet-safe exports of untrusted values, including correction files. Never evaluate imported formulas, fetch arbitrary evidence URLs, or treat CSV as executable content. Evidence attachments follow the separate authorized upload workflow. Imports cannot grant roles, approve PACE plans, verify qualifications, enroll SMS recipients, send invitations/messages, reserve resources, or authorize deployment; each remains an explicit workflow. Existing historical/suppression rules still apply to imported records.
 
 Provide team-scoped typed custom fields (text, choice, yes/no/unknown, date, number) for limited local needs. Each field has a label, help text, visibility, editor role, and export policy. Keep searchable shared concepts such as band/mode/training in structured records, not arbitrary notes. Door, IaR, shirt issuance, and apparel sizes should not clutter the initial volunteer application.
 
@@ -915,10 +940,13 @@ This replaces the earlier five-milestone outline. Security, auditability, import
 
 - Add short self-service intake, progressive profile editing, saved drafts, optional invites, and manager-assisted update/confirmation.
 - Deliver the three-tab CSV mapping/preview/reconciliation flow and typed local fields. Imported training/capability values remain reported/unreviewed until their review steps ship.
+- Establish the section 5.11 import catalog, versioned blank/example CSV downloads, field guides, source/reference keys, private batch history, dependency validation, correction downloads, and safe retry/reversal. Ship unit/member templates first; clearly distinguish staged legacy fields from supported structured importers.
 - Add last-confirmed indicators, review queues, configurable reminder delivery using existing email patterns, and phone/paper follow-up tracking. Collect optional SMS consent only against the approved notice/process; provider sending belongs to M3B and does not block this roster release.
 - Ship basic scoped roster exports, onboarding status metrics, and disclosure previews; document how to cut over and export data back out.
 
 **Exit:** TM-01, TM-02, TM-09, and TM-10 pass with realistic de-identified pilot data. All columns/rows reconcile, re-import is repeatable, conflicting edits are visible, and a member and an assisting manager complete the same update flow. A limited roster pilot can begin; full spreadsheet retirement waits for M3 search/training acceptance.
+
+TM-36 is accepted incrementally in each template's delivery phase. A coordinator can download the blank/example files and field guide, import synthetic related records, correct a rejected row, and re-import without duplication. Validate quoted/multiline text, leading-zero identifiers, ambiguous dates, unknown template versions, unresolved references, partial batches, concurrent edits, unauthorized fields, and spreadsheet-safe correction exports. Completion of the full template catalog follows M4, not the first roster release.
 
 ### M3 — Training, Readiness, and Capability Search
 
@@ -927,6 +955,7 @@ This replaces the earlier five-milestone outline. Security, auditability, import
 - Deliver station test history and path-aware matching, plus reusable digital-exercise templates and attributed learning links. Exercise reported/self-tested/reviewed states, failures, changed configurations, and RF versus Telnet/gateway/peer-to-peer distinctions. Reuse existing net/traffic records; full incident planning is not a prerequisite.
 - Add progressive personal equipment entry and Home / Vehicles / Deployable views with shared physical-item references, explicit power/QRP constraints, accessory dependencies, and removal/setup/restoration requirements. Reuse the same item/configuration design for the team asset phase.
 - Convert accepted imported values through reviewed mappings; keep unresolved composite values visible for follow-up.
+- Add training, personal equipment, configuration/link, and capability CSV templates/importers to the shared catalog; verify references without splitting one shared radio into duplicate assets.
 - Deliver Joel's saved category views, the home-based and trainee views, AND/OR capability filters, match explanations, and scoped readiness exports.
 - Measure search response on the expected pilot roster size and add indexes based on representative queries, without duplicating source records in a second search database by default.
 
@@ -940,6 +969,7 @@ TM-29, TM-30, and section 5.10 scenarios 9–10 also pass: a synthetic message e
 - Deliver asset registration, owner/managing-team distinctions, station/kit manifests, current assignments, nested containment, condition, and audit/history views. Add equipment custodian grants and restricted holder lookup.
 - Implement checkout, acknowledged transfer, reconciled return, component removal/replacement, repair, decommissioning/disposal, discrepancy tracking, and due/review/recall workflows. Enforce transactional handoffs and idempotent retries.
 - Support basic inventory import/export with preview, stable asset IDs, and reconciliation; unresolved items require a responsible custodian and an explicit discrepancy. No blank custody or silent assignment to default storage.
+- Add location, team asset, kit-content, and initial-assignment CSV templates and dependency checks; prevent containment cycles and contradictory item/container custody. No import can overwrite later handoff history without conflict review.
 - Deliver configuration-specific operating guides and printable quick tests using the shared document revision/access model. Flag guide/test review after affected equipment changes; include power/runtime conditions and manifest links.
 - Pilot the two EMA office stations, trailer, and go-kit. Confirm physical contents against the register and perform a kit handoff to a member without an account, a transfer to another member, and a partial return with a component out for repair.
 
@@ -953,6 +983,7 @@ This work depends on M1/M2 permissions, membership, and contact preferences; it 
 
 - **First release:** versioned local procedures, agency/deputy responsibilities, approved PACE/rendezvous cards, alert stages, manual radio/phone callouts and assisted response recording. Publish/distribute through an explicit local adoption workflow; the app is not a prerequisite for listening under a previously issued plan.
 - Add section 5.4 PACE-aware frequency selection to team-linked net creation/editing, including inherited team associations, labeled role ordering, authorized channel resolution, and refresh on team changes. This convenience does not depend on SMS or the incident planner.
+- Add channel and PACE-entry CSV templates/importers. Imported PACE plans remain drafts and cannot populate approved-plan recommendations until reviewed and adopted.
 - **Optional provider release:** implement Twilio configuration, sender/team isolation, consent/suppression, recipient previews, individual queued sends, budget/expiry controls, signed reply/status callbacks, and response/follow-up views. Keep provider delivery distinct from human acknowledgment and authority. No SMS feature is complete until opt-out, cancellation, uncertain delivery, and stale-job behavior are handled.
 - Pilot first with a simulated provider and synthetic recipients; conduct any real test only with an approved sender and explicitly enrolled participants. Rehearse app/internet/provider failure using the distributed radio card, and record phone/radio acknowledgments.
 - Deliver privacy/consent documentation and self-hosted setup guidance with the provider feature. Include the procedure library, document owner/deputy handover, review reminders, and open-action dashboard.
@@ -967,6 +998,7 @@ TM-35 passes in both net creation and editing: direct and inherited team associa
 - Add authorized net/schedule-to-team association on every creation path and effective-date-aware participation attribution.
 - Deliver reporting periods, drill/real-world activity distinctions, reviewed manual history, ARES/EMA preparation adapters, and source drill-downs. When Events actual hours are available, consume them through its reporting contract.
 - Implement the approved NH timecard mapping as a selectable adapter, including off-air activity and export-only rounding. Preserve source precision and explicitly reconcile linked session/net/shift activity rather than summing duplicate records.
+- Add the historical participation/manual-activity CSV template and reviewed import, preserving source precision and checking overlaps with existing activity before including records in totals.
 - Implement section 5.6 coverage rollups/maps/exports from existing per-net observations, reusing the named team locations introduced in M3A (or delivering that shared foundation here if M4 proceeds first). Protect precise home/site data and show path recency/direction.
 
 **Exit:** TM-15 reconciles to manually calculated samples, including membership transfers, multi-unit membership, overlapping net/shift participation, missing actual hours, and timezone boundaries. Coverage fixtures show one-way, two-way, stale, and untested paths without inventing confirmation. Coordinator acceptance is required for each claimed report mapping.
