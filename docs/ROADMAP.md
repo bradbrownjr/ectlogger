@@ -1,6 +1,6 @@
 # ECT Logger — Product Roadmap
 
-*Last updated: 2026-09-08*  
+*Last updated: 2026-09-16*  
 *Compiled from user feedback: AA1GM, KC1UIX, W1BKW, W1MTW, N1GSK, KC1JMH*
 
 > **Canonical location:** `docs/ROADMAP.md`.
@@ -402,9 +402,11 @@ Per-net leaderboards already exist and set the pattern to follow — `statistics
       and show the occurrence count alongside the total so the reader can see whether a high total
       comes from broad turnout or from meeting often. Ad hoc nets with no template are excluded
       from this board — there is no series for them to accumulate into
-- [ ] Exclude DEMO/test nets, and exclude nets whose status makes them meaningless in a ranking
-      (draft, cancelled). `models.py:102` already documents DEMO as throwaway data excluded from
-      reporting — honor that here rather than discovering it later
+- [ ] Exclude nets whose status makes them meaningless in a ranking — `DRAFT` and `CANCELLED`
+      are real rows, not deletions, and a cancelled occurrence exists precisely so the scheduler
+      can see the slot was skipped. **There is no net-level DEMO flag to filter on:** `DEMO` is a
+      value of `TrafficTestCategory` and scopes traffic forms only. If practice nets should be
+      excluded from this board, that exclusion has to be designed, not assumed to exist
 - [ ] Decide the time window. An all-time board freezes within a year and stops rewarding current
       activity; a rolling 12-month or 90-day window keeps moving. Recommend a rolling window with
       the period stated on the card, since every other panel on that page is already windowed
@@ -597,16 +599,45 @@ In other words, the SQLite→Postgres migration will **break time handling app-w
 
 ### Team Management Module
 
-**✨ Teams — ARES/SKYWARN team roster, training tracking, and ARRL Form 2 support** *(KC1JMH — back-burner)*  
-**Model:** Opus for the module design (new domain model, role system, reporting); Sonnet for phased build-out once designed.
+**✨ Teams — ARES/SKYWARN team roster, readiness, equipment custody, callouts, and ARRL Form 2 support** *(KC1JMH — back-burner)*
 
-Full spec and design notes: [`docs/concepts/TEAM-MANAGEMENT-NOTES.md`](concepts/TEAM-MANAGEMENT-NOTES.md)
+Full spec and design notes, in four interlinked documents. The hub is the entry point; section numbers are global across all four:
 
-Summary: a new **Teams** section (menu between Schedule and Stats) to replace spreadsheet-based ARES/SKYWARN team tracking with a role-controlled, self-service platform. Members manage their own profiles; team managers handle roster, approvals, and reporting. Net participation automatically rolls up to team records. Designed to facilitate ARES Form 2 and EMA hour reporting.
+- [`TEAM-MANAGEMENT-NOTES.md`](concepts/TEAM-MANAGEMENT-NOTES.md) — hub. Problem, scope, personas, user stories, data model, permissions, privacy, phase overview, references. Phases M0, M1, M2, M3, M4.
+- [`TEAM-ACTIVATION-CALLOUTS.md`](concepts/TEAM-ACTIVATION-CALLOUTS.md) — activation authority and PACE, the tag board, optional SMS, procedure library. Phases M1A, M3B.
+- [`TEAM-ASSETS-CUSTODY.md`](concepts/TEAM-ASSETS-CUSTODY.md) — asset register, kit manifests, custody, maintenance, SWR sweeps. Phase M3A.
+- [`TEAM-INCIDENT-PLANNER.md`](concepts/TEAM-INCIDENT-PLANNER.md) — plan context, requirements, staffing integration, ICS package. Phases M5, M6.
+
+Summary: a new **Teams** section (menu between Schedule and Stats) to replace spreadsheet-based ARES/SKYWARN team tracking with a role-controlled, self-service platform. Members manage their own profiles; team managers handle roster, approvals, and reporting. Net participation rolls up to team records. Designed to facilitate ARES Form 2 and EMA hour reporting.
+
+The concept has since grown well past a roster. It now also covers station capabilities and demonstrated readiness, team equipment inventory and custody, per-item maintenance and antenna sweep records, versioned procedures and PACE plans, radio and optional SMS callouts, a tag board for presence accountability, task books and training schedules, deployment packets and personnel accountability, and a communications-planning layer that shares the Events staffing workflow. It is the largest single feature proposed for this app.
+
+**The tag board (phase M1A) is the cheapest operationally useful piece and should ship right after the roster.** The app currently has no way to record who is physically where unless a net is running, and a net check-in records a station being on the air, not a person being in a place — a non-radio volunteer or an unlicensed helper has no reason to be in a net log at all but still has to be accounted for. A tag board answers "who is where" with no net, no event, no plan, and no radio. It depends on M1 alone. See `TEAM-ACTIVATION-CALLOUTS.md` section 5.19. Its one hard invariant: **a tag never creates a check-in and a check-in never creates a tag**, and nobody is ever automatically tagged out.
 
 Also carries the Teams-dependent half of "can hear" station-to-station coverage logging (shipped 2026-08-02, see `CHANGELOG.md`) — named team locations (shelters, EOCs), location-to-location coverage, and Coverage Assessment reporting for team managers. See `TEAM-MANAGEMENT-NOTES.md` section 5.6; the per-net capture it builds on has already shipped and is not blocked by this module.
 
-Blocked on: core web app stability, self-hosting, and Docker packaging being in good shape first.
+**Phases and model assignment.** The concept's section 10 is authoritative and carries the exit criteria; this is the index. Phase labels are **M0-M6 (plus M1A, M3A, M3B), phases of this module** — not roadmap tiers. "Teams phase M3" is unambiguous; "Milestone 3" is not, since this whole module sits inside Milestone 2.
+
+One tier for a module this size is wrong in both directions: it overpays for the mechanical parts and underinvests in the six places where a silent bug is expensive. The split follows **Opus writes the schema and the invariants, Sonnet builds against them, Haiku fills in repeated instances of an established pattern.**
+
+| Phase | Delivers | Model |
+|---|---|---|
+| M0 | Discovery: data dictionary, permission matrix, sample import, pilot scenarios | Human conversation with **Opus**; not an implementation task |
+| M1 | Team/unit records, membership lifecycle, scoped grants, audited claims | **Opus** schema + permission helper; **Sonnet** UI/CRUD; **Opus review gate** |
+| M1A | Tag board: presence occasions, tag in/out, places, live view, guarded close | **Opus** presence state model and its relation to the canonical hours sources; **Sonnet** board UI, tagging, live updates, exports; **Opus review gate on the presence model**. Depends on M1 alone |
+| M2 | Intake, assisted maintenance, CSV import catalog, freshness/reminders | **Opus** import/identity engine; **Sonnet** forms and batch UI; **Haiku** template and field-guide files; **Opus review gate on commit path** |
+| M3 | Training, task books, station configurations and capabilities, roster search | **Opus** capability model and match semantics; **Sonnet** catalogs, views, exports; **Haiku** additional saved views |
+| M3A | Asset register, kits, custody, maintenance schedules, SWR sweeps | **Opus** containment and the checkout transaction; **Sonnet** registration, manifests, queues; **Opus review gate on handoff** |
+| M3B | Procedures, PACE cards, alert stages, radio callouts; then optional Twilio SMS | **Sonnet** for everything except SMS; **Opus** for consent, check-at-send, and webhook validation; **Opus review gate on the webhook** |
+| M4 | Net/team association, participation attribution, report adapters, coverage | **Opus** attribution rule (time handling, now over **three** canonical actual-time sources: net check-in, Events shift, and M1A tag); **Sonnet** adapters, exports, coverage rollups |
+| M5 | Plan objectives, requirements, candidate matching, reservations, packets | **Opus** reservation conflict model (reuse M3A's answer); **Sonnet** wizard and Events wiring |
+| M6 | Reviewed ICS-202/204/205/205A package, versioning, after-action actions | **Sonnet** reusing Events builders; **Haiku** additional form mappings |
+
+**M1-M3 are the membership MVP** and independently replace the spreadsheet. **M1A is the shortest path from a roster to something a team can run an activation with**, and needs nothing but M1. M3A and M3B are each independently shippable and depend on neither each other nor M1A. Only M5 and M6 require Events.
+
+**Sequencing against the two prerequisites above.** *Schema Tooling Decision* should be settled before M1 creates the first Teams tables, and *UTC-Aware Datetime Hardening* should land first — Teams adds dozens of dated columns, and adding them naive means they join the sweep that item exists to end. Neither blocks M0, which is pure discovery and can start any time.
+
+**Blocked on:** core web app stability, self-hosting, and Docker packaging being in good shape first. That gating is unchanged; the phase breakdown above is what to do when it lifts, not a signal to start.
 
 ### Offline-Capable Web Client (PWA)
 

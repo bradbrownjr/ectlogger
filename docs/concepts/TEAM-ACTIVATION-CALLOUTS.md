@@ -1,0 +1,214 @@
+# Activation, Tag Board, and Callouts (Concept Draft)
+
+Last updated: 2026-09-16
+
+Part of the Team Management concept. This document covers what happens when a team is called on: who has the authority to activate it, what alert stages mean locally, which communications paths are planned and in what order, how members are reached, how the team knows who is actually where, and which versioned procedures govern all of it.
+
+## Document Map
+
+The Team Management concept is four interlinked documents, split once it outgrew a single readable file. **Section numbers are global across all four** — there is exactly one section 5.13 and it lives in the assets document. A cross-reference to "section 5.14" means the section carrying that number, in whichever document owns it. Do not renumber on a future move; update this table instead.
+
+| Document | Owns | Teams phases |
+|---|---|---|
+| [Hub — Team Management](TEAM-MANAGEMENT-NOTES.md) | 1–4, 5.1–5.11, 5.16, 6–9, execution-plan overview, 11, 12 | M0, M1, M2, M3, M4 |
+| [Assets, Kits, and Custody](TEAM-ASSETS-CUSTODY.md) | 5.13 | M3A |
+| [Activation, Tag Board, and Callouts](TEAM-ACTIVATION-CALLOUTS.md) | 5.14, 5.15, 5.18, 5.19 | M1A, M3B |
+| [Incident and Drill Planner](TEAM-INCIDENT-PLANNER.md) | 5.12, 5.17 | M5, M6 |
+
+The hub owns everything shared: problem statement, goals and non-goals, scope boundaries, personas, the user-story index, the data-model conventions, the permissions matrix, the privacy classification, the phase overview with model assignments, and the reference bibliography. Read it first; nothing in the other three is standalone design.
+
+**This document covers Teams phases M1A and M3B** and accepts user stories TM-22, TM-23, TM-24, TM-35, TM-39 through TM-42, and the procedure-handover portion of TM-28.
+
+**Sections appear in workflow order, not numeric order:** 5.14 (activation authority, alert stages, PACE), 5.19 (tag board), 5.15 (optional SMS), 5.18 (procedure library and succession). The numbers are global across the document set and are not renumbered on a move; see the map above.
+
+### The Line That Runs Through All of It
+
+Every section here touches the same hazard from a different angle, so it is stated once at the top rather than re-argued four times:
+
+> **Reaching someone is not the same as them answering, answering is not the same as being available, being available is not the same as being assigned, and none of those is deployment authority.**
+
+Provider delivery, human acknowledgment, stated availability, assignment acceptance, physical presence, and agency authorization are six distinct facts. Collapsing any two of them produces a system that reports a team is responding when it is not. The tag board in 5.19 exists precisely because presence was the one fact this app had no way to record at all.
+
+### 5.14 Activation Authority, Alert Levels, and PACE
+
+Maintain a served-agency record with mission scope, agreement/procedure reference and review date, primary/alternate agency contacts, activation authority, approved team delegates, and reporting chain. A person permitted to send a callout is not necessarily permitted to authorize deployment. Record who requested and authorized the response, when, incident/reference number if supplied, and any limits on the task. Verbal requests can be recorded with attribution and later documentation.
+
+The [ARRL ARES Plan](https://www.arrl.org/files/file/ARES%20Plan%20July%202025.pdf) recommends scenario-specific quick-start procedures. [FEMA mobilization guidance](https://emilms.fema.gov/_is0700b/groups/37.html) advises waiting for official deployment notification. Apply these as a distinction between preparedness monitoring, availability requests, and authorized assignments, including emergency phone/radio workflows when the app is unavailable.
+
+**Proposed local alert vocabulary:** Normal; Advisory/Monitor; Standby/Availability Requested; Activated/Assignments Issued; Demobilizing; Closed. Labels/colors can be adapted to the adopted local manual. Always show words and required actions, not color alone. Store SKYWARN, exercise, ARES/RACES/other agency context as separate attributes rather than forcing them into a severity ladder. A weather warning may justify monitoring under an approved standing procedure; it does not itself authorize an EOC visit, trailer movement, or an SMS blast.
+
+For each mission or communications path, define **PACE — Primary, Alternate, Contingency, Emergency** methods, with endpoint/contact, approved channel settings, infrastructure dependencies, switching trigger, switching authority, and last exercise result. Multiple choices using one repeater site, power source, or internet connection are not independent fallbacks. Use [CISA's PACE guidance](https://www.cisa.gov/sites/default/files/2024-10/2024_NCSWICPTE_Leveraging_PACE_Plan_Emergency_Comms_Ecosystems.pdf) as a reference; the team must select and test the actual methods.
+
+**Brad's proposed storm procedure, to be adopted with the EMA:** distribute a current radio rendezvous card in advance. It specifies what conditions trigger monitoring; which primary repeater to use; approved fallback sequence; listening/check-in windows and timezone; how NCS/deputy coverage is arranged; and what to do if the repeater or NCS cannot be heard. Resolve the primary choice and fallback channels from current local confirmation, not a neighboring county's plan. Record availability and relay needs over the air when necessary. Members should not independently rotate through channels without a shared timing/transition rule. Monitoring requires no travel and does not presume that every member has confirmed availability.
+
+An authorized coordinator can create a callout before a net exists and later link its resource net and operational periods. Capture the affected unit/audience, alert stage, exercise/real designation, requested action, response deadline, validity/expiry, next update, and source plan revision. Updates/cancellations carry the same incident/callout identifier and a new revision, with obsolete instructions visibly superseded. Restricted deployment details remain separate from any public alert-level display.
+
+### 5.19 Tag Board and Presence Accountability
+
+**The gap this closes.** A team frequently needs to know who is where when there is no net at all. The EOC is staffed for an afternoon. Three people are at the trailer replacing a feedline. Two are driving to a shelter. Someone went home at 1800 and nobody noticed. None of that is radio traffic, none of it needs an NCS or a frequency, and none of it should produce an ICS-309.
+
+Today the app's only mechanism for recording "who is present" is a check-in on a net, and that is the wrong shape twice over. A station checked into the storm net from their own kitchen and an operator physically sitting at the EOC are both check-ins, distinguishable only through the free-text operating-position classifier. And a volunteer doing non-radio work -- a shelter desk, a supply run, an unlicensed helper of the kind the York County model explicitly includes -- has no business appearing in a net log at all, but absolutely must be accounted for.
+
+**What it is.** A **tag board** is a team-owned live record of who is currently tagged in, where, and in what state. An authorized coordinator opens one for a named occasion (an activation, a drill, a work session, a storm watch, a shelter shift), it runs until closed, and it leaves behind a dated participation record. It requires no net, no event, no plan, and no radio.
+
+**Vocabulary decision.** Following the Public Service Events precedent of settling contested words once rather than per-screen:
+
+- The surface is a **Tag Board**; the actions are **tag in** and **tag out**.
+- The person record is a **member tag** (`member_tags`), **never a bare `tag`** -- `asset_tag` is already an equipment field in [section 5.13](TEAM-ASSETS-CUSTODY.md), and a module that inventories both people and equipment cannot afford an ambiguous `tag`.
+- The occasion is a **board** (`tag_boards`), not an incident, an event, or an activation. Section 5.12 explicitly refuses `Incident` a top-level entity, `Event` belongs to Public Service Events, and Activation is an alert stage in 5.14 above.
+
+**The two facts that shape the whole design.**
+
+1. **Presence is not a check-in.** A tag is a fact about where a person physically is and what duty state they are in. A check-in is a fact about a station being on the air. One person can have both at once, either one alone, or neither. **A tag must never create a check-in, and a check-in must never create a tag.** That inference is the single most tempting shortcut available here, and it is wrong in both directions.
+2. **Neither a board nor a net is the parent of the other.** A board can run with no net; a net can run with no board. Where both exist, an optional link supports reporting and nothing more. Containment would mean closing one closes the other, which produces exactly the false "everyone is accounted for" this feature exists to prevent.
+
+**States, kept deliberately small.** Section 5.17's full ladder (authorized, en route, arrived, on duty, relieved, released, returned) belongs to a real incident with a plan behind it. A tag board needs the cheap version:
+
+| State | Meaning |
+|---|---|
+| En route | Committed and travelling to a stated place. Optional per team; a team that does not want it turns it off |
+| Tagged in | Present at a stated place, with an optional task or role label |
+| Tagged out | Left, with an actual time |
+
+Plus a place -- a named team location, free text for somewhere not yet a named location, or an explicit mobile/roving value -- and an optional expected-out time.
+
+**A tag is never inferred.** Not from a net check-in, not from a callout acknowledgment, not from an accepted Events shift, not from a login. Someone who acknowledged a callout is not present. Someone on a shift roster is not present until they arrive. This rule is what makes the board worth trusting, and every convenience that erodes it makes the board a liability during the one event it exists for. It is the same distinction the banner at the top of this document draws, applied to the last fact in the chain.
+
+**Assisted tagging is the normal case, not the exception.** Most tags will be recorded by somebody else -- over the radio, by phone, or by whoever is standing at the door with a clipboard. An authorized coordinator can tag anyone in or out, and every tag carries who recorded it and through which channel (self, radio, telephone, in person), the same attribution pattern used throughout this module. A membership record with no account can be tagged, and so can an unlicensed helper. **No new people table**: a taggable person is a team membership, consistent with the Events boundary rule that unregistered people never get a table of their own.
+
+**Live view.** One board is one broadcast group, reusing the existing `ConnectionManager` pattern rather than polling. New event types are **server-originated, broadcast by the route handler after the database write**, never client-relayed -- the project already paid for that lesson when one browser's socket hiccup silently broke live check-in sync for every other viewer.
+
+**Overdue is a prompt, never a state change.** A tag may carry an expected-out time, and the board surfaces anyone past it so a human can go find out why. **Nobody is ever automatically tagged out.** An auto-clearing board reports that everyone is accounted for, which is the worst available failure mode for a tool whose entire purpose is knowing that they are not.
+
+**Closing a board.** Closing with people still tagged in requires explicit acknowledgment and lists exactly who is still on it. This is the same discipline as a partial equipment return in section 5.13: a board that silently tags everyone out at close is worse than no board at all, because it manufactures a record of a safe demobilization that never happened.
+
+**Hours, and the double-count trap.** Tag time is a **third canonical actual-time source**, alongside net check-in duration and Events shift hours. One person at the EOC, checked into the net, working an Events shift generates three overlapping durations for one contribution. The M4 reporting adapter must reconcile these, never sum them, and the tag board is the newest and least obvious of the three. Section 5.5's existing warning about linked check-in and shift time now has a third input; it is called out here because M1A ships well before M4 and would otherwise hand M4 a problem it did not know it had.
+
+**Privacy.** A live list of named people and their current physical locations is the most sensitive real-time data anywhere in this module -- more sensitive than the static roster, because it says where a named person is right now. Default visibility is team staff plus the people on that board. It never appears in a net's public report or any other public output. It is last-confirmed whereabouts, not live location tracking; section 5.13 already draws that line for equipment and it applies harder to people. Retention should be short for the whereabouts detail and longer for the participation total, since the hours are what reporting needs and the positions are not.
+
+**Relationship to the rest of the module.**
+
+- **Section 5.17 (planner)** is the full incident version of the same underlying fact. It extends the tag record with authorization, relief, release, and return, tied to a plan and to Events shifts. It does not create a second presence ledger.
+- **Section 5.14 (above)** -- raising to Standby or Activated is the natural moment to open a board, but opening a board is not an activation and authorizes nothing.
+- **Section 5.13 (assets)** -- a board makes "who is at the trailer" and "who has the go-kit" answerable side by side, but custody remains custody. **Tagging out does not return equipment**, and the board should say so when someone tags out still holding something.
+- **[Public Service Events](PUBLIC-SERVICE-EVENTS.md)** -- an event's sign-in and sign-out against a staffed post remains the Events workflow. A tag board is for the case with no posts and no shifts. A team that finds itself building a post schedule on a tag board is doing Events, and the answer is to use Events.
+
+**Why this ships early.** A tag board needs a team, membership records, and optionally some named locations. It needs no training records, no capabilities, no assets, no nets, no Events, and no planner. That makes it the highest value-per-effort item in the entire module after the roster itself, which is why it is scheduled as M1A rather than buried behind the planner.
+
+### 5.15 Optional SMS Callouts (Twilio Candidate)
+
+Twilio is Brad's proposed first provider. This section authorizes design only: no account setup, number purchase, credentials, outbound messages, or contact upload is performed by this concept update. The implementation should expose a small provider interface while initially supporting one configured provider. SMS is optional per deployment and team and must not gate radio-based activation or membership.
+
+#### Consent, Sender Scope, and Privacy
+
+- Collect a confirmed mobile number in normalized international format and separate, optional consent for named sender/team and message purposes (for example activation notices and opted-in drills/training). Record notice version, purpose, source, timestamp, and withdrawal; possession of a number, team membership, a public directory listing, or the old "okay to text" cell is not sufficient evidence for a new messaging program.
+- Show sender identity, expected message purpose/frequency, possible message/data charges, help and opt-out instructions. Manager-assisted consent must record the member's actual agreement through an accepted process; staff cannot consent on the member's behalf. Follow the [Twilio Messaging Policy](https://www.twilio.com/en-us/legal/messaging-policy), and confirm the exact registration/consent flow for the chosen sender type before launch.
+- Synchronize provider opt-outs with the local suppression list. Check eligibility/consent again at send time; STOP overrides pending jobs and urgent message classification. Re-enrollment requires fresh valid consent. With [Advanced Opt-Out](https://www.twilio.com/docs/messaging/tutorials/advanced-opt-out), handle provider START/STOP/HELP events without sending duplicate provider confirmations. Map provider-level suppression to its actual sender/service scope; a team-specific preference cannot bypass a broader provider block.
+- Explain that Twilio and downstream carriers process destination numbers and message content. Send individual messages rather than group texts; recipients must not see the roster or each other's numbers. Keep SMS content minimal: team identity, alert/exercise label, action, approved rendezvous information, deadline, and opt-out/help as applicable. Avoid home addresses, access codes, medical information, detailed incident traffic, or member lists; use an authenticated detail page for restricted content.
+- Define retention for number/consent records, message bodies, replies, delivery events, provider logs, and backups. Review provider retention/redaction options without promising deletion from carriers or phones. Keep credentials and webhook secrets server-side, restrict number lookup/export, and redact ordinary logs/diagnostics. Update PRIVACY and self-hosting guidance before enabling SMS.
+
+Keep SMS consent distinct from the existing `User.email_notifications` and email-to-SMS `sms_gateway` fields. An email preference must not enroll SMS, and adding Twilio must not silently reroute existing notifications. A team member can choose radio or assisted telephone follow-up instead. Confirm changed/recycled phone numbers; ambiguous shared numbers cannot establish which person acknowledged an assignment.
+
+#### Coordinator Workflow and Delivery Reliability
+
+1. Choose an approved procedure, alert stage, exercise/real label, expiration, and authorized audience. Filter by unit/task if appropriate; historical/withdrawn members are excluded. A frozen recipient preview records included/excluded counts and reasons, with masked numbers unless the user has contact access.
+2. Preview the exact message, sender, purpose, estimated segment count/cost, and response instructions. A separate callout permission is required to send, with the actor and source authorization audited. Urgent alerts and routine training reminders have distinct schedules/preferences; do not assume an emergency label bypasses consent or sender policy.
+3. Queue one intended delivery per callout revision/recipient/channel, deduplicating shared destination numbers while preserving member ambiguity for follow-up. Apply rate/budget controls, bounded retries, and expiry. Show partial failures; a broadcast is not one atomic success.
+4. Display provider delivery separately from human response: pending/accepted/sent/delivered/failed or unknown versus acknowledged/available/unavailable/needs contact. Twilio [status callbacks](https://www.twilio.com/docs/messaging/guides/track-outbound-message-status) supply delivery events; they do not demonstrate that a volunteer read, understood, or accepted an assignment.
+5. Accept a scoped in-app response, an unambiguous SMS reply with callout identifier, or a radio/phone response entered by authorized staff. Preserve responder, channel, time, and recorder. Acknowledgment means receipt; availability and assignment acceptance require explicit answers. A telephone/SMS response is not authorization to edit a profile or issue a deployment order.
+6. At the response deadline, present unreachable/failed/unacknowledged members for approved radio/phone follow-up. Silence means unknown, not unavailable or safe. Superseding/cancelling a callout stops unsent obsolete jobs; messages already accepted by the provider may still arrive, so include issue/expiry times and a revision-aware status view.
+
+Validate inbound reply/status webhook signatures using the provider-supported validation method and correct externally visible URL behind the deployment proxy; bind callbacks to the configured account/sender and known message/callout. Deduplicate retries, handle out-of-order events, and prevent a delayed callback from reversing a final delivery result or consent withdrawal. Signature checking authenticates the provider, not the human holding a phone. See [Twilio webhook security](https://www.twilio.com/docs/usage/webhooks/webhooks-security).
+
+Provider submission timeouts need an uncertain-delivery state and reconciliation, not blind resends that might duplicate an alert. Persist jobs across restarts, bound how long queued alerts remain useful, and distinguish app queue expiry from any provider-side cancellation guarantee. A provider or internet outage must leave the previously issued radio/PACE card usable; downloading instructions at incident time cannot be the only fallback.
+
+For US local-number application messaging, plan for the relevant [A2P 10DLC registration](https://www.twilio.com/docs/messaging/compliance/a2p-10dlc); other sender types have their own verification requirements. Confirm sender ownership, registration, throughput, segment pricing, and spending limits at implementation time. On a shared ECTLogger instance, define which organization is the registered sender and whether teams need separate services/accounts; do not let one team's branding, consent, costs, or opt-outs be silently attributed to another. No pricing or universal emergency exemption is assumed here.
+
+### 5.18 Procedure Library, Succession, and Improvement
+
+Maintain a versioned library of manuals, quick-start procedures, agreements, PACE cards, site guides, training plans, and exercise/after-action records. Each has an owner/deputy, source URL or authorized attachment, scope, approver, version/effective date, review date, public/restricted classification, and superseded-by link. Drafts are visibly distinct from adopted operational instructions. Acknowledgment of a revised procedure is tracked separately from training completion.
+
+Include a curated external-resource catalog linked to relevant tasks/configurations: original author/organization, source URL, publication/version date when known, last local review, applicability, and reuse permission. GMARES hosts both its own and others' material; attribution and permission follow the original work. Link by default, obtain appropriate permission before reproducing documents/videos, and distinguish a broken/outdated learning link from an approved local operating instruction. Review older software screenshots/settings before recommending them; link current official software sources rather than bundling historical installers. Reuse this library for kit guides and exercise learning links, not a separate learning-management platform.
+
+For the EC transition, begin with the inherited WSSM manual and an explicit adoption checklist: confirm agency authority/agreement, current role holders/deputies, monitored channels, callout/relief arrangements, inventories/custody, training requirements, source conflicts, and outstanding actions. Adapt neighboring patterns into proposed local procedures; do not rewrite the original manuals or publish local adoption through this concept update.
+
+Store organizational responsibility rather than relying on one person's email account. A leadership handover transfers document ownership, access grants, provider administration responsibilities, pending callouts, asset-recovery issues, and improvement actions through an audited process; secrets belong in deployment secret management, not in manuals. Do not infer new authority solely from an EC title on a public page.
+
+An after-action review compares objectives with actual results, identifies what worked and what failed, and creates named corrective actions with due dates, closure evidence, and a retest. Link improvements back to the relevant task, kit, site, PACE path, or procedure revision so the next drill tests the fix. Update approved materials and brief members through their chosen channels.
+
+The [GMARES-hosted after-action template](https://gmares.org/wp-content/uploads/2023/04/aar_form.docx) adds a useful station-level view: operator/configuration/location, how and when notified, emergency power, operating/weather/propagation conditions, message counts, issues, and successes. Reuse callout, traffic, and test records where authorized; distinguish messages originated, relayed, and delivered so counts are not misleading. Link each observation to the relevant resource or procedure: a missing cable becomes a kit discrepancy, failed delivery becomes a path/test finding, and unclear instructions become a guide-review action. Closure requires appropriate evidence/retest and reviewer action; it must not automatically restore service condition or certify an operator.
+
+
+## Records, Permissions, and Privacy
+
+These stay in the hub rather than being copied here, so that a security review happens in one place against one table. These phases are governed by:
+
+- **Hub section 6.1** rows: served agency and procedure/document revisions; callout/revision and per-recipient delivery/response; messaging consent/suppression and provider configuration; tag board and member tag; improvement actions. `TeamLocation` is shared with the hub's section 5.6 and is a prerequisite for named tag-board places.
+- **Hub section 7** rows "Callouts and responses", "Procedures and training plans", and "Tag board and member presence", plus the closing paragraph separating a callout coordinator's authorized-audience access from a raw phone-number export, and provider configuration from ordinary team management.
+- **Hub section 8** classification of SMS numbers, replies, recipient lists, restricted deployment packets, and live member presence as high sensitivity; the callout, consent, procedure-adoption, and tag-board audit requirements; and the offboarding rule that removes pending callout eligibility and suppresses queued notifications.
+
+Two boundaries are worth repeating here because they are the ones a phase read in isolation will get wrong:
+
+- **A callout permission is not deployment authority.** Sending is a communications action. Authorizing a response is an agency action recorded separately, with its own attribution.
+- **A tag is not a check-in, in either direction.** Neither record may create the other, and neither one's lifecycle may close the other.
+
+## Phase M1A — Tag Board and Presence Accountability
+
+**Model:** **Opus** for the presence state model and its relationship to the canonical actual-time sources — the double-count problem in 5.19 is a reporting landmine that costs nothing to design correctly now and is expensive to unpick after M4 is built on top of it. **Sonnet** for the board UI, tagging actions, live updates, roster picker, and exports, all of which follow patterns this codebase already has.
+
+**Depends on M1 only.** Not on M2 import, M3 capabilities, M3A assets, M3B callouts, Events, or the planner. This is deliberate: it is the shortest path from "we have a roster" to "we can run an activation with it".
+
+- Tag board records: team-owned, named occasion, opened and closed by an authorized coordinator with attribution and times. Optional links to a net, an alert stage, or later a plan — always optional references, never containment.
+- Member tag records with state, place, optional task label, optional expected-out time, recorder, and channel. Self-tagging and assisted tagging travel the same path and produce the same record, distinguished only by recorder and channel.
+- Named `TeamLocation` places, free text, and an explicit mobile value. Basic location records are pulled forward from M4 the same way M3A pulls them forward; RF coverage rollups still wait.
+- Live board view over the existing `ConnectionManager` broadcast, server-originated events only, broadcast by the route handler after the database write.
+- Overdue surfacing with human follow-up and no automatic state change. Guarded board close that lists anyone still tagged in and requires explicit acknowledgment.
+- Team-staff-plus-participants visibility by default, with the whereabouts detail excluded from every public output and from net reports.
+- Scoped export of a board's participation for later reporting. Record the durations; do not claim a report-category mapping that M4 has not defined yet.
+
+**Exit:** TM-39 through TM-41 pass. A board runs end to end with no net in existence anywhere in the system. A member with no account and an unlicensed helper are both tagged in by radio and tagged out correctly, each carrying its recorder and channel. An overdue tag is visible and unchanged. Closing a board with two people still tagged in is refused until acknowledged, and the acknowledgment names them. No tag creates a check-in and no check-in creates a tag, verified in both directions. TM-42 is verified when M4 ships; until then the board exports durations and claims no reconciliation.
+
+## Phase M3B — Procedures, Radio Callout, and Optional SMS
+
+**Model:** **Sonnet** for procedures, PACE records, alert stages, manual callout recording, and PACE-first frequency ordering — established UI and read patterns. **Opus** for the SMS provider work: the consent model, the check at send time, webhook signature validation, suppression scope mapping, and the delivery-versus-acknowledgment separation. **Opus review gate on the webhook handler**, the same reasoning the roadmap already applies to the Ko-fi donation webhook.
+
+This work depends on M1/M2 permissions, membership, and contact preferences; it can proceed independently of asset reporting, the tag board, and Events.
+
+- **First release:** versioned local procedures, agency/deputy responsibilities, approved PACE/rendezvous cards, alert stages, manual radio/phone callouts and assisted response recording. Publish/distribute through an explicit local adoption workflow; the app is not a prerequisite for listening under a previously issued plan.
+- Add section 5.4 PACE-aware frequency selection to team-linked net creation/editing, including inherited team associations, labeled role ordering, authorized channel resolution, and refresh on team changes. This convenience does not depend on SMS or the incident planner.
+- Add channel and PACE-entry CSV templates/importers. Imported PACE plans remain drafts and cannot populate approved-plan recommendations until reviewed and adopted.
+- **Optional provider release:** implement Twilio configuration, sender/team isolation, consent/suppression, recipient previews, individual queued sends, budget/expiry controls, signed reply/status callbacks, and response/follow-up views. Keep provider delivery distinct from human acknowledgment and authority. No SMS feature is complete until opt-out, cancellation, uncertain delivery, and stale-job behavior are handled.
+- Pilot first with a simulated provider and synthetic recipients; conduct any real test only with an approved sender and explicitly enrolled participants. Rehearse app/internet/provider failure using the distributed radio card, and record phone/radio acknowledgments.
+- Deliver privacy/consent documentation and self-hosted setup guidance with the provider feature. Include the procedure library, document owner/deputy handover, review reminders, and open-action dashboard.
+- Add seasonal/member-prestorm/leadership-prestorm checklist templates and instances, owners/deadlines, assisted completion, and links to station tests when M3 is available. Keep personal details minimal and outstanding blockers visible. Needs/gap collection can ship here; primary/backup staffing integration follows in M5.
+
+**Exit:** TM-22 through TM-24 and the procedure-handover portion of TM-28 pass. STOP during a queued broadcast prevents subsequent sends; callback replays and out-of-order events cannot create false acknowledgments or reverse suppression; a submission timeout does not trigger blind duplicate alerts. A coordinator can identify unresolved recipients and a non-SMS member can participate. No test turns an advisory, availability response, or message delivery into deployment authorization.
+
+TM-35 passes in both net creation and editing: direct and inherited team associations prioritize approved PACE channels, search retains that priority among matches, shared entries are not duplicated, and distinct channel settings remain distinguishable. Test multiple plans, switching/clearing teams, missing or unresolved PACE entries, revoked access, and a later plan revision. Existing selections remain unchanged unless explicitly edited, and restricted plan/channel details do not leak through suggestions or public outputs.
+
+## Validation Focus for These Phases
+
+The hub's release checklist carries the cross-cutting cases. These are the ones specific to activation, presence, and callouts, and they are where these phases actually break:
+
+- **Tag independence, both directions.** Create a check-in on a net linked to an open board and confirm no tag appears. Tag someone in on a board linked to an active net and confirm no check-in appears, no ICS-309 row is produced, and the net's public report is unchanged. Close the net and confirm the board is untouched; close the board and confirm the net is untouched.
+- **Nobody disappears.** An expected-out time passing changes nothing but visibility. A board close with people still tagged in is refused and names them. A member offboarded mid-board keeps their historical tag. A tag out while still holding checked-out equipment is allowed but surfaces the outstanding custody.
+- **Assisted paths.** Tag in a membership with no account, a member with no callsign, and an unlicensed helper, each by a different channel, and confirm recorder and channel survive into the export. Confirm a member cannot tag another member without the coordinator grant, and that the grant is scoped to their team.
+- **Consent at the boundaries.** Test consent changes between queue and send, invalid webhook signatures, account/sender mismatches, duplicate and out-of-order callbacks, shared and recycled numbers, expiring and superseded alerts, cost limits, and uncertain submission. Verify the radio and telephone fallback paths, and that no phone list or private reply leaks into a public net view.
+- **Procedure state.** Confirm an approved procedure is visibly distinct from a draft, that owner and deputy handover transfers document ownership and pending callouts through an audited path, and that acknowledgment of a revised procedure is tracked separately from training completion.
+- **PACE without the app.** Rehearse a transition with the app unreachable, using only the previously issued rendezvous card. Confirm nothing in the design makes downloading instructions at incident time the only fallback, and that two fallback methods sharing one repeater site, power source, or internet connection are not presented as independent.
+- Run the hub's real-data smoke-test procedure against the tag-board invariants specifically. "At most one open tag per person per board" is exactly the shape of assumption that passes every hand-built fixture and fails on real rows, and here it fails while somebody is standing in a shelter.
+
+## Open Questions Before an Activation Pilot
+
+- Which monitored channels, PACE entries, and transition rules does the EMA actually approve, and who holds switching authority for each path? Resolve from current local confirmation, not a neighboring county's plan.
+- Who may open and close a tag board, and is that the same grant as sending a callout or a separate one? Which named locations should a board offer by default?
+- How long is whereabouts detail retained versus the participation total? The hours are what reporting needs; the positions are not, and they are the sensitive half.
+- Does a tag board need to reference an alert stage at all, or is the association better left entirely optional? A required stage makes a Saturday work session look like an activation.
+- Does the team want the en-route state, or does it invite recording intentions as facts? This is a per-team setting in the current design; confirm that the default is off.
+- What sender type, registered organization, billing owner, spending limit, response deadline, and message-purpose scopes apply to SMS on a shared instance? Which teams need separate services or accounts?
+- Which members prefer radio or assisted telephone follow-up over SMS entirely, and how is that preference recorded without implying they are unreachable?
+- Which seasonal and prestorm checklist stages are actually adopted locally, who owns each, and what counts as a blocker versus a reminder?
+
+## References
+
+This document cites the [ARRL ARES Plan](https://www.arrl.org/files/file/ARES%20Plan%20July%202025.pdf), [FEMA mobilization guidance](https://emilms.fema.gov/_is0700b/groups/37.html), [CISA PACE guidance](https://www.cisa.gov/sites/default/files/2024-10/2024_NCSWICPTE_Leveraging_PACE_Plan_Emergency_Comms_Ecosystems.pdf), the [Twilio Messaging Policy](https://www.twilio.com/en-us/legal/messaging-policy) and related Twilio documentation, and the [GMARES-hosted after-action template](https://gmares.org/wp-content/uploads/2023/04/aar_form.docx). Full source list, review dates, and attribution rules are in the hub's section 12.

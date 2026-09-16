@@ -11,6 +11,21 @@ Related roadmap references:
 - [docs/ROADMAP.md](../ROADMAP.md) > Milestone 2 > Team Management Module — the module itself.
 - [docs/CHANGELOG.md](../CHANGELOG.md) (2026-08-02) — the per-net "can hear" station-to-station coverage logging that section 5.6 below builds on has already shipped; its roadmap entry was removed once complete, per this project's convention of dropping shipped items from ROADMAP.md rather than leaving them checked off in place.
 
+## Document Map
+
+The Team Management concept is four interlinked documents, split once it outgrew a single readable file. **Section numbers are global across all four** — there is exactly one section 5.13 and it lives in the assets document. A cross-reference to "section 5.14" means the section carrying that number, in whichever document owns it. Do not renumber on a future move; update this table instead.
+
+| Document | Owns | Teams phases |
+|---|---|---|
+| [Hub — Team Management](TEAM-MANAGEMENT-NOTES.md) (this file) | 1–4, 5.1–5.11, 5.16, 6–9, execution-plan overview, 11, 12 | M0, M1, M2, M3, M4 |
+| [Assets, Kits, and Custody](TEAM-ASSETS-CUSTODY.md) | 5.13 | M3A |
+| [Activation, Tag Board, and Callouts](TEAM-ACTIVATION-CALLOUTS.md) | 5.14, 5.15, 5.18, 5.19 | M1A, M3B |
+| [Incident and Drill Planner](TEAM-INCIDENT-PLANNER.md) | 5.12, 5.17 | M5, M6 |
+
+This hub owns everything shared: problem statement, goals and non-goals, scope boundaries, personas, the user-story index, the data-model conventions, the permissions matrix, the privacy classification, the phase overview with model assignments, and the reference bibliography. Read it first; nothing in the other three is standalone design. The three child documents keep their own phase sections, phase-specific validation cases, and phase-specific open questions, so each is executable on its own once this hub has been read.
+
+Sections that moved out are left below as one-line pointers rather than being renumbered away, so that every existing "see section 5.x" reference in the codebase and the roadmap still lands somewhere useful.
+
 ## 1. Problem Statement
 
 Current team operations rely on shared spreadsheets for staffing, training, and readiness tracking. This creates:
@@ -20,8 +35,11 @@ Current team operations rely on shared spreadsheets for staffing, training, and 
 - duplicate records
 - poor self-service for member updates
 - manual effort for reporting (including ARES-style reporting)
+- no way at all to record who is physically where during an activation, unless a net happens to be running
 
-Goal: provide a secure, role-based team management experience integrated with existing ECTLogger net activity, answering three practical questions: **Who belongs to our team? What can they do? Who can help with this particular assignment?**
+Goal: provide a secure, role-based team management experience integrated with existing ECTLogger net activity, answering four practical questions: **Who belongs to our team? What can they do? Who can help with this particular assignment? And right now, who is where?**
+
+The fourth question is the one the app currently cannot answer in any form. The only existing mechanism for recording presence is a net check-in, which records a station being on the air rather than a person being in a place, and which is unavailable to a non-radio volunteer or an unlicensed helper. Section 5.19 answers it directly and depends on almost nothing, which is why it is scheduled immediately after the roster rather than behind the planner.
 
 ### Stakeholder Input and Evidence
 
@@ -66,6 +84,36 @@ The current app uses a React/MUI frontend and a FastAPI/SQLAlchemy backend, with
 
 Primary implementation references: [models](../../backend/app/models.py), [permissions](../../backend/app/permissions.py), [contacts](../../backend/app/routers/contacts.py), [Development Guide](../DEVELOPMENT.md), and [UI Design Reference](../DESIGN.md).
 
+#### Integration Facts Verified Against Current Code (2026-09-16)
+
+The prose above describes intent. These are specific properties of the shipped schema that a later implementer will otherwise rediscover the hard way, and that constrain several sections below. Recheck them at implementation time; they were true at this review.
+
+| Fact | Consequence for Teams |
+|---|---|
+| `Frequency` is a **shared, app-wide table** joined to nets through the `net_frequencies` association table, not a per-net child row | A team PACE entry (5.4, 5.14) references an existing `Frequency` row. It must not create a team-local copy of a channel, and deduplication in the PACE-first ordering is therefore reference identity, not string comparison. Note the trap: because rows are shared, editing one to fix a team's channel silently edits it for every net that already uses it. Team-specific labelling belongs on the PACE entry, never on the shared `Frequency` row. |
+| `NetStatus` includes `CANCELLED` and `DRAFT` as real rows, not deletions | Participation rollups (5.5) must exclude both. A cancelled occurrence exists precisely so the reminder scheduler can see the slot was intentionally skipped; counting it would credit attendance at a net that never happened. |
+| `CanHearReport.frequency_id` is **nullable** | The frequency-scoped coverage findings in 5.6 must render "frequency not recorded" as its own case. It is neither a repeater path nor a simplex path, and collapsing it into either invents a finding. |
+| There is **no net-level DEMO flag**. `DEMO` is a value of `TrafficTestCategory`, scoped to traffic forms only | Do not write a rollup that filters "demo nets" — the column does not exist. If Teams reporting needs to exclude practice nets, that exclusion has to be designed, not assumed. |
+| Datetime columns are **naive UTC by convention**; `DateTime(timezone=True)` silently drops the offset on SQLite | Teams adds a large number of dated columns (effective dates, confirmations, due dates, custody timestamps, consent timestamps). Adopt the `UTCDateTime` TypeDecorator from the roadmap's UTC-Aware Datetime Hardening item rather than adding a further tranche of naive columns that later need the same sweep. See Sequencing below. |
+| Migrations are hand-numbered scripts run individually per deployment; there is no schema versioning | Teams is the largest single schema addition proposed for this app. Sequencing it after the roadmap's Schema Tooling Decision is a cost question, not a correctness one, but the cost is real and grows with each phase. See Sequencing below. |
+
+#### Sequencing Against Existing Roadmap Prerequisites
+
+Two roadmap items under Milestone 2 sit underneath this module rather than beside it:
+
+- **UTC-Aware Datetime Hardening** should land first, or Teams contributes dozens of new naive-UTC columns to the sweep it is meant to end. This is cheap to honor early and expensive to retrofit.
+- **Schema Tooling Decision** should be settled before M1 creates the first Teams tables. Whichever path is chosen, making it once beats converting a twenty-table module later.
+
+Neither is an absolute blocker — M0 discovery is entirely independent of both, and can proceed in parallel — but M1 should not create tables before they are resolved.
+
+#### UI Conventions for the New Surfaces
+
+Teams introduces a top-level page, a roster, member/asset detail views, and several multi-tab editors. Every one of those is a surface the project already has hard rules for. Read [`docs/DESIGN.md`](../DESIGN.md) before adding any of them; the rules that will bite this module specifically are the `<Tabs>` scrollable/swipe requirement (the Teams member detail and admin editors are multi-tab by nature), the `<CardActionButton>` and split `<CardActions>` convention (a roster or asset card carries both management and view-only actions, which is exactly the case that convention exists for), the FAB sizing rule, and the icon-color table. A new module is the most likely place for these to drift, because nothing existing is being edited to remind the implementer they apply.
+
+#### Deployments With a Single Team
+
+Most self-hosted instances will have exactly one team, and the hosted instance starts that way. Do not make single-team operation pay the multi-team tax: a team selector with one option, a required team choice on every net, or a "which team?" step in onboarding is friction with no purpose there. Where a deployment has one team, default to it and keep the selector out of the way; the data model stays multi-team throughout, since the privacy boundary is what makes it correct and collapsing it would have to be undone the first time a second team appears.
+
 ## 2. Goals and Non-Goals
 
 ### Goals
@@ -75,6 +123,7 @@ Primary implementation references: [models](../../backend/app/models.py), [permi
 - Let users safely maintain their own profile/team data.
 - Restrict cross-user edits to staff with the relevant delegated team permission.
 - Link net participation to team records and reporting.
+- Record who is where during an activation, drill, or work session without requiring a net, an event, a plan, or a radio.
 - Support multiple team memberships per user.
 - Support pre-user records that can later link to a platform account.
 - Make onboarding and recurring updates usable on a phone, with saved progress and manager-assisted entry.
@@ -132,6 +181,7 @@ Establish a baseline with one Maine team and, if willing, one NH-ARES unit. Prop
 - Structured capability search and a phased incident/drill planning layer.
 - Personal equipment/configuration records and team asset inventory, kit manifests, checkout/transfer/return, repair, and decommissioning.
 - Versioned procedures/PACE plans, controlled callouts, optional Twilio SMS, task books/training schedules, deployment packets, and personnel accountability.
+- A tag board: lightweight presence accountability for the common case where a team needs to know who is where and does not need a net. See section 5.19.
 
 ### Out of Scope for now
 
@@ -164,6 +214,8 @@ The Events draft currently offers registered schedule staff and known contacts. 
 **Asset extension:** Teams owns the equipment register, kit contents, custody, condition, maintenance history, and equipment reservations. Events/plans reference those records for particular posts and periods. A planned equipment allocation does not check out the asset, and a net closing does not return it. Keep one physical-resource ledger rather than copying equipment into every event.
 
 **Readiness and activation extension:** Teams owns agency agreements, training plans, procedures, consent, and callout records, which may exist before any net opens. Incident personnel accountability extends the existing operational-period/Events workflow, referencing memberships and shifts; it must not create a competing attendance or hours ledger. Training sessions can link to a net/exercise, but an in-person workshop must not require a fictitious radio net. Define these interfaces alongside Events before implementation.
+
+**Presence extension:** the section 5.19 tag board is the one piece of this that Events does not already answer. An event's sign-in and sign-out against a staffed post stays in Events. A tag board covers the case with **no posts and no shifts** — an EOC staffed for an afternoon, a trailer work session, people driving to a shelter — and it is also usable with no net, which is why it cannot be a check-in. It creates no second staffing system: it has no posts, no assignments, and no offers, only "who is here, where, right now". A team that finds itself building a post schedule on a tag board is doing Events, and the answer is to use Events. Tag durations are a third canonical actual-time source that Teams reconciles in M4, never sums.
 
 ## 4. Personas and Roles
 
@@ -241,6 +293,10 @@ EC/AEC are organizational appointments; NCS is an operational role. Neither a ti
 | TM-36 | As a coordinator onboarding a team with existing records, I want downloadable CSV templates for each supported record type. | I can download a blank template and synthetic example, map existing columns, preview validation and relationships, and import authorized records in dependency order; corrections/re-imports do not duplicate records or silently overwrite data. |
 | TM-37 | As an equipment custodian, I want a maintenance schedule and service history for each item. | Multiple item-specific tasks retain procedure, responsible person, recurrence/trigger, due date, results, and evidence; overdue, deferred, failed, and completed work remain distinct, and service completion does not silently change custody or certify readiness. |
 | TM-38 | As an antenna-system maintainer, I want to retain and compare SWR sweeps. | Each sweep identifies the antenna/feed-line configuration and measurement conditions, with dated results and attachments; baseline comparisons flag context differences, and failures or material changes prompt review of affected capabilities. |
+| TM-39 | As a coordinator during an activation, I want to see who is where without opening a net. | A tag board can be opened, populated, and read with no net, frequency, or NCS in existence; presence never appears as a check-in and produces no ICS-309 entry. |
+| TM-40 | As a member arriving at a site, I want to tag in, and to be tagged in by radio when I cannot do it myself. | Self and assisted tagging produce the same record, distinguished by recorder and channel; a person with no account, no callsign, or no license can be tagged in and out. |
+| TM-41 | As a coordinator closing out an activation, I want nobody silently dropped. | No tag is ever cleared automatically; an overdue tag prompts follow-up without changing state, and closing a board with people still tagged in requires an explicit acknowledgment that names them. |
+| TM-42 | As a reporting coordinator, I want tag time counted once. | Tag time, net check-in duration, and Events shift hours for the same contribution reconcile to one duration with a visible source, never a sum. |
 
 ## 5. Functional Requirements
 
@@ -295,6 +351,18 @@ EC/AEC are organizational appointments; NCS is an operational role. Neither a ti
 - Keep membership effective dates and the report's attribution rule. Backdated/imported participation requires review rather than assigning every historical check-in to today's roster.
 - Do not treat a check-in count, website login, or NCS appointment as proof of current training, willingness to deploy, or equipment readiness.
 
+#### Boundary Against Schedule Staff and the NCS Rotation
+
+A schedule already has its own people: `TemplateStaff` (including co-managers) and `NCSRotationMember`, with a computed rotation and pre-assignment of the scheduled pick roughly 24 hours ahead. Associating that schedule with a team creates two overlapping lists of people, and the obvious user expectation — "our team roster should populate our net's rotation" — is exactly the kind of convenience that quietly becomes an authorization bug.
+
+The boundary, stated once so it is not relitigated per phase:
+
+> **The rotation stays the schedule's own list. A team association supplies candidates for it, never members of it.**
+
+Practically: an authorized manager may be offered team members when *adding* someone to `TemplateStaff` or the rotation, as a picker convenience in the same spirit as PACE-first frequency ordering. Team membership by itself never adds, reorders, or removes a rotation entry, and never grants NCS. Removing someone from the team does not silently remove them from a rotation they are scheduled to serve in — that would change who runs next week's net as a side effect of a roster edit. Conversely, rotation membership is not evidence of team membership and must not be imported as such. The existing NCS eligibility rules in `permissions.py` are unchanged by any of this; a team is not a new grantable pool.
+
+This is deliberately the narrow choice. Whether a team should be able to *drive* a rotation is a discovery question (section 11), not an assumption to build on.
+
 #### PACE-Aware Frequency Selection
 
 When an authorized net manager creates or edits a net connected to a team, automatically present that team's approved PACE radio frequencies/channels at the top of the frequency selection list. This applies whether the team association is selected directly or inherited from a schedule/template. Reuse the section 5.14 PACE entries and existing `Frequency` choices rather than maintaining a separate favorites list.
@@ -313,10 +381,11 @@ When an authorized net manager creates or edits a net connected to a team, autom
 - Offer monthly, quarterly, yearly, and custom periods in a configured reporting timezone, with explicit start/end boundaries and an as-of timestamp.
 - Reports include membership categories/unit counts, applications awaiting review, stale records, training gaps, usable capabilities, and participation. Permission-filter exports using the same scope as the on-screen view.
 - Count unique people at the team level, including manager-maintained records, with unresolved identity links visibly separated. Do not add subgroup totals to produce a team headcount.
-- Keep planned shift hours, net participation time, actual Events hours, and approved manual activity distinct. Document which sources each report includes; linked check-in and shift time for the same work must not be counted twice.
+- Keep planned shift hours, net participation time, actual Events hours, tag board presence time, and approved manual activity distinct. Document which sources each report includes; linked check-in and shift time for the same work must not be counted twice.
+- **There are three canonical sources of actual time, not two:** net check-in duration, Events shift hours, and section 5.19 tag board time. One person at the EOC, checked into the net, working an Events shift produces three overlapping durations for one contribution. The adapter reconciles them to a single duration with a visible source; it never sums them. The tag board is the newest and least obvious of the three, and it ships in M1A, well before the M4 adapter that has to account for it.
 - ARES/EMA adapters need coordinator-approved field mappings, units, and sample expected totals. Export preparation data first; do not claim that every activity maps automatically to a current official reporting category.
 
-The [NH ARES timecard v1-6 hosted by GMARES](https://gmares.org/wp-content/uploads/2025/12/NH-ARES-Timecard-v1-6.xlsx) is a concrete adapter example: nets, exercises, training, public service, community service, SKYWARN, meetings, emergencies, and unclassified activity. Support reviewed off-air activity such as mentoring and station maintenance without inventing a net. Retain source activity IDs, dates, actual durations, and the approved report mapping/version. Apply destination-specific rounding (the example workbook requests half-hour increments) only at export, preserving original time; confirm rounding granularity and category definitions with the receiving coordinator. Linked net, session, and Events records represent one contribution, not additive hours. An NH mapping must not silently become the default for Maine or other programs.
+The [NH ARES timecard v1-6 hosted by GMARES](https://gmares.org/wp-content/uploads/2025/12/NH-ARES-Timecard-v1-6.xlsx) is a concrete adapter example: nets, exercises, training, public service, community service, SKYWARN, meetings, emergencies, and unclassified activity. Support reviewed off-air activity such as mentoring and station maintenance without inventing a net. Retain source activity IDs, dates, actual durations, and the approved report mapping/version. Apply destination-specific rounding (the example workbook requests half-hour increments) only at export, preserving original time; confirm rounding granularity and category definitions with the receiving coordinator. Linked net, session, tag, and Events records represent one contribution, not additive hours. An NH mapping must not silently become the default for Maine or other programs.
 
 ### 5.6 Team Locations and Coverage Assessment
 
@@ -340,7 +409,7 @@ Context: teams support fixed locations (shelters, EOCs, hospitals, cooling cente
 
 #### Location-to-location coverage
 
-- `TeamLocationCoverage` is a **read-time rollup**, not a maintained table, consistent with the per-net-source-of-truth decision in the roadmap item. It answers: for a pair of locations, has any station operating from location A confirmed hearing a station operating from location B, on which frequency, how recently, and across how many nets.
+- `TeamLocationCoverage` is a **read-time rollup**, not a maintained table. This follows the data-model decision the shipped feature already made and that `CanHearReport` embodies: the per-net report is the single source of truth, edges are directional one-row-per-observation with no header table, and a save reconciles that net's edges rather than accumulating a separate ledger. A maintained coverage table would be a second place for the same fact to live, and the two would disagree the first time a check-in was corrected. It answers: for a pair of locations, has any station operating from location A confirmed hearing a station operating from location B, on which frequency, how recently, and across how many nets.
 - Present confirmed two-way paths distinctly from one-way ones. Direction is never inferred — a one-way path is an operationally meaningful finding, not missing data.
 - Frequency scoping carries through: a repeater path and a simplex path between the same two locations are separate findings, and the simplex one is usually the one that matters for a drill.
 - Reconsider precompute only if a team-year coverage query becomes slow. Caching a rollup later does not change the source of truth.
@@ -537,168 +606,19 @@ Provide team-scoped typed custom fields (text, choice, yes/no/unknown, date, num
 
 ### 5.12 Incident and Drill Planner
 
-This is a phased communications-planning assistant integrated with Teams and Events. A structured wizard and deterministic matching rules are sufficient; generative AI is not a dependency.
-
-#### Planning Workflow
-
-1. **Define context and objectives.** Incident/drill name and identifier, exercise/real-world designation, sponsoring team/unit, served agency, planning lead, operational period(s) and timezone, locations, objectives, and measurable success criteria. Example: "Each shelter exchanges a test message with the EOC during the two-hour exercise."
-2. **Describe tasks and communications needs.** Per task/post, select services, bands, modes/transports, primary and alternate channels, operating setting, reporting destination, headcount/shift windows, required and desirable qualifications, equipment/power/runtime, and supervision or access requirements. Record logistics and safety inputs supplied by the responsible lead.
-3. **Check feasibility and suggest people.** Apply section 5.10 matching and show missing capabilities, unconfirmed availability, staffing gaps, equipment conflicts, and training gaps. Overlay section 5.6 observed RF paths with their age and direction. No measured path means untested, not proven impossible; a past path is not a guarantee under incident conditions.
-4. **Review and offer assignments.** The planner selects candidates, confirms conditions, and uses the Events workflow for offers, accept/decline, shifts, and conflicts. A manager can record a phone acceptance with attribution. Equipment reservations and overlapping duties need review before declaring a plan staffed.
-5. **Prepare and approve the package.** Select the agency's configured form checklist, preview missing fields and source data, edit draft narrative, and identify the actual preparer/reviewer/approver. Approval is an explicit authorized action. An incomplete package remains visibly draft.
-6. **Operate, then review.** Link the plan to the existing net, traffic, check-ins, and Events attendance. Collect actual activity and exercise observations separately from planned work. Compare results to objectives, record improvement actions, and offer reviewed capability/training updates; a successful check-in does not automatically certify a new skill.
-
-Reusable plan templates can retain objectives and requirement patterns. Copying a plan clears member acceptance, approval, and expired period-specific data; recheck availability, qualifications, equipment, and channel choices. Preserve an approved revision and its minimal assignment/form snapshots so later roster edits do not change a previously issued plan. Material revisions invalidate approval for the new version and identify which assignments need reconfirmation.
-
-#### Form Support and Limits
-
-The served agency and incident leadership decide which forms are required. A band/mode selection supplies only part of a communications plan. The [FEMA ICS forms catalog](https://training.fema.gov/emiweb/is/icsresource/icsforms/) provides the official names below; the sequencing and mappings are product proposals. Confirm the exact template edition and local supplements during discovery and before releasing an exporter.
-
-| Output | Proposed inputs and ownership | Delivery |
-|---|---|---|
-| ICS-202 — Incident Objectives | Objectives, period, conditions, and authorized review fields from the plan | First planner package |
-| ICS-204 — Assignment List | Confirmed assignments, supervisor, reporting instructions, and operational period from Events | Reuse the planned Events builder; do not duplicate |
-| ICS-205 — Incident Radio Communications Plan | Reviewed channel assignments and technical channel details, not just band/mode tags | Reuse/extend the planned Events builder |
-| ICS-205A — Communications List | Selected operational contacts, with explicit disclosure review | First planner package, restricted distribution |
-| ICS-203 — Organization Assignment List; ICS-206 — Medical Plan; ICS-208 — Safety Message/Plan | Responsible leaders supply organization, medical, and safety content | Attach reviewed documents initially; structured authoring later if required |
-| ICS-211 — Incident Check-In List; ICS-214 — Activity Log | Incident arrival and actual activity; a radio net check-in alone is not incident check-in | Later mappings/workflows; do not manufacture entries from assignments |
-| ICS-221 — Demobilization Check-Out | Required release sign-offs and outstanding closeout work from the accountability workflow | Attach/review agency form first; structured export after local mapping is accepted |
-| ICS-217A — Communications Resource Availability Worksheet | Reviewed resource/capability data | Later, after candidate matching is proven |
-| Existing ICS-213 and ICS-309 | Messages and actual communications history | Continue existing traffic/log exports; link to the plan context |
-
-The first package is a supported communications-planning subset, not automatically a complete Incident Action Plan. Track required attachments in a checklist so unsupported forms remain visible work. Never fabricate medical plans, signatures, approval, frequencies, authorization, or attendance to fill a blank. Printing a name does not constitute a signature.
-
-Use one canonical source per form for screen preview and export, with plan revision, template version, operational period/timezone, and draft/approved state. Validate overflow/continuation pages and local-time rendering. Private roster fields must not flow into a net's existing public report or subscriber email; plan access and distribution require their own explicit policy.
+**Moved to [Incident and Drill Planner](TEAM-INCIDENT-PLANNER.md).** Plan context, objectives, operational periods, requirements, candidate matching, and the ICS package. Phases M5 and M6.
 
 ### 5.13 Team Assets, Kits, and Custody
 
-#### Station and Kit Operating Guides
-
-Attach a versioned operating guide to each supported station/kit configuration, using the [GMARES go-box article](https://gmares.org/wp-content/uploads/2023/04/VHF-UHF-Go-Box.pdf) as a design example rather than a prescribed build. Include labeled connection photographs/diagrams, required accessories and compatible substitutions, software/configuration references, setup/shutdown steps, power requirements, measured runtime with test conditions, and a quick functional test. Do not present battery capacity alone as guaranteed operating duration.
-
-Link to the existing manifest, equipment IDs, and station tests instead of maintaining a second inventory. Record author/reviewer, applicable configuration revision, review date, and changes requiring review. A replacement radio/interface or changed wiring flags affected instructions for review without rewriting previously issued guides. Personal configurations can have private guides; team kit guides use scoped member access, with restricted site/access details separated and no passwords or door codes embedded.
-
-Provide a printable/downloadable, revision-marked copy before handoff or deployment, including the guide in the section 5.17 packet when applicable. Pilot with a qualified operator other than the kit's usual maintainer: find parts, assemble safely under local procedures, complete a functional test, and submit discrepancies. Guide availability, manifest completeness, successful testing, custody, and operator authorization are independent facts.
-
-#### Inventory and Ownership
-
-Provide a Teams → Assets area with inventory, kits/stations, current assignments, checkouts, and service history. Register team-owned equipment and equipment managed for an EMA or other agency; record the legal owner separately from the managing team and the person holding it. A member's loaned radio links to the same physical equipment record under explicitly granted team visibility, rather than becoming a duplicate team-owned radio. Sharing records/reservations across independent teams remains a later policy decision.
-
-Use named `TeamLocation` records for the two EMA offices. Model the trailer as a movable asset/container with a home storage location and changing current assignment. Model the backpack go-kit as a container/kit asset; neither a trailer nor a backpack should masquerade as a permanently fixed location in coverage maps. A deployment can link either to a supported site while retaining its asset identity.
-
-Track radios, antenna systems, batteries, power supplies, computers/interfaces, feed lines, masts, and other accountable accessories. Each registered item has an internal asset ID even if it lacks a serial number. Useful fields include description/category, make/model, owner, managing team/unit, serial/tag when applicable, home storage location, current assignment, condition, last inventory confirmation, and optional service/test dates and restricted notes. Show power/capacity and relevant technical capabilities through the same equipment/configuration model used for personal gear. Purchasing, depreciation, and consumable stock accounting remain outside this scope.
-
-#### Every Asset Has an Accountable Assignment
-
-Do not combine lifecycle, condition, physical whereabouts, and future plans in one status. Every asset has exactly one current primary assignment, directly or inherited from its containing kit. Also retain an accountable contact, last-known physical location, and the timestamp/source of the latest confirmation where applicable.
-
-| Assignment/disposition shown to staff | Required record | Readiness effect |
-|---|---|---|
-| Assigned to location | Named location, such as EMA Office A/B or trailer storage, and responsible custodian/contact | Evaluate condition, access, reservations, and whether removal is permitted |
-| Assigned / checked out to member | Team membership record (account optional), handoff time, last-known location, purpose, and due date or explicit ongoing-assignment review date | Holder is known; availability for another task requires release/handoff confirmation |
-| Contained in kit/trailer | Parent asset plus effective custody/location inherited through its current assignment | Parent checkout includes the contents actually present; component condition still affects capability |
-| Out for repair | Service destination/provider, team liaison, dispatch date, fault/work note, and expected return if known | Unavailable until received and checked; retain the legal owner and origin |
-| Decommissioned | Lifecycle state, date/reason/authorizer, and retained storage/custodian or recorded disposal/transfer destination | Excluded from usable inventory and new allocations; identity/history remain searchable |
-| Missing / location unconfirmed | Explicit discrepancy, last confirmed assignment/time, responsible investigator, and follow-up state | Excluded from confirmed available supply; never silently treated as unassigned stock |
-
-"Available" is derived for a time/task; "reserved" describes future use. Neither replaces custody. A retired radio still on an EMA shelf has both a decommissioned lifecycle state and a known storage assignment. Closing an import with unknown location creates an accountable discrepancy requiring reconciliation, not a fabricated location. A home/default storage location is not evidence that an item was returned there.
-
-#### Kit Contents and Readiness
-
-- Keep a manifest of expected equipment and actual linked items for each office station, trailer, and go-kit. A station configuration describes how items operate together; physical containment describes where they are stored. Sharing a configuration does not put an item inside two containers.
-- A physical item has at most one current parent container; prevent cycles. Nested kits are allowed (for example a backpack inside the trailer), with inherited custody resolved to the outer holder/location and visible in the item detail.
-- Checkout of a complete kit moves its present contents together, atomically. Missing components are listed on the handoff manifest, not falsely marked as transferred. On removal, explicitly detach the component and give it a new assignment in the same operation; the kit retains its expected-content requirement.
-- Record substitutions and manifest revisions with dates. Historical handoffs retain the manifest as transferred at that time, even if a radio or battery is later replaced.
-- Track condition separately (ready, degraded, unserviceable, unknown) and task-dependent checks such as battery charge/test date, working power supply, required cables, antenna availability, and computer/interface readiness. Inventory confirmation alone does not certify functional readiness.
-- Recompute affected configuration/kit capabilities when a dependency moves, fails, goes for repair, or is decommissioned. Report missing required versus optional items and usable alternatives; do not simply add together every mode listed on every radio in a kit.
-
-#### Checkout, Transfer, Return, and Service
-
-1. **Select and check.** The custodian chooses the item/kit, reviews its current assignment, manifest/condition, conflicting reservations, and intended recipient/purpose. Record due date or explicitly ongoing assignment with a review date.
-2. **Confirm the handoff.** Record from/to holder or location, actual handoff time, recorder, recipient acknowledgment (in-app or documented phone/in-person), and any condition/contents exceptions. A pending request does not change confirmed custody. Assisted handoff works for a member without an account.
-3. **Transfer without losing the trail.** Moving a kit between members, offices, trailer storage, or a deployed site creates another custody event. Resolve an in-transit item to a named responsible holder and destination. Do not overwrite the prior holder or infer movement from a plan edit.
-4. **Return and reconcile.** A return request is not a completed return: an authorized receiver records actual destination, manifest reconciliation, condition, and outstanding missing/damaged items. A late/partial return cannot reset the entire kit to "ready."
-5. **Repair or retire.** Detach a failed component if needed, record the repair destination/team liaison, and flag affected reservations. A repaired item requires receipt and appropriate inspection before being offered as ready. Decommissioning requires disposition details and history retention; outstanding custody/contents must be resolved explicitly.
-
-Maintain an append-only handoff/service history with attributed corrections, an authoritative current assignment, and version checks. Concurrent checkout requests for the same kit or component cannot both succeed; retries must not create duplicate handoffs. Kit/component state changes happen as one transaction. The detailed storage design may use current-state records plus history, but both must remain consistent.
-
-Show current holder and last confirmation prominently, with authorized contact details, due date, overdue/recall indicators, kit completeness, and last service/test. Provide filters and reports for location, holder, owner/unit, category, repair, retirement, missing items, overdue returns, and inventory confirmation age. Optional QR/asset-tag lookup can accelerate identification later; it grants no public access to custody or inventory details.
-
-Notify holders and scoped custodians of agreed return/review dates and unresolved discrepancies through permitted channels. A coordinator can record a recall request and follow-up; neither a recall nor an expired due date automatically transfers custody. Member departure or Silent Key status creates a staff equipment-recovery task without sending routine notices to a historical member or clearing their outstanding custody record.
-
-#### Per-Item Maintenance Schedules and History
-
-Give each equipment item an explicit maintenance plan: one or more tasks, an approved no-scheduled-maintenance designation with rationale/review date, or a visible needs-review state. Plans also apply to personal equipment when the owner chooses to track/share them, without exposing private service details to a team by default. A kit-level inspection does not replace the separate schedules for its radio, batteries, antenna system, trailer, or other components.
-
-- Each task records procedure/reference and revision, responsible maintainer and backup, applicable item/configuration, interval or trigger, last qualifying completion, next due date, advance reminder, and acceptance criteria approved by the owner/agency. Reusable equipment-category templates provide starting points with per-item overrides; the app does not prescribe universal service intervals.
-- Support calendar recurrence and event-triggered work such as before deployment, after return, after repair, or after a configuration change. Optional usage-based tasks require explicit meter/counter readings and units; unknown usage remains unknown. Record whether calendar due dates use a fixed cadence or elapsed time since completion, and define handling of early/late service rather than silently moving the schedule.
-- Example tasks include battery condition/capacity checks, radio/interface functional checks, connector/feed-line inspection, antenna-system sweeps, power-supply checks, and manufacturer/agency-required generator or trailer service. Link approved instructions; the app records work rather than substituting for qualified inspection or manufacturer safety guidance.
-- Work records retain stable task/item references, scheduled and actual dates, performer, work performed, findings/measurements, parts replaced, result, evidence, reviewer where required, and next action. Record unscheduled repairs as well as preventive work. Preserve attributed corrections and prior schedule versions; changing a task must not rewrite service history.
-- Keep due soon, overdue, in progress, deferred, completed, and cancelled work distinct from pass/fail/inconclusive results. A failed attempt is not a qualifying completion and cannot reset the successful-service date. Deferral requires an authorized owner, reason, revised target, and retained original due date; reminders or deferrals cannot clear a fault.
-- Provide an item timeline and team maintenance queue/calendar filtered by asset, site/kit, custodian, task, due window, and result. Notify responsible people through permitted channels, with assisted completion for non-account holders and printable work lists. Completing work does not move equipment or resolve an outstanding checkout.
-
-Define readiness impact per task: advisory, review required, or blocking for specified functions. Overdue work is not automatically proof of physical failure, but a required overdue inspection may block use under local policy. Failed/blocking tasks affect dependent station configurations and kits, with warnings on affected future reservations and an explicit authorized return-to-service review after repair/retest. Do not mark an entire kit ready because one component passed; do not disable unrelated functions without a dependency. Use the same service/condition history and section 5.9 evidence links, not a competing maintenance status ledger.
-
-#### Antenna-System SWR Sweeps and Test Evidence
-
-Treat an antenna system as a versioned operational configuration referencing the antenna, feed line, connectors/adapters, matching components, installation/site, and other relevant items. This is not necessarily a physical container. Attach a sweep to that system revision and applicable maintenance task, not merely to the owner's radio or an unqualified "SWR good" checkbox.
-
-Capture test date/operator, purpose (baseline, periodic, post-repair, or changed setup), instrument/model and available calibration/reference information, measurement point, frequency range and units, sample spacing when known, and installed/test conditions. Record relevant antenna position/height, feed-line arrangement, tuner/matching state, and environmental notes so later reviewers can judge comparability. Retain SWR at required operating frequencies and any recorded acceptable ranges/limits with their local procedure source; do not invent a universal pass threshold or treat an SWR result as proof of end-to-end communications coverage.
-
-Allow private upload/download of analyzer exports, sweep plots/screenshots, and supporting photographs, with file-type/size controls and metadata. Initially support attachments plus structured summary readings; automated parsing of vendor files, graph overlays, instrument control, and automatic measurements are optional later work, not prerequisites. A PDF/image alone need not be converted automatically into numeric data. Where sample data is supported, retain the original evidence and explicit units.
-
-Show prior/baseline results side by side with test context and reviewer notes; label different system revisions, measurement points, or test conditions rather than implying directly comparable trends. Replacing a feed line, moving a portable antenna, or changing the installation preserves prior results but flags the applicable retest requirement. Link findings to affected bands/tasks, service actions, station-readiness evidence, and the operating guide. Only approved completion/retest and any required return-to-service review can clear a blocking finding.
-
-#### Reservations and Planning Integration
-
-The equipment ledger must be useful before the incident planner ships. Add future reservations when planning is implemented: named resources/configuration, time window including preparation/transport/restoration, intended task/post, requester/approver, and provisional/confirmed/released state. Personal equipment needs the owner's agreement; team equipment follows delegated custodian authority.
-
-Check conflicts across the physical dependency set: reserving the backpack includes required present components; separately reserving its radio for the same interval conflicts. A proposed substitution must be compatible and available, and a parent/manifest change must revalidate existing reservations. Reserve confirmed resources atomically to prevent two planners both claiming the same item. Surface conflicts instead of silently overriding an existing commitment.
-
-Plans distinguish qualified operator, suitable configuration, confirmed resource reservation, actual equipment handoff, and actual attendance. Cancellation releases future reservations but leaves equipment with its recorded holder until a real transfer/return occurs. Repair, loss, overdue custody, or changed owner consent invalidates affected readiness assumptions and alerts the planner/custodian for review. Show only authorized reservation details; where cross-team visibility is unavailable, require owner confirmation and state that conflict checks are limited to the current team.
+**Moved to [Assets, Kits, and Custody](TEAM-ASSETS-CUSTODY.md).** Asset registration, containment and kit manifests, custody transfer and return, maintenance schedules, SWR sweeps, and configuration-specific operating guides. Phase M3A.
 
 ### 5.14 Activation Authority, Alert Levels, and PACE
 
-Maintain a served-agency record with mission scope, agreement/procedure reference and review date, primary/alternate agency contacts, activation authority, approved team delegates, and reporting chain. A person permitted to send a callout is not necessarily permitted to authorize deployment. Record who requested and authorized the response, when, incident/reference number if supplied, and any limits on the task. Verbal requests can be recorded with attribution and later documentation.
-
-The [ARRL ARES Plan](https://www.arrl.org/files/file/ARES%20Plan%20July%202025.pdf) recommends scenario-specific quick-start procedures. [FEMA mobilization guidance](https://emilms.fema.gov/_is0700b/groups/37.html) advises waiting for official deployment notification. Apply these as a distinction between preparedness monitoring, availability requests, and authorized assignments, including emergency phone/radio workflows when the app is unavailable.
-
-**Proposed local alert vocabulary:** Normal; Advisory/Monitor; Standby/Availability Requested; Activated/Assignments Issued; Demobilizing; Closed. Labels/colors can be adapted to the adopted local manual. Always show words and required actions, not color alone. Store SKYWARN, exercise, ARES/RACES/other agency context as separate attributes rather than forcing them into a severity ladder. A weather warning may justify monitoring under an approved standing procedure; it does not itself authorize an EOC visit, trailer movement, or an SMS blast.
-
-For each mission or communications path, define **PACE — Primary, Alternate, Contingency, Emergency** methods, with endpoint/contact, approved channel settings, infrastructure dependencies, switching trigger, switching authority, and last exercise result. Multiple choices using one repeater site, power source, or internet connection are not independent fallbacks. Use [CISA's PACE guidance](https://www.cisa.gov/sites/default/files/2024-10/2024_NCSWICPTE_Leveraging_PACE_Plan_Emergency_Comms_Ecosystems.pdf) as a reference; the team must select and test the actual methods.
-
-**Brad's proposed storm procedure, to be adopted with the EMA:** distribute a current radio rendezvous card in advance. It specifies what conditions trigger monitoring; which primary repeater to use; approved fallback sequence; listening/check-in windows and timezone; how NCS/deputy coverage is arranged; and what to do if the repeater or NCS cannot be heard. Resolve the primary choice and fallback channels from current local confirmation, not a neighboring county's plan. Record availability and relay needs over the air when necessary. Members should not independently rotate through channels without a shared timing/transition rule. Monitoring requires no travel and does not presume that every member has confirmed availability.
-
-An authorized coordinator can create a callout before a net exists and later link its resource net and operational periods. Capture the affected unit/audience, alert stage, exercise/real designation, requested action, response deadline, validity/expiry, next update, and source plan revision. Updates/cancellations carry the same incident/callout identifier and a new revision, with obsolete instructions visibly superseded. Restricted deployment details remain separate from any public alert-level display.
+**Moved to [Activation, Tag Board, and Callouts](TEAM-ACTIVATION-CALLOUTS.md).** Served-agency records, activation authority, the local alert vocabulary, PACE paths, and the rendezvous card. Phase M3B.
 
 ### 5.15 Optional SMS Callouts (Twilio Candidate)
 
-Twilio is Brad's proposed first provider. This section authorizes design only: no account setup, number purchase, credentials, outbound messages, or contact upload is performed by this concept update. The implementation should expose a small provider interface while initially supporting one configured provider. SMS is optional per deployment and team and must not gate radio-based activation or membership.
-
-#### Consent, Sender Scope, and Privacy
-
-- Collect a confirmed mobile number in normalized international format and separate, optional consent for named sender/team and message purposes (for example activation notices and opted-in drills/training). Record notice version, purpose, source, timestamp, and withdrawal; possession of a number, team membership, a public directory listing, or the old "okay to text" cell is not sufficient evidence for a new messaging program.
-- Show sender identity, expected message purpose/frequency, possible message/data charges, help and opt-out instructions. Manager-assisted consent must record the member's actual agreement through an accepted process; staff cannot consent on the member's behalf. Follow the [Twilio Messaging Policy](https://www.twilio.com/en-us/legal/messaging-policy), and confirm the exact registration/consent flow for the chosen sender type before launch.
-- Synchronize provider opt-outs with the local suppression list. Check eligibility/consent again at send time; STOP overrides pending jobs and urgent message classification. Re-enrollment requires fresh valid consent. With [Advanced Opt-Out](https://www.twilio.com/docs/messaging/tutorials/advanced-opt-out), handle provider START/STOP/HELP events without sending duplicate provider confirmations. Map provider-level suppression to its actual sender/service scope; a team-specific preference cannot bypass a broader provider block.
-- Explain that Twilio and downstream carriers process destination numbers and message content. Send individual messages rather than group texts; recipients must not see the roster or each other's numbers. Keep SMS content minimal: team identity, alert/exercise label, action, approved rendezvous information, deadline, and opt-out/help as applicable. Avoid home addresses, access codes, medical information, detailed incident traffic, or member lists; use an authenticated detail page for restricted content.
-- Define retention for number/consent records, message bodies, replies, delivery events, provider logs, and backups. Review provider retention/redaction options without promising deletion from carriers or phones. Keep credentials and webhook secrets server-side, restrict number lookup/export, and redact ordinary logs/diagnostics. Update PRIVACY and self-hosting guidance before enabling SMS.
-
-Keep SMS consent distinct from the existing `User.email_notifications` and email-to-SMS `sms_gateway` fields. An email preference must not enroll SMS, and adding Twilio must not silently reroute existing notifications. A team member can choose radio or assisted telephone follow-up instead. Confirm changed/recycled phone numbers; ambiguous shared numbers cannot establish which person acknowledged an assignment.
-
-#### Coordinator Workflow and Delivery Reliability
-
-1. Choose an approved procedure, alert stage, exercise/real label, expiration, and authorized audience. Filter by unit/task if appropriate; historical/withdrawn members are excluded. A frozen recipient preview records included/excluded counts and reasons, with masked numbers unless the user has contact access.
-2. Preview the exact message, sender, purpose, estimated segment count/cost, and response instructions. A separate callout permission is required to send, with the actor and source authorization audited. Urgent alerts and routine training reminders have distinct schedules/preferences; do not assume an emergency label bypasses consent or sender policy.
-3. Queue one intended delivery per callout revision/recipient/channel, deduplicating shared destination numbers while preserving member ambiguity for follow-up. Apply rate/budget controls, bounded retries, and expiry. Show partial failures; a broadcast is not one atomic success.
-4. Display provider delivery separately from human response: pending/accepted/sent/delivered/failed or unknown versus acknowledged/available/unavailable/needs contact. Twilio [status callbacks](https://www.twilio.com/docs/messaging/guides/track-outbound-message-status) supply delivery events; they do not demonstrate that a volunteer read, understood, or accepted an assignment.
-5. Accept a scoped in-app response, an unambiguous SMS reply with callout identifier, or a radio/phone response entered by authorized staff. Preserve responder, channel, time, and recorder. Acknowledgment means receipt; availability and assignment acceptance require explicit answers. A telephone/SMS response is not authorization to edit a profile or issue a deployment order.
-6. At the response deadline, present unreachable/failed/unacknowledged members for approved radio/phone follow-up. Silence means unknown, not unavailable or safe. Superseding/cancelling a callout stops unsent obsolete jobs; messages already accepted by the provider may still arrive, so include issue/expiry times and a revision-aware status view.
-
-Validate inbound reply/status webhook signatures using the provider-supported validation method and correct externally visible URL behind the deployment proxy; bind callbacks to the configured account/sender and known message/callout. Deduplicate retries, handle out-of-order events, and prevent a delayed callback from reversing a final delivery result or consent withdrawal. Signature checking authenticates the provider, not the human holding a phone. See [Twilio webhook security](https://www.twilio.com/docs/usage/webhooks/webhooks-security).
-
-Provider submission timeouts need an uncertain-delivery state and reconciliation, not blind resends that might duplicate an alert. Persist jobs across restarts, bound how long queued alerts remain useful, and distinguish app queue expiry from any provider-side cancellation guarantee. A provider or internet outage must leave the previously issued radio/PACE card usable; downloading instructions at incident time cannot be the only fallback.
-
-For US local-number application messaging, plan for the relevant [A2P 10DLC registration](https://www.twilio.com/docs/messaging/compliance/a2p-10dlc); other sender types have their own verification requirements. Confirm sender ownership, registration, throughput, segment pricing, and spending limits at implementation time. On a shared ECTLogger instance, define which organization is the registered sender and whether teams need separate services/accounts; do not let one team's branding, consent, costs, or opt-outs be silently attributed to another. No pricing or universal emergency exemption is assumed here.
+**Moved to [Activation, Tag Board, and Callouts](TEAM-ACTIVATION-CALLOUTS.md).** Consent and sender scope, the coordinator workflow, delivery-versus-acknowledgment separation, and webhook handling. Phase M3B, optional provider release.
 
 ### 5.16 Program Eligibility, Task Books, and Training Schedule
 
@@ -729,53 +649,15 @@ Reuse net/exercise scheduling, attendance, existing message records, station tes
 
 ### 5.17 Deployment Readiness, Packets, and Personnel Accountability
 
-#### Personal and Site Readiness
-
-Add member-reported notice required, travel radius, maximum shift/deployment duration, overnight ability, transport offered/needed, and operational accommodation needs. For each deployment, confirm personal/family arrangements and logistics without collecting diagnoses, medication lists, or private family details. Keep emergency-contact name/method and disclosure narrowly limited to authorized welfare/recovery staff. Availability is refreshed for this task, not assumed from a permanent "deployable" flag.
-
-Extend supported-site records with arrival/entry contact, operating workspace, installed antennas/connectors, power/network availability, access restrictions, accessibility, sanitation/shelter and agreed support, setup approval, hazards, and evacuation/reporting instructions. Trailer readiness also depends on compatible transport, authorized driver, keys, crew, and inspection. Each site/procedure has a reviewer and confirmation date; internet links alone are insufficient field instructions. CISA's [AUXFOG](https://www.cisa.gov/sites/default/files/publications/AUXFOG%20June%202016%20-%20508%20Reviewed%20-%20Final%20%282-16-17%29.pdf) is a reference for preparation, site awareness, and deployment/demobilization, subject to current local agency instructions.
-
-#### Tailored Checklists and a Deployment Packet
-
-Use the [2024 hurricane preparation checklist hosted by GMARES](https://gmares.org/wp-content/uploads/2024/08/Preparing-for-a-Hurricane-and-ARES-Operations-2024.pdf) to structure locally adopted preparation stages:
-
-| Stage | Proposed checklist focus |
-|---|---|
-| Seasonal / routine | Home-operation and deployment kits, family arrangements confirmation, supplies, generator/power checks under approved safety procedures, battery load tests, live digital-function tests, and current printed instructions |
-| Member prestorm / pre-event | Refresh availability, confirm personal arrangements without private details, check/charge/pack the selected setup, review monitoring instructions, and report constraints |
-| Leadership prestorm / pre-event | Confirm agency needs, poll active/reserve members, identify tentative primary and backup operators, preserve required home-station coverage, assess mutual-aid gaps, and check/preposition fixed and portable resources with authorization |
-
-Each checklist instance retains its template revision, stage/event scope, owner, due date, completion source/evidence, and outstanding blockers. Permit assisted phone/radio recording and printed use. A battery/live-radio test can reference section 5.9 evidence instead of being re-entered; packed, tested, and available remain distinct. Family readiness is a confirmation or constraint, not a request for family plans or medical information.
-
-The source's tentative 72-hour staffing horizon is an optional template parameter, not a mandatory deployment length. Actual primary/backup offers and assignments use Events posts/shifts, reconfirm availability, and check shared equipment; a backup must not be counted as another simultaneously available operator. Before that integration ships, preparation captures staffing needs/gaps only. Checklist completion, monitoring, availability polling, and tentative planning never authorize self-deployment.
-
-Use reusable templates for an equipped EMA office, short field shift, 24-hour/overnight assignment, extended deployment, trailer, or backpack kit. Separate communications equipment, operating supplies, and personal needs. Each checklist line has applicability, required/optional status, responsible supplier (member/team/destination), packed/checked/missing/not applicable state, and confirmation date. Derive equipment lines from the selected configuration/manifest; include personal items and supplies that are not tracked assets.
-
-Reference the [ARRL Field Resources Manual](https://www.arrl.org/files/file/Public%20Service/ARES/ARESFieldResourcesManual-2019.pdf) and [Eastern Massachusetts ARES go-kit checklist](https://ema.arrl.org/wp-content/uploads/2018/03/Go-Kit-Checklist.pdf) for local templates covering radios/accessories, operating forms, lighting, clothing, food/water, and extended-stay needs. Duration and what the host supplies determine the actual list; a published 24/72-hour example is not a universal deployment condition. A checked packing list confirms preparation, not operational qualification.
-
-Generate a printable/downloadable packet containing approved task/period, request/authorization reference, supervisor and necessary contacts, reporting/travel/site instructions, equipment allocation and pickup, tailored checklist, PACE/rendezvous card, applicable forms, safety/relief expectations, and release/return procedure. Include revision/issue/expiry and recipient-specific disclosure. Support printing and saving before departure; offline editing/synchronization remains the separate PWA roadmap work. Cached or printed material cannot be remotely recalled, so minimize private details and define handling/expiry expectations. Essential radio rendezvous instructions must be distributed before app connectivity is lost.
-
-#### Accountability Through Return
-
-Track authorized, en route, arrived/incident check-in, on duty, relieved, released, and returned, with actual/expected timestamps, supervisor, recorder/source, and exception notes. Home-based operators use appropriate duty/welfare states without invented travel. Radio check-in alone does not establish physical arrival or welfare; a net closing does not release responders. Keep these records connected to Events shifts and the canonical actual-hours source.
-
-Record configurable arrival/welfare/relief deadlines, missed-contact follow-up owner, escalation procedure, and assistance requests. Reminders prompt human follow-up; lack of a reply is unknown status, and automated reminders are not a substitute for safety supervision. Record authorized release, required documentation, equipment reconciliation, travel arrangements, and return confirmation separately. Retain unresolved tasks after incident closure instead of marking everyone safely returned.
-
-Use [ICS-211](https://training.fema.gov/emiweb/is/icsresource/icsforms/) for incident check-in mapping when supported, and [ICS-221 Demobilization Check-Out](https://training.fema.gov/emiweb/is/icsresource/assets/ics%20forms/ics%20form%20221%2C%20demobilization%20check-out%20%28v3%29.pdf) as the reference for required release sign-offs. Initially attach an approved agency form/checklist where a full exporter is unavailable. Expenses, mileage, damage, and issued-equipment receipts may be documented for agency review without promising reimbursement.
+**Moved to [Incident and Drill Planner](TEAM-INCIDENT-PLANNER.md).** Deployment packets, staged preparation, and the full incident accountability ladder. It extends the section 5.19 tag record rather than replacing it; there is one presence ledger, not two. Phase M5.
 
 ### 5.18 Procedure Library, Succession, and Improvement
 
-Maintain a versioned library of manuals, quick-start procedures, agreements, PACE cards, site guides, training plans, and exercise/after-action records. Each has an owner/deputy, source URL or authorized attachment, scope, approver, version/effective date, review date, public/restricted classification, and superseded-by link. Drafts are visibly distinct from adopted operational instructions. Acknowledgment of a revised procedure is tracked separately from training completion.
+**Moved to [Activation, Tag Board, and Callouts](TEAM-ACTIVATION-CALLOUTS.md).** Versioned manuals and agreements, the external-resource catalog, leadership handover, and after-action improvement actions. Phase M3B.
 
-Include a curated external-resource catalog linked to relevant tasks/configurations: original author/organization, source URL, publication/version date when known, last local review, applicability, and reuse permission. GMARES hosts both its own and others' material; attribution and permission follow the original work. Link by default, obtain appropriate permission before reproducing documents/videos, and distinguish a broken/outdated learning link from an approved local operating instruction. Review older software screenshots/settings before recommending them; link current official software sources rather than bundling historical installers. Reuse this library for kit guides and exercise learning links, not a separate learning-management platform.
+### 5.19 Tag Board and Presence Accountability
 
-For the EC transition, begin with the inherited WSSM manual and an explicit adoption checklist: confirm agency authority/agreement, current role holders/deputies, monitored channels, callout/relief arrangements, inventories/custody, training requirements, source conflicts, and outstanding actions. Adapt neighboring patterns into proposed local procedures; do not rewrite the original manuals or publish local adoption through this concept update.
-
-Store organizational responsibility rather than relying on one person's email account. A leadership handover transfers document ownership, access grants, provider administration responsibilities, pending callouts, asset-recovery issues, and improvement actions through an audited process; secrets belong in deployment secret management, not in manuals. Do not infer new authority solely from an EC title on a public page.
-
-An after-action review compares objectives with actual results, identifies what worked and what failed, and creates named corrective actions with due dates, closure evidence, and a retest. Link improvements back to the relevant task, kit, site, PACE path, or procedure revision so the next drill tests the fix. Update approved materials and brief members through their chosen channels.
-
-The [GMARES-hosted after-action template](https://gmares.org/wp-content/uploads/2023/04/aar_form.docx) adds a useful station-level view: operator/configuration/location, how and when notified, emergency power, operating/weather/propagation conditions, message counts, issues, and successes. Reuse callout, traffic, and test records where authorized; distinguish messages originated, relayed, and delivered so counts are not misleading. Link each observation to the relevant resource or procedure: a missing cable becomes a kit discrepancy, failed delivery becomes a path/test finding, and unclear instructions become a guide-review action. Closure requires appropriate evidence/retest and reviewer action; it must not automatically restore service condition or certify an operator.
+**Lives in [Activation, Tag Board, and Callouts](TEAM-ACTIVATION-CALLOUTS.md).** Knowing who is where when there is no net: a team-owned live presence record with tag in, tag out, place, and state, usable with no net, no event, no plan, and no radio. **A tag is never a check-in and a check-in is never a tag.** Tag time is a third canonical actual-time source that section 5.5 reporting must reconcile rather than sum. Phase M1A, which depends on M1 alone.
 
 ## 6. Data Model Draft
 
@@ -803,6 +685,7 @@ Names are conceptual until implementation discovery; avoid fixing migration numb
 | Served agency and procedure/document revisions | Agency requests/authority, agreement references, local adoption, owner/deputy, approval, review date, and disclosure. PACE paths reference versioned communications settings/dependencies and switching rules. |
 | Callout/revision and per-recipient delivery/response | Alert intent/audience/expiry; separate provider attempts, human acknowledgment, availability, and assisted response attribution. May precede and later link to a net. |
 | Messaging consent/suppression and provider configuration | Phone verification, sender/team/purpose scope, consent provenance and withdrawals; deployment secrets remain private. Provider opt-out scope can be broader than local team preferences. |
+| Tag board and member tag | Team-owned presence occasion, and one presence record per person per board carrying state, place, optional task label, optional expected-out time, recorder, and channel. **Never creates or is created by a `CheckIn`**, in either direction. Any net, alert-stage, or plan link is an optional reference, never containment, and closing either side must not close the other. No automatic tag-out exists; a board close with open tags requires explicit acknowledgment. Durations are a third canonical actual-time source that the report adapter reconciles, never sums. |
 | Task-book definitions/sign-offs and training sessions | Versioned program/local requirements, evaluator approval, session objectives/prerequisites, attendance, and net/exercise links. No duplicate attendance ledger for sessions already represented by a net. |
 | Reusable exercise templates and preparation checklists | Task/prerequisite/delivery criteria and staged checklist definitions/instances, with revision, scope, owner, due date, blockers, and linked evidence. Reuse session/plan records for execution and Events for staffing. |
 | Deployment readiness/packet and accountability events | Minimal task-specific logistics, checklist/source revisions, approved packet, travel/duty/welfare/release/return evidence linked to Events assignments and the canonical hours source. |
@@ -875,6 +758,7 @@ Proposed defaults; finalize the deployment support-access policy before storing 
 | Own equipment and loan consent | Maintain own reported gear; agree/decline loans | Assist only within granted scope | No by default | Read disclosed capabilities/availability | No authority to loan personal gear without owner consent |
 | Team assets, contents, and custody | View/acknowledge own custody; report issues | Separate asset-management grant | No by default | Read authorized readiness; request allocation | Manage/delegate within team and owner restrictions |
 | Callouts and responses | Own consent/preferences and response | Explicit scoped callout grant | Training reminders only if granted | Request callout; send only if granted | Delegate sender scope; record external deployment authority separately |
+| Tag board and member presence | Tag self in/out; see own tags and the board they are on | Open/close boards and tag anyone, within delegated scope | No | Read presence for the assigned plan scope | Team scope |
 | Procedures and training plans | View approved/disclosed versions | Draft/review as delegated | Own training scope | Approved operational subset | Assign owners/approvers; adoption still requires appropriate agency authority |
 | Bulk export | Own data / permitted directory only | Separate scoped export grant | Training export grant only | Approved operational subset | Scoped and audited |
 | Grant permissions / change privacy | No | Only if separately delegated | No | No | Yes, with audit |
@@ -902,6 +786,7 @@ This section is product/engineering guidance, not legal advice.
   - equipment serial numbers, detailed inventories at private sites, holder contact/location details, and sensitive repair/access notes
   - emergency contacts, private availability/accommodation notes, SMS numbers/replies, recipient lists, and restricted deployment packets
   - team location addresses and access details (5.6) — a roster of shelter and EOC addresses is more sensitive than any single member record, and its visibility should default to team managers
+  - live member presence (5.19) — who is tagged in, at which place, right now. This is the most sensitive real-time data in the module: it states a named person's current physical whereabouts, which the static roster never does. Default visibility is team staff plus the people on that board, it never appears in a public net report or any other public output, and it is last-confirmed whereabouts rather than live location tracking
 
 ### Required Controls (baseline)
 
@@ -917,6 +802,7 @@ This section is product/engineering guidance, not legal advice.
 - Audit imports, merges/claims, status transitions, privilege changes, verification, plan approval, and bulk exports from the first roster release. Avoid copying sensitive payloads into ordinary application logs.
 - Audit asset ownership changes, containment/manifests, custody transfers/corrections, service, retirement, and reservations from the asset release. Restrict detailed asset exports and lookup tags; routine net reports should not expose a member's equipment inventory or home storage location.
 - Audit callout authorization/audience/revisions, consent and suppression, delivery/response transitions, procedure adoption, evaluator sign-offs, and personnel release. Minimize message content in audit/diagnostic logs. Disclose external SMS processing and printed/offline packet limitations before release.
+- Audit tag board opening and closing, every assisted tag with its recorder and channel, and any acknowledged close that left people tagged in. Retain the participation total longer than the whereabouts detail: the hours are what reporting needs, and the positions are the sensitive half with no downstream consumer.
 
 ### User Rights and Lifecycle
 
@@ -944,6 +830,63 @@ This section is product/engineering guidance, not legal advice.
 
 This replaces the earlier five-milestone outline. Security, auditability, import safety, and data lifecycle are part of the first usable roster, not deferred to a final hardening milestone. Estimates should follow discovery and review of the schema-tooling roadmap; no dates or migration numbers are committed here.
 
+> **Naming, to avoid a collision that will otherwise cause real confusion.** The phases below are **M0 through M6, phases of this module**. They are not the repository's roadmap tiers, where "Milestone 2" is the tier that contains this entire module. When referring to one of these outside this document, write "Teams phase M3", never "Milestone 3". The delivery-phase column in section 5.11 uses the same M-labels and means the same thing.
+
+### Phase Overview, Dependencies, and Model Assignment
+
+`docs/ROADMAP.md` assigns each item a recommended model tier so work can be delegated to the cheapest model that can do it safely. This module is large enough that one tier for the whole thing wastes money on the mechanical parts and risks the hard parts. The assignment below is per phase, and follows one principle:
+
+> **Opus writes the schema and the invariants. Sonnet builds against them. Haiku fills in repeated instances of a pattern that is already established and verified.**
+
+Concretely, the expensive judgment in this module is concentrated in a small number of places — the privacy boundary, identity matching, custody concurrency, consent-at-send, and time attribution. Everything else is CRUD, forms, tables, and exports against patterns this codebase already has, which is Sonnet's tier. Several deliverables are genuinely mechanical once their shape is fixed (a blank CSV template for a settled column list, one more saved view against a working filter engine, one more form mapping against a working builder), and paying Sonnet rates for those is waste.
+
+| Phase | Delivers | Depends on | Model |
+|---|---|---|---|
+| M0 | Discovery: data dictionary, permission matrix, sample import, pilot scenarios, form/report checklist | Nothing. Can start immediately and in parallel with roadmap prerequisites | Human conversation with **Opus**. Not an implementation task, and not delegable to a cheaper model — its output is the spec every later phase is measured against |
+| M1 | Team/unit records, membership lifecycle, scoped grants, manager-created records, audited claims | Schema Tooling Decision; UTC hardening | **Opus** for the schema, the team/unit privacy boundary, and the permission helper. **Sonnet** for navigation, roster, detail views, and CRUD against that helper. **Opus review gate before merge** |
+| M1A | Tag board: presence occasions, tag in/out, places, live view, guarded close, participation export | M1 only. Not M2, M3, M3A, M3B, Events, or the planner | **Opus** for the presence state model and its relationship to the canonical actual-time sources — the tag/check-in/shift triple-count is a reporting landmine that costs nothing now and is expensive to unpick after M4. **Sonnet** for the board UI, tagging actions, live updates, roster picker, and exports |
+| M2 | Intake, progressive profile, assisted maintenance, CSV import catalog, freshness/reminders | M1 | **Opus** for the import engine: identity matching, idempotent re-import, blank-means-unknown, reversal semantics. **Sonnet** for intake forms, profile editing, reminder wiring, batch history UI. **Haiku** for blank/example CSV files and field guides once columns are settled. **Opus review gate on the commit path** |
+| M3 | Training catalog and review, task books, station configurations and capabilities, station tests, roster search | M1, M2 | **Opus** for the capability/configuration data model and AND/OR match semantics — this is the piece most likely to be built as unrelated checkboxes and then be wrong forever. **Sonnet** for catalog CRUD, training calendar, saved views, filters, exports. **Haiku** for additional saved-view definitions once the filter engine works |
+| M3A | Asset register, kit manifests, custody, maintenance schedules, SWR sweeps, operating guides | M1, M3 equipment records; named locations pulled forward from M4 | **Opus** for containment, custody state, and the checkout/transfer transaction (concurrent checkout of one kit is a correctness problem, not a UI one). **Sonnet** for registration, manifests, maintenance tasks, sweep metadata, queues, guides. **Opus review gate on the handoff transaction** |
+| M3B | Procedures, agency records, PACE cards, alert stages, manual callouts; then optional SMS | M1, M2 | **Sonnet** for procedures, PACE records, alert stages, manual callout recording, and PACE-first frequency ordering (established UI and read patterns). **Opus** for the SMS provider work: consent model, check-at-send, webhook signature validation, suppression mapping, delivery-versus-acknowledgment. **Opus review gate on the webhook handler**, same reasoning the roadmap already applies to the Ko-fi donation webhook |
+| M4 | Net/team association, participation attribution, reporting periods, report adapters, coverage rollups | M1; M1A or M3A or this phase for named locations; M1A tag durations if it shipped | **Opus** for the attribution rule: effective dates, double-count avoidance across linked net/session/shift/tag records, reporting-period and timezone boundaries. This is time handling, which the roadmap already places in the Opus tier. **Sonnet** for adapters, exports, drill-downs, coverage rollups and maps |
+| M5 | Plan context, objectives, requirements, candidate matching, equipment reservations, packets, accountability | M3, M3A, M3B radio foundation, M4 for coverage, and the Events posts/shifts workflow | **Opus** for the reservation conflict model across physical dependency sets — the same class of problem as M3A checkout and it should reuse that answer, not invent a second one. **Sonnet** for planner wizard, packets, checklists, and the Events wiring |
+| M6 | Reviewed ICS-202/204/205/205A package, plan versioning and approval, after-action and improvement actions | M5; Events form builders | **Sonnet**, reusing the Events builders rather than writing new ones. **Haiku** for additional form field mappings once the first form is built and its pattern verified. Opus only for the plan distribution and disclosure policy, which is a privacy decision rather than a form |
+
+**The Opus review gates, in one list.** These are the points where a cheaper model's work must not merge unreviewed, because the failure is silent and the blast radius is wide:
+
+1. **M1** — the team/unit permission helper. A scoping bug here exposes a private roster and nothing in the UI will show it.
+2. **M1A** — the presence state model, specifically its relationship to `CheckIn` and to the canonical hours sources. The tag/check-in inference and the tag/shift/check-in triple count are both invisible until a coordinator's report is already wrong or a person is already missing.
+3. **M2** — the import commit path. Getting blank-means-unknown or re-import idempotency wrong corrupts the roster it was meant to rescue, and the source spreadsheet may be gone by the time anyone notices.
+4. **M3A** — the checkout/transfer transaction. Two successful concurrent checkouts of one kit is a real-world accountability failure, not a display bug.
+5. **M3B** — the SMS webhook and the consent check at send time. Inbound webhooks are an attack surface, and sending to a withdrawn consent is the one failure in this module with regulatory consequences.
+6. **M4** — participation attribution. Wrong numbers in a coordinator's report are worse than no numbers, because they are believed.
+
+**Standing rules for any model working in this module**, cheap or otherwise. These exist because they are the assumptions a model reading only its own phase will otherwise make:
+
+- **Never invent a fact to fill a blank.** Unknown, declined, stale, unverified, failed, and explicitly-incapable are distinct states throughout this document, and collapsing any of them into a default is the single most common way to make this module dangerous.
+- **Never let one workflow grant another's authority.** Import does not grant membership. Membership does not grant NCS. A title does not grant application permission. A callout permission does not authorize deployment. Delivery does not mean acknowledgment. Acknowledgment does not mean availability, and none of them means presence — a tag is entered, never inferred.
+- **Reuse before adding.** Events owns shifts and hours. `Frequency` rows are shared. `CanHearReport` owns RF observation. The traffic system owns messages. The section 5.19 tag record owns presence, and the section 5.17 planner extends it rather than starting a second ledger. A second table for any of these is a defect, not a feature.
+- **Stop at the phase boundary.** If a phase's spec requires a record a later phase owns, raise it rather than creating a thin version that will have to be migrated.
+
+### User Story Traceability
+
+Every story in section 4.1 is accepted in exactly one phase (a few are split where the story genuinely spans two). This table exists so completeness can be checked mechanically rather than by rereading the exit criteria; the criteria themselves remain authoritative.
+
+| Phase | Stories accepted |
+|---|---|
+| M1 | TM-03, TM-05, and the roster/identity portions of TM-04, TM-06, TM-11 |
+| M1A | TM-39, TM-40, TM-41; TM-42 is designed here and verified in M4 |
+| M2 | TM-01, TM-02, TM-09, TM-10; TM-36 begins here and completes incrementally per template |
+| M3 | TM-04, TM-06, TM-07, TM-08, TM-16, TM-25, TM-29, TM-30 |
+| M3A | TM-18, TM-19, TM-20 (present custody), TM-32, TM-37, TM-38 |
+| M3B | TM-22, TM-23, TM-24, TM-35, and the procedure-handover portion of TM-28 |
+| M4 | TM-15, TM-33, and the verification of TM-42 |
+| M5 | TM-12, TM-13, TM-17, TM-21, TM-26, TM-27, TM-31, and the reservation-dependent portion of TM-20 |
+| M6 | TM-14, TM-34, and the remaining continuity cases of TM-28 |
+
+**M1 through M3 are the membership MVP.** They are independently useful, they replace the spreadsheet, and nothing after them is required for that outcome. **M1A is the cheapest operationally useful thing in the module** — it needs only M1, and it turns a roster into something a team can run an activation with. M3A and M3B are each independently shippable and depend on neither one another nor M1A. M5 and M6 are the only phases that require the Events module.
+
 ### M0 — Validate Workflow and Data Contracts
 
 - Walk through a new application, annual update, EC report, and staffing request with Brad and, if available, Joel/an NH EC. Request a walkthrough or anonymized report examples for the unreviewed reporting interface; its absence need not block the Maine pilot.
@@ -967,6 +910,12 @@ This replaces the earlier five-milestone outline. Security, auditability, import
 - Build in existing backend router/permission patterns and frontend page/component patterns; no separate authentication service or independent frontend application.
 
 **Exit:** two test teams and multiple units prove isolation; interested, trainee, active, reserve, home-based, and historical records all work, and no team action changes unrelated account/net permissions. Exercise the roster/identity portions of TM-03 through TM-06 and TM-11, including changed/shared callsigns and ambiguous claims; full saved-view and matching acceptance follows in M3.
+
+### M1A — Tag Board and Presence Accountability
+
+**Model:** **Opus** for the presence state model and its relationship to the canonical actual-time sources. **Sonnet** for the board UI, tagging actions, live updates, and exports. Full phase detail, exit criteria, and validation cases are in [Activation, Tag Board, and Callouts](TEAM-ACTIVATION-CALLOUTS.md).
+
+Depends on M1 alone, and delivers the shortest path from "we have a roster" to "we can run an activation with it": who is where, with no net, no event, no plan, and no radio. Accepts TM-39 through TM-41; TM-42 is verified when M4 ships.
 
 ### M2 — Onboarding, Spreadsheet Import, and Freshness Pilot
 
@@ -997,77 +946,32 @@ TM-29, TM-30, and section 5.10 scenarios 9–10 also pass: a synthetic message e
 
 ### M3A — Team Asset Register and Custody
 
-- Build on the M3 equipment/configuration records and M1 membership/permission foundation. Bring forward basic named `TeamLocation` records from M4 so the EMA offices and storage destinations exist; RF coverage rollups can still wait.
-- Deliver asset registration, owner/managing-team distinctions, station/kit manifests, current assignments, nested containment, condition, and audit/history views. Add equipment custodian grants and restricted holder lookup.
-- Implement checkout, acknowledged transfer, reconciled return, component removal/replacement, repair, decommissioning/disposal, discrepancy tracking, and due/review/recall workflows. Enforce transactional handoffs and idempotent retries.
-- Support basic inventory import/export with preview, stable asset IDs, and reconciliation; unresolved items require a responsible custodian and an explicit discrepancy. No blank custody or silent assignment to default storage.
-- Add location, team asset, kit-content, and initial-assignment CSV templates and dependency checks; prevent containment cycles and contradictory item/container custody. No import can overwrite later handoff history without conflict review.
-- Deliver per-item maintenance tasks, recurring/triggered schedules, work history, due-work queue/reminders, deferrals, and readiness/return-to-service rules. Add maintenance schedule/history and sweep-summary CSV templates, with item/task reference validation and explicit dates/units.
-- Add antenna-system sweep metadata, structured summary readings, private attachments, and baseline/context comparison. Use configuration revisions and existing service/test evidence; defer vendor parsing, automated graph overlays, and instrument integrations.
-- Deliver configuration-specific operating guides and printable quick tests using the shared document revision/access model. Flag guide/test review after affected equipment changes; include power/runtime conditions and manifest links.
-- Pilot the two EMA office stations, trailer, and go-kit. Confirm physical contents against the register and perform a kit handoff to a member without an account, a transfer to another member, and a partial return with a component out for repair.
-
-**Exit:** TM-18 through TM-20 pass for present custody and readiness; reservation-dependent checks follow in M5. Every item resolves to one current accountable assignment, concurrent kit/component checkout attempts cannot both succeed, and a manifest change preserves prior handoff contents. Staff can find the recorded go-kit holder and determine what remains missing or unavailable. **The asset register ships without waiting for Events or incident planning.**
-
-TM-32 passes when a qualified relief operator uses the approved guide and manifest to set up/test the backpack kit and record discrepancies without relying on its usual operator. Superseded guides retain their history, and printed copies contain no secrets or unnecessary personal information.
-
-TM-37 and TM-38 pass with multiple tasks on one item, fixed versus completion-based recurrence, an overdue task, an authorized deferral, failed service/retest, and a changed antenna/feed-line configuration. Check that a failed attempt cannot reset the successful-service date, a kit inspection cannot complete every component's maintenance, custody is unchanged, and only affected capabilities are blocked. Historical sweeps retain their system/test context; imported or attached results do not automatically approve return to service. Reservation warnings are verified when M5 ships.
+**Moved to [Assets, Kits, and Custody](TEAM-ASSETS-CUSTODY.md).** Deliverables, model assignment, exit criteria, and validation focus live there. Depends on M1 and the M3 equipment records, with named locations pulled forward from M4. Accepts TM-18, TM-19, TM-20 (present custody), TM-32, TM-37, TM-38.
 
 ### M3B — Procedures, Radio Callout, and Optional SMS
 
-This work depends on M1/M2 permissions, membership, and contact preferences; it can proceed independently of asset reporting and Events.
-
-- **First release:** versioned local procedures, agency/deputy responsibilities, approved PACE/rendezvous cards, alert stages, manual radio/phone callouts and assisted response recording. Publish/distribute through an explicit local adoption workflow; the app is not a prerequisite for listening under a previously issued plan.
-- Add section 5.4 PACE-aware frequency selection to team-linked net creation/editing, including inherited team associations, labeled role ordering, authorized channel resolution, and refresh on team changes. This convenience does not depend on SMS or the incident planner.
-- Add channel and PACE-entry CSV templates/importers. Imported PACE plans remain drafts and cannot populate approved-plan recommendations until reviewed and adopted.
-- **Optional provider release:** implement Twilio configuration, sender/team isolation, consent/suppression, recipient previews, individual queued sends, budget/expiry controls, signed reply/status callbacks, and response/follow-up views. Keep provider delivery distinct from human acknowledgment and authority. No SMS feature is complete until opt-out, cancellation, uncertain delivery, and stale-job behavior are handled.
-- Pilot first with a simulated provider and synthetic recipients; conduct any real test only with an approved sender and explicitly enrolled participants. Rehearse app/internet/provider failure using the distributed radio card, and record phone/radio acknowledgments.
-- Deliver privacy/consent documentation and self-hosted setup guidance with the provider feature. Include the procedure library, document owner/deputy handover, review reminders, and open-action dashboard.
-- Add seasonal/member-prestorm/leadership-prestorm checklist templates and instances, owners/deadlines, assisted completion, and links to station tests when M3 is available. Keep personal details minimal and outstanding blockers visible. Needs/gap collection can ship here; primary/backup staffing integration follows in M5.
-
-**Exit:** TM-22 through TM-24 and the procedure-handover portion of TM-28 pass. STOP during a queued broadcast prevents subsequent sends; callback replays and out-of-order events cannot create false acknowledgments or reverse suppression; a submission timeout does not trigger blind duplicate alerts. A coordinator can identify unresolved recipients and a non-SMS member can participate. No test turns an advisory, availability response, or message delivery into deployment authorization.
-
-TM-35 passes in both net creation and editing: direct and inherited team associations prioritize approved PACE channels, search retains that priority among matches, shared entries are not duplicated, and distinct channel settings remain distinguishable. Test multiple plans, switching/clearing teams, missing or unresolved PACE entries, revoked access, and a later plan revision. Existing selections remain unchanged unless explicitly edited, and restricted plan/channel details do not leak through suggestions or public outputs.
+**Moved to [Activation, Tag Board, and Callouts](TEAM-ACTIVATION-CALLOUTS.md).** Depends on M1 and M2; independent of assets, the tag board, and Events. Accepts TM-22, TM-23, TM-24, TM-35, and the procedure-handover portion of TM-28.
 
 ### M4 — Participation, Coordinator Reports, and Coverage
 
 - Add authorized net/schedule-to-team association on every creation path and effective-date-aware participation attribution.
 - Deliver reporting periods, drill/real-world activity distinctions, reviewed manual history, ARES/EMA preparation adapters, and source drill-downs. When Events actual hours are available, consume them through its reporting contract.
-- Implement the approved NH timecard mapping as a selectable adapter, including off-air activity and export-only rounding. Preserve source precision and explicitly reconcile linked session/net/shift activity rather than summing duplicate records.
+- Implement the approved NH timecard mapping as a selectable adapter, including off-air activity and export-only rounding. Preserve source precision and explicitly reconcile linked session/net/shift/tag activity rather than summing duplicate records.
+- **Consume M1A tag board durations as a third canonical actual-time source** if that phase has shipped. One person at the EOC, checked into the net, on an Events shift is one contribution with three recorded durations; the adapter picks one and shows which, and TM-42 is verified here.
 - Add the historical participation/manual-activity CSV template and reviewed import, preserving source precision and checking overlaps with existing activity before including records in totals.
-- Implement section 5.6 coverage rollups/maps/exports from existing per-net observations, reusing the named team locations introduced in M3A (or delivering that shared foundation here if M4 proceeds first). Protect precise home/site data and show path recency/direction.
+- Implement section 5.6 coverage rollups/maps/exports from existing per-net observations, reusing the named team locations introduced in M1A or M3A (or delivering that shared foundation here if M4 proceeds first). Protect precise home/site data and show path recency/direction.
 
-**Exit:** TM-15 reconciles to manually calculated samples, including membership transfers, multi-unit membership, overlapping net/shift participation, missing actual hours, and timezone boundaries. Coverage fixtures show one-way, two-way, stale, and untested paths without inventing confirmation. Coordinator acceptance is required for each claimed report mapping.
+**Exit:** TM-15 and TM-42 reconcile to manually calculated samples, including membership transfers, multi-unit membership, overlapping net/shift/tag participation, missing actual hours, and timezone boundaries. Coverage fixtures show one-way, two-way, stale, and untested paths without inventing confirmation. Coordinator acceptance is required for each claimed report mapping.
 
 TM-33 passes for an approved NH sample with fractional durations, off-air mentoring/maintenance, mixed activity categories, and overlapping source links. Changing export rounding does not change recorded hours or another program's report.
 
 ### M5 — Incident/Drill Requirements and Staffing Integration
 
-- Add template/net planning context, objectives, measurable drill goals, operational periods, requirements, and reusable task templates.
-- Link the adopted agency/PACE procedure and callout to the plan. Deliver task-specific personal/site/logistics checks, tailored packing templates, and a revisioned printable deployment packet. Add incident travel/duty/relief/release/return events through the shared Events accountability contract.
-- Connect candidate matching and availability confirmation to Events posts/shifts/offers. Exercise manager-recorded acceptance, trainees with supervision, reserve escalation, equipment contention, and scoped conflict checks.
-- Connect staged preparation to configurable operational-period horizons, tentative primary/backup staffing, home-coverage needs, and authorized prepositioning. Include approved kit guides in packets and reuse the M3 digital-exercise templates and evidence.
-- Add confirmed equipment reservations through the shared asset ledger, with owner/custodian agreement and atomic conflict checks across kits/configuration dependencies. Pair qualified people with team equipment; separate allocation, pickup/checkout, attendance, and return.
-- Use observed coverage as supporting evidence and display unmet communications/staffing requirements. Preserve candidate snapshots only as needed for review; revalidate when selecting/confirming assignments.
-- Reuse Events multi-period materialization before piloting plans scheduled far ahead or spanning multiple operational periods.
-
-**Dependency:** requires M3, the radio/procedure foundation of M3B, M3A for team equipment allocation/custody, and the relevant Events posts/shifts/offer workflows. SMS is optional. Coverage-assisted planning requires M4. If Events is not ready, a requirements/candidate preview may be piloted, but do not label it completed staffing or create a parallel assignment system.
-
-**Exit:** TM-12, TM-13, TM-17, TM-21, reservation-dependent portions of TM-20, and equipment scenarios 6–8 in section 5.10 pass in a shelter/EOC exercise that includes a home relay, a field station, a trainee/mentor pair, and an unfilled requirement. Suggestions, offers, acceptance, equipment reservations, handoffs, and attendance remain visibly distinct. A candidate without an account can be handled end to end by a manager. Reserving Brad's FT-991A blocks its overlapping home use; sharing a mast/computer still conflicts even with two separate radios. A cancelled plan releases reservations without claiming the checked-out go-kit was returned.
-
-TM-26 and TM-27 additionally require a usable pre-downloaded/printed packet, assisted incident arrival, relief and welfare follow-up, actual release, and recorded return, with no travel states invented for a home operator. Closing the exercise net leaves unresolved people/equipment follow-up visible.
-
-TM-31 passes across the M3B/M5 workflow: seasonal and prestorm tasks retain their owners/evidence, unresolved checks remain visible, the staffing horizon is configurable, backup resources are not double-counted, and completing preparation creates no deployment authority.
+**Moved to [Incident and Drill Planner](TEAM-INCIDENT-PLANNER.md).** Depends on M3, M3A, the M3B radio/procedure foundation, M4 for coverage, and the Events posts/shifts workflow. Accepts TM-12, TM-13, TM-17, TM-21, TM-26, TM-27, TM-31, and the reservation-dependent portion of TM-20.
 
 ### M6 — Reviewed ICS Package and Exercise Results
 
-- Deliver the selected ICS-202/204/205/205A package, sharing Events builders for 204/205, plus required attachment checklist and existing traffic/log exports. Add later forms only when the pilot establishes their need and authoritative input sources.
-- Add plan versioning, approval, restricted distribution, copy/replan behavior, and actual-versus-objective review. Store template edition and minimal issued snapshots.
-- Conduct an exercise using the draft package; capture missing inputs, staffing gaps, RF results, actual hours, and follow-up actions. Coordinator review is required before suggesting changes to long-term qualifications.
-- Include agency-approved incident check-in/demobilization attachments (ICS-211/221 as applicable), source/version review, and a corrective-action owner/due date/retest workflow. Reuse the same library for EC succession and updated member briefings; verify the remaining TM-28 continuity cases.
-- Deliver station-specific after-action observations linked to configurations, kits, sites, callouts, and traffic/test evidence. Verify TM-34 with a missing cable, failed message path, and outdated guide: each has a responsible owner and appropriate correction/retest, with no automatic qualification or service-status change.
-
-**Exit:** TM-14 passes with a coordinator-reviewed sample package, long text/continuation pages, missing-field warnings, revised approval, timezone handling, restricted contacts, and public-net-report isolation. A second operational period can reuse requirements while reconfirming assignments. No package claims unsupported agency requirements are complete.
+**Moved to [Incident and Drill Planner](TEAM-INCIDENT-PLANNER.md).** Depends on M5 and the Events form builders. Accepts TM-14, TM-34, and the remaining continuity cases of TM-28.
 
 ### Release and Validation Checklist
 
@@ -1077,11 +981,14 @@ TM-31 passes across the M3B/M5 workflow: seasonal and prestorm tasks retain thei
 - Test matched capability tuples and missing evidence rather than only individual filter controls. Include band/service/mode compatibility, time-window conflicts, and equipment shared by multiple candidates.
 - Verify one item across home/deployable setups, power/QRP constraints, parent/component checkout and reservation races, partial returns, in-transit custody, missing assets, manifest substitutions, repair, decommissioning with retained location/disposal, and member offboarding with an outstanding loan. Ensure changes invalidate affected capabilities and preserve historical manifests.
 - Test SMS consent changes at queue/send boundaries, invalid webhook signatures, account/sender mismatches, duplicate/out-of-order callbacks, shared/recycled numbers, expiring/superseded alerts, cost limits, and uncertain submission. Verify radio/phone fallback and that no phone list or private reply leaks into public net views.
+- **Test tag/check-in independence in both directions on every release that touches either.** A check-in on a net linked to an open board must create no tag; a tag on a board linked to an active net must create no check-in, no ICS-309 row, and no change to the net's public report. Closing either one must leave the other untouched, and no path anywhere may automatically tag someone out.
 - Test task-book version changes without erasing sign-offs, approved versus draft procedures, owner/deputy handover, packet disclosure/expiry, missed arrival/welfare follow-up, and release/return independently of net closure. Rehearse the chosen PACE transitions with app connectivity absent.
 - Reconcile report/export calculations and source attribution. Test period boundaries, actual/planned-hour separation, and stable issued-plan/closed-net history.
 - Test configuration-specific evidence after failed tests/equipment changes, Telnet versus RF matching, guide revision/disclosure, staged checklist blockers, and after-action retest links. Validate NH adapter rounding without mutating source durations or duplicating off-air/net/event participation.
 - Test maintenance recurrence and timezone boundaries, event-trigger deduplication, missing usage readings, early/late completion, deferral history, failed-test handling, and scoped reminder/attachment access. Preserve sweep context and original evidence through component replacement, CSV re-import, and schedule changes.
 - Check fresh install and upgrade paths, backup/restore, private evidence storage, retention operations, mobile/keyboard accessibility, and usable performance on the pilot's roster.
+- **Test every outbound-notification path on beta with beta's existing email guards left in place.** Beta holds a copy of production's database, so its rows carry real operators' real addresses. Reminders, review requests, invitations, digest mail, and callout notices are all new senders introduced by this module, and each one is a new way to mail a real person from a test. Verify them against logged no-op sends and the local suppression list; never enable outbound email on beta to check that a Teams notification "actually works". The same applies doubly to the SMS provider in M3B, whose pilot is explicitly a simulated provider with synthetic recipients.
+- **Run the real-data smoke test before promoting any phase whose correctness rests on a data-shape assumption** — and this module is full of them (at most one current membership per user per team, at most one open tag per person per board, at most one current parent container per item, exactly one current assignment per asset, a resolvable identity per import row). Synthetic fixtures are built by the same person who holds the assumption, so they cannot disprove it. Import the real function, run it across every relevant row already in beta's database, collect exceptions rather than stopping at the first, and repeat against production's own copy before restarting production. The pattern and the incident that established this rule are in `.github/copilot-instructions.md`.
 - Ship member and EC/AEC guidance with each release: onboarding/assisted entry, import, privacy/delegation, readiness search, and later planning. Update README, USER-GUIDE, DESIGN, DEVELOPMENT, PRIVACY, ROADMAP, and CHANGELOG when corresponding behavior actually ships. Coordinate the Events concept update before implementing shared contracts.
 - At each pilot checkpoint, compare the section 2 measures and gather coordinator/member feedback. Keep an export-based exit path; do not require the advanced planner for membership adoption.
 
@@ -1099,31 +1006,27 @@ These are discovery questions, not blockers to maintaining this concept. Default
 - What reports does Joel's EC interface produce, and which ARES/EMA columns, reporting timezone, attribution rules, and export formats are mandatory at launch?
 - What source identifiers can safely join Brad's three tabs? How should conflicts and shared accounts/contact methods be resolved by the coordinator?
 - Which parts of the inherited WSSM manual remain adopted, who can approve updates with the EMA, and who serves as backup for activation, document ownership, and training review?
+- Should a team ever *drive* a schedule's NCS rotation, rather than only offering candidates for it? Section 5.4 deliberately answers no for now. Test that against how Brad and Joel actually staff a recurring net: if the rotation and the roster are maintained as one list in practice, the narrow boundary creates duplicate upkeep, and the alternative needs designing rather than discovering mid-build.
+- For a deployment with a single team, which surfaces should hide the team dimension entirely, and does anything break when a second team is later added to an instance that has been running as one?
 
-### Before the Asset Pilot
+### Before an Activation, Asset, or Planning Pilot
 
-- Which office/trailer/go-kit components are team-owned versus EMA-owned or personally loaned, and who authorizes removal, loan, repair, or disposal?
-- Which accessories need individual IDs versus a counted checklist entry, and what must be present/charged/tested before each setup is considered ready?
-- What home storage location, responsible contact, due/review interval, and recall expectations apply to each kit? Who can acknowledge transfers and reconcile returns?
-- Can a holder transfer equipment directly with both parties' acknowledgment, or is a custodian approval required? What recovery process applies to missing gear or departing/historical members?
-- For personal gear, is it offered only with its owner operating, or may it be loaned? Which computers, interfaces, antennas, and masts are shared dependencies, and how much removal/restoration time is needed?
-- Who authors/reviews each station/kit guide, what qualifies as a material configuration change, and which power/live-message tests must a relief operator demonstrate?
-- Which item-specific maintenance intervals/triggers, SWR sweep baselines and acceptance criteria, service reviewers, and overdue-task restrictions are approved by the owners/agencies? Which analyzer file formats need attachments first versus later structured import?
+Each child document carries its own list, because each is answered by different people and needed at a different time:
+
+- **[Assets, Kits, and Custody](TEAM-ASSETS-CUSTODY.md)** — ownership and authorization for each office/trailer/kit component, individual IDs versus counted checklists, home storage and recall expectations, direct holder-to-holder transfer, personal-gear loan policy, guide authorship and review, and approved maintenance intervals and sweep acceptance criteria.
+- **[Activation, Tag Board, and Callouts](TEAM-ACTIVATION-CALLOUTS.md)** — approved monitored channels and PACE transition rules, who may open and close a tag board, whereabouts retention, whether a board references an alert stage at all, the en-route state, SMS sender ownership and spending limits, radio and telephone follow-up preferences, and which seasonal and prestorm stages are locally adopted.
+- **[Incident and Drill Planner](TEAM-INCIDENT-PLANNER.md)** — ICS editions and distribution rules, standby versus routine availability, how shared equipment and trainee supervision constrain staffing, RF path recency for a given exercise, host-site expectations, relief and release authority, and the staffing horizon.
 
 ### Before Planning and Wider Rollout
 
-- Which agency's ICS editions, local supplements, sign-off roles, and distribution rules should the pilot support? Is an attached reviewed form sufficient where structured generation is deferred?
-- What standby/escalation conditions distinguish reserve availability from routine availability, and which assignment changes require reconfirmation?
-- How should shared radios, portable kits, home relays, concurrent nets, and supervised trainee assignments constrain staffing?
-- Which team location details may ordinary members see? Default precise addresses/access details to need-based staff access; review the use of generalized map locations.
-- How old can a measured RF path be before it needs reconfirmation for a particular exercise, and what test context matters?
+These remain hub questions because their answers change records, permissions, or privacy defaults that every phase reads:
+
+- Which team location details may ordinary members see? Default precise addresses/access details to need-based staff access; review the use of generalized map locations. This now also governs the tag board, whose places are the same records seen live.
 - Will mutual aid need explicitly shared locations, qualifications, or availability? Keep separate teams isolated until a sharing contract is agreed; duplicate local location records are acceptable initially.
 - What freshness intervals and follow-up cadence work for volunteers? Validate the six-month pilot proposal rather than assuming all data expires together.
-- Which monitored channel and PACE transition/listening rules will Cumberland adopt? Resolve differing reference entries locally and confirm what to do when no NCS is heard.
-- Who owns the SMS sender and pays the bill, which team/purpose scopes need distinct consent, and what response deadlines, escalation, expiry, and spending limits apply? Which members prefer radio/telephone follow-up?
-- What must each host site provide, what must volunteers bring, who authorizes relief/release, and who follows up on overdue arrival/return? Which emergency-contact details are necessary and who may see them?
 - Which training cadence, task-book edition/local overrides, evaluators, and practical objectives should the first annual plan adopt? Neighboring schedules are examples until locally confirmed.
-- Which digital paths, receipt/delivery criteria, test recency rules, seasonal stages, and primary/backup staffing horizons will the pilot adopt? Which external training resources may be linked versus reproduced?
+- Which digital paths and receipt/delivery criteria count as evidence, and which external training resources may be linked versus reproduced?
+- When a report has to pick one duration from a tag, a check-in, and a shift covering the same hours, which source wins by default, and does the coordinator need to see the discarded ones?
 
 ## 12. Reference Links
 

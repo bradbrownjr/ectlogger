@@ -16,7 +16,10 @@ Related references:
   pattern, migration template, Date & Time Handling.
 - [docs/DESIGN.md](../DESIGN.md) — read before building any UI listed in section 5.
 - [docs/concepts/TEAM-MANAGEMENT-NOTES.md](TEAM-MANAGEMENT-NOTES.md) — the neighboring
-  module. Section 9 below states the binding boundary between the two.
+  module, and the hub of a four-document set: [assets and custody](TEAM-ASSETS-CUSTODY.md),
+  [activation, tag board, and callouts](TEAM-ACTIVATION-CALLOUTS.md), and the
+  [incident and drill planner](TEAM-INCIDENT-PLANNER.md). Section numbers there are global
+  across all four. Section 9 below states the binding boundary between the two modules.
 
 ---
 
@@ -648,6 +651,23 @@ Concretely:
 
 Every new noun proposed for this feature should be tested against that sentence before it is
 given a table.
+
+**The tag board is the one Teams surface that can be mistaken for this one.** Teams section
+5.19 ([TEAM-ACTIVATION-CALLOUTS.md](TEAM-ACTIVATION-CALLOUTS.md)) adds a lightweight presence
+record -- tag in, tag out, a place -- for the case where a team needs to know who is where and
+has **no posts and no shifts**: an EOC staffed for an afternoon, a trailer work session, people
+driving to a shelter. It is not an event sign-in, and it must not grow into one.
+
+- Sign-in and sign-out against a **staffed post** stays here. A tag board has no posts, no
+  assignments, and no offers, and it never acquires them. A team building a post schedule on a
+  tag board is doing Events, and the answer is to use Events.
+- A tag is **not** a check-in and not a shift sign-in, in any direction. None of the three may
+  create or close another.
+- Tag durations are a **third canonical actual-time source** alongside this module's shift
+  hours and a net's check-in duration. One person at an EOC, checked into the net, on a shift
+  produces three overlapping durations for one contribution. The Teams M4 reporting adapter
+  reconciles them to one duration with a visible source; it never sums them. This module's
+  hours export is unchanged -- it still exports the hours for one event, as recorded here.
 
 ---
 
