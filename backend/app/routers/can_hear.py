@@ -1,11 +1,14 @@
 """
 "Can hear" inter-station propagation logging (Phase 1 - Schema and API).
 
-Records directional "who can hear whom" reports during a net. See
-docs/ROADMAP.md "Relaying & Propagation Mapping" for the full settled data
-model rationale: directional edges (not a blob), no separate report-header
-row, reconcile-on-save semantics (insert new / delete unchecked / touch
-reported_at on ones that stay checked). The NULL-frequency case (a NULL does
+Records directional "who can hear whom" reports during a net. Settled data
+model: directional edges (not a blob), no separate report-header row, and
+reconcile-on-save semantics (insert new / delete unchecked / touch
+reported_at on ones that stay checked). The per-net report is the single
+source of truth; any coverage summary is a read-time rollup over these rows,
+never a second maintained table. The roadmap item carrying that rationale
+was pruned when this shipped; the Teams-dependent half of the feature lives
+in docs/concepts/TEAM-MANAGEMENT-NOTES.md section 5.6. The NULL-frequency case (a NULL does
 not participate in the main UNIQUE constraint) is closed by a partial unique
 index (see migration 049); a concurrent-save duplicate on either that index
 or the main unique constraint surfaces as an IntegrityError, which is caught

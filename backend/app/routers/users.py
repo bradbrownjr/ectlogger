@@ -159,8 +159,8 @@ async def get_my_can_hear_coverage(
     db: AsyncSession = Depends(get_db)
 ):
     """Personal propagation coverage rollup (Phase 5 of the "Can hear"
-    inter-station propagation logging feature - see docs/ROADMAP.md
-    "Relaying & Propagation Mapping", "Last heard" and Phase 5 sections).
+    inter-station propagation logging feature - see routers/can_hear.py for
+    the data model; its roadmap item was pruned when the feature shipped).
 
     Returns, for every (station, band) the current user has personally
     reported hearing while operating from home, a MAX(reported_at) "last

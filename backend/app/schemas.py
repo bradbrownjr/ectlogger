@@ -1814,8 +1814,8 @@ class CanHearReportFrequencyUpdate(BaseModel):
 
 
 class CoverageStationResponse(BaseModel):
-    """Phase 5 personal coverage rollup entry (see docs/ROADMAP.md
-    "Relaying & Propagation Mapping", Profile map section). One row per
+    """Phase 5 personal coverage rollup entry (see routers/can_hear.py for
+    the data model; its roadmap item was pruned when it shipped). One row per
     heard station, aggregated across all of the current user's own "can
     hear" reports made while operating from home. Rows are grouped by
     (callsign, band) rather than callsign alone, since the same station

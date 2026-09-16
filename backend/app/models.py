@@ -466,9 +466,13 @@ class CheckIn(Base):
 class CanHearReport(Base):
     """Directional 'can hear' propagation edge: reporter_check_in can hear heard_check_in.
 
-    One row per checked box in the "Who can this station hear?" dialog. See
-    docs/ROADMAP.md "Relaying & Propagation Mapping" for the full data model
-    rationale (directional edges, no header table, reconcile-on-save).
+    One row per checked box in the "Who can this station hear?" dialog.
+    Data model: directional edges, no header table, reconcile-on-save -- the
+    per-net report is the single source of truth and any coverage summary is a
+    read-time rollup over these rows, never a second maintained table. The
+    roadmap item carrying that rationale was pruned when the feature shipped;
+    the Teams-dependent half of it lives in
+    docs/concepts/TEAM-MANAGEMENT-NOTES.md section 5.6.
     """
     __tablename__ = "can_hear_reports"
 
