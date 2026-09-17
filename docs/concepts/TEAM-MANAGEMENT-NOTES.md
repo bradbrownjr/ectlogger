@@ -303,6 +303,9 @@ EC/AEC are organizational appointments; NCS is an operational role. Neither a ti
 | TM-45 | As an EC, I want to see and revisit every policy choice my team has made. | One register lists each setting with its current value, its default, who may change it, and the governing section; changing one later is the same action as choosing it during setup, and each decision retains who made it and when. |
 | TM-46 | As the lead of a team that is not an ARES group, I want setup that does not assume I am one. | A doctrine profile of agency-directed, SKYWARN, club, or none is a first-class choice that suppresses hints for programs the team has not adopted; declining a specific recommendation is recorded as a decision, not as incomplete setup. |
 | TM-47 | As an EMA coordinator, I want our attendance to reach the master spreadsheet without anyone retyping it. | A board exports its own rows in the agency's column mapping, with travel time carried separately from presence time and external attendees included without becoming members; re-exporting is recognizable as a re-run rather than appending duplicates, and a blank pre-populated sheet can still be printed and transcribed by hand when there is no power or network. |
+| TM-48 | As a coordinator, I want to open an incident when there is no net, because most of what we are called for does not warrant one. | An incident can be opened, worked, and closed with no net in existence; a tag board, an activity entry, and an observation all attach to it directly. Closing the incident closes no board and no net, and closing either of those closes no incident. |
+| TM-49 | As a coordinator in an operation involving another county's team, I want one shared incident without sharing our roster. | Several teams participate in one incident, each seeing its own records by default; cross-team record visibility is a per-team setting that is off until chosen, grants sight of records only, and never confers membership, whereabouts detail, or authority over another team's board. |
+| TM-50 | As a coordinator whose team is split between two buildings, I want both sites accounted for as one team. | Several operating sites belong to one team without splitting its roster, membership, or hours; each site is a place on the board and a station identity for logging, and the relay between two of our own sites is recorded as our traffic rather than as two teams exchanging it. |
 
 ## 5. Functional Requirements
 
@@ -705,8 +708,17 @@ The register's value is that these settings currently exist only as sentences sc
 | Confirmation-age threshold that marks a record stale | Unset; staleness shown but unjudged | 5.11 |
 | Reporting cadence and recipient | Unset | 5.5 |
 | Alert-stage vocabulary | Unset; no stages defined | 5.14 |
+| Who may open an incident record, and whether an agency reference is required first | Team staff; not required | 5.14, roadmap Incident Operations Log |
+| Sharing posture for monitored-source content (scanner and public-service observation) | Log internally; never dispatched to an outbound channel | 5.14, 8 |
+| Outbound notification targets and which source types may reach them | None configured; nothing dispatched | 5.14 |
+| Situational-awareness export shape (own export, folded into the ICS-214, or both) | Both available; neither assumed | 5.5 |
+| Cross-team record visibility within a shared incident | Off; a team sees only its own records | 5.2, 8 |
 
 **A new per-team setting is added to the register in the same change that introduces it.** Without that rule the register rots within two phases, the setup flow silently stops covering new policy, and the module is back to undisclosed defaults with extra steps.
+
+**One agency's answer is a default, not a constant.** Much of this specification was written by asking Cumberland County EMA how it actually works — what the master attendance spreadsheet wants, how long hours must be retained, what may be done with scanner-derived content, who may open a board. Every one of those questions will be answered differently by the next county, differently again by the state, and differently again by a SKYWARN group or a club that serves no agency at all. An answer obtained during discovery is therefore recorded as **this team's value, with that answer as the shipped default** — never as a hardcoded column set, validation rule, retention timer, or permission check. The test, and it is worth applying literally during review: *if adopting this app in the next county over requires a code change, the answer was written in the wrong place.*
+
+**Where an answer is really the agency's policy rather than the team's, it belongs to the served-agency record** in section 5.14, not to the team. A team may serve a county EMA and the state, or a county EMA and a hospital, and those principals will not agree about retention, attendance columns, or what may be repeated from a scanner. A single team-level value would force the team to average two policies into one, which in practice means quietly applying the looser one to both.
 
 #### How a hint is shaped
 
@@ -906,6 +918,8 @@ This section is product/engineering guidance, not legal advice.
 - Audit every policy-register change with its previous value, the deciding member, and the date, from the first roster release. These are the team's governance record and section 5.18 exports them as a local SOP; a setting that changed with no attribution cannot be defended after an incident. Keep the doctrine hint catalog outside team-writable storage so a quotation cannot be edited into a claim its source never made.
 - Audit tag board opening and closing, every assisted tag with its recorder and channel, and any acknowledged close that left people tagged in. Retain the participation total longer than the whereabouts detail: the hours are what reporting needs, and the positions are the sensitive half with no downstream consumer. **Do not set the hours-retention period from this project's own convenience.** Where a served agency uses those hours to document a grant match, federal award records run three years from submission of the final expenditure report rather than from the event, and an audit or litigation hold extends that with no signal that reaches this application. The obligation is the agency's, but an automatic purge on an anniversary of the event can still destroy the source of somebody else's financial record; make it a team policy set with the agency (section 5.20), not a default this project chose.
 
+- Audit every document issued to a served agency, and retain what was rendered alongside the records it was rendered from. A re-export either reproduces the issued copy or is visibly a revision; it never quietly produces a second original, and a correction made afterward never rewrites the copy the agency already holds. The same rule covers documents received from an agency, which are retained as received with their source and edition rather than normalized into this application's formatting. The roadmap's Incident Operations Log entry owns this mechanism; phase M6's plan versioning and issued snapshots reuse it rather than defining a second one.
+
 ### User Rights and Lifecycle
 
 - Data export for user-owned profile data.
@@ -979,7 +993,7 @@ Every story in section 4.1 is accepted in exactly one phase (a few are split whe
 | Phase | Stories accepted |
 |---|---|
 | M1 | TM-03, TM-05, and the roster/identity portions of TM-04, TM-06, TM-11 |
-| M1A | TM-39, TM-40, TM-41, TM-47; TM-42 is designed here and verified in M4 |
+| M1A | TM-39, TM-40, TM-41, TM-47, TM-48, TM-49, TM-50; TM-42 is designed here and verified in M4. TM-48 and TM-49 adopt the incident record the roadmap's Incident Operations Log item delivers, and add the team participation join to it |
 | M1B | TM-43, TM-44, TM-45, TM-46 |
 | M2 | TM-01, TM-02, TM-09, TM-10; TM-36 begins here and completes incrementally per template |
 | M3 | TM-04, TM-06, TM-07, TM-08, TM-16, TM-25, TM-29, TM-30 |
