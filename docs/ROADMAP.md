@@ -413,6 +413,49 @@ Per-net leaderboards already exist and set the pattern to follow — `statistics
 - [ ] Link each row to the net or schedule statistics page, and make sure it does not leak a net
       the viewer could not otherwise see — the page is readable before login
 
+### Incident Operations Log & Situational Awareness Feed
+
+**✨ Log what you hear once, and let it render as an ICS-214, a spreadsheet row, and a Slack post** *(KC1JMH — from the statewide drill of 2026-09-17, see [`USER-STORIES.md`](USER-STORIES.md))*  
+**Model:** Opus for the record-type boundaries and the provenance model — the failure here is an unverified overheard report reaching a decision-maker as a fact, which is a judgment problem, not a CRUD problem. Sonnet for the log UI, the ICS-214 exporter, and the outbound dispatcher, all of which follow the Traffic module's existing patterns. Haiku for additional export field mappings once the first one is built and verified.
+
+**The drill that produced this.** A county EOC ran a statewide exercise with the team split across two buildings. Every sitrep heard from MEMA or another county was handwritten, then typed into a spreadsheet, then typed into Slack, then typed again into an ICS-214. One thing heard, four places written. Separately, a shelter supply request was passed to MEMA as a verbalized list relayed through the team's other site.
+
+**Start by using what already ships.** The supply request was an ICS-213 and the app already files them, with the full originated/received/relayed/delivered chain of custody that would have recorded both hops of that relay and put metadata-only rows on the net's ICS-309. That is not a gap; that is a feature nobody reached for under pressure, which is a training and UI-discoverability finding rather than a build. Fix the discoverability before building anything below.
+
+**Four record types, and collapsing any two of them is the whole risk.** Doctrine already separates them and the app should too:
+
+| Record | Question it answers | Status |
+|---|---|---|
+| Traffic (Radiogram, ICS-213, RRI strip) | A message **we handled** — we are in its chain of custody | Shipped |
+| ICS-309 Communications Log | What **our station** sent and received on a net | Shipped, per-net, fed by traffic |
+| ICS-214 Activity Log | What **our unit did** — notable activities, the reference for the after-action report | **Gap** |
+| Situational awareness entry | Something **we heard about somebody else**, logged because our county needs to know | **Gap, and the bulk of the drill's work** |
+
+The fourth is the discovery. An overheard report from another county is not our traffic (we are not in its custody chain), not our station's message log, and not our activity. It is an observation about a third party, its value is its content rather than its handling, and the app has nowhere to put it. That is what was being retyped into a spreadsheet and Slack all day.
+
+**An SA entry carries its provenance or it is actively dangerous.** This is the one place in the feature where a cheap model will do the wrong thing confidently. Every entry records who reported it, **how we came by it — heard direct, relayed to us, or overheard** — and whether it is confirmed or unconfirmed. A third-hand "shelter at capacity" copied off an HF net and a coordinator's own confirmed report must never render identically, because the consumer is somebody allocating supplies. The module's standing rule against inventing a fact to fill a blank applies with money and people attached.
+
+**One capture, many renderings.** The entry is written once, at the radio, by the person who heard it. Everything after that is a rendering of the same record: an ICS-214 row, a CSV row shaped for the county's spreadsheet, and an outbound post. No path may require retyping, and no rendering may be the system of record.
+
+**Outbound notifications, Slack included — a courtesy, never the record.** Hard rules, because this is where an integration quietly becomes load-bearing:
+
+- The log write succeeds or fails on its own. Dispatch is fire-and-forget, queued, retried, and **never blocks or fails a log entry**.
+- Undelivered is visible. A post that never landed shows as undelivered next to the entry rather than being assumed sent.
+- Provenance travels with the text. A Slack message gets forwarded and screenshotted into decisions, so the confirmed/unconfirmed marking and the source go in the message body, not just the database.
+- **The drill's own scenario is the argument.** The injected condition was Internet, phones, and cellular down. That is exactly when Slack cannot work and exactly when the radio log matters most. The webhook is the good-day convenience; the log has to stand alone on the bad day.
+- Per-team webhook configuration, secrets never exported, and a visible test-send. Treat the outbound URL as a credential.
+
+**Do not manufacture entries.** An ICS-214 is written from what happened, never generated from assignments, a plan, or a shift roster — the same rule [`TEAM-INCIDENT-PLANNER.md`](concepts/TEAM-INCIDENT-PLANNER.md) already states for ICS-211 and ICS-214 mappings. A fabricated activity log is worse than none, because it is signed and filed.
+
+**Reuse, do not rebuild.** The Traffic module already owns form definitions, chain of custody, per-net export integration, and form-accurate PDFs. This feature is a fifth form family and a dispatcher beside it, not a second traffic system. ICS-309 stays where it is.
+
+**Open questions.**
+
+- Is the SA entry a Traffic form definition (reusing everything) or a sibling record? Leaning sibling: an SA entry has no addressee, no precedence, no custody chain, and no delivery — four of the things a traffic form exists to carry.
+- Does the county want the SA feed as its own export, or folded into the ICS-214? The drill did both, which may mean both are needed or may mean one was redundant.
+- Which outbound targets beyond Slack — Teams, Mattermost, a generic webhook, email? A generic signed webhook plus a Slack-shaped formatter probably covers it without committing to vendors.
+- Should a net with two operating sites model the relay explicitly, or is the existing multi-NCS net plus the Relay role enough? The drill worked; confirm before adding anything.
+
 ### Exports & Printing
 
 **✨ Export net announcements and the net script to PDF with their formatting intact** *(KC1JMH, 2026-09-08)*  
