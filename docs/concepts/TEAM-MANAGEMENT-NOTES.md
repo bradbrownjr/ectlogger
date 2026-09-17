@@ -697,7 +697,7 @@ The register's value is that these settings currently exist only as sentences sc
 | Team discoverability and roster visibility | Private; staff-only roster | 5.1, 8 |
 | Who may open a tag board | Any active member, one open board per team | 5.19 |
 | En-route tag state offered | Off | 5.19 |
-| Whereabouts retention versus participation retention | Short for whereabouts, longer for totals | 5.19, 8 |
+| Whereabouts retention versus participation retention | Short for whereabouts; hours retained on a period agreed with the served agency, never an automatic purge | 5.19, 8 |
 | Named locations offered by default on a board | Team locations marked as activation sites | 5.6, 5.19 |
 | Served-agency roster template and master-sheet column mapping | None; no layout or column set assumed | 5.14, 5.19, 5.5 |
 | Local qualification and trainee supervision rules | Unset; no local rule asserted | 5.8, 5.16 |
@@ -904,7 +904,7 @@ This section is product/engineering guidance, not legal advice.
 - Audit asset ownership changes, containment/manifests, custody transfers/corrections, service, retirement, and reservations from the asset release. Restrict detailed asset exports and lookup tags; routine net reports should not expose a member's equipment inventory or home storage location.
 - Audit callout authorization/audience/revisions, consent and suppression, delivery/response transitions, procedure adoption, evaluator sign-offs, and personnel release. Minimize message content in audit/diagnostic logs. Disclose external SMS processing and printed/offline packet limitations before release.
 - Audit every policy-register change with its previous value, the deciding member, and the date, from the first roster release. These are the team's governance record and section 5.18 exports them as a local SOP; a setting that changed with no attribution cannot be defended after an incident. Keep the doctrine hint catalog outside team-writable storage so a quotation cannot be edited into a claim its source never made.
-- Audit tag board opening and closing, every assisted tag with its recorder and channel, and any acknowledged close that left people tagged in. Retain the participation total longer than the whereabouts detail: the hours are what reporting needs, and the positions are the sensitive half with no downstream consumer.
+- Audit tag board opening and closing, every assisted tag with its recorder and channel, and any acknowledged close that left people tagged in. Retain the participation total longer than the whereabouts detail: the hours are what reporting needs, and the positions are the sensitive half with no downstream consumer. **Do not set the hours-retention period from this project's own convenience.** Where a served agency uses those hours to document a grant match, federal award records run three years from submission of the final expenditure report rather than from the event, and an audit or litigation hold extends that with no signal that reaches this application. The obligation is the agency's, but an automatic purge on an anniversary of the event can still destroy the source of somebody else's financial record; make it a team policy set with the agency (section 5.20), not a default this project chose.
 
 ### User Rights and Lifecycle
 
