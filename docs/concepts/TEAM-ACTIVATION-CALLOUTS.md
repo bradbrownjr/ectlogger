@@ -17,7 +17,7 @@ The Team Management concept is four interlinked documents, split once it outgrew
 
 The hub owns everything shared: problem statement, goals and non-goals, scope boundaries, personas, the user-story index, the data-model conventions, the permissions matrix, the privacy classification, the phase overview with model assignments, and the reference bibliography. Read it first; nothing in the other three is standalone design.
 
-**This document covers Teams phases M1A and M3B** and accepts user stories TM-22, TM-23, TM-24, TM-35, TM-39 through TM-42, and the procedure-handover portion of TM-28.
+**This document covers Teams phases M1A and M3B** and accepts user stories TM-22, TM-23, TM-24, TM-35, TM-39 through TM-42, TM-47, and the procedure-handover portion of TM-28.
 
 **Sections appear in workflow order, not numeric order:** 5.14 (activation authority, alert stages, PACE), 5.19 (tag board), 5.15 (optional SMS), 5.18 (procedure library and succession). The numbers are global across the document set and are not renumbered on a move; see the map above.
 
@@ -107,6 +107,31 @@ Plus a place -- a named team location, free text for somewhere not yet a named l
 
 **Hours, and the double-count trap.** Tag time is a **third canonical actual-time source**, alongside net check-in duration and Events shift hours. One person at the EOC, checked into the net, working an Events shift generates three overlapping durations for one contribution. The M4 reporting adapter must reconcile these, never sum them, and the tag board is the newest and least obvious of the three. Section 5.5's existing warning about linked check-in and shift time now has a third input; it is called out here because M1A ships well before M4 and would otherwise hand M4 a problem it did not know it had.
 
+**The agency sign-in sheet, and what the board owes it.** Cumberland County EMA puts a paper roster on the table at every meeting and every activation: *Meeting Attendance / Event Participant Roster*, with a header naming the meeting, event, or incident, a date, a **Meeting / Operational Period** start and end time, and eight columns — name, title/position, agency, phone, email, travel time round trip, time in, time out.
+
+**It is not a numbered ICS form.** [ICS-211](https://training.fema.gov/emiweb/is/icsresource/icsforms/), the standard incident check-in list, is a resource-oriented document built for demobilization planning: resource kind and type, order request number, leader's name, total personnel, method of travel, incident assignment, qualifications. Cumberland's is person-oriented and carries contact details ICS-211 does not. The two are not substitutes and the app must never present one as the other; ICS-211 mapping stays where section 5.12 already puts it, in M6.
+
+**But its shape is not arbitrary either, and that matters more than whether it is official.** EMPG requires a non-federal cost match, volunteer hours are the usual way a county meets it, and in-kind match documentation has to show name, date, times, and the activity. Four of those eight columns exist because of that rule. The footer's per-diem language is federal travel-reimbursement boilerplate. So this is a local form serving non-local requirements, which is the best possible case for the app: generate the local document, satisfy the external rule, and pretend to be neither an ICS form nor an authority on grant compliance.
+
+Most of it maps onto a board that already exists:
+
+| Form field | Board record |
+|---|---|
+| Name of meeting / event / incident | The board's occasion name. The form's own "Meeting / Operational Period" phrasing is the same union of cases section 5.19 chose deliberately |
+| Date, start time, end time | Board open and close times |
+| Name, title/position, agency, phone, email | Section 5.8 membership, profile, and affiliation records, populated rather than retyped |
+| Time in, time out | Tag in and tag out, unchanged |
+
+**Three things do not map, and each is a design decision rather than a missing column.**
+
+1. **Travel time round trip is not presence and must never be added to it.** It is time spent *not* at the place, recorded because a grant match counts it, and it is a fourth duration next to tag time, net check-in duration, and Events shift hours — but not a fourth *source of the same quantity*. Section 5.5's reconciliation rule picks one duration from several measurements of one contribution; travel time is a different contribution and is carried alongside, never folded in. It is self-reported by the person who travelled, never inferred from a home address, a named location, or a map.
+2. **An assisted tag is not a signature.** Section 5.19 makes recording someone else's tag the normal case, and the paper form makes signing it an attestation: the per-diem line places an obligation on the signer, and a grant match rests on the attendee's own claim of their hours. A coordinator's entry cannot carry either. **A generated roster marks every row that was not self-attested**, and the export never renders a recorded-by-someone-else row as though the person signed it. The recorder and channel fields the board already captures are exactly what makes this visible; this is the first place their absence would have been a real problem rather than a provenance gap.
+3. **Half the room is not on the team.** The agency column exists because a county EMA meeting contains fire chiefs, public works, Red Cross, and a warning coordination meteorologist, none of whom are ARES members and none of whom should become roster entries as the price of being counted present. The **no new people table** rule still holds — an external attendee is a manager-created membership record in an explicitly external stage, never a second people store — but section 5.8's stage vocabulary needs a value that means *attended once, not a member and not a prospect*, and it must not put them in outreach, staffing search, or the headcount. Confirm that value before building the export, not after.
+
+**Paper stays primary, and the board's job is to serve it rather than replace it.** The form works because a clipboard sits on a table by the door and needs no power, no network, and no account. So a board can **print a blank roster with expected attendees pre-populated** and be transcribed afterward — which is only assisted tagging with a channel of in person, already in the design. Nothing here may make the app the only way to sign in; that is the same rule section 5.14 applies to the rendezvous card, for the same reason, and a grant match lost to a dead router is a worse outcome than a hand-copied sheet.
+
+**The template belongs to the served agency, so it belongs in the policy register.** Which roster layout a team produces is a section 5.20 setting, defaulting to none, because there is no national standard to default to and inventing one would repeat the mistake the tag board's open-authority research already caught. Agency-supplied text — the per-diem notice above all — travels with the template **verbatim, with its source and revision date**, and is never composed, paraphrased, or updated by this project. Printing last year's legal notice under this year's date is a failure mode with consequences outside the app.
+
 **Privacy.** A live list of named people and their current physical locations is the most sensitive real-time data anywhere in this module -- more sensitive than the static roster, because it says where a named person is right now. Default visibility is team staff plus the people on that board. It never appears in a net's public report or any other public output. It is last-confirmed whereabouts, not live location tracking; section 5.13 already draws that line for equipment and it applies harder to people. Retention should be short for the whereabouts detail and longer for the participation total, since the hours are what reporting needs and the positions are not.
 
 **Relationship to the rest of the module.**
@@ -188,8 +213,11 @@ Two boundaries are worth repeating here because they are the ones a phase read i
 - Overdue surfacing with human follow-up and no automatic state change. Guarded board close that lists anyone still tagged in and requires explicit acknowledgment.
 - Team-staff-plus-participants visibility by default, with the whereabouts detail excluded from every public output and from net reports.
 - Scoped export of a board's participation for later reporting. Record the durations; do not claim a report-category mapping that M4 has not defined yet.
+- Render the served agency's sign-in roster from an agency-owned template: member details populated from section 5.8 records, optional self-reported round-trip travel time carried separately from presence time, external attendees included through the external-participant stage without joining the roster, and **every non-self-attested row marked as recorded by someone else**. Printing a blank roster with expected attendees pre-populated is part of this deliverable, not a later convenience — it is the fallback that keeps the workflow alive without power or network.
 
 **Exit:** TM-39 through TM-41 pass. A board runs end to end with no net in existence anywhere in the system. A member with no account and an unlicensed helper are both tagged in by radio and tagged out correctly, each carrying its recorder and channel. An overdue tag is visible and unchanged. Closing a board with two people still tagged in is refused until acknowledged, and the acknowledgment names them. No tag creates a check-in and no check-in creates a tag, verified in both directions. TM-42 is verified when M4 ships; until then the board exports durations and claims no reconciliation.
+
+TM-47 passes: a rendered roster populates from membership records, prints blank with expected attendees, and accepts transcription afterward. Travel time never appears inside a presence duration in any export. A coordinator-recorded row is visibly distinguished from a self-attested one on the printed sheet, not only in the database. An external attendee appears on the roster and in no headcount, outreach list, or staffing search. Agency-supplied footer text renders verbatim with its revision date, and a template with no recorded source cannot be published.
 
 ## Phase M3B — Procedures, Radio Callout, and Optional SMS
 
@@ -223,6 +251,9 @@ The hub's release checklist carries the cross-cutting cases. These are the ones 
 
 ## Open Questions Before an Activation Pilot
 
+- Is Cumberland County's participant roster a form the county wrote, or one Maine EMA issues to every county? The design answer is the same either way — a per-team template with the agency's text carried verbatim — but if it is a state form, one template serves every Maine team and is worth shipping. Ask the EMA for the source file and its revision.
+- **Will the EMA accept a generated roster at all, or does it need wet signatures on paper?** This does not change the build, since the paper path is required regardless, but it changes what to demonstrate first: a filled printable sheet if they want paper, a transcription flow if they will take the file.
+- What is the external-participant stage actually called locally, and who may create one? A meeting roster full of agency staff is the common case, and the answer determines whether an EMA coordinator can record attendance without a roster-manager grant.
 - Which monitored channels, PACE entries, and transition rules does the EMA actually approve, and who holds switching authority for each path? Resolve from current local confirmation, not a neighboring county's plan.
 - **Answered 2026-09-17, with research.** Open/close authority follows whoever is running the occasion (the incident commander, or the team lead), derived from the existing EC/AEC appointment rather than a separate grant. The 0200-first-arrival case resolves to a **per-team setting defaulting to any active member**, because the ARES Plan delegates this to the local SOP and real local SOPs disagree. See the doctrine findings in 5.19. What still needs Brad: **does Cumberland's adopted SOP, once written with the EMA, take the default or the strict posture?** That is a policy answer to record in the team's settings, not a code change.
 - Which named locations should a board offer by default?
@@ -234,5 +265,7 @@ The hub's release checklist carries the cross-cutting cases. These are the ones 
 - Which seasonal and prestorm checklist stages are actually adopted locally, who owns each, and what counts as a blocker versus a reminder?
 
 ## References
+
+Section 5.19's roster discussion additionally cites [FEMA's ICS forms index](https://training.fema.gov/emiweb/is/icsresource/icsforms/) for ICS-211, which the agency sign-in sheet is deliberately **not**, and [FEMA's EMPG program page](https://www.fema.gov/grants/preparedness/emergency-management-performance) for the cost-match requirement that shapes what such a sheet collects. Neither makes this project an authority on grant compliance, and no export may imply that it is.
 
 This document cites the [ARRL ARES Plan](https://www.arrl.org/files/file/ARES%20Plan%20July%202025.pdf), [FEMA mobilization guidance](https://emilms.fema.gov/_is0700b/groups/37.html), [CISA PACE guidance](https://www.cisa.gov/sites/default/files/2024-10/2024_NCSWICPTE_Leveraging_PACE_Plan_Emergency_Comms_Ecosystems.pdf), the [Twilio Messaging Policy](https://www.twilio.com/en-us/legal/messaging-policy) and related Twilio documentation, and the [GMARES-hosted after-action template](https://gmares.org/wp-content/uploads/2023/04/aar_form.docx). Full source list, review dates, and attribution rules are in the hub's section 12.
