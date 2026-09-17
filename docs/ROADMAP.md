@@ -421,38 +421,6 @@ flash: the app should have exactly one "something just happened in this row" ani
       above, whose root cause is exactly a flash timer whose lifetime was borrowed from another
       component's state
 
-### Statistics & Recognition
-
-**✨ Most-attended nets scoreboard on the global statistics page** *(KC1JMH, 2026-09-08)*  
-**Model:** Sonnet — one new aggregate query plus a table, against an established page.
-
-The global statistics page (`frontend/src/pages/Statistics.tsx`, backed by
-`routers/statistics_global.py`) reports totals, activity windows, and time series, but never ranks
-anything. Add a scoreboard of the nets with the most check-ins, which is both the question people
-ask and a quiet nudge toward the nets worth joining.
-
-Per-net leaderboards already exist and set the pattern to follow — `statistics_net.py` builds
-`check_in_leaderboard`, `ncs_leaderboard`, and `relay_leaderboard` for a schedule's series.
-
-- [ ] Extend `GlobalStatsResponse` (`schemas.py:1548`) with a `top_nets` list, and compute it in
-      `statistics_global.py` as one grouped aggregate — not a per-net fan-out
-- [ ] **A row is one schedule (net template), not one net occurrence** (decided 2026-09-08) — a
-      single well-attended weekly net would otherwise fill the whole board with its own
-      occurrences. Rank by total check-ins aggregated across a schedule's nets within the window,
-      and show the occurrence count alongside the total so the reader can see whether a high total
-      comes from broad turnout or from meeting often. Ad hoc nets with no template are excluded
-      from this board — there is no series for them to accumulate into
-- [ ] Exclude nets whose status makes them meaningless in a ranking — `DRAFT` and `CANCELLED`
-      are real rows, not deletions, and a cancelled occurrence exists precisely so the scheduler
-      can see the slot was skipped. **There is no net-level DEMO flag to filter on:** `DEMO` is a
-      value of `TrafficTestCategory` and scopes traffic forms only. If practice nets should be
-      excluded from this board, that exclusion has to be designed, not assumed to exist
-- [ ] Decide the time window. An all-time board freezes within a year and stops rewarding current
-      activity; a rolling 12-month or 90-day window keeps moving. Recommend a rolling window with
-      the period stated on the card, since every other panel on that page is already windowed
-- [ ] Link each row to the net or schedule statistics page, and make sure it does not leak a net
-      the viewer could not otherwise see — the page is readable before login
-
 ### Incident Operations Log & Situational Awareness Feed
 
 **✨ Log what you hear once, and let it render as an ICS-214, a spreadsheet row, and a Slack post** *(KC1JMH — from the statewide drill of 2026-09-17, see [`USER-STORIES.md`](USER-STORIES.md))*  
@@ -591,39 +559,6 @@ Teams phase M6 already plans versioning, approval, and issued snapshots for the 
 - **A licence is not required and must not be implied anywhere.** Registration today is callsign-centred; this principal has no callsign, and nothing in the interface should ask for one, generate a placeholder, or display an empty callsign field where a station identifier normally goes.
 
 **Open questions.** Does the EMA's own policy permit its staff to hold accounts in a volunteer organization's system, and who decides that — her, her director, or county IT? Is one liaison per incident realistic, or does a real activation need several with different agencies? And if she contributes an observation that later proves wrong, whose correction is it — hers, or the team's log's?
-
-### Exports & Printing
-
-**✨ Export net announcements and the net script to PDF with their formatting intact** *(KC1JMH, 2026-09-08)*  
-**Model:** Sonnet.
-
-Announcements and the net script are Markdown (`nets.announcements`, `nets.script`, with template
-defaults on `net_templates`), edited through the formatting toolbars in `Announcements.tsx` and
-`NetScript.tsx` and rendered with react-markdown plus remark-breaks. There is no way to get either
-onto paper, which is what an NCS running a net from a printed script actually needs, and copying
-the raw Markdown out yields asterisks and hash marks instead of headings and bullets.
-
-The mechanism already exists and must be reused, not re-invented: `exportElementToPdf`
-(`frontend/src/utils/pdfExport.ts`) captures a rendered DOM element through html2canvas and jsPDF,
-forces light-mode styling, and handles page boundaries. NetReport, Statistics, the traffic panel,
-and the ICS-309 view all go through it. Exporting the **already-rendered preview** is therefore
-both the least code and the only approach that guarantees the PDF matches what the editor's
-preview showed.
-
-- [ ] Export action on both the announcements and net script panels, at all their placements
-      (inline, docked, and detached — both components support undocking)
-- [ ] Render off-screen at a fixed print width rather than capturing the panel at its on-screen
-      size. A detached panel is a few hundred pixels wide and would produce a PDF of a narrow
-      column
-- [ ] Header identifying the net, the date, and which document it is, so a printed script found on
-      a desk says what net it belongs to
-- [ ] Filename following the convention the existing exports use
-- [ ] Verify the Markdown features the editor toolbars actually offer survive the round trip —
-      headings, bold, italic, the `==highlight==` extension, links, both list types, and the
-      horizontal rule. The highlight extension is custom, so it is the one most likely to render
-      as literal equals signs
-- [ ] Consider a combined "net paperwork" export (script plus announcements in one document)
-      before building two separate buttons. An NCS printing one usually wants both
 
 ### Account Deletion, Anonymization & Right to Erasure
 

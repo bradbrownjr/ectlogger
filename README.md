@@ -52,6 +52,7 @@ The responsive interface works beautifully on any device — from a phone in the
 - **⏱️ Automatic Close on Inactivity** — Optional per-net/schedule toggle that closes a net on its own after a chosen period (1-4 hours) with no check-ins or chat activity, so a net Net Control forgot to close doesn't sit open indefinitely. Off by default so long SKYWARN/ARES activations are never cut short
 - **📜 Net Scripts** — Create formatted scripts for NCS operators to follow during nets
 - **🗒️ Net Notes** — Jot down something specific to one net (e.g. a repeater running weak) separately from your schedule's standing announcements
+- **📄 Net Paperwork (PDF)** — Download the net script and net notes together as one printable PDF, so Net Control can run the net from a single printed page
 - **✏️ Inline Editing** — NCS/Loggers can click any check-in row to edit fields directly
 - **🦔 Speed Entry** - Hit the ⏩ button to enter a string of check-ins in fast-moving nets
 - **🔄 Recheck Tracking** — Track stations as they check in and out, on different frequencies if needed
@@ -98,7 +99,7 @@ ECT and SKYWARN nets often move between frequencies to meet participants where t
 - **📧 Emailed net closure reports** - Net participants can receive chat logs, check-in logs, topic answers, poll results, and a traffic-handled summary
 - **📥 CSV check-in import** - Import check-in logs from paper or external software into a net at any stage, with row-level validation and clear errors. A net that ran entirely off-app can be backfilled by supplying its real start and end times, and closed in the same step so everyone who took part gets attendance credit
 - **📃 ICS-309 Communications Log** - For ARES and ECT nets, ICS-309 documents can be downloaded and emailed from closed nets, including traffic-handling metadata rows when the net has that feature enabled
-- **📈 Statistics & Analytics** — Track participation trends, operator activity, net performance, and traffic handled (broken out by originated/relayed/delivered/etc.) with interactive charts
+- **📈 Statistics & Analytics** — Track participation trends, operator activity, net performance, and traffic handled (broken out by originated/relayed/delivered/etc.) with interactive charts; a platform-wide time-window toggle (week / month / 6 months / year / all time) drives the activity counts, charts, and a most-attended-nets leaderboard together
 - **🏆 Schedule Statistics & Leaderboards** — Per-schedule reporting with time-window filters (30d / 90d / 1y / all-time) and leaderboards for Check-ins, NCS, Logger, and Relay roles, plus a net history log with NCS callsigns
 - **📄 Net Report (PDF)** — Generate comprehensive multi-page PDF reports for closed nets including statistics, check-in logs, chat, and ICS-309 sections; the graphs, check-in map, and check-in list can each also be downloaded individually as a PNG image for social media posts
 - **📄 Schedule Report (PDF)** — Export a schedule's stats, all four leaderboards, and net history as a single printable PDF

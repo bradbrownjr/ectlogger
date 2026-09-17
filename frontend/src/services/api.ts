@@ -300,7 +300,7 @@ export const templateStaffApi = {
 
 // Statistics API
 export const statisticsApi = {
-  getGlobal: () => api.get('/statistics/global'),
+  getGlobal: (days: number = 30) => api.get('/statistics/global', { params: { days } }),
   getNetStats: (netId: number) => api.get(`/statistics/nets/${netId}`),
   getNetOperators: (netId: number) => api.get(`/statistics/nets/${netId}/operators`),
   getNetDaily: (netId: number) => api.get(`/statistics/nets/${netId}/daily`),

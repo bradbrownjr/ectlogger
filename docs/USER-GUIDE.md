@@ -401,6 +401,8 @@ These sound similar but are separate features:
   carry forward. Anyone checked in who can manage the net can open **Notes**
   from the toolbar and start writing, even if nothing's been added yet.
 
+**Printing your script and notes together.** The **Paperwork** button in the net toolbar downloads the net script and net notes as a single PDF, so an NCS running the net from a printed page only needs one document instead of two. It appears once you're checked in and there's a script or notes to export.
+
 ### Net Timers
 
 The net header displays helpful timing information:
@@ -837,6 +839,12 @@ Three statistics views are available, each with PDF export:
 - **Your Activity** — Personal check-in history (also available in your Profile).
 
 **Top Operators Ranking** — Top operators are ranked by check-in count. When tied, the operator who checked in earliest gets the higher medal (🥇🥈🥉) ranking.
+
+### Platform Stats: Time Window and Most-Attended Nets
+
+A time-window toggle at the top of Platform Stats — **Week**, **Month**, **6 Months**, **Year**, or **All Time** — controls every windowed figure on the page in one place: the activity counts, the average check-ins per net, the three activity charts, and the **Most-Attended Nets** leaderboard. Total nets, registered users, unique operators (all-time), and nets currently active are always shown at their all-time/current value regardless of the selected window.
+
+**Most-Attended Nets** ranks schedules (not individual net occurrences) by total check-ins within the selected window, showing how many times that schedule met alongside its total so a high count from broad turnout can be told apart from one that just meets often. Ad hoc nets with no schedule, and draft or cancelled occurrences, aren't included. Click a row to open that schedule's own statistics page.
 
 ### Schedule Statistics
 

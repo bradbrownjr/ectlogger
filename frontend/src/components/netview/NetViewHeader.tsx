@@ -237,6 +237,7 @@ interface NetViewHeaderProps {
   onExportCSV: () => void;
   onExportICS309: () => void;
   onExportICS309Pdf: () => void;
+  onExportNetPaperworkPdf: () => void;
   onArchive: () => void;
   onUnarchive: () => void;
   onDelete: () => void;
@@ -352,6 +353,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
   onExportCSV,
   onExportICS309,
   onExportICS309Pdf,
+  onExportNetPaperworkPdf,
   onArchive,
   onUnarchive,
   onDelete,
@@ -464,6 +466,16 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
       visible: checkInsCount > 0 && !!net.template_id,
       Icon: HistoryIcon, color: neutralIconColor, label: 'Topics',
       tooltip: 'View prior topics', onClick: () => topicHistory.onOpen(),
+    },
+    {
+      // Combined script + announcements export -- doesn't capture either
+      // docked/floating panel's DOM (see NetPaperworkPrintView.tsx), so it
+      // doesn't need either one open, and works during a live net as well as
+      // the closed/archived-only exports in the management group below.
+      key: 'net-paperwork-pdf', group: 'info', priority: 1,
+      visible: checkInsCount > 0 && (!!net.script || !!net.announcements),
+      Icon: PictureAsPdfIcon, color: neutralIconColor, label: 'Paperwork',
+      tooltip: 'Download net script and notes as PDF', onClick: onExportNetPaperworkPdf,
     },
     {
       key: 'stats', group: 'info', priority: 3,

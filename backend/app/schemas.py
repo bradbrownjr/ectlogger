@@ -1654,24 +1654,33 @@ class TrafficHandledEntry(BaseModel):
     occurred_at: datetime
 
 
+class TopNetEntry(BaseModel):
+    """One row of the most-attended-nets scoreboard (Statistics.tsx). One row
+    per schedule (net template), not per net occurrence, aggregated within
+    whatever window GET /statistics/global was asked for."""
+    template_id: int
+    template_name: str
+    total_check_ins: int
+    occurrence_count: int
+
+
 class GlobalStatsResponse(BaseModel):
-    """Global platform statistics"""
-    # Totals
+    """Global platform statistics. `total_*`, `active_nets`, and
+    `traffic_handled`/`traffic_by_action` are lifetime/current-moment figures
+    and are not affected by the `days` window on GET /statistics/global;
+    `window_*`, `top_nets`, and the `*_over_time` series all are."""
+    # All-time / current-moment totals
     total_nets: int
     total_check_ins: int
     total_users: int
     unique_operators: int
-
-    # Current activity
     active_nets: int
-    nets_last_24h: int
-    nets_last_7_days: int
-    nets_last_30_days: int
-    check_ins_last_24h: int
-    check_ins_last_7_days: int
 
-    # Averages
-    avg_check_ins_per_net: float
+    # Windowed activity
+    window_nets: int
+    window_check_ins: int
+    window_unique_operators: int
+    window_avg_check_ins_per_net: float
 
     # Assisted Traffic Handling: distinct forms with any traffic_log_entries
     # row, platform-wide, broken out by action (see
@@ -1679,11 +1688,14 @@ class GlobalStatsResponse(BaseModel):
     traffic_handled: int = 0
     traffic_by_action: dict = Field(default_factory=dict)
 
-    # Time series for charts
-    nets_per_day: List[TimeSeriesDataPoint]  # Last 30 days
-    nets_per_week: List[TimeSeriesDataPoint]  # Last 6 months
-    check_ins_per_day: List[TimeSeriesDataPoint]  # Last 30 days
-    unique_operators_per_week: List[TimeSeriesDataPoint]  # Last 6 months
+    # Most-attended nets scoreboard, windowed
+    top_nets: List[TopNetEntry] = Field(default_factory=list)
+
+    # Time series for charts. Bucket granularity (daily/weekly/monthly) is
+    # chosen server-side from the requested window.
+    nets_over_time: List[TimeSeriesDataPoint]
+    check_ins_over_time: List[TimeSeriesDataPoint]
+    unique_operators_over_time: List[TimeSeriesDataPoint]
 
 
 class NetStatsResponse(BaseModel):

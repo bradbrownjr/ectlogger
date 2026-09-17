@@ -65,6 +65,7 @@ import { netApi, checkInApi, netRoleApi, templateApi, canHearApi } from '../serv
 import api from '../services/api';
 import { exportElementToPdf } from '../utils/pdfExport';
 import ICS309PrintView, { Ics309LogData } from '../components/traffic/print/ICS309PrintView';
+import NetPaperworkPrintView from '../components/netview/NetPaperworkPrintView';
 import { useAuth } from '../contexts/AuthContext';
 import { useLocation } from '../contexts/LocationContext';
 import CheckInMap from '../components/CheckInMap';
@@ -1148,6 +1149,19 @@ const NetView: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ics309PrintData]);
 
+  // Combined script + announcements PDF -- unlike the ICS-309 PDF above, both
+  // sections are already in `net` state (no fetch needed), so the off-screen
+  // print view is mounted permanently and this just captures it directly.
+  const handleExportNetPaperworkPdf = async () => {
+    try {
+      await exportElementToPdf('net-paperwork-print-view', {
+        filename: `${net?.name.replace(/[^a-zA-Z0-9]/g, '_') || 'Net'}_Paperwork`,
+      });
+    } catch (error) {
+      console.error('Failed to export net paperwork PDF:', error);
+    }
+  };
+
   // State for archive undo functionality
   const [pendingArchive, setPendingArchive] = React.useState<boolean>(false);
   const archiveTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1639,6 +1653,7 @@ const NetView: React.FC = () => {
         onExportCSV={handleExportCSV}
         onExportICS309={handleExportICS309}
         onExportICS309Pdf={handleExportICS309Pdf}
+        onExportNetPaperworkPdf={handleExportNetPaperworkPdf}
         onArchive={handleArchive}
         onUnarchive={handleUnarchive}
         onDelete={handleDelete}
@@ -1650,6 +1665,21 @@ const NetView: React.FC = () => {
       {ics309PrintData && (
         <Box sx={{ position: 'fixed', top: 0, left: -9999, width: 0, height: 0, overflow: 'hidden' }}>
           <ICS309PrintView id="ics309-print-view" data={ics309PrintData} />
+        </Box>
+      )}
+
+      {/* Off-screen combined net script + notes print view, mounted whenever
+          there's content to export -- see NetPaperworkPrintView.tsx for why
+          this reads net state directly instead of capturing either
+          docked/floating panel's DOM. */}
+      {(!!net.script || !!net.announcements) && (
+        <Box sx={{ position: 'fixed', top: 0, left: -9999, width: 0, height: 0, overflow: 'hidden' }}>
+          <NetPaperworkPrintView
+            id="net-paperwork-print-view"
+            netName={net.name}
+            script={net.script || ''}
+            notes={net.announcements || ''}
+          />
         </Box>
       )}
 

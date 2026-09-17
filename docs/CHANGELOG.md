@@ -4,6 +4,15 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# September 17, 2026
+
+## New Features
+
+* **Statistics: Time window and most-attended nets** — Switch the whole statistics page between a week, month, six months, year, or all time, and see which nets draw the biggest turnout in that window on a new leaderboard.
+* **Net View: Combined script and notes PDF** — Download the net script and net notes together as one printable PDF from the toolbar, so an NCS running the net from paper doesn't need to print two separate documents.
+
+---
+
 # September 15, 2026
 
 ## New Features

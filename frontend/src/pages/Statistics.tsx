@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 import useApiData from '../hooks/useApiData';
 import {
   Box,
@@ -18,23 +19,25 @@ import {
   Button,
   Tooltip,
   CircularProgress,
+  ToggleButton,
+  ToggleButtonGroup,
+  List,
+  ListItemButton,
+  ListItemText,
 } from '@mui/material';
 import {
   BarChart as BarChartIcon,
   TrendingUp,
   People,
   Radio,
-  Today,
   DateRange,
-  CalendarMonth,
   PictureAsPdf,
   Mail as MailIcon,
+  EmojiEvents,
 } from '@mui/icons-material';
 import {
   LineChart,
   Line,
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -53,28 +56,44 @@ interface TimeSeriesDataPoint {
   date: string;
 }
 
+interface TopNetEntry {
+  template_id: number;
+  template_name: string;
+  total_check_ins: number;
+  occurrence_count: number;
+}
+
 interface GlobalStats {
   total_nets: number;
   total_check_ins: number;
   total_users: number;
   unique_operators: number;
   active_nets: number;
-  nets_last_24h: number;
-  nets_last_7_days: number;
-  nets_last_30_days: number;
-  check_ins_last_24h: number;
-  check_ins_last_7_days: number;
-  avg_check_ins_per_net: number;
+  window_nets: number;
+  window_check_ins: number;
+  window_unique_operators: number;
+  window_avg_check_ins_per_net: number;
   // Assisted Traffic Handling: distinct forms with any log entry
   // platform-wide, broken out by action. See
   // TRAFFIC-HANDLING-DESIGN.md section 3.5.
   traffic_handled: number;
   traffic_by_action: Record<string, number>;
-  nets_per_day: TimeSeriesDataPoint[];
-  nets_per_week: TimeSeriesDataPoint[];
-  check_ins_per_day: TimeSeriesDataPoint[];
-  unique_operators_per_week: TimeSeriesDataPoint[];
+  top_nets: TopNetEntry[];
+  nets_over_time: TimeSeriesDataPoint[];
+  check_ins_over_time: TimeSeriesDataPoint[];
+  unique_operators_over_time: TimeSeriesDataPoint[];
 }
+
+// Window options shared by the selector, the activity cards, the scoreboard,
+// and the chart titles -- one flip of this toggle drives every windowed
+// figure on the page (see ROADMAP.md "Most-attended nets scoreboard").
+const WINDOW_OPTIONS: { value: number; label: string }[] = [
+  { value: 7, label: 'Week' },
+  { value: 30, label: 'Month' },
+  { value: 182, label: '6 Months' },
+  { value: 365, label: 'Year' },
+  { value: 0, label: 'All Time' },
+];
 
 interface StatCardProps {
   title: string;
@@ -129,9 +148,22 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, subtitle, icon, color
 const Statistics: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const { data: stats, loading, error } = useApiData<GlobalStats>(
-    () => statisticsApi.getGlobal().then((r) => r.data),
+  const [windowDays, setWindowDays] = useState(30);
+  const { data: stats, loading, error, refetch } = useApiData<GlobalStats>(
+    () => statisticsApi.getGlobal(windowDays).then((r) => r.data),
   );
+  // useApiData already fetches on mount; only refetch here on a later change
+  // of windowDays, or the selector's own default would fire a duplicate
+  // request alongside the hook's initial one.
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    refetch();
+  }, [windowDays, refetch]);
+  const windowLabel = WINDOW_OPTIONS.find(o => o.value === windowDays)?.label ?? 'Month';
   const [chartTab, setChartTab] = useState(0);
   const [exporting, setExporting] = useState(false);
 
@@ -164,7 +196,7 @@ const Statistics: React.FC = () => {
     touchStartY.current = null;
     if (touchOnScrollable.current) return;
     if (Math.abs(deltaX) < 50 || Math.abs(deltaY) > Math.abs(deltaX)) return;
-    setChartTab(v => deltaX < 0 ? Math.min(v + 1, 3) : Math.max(v - 1, 0));
+    setChartTab(v => deltaX < 0 ? Math.min(v + 1, 2) : Math.max(v - 1, 0));
   };
 
   // Handle PDF export
@@ -223,22 +255,36 @@ const Statistics: React.FC = () => {
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
-      {/* Header with PDF export button */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
+      {/* Header with window selector and PDF export button */}
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 2, mb: 4 }}>
         <Typography variant="h4" component="h1" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <BarChartIcon sx={{ fontSize: 32, color: 'text.primary' }} />
           Statistics
         </Typography>
-        <Tooltip title="Export to PDF">
-          <Button
-            variant="outlined"
-            onClick={handleExportPdf}
-            disabled={exporting}
-            startIcon={exporting ? <CircularProgress size={16} /> : <PictureAsPdf />}
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1.5 }}>
+          <ToggleButtonGroup
+            size="small"
+            exclusive
+            value={windowDays}
+            onChange={(_e, v) => v !== null && setWindowDays(v)}
           >
-            {exporting ? 'Exporting...' : 'PDF'}
-          </Button>
-        </Tooltip>
+            {WINDOW_OPTIONS.map(opt => (
+              <ToggleButton key={opt.value} value={opt.value} sx={{ px: { xs: 1, sm: 1.5 } }}>
+                {opt.label}
+              </ToggleButton>
+            ))}
+          </ToggleButtonGroup>
+          <Tooltip title="Export to PDF">
+            <Button
+              variant="outlined"
+              onClick={handleExportPdf}
+              disabled={exporting}
+              startIcon={exporting ? <CircularProgress size={16} /> : <PictureAsPdf />}
+            >
+              {exporting ? 'Exporting...' : 'PDF'}
+            </Button>
+          </Tooltip>
+        </Box>
       </Box>
 
       {/* Content wrapper for PDF export */}
@@ -290,8 +336,8 @@ const Statistics: React.FC = () => {
         <Grid item xs={6} sm={4} md={2}>
           <StatCard
             title="Avg Check-ins"
-            value={stats.avg_check_ins_per_net}
-            subtitle="Per net"
+            value={stats.window_avg_check_ins_per_net}
+            subtitle={`Per net, ${windowLabel}`}
             icon={<TrendingUp sx={{ fontSize: 32 }} />}
             color={theme.palette.secondary.main}
           />
@@ -310,61 +356,61 @@ const Statistics: React.FC = () => {
         )}
       </Grid>
 
-      {/* Recent Activity Cards */}
+      {/* Windowed Activity + Most-Attended Nets Scoreboard */}
       <Grid container spacing={2} sx={{ mb: 4 }}>
-        <Grid item xs={12} md={4}>
-          <Paper sx={{ p: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-              <Today color="primary" />
-              <Typography variant="h6">Last 24 Hours</Typography>
-            </Box>
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <Chip 
-                label={`${stats.nets_last_24h} nets`} 
-                color="primary" 
-                variant="outlined" 
-              />
-              <Chip 
-                label={`${stats.check_ins_last_24h} check-ins`} 
-                color="success" 
-                variant="outlined" 
-              />
-            </Box>
-          </Paper>
-        </Grid>
-        <Grid item xs={12} md={4}>
-          <Paper sx={{ p: 2 }}>
+        <Grid item xs={12} md={5}>
+          <Paper sx={{ p: 2, height: '100%' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
               <DateRange color="primary" />
-              <Typography variant="h6">Last 7 Days</Typography>
+              <Typography variant="h6">Activity — {windowLabel}</Typography>
             </Box>
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <Chip 
-                label={`${stats.nets_last_7_days} nets`} 
-                color="primary" 
-                variant="outlined" 
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+              <Chip
+                label={`${stats.window_nets} nets`}
+                color="primary"
+                variant="outlined"
               />
-              <Chip 
-                label={`${stats.check_ins_last_7_days} check-ins`} 
-                color="success" 
-                variant="outlined" 
+              <Chip
+                label={`${stats.window_check_ins} check-ins`}
+                color="success"
+                variant="outlined"
+              />
+              <Chip
+                label={`${stats.window_unique_operators} operators`}
+                color="warning"
+                variant="outlined"
               />
             </Box>
           </Paper>
         </Grid>
-        <Grid item xs={12} md={4}>
-          <Paper sx={{ p: 2 }}>
+        <Grid item xs={12} md={7}>
+          <Paper sx={{ p: 2, height: '100%' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-              <CalendarMonth color="primary" />
-              <Typography variant="h6">Last 30 Days</Typography>
+              <EmojiEvents color="primary" />
+              <Typography variant="h6">Most-Attended Nets — {windowLabel}</Typography>
             </Box>
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <Chip 
-                label={`${stats.nets_last_30_days} nets`} 
-                color="primary" 
-                variant="outlined" 
-              />
-            </Box>
+            {stats.top_nets.length === 0 ? (
+              <Typography variant="body2" color="text.secondary">
+                No scheduled-net activity in this window yet.
+              </Typography>
+            ) : (
+              <List dense disablePadding>
+                {stats.top_nets.map((entry, i) => (
+                  <ListItemButton
+                    key={entry.template_id}
+                    component={RouterLink}
+                    to={`/statistics/schedules/${entry.template_id}`}
+                    sx={{ borderRadius: 1, px: 1 }}
+                  >
+                    <ListItemText
+                      primary={`${i + 1}. ${entry.template_name}`}
+                      secondary={`${entry.occurrence_count} net${entry.occurrence_count === 1 ? '' : 's'} held`}
+                    />
+                    <Chip size="small" label={`${entry.total_check_ins} check-ins`} color="primary" variant="outlined" />
+                  </ListItemButton>
+                ))}
+              </List>
+            )}
           </Paper>
         </Grid>
       </Grid>
@@ -383,20 +429,19 @@ const Statistics: React.FC = () => {
             '& .MuiTab-root': { minWidth: { xs: 80, sm: 110 }, px: { xs: 1, sm: 2 } },
           }}
         >
-          <Tab label="Nets (Daily)" />
-          <Tab label="Nets (Weekly)" />
-          <Tab label="Check-ins (Daily)" />
-          <Tab label="Operators (Weekly)" />
+          <Tab label="Nets" />
+          <Tab label="Check-ins" />
+          <Tab label="Operators" />
         </Tabs>
 
-        {/* Nets per Day Chart */}
+        {/* Nets over Time Chart */}
         {chartTab === 0 && (
           <Box>
             <Typography variant="h6" gutterBottom>
-              Nets Started Per Day (Last 30 Days)
+              Nets Started — {windowLabel}
             </Typography>
             <ResponsiveContainer width="100%" height={400}>
-              <AreaChart data={stats.nets_per_day}>
+              <AreaChart data={stats.nets_over_time}>
                 <defs>
                   <linearGradient id="colorNets" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor={chartColors.primary} stopOpacity={0.8}/>
@@ -404,23 +449,23 @@ const Statistics: React.FC = () => {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                <XAxis 
-                  dataKey="label" 
+                <XAxis
+                  dataKey="label"
                   tick={{ fontSize: 12 }}
                   interval={isMobile ? 4 : 2}
                 />
                 <YAxis tick={{ fontSize: 12 }} />
-                <RechartsTooltip 
-                  contentStyle={{ 
+                <RechartsTooltip
+                  contentStyle={{
                     backgroundColor: theme.palette.background.paper,
                     border: `1px solid ${theme.palette.divider}`,
                   }}
                 />
-                <Area 
-                  type="monotone" 
-                  dataKey="value" 
+                <Area
+                  type="monotone"
+                  dataKey="value"
                   name="Nets"
-                  stroke={chartColors.primary} 
+                  stroke={chartColors.primary}
                   fillOpacity={1}
                   fill="url(#colorNets)"
                 />
@@ -429,46 +474,14 @@ const Statistics: React.FC = () => {
           </Box>
         )}
 
-        {/* Nets per Week Chart */}
+        {/* Check-ins over Time Chart */}
         {chartTab === 1 && (
           <Box>
             <Typography variant="h6" gutterBottom>
-              Nets Per Week (Last 6 Months)
+              Check-ins — {windowLabel}
             </Typography>
             <ResponsiveContainer width="100%" height={400}>
-              <BarChart data={stats.nets_per_week}>
-                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                <XAxis 
-                  dataKey="label" 
-                  tick={{ fontSize: 12 }}
-                  interval={isMobile ? 4 : 2}
-                />
-                <YAxis tick={{ fontSize: 12 }} />
-                <RechartsTooltip 
-                  contentStyle={{ 
-                    backgroundColor: theme.palette.background.paper,
-                    border: `1px solid ${theme.palette.divider}`,
-                  }}
-                />
-                <Bar 
-                  dataKey="value" 
-                  name="Nets"
-                  fill={chartColors.primary}
-                  radius={[4, 4, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </Box>
-        )}
-
-        {/* Check-ins per Day Chart */}
-        {chartTab === 2 && (
-          <Box>
-            <Typography variant="h6" gutterBottom>
-              Check-ins Per Day (Last 30 Days)
-            </Typography>
-            <ResponsiveContainer width="100%" height={400}>
-              <AreaChart data={stats.check_ins_per_day}>
+              <AreaChart data={stats.check_ins_over_time}>
                 <defs>
                   <linearGradient id="colorCheckins" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor={chartColors.success} stopOpacity={0.8}/>
@@ -476,23 +489,23 @@ const Statistics: React.FC = () => {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                <XAxis 
-                  dataKey="label" 
+                <XAxis
+                  dataKey="label"
                   tick={{ fontSize: 12 }}
                   interval={isMobile ? 4 : 2}
                 />
                 <YAxis tick={{ fontSize: 12 }} />
-                <RechartsTooltip 
-                  contentStyle={{ 
+                <RechartsTooltip
+                  contentStyle={{
                     backgroundColor: theme.palette.background.paper,
                     border: `1px solid ${theme.palette.divider}`,
                   }}
                 />
-                <Area 
-                  type="monotone" 
-                  dataKey="value" 
+                <Area
+                  type="monotone"
+                  dataKey="value"
                   name="Check-ins"
-                  stroke={chartColors.success} 
+                  stroke={chartColors.success}
                   fillOpacity={1}
                   fill="url(#colorCheckins)"
                 />
@@ -501,32 +514,32 @@ const Statistics: React.FC = () => {
           </Box>
         )}
 
-        {/* Unique Operators per Week Chart */}
-        {chartTab === 3 && (
+        {/* Unique Operators over Time Chart */}
+        {chartTab === 2 && (
           <Box>
             <Typography variant="h6" gutterBottom>
-              Unique Operators Per Week (Last 6 Months)
+              Unique Operators — {windowLabel}
             </Typography>
             <ResponsiveContainer width="100%" height={400}>
-              <LineChart data={stats.unique_operators_per_week}>
+              <LineChart data={stats.unique_operators_over_time}>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                <XAxis 
-                  dataKey="label" 
+                <XAxis
+                  dataKey="label"
                   tick={{ fontSize: 12 }}
                   interval={isMobile ? 4 : 2}
                 />
                 <YAxis tick={{ fontSize: 12 }} />
-                <RechartsTooltip 
-                  contentStyle={{ 
+                <RechartsTooltip
+                  contentStyle={{
                     backgroundColor: theme.palette.background.paper,
                     border: `1px solid ${theme.palette.divider}`,
                   }}
                 />
-                <Line 
-                  type="monotone" 
-                  dataKey="value" 
+                <Line
+                  type="monotone"
+                  dataKey="value"
                   name="Operators"
-                  stroke={chartColors.warning} 
+                  stroke={chartColors.warning}
                   strokeWidth={2}
                   dot={{ fill: chartColors.warning, strokeWidth: 2 }}
                 />
