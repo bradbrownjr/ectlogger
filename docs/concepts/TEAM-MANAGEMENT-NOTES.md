@@ -715,6 +715,9 @@ The register's value is that these settings currently exist only as sentences sc
 | Situational-awareness export shape (own export, folded into the ICS-214, or both) | Both available; neither assumed | 5.5 |
 | Cross-team record visibility within a shared incident | Off; a team sees only its own records | 5.2, 8 |
 | Who approves a communications plan for an incident, and whether the team issues its own | Unset; a team-drafted plan stays a draft until an approver is recorded | 5.14, 5.18 |
+| Observation categories and the served agency's mapping layer schema | None; no categories or field names assumed | 5.14, roadmap Incident Operations Log |
+| Whether monitored-source observations may appear on an exported map layer | No; an export is a sharing channel | 5.14, 8 |
+| Whether served-agency staff may hold scoped accounts, and who may invite them | Off; no external accounts | 5.2, 5.8, 8 |
 
 **A new per-team setting is added to the register in the same change that introduces it.** Without that rule the register rots within two phases, the setup flow silently stops covering new policy, and the module is back to undisclosed defaults with extra steps.
 
