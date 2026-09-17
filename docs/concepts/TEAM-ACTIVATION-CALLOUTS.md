@@ -31,7 +31,7 @@ Provider delivery, human acknowledgment, stated availability, assignment accepta
 
 ### 5.14 Activation Authority, Alert Levels, and PACE
 
-Maintain a served-agency record with mission scope, agreement/procedure reference and review date, primary/alternate agency contacts, activation authority, approved team delegates, and reporting chain. A person permitted to send a callout is not necessarily permitted to authorize deployment. Record who requested and authorized the response, when, incident/reference number if supplied, and any limits on the task. Verbal requests can be recorded with attribution and later documentation.
+Maintain a served-agency record with mission scope, agreement/procedure reference and review date, primary/alternate agency contacts, activation authority, approved team delegates, and reporting chain. A person permitted to send a callout is not necessarily permitted to authorize deployment. Record who requested and authorized the response, when, incident/reference number if supplied, and any limits on the task. **That supplied number is the incident reference the rest of the system should adopt** rather than minting a competing one: nets, tag boards, traffic, and situational-awareness entries all carry it optionally so one operation's records can be found together, and the app mints a local reference only when the agency supplied none. It correlates; it never contains. Verbal requests can be recorded with attribution and later documentation.
 
 The [ARRL ARES Plan](https://www.arrl.org/files/file/ARES%20Plan%20July%202025.pdf) recommends scenario-specific quick-start procedures. [FEMA mobilization guidance](https://emilms.fema.gov/_is0700b/groups/37.html) advises waiting for official deployment notification. Apply these as a distinction between preparedness monitoring, availability requests, and authorized assignments, including emergency phone/radio workflows when the app is unavailable.
 
@@ -78,7 +78,7 @@ Two constraints follow, and they are not optional:
 
 - The surface is a **Tag Board**; the actions are **tag in** and **tag out**.
 - The person record is a **member tag** (`member_tags`), **never a bare `tag`** -- `asset_tag` is already an equipment field in [section 5.13](TEAM-ASSETS-CUSTODY.md), and a module that inventories both people and equipment cannot afford an ambiguous `tag`.
-- The occasion is a **board** (`tag_boards`), not an incident, an event, or an activation. Section 5.12 explicitly refuses `Incident` a top-level entity, `Event` belongs to Public Service Events, and Activation is an alert stage in 5.14 above.
+- The occasion is a **board** (`tag_boards`), not an incident, an event, or an activation. Section 5.12 refuses `Incident` a top-level *entity*, `Event` belongs to Public Service Events, and Activation is an alert stage in 5.14 above. A board may still carry the optional incident reference described in 5.14 — a correlation key, so one storm's boards, nets, and records are findable together — which is a label on the board, not a parent of it.
 
 **The two facts that shape the whole design.**
 
