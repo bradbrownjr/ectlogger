@@ -956,6 +956,8 @@ This replaces the earlier five-milestone outline. Security, auditability, import
 
 Concretely, the expensive judgment in this module is concentrated in a small number of places — the privacy boundary, identity matching, custody concurrency, consent-at-send, and time attribution. Everything else is CRUD, forms, tables, and exports against patterns this codebase already has, which is Sonnet's tier. Several deliverables are genuinely mechanical once their shape is fixed (a blank CSV template for a settled column list, one more saved view against a working filter engine, one more form mapping against a working builder), and paying Sonnet rates for those is waste.
 
+**The per-package breakdown lives in the roadmap, not here.** [`docs/ROADMAP.md`](../ROADMAP.md) carries a Build Plan under this module's entry: each phase split into numbered packages small enough for one sub-agent in one sitting, each with its model, its thinking level, the sections it needs to read, and the review gates as packages of their own. That index is deliberately downstream of this document — the exit criteria below remain authoritative, and where the two disagree, these criteria win.
+
 | Phase | Delivers | Depends on | Model |
 |---|---|---|---|
 | M0 | Discovery: data dictionary, permission matrix, sample import, pilot scenarios, form/report checklist | Nothing. Can start immediately and in parallel with roadmap prerequisites | Human conversation with **Opus**. Not an implementation task, and not delegable to a cheaper model — its output is the spec every later phase is measured against |

@@ -1,6 +1,6 @@
 # ECT Logger — Product Roadmap
 
-*Last updated: 2026-09-16*  
+*Last updated: 2026-09-17*  
 *Compiled from user feedback: AA1GM, KC1UIX, W1BKW, W1MTW, N1GSK, KC1JMH*
 
 > **Canonical location:** `docs/ROADMAP.md`.
@@ -29,6 +29,17 @@ As of rev 25, each item carries a **Model:** line recommending which Claude mode
 - **Opus** — architecture, security-sensitive design, data modeling, and anything touching auth/payments/time handling. Also used as a *review gate* on Sonnet work where noted.
 
 Rule of thumb: Haiku and Sonnet can only maintain this codebase safely once files are small and patterns are extracted. That groundwork shipped with Milestone 0.4 (2026-07-06), so Milestone 1 items can now be assigned to smaller models as their **Model:** lines indicate.
+
+### Thinking levels for sub-agents
+
+The model tier decides *who* does the work. The thinking level decides *how much reasoning budget is spent before the first edit*. They are independent, and the second one is the more common source of waste: an expensive model on a transcription task burns tokens restating a design that is already settled, while a cheap model with no budget at all on a concurrency question writes something that looks right and passes its own tests.
+
+- **none** — the task is fully specified and the work is transcription. Repeated instances of a verified pattern, blank template files, one more field mapping against a proven builder.
+- **think** — ordinary feature work against an established pattern with a clear spec. The default for Sonnet.
+- **think hard** — more than one implementation looks correct and the wrong one fails quietly: concurrency, recurrence and timezone math, idempotency, and anything where running the same operation twice must not produce two records.
+- **ultrathink** — schema, invariants, permission boundaries, and every review gate. Deliberately rare. If a plan has ultrathink on most of its packages, the packages are the problem, not the budget.
+
+Items carrying a **Model:** line but no **Think:** line predate this convention; read them as `think` for Sonnet and Opus and `none` for Haiku.
 
 ---
 
@@ -813,7 +824,168 @@ One tier for a module this size is wrong in both directions: it overpays for the
 
 **Sequencing against the two prerequisites above.** *Schema Tooling Decision* should be settled before M1 creates the first Teams tables, and *UTC-Aware Datetime Hardening* should land first — Teams adds dozens of dated columns, and adding them naive means they join the sweep that item exists to end. Neither blocks M0, which is pure discovery and can start any time.
 
-**Blocked on:** core web app stability, self-hosting, and Docker packaging being in good shape first. That gating is unchanged; the phase breakdown above is what to do when it lifts, not a signal to start.
+---
+
+#### Build Plan
+
+The phase table above says what each phase delivers and which tier should build it. This is the execution index: the same work broken into packages small enough to hand to one sub-agent in one sitting, each with its model, its thinking level, and the specific sections it needs to read. Section 10 of `TEAM-MANAGEMENT-NOTES.md` remains authoritative for exit criteria; nothing below replaces them, and where this index and a phase's exit criteria disagree, the criteria win.
+
+Package IDs are stable and are meant to appear in commit messages and branch names. `M1A-3` means the same thing a year from now, and a phase that gains a package appends rather than renumbering.
+
+**Before package one.** Three things are true before any of this starts, and none of them is negotiable by a sub-agent that does not know about them:
+
+1. *Schema Tooling Decision* is settled and *UTC-Aware Datetime Hardening* has landed. Teams adds dozens of dated columns; adding them naive means they join the sweep that item exists to end.
+2. M0 has exited. Its output is the specification every later package is measured against, and it is a conversation, not an implementation task.
+3. All of it lands on a long-running `feature/teams` branch per the Long-Running Feature Branches rules in `.github/copilot-instructions.md`: every phase is commits on that branch, beta tests from the branch, and the merge to `main` happens only once beta confirms. No changelog entry is written until that merge deploys to production, dated for the actual deploy day. Incidental bug fixes made to get a phase shippable are not separate changelog items.
+
+**What a package prompt contains, and what it must not.** The four concept documents run about 2,700 lines. Pasting the set into every sub-agent prompt is the largest avoidable cost in this module, and it also buries the two paragraphs that actually govern the work. The Reads column below names the sections a package needs; the prompt carries those sections, not the set. Section numbers are global across the four documents, so a bare section number resolves through any of their Document Maps. Alongside the named sections, every prompt regardless of tier carries:
+
+- **The four standing rules from section 10** — never invent a fact to fill a blank, never let one workflow grant another's authority, reuse before adding, stop at the phase boundary. They are short, and they are precisely the assumptions a model reading one section in isolation will otherwise make.
+- **The one invariant this package must not break**, written as a single sentence. If it takes a paragraph, the package is two packages.
+- **The exit test that proves it**, lifted from the phase's exit criteria.
+- **The codebase pattern it builds against, named rather than explained** — `DEVELOPMENT.md` "Backend router-split (facade) pattern", `permissions.py`, `ConnectionManager`, the migration template. Naming a pattern the agent can read costs a line; describing it costs a page and drifts from the code.
+
+A package that cannot be briefed this way is too large. Split it.
+
+**M0 — Discovery.**
+
+| # | Package | Model | Think | Reads |
+|---|---|---|---|---|
+| M0-1 | Data dictionary, permission matrix, sample import and mapping, pilot scenarios, prioritized report/form checklist | Opus, in conversation | ultrathink | 10 (M0), 11 |
+
+**M1 — Team and Membership Foundation.** The foundation every other phase builds on, and the one place where a quiet mistake is unrecoverable rather than expensive.
+
+| # | Package | Model | Think | Reads |
+|---|---|---|---|---|
+| M1-1 | Schema: team, unit, membership, grant, claim, audit, and the policy register with every default it decides | Opus | ultrathink | 6.1, 6.2, 5.2, 5.8, 5.20 |
+| M1-2 | Team permission helper: scoped grants, unit delegation, field-level read/write, lifecycle suppression | Opus | ultrathink | 7, 8, 5.2 |
+| M1-3 | Additive migrations valid on both upgraded and fresh installations | Sonnet | think hard | 6.1, migration template |
+| M1-4 | Router facade plus membership and application lifecycle endpoints, written against the helper | Sonnet | think | 5.2, 5.3 |
+| M1-5 | Teams navigation, discovery and privacy settings, roster, member detail, manager-created records | Sonnet | think | 5.1, 5.7, 5.8 |
+| M1-6 | Audited record claims, concurrency checks, core export and retention controls | Sonnet | think hard | 5.3, 8 |
+| M1-G | **Gate:** the permission helper, probed directly through the API with revoked grants and altered team identifiers | Opus | ultrathink | 7, 8, release checklist |
+
+**M1A — Tag Board and Presence Accountability.** Depends on M1 alone and is the shortest path from a roster to something usable on activation day.
+
+| # | Package | Model | Think | Reads |
+|---|---|---|---|---|
+| M1A-1 | Presence state model and its relationship to `CheckIn` and the Events shift; the board and tag invariants | Opus | ultrathink | 5.19, 5.5, 6.1 |
+| M1A-2 | Named `TeamLocation` records pulled forward from M4, names only, no coverage | Sonnet | none | 5.6 (named locations) |
+| M1A-3 | Board open and guarded close with keeper handover; tag in and out; assisted tagging carrying recorder and channel | Sonnet | think | 5.19 |
+| M1A-4 | Live board over `ConnectionManager`, server-originated events only, broadcast by the route handler after the write | Sonnet | think | 5.19, WebSocket table |
+| M1A-5 | Raw row export with a stable board-plus-membership row identity and a recorded export receipt | Sonnet | think hard | 5.19, 6.1 |
+| M1A-6 | Rendered agency roster: populated from membership, printable blank with expected attendees, agency text verbatim | Sonnet | think | 5.19, 5.8 |
+| M1A-7 | Overdue surfacing with no automatic state change; external-participant stage | Sonnet | think | 5.19 |
+| M1A-8 | Team participation join on the incident record, and the cross-team record visibility setting, default off | Opus | ultrathink | 5.19, 7, 8, Incident Operations Log |
+| M1A-G | **Gate:** the presence model; tag and check-in independence tested in both directions; smoke test against "at most one open tag per person per board" | Opus | ultrathink | ACT validation focus |
+
+**M1B — Guided Setup, Policy Register, and Doctrine Hints.** Depends on M1 alone. Almost entirely content and forms over a register M1 already had to build, which is why it carries no Opus package.
+
+| # | Package | Model | Think | Reads |
+|---|---|---|---|---|
+| M1B-1 | Setup stepper over the register: skippable, resumable, every step re-enterable later, deputy or successor first | Sonnet | think | 5.20 |
+| M1B-2 | Hint catalog schema and the first hints, one of each strength, rendering visibly differently from one another | Sonnet | think hard | 5.20 (hint shape) |
+| M1B-3 | Decision log: value, responding hint, deciding member, date, rationale; a decision to differ is a complete outcome | Sonnet | think | 5.20 |
+| M1B-4 | Quick-Start scaffold against the 5.14 agency and PACE records, and the draft SOP export | Sonnet | think | 5.20, 5.14, 5.18 |
+| M1B-5 | Remaining hint entries and the 5.16 training catalog seed, with the IS-200/IS-800 edition conflict left visible | Haiku | none | 5.20 (catalog), 5.16 |
+| M1B-6 | **Adversarial check:** attempt to make a hint of each strength block a save, disable a field, or change a permission outcome, and report what was attempted | Sonnet | think hard | M1B exit criteria |
+
+**M2 — Onboarding, Import, and Freshness.**
+
+| # | Package | Model | Think | Reads |
+|---|---|---|---|---|
+| M2-1 | Import engine: identity matching, idempotent re-import, blank-means-unknown, reversal semantics | Opus | ultrathink | 5.11 |
+| M2-2 | Mapping, preview, and reconciliation flow with typed local fields and correction downloads | Sonnet | think | 5.11 |
+| M2-3 | Self-service intake, progressive profile editing, saved drafts, optional invites, assisted update | Sonnet | think | 5.7 |
+| M2-4 | Last-confirmed indicators, review queues, reminders on the existing email patterns | Sonnet | think | 5.11, email patterns |
+| M2-5 | Versioned blank and example CSV files and field guides, once the columns are settled | Haiku | none | 5.11 (import catalog) |
+| M2-G | **Gate:** the commit path, with a reversal after later edits, a partial batch, and a concurrent edit | Opus | ultrathink | 5.11, release checklist |
+
+**M3 — Training, Readiness, and Capability Search.**
+
+| # | Package | Model | Think | Reads |
+|---|---|---|---|---|
+| M3-1 | Capability and configuration model with AND/OR match semantics | Opus | ultrathink | 5.9, 5.10 |
+| M3-2 | Training catalog, records, reviewer workflow, task books, equivalencies, training calendar | Sonnet | think | 5.9, 5.16 |
+| M3-3 | Personal equipment and operating configurations: Home, Vehicles, Deployable, with shared physical-item references | Sonnet | think hard | 5.9 (equipment) |
+| M3-4 | Roster search, AND/OR filters, match explanations, scoped exports, indexes from representative queries | Sonnet | think | 5.10 |
+| M3-5 | Additional saved views and the training, equipment, and capability CSV templates | Haiku | none | 5.10, 5.11 |
+
+**M3A — Team Asset Register and Custody.**
+
+| # | Package | Model | Think | Reads |
+|---|---|---|---|---|
+| M3A-1 | Containment, custody state, and the checkout, transfer, and return transaction | Opus | ultrathink | 5.13 (custody) |
+| M3A-2 | Registration, ownership distinctions, manifests, condition, audit and history views | Sonnet | think | 5.13 (inventory) |
+| M3A-3 | Maintenance tasks, recurring and triggered schedules, due queue, deferrals, return-to-service rules | Sonnet | think hard | 5.13 (maintenance) |
+| M3A-4 | Antenna sweep metadata, structured summaries, private attachments, baselines; guides and printable quick tests | Sonnet | think | 5.13 (sweeps, guides) |
+| M3A-5 | Location, asset, kit-content, initial-assignment, and sweep CSV templates | Haiku | none | 5.13, 5.11 |
+| M3A-G | **Gate:** the handoff transaction, with concurrent checkout, partial return, and a containment cycle | Opus | ultrathink | AST validation focus |
+
+**M3B — Procedures, Radio Callout, and Optional SMS.** The first six packages are the first release; the provider work is separable and optional.
+
+| # | Package | Model | Think | Reads |
+|---|---|---|---|---|
+| M3B-1 | Versioned procedures, owner and deputy handover, adoption workflow, review reminders, open-action dashboard | Sonnet | think | 5.18 |
+| M3B-2 | Agency records, alert stages, approved PACE and rendezvous cards, manual callout and response recording | Sonnet | think | 5.14 |
+| M3B-3 | PACE-aware frequency ordering in team-linked net creation and editing | Sonnet | think | 5.4 (PACE) |
+| M3B-4 | SMS consent model, the check at send time, suppression scope, delivery separated from acknowledgment | Opus | ultrathink | 5.15 (consent) |
+| M3B-5 | Queued individual sends, recipient previews, budget and expiry controls, simulated-provider pilot with synthetic recipients | Sonnet | think hard | 5.15 (workflow) |
+| M3B-6 | Signed status and reply callbacks: signature validation, replays, out-of-order events, recycled numbers | Opus | ultrathink | 5.15 |
+| M3B-7 | Channel and PACE-entry CSV templates, imported plans staying drafts | Haiku | none | 5.11 |
+| M3B-G | **Gate:** the webhook handler and the consent check at the queue/send boundary | Opus | ultrathink | ACT validation focus |
+
+**M4 — Participation, Coordinator Reports, and Coverage.**
+
+| # | Package | Model | Think | Reads |
+|---|---|---|---|---|
+| M4-1 | Attribution rule across the three canonical actual-time sources, reporting periods, and timezone boundaries | Opus | ultrathink | 5.5, 5.19, Events reporting contract |
+| M4-2 | Net and schedule association to a team on **every** creation path, including the background scheduler | Sonnet | think hard | 5.4, Feature Registry creation paths |
+| M4-3 | Reporting periods, drill versus real-world distinction, source drill-downs, ARES and EMA preparation adapters | Sonnet | think | 5.5 |
+| M4-4 | NH timecard adapter with export-only rounding, and the agency attendance column mapping over M1A's raw rows | Sonnet | think | 5.5, 5.19 |
+| M4-5 | Coverage rollups, maps, and exports from the existing per-net `CanHearReport` observations | Sonnet | think | 5.6 |
+| M4-6 | Historical participation and manual-activity CSV template | Haiku | none | 5.11 |
+| M4-G | **Gate:** attribution reconciled against hand-calculated samples with overlaps, transfers, and missing hours | Opus | ultrathink | M4 exit criteria |
+
+**M5 — Incident and Drill Requirements with Staffing Integration.** Requires Events.
+
+| # | Package | Model | Think | Reads |
+|---|---|---|---|---|
+| M5-1 | Reservation conflict model across physical dependency sets, reusing M3A-1's transaction rather than inventing a second | Opus | ultrathink | 5.13 (reservations), 5.12 |
+| M5-2 | Plan context, objectives, operational periods, requirements, reusable task templates | Sonnet | think | 5.12 |
+| M5-3 | Candidate matching and availability confirmation against Events posts, shifts, and offers | Sonnet | think hard | 5.12 (staffing) |
+| M5-4 | Tailored checklists, packing templates, and the revisioned deployment packet with disclosure and expiry | Sonnet | think | 5.17 |
+| M5-5 | Travel, duty, relief, release, and return events extending the 5.19 tag record, never a parallel ledger | Sonnet | think hard | 5.17, 5.19 |
+
+**M6 — Reviewed ICS Package and Exercise Results.** Requires M5 and the Events form builders.
+
+| # | Package | Model | Think | Reads |
+|---|---|---|---|---|
+| M6-1 | ICS-202 and package assembly, reusing the Events 204 and 205 builders | Sonnet | think | 5.12 (forms) |
+| M6-2 | Plan versioning, approval, restricted distribution, issued snapshots, copy and replan | Sonnet | think hard | 5.12 |
+| M6-3 | Remaining form field mappings and the attachment checklist, once the first form's pattern is verified | Haiku | none | 5.12 |
+| M6-4 | Plan distribution and disclosure policy | Opus | think hard | 8, 5.17 |
+| M6-5 | After-action observations and corrective actions that close only on evidence | Sonnet | think | 5.12 (after-action) |
+
+**The review gates are packages, not a reading pass.** Each `-G` package is its own sub-agent invocation with no feature code to write and one question to answer: does the phase's invariant survive an attempt to break it? A gate that only reads the diff will approve code that is wrong in exactly the way the gate exists to catch, because the diff looks like what the spec asked for. A gate runs the exit test, attempts the failure, and reports what it attempted rather than only what passed. Six gates come from the concept document (M1, M1A, M2, M3A, M3B, M4). M1B-6 is the same discipline at Sonnet tier, because what is being attacked there is a rendering and permission-consultation rule rather than a data invariant.
+
+**A package is done when** its exit test passes and is named in the commit; tests exist under `backend/tests/` following the existing naming; the docs that describe the shipped behavior are updated; and, where the package rests on a data-shape assumption, the real-data smoke test in `.github/copilot-instructions.md` has been run against beta's database and production's copy. This module is unusually full of those assumptions — at most one current membership per user per team, at most one open tag per person per board, at most one current parent container per item, exactly one current assignment per asset, a resolvable identity per import row — and every one of them passes hand-built fixtures by construction.
+
+**Three points where this is worth shipping, and little in between.**
+
+1. **M1 plus M1A.** A roster and a tag board: who is where on activation day, with no import, no capability model, no Events, and no radio. The smallest thing the team can actually use in the field.
+2. **M1 plus M2 plus M3.** The membership MVP. The spreadsheet can be retired.
+3. **M4.** The coordinator's monthly report stops being assembled by hand.
+
+M1B, M3A, and M3B attach to any of those and gate none of them. M5 and M6 wait on Events regardless of everything above.
+
+**One cross-tier dependency worth naming now.** The Milestone 1 *Incident Operations Log & Situational Awareness Feed* ships long before any of this and correctly does not wait for it. **It owns the incident record**: a first-class record with an open and closed state that holds identity and status and owns no people. Teams adopts that record rather than defining a second one, and M1A-8 adds only the team participation join and the cross-team visibility setting on top of it. Two things follow for whoever builds the Milestone 1 item first: do not assume an incident has a net, and **do not assume a single team**, because the join is coming and a schema that precludes it is a migration.
+
+M1A-8 is the one Opus package in this phase that is not the presence model, and it is Opus for a specific reason: cross-team visibility is a privacy boundary between two organizations that did not choose each other, reached through a shared incident. Getting it wrong exposes one county's roster to another with nothing in the UI to show it, which is the same failure mode as the M1 permission helper.
+
+---
+
+**Blocked on:** core web app stability, self-hosting, and Docker packaging being in good shape first. That gating is unchanged; the build plan above is what to execute when it lifts, not a signal to start.
 
 ### Offline-Capable Web Client (PWA)
 
