@@ -377,33 +377,6 @@ Two rules fall out of that and both are load-bearing:
 
 ### Net View Usability
 
-**🔧 Let a station change its own Topic of the Week answer from the toolbar** *(KC1JMH, 2026-09-08)*  
-**Model:** Haiku, once the icon is chosen — the permission and persistence paths both already exist.
-
-A station that answers the topic question at check-in has no obvious way to change its answer
-afterward; the answer lives in `check_ins.topic_response` and is reachable only by finding your own
-row and editing it inline, which is exactly the hunt the "I hear" and "Just listening" toolbar
-buttons were added to remove. Add a toolbar action alongside them.
-
-Nothing new is needed underneath: `update_check_in`
-(`backend/app/routers/check_ins.py:464`) already permits a user to edit their own check-in
-(`is_own_check_in`), and the toolbar entry follows the existing action-descriptor pattern in
-`NetViewHeader.tsx` (~`:500-600`) — key, group, priority, visible, Icon, color, label, tooltip,
-onClick.
-
-- [ ] Visible only when `isAuthenticated`, the net is active or in lobby, the viewer has an active
-      check-in, **and** `net.topic_of_week_enabled` — the button must not appear on a net with no
-      topic set, and must not appear for a viewer who is not checked in
-- [ ] Small dialog prefilled with the current answer, showing `net.topic_of_week_prompt` as its
-      label so the operator can see the question they are answering
-- [ ] **Icon choice is the open question.** The topic column header uses a plain tooltip today and
-      the toolbar's neutral icons are already dense. Candidates worth comparing in place:
-      `RateReviewOutlined`, `ChatBubbleOutline` (too close to Chat), `QuestionAnswerOutlined`,
-      `EditNoteOutlined`. Pick against the icon-color table in DESIGN.md, and check it is not
-      confusable with Chat, Announcements, or the poll surfaces at icon-only width
-- [ ] Consider covering the poll answer with the same control, or deliberately not. Both live on
-      the same row and a station that wants to change one usually wants the other
-
 **🔧 Separate "stepped away" from "no answer when called", and flash the row on return** *(KC1JMH, 2026-09-08)*  
 **Model:** Sonnet — a new `StationStatus` member touches the status dropdowns, the row tint logic,
 exports, and statistics, so it is a small-but-wide change rather than a one-file one.
@@ -447,26 +420,6 @@ flash: the app should have exactly one "something just happened in this row" ani
 - [ ] Whichever it is, do not build it on the arrow's broken pattern — see the sneak-in arrow bug
       above, whose root cause is exactly a flash timer whose lifetime was borrowed from another
       component's state
-
-**🔧 Make net logos openable at full size** *(KC1JMH, 2026-09-08)*  
-**Model:** Haiku — one small shared component, three call sites.
-
-Net and schedule logos render at 28-32 px (`NetCard.tsx:141`, `ScheduleCard.tsx:212`,
-`NetViewHeader.tsx:821`). Club logos routinely carry the club name, a repeater frequency, or a
-callsign as part of the artwork, and none of it is legible at that size. Clicking should open the
-uploaded image at its natural size.
-
-- [ ] One shared click-to-enlarge wrapper used by all three sites, not three separate dialogs.
-      A plain MUI `Dialog` with the image at `max-width: 100%` and a close affordance is enough;
-      no lightbox dependency
-- [ ] Keyboard reachable and dismissible on Escape, with the logo carrying alt text naming the net
-      or schedule — it is currently a decorative `Avatar` with no label
-- [ ] Do not swallow the card click. On `NetCard`/`ScheduleCard` the logo sits inside a card whose
-      body already navigates; the enlarge click has to stop propagation or clicking the logo will
-      both open the image and leave the page
-- [ ] Serve the original upload, not the resized avatar, or the enlarged view is just a blurry
-      28 px image — confirm what `NetLogoSection.tsx`'s upload path actually stores before
-      promising full resolution
 
 ### Statistics & Recognition
 
