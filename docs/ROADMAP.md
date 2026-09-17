@@ -603,7 +603,7 @@ In other words, the SQLite→Postgres migration will **break time handling app-w
 
 Full spec and design notes, in four interlinked documents. The hub is the entry point; section numbers are global across all four:
 
-- [`TEAM-MANAGEMENT-NOTES.md`](concepts/TEAM-MANAGEMENT-NOTES.md) — hub. Problem, scope, personas, user stories, data model, permissions, privacy, phase overview, references. Phases M0, M1, M2, M3, M4.
+- [`TEAM-MANAGEMENT-NOTES.md`](concepts/TEAM-MANAGEMENT-NOTES.md) — hub. Problem, scope, personas, user stories, data model, permissions, privacy, guided setup and the policy register, phase overview, references. Phases M0, M1, M1B, M2, M3, M4.
 - [`TEAM-ACTIVATION-CALLOUTS.md`](concepts/TEAM-ACTIVATION-CALLOUTS.md) — activation authority and PACE, the tag board, optional SMS, procedure library. Phases M1A, M3B.
 - [`TEAM-ASSETS-CUSTODY.md`](concepts/TEAM-ASSETS-CUSTODY.md) — asset register, kit manifests, custody, maintenance, SWR sweeps. Phase M3A.
 - [`TEAM-INCIDENT-PLANNER.md`](concepts/TEAM-INCIDENT-PLANNER.md) — plan context, requirements, staffing integration, ICS package. Phases M5, M6.
@@ -614,17 +614,20 @@ The concept has since grown well past a roster. It now also covers station capab
 
 **The tag board (phase M1A) is the cheapest operationally useful piece and should ship right after the roster.** The app currently has no way to record who is physically where unless a net is running, and a net check-in records a station being on the air, not a person being in a place — a non-radio volunteer or an unlicensed helper has no reason to be in a net log at all but still has to be accounted for. A tag board answers "who is where" with no net, no event, no plan, and no radio. It depends on M1 alone. See `TEAM-ACTIVATION-CALLOUTS.md` section 5.19. Its one hard invariant: **a tag never creates a check-in and a check-in never creates a tag**, and nobody is ever automatically tagged out.
 
+**Guided setup for the EC standing the team up (phase M1B).** This module silently defaults roughly two dozen per-team policy decisions the moment a team record is created — whether the en-route tag state exists, who may open a tag board, how long whereabouts detail is retained, what the organizational levels are called, which training rules apply. A default nobody was shown is not a policy. M1B adds a **policy register** listing every one of those settings with its value, its default, and the section that governs it, plus a catalog of **sourced ICS and ARES hints** attached to the decisions they bear on. Three rules make it safe: setup is always skippable and a team that never opens it works on safe defaults; a hint may never block a save, disable a field, or be consulted by a permission check; and each hint states whether its source *requires*, *recommends*, *delegates*, or merely *exemplifies* — never collapsing those four, because rendering a delegated question as a requirement invents a national standard that does not exist. The register itself is M1 schema (a setting added after teams exist is a migration plus a guess); M1B is the stepper, the catalog, and the decision log over it. See `TEAM-MANAGEMENT-NOTES.md` section 5.20.
+
 Also carries the Teams-dependent half of "can hear" station-to-station coverage logging (shipped 2026-08-02, see `CHANGELOG.md`) — named team locations (shelters, EOCs), location-to-location coverage, and Coverage Assessment reporting for team managers. See `TEAM-MANAGEMENT-NOTES.md` section 5.6; the per-net capture it builds on has already shipped and is not blocked by this module.
 
-**Phases and model assignment.** The concept's section 10 is authoritative and carries the exit criteria; this is the index. Phase labels are **M0-M6 (plus M1A, M3A, M3B), phases of this module** — not roadmap tiers. "Teams phase M3" is unambiguous; "Milestone 3" is not, since this whole module sits inside Milestone 2.
+**Phases and model assignment.** The concept's section 10 is authoritative and carries the exit criteria; this is the index. Phase labels are **M0-M6 (plus M1A, M1B, M3A, M3B), phases of this module** — not roadmap tiers. "Teams phase M3" is unambiguous; "Milestone 3" is not, since this whole module sits inside Milestone 2.
 
 One tier for a module this size is wrong in both directions: it overpays for the mechanical parts and underinvests in the six places where a silent bug is expensive. The split follows **Opus writes the schema and the invariants, Sonnet builds against them, Haiku fills in repeated instances of an established pattern.**
 
 | Phase | Delivers | Model |
 |---|---|---|
 | M0 | Discovery: data dictionary, permission matrix, sample import, pilot scenarios | Human conversation with **Opus**; not an implementation task |
-| M1 | Team/unit records, membership lifecycle, scoped grants, audited claims | **Opus** schema + permission helper; **Sonnet** UI/CRUD; **Opus review gate** |
+| M1 | Team/unit records, membership lifecycle, scoped grants, audited claims, the policy register and its defaults | **Opus** schema, permission helper, and register; **Sonnet** UI/CRUD; **Opus review gate** |
 | M1A | Tag board: presence occasions, tag in/out, places, live view, guarded close | **Opus** presence state model and its relation to the canonical hours sources; **Sonnet** board UI, tagging, live updates, exports; **Opus review gate on the presence model**. Depends on M1 alone |
+| M1B | Guided team setup, doctrine hint catalog, policy decisions, SOP-draft export | **Sonnet** throughout — a stepper over an existing settings table, a read-only catalog, and a decision log are established patterns here; **Haiku** for further hint entries once the four-strength shape is verified. Depends on M1 alone |
 | M2 | Intake, assisted maintenance, CSV import catalog, freshness/reminders | **Opus** import/identity engine; **Sonnet** forms and batch UI; **Haiku** template and field-guide files; **Opus review gate on commit path** |
 | M3 | Training, task books, station configurations and capabilities, roster search | **Opus** capability model and match semantics; **Sonnet** catalogs, views, exports; **Haiku** additional saved views |
 | M3A | Asset register, kits, custody, maintenance schedules, SWR sweeps | **Opus** containment and the checkout transaction; **Sonnet** registration, manifests, queues; **Opus review gate on handoff** |
@@ -633,7 +636,7 @@ One tier for a module this size is wrong in both directions: it overpays for the
 | M5 | Plan objectives, requirements, candidate matching, reservations, packets | **Opus** reservation conflict model (reuse M3A's answer); **Sonnet** wizard and Events wiring |
 | M6 | Reviewed ICS-202/204/205/205A package, versioning, after-action actions | **Sonnet** reusing Events builders; **Haiku** additional form mappings |
 
-**M1-M3 are the membership MVP** and independently replace the spreadsheet. **M1A is the shortest path from a roster to something a team can run an activation with**, and needs nothing but M1. M3A and M3B are each independently shippable and depend on neither each other nor M1A. Only M5 and M6 require Events.
+**M1-M3 are the membership MVP** and independently replace the spreadsheet. **M1A is the shortest path from a roster to something a team can run an activation with**, and needs nothing but M1. **M1B is the cheapest useful thing for the person standing the team up**, and is almost entirely content and forms over a register M1 already had to build. M1A, M1B, M3A, and M3B are each independently shippable and depend on none of the others. Only M5 and M6 require Events.
 
 **Sequencing against the two prerequisites above.** *Schema Tooling Decision* should be settled before M1 creates the first Teams tables, and *UTC-Aware Datetime Hardening* should land first — Teams adds dozens of dated columns, and adding them naive means they join the sweep that item exists to end. Neither blocks M0, which is pure discovery and can start any time.
 

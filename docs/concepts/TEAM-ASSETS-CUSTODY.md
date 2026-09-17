@@ -10,7 +10,7 @@ The Team Management concept is four interlinked documents, split once it outgrew
 
 | Document | Owns | Teams phases |
 |---|---|---|
-| [Hub — Team Management](TEAM-MANAGEMENT-NOTES.md) | 1–4, 5.1–5.11, 5.16, 6–9, execution-plan overview, 11, 12 | M0, M1, M2, M3, M4 |
+| [Hub — Team Management](TEAM-MANAGEMENT-NOTES.md) | 1–4, 5.1–5.11, 5.16, 5.20, 6–9, execution-plan overview, 11, 12 | M0, M1, M1B, M2, M3, M4 |
 | [Assets, Kits, and Custody](TEAM-ASSETS-CUSTODY.md) | 5.13 | M3A |
 | [Activation, Tag Board, and Callouts](TEAM-ACTIVATION-CALLOUTS.md) | 5.14, 5.15, 5.18, 5.19 | M1A, M3B |
 | [Incident and Drill Planner](TEAM-INCIDENT-PLANNER.md) | 5.12, 5.17 | M5, M6 |

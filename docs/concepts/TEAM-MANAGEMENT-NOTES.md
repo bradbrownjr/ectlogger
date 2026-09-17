@@ -17,7 +17,7 @@ The Team Management concept is four interlinked documents, split once it outgrew
 
 | Document | Owns | Teams phases |
 |---|---|---|
-| [Hub — Team Management](TEAM-MANAGEMENT-NOTES.md) (this file) | 1–4, 5.1–5.11, 5.16, 6–9, execution-plan overview, 11, 12 | M0, M1, M2, M3, M4 |
+| [Hub — Team Management](TEAM-MANAGEMENT-NOTES.md) (this file) | 1–4, 5.1–5.11, 5.16, 5.20, 6–9, execution-plan overview, 11, 12 | M0, M1, M1B, M2, M3, M4 |
 | [Assets, Kits, and Custody](TEAM-ASSETS-CUSTODY.md) | 5.13 | M3A |
 | [Activation, Tag Board, and Callouts](TEAM-ACTIVATION-CALLOUTS.md) | 5.14, 5.15, 5.18, 5.19 | M1A, M3B |
 | [Incident and Drill Planner](TEAM-INCIDENT-PLANNER.md) | 5.12, 5.17 | M5, M6 |
@@ -182,6 +182,7 @@ Establish a baseline with one Maine team and, if willing, one NH-ARES unit. Prop
 - Personal equipment/configuration records and team asset inventory, kit manifests, checkout/transfer/return, repair, and decommissioning.
 - Versioned procedures/PACE plans, controlled callouts, optional Twilio SMS, task books/training schedules, deployment packets, and personnel accountability.
 - A tag board: lightweight presence accountability for the common case where a team needs to know who is where and does not need a net. See section 5.19.
+- Guided team setup for a new EC: a policy register with visible defaults, and sourced ICS/ARES hints attached to the decisions they bear on. Advisory only. See section 5.20.
 
 ### Out of Scope for now
 
@@ -297,6 +298,10 @@ EC/AEC are organizational appointments; NCS is an operational role. Neither a ti
 | TM-40 | As a member arriving at a site, I want to tag in, and to be tagged in by radio when I cannot do it myself. | Self and assisted tagging produce the same record, distinguished by recorder and channel; a person with no account, no callsign, or no license can be tagged in and out. |
 | TM-41 | As a coordinator closing out an activation, I want nobody silently dropped. | No tag is ever cleared automatically; an overdue tag prompts follow-up without changing state, and closing a board with people still tagged in requires an explicit acknowledgment that names them. |
 | TM-42 | As a reporting coordinator, I want tag time counted once. | Tag time, net check-in duration, and Events shift hours for the same contribution reconcile to one duration with a visible source, never a sum. |
+| TM-43 | As a newly appointed EC, I want help standing my team up rather than a blank page. | Setup walks the decisions this module actually defaults, is skippable and resumable at every step, and a team whose EC never opens it still works on safe defaults. |
+| TM-44 | As an EC, I want to know what ICS and ARES recommend at the moment I am deciding it. | A hint names its source, edition, and review date, states whether the source requires, recommends, delegates, or merely exemplifies, and never blocks a save, disables a field, or becomes a permission check. |
+| TM-45 | As an EC, I want to see and revisit every policy choice my team has made. | One register lists each setting with its current value, its default, who may change it, and the governing section; changing one later is the same action as choosing it during setup, and each decision retains who made it and when. |
+| TM-46 | As the lead of a team that is not an ARES group, I want setup that does not assume I am one. | A doctrine profile of agency-directed, SKYWARN, club, or none is a first-class choice that suppresses hints for programs the team has not adopted; declining a specific recommendation is recorded as a decision, not as incomplete setup. |
 
 ## 5. Functional Requirements
 
@@ -440,6 +445,8 @@ A user's own "stations I can hear from home" map is **not** part of this section
 - Members directly maintain contact preferences, interests, willingness, availability, and self-reported capabilities. Approvals, verified qualifications, appointments, and access authorizations remain delegated staff actions. Show changes awaiting review alongside the last approved value where relevant.
 - After review, show the applicant a named next step: coordinator contact, orientation, mentor, training, or an introductory net. Capture optional mentoring needs and non-radio interests such as logging, technical support, and recruitment.
 - Keep onboarding configuration modest: required/optional sections and a few typed local fields. A general-purpose form builder is not necessary for the first release.
+
+**This section is the volunteer's onboarding, not the EC's.** Standing up the team itself — the policy register, the doctrine profile, appointments, and the ICS/ARES hints attached to those choices — is section 5.20. The two are deliberately separate: this one is filled in by many people over years and optimized for a phone, while that one is done once by one person and optimized for decisions they may not know are theirs to make.
 
 ### 5.8 Membership, Readiness, and Staff Designations
 
@@ -626,7 +633,7 @@ Support general team participants, unlicensed prospects/helpers, and program-qua
 
 Expand the training catalog to explicitly include IS-200 alongside IS-100/700/800, appropriate ARRL courses, local orientation, and role-specific practical tasks. The [ARES Individual Task Book, July 2024](https://www.arrl.org/files/file/ARES%20Taskbook%20July%202024%20%28improved%29.pdf) supports task-level dates, evaluator sign-offs, and local additions. Store task-book edition, required/encouraged/optional designation, prerequisites, task evidence, evaluator identity/authority, sign-off date, approved equivalence, and local adoption record. Members submit evidence; authorized evaluators approve it.
 
-The July 2024 task book marks IS-200/800 encouraged at Basic, while the [July 2025 ARES Plan](https://www.arrl.org/files/file/ARES%20Plan%20July%202025.pdf) includes them in Basic training. Reconcile the adopted local rule with section leadership; preserve evidence and version history rather than silently reclassifying members after an import. The same plan distinguishes credentialing from incident-specific entry authorization. Course attendance, task proficiency, program qualification, and site access therefore remain separate checks.
+The July 2024 task book marks IS-200/800 encouraged at Basic, while the [July 2025 ARES Plan](https://www.arrl.org/files/file/ARES%20Plan%20July%202025.pdf) includes them in Basic training. Reconcile the adopted local rule with section leadership; preserve evidence and version history rather than silently reclassifying members after an import. Section 5.20 seeds this catalog from the July 2025 levels and surfaces that discrepancy as a standing conflict between two current editions, which is what it is; **seeding the catalog is not adopting a rule**, and the adopted rule stays a recorded local decision. The same plan distinguishes credentialing from incident-specific entry authorization. Course attendance, task proficiency, program qualification, and site access therefore remain separate checks.
 
 **Proposed local training cycle, inspired by the neighboring examples rather than copying their calendar:**
 
@@ -659,6 +666,89 @@ Reuse net/exercise scheduling, attendance, existing message records, station tes
 
 **Lives in [Activation, Tag Board, and Callouts](TEAM-ACTIVATION-CALLOUTS.md).** Knowing who is where when there is no net: a team-owned live presence record with tag in, tag out, place, and state, usable with no net, no event, no plan, and no radio. **A tag is never a check-in and a check-in is never a tag.** Tag time is a third canonical actual-time source that section 5.5 reporting must reconcile rather than sum. Phase M1A, which depends on M1 alone.
 
+### 5.20 Team Setup, Policy Register, and Doctrine Hints
+
+**The gap this closes.** An EC who has just been appointed opens the Teams area and finds the same blank page the spreadsheet gave them, with one difference that is worse: this document defines roughly two dozen per-team policy decisions, every one of them already silently defaulted. Whether the en-route state exists, who may open a tag board, how long whereabouts detail is retained, what the organizational levels are called, which training rules apply, what a membership stage means locally — all of it is decided the moment a team record is created, and none of it is presented to the person whose decision it actually is. A default nobody was shown is not a policy; it is an accident that will be discovered during an activation.
+
+Separately, a new EC is not short of doctrine. ARRL publishes an EC appointment description with twelve numbered responsibilities, the ARES Plan specifies a training ladder, and NIMS supplies the organizational principles. What they lack is any connection between that doctrine and the software they are typing into. The gap is not information; it is that the information lives in six PDFs and the decisions live in a settings screen.
+
+**What it is.** A guided setup experience for the person standing up a team, backed by two durable records: a **policy register** that enumerates every per-team setting in one place with its default and its governing section, and a **doctrine hint catalog** that attaches sourced ICS/ARES guidance to the specific settings it bears on. The EC's answers, including a deliberate decision to differ from a recommendation, are recorded as dated decisions that section 5.18 can export as the beginning of a local SOP.
+
+#### Three things this must never become
+
+1. **A blocking wizard.** Setup is skippable at any point, resumable, and re-enterable a year later. Every setting ships with a safe default and a team that never opens setup at all must work correctly. This is the same reasoning that made the tag board's open authority a default rather than a grant: **configuration that must happen in advance is configuration that will not have happened at 0200 on the night it is needed.**
+2. **A source of doctrine.** The app quotes; it does not rule. Every hint names its source and edition, and a hint whose source explicitly declines to decide must say so rather than inventing an answer. The failure mode here is specific and already documented in [section 5.19](TEAM-ACTIVATION-CALLOUTS.md): the ARES Plan delegates a whole class of question to the local EC's SOP, so an app that hardcodes an answer manufactures a national standard that does not exist, then teaches it to every team that installs it.
+3. **A compliance claim.** Finishing setup does not make a team ARES-compliant, does not constitute the SOP the ARES Plan asks every EC to write, and credentials nobody. The product must say this where the EC can see it, not only here.
+
+#### The policy register
+
+One table, listing every per-team setting this document defines, each with its default, the role that may change it, and the section that governs it. It is a real record rather than a documentation exercise for three reasons: the setup flow iterates it, the decision log references it, and an SOP export renders it.
+
+The register's value is that these settings currently exist only as sentences scattered across sections 5.2, 5.6, 5.8, 5.14, 5.16, 5.19, and 8. Nobody, including an implementer, can presently answer "what are this team's policy choices?" without rereading the specification. Representative entries:
+
+| Setting | Default | Governed by |
+|---|---|---|
+| Doctrine profile (ARES, agency/EMA-directed, SKYWARN, club/public service, none) | None, until chosen | This section |
+| Organizational level names and depth | Section, district/county, local group | 5.2 |
+| Team discoverability and roster visibility | Private; staff-only roster | 5.1, 8 |
+| Who may open a tag board | Any active member, one open board per team | 5.19 |
+| En-route tag state offered | Off | 5.19 |
+| Whereabouts retention versus participation retention | Short for whereabouts, longer for totals | 5.19, 8 |
+| Named locations offered by default on a board | Team locations marked as activation sites | 5.6, 5.19 |
+| Local qualification and trainee supervision rules | Unset; no local rule asserted | 5.8, 5.16 |
+| Adopted training baseline and task-book edition | Unset; catalog seeded but not adopted | 5.16 |
+| Confirmation-age threshold that marks a record stale | Unset; staleness shown but unjudged | 5.11 |
+| Reporting cadence and recipient | Unset | 5.5 |
+| Alert-stage vocabulary | Unset; no stages defined | 5.14 |
+
+**A new per-team setting is added to the register in the same change that introduces it.** Without that rule the register rots within two phases, the setup flow silently stops covering new policy, and the module is back to undisclosed defaults with extra steps.
+
+#### How a hint is shaped
+
+A hint is attached to a register entry and carries the recommendation, its source, the source's edition and the date it was reviewed, and — the part that does the real work — **what kind of statement the source is making**. Four strengths, never collapsed into one another:
+
+| Strength | Meaning | Worked example |
+|---|---|---|
+| **Requirement** | The cited authority mandates it for teams under that authority | ARES participation requires a valid FCC amateur license ([ARES Plan](https://www.arrl.org/files/file/ARES%20Plan%20July%202025.pdf), July 2025) |
+| **Recommendation** | The authority advises it and says so as advice | NIMS gives an optimal span of control of one supervisor to five subordinates and calls the 1:5 ratio a guideline, to be varied by judgment |
+| **Delegated** | The authority explicitly leaves the decision local | Activation and operating procedure specifics are left to the EC's own SOP and Quick-Start document |
+| **Local example** | A neighboring program's practice, attributed, normative for nobody | One state ARES program suggests 3 to 7 volunteers per response team under an AEC |
+
+**A delegated hint must never render like a requirement.** It is the strength that is easiest to flatten and the one whose flattening does the most damage, because it converts "your section has not decided this" into "the software says so".
+
+Three further rules:
+
+- **Hints are advisory and never enforcing.** No hint may block a save, disable a field, alter a default, or become a permission check. An EC whose own training is incomplete is a matter for their section, not an access-control decision in this app, and a requirement-strength hint about a person must never become a gate on that person.
+- **Hints go stale visibly.** Each carries its source edition and review date, ARRL reviews the ARES Plan annually, and this document already records a live discrepancy between the July 2024 task book and the July 2025 Plan over IS-200 and IS-800 (see section 5.16). A hint quoting a superseded edition during an activation is misinformation, so the catalog surfaces its own age and known conflicts rather than presenting a single confident answer.
+- **The catalog is global and versioned, not team data.** A team records decisions against hints; it does not edit hint text. Otherwise one team's local note becomes a quotation misattributed to ARRL.
+
+#### Profile scoping
+
+Section 5.2 already establishes that EMA-directed teams can omit ARES-specific levels and titles. The doctrine profile makes that a first-class choice: an agency-directed team, a SKYWARN group, or a club running public-service events is not nagged toward an ARES ladder it has not adopted, and **none** is a supported, unapologetic answer that suppresses the hint surface entirely. A team may also adopt ARES structure while declining particular recommendations; that is a decision record, not an incomplete setup.
+
+#### What the ARES and ICS sources actually recommend
+
+Researched rather than recalled, September 2026. These seed the initial catalog:
+
+- **Appointments are made elsewhere, so the app records them and never confers them.** All ARRL field appointments are made by the Section Manager, an EC usually on the recommendation of the SEC or DEC. Setup therefore asks who holds the appointment and who made it, with an effective date, rather than offering to make somebody an EC. This is section 4's existing rule that a title grants no application permission, now with a citation and a consequence for the intake screen.
+- **Name a deputy before anything else.** The strongest single piece of practical guidance found is that a new EC's first task is to locate or recruit their own replacement, for coverage during illness, vacation, and family emergency. It costs one field, it is the record section 5.18's leadership handover already requires, and it is the setup step most likely to be skipped if buried. It goes first.
+- **Span of control shapes units; geography does not.** NIMS is explicit that the modular organization exists to keep span of control manageable, and equally explicit that 1:5 is a guideline. So when a unit's membership exceeds the guideline the app may suggest splitting it, as a suggestion, once — never a validation error, and never a number the app defends.
+- **The training ladder is concrete enough to seed.** The July 2025 ARES Plan's Basic, Intermediate, and Advanced levels name their courses exactly: FEMA IS-100, IS-200, IS-700, IS-800 with the ARRL Basic EmComm course and a level 1 task book at Basic; the Intermediate course and level 2 task book above that; the Advanced EmComm course, the IS-230/240/241/242/244 professional development series, IS-288, and a level 3 task book at Advanced, which is also the level required to hold EC, AEC, DEC, or SEC. Seeding this catalog saves an EC an afternoon of typing. **Seeding is not adopting** — the adopted local rule remains a recorded decision, because section 5.16 documents a real conflict between editions and an import must not silently reclassify members.
+- **Training is verified up the chain, not self-asserted.** The Plan requires a participant's EC, DEC, SEC, or designee to verify completion before advancement, and an EC's own training to be verified by the SEC. This matches section 5.9's existing rule that members cannot verify their own records, and gives the verifier field a doctrinal reason rather than a product preference.
+- **The Quick-Start plan is a template waiting to be filled.** The Plan asks each EC to formulate a basic Quick-Start plan per scenario covering each served partner agency, expected operating frequencies, how each will be used, required liaisons, and how stations are prioritized and assigned. Those five items map almost field for field onto the section 5.14 served-agency and PACE records, so setup can scaffold a Quick-Start rather than presenting a blank document.
+- **Monthly reporting has a named recipient.** The EC appointment description makes monthly reports to the SEC an explicit responsibility. Section 5.5 and phase M4 already produce the numbers; setup records the cadence and the recipient so a reminder has somewhere to go.
+- **An ID card is not a credential.** The Plan, adapting FEMA's NIMS guidance, separates qualification, certification, credentialing, and personnel presentation, and states plainly that an ARES ID identifies a member but does not by itself grant entry to a disaster area — only an incident-specific credential issued by the authority having jurisdiction does that. Section 5.16 already carries this distinction; setup is the moment an EC is deciding what membership means, which is exactly when the distinction is most useful and most often lost.
+
+#### A terminology collision worth naming in the product
+
+NIMS lists the principles of incident accountability as check-in/check-out, incident action planning, unity of command, personal responsibility, span of control, and resource tracking. **The accountability action doctrine calls "check-in" is what section 5.19 calls a tag, not what this application calls a `CheckIn`.** The app's check-in is a station reporting onto a net; NIMS's is a person reporting to an incident. A hint that quoted NIMS accountability next to a button labeled "check in" would actively teach the wrong mapping to the one audience that most needs it right.
+
+This is not a naming regret. It is why section 5.19 chose "tag" over any word in the check-in family, and the hint catalog states the mapping explicitly rather than hoping nobody notices.
+
+#### Why this ships with the roster rather than later
+
+The register must exist when teams do. Every setting it names is already being defaulted today by the code that creates a team, and a setting introduced after teams exist is a migration plus a population guess. So the register and its defaults belong to M1's schema, inside M1's existing review gate, while the guided experience, the hint catalog, and the decision log are phase M1B and can follow at any time — including after M1A, whose who-may-open-a-board setting is one of the first register entries a real EC will want to reconsider.
+
 ## 6. Data Model Draft
 
 ### 6.1 Ownership and Proposed Records
@@ -668,8 +758,11 @@ Names are conceptual until implementation discovery; avoid fixing migration numb
 | Record | Responsibility and constraints |
 |---|---|
 | `Team`, `TeamUnit` | Team privacy boundary and scoped organizational hierarchy; prevent cycles and cross-team parent links. |
+| Team policy setting (the section 5.20 register) | One row per per-team policy decision, carrying current value, shipped default, the role permitted to change it, and the governing section. Created with the team so no setting is introduced later against an existing population. **Every new per-team setting is registered in the change that introduces it.** The doctrine profile is one of these, and `none` is a valid value, not an unfinished one. |
+| Doctrine hint catalog | Global, versioned, read-only to teams. Each hint names its source, edition, review date, the register entry it bears on, the profiles it applies to, and **which of requirement, recommendation, delegated, or local example the source is making** — these four never collapse. A hint may not block a save, disable a field, alter a default, or be consulted by a permission check. Teams record decisions against hints; they never edit hint text, or a local note becomes a quotation misattributed to ARRL. |
+| Team policy decision | Dated record of a register entry's chosen value, the hint it responded to if any, the deciding member, and optional rationale. A decision to differ from a recommendation is a first-class outcome. Section 5.18 renders these as the start of a local SOP; nothing here asserts that the team is compliant with the cited source. |
 | `TeamMembership` | Stable roster identity with nullable `user_id`/optional contact link, lifecycle dates, and stage. May exist before a platform account or callsign; a linked user has at most one current membership per team. |
-| Membership unit assignments, appointments, and permission grants | Separate dated unit affiliations, organizational titles, and authorized actions. Changes cannot silently elevate access. |
+| Membership unit assignments, appointments, and permission grants | Separate dated unit affiliations, organizational titles, and authorized actions. Changes cannot silently elevate access. An appointment record captures who holds it, **who made it**, and its effective date, because ARRL field appointments are made by the Section Manager rather than inside this application: the app records an appointment and never confers one. |
 | `TeamJoinRequest` | Application/review lifecycle, independently of member permissions and readiness. |
 | `TeamMemberProfile` | Team-held identity/contact data, disclosure preferences, deployment choice, participation settings, and confirmation metadata. Auth identity remains on `User`. |
 | `TeamTrainingRecord` and qualification definitions | Reported/verified course evidence and team task requirements; retain provenance and review history. |
@@ -759,9 +852,12 @@ Proposed defaults; finalize the deployment support-access policy before storing 
 | Team assets, contents, and custody | View/acknowledge own custody; report issues | Separate asset-management grant | No by default | Read authorized readiness; request allocation | Manage/delegate within team and owner restrictions |
 | Callouts and responses | Own consent/preferences and response | Explicit scoped callout grant | Training reminders only if granted | Request callout; send only if granted | Delegate sender scope; record external deployment authority separately |
 | Tag board and member presence | Tag self in/out; see own tags and the board they are on. **May open a board by default** (per-team setting; one open board per team), which records presence and authorizes nothing | Open/close boards and tag anyone, within the unit scope of the existing appointment — **no separate grant**; adopt a member-opened board by ICS-style transfer of command | No | Read presence for the assigned plan scope | Team scope, including the who-may-open setting |
+| Team policy register and doctrine hints | Read the hints and the team's current policy values that affect them; change none | Change settings scoped to the delegated unit; record decisions with rationale | No | Read values affecting an assigned plan | Team scope, including the doctrine profile and every team-wide setting |
 | Procedures and training plans | View approved/disclosed versions | Draft/review as delegated | Own training scope | Approved operational subset | Assign owners/approvers; adoption still requires appropriate agency authority |
 | Bulk export | Own data / permitted directory only | Separate scoped export grant | Training export grant only | Approved operational subset | Scoped and audited |
 | Grant permissions / change privacy | No | Only if separately delegated | No | No | Yes, with audit |
+
+A doctrine hint is never an input to any of these checks. A hint may state that a program requires something of a person, and the app may record whether that person meets it, but neither fact may gate an action in this table: enforcing ARRL's training ladder as an access-control rule would apply another organization's policy to teams that never adopted it, and would lock out the EC of a team midway through the one year the ARES Plan itself allows for a new appointee to finish qualifying.
 
 A platform administrator's existing access to nets and contacts is not a Teams permission specification. New helpers must check team, unit, action, and field sensitivity explicitly; decide and document any exceptional support access and audit it. A managed server's operator remains technically able to access its database/backups, so application privacy must not imply protection from the host operator.
 
@@ -802,6 +898,7 @@ This section is product/engineering guidance, not legal advice.
 - Audit imports, merges/claims, status transitions, privilege changes, verification, plan approval, and bulk exports from the first roster release. Avoid copying sensitive payloads into ordinary application logs.
 - Audit asset ownership changes, containment/manifests, custody transfers/corrections, service, retirement, and reservations from the asset release. Restrict detailed asset exports and lookup tags; routine net reports should not expose a member's equipment inventory or home storage location.
 - Audit callout authorization/audience/revisions, consent and suppression, delivery/response transitions, procedure adoption, evaluator sign-offs, and personnel release. Minimize message content in audit/diagnostic logs. Disclose external SMS processing and printed/offline packet limitations before release.
+- Audit every policy-register change with its previous value, the deciding member, and the date, from the first roster release. These are the team's governance record and section 5.18 exports them as a local SOP; a setting that changed with no attribution cannot be defended after an incident. Keep the doctrine hint catalog outside team-writable storage so a quotation cannot be edited into a claim its source never made.
 - Audit tag board opening and closing, every assisted tag with its recorder and channel, and any acknowledged close that left people tagged in. Retain the participation total longer than the whereabouts detail: the hours are what reporting needs, and the positions are the sensitive half with no downstream consumer.
 
 ### User Rights and Lifecycle
@@ -830,7 +927,7 @@ This section is product/engineering guidance, not legal advice.
 
 This replaces the earlier five-milestone outline. Security, auditability, import safety, and data lifecycle are part of the first usable roster, not deferred to a final hardening milestone. Estimates should follow discovery and review of the schema-tooling roadmap; no dates or migration numbers are committed here.
 
-> **Naming, to avoid a collision that will otherwise cause real confusion.** The phases below are **M0 through M6, phases of this module**. They are not the repository's roadmap tiers, where "Milestone 2" is the tier that contains this entire module. When referring to one of these outside this document, write "Teams phase M3", never "Milestone 3". The delivery-phase column in section 5.11 uses the same M-labels and means the same thing.
+> **Naming, to avoid a collision that will otherwise cause real confusion.** The phases below are **M0 through M6 plus M1A, M1B, M3A, and M3B, phases of this module**. They are not the repository's roadmap tiers, where "Milestone 2" is the tier that contains this entire module. When referring to one of these outside this document, write "Teams phase M3", never "Milestone 3". The delivery-phase column in section 5.11 uses the same M-labels and means the same thing.
 
 ### Phase Overview, Dependencies, and Model Assignment
 
@@ -843,8 +940,9 @@ Concretely, the expensive judgment in this module is concentrated in a small num
 | Phase | Delivers | Depends on | Model |
 |---|---|---|---|
 | M0 | Discovery: data dictionary, permission matrix, sample import, pilot scenarios, form/report checklist | Nothing. Can start immediately and in parallel with roadmap prerequisites | Human conversation with **Opus**. Not an implementation task, and not delegable to a cheaper model — its output is the spec every later phase is measured against |
-| M1 | Team/unit records, membership lifecycle, scoped grants, manager-created records, audited claims | Schema Tooling Decision; UTC hardening | **Opus** for the schema, the team/unit privacy boundary, and the permission helper. **Sonnet** for navigation, roster, detail views, and CRUD against that helper. **Opus review gate before merge** |
+| M1 | Team/unit records, membership lifecycle, scoped grants, manager-created records, audited claims, **and the section 5.20 policy register with its defaults** | Schema Tooling Decision; UTC hardening | **Opus** for the schema, the team/unit privacy boundary, the permission helper, and the register (every setting it names is already being defaulted by the code that creates a team, so it is schema, not configuration UI). **Sonnet** for navigation, roster, detail views, and CRUD against that helper. **Opus review gate before merge** |
 | M1A | Tag board: presence occasions, tag in/out, places, live view, guarded close, participation export | M1 only. Not M2, M3, M3A, M3B, Events, or the planner | **Opus** for the presence state model and its relationship to the canonical actual-time sources — the tag/check-in/shift triple-count is a reporting landmine that costs nothing now and is expensive to unpick after M4. **Sonnet** for the board UI, tagging actions, live updates, roster picker, and exports |
+| M1B | Guided team setup, the doctrine hint catalog, policy decisions with rationale, and the SOP-draft export | M1 for the register. Not M1A, M2, or anything after | **Sonnet** throughout: a stepper over an existing settings table, a read-only catalog, and a decision log are patterns this codebase has. **Haiku** for additional hint entries once the first few are written and their four-strength shape is verified — this is the module's clearest example of repeated instances of a settled pattern. **Opus** only if the SOP export grows disclosure rules, which is a privacy decision rather than a form |
 | M2 | Intake, progressive profile, assisted maintenance, CSV import catalog, freshness/reminders | M1 | **Opus** for the import engine: identity matching, idempotent re-import, blank-means-unknown, reversal semantics. **Sonnet** for intake forms, profile editing, reminder wiring, batch history UI. **Haiku** for blank/example CSV files and field guides once columns are settled. **Opus review gate on the commit path** |
 | M3 | Training catalog and review, task books, station configurations and capabilities, station tests, roster search | M1, M2 | **Opus** for the capability/configuration data model and AND/OR match semantics — this is the piece most likely to be built as unrelated checkboxes and then be wrong forever. **Sonnet** for catalog CRUD, training calendar, saved views, filters, exports. **Haiku** for additional saved-view definitions once the filter engine works |
 | M3A | Asset register, kit manifests, custody, maintenance schedules, SWR sweeps, operating guides | M1, M3 equipment records; named locations pulled forward from M4 | **Opus** for containment, custody state, and the checkout/transfer transaction (concurrent checkout of one kit is a correctness problem, not a UI one). **Sonnet** for registration, manifests, maintenance tasks, sweep metadata, queues, guides. **Opus review gate on the handoff transaction** |
@@ -865,7 +963,7 @@ Concretely, the expensive judgment in this module is concentrated in a small num
 **Standing rules for any model working in this module**, cheap or otherwise. These exist because they are the assumptions a model reading only its own phase will otherwise make:
 
 - **Never invent a fact to fill a blank.** Unknown, declined, stale, unverified, failed, and explicitly-incapable are distinct states throughout this document, and collapsing any of them into a default is the single most common way to make this module dangerous.
-- **Never let one workflow grant another's authority.** Import does not grant membership. Membership does not grant NCS. A title does not grant application permission. A callout permission does not authorize deployment. Delivery does not mean acknowledgment. Acknowledgment does not mean availability, and none of them means presence — a tag is entered, never inferred.
+- **Never let one workflow grant another's authority.** Import does not grant membership. Membership does not grant NCS. A title does not grant application permission. A callout permission does not authorize deployment. Delivery does not mean acknowledgment. Acknowledgment does not mean availability, and none of them means presence — a tag is entered, never inferred. A doctrine hint grants and gates nothing at all: it is a quotation, and the moment it is consulted by a permission check the app has started enforcing another organization's policy on teams that never adopted it.
 - **Reuse before adding.** Events owns shifts and hours. `Frequency` rows are shared. `CanHearReport` owns RF observation. The traffic system owns messages. The section 5.19 tag record owns presence, and the section 5.17 planner extends it rather than starting a second ledger. A second table for any of these is a defect, not a feature.
 - **Stop at the phase boundary.** If a phase's spec requires a record a later phase owns, raise it rather than creating a thin version that will have to be migrated.
 
@@ -877,6 +975,7 @@ Every story in section 4.1 is accepted in exactly one phase (a few are split whe
 |---|---|
 | M1 | TM-03, TM-05, and the roster/identity portions of TM-04, TM-06, TM-11 |
 | M1A | TM-39, TM-40, TM-41; TM-42 is designed here and verified in M4 |
+| M1B | TM-43, TM-44, TM-45, TM-46 |
 | M2 | TM-01, TM-02, TM-09, TM-10; TM-36 begins here and completes incrementally per template |
 | M3 | TM-04, TM-06, TM-07, TM-08, TM-16, TM-25, TM-29, TM-30 |
 | M3A | TM-18, TM-19, TM-20 (present custody), TM-32, TM-37, TM-38 |
@@ -885,7 +984,7 @@ Every story in section 4.1 is accepted in exactly one phase (a few are split whe
 | M5 | TM-12, TM-13, TM-17, TM-21, TM-26, TM-27, TM-31, and the reservation-dependent portion of TM-20 |
 | M6 | TM-14, TM-34, and the remaining continuity cases of TM-28 |
 
-**M1 through M3 are the membership MVP.** They are independently useful, they replace the spreadsheet, and nothing after them is required for that outcome. **M1A is the cheapest operationally useful thing in the module** — it needs only M1, and it turns a roster into something a team can run an activation with. M3A and M3B are each independently shippable and depend on neither one another nor M1A. M5 and M6 are the only phases that require the Events module.
+**M1 through M3 are the membership MVP.** They are independently useful, they replace the spreadsheet, and nothing after them is required for that outcome. **M1A is the cheapest operationally useful thing in the module** — it needs only M1, and it turns a roster into something a team can run an activation with. **M1B is the cheapest useful thing for the person standing the team up**, and it is almost entirely content and forms over a register that M1 already had to build. M1A, M1B, M3A, and M3B are each independently shippable and depend on none of the others. M5 and M6 are the only phases that require the Events module.
 
 ### M0 — Validate Workflow and Data Contracts
 
@@ -916,6 +1015,21 @@ Every story in section 4.1 is accepted in exactly one phase (a few are split whe
 **Model:** **Opus** for the presence state model and its relationship to the canonical actual-time sources. **Sonnet** for the board UI, tagging actions, live updates, and exports. Full phase detail, exit criteria, and validation cases are in [Activation, Tag Board, and Callouts](TEAM-ACTIVATION-CALLOUTS.md).
 
 Depends on M1 alone, and delivers the shortest path from "we have a roster" to "we can run an activation with it": who is where, with no net, no event, no plan, and no radio. Accepts TM-39 through TM-41; TM-42 is verified when M4 ships.
+
+### M1B — Guided Setup, Policy Register, and Doctrine Hints
+
+**Model:** **Sonnet** for the setup stepper, the catalog reader, the decision log, and the SOP-draft export. **Haiku** for additional hint entries once the first few exist and their shape is verified. The register schema itself is not here — it belongs to M1, because a per-team setting introduced after teams exist is a migration plus a guess at what every existing team meant.
+
+**Depends on M1 only.** Not on M1A, M2, or anything later. It can ship before or after the tag board; if it ships after, the who-may-open-a-board setting is already in the register waiting to be surfaced, which is the likeliest first thing a real EC will want to reconsider.
+
+- Setup covers the section 5.20 register in a skippable, resumable stepper, and the deputy or successor record comes first. Every step is re-enterable later, and an EC who never opens setup leaves a working team on safe defaults.
+- Seed the doctrine hint catalog from the sources in section 5.20, each carrying source, edition, review date, applicable profiles, and one of the four strengths. Seed the section 5.16 training catalog from the July 2025 ARES Plan levels, and record the known IS-200/IS-800 edition conflict as a visible conflict rather than resolving it silently.
+- Record each decision with its value, the responding hint where there is one, the deciding member, the date, and optional rationale. A decision to differ is a first-class outcome and must not read as incomplete setup.
+- Scaffold the Quick-Start plan against the section 5.14 served-agency and PACE records: served agency, expected frequencies, how each is used, required liaisons, and station priority. Scaffolding is not adoption; the local adoption workflow in section 5.18 still governs.
+- Export the decision set as a draft local SOP. It is a starting document for the EC to edit and adopt, and the product must not describe it as a completed SOP or as evidence of compliance with any cited source.
+- Offer the span-of-control suggestion when a unit exceeds the NIMS guideline, once, as a suggestion. Never a validation error.
+
+**Exit:** TM-43 through TM-46 pass. A team created without ever opening setup behaves identically to one that completed it, with the same defaults, and the register shows every value either way. A hint whose source delegates the decision renders visibly differently from one whose source requires it, and no hint of any strength can be made to block a save, disable a field, or change a permission outcome — verified by attempting each. A team on the `none` profile sees no ARES hints anywhere in the product. Changing a setting a year later produces the same decision record as choosing it during setup, and the previous value is retained with its attribution. The SOP export names its sources and their editions, and claims compliance with none of them.
 
 ### M2 — Onboarding, Spreadsheet Import, and Freshness Pilot
 
@@ -1027,6 +1141,9 @@ These remain hub questions because their answers change records, permissions, or
 - Which training cadence, task-book edition/local overrides, evaluators, and practical objectives should the first annual plan adopt? Neighboring schedules are examples until locally confirmed.
 - Which digital paths and receipt/delivery criteria count as evidence, and which external training resources may be linked versus reproduced?
 - When a report has to pick one duration from a tag, a check-in, and a shift covering the same hours, which source wins by default, and does the coordinator need to see the discarded ones?
+- Which doctrine profile does the Cumberland team adopt, and does the section want to supply its own defaults for teams beneath it? A section-level default layer is plausible and is deliberately not designed yet; it would turn the register into a two-level inheritance problem, which is worth doing only if a real section asks.
+- How does the hint catalog get updated — shipped with releases, or fetched? Shipping it means a self-hosted instance can quote a superseded edition indefinitely; fetching it means an activation-time dependency on the network, which contradicts everything section 5.14 says about the app not being a prerequisite. The likely answer is shipped plus a visible age, but confirm it before the catalog has many entries.
+- Is the SOP draft export actually useful to an EC, or does it produce a document nobody adopts? Test with one real EC before investing in its formatting; the decision log has standalone value regardless of whether the export does.
 
 ## 12. Reference Links
 
@@ -1057,7 +1174,10 @@ Reviewed 2026-09-15. These are reference examples and proposed local adaptations
 ### ARES, Preparedness, and Incident Guidance
 
 - [ARRL ARES overview and membership guidance](https://www.arrl.org/ares) — formal program eligibility and links to current program resources.
-- [ARRL ARES Plan, July 2025](https://www.arrl.org/files/file/ARES%20Plan%20July%202025.pdf) — quick-start procedures, qualification, agency relationships, and credentialing.
+- [ARRL ARES Plan, July 2025](https://www.arrl.org/files/file/ARES%20Plan%20July%202025.pdf) — quick-start procedures, qualification, agency relationships, and credentialing. Also the Basic/Intermediate/Advanced training ladder and its course lists, seeded by section 5.20. ARRL reviews this document annually, which is why every hint carries its edition.
+- [ARRL Official Field Organization Appointment Description, Emergency Coordinator, rev. 4.24](http://www.arrl.org/files/file/2024%20Director%20Workbook/9_2G%20Emergency%20Coordinator.pdf) — EC eligibility, the twelve numbered responsibilities, appointment by the Section Manager, and the monthly report to the SEC. Source for several section 5.20 hints.
+- [FEMA/NIMS ICS review document, March 2018](https://training.fema.gov/emiweb/is/icsresource/assets/ics%20review%20document.pdf) — span of control stated as a 1:5 guideline rather than a rule, modular organization, establishment and transfer of command, and the accountability principles including check-in/check-out. Note the terminology collision recorded in section 5.20: NIMS check-in is a section 5.19 tag, not this application's `CheckIn`.
+- [ARES Oklahoma, "So You're the ARES County Emergency Coordinator — Now What?"](https://aresok.org/training/nowwhat/) — a local program's startup checklist, cited in section 5.20 as a local example and normative for nobody. Source of the recruit-your-replacement-first guidance.
 - [ARES Individual Task Book, version 3.0, July 2024](https://www.arrl.org/files/file/ARES%20Taskbook%20July%202024%20%28improved%29.pdf) — task evidence, evaluator sign-offs, and local additions; reconcile differences with the later plan.
 - [ARRL Field Resources Manual, 2019 file](https://www.arrl.org/files/file/Public%20Service/ARES/ARESFieldResourcesManual-2019.pdf) — field reference and preparation templates; older guidance requires local review.
 - [Eastern Massachusetts ARES go-kit checklist](https://ema.arrl.org/wp-content/uploads/2018/03/Go-Kit-Checklist.pdf) — equipment, operating supplies, and personal/extended deployment checklist example.

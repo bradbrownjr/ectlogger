@@ -10,7 +10,7 @@ The Team Management concept is four interlinked documents, split once it outgrew
 
 | Document | Owns | Teams phases |
 |---|---|---|
-| [Hub — Team Management](TEAM-MANAGEMENT-NOTES.md) | 1–4, 5.1–5.11, 5.16, 6–9, execution-plan overview, 11, 12 | M0, M1, M2, M3, M4 |
+| [Hub — Team Management](TEAM-MANAGEMENT-NOTES.md) | 1–4, 5.1–5.11, 5.16, 5.20, 6–9, execution-plan overview, 11, 12 | M0, M1, M1B, M2, M3, M4 |
 | [Assets, Kits, and Custody](TEAM-ASSETS-CUSTODY.md) | 5.13 | M3A |
 | [Activation, Tag Board, and Callouts](TEAM-ACTIVATION-CALLOUTS.md) | 5.14, 5.15, 5.18, 5.19 | M1A, M3B |
 | [Incident and Drill Planner](TEAM-INCIDENT-PLANNER.md) | 5.12, 5.17 | M5, M6 |
@@ -65,7 +65,7 @@ Opening a board under someone else's authority therefore requires no new app per
 - **ICS does answer it, and the answer is first-arrival-acts.** Under ICS, the first arriving authority with jurisdiction establishes incident command and remains in charge until transfer of command is accomplished; the arrival of a more qualified person does not by itself change command. Transfer is face to face, includes a full briefing, and its effective time is announced to everyone affected. That is exactly the shape used here, and the keeper handover below is modeled on it rather than on an invented "adopt" flag.
 - **Local ARES SOPs disagree with each other, and the strict ones are about a different action.** Some, such as Washington County's, state plainly that units do not self-activate and that no member may take it upon themselves to activate or participate without authorization. That rule governs **self-deployment**, not record-keeping: it stops a member driving to a disaster and inserting themselves. It says nothing about writing down who is already standing in the room. Opening a board is not activating, not deploying, and not assuming command, and collapsing those is precisely the error the hub's standing rule against one workflow granting another's authority exists to prevent. The ARES Plan makes the same distinction in its own credentialing section: an ARES ID identifies a member but *"will not necessarily grant permission to enter a disaster area"* — only the AHJ's incident-specific credential does.
 
-**Therefore: who may open a board is a per-team setting, defaulting to any active member.** A team whose adopted SOP is the strict kind flips one switch and requires an appointment, rather than needing a different build. The default is the permissive one because the cost of being wrong is asymmetric: a junk board is a nuisance an EC corrects in the morning, and an unrecorded first ninety minutes of an activation is the exact failure this feature exists to prevent.
+**Therefore: who may open a board is a per-team setting, defaulting to any active member.** That switch lives in the hub's section 5.20 policy register, alongside the doctrine hint that says in as many words that ARRL declines to answer this and expects the local SOP to — so the EC reading the setting learns why it is theirs to decide rather than finding an unexplained toggle. A team whose adopted SOP is the strict kind flips it and requires an appointment, rather than needing a different build. The default is the permissive one because the cost of being wrong is asymmetric: a junk board is a nuisance an EC corrects in the morning, and an unrecorded first ninety minutes of an activation is the exact failure this feature exists to prevent.
 
 Two constraints follow, and they are not optional:
 
