@@ -14,11 +14,14 @@ import {
   Chip,
   Divider,
   IconButton,
+  Tooltip,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import StarIcon from '@mui/icons-material/Star';
+import StarBorderIcon from '@mui/icons-material/StarBorder';
 import { ncsRotationApi, templateStaffApi, templateApi } from '../../services/api';
 import { getErrorMessage } from '../../utils/apiErrors';
 import {
@@ -152,6 +155,24 @@ const StaffRotationTab: React.FC = () => {
     try {
       await templateStaffApi.updateActive(Number(scheduleId), staffId, !currentActive);
       setStaff(staff.map((s: StaffMember) => (s.id === staffId ? { ...s, is_active: !currentActive } : s)));
+    } catch (error) {
+      console.error('Failed to update staff:', error);
+      alert(getErrorMessage(error, 'Failed to update staff'));
+    }
+  };
+
+  // Co-Manager is the actual trust bar for independently running nets from
+  // this schedule (self-grant eligibility, role management) -- plain "active"
+  // staff can only manually click Start. This control used to exist only in
+  // the separate Net Staff popup (NCSStaffRosterTab.tsx), so a schedule
+  // manager who only ever used this Edit Schedule page had no way to promote
+  // anyone, leaving staff who should be able to run nets independently stuck
+  // with no real permission on nets auto-created from the schedule.
+  const handleToggleCoManager = async (staffId: number, currentCoManager: boolean) => {
+    if (!scheduleId) return;
+    try {
+      await templateStaffApi.updateCoManager(Number(scheduleId), staffId, !currentCoManager);
+      setStaff(staff.map((s: StaffMember) => (s.id === staffId ? { ...s, is_co_manager: !currentCoManager } : s)));
     } catch (error) {
       console.error('Failed to update staff:', error);
       alert(getErrorMessage(error, 'Failed to update staff'));
@@ -439,6 +460,9 @@ const StaffRotationTab: React.FC = () => {
                         {s.user_name && (
                           <Typography color="text.secondary">({s.user_name})</Typography>
                         )}
+                        {s.is_co_manager && (
+                          <Chip label="Co-Manager" size="small" color="primary" variant="outlined" />
+                        )}
                         {!s.is_active && (
                           <Chip label="Inactive" size="small" variant="outlined" />
                         )}
@@ -446,6 +470,16 @@ const StaffRotationTab: React.FC = () => {
                     }
                   />
                   <ListItemSecondaryAction>
+                    <Tooltip title={s.is_co_manager ? 'Remove co-manager role' : 'Promote to co-manager (can run nets independently, even without a rotation slot)'}>
+                      <IconButton
+                        type="button"
+                        onClick={() => handleToggleCoManager(s.id, s.is_co_manager)}
+                      >
+                        {s.is_co_manager
+                          ? <StarIcon color="primary" />
+                          : <StarBorderIcon />}
+                      </IconButton>
+                    </Tooltip>
                     <Box sx={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', mr: 1 }}>
                       <Switch
                         checked={s.is_active}

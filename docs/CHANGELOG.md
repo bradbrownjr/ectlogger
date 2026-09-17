@@ -11,6 +11,10 @@ All notable changes to ECTLogger are documented here.
 * **Statistics: Time window and most-attended nets** — Switch the whole statistics page between a week, month, six months, year, or all time, and see which nets draw the biggest turnout in that window on a new leaderboard.
 * **Net View: Combined script and notes PDF** — Download the net script and net notes together as one printable PDF from the toolbar, so an NCS running the net from paper doesn't need to print two separate documents.
 
+## Bug Fixes
+
+* **Schedule: Promote to Co-Manager from Edit Schedule** — The Edit Schedule page's Net Staff tab could add operators to a schedule's authorized staff list, but had no way to make one a Co-Manager, so staff added there could never independently run nets or pick up NCS on a net with no rotation configured. The star icon that already existed in the separate Net Staff popup is now on this page too.
+
 ---
 
 # September 15, 2026

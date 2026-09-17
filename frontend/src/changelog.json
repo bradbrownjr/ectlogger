@@ -18,6 +18,16 @@
               "userImpact": true
             }
           ]
+        },
+        {
+          "title": "Bug Fixes",
+          "type": "bugfix",
+          "items": [
+            {
+              "text": "Schedule: Promote to Co-Manager from Edit Schedule — The Edit Schedule page's Net Staff tab could add operators to a schedule's authorized staff list, but had no way to make one a Co-Manager, so staff added there could never independently run nets or pick up NCS on a net with no rotation configured. The star icon that already existed in the separate Net Staff popup is now on this page too.",
+              "userImpact": true
+            }
+          ]
         }
       ]
     },
