@@ -306,6 +306,7 @@ EC/AEC are organizational appointments; NCS is an operational role. Neither a ti
 | TM-48 | As a coordinator, I want to open an incident when there is no net, because most of what we are called for does not warrant one. | An incident can be opened, worked, and closed with no net in existence; a tag board, an activity entry, and an observation all attach to it directly. Closing the incident closes no board and no net, and closing either of those closes no incident. |
 | TM-49 | As a coordinator in an operation involving another county's team, I want one shared incident without sharing our roster. | Several teams participate in one incident, each seeing its own records by default; cross-team record visibility is a per-team setting that is off until chosen, grants sight of records only, and never confers membership, whereabouts detail, or authority over another team's board. |
 | TM-50 | As a coordinator whose team is split between two buildings, I want both sites accounted for as one team. | Several operating sites belong to one team without splitting its roster, membership, or hours; each site is a place on the board and a station identity for logging, and the relay between two of our own sites is recorded as our traffic rather than as two teams exchanging it. |
+| TM-51 | As an EC, I want to build the incident's communications plan from the one we already maintain, not from a blank form at 0300. | A team master channel and PACE record set exists between incidents; an incident ICS-205 is instantiated from it as a snapshot and then edited for that incident, so later edits to the master never alter an issued plan. A team-drafted plan renders visibly as a draft until an approver is recorded, an agency-issued plan can be recorded as authoritative instead, and the PACE card, ICS-205, and ICS-205A all render from the one channel record set rather than three stores. |
 
 ## 5. Functional Requirements
 
@@ -713,6 +714,7 @@ The register's value is that these settings currently exist only as sentences sc
 | Outbound notification targets and which source types may reach them | None configured; nothing dispatched | 5.14 |
 | Situational-awareness export shape (own export, folded into the ICS-214, or both) | Both available; neither assumed | 5.5 |
 | Cross-team record visibility within a shared incident | Off; a team sees only its own records | 5.2, 8 |
+| Who approves a communications plan for an incident, and whether the team issues its own | Unset; a team-drafted plan stays a draft until an approver is recorded | 5.14, 5.18 |
 
 **A new per-team setting is added to the register in the same change that introduces it.** Without that rule the register rots within two phases, the setup flow silently stops covering new policy, and the module is back to undisclosed defaults with extra steps.
 
@@ -1003,7 +1005,7 @@ Every story in section 4.1 is accepted in exactly one phase (a few are split whe
 | M3B | TM-22, TM-23, TM-24, TM-35, and the procedure-handover portion of TM-28 |
 | M4 | TM-15, TM-33, and the verification of TM-42 |
 | M5 | TM-12, TM-13, TM-17, TM-21, TM-26, TM-27, TM-31, and the reservation-dependent portion of TM-20 |
-| M6 | TM-14, TM-34, and the remaining continuity cases of TM-28 |
+| M6 | TM-14, TM-34, TM-51 (its master channel records come from M3B), and the remaining continuity cases of TM-28 |
 
 **M1 through M3 are the membership MVP.** They are independently useful, they replace the spreadsheet, and nothing after them is required for that outcome. **M1A is the cheapest operationally useful thing in the module** — it needs only M1, and it turns a roster into something a team can run an activation with. **M1B is the cheapest useful thing for the person standing the team up**, and it is almost entirely content and forms over a register that M1 already had to build. M1A, M1B, M3A, and M3B are each independently shippable and depend on none of the others. M5 and M6 are the only phases that require the Events module.
 
