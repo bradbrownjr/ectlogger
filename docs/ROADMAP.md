@@ -92,6 +92,82 @@ Code-splitting it (`manualChunks` / dynamic imports) would cut build memory *and
 first load for users. That's a real refactor with its own regression risk, so it belongs on
 its own rather than bundled into this.
 
+### 0.9 — Second test instance on the dev host *(partly an operator task — needs root)*
+
+**🔧 A place for `feature/teams` to bake that does not cost us beta** *(KC1JMH)*
+**Model:** Sonnet for the one code change. **Think:** think. The rest is configuration and operator steps.
+
+The Teams module is a long-running feature branch measured in months. Under the current setup, testing it on beta means beta stops mirroring production, and every bug report that arrives in the meantime has nowhere to be reproduced. A second instance on this host solves it, and the host is nowhere near its limits: 96 GB of RAM and 12 cores, currently running one instance.
+
+**Which branch goes where, and it is the opposite of the obvious assignment.** Existing beta stays on `main` — it is the instance that must keep mirroring production so bug reports can be reproduced against what users are actually running. The **new** instance tracks `feature/teams`. The unstable work goes on the new box, not the established one.
+
+**Prerequisite code change, and it lands on `main` rather than the feature branch.** `BACKEND_PORT` is already read from `backend/.env`, so the backend side is free. The frontend port is hardcoded in three places — `--port 3000` in `start.sh`, and `port: 3000` in both the `server` and `preview` blocks of `frontend/vite.config.ts`. Add a `FRONTEND_PORT` env var following exactly the pattern `BACKEND_PORT` already uses, defaulting to 3000 so nothing existing changes. **Port 3001 is already in use** by something outside this container's process view, so the second instance takes 3002 and 8002.
+
+**Check disk before starting.** `/` is 3.7 TB at **100 % with about 7.2 GB free**. A second checkout is roughly 660 MB with `node_modules` and the venv, and a Vite build wants scratch on top of that. It fits, but not comfortably — clear space first rather than discovering this mid-build.
+
+**Steps that do not need root** (run directly on this host — it is the session's own host, never an SSH target):
+
+```bash
+# 1. Clone the feature branch into its own directory
+git clone "$(git -C /home/bradb/ectlogger remote get-url origin)" /home/bradb/ectlogger-teams
+cd /home/bradb/ectlogger-teams && git checkout feature/teams
+
+# 2. Backend environment
+python3 -m venv backend/venv
+backend/venv/bin/pip install -r backend/requirements.txt
+
+# 3. Frontend dependencies
+cd /home/bradb/ectlogger-teams/frontend && npm ci
+
+# 4. Config: its own ports, its own database, and its own SECRET_KEY.
+#    Write backend/.env with BACKEND_PORT=8002, a DATABASE_URL pointing at this
+#    instance's own SQLite file, EMAIL_ENABLED=false and SMTP_HOST=127.0.0.1.
+#    Write frontend/.env with FRONTEND_PORT=3002, VITE_SERVE_MODE=preview, and
+#    VITE_API_URL pointing at whatever hostname this instance ends up served on.
+
+# 5. Build the frontend (vite preview serves a static build; git pull alone is never enough)
+npm run build
+```
+
+**The email guards are the one step that must not be skipped or improvised.** A fresh `.env` on a new instance is a brand-new way to mail real operators from a test, and Teams introduces reminders, review requests, invitations, and callout notices — every one of them a new sender. `EMAIL_ENABLED=false` and `SMTP_HOST=127.0.0.1` go in before the service ever starts, not after the first send.
+
+**Start this instance on a fresh database with de-identified fixtures, not a copy of production.** The Teams concept documents already require de-identified fixtures for this module's testing, and a third copy of production's real member data is a privacy cost with no matching benefit. Teams migrations must never run against beta's database, which holds that copy. Where a real-data smoke test is genuinely needed, run it against beta's existing copy rather than making another one.
+
+**Steps that need root, so they are Brad's** (`! sudo ...` from the prompt runs them in-session). First `/etc/systemd/system/ectlogger-teams.service`, which is the existing unit with the paths changed:
+
+```ini
+[Unit]
+Description=ECTLogger Teams branch test instance
+After=network.target
+
+[Service]
+Type=simple
+User=bradb
+Group=bradb
+WorkingDirectory=/home/bradb/ectlogger-teams
+Environment="PATH=/home/bradb/ectlogger-teams/backend/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+Environment="NODE_PATH=/home/bradb/ectlogger-teams/frontend/node_modules"
+ExecStart=/bin/bash /home/bradb/ectlogger-teams/start.sh --service
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutStopSec=30
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Then a `/etc/sudoers.d/ectlogger-teams` granting the same five verbs the existing file grants for `ectlogger` (start, stop, restart, is-active, status), so this instance can be managed without a password the way the first one is. Then `systemctl daemon-reload && systemctl enable --now ectlogger-teams`. Finally, nothing on this host proxies `ectbeta.lynwood.us`, so a hostname for the new instance is a change wherever that reverse proxy actually lives.
+
+**Verify** with `systemctl is-active ectlogger-teams`, a request to `:8002/docs`, and a request to `:3002/` — then confirm the original instance is still answering on 3000 and 8000 and still on `main`.
+
+**This does not change how production is built.** Building production's frontend here and shipping the artifact has been standard since 2026-09-15 because production's 1.8 GB VPS gets OOM-killed building its own. The one rule when Teams eventually ships: the production build comes from **`main` after the merge**, never from the teams instance's branch checkout, and still with `VITE_API_URL=https://app.ectlogger.us/api` passed explicitly on the build command.
+
+---
+
 ## Milestone 1 — Medium-term
 
 *Meaningful new capabilities that don't require architectural changes.*
