@@ -1,6 +1,6 @@
 # Activation, Tag Board, and Callouts (Concept Draft)
 
-Last updated: 2026-09-16
+Last updated: 2026-09-17
 
 Part of the Team Management concept. This document covers what happens when a team is called on: who has the authority to activate it, what alert stages mean locally, which communications paths are planned and in what order, how members are reached, how the team knows who is actually where, and which versioned procedures govern all of it.
 
@@ -50,6 +50,16 @@ An authorized coordinator can create a callout before a net exists and later lin
 Today the app's only mechanism for recording "who is present" is a check-in on a net, and that is the wrong shape twice over. A station checked into the storm net from their own kitchen and an operator physically sitting at the EOC are both check-ins, distinguishable only through the free-text operating-position classifier. And a volunteer doing non-radio work -- a shelter desk, a supply run, an unlicensed helper of the kind the York County model explicitly includes -- has no business appearing in a net log at all, but absolutely must be accounted for.
 
 **What it is.** A **tag board** is a team-owned live record of who is currently tagged in, where, and in what state. An authorized coordinator opens one for a named occasion (an activation, a drill, a work session, a storm watch, a shelter shift), it runs until closed, and it leaves behind a dated participation record. It requires no net, no event, no plan, and no radio.
+
+**Who opens and closes one: whoever is running the thing.** The authority follows the existing leadership appointment rather than becoming a new permission to hand out. A team lead (EC) has it for their team, and a delegated AEC has it within the unit scope they already hold, by virtue of the appointment recorded in section 5.8 — there is no separate "board opener" grant, because a grant that has to be assigned in advance is a grant that will not have been assigned at 0200 on the night it is needed.
+
+On a real incident the authority is the **incident commander**, and that person is frequently not an ECTLogger user at all: they are the EMA duty officer or the agency's own IC, running an incident in which this team is one resource. The module must not resolve that by inventing an account for them or by making "incident commander" an application permission. It resolves the same way section 5.14 already resolves activation authority:
+
+> **The person with the authority and the person operating the app are two different facts, and the board records both.** A board carries who authorized it (by name, role, and agency, as free reference rather than a user link) alongside who opened it in the app. An authorized team member opening a board at the direction of an agency IC is the normal case, not an exception, and it is the same recorder-and-channel attribution used for an assisted tag.
+
+Opening a board under someone else's authority therefore requires no new app permission and confers none. It does not make the opener the IC, it does not authorize deployment, and it creates no authority over anyone tagged onto the board. It records that a board exists, on whose say-so.
+
+**Closing is the guarded half**, because it is the action with the accountability consequence, and a long activation routinely outlives the person who opened it — shifts change, the EC goes home, the IC is relieved. A board therefore has a **current keeper**, initially its opener, transferable through the audited handover pattern section 5.18 already defines for document ownership and pending callouts. The keeper, anyone holding the same appointment-level authority over that team or unit, or a team administrator may close it. Closing still requires the acknowledgment described below when people are still tagged in, regardless of who is doing it: authority to close a board is not authority to declare everyone home safe.
 
 **Vocabulary decision.** Following the Public Service Events precedent of settling contested words once rather than per-screen:
 
@@ -158,7 +168,7 @@ Two boundaries are worth repeating here because they are the ones a phase read i
 
 **Depends on M1 only.** Not on M2 import, M3 capabilities, M3A assets, M3B callouts, Events, or the planner. This is deliberate: it is the shortest path from "we have a roster" to "we can run an activation with it".
 
-- Tag board records: team-owned, named occasion, opened and closed by an authorized coordinator with attribution and times. Optional links to a net, an alert stage, or later a plan — always optional references, never containment.
+- Tag board records: team-owned, named occasion, opened and closed with attribution and times. **Open/close authority derives from the existing EC/AEC appointment and its unit scope; no new permission is defined.** A board separately records the authorizing incident commander or team lead as a free name/role/agency reference, since that person is often not a platform user, and carries a current keeper transferable by audited handover so a long activation can outlive its opener. Optional links to a net, an alert stage, or later a plan — always optional references, never containment.
 - Member tag records with state, place, optional task label, optional expected-out time, recorder, and channel. Self-tagging and assisted tagging travel the same path and produce the same record, distinguished only by recorder and channel.
 - Named `TeamLocation` places, free text, and an explicit mobile value. Basic location records are pulled forward from M4 the same way M3A pulls them forward; RF coverage rollups still wait.
 - Live board view over the existing `ConnectionManager` broadcast, server-originated events only, broadcast by the route handler after the database write.
@@ -201,7 +211,8 @@ The hub's release checklist carries the cross-cutting cases. These are the ones 
 ## Open Questions Before an Activation Pilot
 
 - Which monitored channels, PACE entries, and transition rules does the EMA actually approve, and who holds switching authority for each path? Resolve from current local confirmation, not a neighboring county's plan.
-- Who may open and close a tag board, and is that the same grant as sending a callout or a separate one? Which named locations should a board offer by default?
+- **Answered 2026-09-17:** open/close authority follows whoever is running the occasion — the incident commander, or the team lead — and is derived from the existing EC/AEC appointment rather than a separate grant. The residual question: what happens when the first person to reach the EOC at 0200 holds no appointment? Options are to let anyone on the roster open a board and have an appointed lead adopt it afterward, or to hold the line and require an appointed lead. The first risks junk boards; the second risks the tool being unavailable at exactly the moment it exists for. This needs Brad's call before M1A builds the open path, not during.
+- Which named locations should a board offer by default?
 - How long is whereabouts detail retained versus the participation total? The hours are what reporting needs; the positions are not, and they are the sensitive half.
 - Does a tag board need to reference an alert stage at all, or is the association better left entirely optional? A required stage makes a Saturday work session look like an activation.
 - Does the team want the en-route state, or does it invite recording intentions as facts? This is a per-team setting in the current design; confirm that the default is off.
