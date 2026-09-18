@@ -1,6 +1,6 @@
 # ECT Logger — Product Roadmap
 
-*Last updated: 2026-09-17*  
+*Last updated: 2026-09-18*  
 *Compiled from user feedback: AA1GM, KC1UIX, W1BKW, W1MTW, N1GSK, KC1JMH*
 
 > **Canonical location:** `docs/ROADMAP.md`.
@@ -40,6 +40,19 @@ The model tier decides *who* does the work. The thinking level decides *how much
 - **ultrathink** — schema, invariants, permission boundaries, and every review gate. Deliberately rare. If a plan has ultrathink on most of its packages, the packages are the problem, not the budget.
 
 Items carrying a **Model:** line but no **Think:** line predate this convention; read them as `think` for Sonnet and Opus and `none` for Haiku.
+
+### Documentation coverage for sub-agents
+
+Every item that changes user-facing behavior carries a **Docs:** line naming which audience paths on the help site the work has to land in, using the path names from the Documentation & Help Site Overhaul item below: **operators**, **net-control**, **net-managers**, **admins**, **self-hosting**, **reference**, or **none**.
+
+The line is not a reminder to write documentation afterward. It is part of the item's scope, the same as its migrations and its tests, and an item is not done until those pages exist. A feature that reaches production undocumented is a feature most of its audience will never find, which is how a net manager ends up asking for something that shipped four months ago.
+
+Two rules make this survive contact with a real build:
+
+- **Name the paths, not the files.** "Docs: net-managers, reference" is checkable by whoever reviews the merge. "Update the docs" is not.
+- **`none` has to be argued.** Write `Docs: none (no user-visible change)` and mean it. Infrastructure, refactors, and test work legitimately take it; anything a user can see or click does not.
+
+Items predating this convention get a **Docs:** line when they are picked up, not retroactively in bulk. The Public Service Event Support item below already carries the long-form version of this as its own "Documentation deliverables" phase, which is the pattern generalized here.
 
 ---
 
@@ -182,6 +195,222 @@ Then a `/etc/sudoers.d/ectlogger-teams` granting the same five verbs the existin
 ## Milestone 1 — Medium-term
 
 *Meaningful new capabilities that don't require architectural changes.*
+
+### Documentation & Help Site Overhaul
+
+**✨ Rebuild ectlogger.us as a real help site: a marketing landing page, four audience paths, current screenshots** *(KC1JMH)*
+
+**Model:** Opus for the information architecture, the audience split, and the screenshot pipeline design (Phases 0-1); Sonnet for page-by-page writing against the settled outline (Phases 2-5); Haiku for mechanical moves, link fixes, and front-matter stamping. **Opus review gate before the branch merges**, because GitHub Pages publishes from `main` and there is no staging site.
+**Think:** think hard for Phases 0-1; think for the writing phases; none for the mechanical ones.
+**Docs:** all paths. This item *is* the documentation.
+
+This is a long-running feature branch (`feature/docs-site`) under the rules in `.github/copilot-instructions.md`. Doc-only work never reaches beta, so the usual beta-confirms-before-prod gate is replaced by a local Jekyll preview plus the Opus review gate. Nothing lands on `main` until the whole site is coherent, because a half-migrated site is worse than the current one.
+
+#### What is actually wrong today
+
+Audited 2026-09-18 against the live site, not from memory:
+
+- **There is no landing page.** `README.md` *is* the homepage, because GitHub Pages runs `jekyll-readme-index` by default. One file is being asked to be the marketing pitch, the feature list, the role reference, the workflow explainer, and the developer's documentation index. It does none of them well, and a newcomer's first screen is a 60-item emoji bullet list.
+- **The app's Help menu does not link to help.** `Navbar.tsx` labels the item **User Guide** and opens `https://ectlogger.us`, which is the README. The one guide we have is two clicks further in, and nothing on the homepage points at it above the fold.
+- **There is no navigation.** The header offers Home, GitHub, and Open App. Twenty markdown files under `docs/` have no sidebar, no breadcrumb, no next/previous, and no search. Every page is an island reached by a link somebody remembered to write.
+- **The user guide is one 1,084-line scroll** (82 KB) running from "enter your email address" to the admin panel with no landmarks, no per-audience entry point, and **not one screenshot**.
+- **Six screenshots exist, all from 2026-01-25**, all light-mode, referenced from exactly one place: the README hero. They predate the multi-monitor layout, the wide-screen dock, traffic handling, the card-button redesign, the logo upload, and the marker palette. `check-in-log.pdn` (a Paint.NET source file, 188 KB) is committed alongside them.
+- **Internal working documents are published to the public web.** Verified 200 responses for `docs/DEVELOPMENT`, `docs/DESIGN`, `docs/USER-STORIES`, and every file in `docs/concepts/` including the 190 KB `TEAM-MANAGEMENT-NOTES.md`. These are design conversations and deployment internals, not user information, and they are currently a larger share of the site than the user guide is.
+- **There is no `sitemap.xml` and no `robots.txt`.** Both 404. Nothing tells a search engine which of those twenty files is the one an operator should land on.
+- **The content has measurably drifted.** Concrete, verified against `backend/app/models.py` and yesterday's commits:
+  - README's station-status list names **Available** and **Recheck**, neither of which is a `StationStatus`, and omits **Has Traffic**, **Relay**, **Announcements**, and **Mobile**, all four of which are.
+  - README's net-role table lists **Secondary NCS** as a distinct role. There is no such role; multi-NCS is simply more than one active `NetRole("NCS")`.
+  - README's global-role table omits the `NCS` value that `UserRole` actually has.
+  - README says only an owner, co-manager, or rotation member can self-grant Logger. Commit `58b99cf` (2026-09-18) widened that to any active net staff.
+  - `docs/training_video_outline.md` teaches OAuth sign-in with Google, Microsoft, and GitHub. The OAuth callback is a `501` stub and has never been a working login path.
+
+#### Standards consulted, and what each one actually decides
+
+Per the house rule on checking doctrine before design: say whether a standard answers the question, delegates it, or conflicts with us.
+
+- **Diátaxis (tutorial / how-to / reference / explanation) — answers it.** This is the framework that resolves the stated tension between "accessible to the new person" and "enough for power users." They are not a spectrum to compromise along; they are different document types. The newcomer needs a *tutorial* (one guaranteed-to-work path, no choices). The power user needs *reference* (complete, scannable, no narrative). Writing one document that serves both is what produced the 1,084-line guide. Every page in the new site declares which of the four it is, and pages do not mix modes.
+- **ISO/IEC/IEEE 26514:2022, *Design and development of information for users* — answers the document-control half.** It is where the per-page front matter comes from: a stated audience, an owner, a revision, a last-reviewed date, and a statement of which product version the page describes. It also supplies the completeness checklist we will grade the old pages against. We adopt its apparatus, not its deliverable list; it assumes shipped software with a release train and we deploy continuously.
+- **ITIL 4 — delegates the structure, answers the lifecycle.** ITIL has nothing to say about how a user manual is laid out, and its Knowledge Management practice assumes an internal service desk with a ticket queue feeding article creation. We have GitHub Issues, the in-app Submit Feedback form, and one maintainer, so the service-desk machinery does not transfer. Three things do, and they are the parts that keep this from rotting again: **every article has a named owner and an explicit review-by date**, **publish incrementally rather than holding everything for a big-bang release**, and **maintain a known-issues page** so a recurring question has somewhere to live that is not a changelog entry. The in-app Diagnostics and Feedback tools are already the intake for that last one.
+- **WCAG 2.2 AA — constrains it.** This matters more than usual for an audience that includes served agencies with Section 508 obligations. Binding rules: every screenshot carries real alt text describing what it shows (1.1.1); **no instruction may exist only inside an image** (1.4.5), so a screenshot always accompanies prose rather than replacing it; annotation callouts need contrast and a shape or number, never color alone (1.4.1); headings are descriptive and nested without skipping (2.4.6, 2.4.10).
+- **Plain-language practice — conflicts, mildly, and the conflict is productive.** The existing voice runs to long, dense, technically specific paragraphs, and that is genuinely good writing for *explanation* pages. It is wrong for *procedures*. Resolution: explanation and reference keep the current register; how-to pages get numbered steps, one action per step, imperative mood, and the outcome stated before the steps.
+
+#### Voice
+
+The site is written the way the current user guide's best sections are written, which is the same voice as the MEPN material: **a sysop writing to other operators.** Practical, specific, never breathless.
+
+- "You" for the reader-operator. "We" sparingly, for the project. Never "ECTLogger is pleased to offer."
+- Sentence case for every heading, button reference, and label. Protocol literals keep their real casing: callsigns, `ICS-309`, `WXOBS`, `@MAINE`.
+- **Always give the why.** A sentence that says what a control does without saying what problem it solves gets rewritten. This is already the strongest habit in the existing guide and it is the thing to preserve above all else.
+- Name real things: "Net Control", "on frequency", "the check-in row", "the repeater is running weak." Avoid developer vocabulary entirely. The changelog's forbidden-terms list applies here too: no "component", "endpoint", "modal", "boolean", "refactor".
+- Expand an acronym on first use per page, then use it freely. Assume the reader knows amateur radio; do not assume they know ARES, RRI, or ICS.
+- Honesty about limits. If a feature needs MFA set up, or only works on a template-based net, say so where the reader will hit it, not in a footnote.
+- **Emoji: retire them from body copy.** They are load-bearing in exactly two places and stay there: the ROADMAP's type tags, and the changelog. The README's one-emoji-per-bullet feature list is the single biggest reason the homepage reads as unserious.
+
+#### Target structure
+
+The landing page is marketing. Everything under `/docs/` is a path, and every path opens with a "start here" page that states who it is for and what the reader will be able to do at the end.
+
+```
+/                     Landing page (new index.md) - what it is, who it is for,
+                      the four paths, one live screenshot, one call to action.
+                      Describes what ECTLogger does; never names another product.
+
+/docs/                Documentation home. The four paths, a search box, and the
+                      three "first ten minutes" tutorials.
+
+/docs/start/          Tutorials - the only pages with a guaranteed single path
+                      Check into your first net . Run your first net .
+                      Set up your first recurring schedule
+
+/docs/operators/      PATH 1 - Operators (check-ins). The largest audience and
+                      the one that must never need another path to participate.
+                      Account and profile . Finding a net . Checking in .
+                      Status, rechecks, and checking out . Chat, polls, topics .
+                      Location and the map . Filing traffic . Your statistics .
+                      On a phone in the field
+
+/docs/net-control/    PATH 2 - Net staff (NCS, Logger, Relay) running a live net
+                      The net toolbar . Logging check-ins . Speed entry .
+                      Frequencies and multi-NCS . Roles and stepping away .
+                      Chat moderation and mutes . Authenticated nets .
+                      Traffic handling . Multi-monitor and wide-screen .
+                      Closing the net
+
+/docs/net-managers/   PATH 3 - Net managers who own nets and schedules
+                      Creating a net . Recurring schedules . Net staff and NCS
+                      rotation . Scripts, notes, announcements . Lobby and
+                      auto-close settings . Cancelling, archiving, restoring .
+                      Reports, ICS-309, exports . CSV import and backfill .
+                      Schedule statistics and leaderboards
+
+/docs/admins/         PATH 4 - Platform administrators (the Admin panel)
+                      Users and roles . Custom fields . Frequencies . Branding
+                      and themes . Maintenance banner . Security, MFA, lockouts .
+                      Traffic settings . Contacts
+
+/docs/self-hosting/   Running your own instance. A separate track, not a fifth
+                      path - see the decision below.
+
+/docs/reference/      Reference - complete, scannable, no narrative
+                      Station statuses . Roles and permissions matrix . Keyboard
+                      shortcuts . Check-in fields . Speed-entry syntax .
+                      Location formats . Emails we send . RSS feeds . Glossary
+
+/docs/about/          Changelog . Roadmap . Privacy . Known issues . Getting help
+```
+
+**Decisions made, and the reasons, so they are not relitigated mid-build:**
+
+1. **Path order is privilege escalation: operator, net staff, net manager, administrator.** A person becomes staff on somebody else's net before they own a schedule, so the nav order matches the career. This differs from the order in the original request; say so if you want it changed before writing starts.
+2. **Self-hosting is its own track, not a fifth path.** The word "administrator" covers two different people: the club member with the Admin role in a hosted instance, who never touches a shell, and the person running the service on a VPS. Merging them buries the first audience under `systemctl`. Path 4 is the Admin panel only; the server operator gets `/docs/self-hosting/` with the existing installation, deployment, email, logging, fail2ban, and security documents reorganized behind one index.
+3. **Internal documents leave the published site.** `docs/concepts/`, `DEVELOPMENT.md`, `DESIGN.md`, and `USER-STORIES.md` stay in the repository, where they belong, and get an `exclude:` entry in `_config.yml`. `ROADMAP.md`, `CHANGELOG.md`, and `PRIVACY.md` stay published; the app links to all three.
+4. **`README.md` becomes a repository README again.** What the project is, a screenshot, a link to the site, how to run it locally, how to contribute, the license. The marketing copy moves to `index.md` and the feature list becomes a page under `/docs/`.
+5. **Light-mode screenshots only.** The repo already made this call once (commit `eaff80c`) and the layout's `.light-only` / `.dark-only` swap has been dead code since. Halving the capture count is worth more than showing the dark theme in every figure. The dark theme gets one dedicated figure on the personalization page.
+
+#### The screenshot problem, and the actual fix
+
+The screenshots are eight months stale because refreshing them is manual, and any process that depends on somebody remembering to re-crop twenty PNGs will produce eight-month-stale screenshots again. **The deliverable is not new screenshots; it is a command that regenerates every screenshot in the site.**
+
+- `scripts/docs-screenshots/capture.mjs` drives headless Chrome through the Browserless instance, following the mechanics already recorded in the browserless skill: connect with `connectOverCDP` rather than `connect`; intercept and refulfill requests to the baked-in API hostname; use a tall window size at connect time, because the app shell's `overflow: hidden` root silently truncates a fullPage capture to one screen; select MUI controls by `aria-label`, not `title`.
+- `scripts/docs-screenshots/shots.yml` is the manifest, one entry per figure: id, route, viewport, element selector for a partial capture, crop padding, any callout annotations, the alt text, the caption, and the doc page that embeds it. Adding a figure means adding an entry, not writing a script.
+- **Annotations are drawn at capture time**, as CSS injected before the screenshot, never painted on afterward in an image editor. A hand-annotated PNG cannot be regenerated, which is how we got here.
+- **A figure that tells the reader where to click carries a bright red box around the target**, or a bright red underline where a box would swallow half the screen. Red at full saturation (`#e53935`, 3 px) against the app's blue-grey chrome is the highest-contrast marker available and reads as "look here" without a legend. Two rules keep it honest: the annotation is declared in the manifest as a selector, so it moves when the control moves instead of pointing at empty space after a layout change; and per WCAG 1.4.5 the prose still names the control by its label, because a red box is unusable to a screen reader and the alt text has to carry the same instruction in words.
+- **Captures run against a seeded demo instance, never beta.** Beta holds a copy of production's database with real names and email addresses, and a published screenshot of it is a privacy incident. `backend/scripts/seed_demo_data.py` builds a throwaway database with a fixed fictional roster, a closed net with a full log, an active net mid-check-in, a recurring schedule with a rotation, and a few traffic messages. This shares the `FRONTEND_PORT` groundwork already scoped in item 0.9, so sequence them together if both are live.
+- **One documented cast of characters**, used in every screenshot, every worked example, and every speed-entry sample, written into `docs/DEVELOPMENT.md` so examples stop being invented page by page. The guide currently improvises `KC1ABC`, `N1XYZ`, and `W1DEF`, every one of which is a callsign the FCC can and may already have issued to a real operator.
+
+  **The rule: every example callsign carries a four-letter suffix, which the amateur service cannot issue.** The FCC's sequential call sign system tops out at a three-letter suffix (1x3 and 2x3 being the longest forms), so a four-letter suffix is structurally unassignable in perpetuity. This is the same reasoning behind `N0CALL`, the placeholder WSJT-X, Direwolf, and most of the packet ecosystem ship as their default. It means no screenshot can ever put words in a real licensee's mouth, and a ham reading closely recognizes the shape as a placeholder without it looking foreign or wrong.
+
+  Geographic four-letter suffixes read most naturally in a check-in table. Proposed roster:
+
+  | Callsign | Name | Stands in for |
+  | --- | --- | --- |
+  | `W1PINE` | Alex Reed | Net Control, the schedule owner through most of the guide |
+  | `K1COVE` | Dana Whitfield | Logger |
+  | `N1LAKE` | Marcus Ellery | Relay |
+  | `KC1HILL` | Priya Nandan | A regular participant, the "you" of the operator path |
+  | `W1PORT` | Joan Alderman | Second NCS on a multi-frequency net |
+  | `N1ROVE` | Chris Baumann | Mobile station, used for the status and location examples |
+  | `K1CAMP` | Terry Osgood | Shelter station, used in the traffic examples |
+  | `W2FERN` · `N2OAKS` · `K3BASE` · `W1MILL` · `N1BIRD` | — | Table filler, enough rows for a realistic log |
+  | `N0CALL` | — | Reserved for "not configured yet" examples only |
+
+  Organizations are named so they cannot be mistaken for a real group or tread on anyone's mark: **Example County ARES**, **Example County SKYWARN**, **Tuesday Evening Club Net**. Locations stay real New England towns, since the map pages need addresses that actually geocode and a town name is not personal information.
+- Output lands in `docs/img/<section>/<shot-id>.png`, PNG, width-capped. `assets/screenshots/` and its `.pdn` file are deleted once the README hero is re-pointed.
+- Every figure gets alt text from the manifest, and no procedure step depends on the reader seeing the image.
+
+#### Phases
+
+**Phase 0 — Scaffold** *(not started)*
+
+*Structure, voice, roster, path order, preview, and search are all settled below; nothing here is waiting on a decision.*
+
+- [ ] Branch `feature/docs-site`
+- [ ] **Preview repo.** A throwaway `ectlogger-docs-preview` repository with Pages enabled, that `feature/docs-site` is pushed to for review. This is the real GitHub Pages build, so the plugin set and versions match production exactly, and it needs nothing installed on the dev host. Delete the repo when the branch merges
+- [ ] `_data/nav.yml` plus a sidebar in `_layouts/default.html`. Liquid is disabled for page *content* in `_config.yml` but layouts still process it, so this needs no change to that setting
+- [ ] Front-matter template: title, audience, diataxis type, owner, revised date, applies-to
+- [ ] `_config.yml` excludes for `docs/concepts/`, `DEVELOPMENT.md`, `DESIGN.md`, `USER-STORIES.md`; add `jekyll-sitemap` and a `robots.txt`
+- [ ] Seed roster and organization names into `docs/DEVELOPMENT.md` before any page is written, so no agent invents its own examples
+
+**Phase 1 — Landing page and documentation home** *(not started)*
+- [ ] `index.md`: the pitch, who it is for, the four paths, one current screenshot, one call to action. No competitor comparisons, stated or implied
+- [ ] `README.md` cut back to a repository README
+- [ ] `/docs/` home with the four path cards and the three tutorials
+- [ ] Screenshot pipeline running end to end, proven by the landing-page hero being generated rather than hand-captured
+- [ ] **Search**, wired in early so every page is indexed as it is written: a `search.json` the site generates from its own pages, plus Lunr in the layout and a search field in the sidebar. This is what `just-the-docs` does, and it is the ordinary answer for a Jekyll site on GitHub Pages. We take the mechanism, not the theme, since the layout already matches the app's Material design and there is no reason to throw that away. The index page needs `render_with_liquid: true` in its own front matter to opt back out of the site-wide Liquid switch-off
+- [ ] `Navbar.tsx` Help menu: **User Guide** points at `/docs/`, and add a **Known Issues** item
+
+**Phase 2 — Operator path and the three tutorials** *(not started)*
+- [ ] Three "first ten minutes" tutorials, each verified by walking it in a browser against the seeded instance
+- [ ] Nine operator pages, harvested from `USER-GUIDE.md` where the existing text is good and rewritten where it is not
+- [ ] Figures for check-in, status, map, chat, and mobile
+
+**Phase 3 — Net staff and net manager paths** *(not started)*
+- [ ] Ten net-control pages and nine net-manager pages
+- [ ] The multi-monitor and wide-screen material needs real figures more than any other section; it is currently four paragraphs describing a spatial layout in words
+- [ ] Traffic handling gets its own sub-index; it is large enough to be a manual on its own
+
+**Phase 4 — Administrator path, self-hosting track, reference** *(not started)*
+- [ ] Eight Admin-panel pages with a figure each
+- [ ] Self-hosting index over the existing install, deploy, email, logging, fail2ban, and security documents, each re-checked against what the scripts actually do today
+- [ ] Reference section, generated from the code where possible so it cannot drift: station statuses and the permissions matrix are the two worth generating
+- [ ] Glossary
+
+**Phase 5 — Sweep, verify, retire** *(not started)*
+- [ ] Factual sweep of every page against the running app, with the five confirmed drifts above as the starting list
+- [ ] Delete `USER-GUIDE.md` (fully superseded), `training_video_outline.md` (a chat transcript that teaches a login path that does not exist), `assets/screenshots/`
+- [ ] Link check across the whole site, including the links the app itself opens
+- [ ] Every page carries an owner and a review-by date
+- [ ] `docs/about/known-issues.md` seeded from recent feedback submissions
+- [ ] The whole of "Keeping it current" below, which is the part that decides whether any of this is still true in a year
+
+#### Keeping it current
+
+The 2026-01 screenshots did not go stale because anyone decided to let them. They went stale because nothing made them anyone's problem on the way past. A rebuilt site with no mechanism attached decays the same way and on roughly the same schedule, so these are deliverables of Phase 5, not aspirations:
+
+- **`.github/copilot-instructions.md`, "Documentation Requirements", rewritten.** It currently tells every agent to update `README.md`, `docs/USER-GUIDE.md`, `docs/CHANGELOG.md`, and `docs/DEVELOPMENT.md`. Two of those four will not exist in that role any more, and an instruction naming a deleted file is worse than no instruction, because it gets followed into a new file nobody reads. It must instead name the audience paths and require a feature to say which ones it touches.
+- **The `Docs:` line becomes mandatory on new roadmap items**, per the convention added to "How to Read This Document" above. This is the load-bearing piece: it puts documentation inside an item's scope at the moment the item is written, rather than leaving it to a checklist at the end when the budget is gone.
+- **Definition of Done gains a documentation clause** alongside the existing changelog one, so "the pages for its audience paths exist" sits next to "the changelog is updated" rather than below it.
+- **Every page carries an owner and a review-by date** in its front matter, per ISO 26514 and the ITIL lifecycle discipline. A yearly sweep of pages past their review date is a real, bounded task; "is the documentation still accurate" is not.
+- **Screenshots are regenerated by command, not by hand.** Re-running the capture script is a chore an agent can be handed in one line, which is the whole reason the pipeline exists rather than a folder of PNGs. Worth running against the seeded instance after any release that changes the check-in table, the net toolbar, or the card buttons.
+- **A page that documents an unshipped feature is a bug.** The Public Service Events item already states this rule for itself ("until then no user-facing guide may describe this feature as available"); it generalizes. The site describes production, and a feature baking on a branch gets its pages written on that branch and merged with it.
+
+#### Decisions settled 2026-09-18
+
+1. **Example callsigns and names: invented, and structurally unassignable.** Four-letter suffixes throughout, with generic fictional names and Example County organizations. Full roster in the screenshot section above.
+2. **Preview: a separate GitHub Pages repository, not a local Jekyll install.** GitHub Pages serves one site per repository from one branch, so a docs branch is invisible until it merges, and merging a half-built site is the one outcome this branch exists to avoid. Pushing the branch to a throwaway preview repo gets the genuine Pages build, with the same plugins and versions, and installs nothing. Rejected: the `jekyll/jekyll` container, because Docker is not usable by this account.
+
+   **The escape hatch, if the push-and-wait loop proves too slow for layout and search work:** `sudo apt update && sudo apt install -y ruby-full` (Debian 13 here, `ruby-full` 3.3 in the repository, and `gcc`, `g++`, `make`, and the `zlib`/`openssl` headers native gems want are already present), then userspace from there — a `Gemfile` pinning `github-pages`, `bundle config set --local path vendor/bundle`, `bundle install`, and `bundle exec jekyll serve` for live reload. Add `vendor/` and `_site/` to `.gitignore` if it comes to that. Prose iterates fine on a one-minute build; a stylesheet does not, which is the only thing that should trigger this.
+
+   Worth being explicit, since the two got confused once already: **this has nothing to do with screenshots.** Browserless photographs the running application, which is what goes *inside* the pages. Jekyll builds the pages themselves. Neither needs the other.
+3. **Search: Lunr over a Jekyll-generated JSON index**, the `just-the-docs` mechanism, on the default GitHub Pages build. At roughly fifty pages this is comfortably inside Lunr's range; it starts to hurt in the hundreds. Rejected for now: Pagefind, which is the better answer for a large site but needs a GitHub Actions build, and an Actions build is a new way for the site to stop updating. Revisit if the site ever passes a few hundred pages, and pick up the CI broken-link gate at the same time.
+4. **Path order: operator, net staff, net manager, administrator.** Confirmed.
+
+#### Risks
+
+- **Merging a half-built site.** A partial migration leaves the app's Help menu pointing at pages that do not exist yet. Mitigation is the feature-branch rule already in force: nothing merges until Phase 5 passes.
+- **Screenshots leaking real user data.** The only real mitigation is the seeded instance. Do not take "just this one" from beta.
+- **Repository size.** Roughly sixty PNGs at a few hundred KB each. Width-cap on capture, and do not commit intermediate crops.
+- **Writing volume.** This is around fifty pages. Split by path across agents so a single context does not try to hold the whole site, and give each agent the finished outline plus the voice rules rather than asking it to invent structure.
 
 ### Public Service Event Support
 
