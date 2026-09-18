@@ -9,6 +9,7 @@ All notable changes to ECTLogger are documented here.
 ## Bug Fixes
 
 * **Net Control: Authorized net staff can take net control again** — On a schedule with no NCS rotation set up, an automatically created net opened with nobody assigned as net control, and the operators on the schedule's Authorized Net Staff list had no way to take it — an admin had to step in, even though the staff list says those operators can run nets. Anyone on that list can now check themselves in as NCS or Logger and get the role immediately, the same as a rotation member always could.
+* **Net Report: Map shows every station that took part** — A net's report map quietly left out stations that had checked out before the net closed, so it disagreed with the same net's statistics page about how many stations were on the air. Both maps now plot everyone who participated, and the statistics map no longer stops plotting after the tenth street address.
 
 ---
 

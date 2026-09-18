@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import AppLogo from '../components/AppLogo';
 import { displayCallsign } from '../utils/userDisplay';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -48,7 +48,8 @@ import {
 import { MapContainer, TileLayer, Marker, Popup, Polyline, Tooltip as LeafletTooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { parseLocation, geocodeAddress, ParsedLocation } from '../utils/locationParser';
+import { useMappedCheckIns } from '../hooks/useMappedCheckIns';
+import { computeDualMapData } from '../utils/dualMap';
 
 // Fix for default marker icons in webpack/vite
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -69,50 +70,6 @@ L.Marker.prototype.options.icon = DefaultIcon;
 
 // Custom marker colors based on status
 // Uses SVG for better html2canvas PDF export compatibility
-// ========== DUAL-MAP OUTLIER DETECTION ==========
-// Detects whether check-in positions have significant geographic outliers that justify
-// showing two maps side-by-side: one zoomed into the cluster and one full overview.
-// Uses degree-based Euclidean distance from centroid (sufficient for relative comparison).
-interface DualMapData {
-  clusterPositions: [number, number][];
-  allPositions: [number, number][];
-}
-
-const computeDualMapData = (
-  pts: { lat: number; lon: number }[]
-): DualMapData | null => {
-  if (pts.length < 3) return null;
-
-  // Centroid
-  const centLat = pts.reduce((s, p) => s + p.lat, 0) / pts.length;
-  const centLon = pts.reduce((s, p) => s + p.lon, 0) / pts.length;
-
-  // Distance from centroid for each point (degrees)
-  const dists = pts.map(p =>
-    Math.sqrt(Math.pow(p.lat - centLat, 2) + Math.pow(p.lon - centLon, 2))
-  );
-
-  const sorted = [...dists].sort((a, b) => a - b);
-  const medianDist = sorted[Math.floor(sorted.length / 2)];
-  const maxDist = sorted[sorted.length - 1];
-
-  // Only split when the maximal outlier is >3× the median distance AND
-  // the cluster itself spans a meaningful area (≥0.5°, roughly 50 km)
-  if (medianDist < 0.5 || maxDist < medianDist * 3) return null;
-
-  const clusterThreshold = medianDist * 2.5;
-  const clusterPositions = pts
-    .filter((_, i) => dists[i] <= clusterThreshold)
-    .map(p => [p.lat, p.lon] as [number, number]);
-
-  const allPositions = pts.map(p => [p.lat, p.lon] as [number, number]);
-
-  // Only worth splitting if there are ≥2 cluster points AND at least 1 outlier
-  if (clusterPositions.length < 2 || clusterPositions.length === allPositions.length) return null;
-
-  return { clusterPositions, allPositions };
-};
-
 const createColoredIcon = (color: string) => {
   // Create an SVG marker that renders properly in PDF export
   const svg = `
@@ -347,19 +304,21 @@ const NetReport: React.FC = () => {
   const tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
   const tileAttribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
-  // State for mapped locations
-  interface MappedCheckIn {
-    checkIn: CheckIn;
-    parsedLocation: ParsedLocation;
-  }
-  const [mappedCheckIns, setMappedCheckIns] = useState<MappedCheckIn[]>([]);
-  // Checked-in (non-checked-out) stations that couldn't be placed on the map --
-  // no location on file, an unparseable location, or a geocode that came back
-  // empty. Surfaced explicitly rather than silently dropped, see Section 3 below.
-  const [unmappedCheckIns, setUnmappedCheckIns] = useState<CheckIn[]>([]);
-  const [mapLoading, setMapLoading] = useState(false);
+  // State for mapped locations. Parsing/geocoding lives in the shared hook so
+  // this map always plots exactly what the statistics page's map does --
+  // including checked-out stations, which took part in the net and belong in
+  // its record. Stations the hook couldn't place (no location on file, an
+  // unparseable location, or an empty geocode) come back as unmappedCheckIns
+  // and are named explicitly rather than silently dropped, see Section 3 below.
+  const { mapped: mappedCheckIns, unmapped: unmappedCheckIns, loading: mapLoading } =
+    useMappedCheckIns(checkIns);
   const [mapTilesReady, setMapTilesReady] = useState(false);
-  const processedKeyRef = useRef<string>('');
+
+  // A new set of markers means the tiles behind them have to redraw, so the
+  // "map still rendering" overlay goes back up until a TileLayer reports load.
+  useEffect(() => {
+    setMapTilesReady(false);
+  }, [mappedCheckIns]);
 
   // Colors for pie chart
   const COLORS = [
@@ -415,84 +374,6 @@ const NetReport: React.FC = () => {
 
     fetchAllData();
   }, [netId]);
-
-  // ========== LOCATION PROCESSING FOR MAP ==========
-
-  // Process check-in locations for map display
-  useEffect(() => {
-    if (checkIns.length === 0) return;
-
-    // Create a stable key for checkIns to prevent unnecessary re-runs
-    const checkInsKey = checkIns
-      .filter(c => c.location && c.status.toUpperCase() !== 'CHECKED_OUT')
-      .map(c => `${c.id}:${c.location}:${c.status}`)
-      .join('|');
-
-    // Skip if we've already processed this exact set of checkIns
-    if (processedKeyRef.current === checkInsKey && mappedCheckIns.length > 0) {
-      return;
-    }
-
-    const processLocations = async () => {
-      setMapLoading(true);
-      const results: MappedCheckIn[] = [];
-      const failed: CheckIn[] = [];
-      const addressesToGeocode: { checkIn: CheckIn; parsed: ParsedLocation }[] = [];
-
-      // First pass: parse all locations
-      for (const checkIn of checkIns) {
-        if (checkIn.status.toUpperCase() === 'CHECKED_OUT') continue;
-        if (!checkIn.location) {
-          failed.push(checkIn);
-          continue;
-        }
-
-        const parsed = parseLocation(checkIn.location);
-        if (parsed) {
-          if (parsed.type === 'address') {
-            // Need to geocode this address
-            addressesToGeocode.push({ checkIn, parsed });
-          } else {
-            // Already have coordinates
-            results.push({ checkIn, parsedLocation: parsed });
-          }
-        } else {
-          failed.push(checkIn);
-        }
-      }
-
-      // Geocode every address that needs it. Nominatim rate limiting is
-      // already serialized server-side (app/routers/geocode.py) and results
-      // are cached there, so there's no reason to cap this list -- a net
-      // with many unique locations just takes a few extra seconds the first
-      // time. (Previously hard-capped at 10, which silently dropped every
-      // station past the 10th with no indication anything was missing --
-      // see docs/CHANGELOG.md.)
-      for (const { checkIn, parsed } of addressesToGeocode) {
-        const geocoded = await geocodeAddress(parsed.original);
-        if (geocoded) {
-          results.push({
-            checkIn,
-            parsedLocation: {
-              ...geocoded,
-              type: 'address',
-              original: parsed.original
-            }
-          });
-        } else {
-          failed.push(checkIn);
-        }
-      }
-
-      processedKeyRef.current = checkInsKey;
-      setMappedCheckIns(results);
-      setUnmappedCheckIns(failed);
-      setMapTilesReady(false);
-      setMapLoading(false);
-    };
-
-    processLocations();
-  }, [checkIns]);
 
   // Get marker color based on status (handle UPPERCASE database values)
   const getStatusColor = (status: string): string => {

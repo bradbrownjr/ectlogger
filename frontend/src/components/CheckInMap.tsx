@@ -27,7 +27,7 @@ import { Rnd } from 'react-rnd';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { parseLocation, geocodeAddress, ParsedLocation } from '../utils/locationParser';
+import { useMappedCheckIns } from '../hooks/useMappedCheckIns';
 import { exportToPdf } from '../utils/pdfExport';
 import type { CanHearReportEntry } from './netview/CoverageReport';
 
@@ -145,10 +145,6 @@ interface CheckInMapProps {
   highlightedCallsign?: string | null;
 }
 
-interface MappedCheckIn extends CheckIn {
-  parsedLocation: ParsedLocation;
-}
-
 // Component to fit map bounds to markers - only runs once on initial load.
 // Uses hasFitRef to ensure that after the user zooms/pans, the map does NOT snap back
 // on every re-render or check-in update. The ref naturally resets when the MapContainer
@@ -209,8 +205,11 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
 
-  const [mappedCheckIns, setMappedCheckIns] = useState<MappedCheckIn[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Parsing/geocoding lives in the shared hook (see hooks/useMappedCheckIns.ts),
+  // which is also what the net report and statistics maps plot from, so all
+  // three agree on which stations are mappable. Deferred until the map is
+  // actually open - this component stays mounted while closed.
+  const { mapped: mappedCheckIns, loading } = useMappedCheckIns(checkIns, { enabled: open });
   const [minimized, setMinimized] = useState(false);
   // "Can hear" coverage overlay (Phase 4) - on/off is now a controlled prop
   // (lifted to NetView.tsx, see coverageOverlayOn above) so the Coverage
@@ -372,68 +371,6 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Create a stable key for checkIns to prevent unnecessary re-runs
-  // Only re-process when the actual data changes, not on every render
-  // Include checked-out stations - they still participated in the net
-  const checkInsKey = checkIns
-    .filter(c => c.location)
-    .map(c => `${c.id}:${c.location}:${c.status}`)
-    .join('|');
-
-  // Track if we've already processed this set of checkIns
-  const processedKeyRef = useRef<string>('');
-
-  useEffect(() => {
-    if (!open) return;
-    
-    // Skip if we've already processed this exact set of checkIns
-    if (processedKeyRef.current === checkInsKey && mappedCheckIns.length > 0) {
-      return;
-    }
-
-    const processLocations = async () => {
-      setLoading(true);
-      const results: MappedCheckIn[] = [];
-      const addressesToGeocode: { checkIn: CheckIn; parsed: ParsedLocation }[] = [];
-
-      // First pass: parse all locations
-      // Checked-out stations are included - they still participated in the net
-      for (const checkIn of checkIns) {
-        if (!checkIn.location) continue;
-
-        const parsed = parseLocation(checkIn.location);
-        if (parsed) {
-          if (parsed.type === 'address') {
-            addressesToGeocode.push({ checkIn, parsed });
-          } else {
-            results.push({ ...checkIn, parsedLocation: parsed });
-          }
-        }
-      }
-
-      // Second pass: geocode addresses (backend handles rate limiting)
-      for (const { checkIn, parsed } of addressesToGeocode) {
-        try {
-          const coords = await geocodeAddress(parsed.original);
-          if (coords) {
-            results.push({
-              ...checkIn,
-              parsedLocation: { ...parsed, lat: coords.lat, lon: coords.lon }
-            });
-          }
-        } catch (error) {
-          console.error(`Failed to geocode ${parsed.original}:`, error);
-        }
-      }
-
-      processedKeyRef.current = checkInsKey;
-      setMappedCheckIns(results);
-      setLoading(false);
-    };
-
-    processLocations();
-  }, [open, checkInsKey]);
-
   // Invalidate map size after resize
   const handleResizeStop = () => {
     setMapKey(prev => prev + 1);
@@ -468,7 +405,7 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
     setTimeout(() => setMapKey(prev => prev + 1), 100);
   };
 
-  const getMarkerColor = (checkIn: MappedCheckIn): string => {
+  const getMarkerColor = (checkIn: CheckIn): string => {
     // Role-based colors take priority over status
     if (checkIn.user_id && ncsUserIds.includes(checkIn.user_id)) {
       return '#1565c0'; // dark blue for NCS
@@ -535,7 +472,7 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
     const map = new Map<number, [number, number]>();
     for (const c of mappedCheckIns) {
       if (c.parsedLocation.lat !== 0 && c.parsedLocation.lon !== 0) {
-        map.set(c.id, [c.parsedLocation.lat, c.parsedLocation.lon]);
+        map.set(c.checkIn.id, [c.parsedLocation.lat, c.parsedLocation.lon]);
       }
     }
     return map;
@@ -554,7 +491,7 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
     const map = new Map<string, [number, number]>();
     for (const c of mappedCheckIns) {
       if (c.parsedLocation.lat !== 0 && c.parsedLocation.lon !== 0) {
-        map.set(c.callsign.toLowerCase(), [c.parsedLocation.lat, c.parsedLocation.lon]);
+        map.set(c.checkIn.callsign.toLowerCase(), [c.parsedLocation.lat, c.parsedLocation.lon]);
       }
     }
     return map;
@@ -684,11 +621,11 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
                 }
               />
             ))}
-            {mappedCheckIns.map((checkIn) => (
-              checkIn.parsedLocation.lat !== 0 && checkIn.parsedLocation.lon !== 0 && (
+            {mappedCheckIns.map(({ checkIn, parsedLocation }) => (
+              parsedLocation.lat !== 0 && parsedLocation.lon !== 0 && (
                 <Marker
                   key={checkIn.id}
-                  position={[checkIn.parsedLocation.lat, checkIn.parsedLocation.lon]}
+                  position={[parsedLocation.lat, parsedLocation.lon]}
                   icon={createColoredIcon(getMarkerColor(checkIn))}
                 >
                   <Popup>
@@ -708,7 +645,7 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
                         {checkIn.location}
                       </Typography>
                       <Typography variant="caption" display="block" color="text.secondary">
-                        ({checkIn.parsedLocation.type})
+                        ({parsedLocation.type})
                       </Typography>
                     </Box>
                   </Popup>

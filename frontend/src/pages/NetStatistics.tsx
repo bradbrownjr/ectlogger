@@ -64,7 +64,8 @@ import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 import iconRetina from 'leaflet/dist/images/marker-icon-2x.png';
 import { statisticsApi, checkInApi } from '../services/api';
-import { parseLocation, geocodeAddress, ParsedLocation } from '../utils/locationParser';
+import { useMappedCheckIns } from '../hooks/useMappedCheckIns';
+import { computeDualMapData } from '../utils/dualMap';
 import { formatDateTime } from '../utils/dateUtils';
 import { getErrorMessage } from '../utils/apiErrors';
 import { useAuth } from '../contexts/AuthContext';
@@ -158,30 +159,6 @@ const CardExportProgress: React.FC<{ active: boolean; children: React.ReactNode 
   </Box>
 );
 
-// Dual-map split: detects outliers and separates cluster from full overview
-interface DualMapData {
-  clusterPositions: [number, number][];
-  allPositions: [number, number][];
-}
-
-const computeDualMapData = (pts: { lat: number; lon: number }[]): DualMapData | null => {
-  if (pts.length < 3) return null;
-  const centLat = pts.reduce((s, p) => s + p.lat, 0) / pts.length;
-  const centLon = pts.reduce((s, p) => s + p.lon, 0) / pts.length;
-  const dists = pts.map(p => Math.sqrt(Math.pow(p.lat - centLat, 2) + Math.pow(p.lon - centLon, 2)));
-  const sorted = [...dists].sort((a, b) => a - b);
-  const medianDist = sorted[Math.floor(sorted.length / 2)];
-  const maxDist = sorted[sorted.length - 1];
-  if (medianDist < 0.5 || maxDist < medianDist * 3) return null;
-  const clusterThreshold = medianDist * 2.5;
-  const clusterPositions = pts
-    .filter((_, i) => dists[i] <= clusterThreshold)
-    .map(p => [p.lat, p.lon] as [number, number]);
-  const allPositions = pts.map(p => [p.lat, p.lon] as [number, number]);
-  if (clusterPositions.length < 2 || clusterPositions.length === allPositions.length) return null;
-  return { clusterPositions, allPositions };
-};
-
 interface TimeSeriesDataPoint {
   label: string;
   value: number;
@@ -226,11 +203,6 @@ interface CheckInRecord {
   status: string;
 }
 
-interface MappedCheckIn {
-  checkIn: CheckInRecord;
-  parsedLocation: ParsedLocation;
-}
-
 const NetStatistics: React.FC = () => {
   const { netId } = useParams<{ netId: string }>();
   const navigate = useNavigate();
@@ -257,11 +229,10 @@ const NetStatistics: React.FC = () => {
   // progress and stay disabled between individual captures.
   const [exportingAllPngs, setExportingAllPngs] = useState(false);
 
-  // Location map state
+  // Location map state. Parsing/geocoding lives in the shared hook so this
+  // page's map always plots exactly what the net report's map does.
   const [checkIns, setCheckIns] = useState<CheckInRecord[]>([]);
-  const [mappedCheckIns, setMappedCheckIns] = useState<MappedCheckIn[]>([]);
-  const [mapLoading, setMapLoading] = useState(false);
-  const processedKeyRef = useRef<string>('');
+  const { mapped: mappedCheckIns, loading: mapLoading } = useMappedCheckIns(checkIns);
 
   // Handle PDF export
   const handleExportPdf = async () => {
@@ -331,51 +302,6 @@ const NetStatistics: React.FC = () => {
     };
     fetchData();
   }, [netId]);
-
-  // Process check-in locations for the map
-  useEffect(() => {
-    if (checkIns.length === 0) return;
-
-    const checkInsKey = checkIns
-      .filter(c => c.location)
-      .map(c => `${c.id}:${c.location}`)
-      .join('|');
-
-    if (processedKeyRef.current === checkInsKey && mappedCheckIns.length > 0) return;
-
-    const processLocations = async () => {
-      setMapLoading(true);
-      const results: MappedCheckIn[] = [];
-      const addressesToGeocode: { checkIn: CheckInRecord; parsed: ParsedLocation }[] = [];
-
-      for (const checkIn of checkIns) {
-        if (!checkIn.location) continue;
-        const parsed = parseLocation(checkIn.location);
-        if (parsed) {
-          if (parsed.type === 'address') {
-            addressesToGeocode.push({ checkIn, parsed });
-          } else {
-            results.push({ checkIn, parsedLocation: parsed });
-          }
-        }
-      }
-
-      // Geocode up to 10 addresses to avoid excessive API calls
-      for (let i = 0; i < Math.min(addressesToGeocode.length, 10); i++) {
-        const { checkIn, parsed } = addressesToGeocode[i];
-        const coords = await geocodeAddress(parsed.original);
-        if (coords) {
-          results.push({ checkIn, parsedLocation: { ...coords, type: 'address', original: parsed.original } });
-        }
-      }
-
-      processedKeyRef.current = checkInsKey;
-      setMappedCheckIns(results);
-      setMapLoading(false);
-    };
-
-    processLocations();
-  }, [checkIns]);
 
   const formatDuration = (minutes: number) => {
     const hours = Math.floor(minutes / 60);

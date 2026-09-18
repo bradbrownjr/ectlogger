@@ -230,6 +230,32 @@ Whichever kind of split you're doing, after moving code out of a file:
 
 ---
 
+## Check-in maps
+
+Every check-in map in the app plots from one pipeline:
+`hooks/useMappedCheckIns.ts` parses each station's location (GPS, Maidenhead,
+UTM and MGRS locally via `utils/locationParser.ts`; street addresses geocoded
+through `backend/app/routers/geocode.py`) and returns `mapped`, `unmapped` and
+`loading`. The consumers are `components/CheckInMap.tsx` (the live map, which
+passes `enabled: open` because it stays mounted while closed),
+`pages/NetReport.tsx` and `pages/NetStatistics.tsx`. The report and statistics
+pages additionally share `utils/dualMap.ts`, which decides whether outliers
+justify the cluster/overview split.
+
+**Which stations get mapped is decided in the hook, never in a page.** Two
+rules live there: checked-out stations *are* plotted (they took part in the
+net, and the map is a record of participation), and there is *no* cap on how
+many addresses get geocoded (rate limiting is serialized and cached
+server-side). Both exist because these three files each carried their own copy
+of the loop until 2026-09-18, and the copies drifted: the report silently
+dropped checked-out stations while the other two kept them, so the same net's
+report and statistics pages reported different station counts for the same map
+(net 95: 10 vs 11), and the statistics page still had a 10-address geocode cap
+that had already been found and removed elsewhere. A new map surface consumes
+the hook; it does not filter `checkIns` on its way in.
+
+---
+
 ## UI Design Reference
 
 Before adding any new UI element, read **[docs/DESIGN.md](DESIGN.md)**. It covers:
