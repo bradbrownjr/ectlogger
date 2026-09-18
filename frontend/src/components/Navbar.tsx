@@ -58,6 +58,7 @@ import PrivacyTipIcon from '@mui/icons-material/PrivacyTip';
 import FeedbackIcon from '@mui/icons-material/Feedback';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import BugReportIcon from '@mui/icons-material/BugReport';
+import ReportProblemOutlinedIcon from '@mui/icons-material/ReportProblemOutlined';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 
 interface NavbarClockProps {
@@ -229,21 +230,30 @@ const Navbar: React.FC = () => {
 
   const helpMenuItems = [
     {
+      // The documentation home, not the site root. The root is the marketing
+      // landing page, and a menu item labeled "User Guide" that lands on a
+      // sales pitch is the wrong destination for someone who is stuck.
       label: 'User Guide',
       icon: <MenuBookIcon fontSize="small" />,
-      action: () => { closeHelpMenu(); setDrawerOpen(false); window.open('https://ectlogger.us', '_blank', 'noopener,noreferrer'); },
+      action: () => { closeHelpMenu(); setDrawerOpen(false); window.open('https://ectlogger.us/docs/', '_blank', 'noopener,noreferrer'); },
+      external: true,
+    },
+    {
+      label: 'Known Issues',
+      icon: <ReportProblemOutlinedIcon fontSize="small" />,
+      action: () => { closeHelpMenu(); setDrawerOpen(false); window.open('https://ectlogger.us/docs/about/known-issues/', '_blank', 'noopener,noreferrer'); },
       external: true,
     },
     {
       label: 'Roadmap',
       icon: <MapIcon fontSize="small" />,
-      action: () => { closeHelpMenu(); setDrawerOpen(false); window.open('https://ectlogger.us/docs/ROADMAP', '_blank', 'noopener,noreferrer'); },
+      action: () => { closeHelpMenu(); setDrawerOpen(false); window.open('https://ectlogger.us/docs/ROADMAP/', '_blank', 'noopener,noreferrer'); },
       external: true,
     },
     {
       label: 'Privacy Policy',
       icon: <PrivacyTipIcon fontSize="small" />,
-      action: () => { closeHelpMenu(); setDrawerOpen(false); window.open('https://ectlogger.us/docs/PRIVACY', '_blank', 'noopener,noreferrer'); },
+      action: () => { closeHelpMenu(); setDrawerOpen(false); window.open('https://ectlogger.us/docs/PRIVACY/', '_blank', 'noopener,noreferrer'); },
       external: true,
     },
     {

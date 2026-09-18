@@ -72,6 +72,10 @@ sed -i "s|https://GITHUB_OWNER.github.io|https://${OWNER}.github.io|" "$STAGING/
 # A custom domain on the real site would hijack the preview.
 rm -f "$STAGING/CNAME"
 
+# The project's own CI has nothing to test here and only produces a red X on a
+# repository that exists to render one Jekyll site.
+rm -rf "$STAGING/.github/workflows"
+
 cd "$STAGING"
 git init -q -b main
 git add -A

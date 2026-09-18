@@ -90,6 +90,8 @@
       url: /docs/net-managers/cancelling-and-archiving/
     - title: Reports, ICS-309, and exports
       url: /docs/net-managers/reports-and-exports/
+    - title: Importing check-ins
+      url: /docs/net-managers/importing-check-ins/
     - title: Schedule statistics and leaderboards
       url: /docs/net-managers/schedule-statistics/
 
