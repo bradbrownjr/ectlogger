@@ -66,3 +66,6 @@ htmlcov/
 
 # Local email digest (not for commit)
 docs/ectlogger-email-digest.md
+
+# Documentation screenshot pipeline
+scripts/docs-screenshots/node_modules/

@@ -1,0 +1,14 @@
+{
+  "name": "ectlogger-docs-screenshots",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Regenerates every screenshot on ectlogger.us from a manifest. See README.md.",
+  "scripts": {
+    "capture": "node capture.mjs"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0",
+    "playwright-core": "^1.48.0"
+  }
+}
