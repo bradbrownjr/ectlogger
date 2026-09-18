@@ -845,3 +845,175 @@ account password.
 | Production | `ectlogger@app.ectlogger.us` | 3.11.2 | Caddy, static build, port 8001 |
 | Beta | `bradb@10.6.26.3` | 3.13 | Backend: uvicorn port 8000, auto-reload. Frontend: `vite preview` (static build) port 3000 — not a dev server, `npm run build` required after frontend changes |
 | Alpha | `bradb@10.6.26.6` | 3.13 | Feature testing before beta; frontend serving mode unverified — check with `ps aux \| grep vite` before assuming HMR |
+
+---
+
+## Documentation site (ectlogger.us)
+
+The public site is built by GitHub Pages from `main`. There is no staging
+site: whatever is on `main` is live within about a minute of the push. Layouts
+live in `_layouts/`, the sidebar in `_data/nav.yml`, styles in
+`assets/css/site.css`, and the pages themselves under `docs/`.
+
+Full plan, including the audience split and the standards it was built
+against: the Documentation & Help Site Overhaul item in
+[ROADMAP.md](ROADMAP.md).
+
+### Layouts
+
+| Layout | Used by | What it adds |
+|---|---|---|
+| `shell` | Nothing directly | The document, header, footer, theme toggle. Every other layout inherits from it |
+| `default` | The site root and anything outside `docs/` | A single content card |
+| `docs` | Everything under `docs/`, by a default in `_config.yml` | Sidebar, search, breadcrumb, previous/next, page metadata footer |
+| `landing` | `index.md` only | Full-bleed marketing sections, no card |
+
+### Page front matter
+
+Every new page under `docs/` carries this block. The fields after `summary`
+come from ISO/IEC/IEEE 26514 document control, and the layout renders them in
+a footer line so a reader can see how old a page is without digging.
+
+```yaml
+---
+title: Checking in
+summary: One sentence, shown under the title, in search results, and as the page description.
+audience: Operators
+kind: How-to
+owner: KC1JMH
+revised: 2026-09-18
+applies_to: ECTLogger, hosted instance
+permalink: /docs/operators/checking-in/
+---
+```
+
+- **`kind`** is the Diataxis type and is one of **Tutorial**, **How-to**,
+  **Reference**, or **Explanation**. It is not decoration: a page does not mix
+  modes. A tutorial has exactly one path with no choices in it, a how-to
+  assumes you know what you want and gets you there, reference is complete and
+  scannable with no narrative, and explanation is allowed to be discursive.
+  The 1,084-line user guide this site replaced was one document trying to be
+  all four at once, which is why it served nobody.
+- **`permalink`** is optional where the file path already produces the right
+  URL (`permalink: pretty` is set site-wide), but writing it explicitly means
+  moving the file never silently breaks the sidebar.
+- **`revised`** is a real review date, not the date of the last typo fix. A
+  page past a year without review is a Phase-5-style sweep candidate.
+
+### Figures
+
+Screenshots are **generated, never hand-captured**. The manifest is
+`scripts/docs-screenshots/shots.yml` and the command is
+`node scripts/docs-screenshots/capture.mjs`. Adding a figure means adding a
+manifest entry, not opening an image editor: a hand-annotated PNG cannot be
+regenerated, which is how the site ended up with eight-month-old screenshots
+of a UI that had been redesigned twice.
+
+Rules that are not negotiable:
+
+- **Captures run against the seeded demo instance, never beta and never
+  production.** Beta holds a copy of production's database, real names and
+  email addresses included. A screenshot of it is a privacy incident.
+- **Annotations are drawn at capture time.** A figure that tells the reader
+  where to click gets a bright red box (`#e53935`) around the target, or a red
+  underline where a box would swallow half the screen. The target is declared
+  in the manifest as a selector, so it follows the control when the layout
+  changes instead of pointing at empty space.
+- **No instruction may exist only inside an image** (WCAG 1.4.5). The prose
+  names the control by its label, and the alt text carries the same
+  instruction in words. A red box is invisible to a screen reader.
+- **Light mode only**, except for the one figure that exists to show the dark
+  theme.
+
+### Example callsigns, names, and organizations
+
+Every worked example, screenshot, and speed-entry sample uses the roster
+below, and nothing else. Do not invent a callsign for a new page.
+
+**The rule: every example callsign carries a four-letter suffix.** The FCC's
+sequential call sign system tops out at a three-letter suffix (1x3 and 2x3
+being the longest forms it issues), so a four-letter suffix is structurally
+unassignable in perpetuity. This is the same reasoning behind `N0CALL`, the
+placeholder WSJT-X and Direwolf ship as their default. It means no screenshot
+can put words in a real licensee's mouth, and a ham reading closely recognizes
+the shape as a placeholder without it looking wrong.
+
+The guide this site replaced used `KC1ABC`, `N1XYZ`, and `W1DEF`, every one of
+which is a callsign the FCC can issue and may already have issued.
+
+| Callsign | Name | Stands in for |
+|---|---|---|
+| `W1PINE` | Alex Reed | Net Control, and the schedule owner through most of the guide |
+| `K1COVE` | Dana Whitfield | Logger |
+| `N1LAKE` | Marcus Ellery | Relay |
+| `KC1HILL` | Priya Nandan | A regular participant; the "you" of the operator path |
+| `W1PORT` | Joan Alderman | Second net control on a multi-frequency net |
+| `N1ROVE` | Chris Baumann | Mobile station, for the status and location examples |
+| `K1CAMP` | Terry Osgood | Shelter station, for the traffic examples |
+| `W2FERN`, `N2OAKS`, `K3BASE`, `W1MILL`, `N1BIRD` | — | Table filler, enough rows for a realistic log |
+| `N0CALL` | — | Reserved for "not configured yet" examples only |
+
+Organizations: **Example County ARES**, **Example County SKYWARN**, and the
+**Tuesday Evening Club Net**. Named so they cannot be mistaken for a real
+group or tread on anyone's mark.
+
+Locations stay real New England towns, because the map pages need addresses
+that actually geocode and a town name is not personal information.
+
+### Voice
+
+The site is written the way a sysop writes to other operators: practical,
+specific, never breathless.
+
+- "You" for the reader-operator. "We" sparingly, for the project.
+- Sentence case for headings, buttons, and labels. Protocol literals keep
+  their real casing: callsigns, `ICS-309`, `WXOBS`, `@MAINE`.
+- **Always give the why.** A sentence that says what a control does without
+  saying what problem it solves gets rewritten.
+- Expand an acronym on first use per page, then use it freely. Assume the
+  reader knows amateur radio. Do not assume they know ARES, RRI, or ICS.
+- Be honest about limits, where the reader will hit them, not in a footnote.
+- No developer vocabulary. The changelog's forbidden-terms list applies here
+  too: no "component", "endpoint", "modal", "boolean", "refactor".
+- **No emoji in body copy.** They stay in exactly two places, where they are
+  load-bearing: the roadmap's type tags and the changelog.
+- How-to pages get numbered steps, one action per step, imperative mood, and
+  the outcome stated before the steps. Explanation pages keep the long, dense,
+  technically specific register; that is where it belongs.
+
+### Reusable HTML in a page
+
+Markdown is converted with Kramdown, so raw HTML passes through. The site
+stylesheet defines three things worth reaching for:
+
+```html
+<div class="callout">
+  <span class="callout-label">Note</span>
+  <p>Body.</p>
+</div>
+```
+
+`callout` also takes `warning` and `danger`. The label word is required: a
+callout must never rely on its color to say what it is (WCAG 1.4.1).
+
+```html
+<figure>
+  <img src="/docs/img/operators/check-in-dialog.png"
+       alt="The check-in dialog, with the Check In button outlined in red at the bottom right.">
+  <figcaption>The check-in dialog. Only the callsign is required.</figcaption>
+</figure>
+```
+
+Add `class="control-figure"` for a partial capture of a single control, so it
+renders at its own size instead of stretched to the column width.
+
+### Never do this
+
+- **Never document a feature that is not in production.** A page describing an
+  unshipped feature is a bug. Feature-branch work gets its pages written on
+  that branch and merged with it.
+- **Never take "just one" screenshot from beta.**
+- **Never write bare double braces in a page**, per the GitHub Pages rule in
+  `.github/copilot-instructions.md`. Liquid is switched off for page content
+  in `_config.yml`, which covers most of it, but the search index and the
+  layouts do process Liquid.

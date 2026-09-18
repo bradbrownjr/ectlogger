@@ -1,0 +1,178 @@
+# Sidebar navigation for the documentation site.
+#
+# The order here is the order a person grows into: you take part in a net
+# before you run one, you run one before you own the schedule, and you own a
+# schedule before anyone hands you the admin panel. Self-hosting is a separate
+# track rather than a fifth step, because running the server is a different job
+# from administering an instance somebody else runs.
+#
+# Every entry needs a url with a leading and trailing slash, matching the
+# page's own permalink, or the sidebar cannot tell which page you are on.
+
+- title: Start here
+  url: /docs/start/
+  eyebrow: Tutorial
+  summary: Three guided walkthroughs that each end with something real on the screen.
+  items:
+    - title: Check into your first net
+      url: /docs/start/first-check-in/
+    - title: Run your first net
+      url: /docs/start/run-your-first-net/
+    - title: Set up a recurring schedule
+      url: /docs/start/first-schedule/
+
+- title: Operators
+  url: /docs/operators/
+  eyebrow: Path 1
+  summary: Taking part in a net. Checking in, keeping your status honest, and getting credit for the time you put in.
+  items:
+    - title: Your account and profile
+      url: /docs/operators/account-and-profile/
+    - title: Finding a net
+      url: /docs/operators/finding-a-net/
+    - title: Checking in
+      url: /docs/operators/checking-in/
+    - title: Status, rechecks, and checking out
+      url: /docs/operators/status-and-checking-out/
+    - title: Chat, polls, and topics
+      url: /docs/operators/chat-and-polls/
+    - title: Your location and the map
+      url: /docs/operators/location-and-the-map/
+    - title: Filing traffic
+      url: /docs/operators/filing-traffic/
+    - title: Your statistics
+      url: /docs/operators/your-statistics/
+    - title: On a phone in the field
+      url: /docs/operators/in-the-field/
+
+- title: Net control
+  url: /docs/net-control/
+  eyebrow: Path 2
+  summary: Running a live net as NCS, Logger, or Relay, from the first check-in to the log in your inbox.
+  items:
+    - title: The net control desk
+      url: /docs/net-control/the-net-control-desk/
+    - title: Logging check-ins
+      url: /docs/net-control/logging-check-ins/
+    - title: Speed entry
+      url: /docs/net-control/speed-entry/
+    - title: Frequencies and multiple net controls
+      url: /docs/net-control/frequencies-and-multi-ncs/
+    - title: Roles and stepping away
+      url: /docs/net-control/roles-and-stepping-away/
+    - title: Chat moderation and mutes
+      url: /docs/net-control/chat-moderation/
+    - title: Authenticated nets
+      url: /docs/net-control/authenticated-nets/
+    - title: Handling traffic
+      url: /docs/net-control/handling-traffic/
+    - title: Multiple monitors and wide screens
+      url: /docs/net-control/multiple-monitors/
+    - title: Closing the net
+      url: /docs/net-control/closing-the-net/
+
+- title: Net managers
+  url: /docs/net-managers/
+  eyebrow: Path 3
+  summary: Owning a net or a schedule. Recurrence, staffing, rotation, and everything that has to happen before anyone keys up.
+  items:
+    - title: Creating a net
+      url: /docs/net-managers/creating-a-net/
+    - title: Recurring schedules
+      url: /docs/net-managers/recurring-schedules/
+    - title: Net staff and the NCS rotation
+      url: /docs/net-managers/net-staff-and-rotation/
+    - title: Scripts, notes, and announcements
+      url: /docs/net-managers/scripts-and-announcements/
+    - title: Lobby and auto-close settings
+      url: /docs/net-managers/lobby-and-auto-close/
+    - title: Cancelling, archiving, and restoring
+      url: /docs/net-managers/cancelling-and-archiving/
+    - title: Reports, ICS-309, and exports
+      url: /docs/net-managers/reports-and-exports/
+    - title: Schedule statistics and leaderboards
+      url: /docs/net-managers/schedule-statistics/
+
+- title: Administrators
+  url: /docs/admins/
+  eyebrow: Path 4
+  summary: The admin panel of a running instance. Who gets in, what the forms ask for, and what the whole site looks like.
+  items:
+    - title: Users and roles
+      url: /docs/admins/users-and-roles/
+    - title: Custom check-in fields
+      url: /docs/admins/custom-fields/
+    - title: Shared frequencies
+      url: /docs/admins/frequencies/
+    - title: Branding and themes
+      url: /docs/admins/branding-and-themes/
+    - title: The maintenance banner
+      url: /docs/admins/maintenance-banner/
+    - title: Security, MFA, and lockouts
+      url: /docs/admins/security-and-mfa/
+    - title: Traffic handling settings
+      url: /docs/admins/traffic-settings/
+    - title: The contact directory
+      url: /docs/admins/contacts/
+
+- title: Self-hosting
+  url: /docs/self-hosting/
+  eyebrow: Server operators
+  summary: Running your own instance on your own hardware. Install, deploy, email, logging, and hardening.
+  items:
+    - title: Quick start
+      url: /docs/QUICKSTART/
+    - title: Manual installation
+      url: /docs/MANUAL-INSTALLATION/
+    - title: Production deployment
+      url: /docs/PRODUCTION-DEPLOYMENT/
+    - title: Magic link configuration
+      url: /docs/MAGIC-LINK-CONFIGURATION/
+    - title: Email deliverability
+      url: /docs/EMAIL-DELIVERABILITY/
+    - title: Passwords and MFA
+      url: /docs/PASSWORD-MFA/
+    - title: Logging
+      url: /docs/LOGGING/
+    - title: fail2ban
+      url: /docs/FAIL2BAN/
+    - title: Security
+      url: /docs/SECURITY/
+
+- title: Reference
+  url: /docs/reference/
+  eyebrow: Reference
+  summary: The complete lists. Nothing here explains anything; it is for looking something up mid-net.
+  items:
+    - title: Station statuses
+      url: /docs/reference/station-statuses/
+    - title: Roles and permissions
+      url: /docs/reference/roles-and-permissions/
+    - title: Check-in fields
+      url: /docs/reference/check-in-fields/
+    - title: Speed entry syntax
+      url: /docs/reference/speed-entry-syntax/
+    - title: Location formats
+      url: /docs/reference/location-formats/
+    - title: Emails we send
+      url: /docs/reference/emails/
+    - title: Feeds and calendars
+      url: /docs/reference/feeds/
+    - title: Glossary
+      url: /docs/reference/glossary/
+
+- title: About
+  url: /docs/about/
+  eyebrow: About
+  summary: What changed, what is broken, what is planned, and how to reach a human.
+  items:
+    - title: Known issues
+      url: /docs/about/known-issues/
+    - title: Getting help
+      url: /docs/about/getting-help/
+    - title: Changelog
+      url: /docs/CHANGELOG/
+    - title: Roadmap
+      url: /docs/ROADMAP/
+    - title: Privacy
+      url: /docs/PRIVACY/
