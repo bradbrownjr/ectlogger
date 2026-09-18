@@ -17,6 +17,7 @@ import { useNetWebSocket } from '../hooks/useNetWebSocket';
 import Chat from '../components/Chat';
 import ActivityLog from '../components/ActivityLog';
 import CheckInMap from '../components/CheckInMap';
+import { getMarkerRoleIds } from '../utils/checkInMarkers';
 import CoverageReport from '../components/netview/CoverageReport';
 import TrafficPanel from '../components/netview/TrafficPanel';
 import FileTrafficDialog from '../components/netview/FileTrafficDialog';
@@ -237,9 +238,7 @@ const NetPaneWindow: React.FC = () => {
           onClose={() => {}}
           checkIns={checkIns}
           netName={net.name || 'Net'}
-          ncsUserIds={netRoles.filter((r: any) => r.role === 'NCS').map((r: any) => r.user_id)}
-          loggerUserIds={netRoles.filter((r: any) => r.role === 'LOGGER').map((r: any) => r.user_id)}
-          relayUserIds={netRoles.filter((r: any) => r.role === 'Relay').map((r: any) => r.user_id)}
+          {...getMarkerRoleIds(netRoles)}
           embedded
           canHearReports={canHearReports}
           frequencyLabels={Object.fromEntries(

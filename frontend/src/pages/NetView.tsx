@@ -28,6 +28,7 @@ import usePersistedDialog from '../hooks/usePersistedDialog';
 import { STORAGE_KEYS } from '../utils/localStorageKeys';
 import { displayCallsign } from '../utils/userDisplay';
 import { getErrorMessage } from '../utils/apiErrors';
+import { getMarkerRoleIds } from '../utils/checkInMarkers';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Container,
@@ -1446,10 +1447,13 @@ const NetView: React.FC = () => {
     compareCheckInsByRole(a, b, staffRoleRankByUserId, net?.mobile_priority_sort !== false)
   );
 
-  // Shared by the floating and docked CheckInMap instances below.
-  const ncsUserIds = netRoles.filter((r: any) => r.role === 'NCS').map((r: any) => r.user_id);
-  const loggerUserIds = netRoles.filter((r: any) => r.role === 'LOGGER').map((r: any) => r.user_id);
-  const relayUserIds = netRoles.filter((r: any) => r.role === 'Relay').map((r: any) => r.user_id);
+  // Shared by the floating and docked CheckInMap instances below. The split
+  // itself lives in utils/checkInMarkers.ts so this page, the net report
+  // and the statistics page all resolve roles the same way -- this copy used
+  // to test `r.role === 'Relay'` against an API that returns 'RELAY' (so a
+  // relay station was never colored, and the legend entry never appeared) and
+  // ignored is_active (so a station kept its NCS color after stepping down).
+  const { ncsUserIds, loggerUserIds, relayUserIds } = getMarkerRoleIds(netRoles);
 
   // Find the user's active check-in (not checked out)
   const userActiveCheckIn = checkIns.find(

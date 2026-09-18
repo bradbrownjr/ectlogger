@@ -14,7 +14,7 @@
               "userImpact": true
             },
             {
-              "text": "Net Report: Map shows every station that took part — A net's report map quietly left out stations that had checked out before the net closed, so it disagreed with the same net's statistics page about how many stations were on the air. Both maps now plot everyone who participated, and the statistics map no longer stops plotting after the tenth street address.",
+              "text": "Net Report: Maps agree with each other — A net's report map quietly left out stations that had checked out before the net closed, so it disagreed with the same net's statistics page about how many stations were on the air, and the two pages colored their pins differently on top of that. Both maps now plot everyone who participated, in the same colors as the live map during the net (including net control, logger and relay), each with a legend listing exactly the pins on it. The statistics map also no longer stops plotting after the tenth street address.",
               "userImpact": true
             }
           ]

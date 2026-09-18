@@ -242,6 +242,19 @@ passes `enabled: open` because it stays mounted while closed),
 pages additionally share `utils/dualMap.ts`, which decides whether outliers
 justify the cluster/overview split.
 
+**How a station is drawn** is decided in `utils/checkInMarkers.ts`: the status
+and role palette, the role split (`getMarkerRoleIds`), and each map's legend
+(`buildMarkerLegend`, which lists only the colors actually on that map). The
+palette is keyed to the real `StationStatus` vocabulary from
+`backend/app/models.py` and nothing else -- both of the per-page copies it
+replaced colored invented statuses ('TACTICAL', 'MONITORING', 'priority') and
+so sent real ones to a default color. It is deliberately DOM-free so it can be
+unit tested; the Leaflet icon factory lives next door in
+`utils/checkInMarkerIcon.ts`, which needs `window`. The live map keeps its own
+CSS-rotated marker *shape* (the report and statistics pins are SVG in an `img`
+because html2canvas captures those reliably and inline SVG unreliably) but
+draws it in the shared colors.
+
 **Which stations get mapped is decided in the hook, never in a page.** Two
 rules live there: checked-out stations *are* plotted (they took part in the
 net, and the map is a record of participation), and there is *no* cap on how

@@ -63,8 +63,11 @@ import 'leaflet/dist/leaflet.css';
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 import iconRetina from 'leaflet/dist/images/marker-icon-2x.png';
-import { statisticsApi, checkInApi } from '../services/api';
+import { statisticsApi, checkInApi, netRoleApi } from '../services/api';
 import { useMappedCheckIns } from '../hooks/useMappedCheckIns';
+import { getCheckInMarkerColor, getMarkerRoleIds, buildMarkerLegend } from '../utils/checkInMarkers';
+import { createStationMarkerIcon } from '../utils/checkInMarkerIcon';
+import { getStatusLabel } from '../components/netview/checkInStatusHelpers';
 import { computeDualMapData } from '../utils/dualMap';
 import { formatDateTime } from '../utils/dateUtils';
 import { getErrorMessage } from '../utils/apiErrors';
@@ -84,19 +87,6 @@ const DefaultIcon = L.icon({
   shadowSize: [41, 41],
 });
 L.Marker.prototype.options.icon = DefaultIcon;
-
-// Simple green pin for all historical check-in locations on the stats map
-const statsMarkerIcon = L.divIcon({
-  className: 'custom-marker',
-  html: `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="30" viewBox="0 0 24 32">
-    <path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 20 12 20s12-11 12-20c0-6.6-5.4-12-12-12z"
-          fill="#4caf50" stroke="#333" stroke-width="2"/>
-    <circle cx="12" cy="12" r="4" fill="white"/>
-  </svg>`,
-  iconSize: [22, 30],
-  iconAnchor: [11, 30],
-  popupAnchor: [0, -30],
-});
 
 // FitBounds: auto-fits the map to show all markers, then stays put
 // resizeToken: bump when the map's *container* changes shape (the PNG export
@@ -201,6 +191,8 @@ interface CheckInRecord {
   name?: string;
   location?: string;
   status: string;
+  // Only used to color a station by the net role it held - see markerRoles.
+  user_id?: number;
 }
 
 const NetStatistics: React.FC = () => {
@@ -229,10 +221,20 @@ const NetStatistics: React.FC = () => {
   // progress and stay disabled between individual captures.
   const [exportingAllPngs, setExportingAllPngs] = useState(false);
 
-  // Location map state. Parsing/geocoding lives in the shared hook so this
-  // page's map always plots exactly what the net report's map does.
+  // Location map state. Parsing/geocoding lives in the shared hook and marker
+  // colors in the shared palette, so this page's map plots exactly what the
+  // net report's map does, in the same colors.
   const [checkIns, setCheckIns] = useState<CheckInRecord[]>([]);
+  // Roles are fetched only to color a station by the role it held (NCS,
+  // Logger, Relay), which is what the live map and the report both do.
+  const [netRoles, setNetRoles] = useState<any[]>([]);
   const { mapped: mappedCheckIns, loading: mapLoading } = useMappedCheckIns(checkIns);
+  const markerRoles = getMarkerRoleIds(netRoles);
+  const mapLegend = buildMarkerLegend(
+    mappedCheckIns.map(m => m.checkIn),
+    markerRoles,
+    getStatusLabel
+  );
 
   // Handle PDF export
   const handleExportPdf = async () => {
@@ -286,12 +288,14 @@ const NetStatistics: React.FC = () => {
       if (!netId) return;
       try {
         setLoading(true);
-        const [statsRes, checkInsRes] = await Promise.all([
+        const [statsRes, checkInsRes, rolesRes] = await Promise.all([
           statisticsApi.getNetStats(parseInt(netId)),
           checkInApi.list(parseInt(netId)),
+          netRoleApi.list(parseInt(netId)),
         ]);
         setStats(statsRes.data);
         setCheckIns(checkInsRes.data);
+        setNetRoles(rolesRes.data || []);
         setError(null);
       } catch (err: any) {
         console.error('Failed to fetch net statistics:', err);
@@ -860,7 +864,7 @@ const NetStatistics: React.FC = () => {
                               <Marker
                                 key={`cluster-${mapped.checkIn.id}`}
                                 position={[mapped.parsedLocation.lat, mapped.parsedLocation.lon]}
-                                icon={statsMarkerIcon}
+                                icon={createStationMarkerIcon(getCheckInMarkerColor(mapped.checkIn, markerRoles), 22, 30)}
                               >
                                 <Popup>
                                   <strong>{mapped.checkIn.callsign}</strong>
@@ -892,7 +896,7 @@ const NetStatistics: React.FC = () => {
                               <Marker
                                 key={`overview-${mapped.checkIn.id}`}
                                 position={[mapped.parsedLocation.lat, mapped.parsedLocation.lon]}
-                                icon={statsMarkerIcon}
+                                icon={createStationMarkerIcon(getCheckInMarkerColor(mapped.checkIn, markerRoles), 22, 30)}
                               >
                                 <Popup>
                                   <strong>{mapped.checkIn.callsign}</strong>
@@ -922,7 +926,7 @@ const NetStatistics: React.FC = () => {
                         <Marker
                           key={mapped.checkIn.id}
                           position={[mapped.parsedLocation.lat, mapped.parsedLocation.lon]}
-                          icon={statsMarkerIcon}
+                          icon={createStationMarkerIcon(getCheckInMarkerColor(mapped.checkIn, markerRoles), 22, 30)}
                         >
                           <Popup>
                             <strong>{mapped.checkIn.callsign}</strong>
@@ -934,6 +938,19 @@ const NetStatistics: React.FC = () => {
                     </MapContainer>
                   </Box>
                 )
+              )}
+
+              {/* Marker legend -- built from the same palette the markers draw
+                  from, so it lists exactly the colors on this net's map */}
+              {mapLegend.length > 0 && !mapLoading && (
+                <Box sx={{ px: 2, pb: 2, pt: 1, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                  {mapLegend.map((item) => (
+                    <Box key={item.label} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: item.color }} />
+                      <Typography variant="caption">{item.label}</Typography>
+                    </Box>
+                  ))}
+                </Box>
               )}
             </Paper>
             </CardExportProgress>
@@ -1089,7 +1106,7 @@ const NetStatistics: React.FC = () => {
                       {mappedCheckIns.map(mapped => (
                         <Marker key={`exp-c-${mapped.checkIn.id}`}
                           position={[mapped.parsedLocation.lat, mapped.parsedLocation.lon]}
-                          icon={statsMarkerIcon}>
+                          icon={createStationMarkerIcon(getCheckInMarkerColor(mapped.checkIn, markerRoles), 22, 30)}>
                           <Popup>
                             <strong>{mapped.checkIn.callsign}</strong>
                             {mapped.checkIn.name && <><br />{mapped.checkIn.name}</>}
@@ -1109,7 +1126,7 @@ const NetStatistics: React.FC = () => {
                       {mappedCheckIns.map(mapped => (
                         <Marker key={`exp-o-${mapped.checkIn.id}`}
                           position={[mapped.parsedLocation.lat, mapped.parsedLocation.lon]}
-                          icon={statsMarkerIcon}>
+                          icon={createStationMarkerIcon(getCheckInMarkerColor(mapped.checkIn, markerRoles), 22, 30)}>
                           <Popup>
                             <strong>{mapped.checkIn.callsign}</strong>
                             {mapped.checkIn.name && <><br />{mapped.checkIn.name}</>}
@@ -1130,7 +1147,7 @@ const NetStatistics: React.FC = () => {
                   {mappedCheckIns.map(mapped => (
                     <Marker key={`exp-${mapped.checkIn.id}`}
                       position={[mapped.parsedLocation.lat, mapped.parsedLocation.lon]}
-                      icon={statsMarkerIcon}>
+                      icon={createStationMarkerIcon(getCheckInMarkerColor(mapped.checkIn, markerRoles), 22, 30)}>
                       <Popup>
                         <strong>{mapped.checkIn.callsign}</strong>
                         {mapped.checkIn.name && <><br />{mapped.checkIn.name}</>}

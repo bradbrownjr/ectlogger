@@ -1187,3 +1187,43 @@ to the content.
 
 `frontend/src/components/TopicHistory.tsx` — dialog list with search, 25-row
 pagination, and the date-left / content-right row layout.
+
+---
+
+## Check-in Map Markers
+
+Every check-in map draws a station in the same color, from one palette:
+`frontend/src/utils/checkInMarkers.ts`. Never hardcode a marker color, and
+never write a per-page legend.
+
+### Rules
+
+- **Color comes from `getCheckInMarkerColor(checkIn, roles)`.** Role outranks
+  status (an NCS who is checked in draws as NCS), because on a map the first
+  question is who is running the net.
+- **The palette is keyed to `StationStatus`** (`backend/app/models.py`) and
+  nothing else. Before adding a key, confirm the backend can actually produce
+  that value. Two earlier hand-written copies colored `TACTICAL`,
+  `MONITORING`, `CHECKING_OUT` and `priority`, none of which exist, and so
+  quietly sent real statuses (`away`, `mobile`, `announcements`,
+  `checked_out`) to a default color.
+- **Legends are generated, never hand-listed.** `buildMarkerLegend(checkIns,
+  roles, getStatusLabel)` returns exactly the colors present on that map. A
+  hardcoded legend drifts in both directions: it names statuses nobody used and
+  omits the color the reader is actually looking at.
+- **Status labels come from `getStatusLabel`**
+  (`components/netview/checkInStatusHelpers.ts`), so a status reads the same
+  word in the check-in table, the legend, and the report's status badge.
+- **Fixed hex values, not theme tokens.** These colors are also legend swatches
+  drawn over map tiles, and the report is a print document whose tiles are
+  always light. A net's record must not look different depending on the
+  viewer's theme. This is the documented exception to the theme-token rule in
+  "Theme & Dark Mode Compliance" above.
+
+### Marker shape
+
+The report and statistics maps use the SVG pin from
+`utils/checkInMarkerIcon.ts`; the live map (`CheckInMap.tsx`) keeps a
+CSS-rotated square. That divergence is deliberate: both pages capture their map
+through html2canvas for PDF/PNG export, which renders an `img`-wrapped SVG
+reliably and a CSS-transformed div unreliably. Same colors, different shape.

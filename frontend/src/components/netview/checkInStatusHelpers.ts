@@ -15,6 +15,29 @@ interface StatusHelperContext {
   ncsRoles: any[];
 }
 
+// Short text label for a status. Pairs with the emoji icon in the status
+// select so new NCS users don't have to memorize the icon legend (e.g.,
+// bullhorn 📢 vs ear 👂 — both look "loud" at a glance). Module-level and
+// exported rather than part of the factory below: it needs no net context, and
+// the map legends and the report's status badge name statuses too. They used
+// to spell them their own way (the report title-cased the raw value, so a
+// station read "Listening" in the log and "Listening only" in the table).
+export function getStatusLabel(status: string): string {
+  switch (status) {
+    case 'ncs': return 'NCS';
+    case 'logger': return 'Logger';
+    case 'checked_in': return 'Checked in';
+    case 'listening': return 'Listening only';
+    case 'relay': return 'Relay';
+    case 'away': return 'Away';
+    case 'has_traffic': return 'Has traffic';
+    case 'announcements': return 'Announcements';
+    case 'mobile': return 'Mobile';
+    case 'checked_out': return 'Checked out';
+    default: return status;
+  }
+}
+
 export interface CheckInStatusHelpers {
   getStatusIcon: (status: string, checkIn?: any) => string;
   getStatusTooltip: (status: string, checkIn?: any) => string;
@@ -114,25 +137,6 @@ export function getCheckInStatusHelpers({
       case 'mobile': return 'Mobile - may only be available briefly';
       case 'checked_out': return 'Checked out of net';
       default: return 'Checked in and available';
-    }
-  };
-
-  // Short text label for the status select dropdown options. Pairs with the
-  // emoji icon so new NCS users don't have to memorize the icon legend
-  // (e.g., bullhorn 📢 vs ear 👂 — both look "loud" at a glance).
-  const getStatusLabel = (status: string): string => {
-    switch (status) {
-      case 'ncs': return 'NCS';
-      case 'logger': return 'Logger';
-      case 'checked_in': return 'Checked in';
-      case 'listening': return 'Listening only';
-      case 'relay': return 'Relay';
-      case 'away': return 'Away';
-      case 'has_traffic': return 'Has traffic';
-      case 'announcements': return 'Announcements';
-      case 'mobile': return 'Mobile';
-      case 'checked_out': return 'Checked out';
-      default: return status;
     }
   };
 

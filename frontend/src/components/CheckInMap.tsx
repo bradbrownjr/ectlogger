@@ -28,6 +28,8 @@ import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useMappedCheckIns } from '../hooks/useMappedCheckIns';
+import { getCheckInMarkerColor, buildMarkerLegend } from '../utils/checkInMarkers';
+import { getStatusLabel } from './netview/checkInStatusHelpers';
 import { exportToPdf } from '../utils/pdfExport';
 import type { CanHearReportEntry } from './netview/CoverageReport';
 
@@ -52,9 +54,9 @@ L.Marker.prototype.options.icon = DefaultIcon;
 // See docs/ROADMAP.md "Relaying & Propagation Mapping" - the map overlay for
 // the per-net "can hear" propagation edges (Phase 3's CoverageReport.tsx is
 // the table view of the same data). Colors are chosen to be distinct from
-// every marker/status color in getMarkerColor/colorLegend below (blue,
-// deep purple, teal, green, purple, orange, red, cyan, brown, blue-gray,
-// pink) so a line is never mistaken for a marker's status.
+// every marker color in utils/checkInMarkers.ts (blue, deep purple,
+// teal, green, purple, orange, red, cyan, blue-gray, grey) so a line is never
+// mistaken for a marker's status - keep them distinct if that palette grows.
 const COVERAGE_TWO_WAY_COLOR = '#ffab00'; // amber - confirmed both directions
 const COVERAGE_ONE_WAY_COLOR = '#616161'; // neutral gray - reported one direction only
 
@@ -405,43 +407,11 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
     setTimeout(() => setMapKey(prev => prev + 1), 100);
   };
 
-  const getMarkerColor = (checkIn: CheckIn): string => {
-    // Role-based colors take priority over status
-    if (checkIn.user_id && ncsUserIds.includes(checkIn.user_id)) {
-      return '#1565c0'; // dark blue for NCS
-    }
-    if (checkIn.user_id && loggerUserIds.includes(checkIn.user_id)) {
-      return '#6a1b9a'; // deep purple for Logger
-    }
-    if (checkIn.user_id && relayUserIds.includes(checkIn.user_id)) {
-      return '#00695c'; // teal for Relay
-    }
-    
-    switch (checkIn.status) {
-      case 'checked_in': return '#4caf50'; // green - standard check-in
-      case 'listening': return '#9c27b0'; // purple - monitoring
-      case 'away': return '#ff9800'; // orange - temporarily away
-      case 'has_traffic': return '#f44336'; // red - has traffic
-      case 'announcements': return '#00bcd4'; // cyan - has announcements
-      case 'tactical': return '#795548'; // brown - tactical station
-      case 'mobile': return '#607d8b'; // blue-gray - mobile station
-      case 'priority': return '#e91e63'; // pink - priority traffic
-      default: return '#4caf50';
-    }
-  };
-
-  // Color legend for the map
-  const colorLegend = [
-    { color: '#1565c0', label: 'NCS', show: ncsUserIds.length > 0 },
-    { color: '#6a1b9a', label: 'Logger', show: loggerUserIds.length > 0 },
-    { color: '#00695c', label: 'Relay', show: relayUserIds.length > 0 },
-    { color: '#4caf50', label: 'Checked In', show: true },
-    { color: '#f44336', label: 'Has Traffic', show: true },
-    { color: '#9c27b0', label: 'Listening', show: true },
-    { color: '#ff9800', label: 'Away', show: true },
-    { color: '#00bcd4', label: 'Announcements', show: true },
-    { color: '#607d8b', label: 'Mobile', show: true },
-  ];
+  // Marker colors and the legend below the map both come from the shared
+  // palette (utils/checkInMarkers.ts), so a station looks the same here,
+  // on the net report and on the statistics page.
+  const markerRoles = { ncsUserIds, loggerUserIds, relayUserIds };
+  const colorLegend = buildMarkerLegend(checkIns, markerRoles, getStatusLabel);
 
   // Memoize positions so the array reference only changes when mappedCheckIns actually changes,
   // preventing FitBounds' useEffect from triggering on unrelated re-renders
@@ -626,7 +596,7 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
                 <Marker
                   key={checkIn.id}
                   position={[parsedLocation.lat, parsedLocation.lon]}
-                  icon={createColoredIcon(getMarkerColor(checkIn))}
+                  icon={createColoredIcon(getCheckInMarkerColor(checkIn, markerRoles))}
                 >
                   <Popup>
                     <Box sx={{ minWidth: 150 }}>
@@ -731,7 +701,6 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
             }}
           >
             {colorLegend
-              .filter(item => item.show)
               .map((item) => (
                 <Box key={item.label} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                   <Box

@@ -49,6 +49,9 @@ import { MapContainer, TileLayer, Marker, Popup, Polyline, Tooltip as LeafletToo
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useMappedCheckIns } from '../hooks/useMappedCheckIns';
+import { getCheckInMarkerColor, getMarkerRoleIds, buildMarkerLegend } from '../utils/checkInMarkers';
+import { createStationMarkerIcon } from '../utils/checkInMarkerIcon';
+import { getStatusLabel } from '../components/netview/checkInStatusHelpers';
 import { computeDualMapData } from '../utils/dualMap';
 
 // Fix for default marker icons in webpack/vite
@@ -67,30 +70,6 @@ const DefaultIcon = L.icon({
 });
 
 L.Marker.prototype.options.icon = DefaultIcon;
-
-// Custom marker colors based on status
-// Uses SVG for better html2canvas PDF export compatibility
-const createColoredIcon = (color: string) => {
-  // Create an SVG marker that renders properly in PDF export
-  const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="32" viewBox="0 0 24 32">
-      <path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 20 12 20s12-11 12-20c0-6.6-5.4-12-12-12z" 
-            fill="${color}" 
-            stroke="#333333" 
-            stroke-width="2"/>
-      <circle cx="12" cy="12" r="4" fill="white"/>
-    </svg>
-  `;
-  const encodedSvg = encodeURIComponent(svg);
-  
-  return L.divIcon({
-    className: 'custom-marker',
-    html: `<img src="data:image/svg+xml,${encodedSvg}" width="24" height="32" style="display: block;" />`,
-    iconSize: [24, 32],
-    iconAnchor: [12, 32],
-    popupAnchor: [0, -32],
-  });
-};
 
 // Component to fit map bounds to markers
 //
@@ -375,28 +354,18 @@ const NetReport: React.FC = () => {
     fetchAllData();
   }, [netId]);
 
-  // Get marker color based on status (handle UPPERCASE database values)
-  const getStatusColor = (status: string): string => {
-    switch (status.toUpperCase()) {
-      case 'CHECKED_IN': return theme.palette.success.main;
-      case 'HAS_TRAFFIC': return theme.palette.error.main;
-      case 'TACTICAL': return theme.palette.warning.main;
-      case 'MONITORING': return theme.palette.info.main;
-      case 'LISTENING': return theme.palette.info.main;
-      case 'CHECKING_OUT': return theme.palette.error.light;
-      default: return theme.palette.grey[500];
-    }
-  };
-
-  // Get status label formatted nicely
-  const getStatusLabel = (status: string): string => {
-    const normalized = status.toLowerCase().replace('_', ' ');
-    return normalized.charAt(0).toUpperCase() + normalized.slice(1);
-  };
+  // Role lookup for the map's markers and legend, so a station is the same
+  // color here as on the live map (see utils/checkInMarkers.ts).
+  const markerRoles = getMarkerRoleIds(netRoles);
+  const mapLegend = buildMarkerLegend(
+    mappedCheckIns.map(m => m.checkIn),
+    markerRoles,
+    getStatusLabel
+  );
 
   // PDF-friendly status badge (html2canvas doesn't render MUI Chip text properly)
   const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
-    const color = getStatusColor(status);
+    const color = getCheckInMarkerColor({ status });
     const label = getStatusLabel(status);
     return (
       <span
@@ -1170,7 +1139,7 @@ const NetReport: React.FC = () => {
                           <Marker
                             key={`cluster-${mapped.checkIn.id}`}
                             position={[mapped.parsedLocation.lat, mapped.parsedLocation.lon]}
-                            icon={createColoredIcon(getStatusColor(mapped.checkIn.status))}
+                            icon={createStationMarkerIcon(getCheckInMarkerColor(mapped.checkIn, markerRoles))}
                           >
                             <Popup>
                               <Box sx={{ minWidth: 150 }}>
@@ -1218,7 +1187,7 @@ const NetReport: React.FC = () => {
                           <Marker
                             key={`overview-${mapped.checkIn.id}`}
                             position={[mapped.parsedLocation.lat, mapped.parsedLocation.lon]}
-                            icon={createColoredIcon(getStatusColor(mapped.checkIn.status))}
+                            icon={createStationMarkerIcon(getCheckInMarkerColor(mapped.checkIn, markerRoles))}
                           >
                             <Popup>
                               <Box sx={{ minWidth: 150 }}>
@@ -1235,21 +1204,17 @@ const NetReport: React.FC = () => {
                   </Paper>
                 </Grid>
 
-                {/* Shared legend below both maps */}
+                {/* Shared legend below both maps -- built from the same palette
+                    the markers draw from, so it lists exactly the colors on
+                    this net's map and nothing else */}
                 <Grid item xs={12}>
                   <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: theme.palette.success.main }} />
-                      <Typography variant="caption">Checked In</Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: theme.palette.warning.main }} />
-                      <Typography variant="caption">Tactical</Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: theme.palette.info.main }} />
-                      <Typography variant="caption">Monitoring</Typography>
-                    </Box>
+                    {mapLegend.map((item) => (
+                      <Box key={item.label} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: item.color }} />
+                        <Typography variant="caption">{item.label}</Typography>
+                      </Box>
+                    ))}
                   </Box>
                 </Grid>
               </Grid>
@@ -1282,7 +1247,7 @@ const NetReport: React.FC = () => {
                       <Marker
                         key={mapped.checkIn.id}
                         position={[mapped.parsedLocation.lat, mapped.parsedLocation.lon]}
-                        icon={createColoredIcon(getStatusColor(mapped.checkIn.status))}
+                        icon={createStationMarkerIcon(getCheckInMarkerColor(mapped.checkIn, markerRoles))}
                       >
                         <Popup>
                           <Box sx={{ minWidth: 150 }}>
@@ -1296,20 +1261,14 @@ const NetReport: React.FC = () => {
                     ))}
                   </MapContainer>
                 </Box>
-                {/* Map Legend */}
+                {/* Map Legend -- same source as the dual-map legend above */}
                 <Box sx={{ p: 1, display: 'flex', gap: 2, flexWrap: 'wrap', borderTop: `1px solid ${theme.palette.divider}`, ...(isMapPngExport && { flexShrink: 0 }) }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: theme.palette.success.main }} />
-                    <Typography variant="caption">Checked In</Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: theme.palette.warning.main }} />
-                    <Typography variant="caption">Tactical</Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: theme.palette.info.main }} />
-                    <Typography variant="caption">Monitoring</Typography>
-                  </Box>
+                  {mapLegend.map((item) => (
+                    <Box key={item.label} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <Box sx={{ width: 12, height: 12, borderRadius: '50%', bgcolor: item.color }} />
+                      <Typography variant="caption">{item.label}</Typography>
+                    </Box>
+                  ))}
                 </Box>
               </Paper>
             )}
@@ -1687,13 +1646,13 @@ const NetReport: React.FC = () => {
                                     }
                                   />
                                 ))}
-                                <Marker position={station.reporterPosition} icon={createColoredIcon(theme.palette.primary.main)}>
+                                <Marker position={station.reporterPosition} icon={createStationMarkerIcon(theme.palette.primary.main)}>
                                   <LeafletTooltip permanent direction="top" offset={[0, -28]} opacity={1}>
                                     {station.reporterCallsign}
                                   </LeafletTooltip>
                                 </Marker>
                                 {mappableHeard.map((h) => (
-                                  <Marker key={h.checkInId} position={h.position as [number, number]} icon={createColoredIcon(theme.palette.grey[600])}>
+                                  <Marker key={h.checkInId} position={h.position as [number, number]} icon={createStationMarkerIcon(theme.palette.grey[600])}>
                                     <LeafletTooltip permanent direction="top" offset={[0, -28]} opacity={1}>
                                       {h.callsign}
                                     </LeafletTooltip>
@@ -1804,7 +1763,7 @@ const NetReport: React.FC = () => {
                       {mappedCheckIns.map(mapped => (
                         <Marker key={`rep-exp-c-${mapped.checkIn.id}`}
                           position={[mapped.parsedLocation.lat, mapped.parsedLocation.lon]}
-                          icon={createColoredIcon(getStatusColor(mapped.checkIn.status))}>
+                          icon={createStationMarkerIcon(getCheckInMarkerColor(mapped.checkIn, markerRoles))}>
                           <Popup>
                             <Box sx={{ minWidth: 150 }}>
                               <Typography variant="subtitle2" fontWeight="bold">{mapped.checkIn.callsign}</Typography>
@@ -1827,7 +1786,7 @@ const NetReport: React.FC = () => {
                       {mappedCheckIns.map(mapped => (
                         <Marker key={`rep-exp-o-${mapped.checkIn.id}`}
                           position={[mapped.parsedLocation.lat, mapped.parsedLocation.lon]}
-                          icon={createColoredIcon(getStatusColor(mapped.checkIn.status))}>
+                          icon={createStationMarkerIcon(getCheckInMarkerColor(mapped.checkIn, markerRoles))}>
                           <Popup>
                             <Box sx={{ minWidth: 150 }}>
                               <Typography variant="subtitle2" fontWeight="bold">{mapped.checkIn.callsign}</Typography>
@@ -1851,7 +1810,7 @@ const NetReport: React.FC = () => {
                   {mappedCheckIns.map(mapped => (
                     <Marker key={`rep-exp-${mapped.checkIn.id}`}
                       position={[mapped.parsedLocation.lat, mapped.parsedLocation.lon]}
-                      icon={createColoredIcon(getStatusColor(mapped.checkIn.status))}>
+                      icon={createStationMarkerIcon(getCheckInMarkerColor(mapped.checkIn, markerRoles))}>
                       <Popup>
                         <Box sx={{ minWidth: 150 }}>
                           <Typography variant="subtitle2" fontWeight="bold">{mapped.checkIn.callsign}</Typography>
