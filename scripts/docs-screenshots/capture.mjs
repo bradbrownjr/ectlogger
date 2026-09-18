@@ -27,7 +27,7 @@
 import { chromium } from 'playwright-core';
 import yaml from 'js-yaml';
 import { createHmac } from 'node:crypto';
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync } from 'node:fs';
 import { dirname, resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -65,6 +65,30 @@ const manifestPath = resolve(HERE, 'shots.yml');
 const manifest = yaml.load(readFileSync(manifestPath, 'utf8'));
 const defaults = manifest.defaults || {};
 let shots = manifest.shots || [];
+
+// Each documentation path keeps its figure requests in its own file under
+// requests/, so the people writing a path declare the figures they need
+// without everyone editing one manifest and colliding.
+const requestsDir = resolve(HERE, 'requests');
+if (existsSync(requestsDir)) {
+  for (const file of readdirSync(requestsDir).filter((f) => f.endsWith('.yml')).sort()) {
+    const loaded = yaml.load(readFileSync(resolve(requestsDir, file), 'utf8')) || {};
+    for (const shot of loaded.shots || []) {
+      if (shots.some((s) => s.id === shot.id)) {
+        throw new Error(`Duplicate shot id "${shot.id}" in requests/${file}`);
+      }
+      shots.push(shot);
+    }
+  }
+}
+
+for (const shot of shots) {
+  for (const field of ['id', 'section', 'route', 'alt']) {
+    if (!shot[field]) {
+      throw new Error(`Shot ${shot.id || '(no id)'} is missing required field "${field}"`);
+    }
+  }
+}
 
 if (sectionFilter && sectionFilter !== true) {
   shots = shots.filter((s) => s.section === sectionFilter);

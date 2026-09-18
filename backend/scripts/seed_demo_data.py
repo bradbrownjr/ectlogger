@@ -49,6 +49,9 @@ os.environ.setdefault("SMTP_PASSWORD", "demo-not-a-real-password")
 os.environ.setdefault("SMTP_FROM_EMAIL", "demo@example.com")
 os.environ.setdefault("SMTP_HOST", "127.0.0.1")
 os.environ.setdefault("EMAIL_ENABLED", "false")
+# app/database.py turns on verbose SQLAlchemy statement echo when app_env ==
+# "development" (its own default) -- not useful here and just noise.
+os.environ.setdefault("APP_ENV", "production")
 
 # Same password for every seeded user -- this database is never deployed
 # anywhere real, so there is no reason to vary it, and a single known
@@ -233,10 +236,10 @@ async def _build(db_path: Path, out_path: Path):
             field_config=_field_config(enable_skywarn=True, enable_weather=True),
             ics309_enabled=True,
             traffic_enabled=True,
+            frequencies=[f_repeater, f_simplex, f_dmr],
         )
         db.add(template_ares)
         await db.flush()
-        template_ares.frequencies.extend([f_repeater, f_simplex, f_dmr])
         db.add_all([
             TemplateStaff(template_id=template_ares.id, user_id=users["K1COVE"].id, is_active=True, is_co_manager=True),
             TemplateStaff(template_id=template_ares.id, user_id=users["N1LAKE"].id, is_active=True, is_co_manager=False),
@@ -259,10 +262,10 @@ async def _build(db_path: Path, out_path: Path):
             schedule_config=json.dumps({"day_of_week": 4, "time": "19:30"}),  # Thursday
             field_config=_field_config(enable_skywarn=True, enable_weather=True),
             ics309_enabled=True,
+            frequencies=[f_skywarn, f_repeater],
         )
         db.add(template_skywarn)
         await db.flush()
-        template_skywarn.frequencies.extend([f_skywarn, f_repeater])
         db.add(TemplateStaff(template_id=template_skywarn.id, user_id=users["K1CAMP"].id, is_active=True, is_co_manager=False))
         await db.commit()
         await db.refresh(template_skywarn)
@@ -290,10 +293,10 @@ async def _build(db_path: Path, out_path: Path):
             traffic_enabled=True,
             scheduled_start_time=started_at,
             started_at=started_at,
+            frequencies=[f_repeater, f_simplex, f_dmr],
         )
         db.add(net_active)
         await db.flush()
-        net_active.frequencies.extend([f_repeater, f_simplex, f_dmr])
         net_active.active_frequency_id = f_repeater.id
         db.add_all([
             NetRole(net_id=net_active.id, user_id=users["W1PINE"].id, role="NCS", active_frequency_id=f_repeater.id,
@@ -316,6 +319,7 @@ async def _build(db_path: Path, out_path: Path):
 
         def add_ci(callsign, minutes_ago, status, **kwargs):
             user = users.get(callsign)
+            kwargs.setdefault("frequency_id", f_repeater.id)
             ci = CheckIn(
                 net_id=net_active.id,
                 user_id=user.id if user else None,
@@ -325,7 +329,6 @@ async def _build(db_path: Path, out_path: Path):
                 status=status,
                 checked_in_at=ci_time(minutes_ago),
                 checked_in_by_id=user.id if user else users["W1PINE"].id,
-                frequency_id=f_repeater.id,
                 **kwargs,
             )
             db.add(ci)
@@ -449,10 +452,10 @@ async def _build(db_path: Path, out_path: Path):
             field_config=_field_config(enable_skywarn=True, enable_weather=True),
             ics309_enabled=True,
             scheduled_start_time=next_thursday,
+            frequencies=[f_skywarn, f_repeater],
         )
         db.add(net_scheduled)
         await db.flush()
-        net_scheduled.frequencies.extend([f_skywarn, f_repeater])
         await db.commit()
         await db.refresh(net_scheduled)
 
@@ -472,10 +475,10 @@ async def _build(db_path: Path, out_path: Path):
             scheduled_start_time=closed_start,
             started_at=closed_start,
             closed_at=closed_end,
+            frequencies=[f_repeater, f_simplex],
         )
         db.add(net_closed)
         await db.flush()
-        net_closed.frequencies.extend([f_repeater, f_simplex])
         net_closed.active_frequency_id = f_repeater.id
         db.add_all([
             NetRole(net_id=net_closed.id, user_id=users["K1COVE"].id, role="NCS",

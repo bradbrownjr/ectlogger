@@ -1,0 +1,40 @@
+# Screenshot manifest for ectlogger.us
+#
+# This file holds the site-wide defaults and the handful of figures that do not
+# belong to any one documentation path. Everything else lives in
+# requests/<section>.yml and is merged in automatically, so the people writing
+# a path are not all editing one file.
+#
+# See README.md in this directory for the field reference and the rules.
+
+defaults:
+  # 1440 wide is the narrowest desktop the wide-screen dock still behaves at,
+  # and tall enough that the check-in table is not cut off mid-row. Deliberately
+  # not full_page: the application shell sets overflow: hidden on its root, so a
+  # full-page capture silently truncates to one screen.
+  viewport:
+    width: 1440
+    height: 1000
+  scale: 2
+  timezone: America/New_York
+  settle: 500
+
+  local_storage:
+    # Light mode throughout. The repository made this call once already
+    # (commit eaff80c) and the layout's light-only/dark-only image swap has
+    # been dead code ever since. Halving the capture count is worth more than
+    # showing the dark theme in every figure; it gets one dedicated shot.
+    theme: light
+
+shots:
+  - id: hero
+    section: landing
+    page: /
+    route: /nets/{{net:active}}
+    as: W1PINE
+    wait_for: 'table tbody tr'
+    alt: >
+      A live net in ECTLogger: eleven stations in the check-in list with their
+      statuses and locations, frequency chips across the top of the table, and
+      the chat panel beside it.
+    caption: A net in progress, seen by Net Control.
