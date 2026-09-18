@@ -77,26 +77,63 @@ async def check_net_permission(
 
 
 async def _is_active_template_staff(db: AsyncSession, template_id: int, user_id: int) -> bool:
-    """Return True when user_id is an active co-manager or active NCS rotation
-    member for template_id -- the "net staff" trust bar shared by the
-    self-grant eligibility checks below and can_manage_net_roles."""
-    co_mgr_result = await db.execute(
-        select(TemplateStaff).where(
+    """Return True when user_id is any active TemplateStaff member or active
+    NCS rotation member for template_id -- the "net staff" trust bar shared by
+    the self-grant eligibility checks below and can_manage_net_roles.
+
+    Plain active staff counts, not just co-managers. `is_co_manager` is a
+    higher, schedule-ownership tier (ownership transfer, template merge, net
+    archive/delete -- see check_net_lifecycle_permission and templates_merge),
+    which those callers still check separately. Requiring it here meant the
+    baseline "Authorized Net Staff" tier -- described in its own UI as
+    operators who "can start and run nets from this schedule" -- could not
+    actually run one.
+
+    Root-caused 2026-09-18 from net 95 (WSSM MOTA): the schedule had three
+    active staff, no rotation and no co-manager, so the auto-created net came
+    into existence with no NetRole at all (_assign_duty_ncs only draws from the
+    rotation), its lobby auto-opened unstaffed, and none of the three could
+    take net control -- an admin had to use the owner/admin-only Claim NCS
+    button. Every WSSM MOTA net since auto-create landed (nets 46, 70, 95) had
+    needed the same rescue. The regression is not in this file: commit 563ccf5
+    (2026-06-18) replaced "a human clicks Create Net and is assigned NCS by
+    create_net_from_template" with the background auto-create job, and in the
+    same commit gave plain active staff the start_net bypass and a can_manage
+    of True -- so the frontend has offered them management controls ever since
+    while check_net_permission, which only honors a NetRole, refused them. This
+    makes the backend agree with what the product already promises.
+
+    Still opt-in: the grant only fires when a check-in affirmatively requests
+    NCS/Logger (self_role_choice), so the ME Dirigo pile-on fix documented on
+    is_eligible_for_ncs_auto_grant is unaffected, as is the rule that a
+    staff-entered check-in never grants anything.
+
+    Both checks are bounded existence checks rather than scalar_one_or_none():
+    ncs_rotation_members has no uniqueness constraint on (template_id,
+    user_id), so a user listed twice in one rotation would otherwise raise
+    MultipleResultsFound -- the same defect class that took GET /nets/{id} down
+    on 2026-09-03.
+    """
+    staff_result = await db.execute(
+        select(TemplateStaff.id)
+        .where(
             TemplateStaff.template_id == template_id,
             TemplateStaff.user_id == user_id,
             TemplateStaff.is_active == True,  # noqa: E712
-            TemplateStaff.is_co_manager == True,  # noqa: E712
         )
+        .limit(1)
     )
-    if co_mgr_result.scalar_one_or_none() is not None:
+    if staff_result.scalar_one_or_none() is not None:
         return True
 
     rotation_result = await db.execute(
-        select(NCSRotationMember).where(
+        select(NCSRotationMember.id)
+        .where(
             NCSRotationMember.template_id == template_id,
             NCSRotationMember.user_id == user_id,
             NCSRotationMember.is_active == True,  # noqa: E712
         )
+        .limit(1)
     )
     return rotation_result.scalar_one_or_none() is not None
 
@@ -105,9 +142,10 @@ async def can_manage_net_roles(db: AsyncSession, net: Net, user: User) -> bool:
     """Return True when *user* may assign/remove NetRoles on *net* (the
     "Manage Net Control Staff" dialog's assign/remove actions).
 
-    Grants access to the owner, any admin, or a "net staff" member (active
-    co-manager or active NCS rotation member for the net's template) who
-    currently holds an active NCS or LOGGER role on this specific net.
+    Grants access to the owner, any admin, or a "net staff" member (any
+    active TemplateStaff or active NCS rotation member for the net's
+    template, per _is_active_template_staff) who currently holds an active
+    NCS or LOGGER role on this specific net.
 
     Deliberately narrower than "any NCS/Logger on this net": the dialog's own
     copy promises backup NCS/Logger can manage net control as a group, but
@@ -153,8 +191,9 @@ async def can_manage_net_roles(db: AsyncSession, net: Net, user: User) -> bool:
 
 async def is_eligible_for_ncs_auto_grant(db: AsyncSession, net: Net, user_id: int) -> bool:
     """Return True when *user_id* is eligible to be granted NCS on checking
-    into *net*: an active co-manager or active NCS rotation member for the
-    net's template, with no existing NetRole on this specific net occurrence
+    into *net*: an active member of the net template's staff (per
+    _is_active_template_staff -- any active TemplateStaff or active NCS
+    rotation member), with no existing NetRole on this specific net occurrence
     yet (owner/admin/an already-assigned role don't need this -- they already
     have access, or checking in wouldn't change anything for them).
 
@@ -213,8 +252,9 @@ async def is_eligible_for_logger_self_grant(db: AsyncSession, net: Net, user_id:
 
     Eligible: the net's owner (e.g. opening a lobby and stepping in as Logger
     while waiting for the scheduled NCS -- the workflow this was added for,
-    2026-09-05), or the same population eligible for NCS auto-grant (active
-    co-manager or active NCS rotation member for the net's template). Logger
+    2026-09-05), or the same population eligible for NCS auto-grant (any
+    active TemplateStaff or active NCS rotation member for the net's
+    template, per _is_active_template_staff). Logger
     is lower-stakes than NCS but still grants check-in management power, so
     it uses the same trust bar plus the owner rather than being open to
     anyone -- unlike NCS eligibility, which requires a template, the owner

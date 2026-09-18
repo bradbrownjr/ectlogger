@@ -1,6 +1,22 @@
 {
-  "version": "2026.09.17",
+  "version": "2026.09.18",
   "entries": [
+    {
+      "version": "2026.09.18",
+      "date": "2026-09-18",
+      "sections": [
+        {
+          "title": "Bug Fixes",
+          "type": "bugfix",
+          "items": [
+            {
+              "text": "Net Control: Authorized net staff can take net control again — On a schedule with no NCS rotation set up, an automatically created net opened with nobody assigned as net control, and the operators on the schedule's Authorized Net Staff list had no way to take it, so an admin had to step in even though the staff list says those operators can run nets. Anyone on that list can now check themselves in as NCS or Logger and get the role immediately, the same as a rotation member always could.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.09.17",
       "date": "2026-09-17",

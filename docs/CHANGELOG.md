@@ -4,6 +4,14 @@ All notable changes to ECTLogger are documented here.
 
 ---
 
+# September 18, 2026
+
+## Bug Fixes
+
+* **Net Control: Authorized net staff can take net control again** — On a schedule with no NCS rotation set up, an automatically created net opened with nobody assigned as net control, and the operators on the schedule's Authorized Net Staff list had no way to take it — an admin had to step in, even though the staff list says those operators can run nets. Anyone on that list can now check themselves in as NCS or Logger and get the role immediately, the same as a rotation member always could.
+
+---
+
 # September 17, 2026
 
 ## New Features
@@ -13,7 +21,7 @@ All notable changes to ECTLogger are documented here.
 
 ## Bug Fixes
 
-* **Schedule: Promote to Co-Manager from Edit Schedule** — The Edit Schedule page's Net Staff tab could add operators to a schedule's authorized staff list, but had no way to make one a Co-Manager, so staff added there could never independently run nets or pick up NCS on a net with no rotation configured. The star icon that already existed in the separate Net Staff popup is now on this page too.
+* **Schedule: Promote to Co-Manager from Edit Schedule** — The Edit Schedule page's Net Staff tab could add operators to a schedule's authorized staff list, but had no way to make one a Co-Manager. The star icon that already existed in the separate Net Staff popup is now on this page too.
 
 ---
 

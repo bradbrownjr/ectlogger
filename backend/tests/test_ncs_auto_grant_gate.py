@@ -32,7 +32,7 @@ the same "only an explicit affirmative choice grants anything" guarantee.
 import pytest
 from sqlalchemy import select
 
-from app.models import Frequency, Net, NetRole, NetTemplate, NCSRotationMember, User, UserRole, net_template_frequencies
+from app.models import Frequency, Net, NetRole, NetTemplate, NCSRotationMember, TemplateStaff, User, UserRole, net_template_frequencies
 from app.permissions import is_eligible_for_logger_self_grant, is_eligible_for_ncs_auto_grant
 from tests.conftest import auth_headers
 
@@ -415,3 +415,145 @@ async def test_logger_eligibility_check_respects_existing_role(db, owner, other)
 
     result = await is_eligible_for_logger_self_grant(db, net, other.id)
     assert result is False
+
+
+async def _template_with_plain_staff(db, owner_id: int, staff_id: int, is_active: bool = True) -> NetTemplate:
+    """A schedule configured the way net 95's was: an Authorized Net Staff
+    member who is NOT a co-manager and NOT in any NCS rotation. This is the
+    shape that had no path to net control at all before 2026-09-18."""
+    freq = Frequency(frequency="147.090", mode="FM", description="Test Repeater")
+    db.add(freq)
+    await db.flush()
+
+    template = NetTemplate(
+        name="Plain Staff Net",
+        owner_id=owner_id,
+        schedule_type="ad_hoc",
+        schedule_config="{}",
+    )
+    db.add(template)
+    await db.flush()
+
+    await db.execute(
+        net_template_frequencies.insert().values(template_id=template.id, frequency_id=freq.id)
+    )
+    db.add(TemplateStaff(
+        template_id=template.id,
+        user_id=staff_id,
+        is_active=is_active,
+        is_co_manager=False,
+    ))
+    await db.commit()
+    await db.refresh(template)
+    return template
+
+
+@pytest.mark.asyncio
+async def test_plain_active_staff_can_self_grant_ncs(client, db, owner, other):
+    """Net 95 (WSSM MOTA, 2026-09-17). `other` is an active Authorized Net
+    Staff member with no co-manager flag and no rotation slot -- exactly the
+    three operators on that schedule. The schedule's own UI says active staff
+    "can start and run nets", start_net already lets them open the lobby, and
+    get_net already reports can_manage=True for them, but eligibility required
+    co-manager/rotation, so checking in as NCS granted nothing and an admin
+    had to use Claim NCS to rescue the net."""
+    owner_id, other_id = owner.id, other.id
+    template = await _template_with_plain_staff(db, owner_id, other_id)
+    net_id = await _create_and_start_net(client, owner, template.id)
+
+    resp = await client.post(
+        f"/api/check-ins/nets/{net_id}/check-ins",
+        json={"callsign": "KC1OTH", "self_role_choice": "ncs"},
+        headers=auth_headers(other),
+    )
+    assert resp.status_code == 201
+
+    db.expire_all()
+    roles = await db.execute(
+        select(NetRole).where(
+            NetRole.net_id == net_id, NetRole.role == "NCS", NetRole.is_active == True  # noqa: E712
+        )
+    )
+    assert other_id in {r.user_id for r in roles.scalars().all()}
+
+
+@pytest.mark.asyncio
+async def test_plain_active_staff_can_self_grant_logger(client, db, owner, other):
+    """Same widening applies to the Logger self-grant, which shares the helper."""
+    owner_id, other_id = owner.id, other.id
+    template = await _template_with_plain_staff(db, owner_id, other_id)
+    net_id = await _create_and_start_net(client, owner, template.id)
+
+    resp = await client.post(
+        f"/api/check-ins/nets/{net_id}/check-ins",
+        json={"callsign": "KC1OTH", "self_role_choice": "logger"},
+        headers=auth_headers(other),
+    )
+    assert resp.status_code == 201
+
+    db.expire_all()
+    roles = await db.execute(
+        select(NetRole).where(
+            NetRole.net_id == net_id, NetRole.role == "LOGGER", NetRole.is_active == True  # noqa: E712
+        )
+    )
+    assert other_id in {r.user_id for r in roles.scalars().all()}
+
+
+@pytest.mark.asyncio
+async def test_inactive_staff_is_not_eligible(db, owner, other):
+    """The "Can run nets" switch still means something: a staff member toggled
+    off is not eligible, so deactivating remains a real revocation rather than
+    a display-only change."""
+    template = await _template_with_plain_staff(db, owner.id, other.id, is_active=False)
+    net = Net(name="Plain Staff Occurrence", owner_id=owner.id, status="active", template_id=template.id)
+    db.add(net)
+    await db.commit()
+    await db.refresh(net)
+
+    assert await is_eligible_for_ncs_auto_grant(db, net, other.id) is False
+
+
+@pytest.mark.asyncio
+async def test_plain_staff_entered_checkin_still_grants_nothing(client, db, owner, other):
+    """Widening eligibility must not weaken the staff-entered rule: NCS logging
+    someone in by voice (as happened to N1RXR on net 95) always records a
+    Standard participant, never a role -- the grant is restricted to a
+    self-check-in regardless of how eligible the named operator is."""
+    owner_id, other_id = owner.id, other.id
+    template = await _template_with_plain_staff(db, owner_id, other_id)
+    net_id = await _create_and_start_net(client, owner, template.id)
+
+    # `owner` (the net's NCS) enters `other`'s check-in on their behalf.
+    resp = await client.post(
+        f"/api/check-ins/nets/{net_id}/check-ins",
+        json={"callsign": "KC1OTH", "self_role_choice": "ncs"},
+        headers=auth_headers(owner),
+    )
+    assert resp.status_code == 201
+
+    db.expire_all()
+    roles = await db.execute(
+        select(NetRole).where(NetRole.net_id == net_id, NetRole.is_active == True)  # noqa: E712
+    )
+    granted = {r.user_id for r in roles.scalars().all() if r.role in ("NCS", "LOGGER")}
+    assert other_id not in granted
+
+
+@pytest.mark.asyncio
+async def test_eligibility_tolerates_duplicate_rotation_rows(db, owner, other):
+    """ncs_rotation_members has no uniqueness constraint on (template_id,
+    user_id), so the same operator can legitimately appear twice. The
+    eligibility lookup must be a bounded existence check, not
+    scalar_one_or_none() -- that is the defect class that took GET /nets/{id}
+    down on 2026-09-03."""
+    template = await _template_with_rotation_member(db, owner.id, other.id)
+    db.add(NCSRotationMember(template_id=template.id, user_id=other.id, position=2, is_active=True))
+    await db.commit()
+
+    net = Net(name="Dup Rotation Occurrence", owner_id=owner.id, status="active", template_id=template.id)
+    db.add(net)
+    await db.commit()
+    await db.refresh(net)
+
+    assert await is_eligible_for_ncs_auto_grant(db, net, other.id) is True
