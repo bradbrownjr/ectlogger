@@ -57,20 +57,37 @@ async def check_net_permission(
       (a role stepped down to Standard via toggle_self_net_role, is_active=False,
       no longer counts -- otherwise "step down to Standard" would only change
       what's displayed, not what's actually permitted)
+
+    *required_roles* is matched case-insensitively by upper-casing it here.
+    NetRole.role is a plain String(50) storing "NCS"/"LOGGER"/"RELAY" (now
+    enforced at the one write boundary, routers/nets_roles.assign_net_role),
+    but four callers passed lowercase and so matched nothing at all: the whole
+    traffic panel was owner-and-admin-only for every net's own NCS and Logger
+    (see routers/traffic_forms.py and traffic/visibility.py). Normalizing here
+    rather than only fixing those literals means the next caller to write
+    ["ncs"] gets the behavior it obviously intends instead of a silent denial.
     """
     if net.owner_id == user.id or is_admin(user):
         return True
 
     if required_roles:
+        # Bounded with limit(1): a user can legitimately hold more than one
+        # NetRole on the same net (opening the lobby as Logger and then taking
+        # net control is the common way), so scalar_one_or_none() over a
+        # multi-role filter raises MultipleResultsFound -- the same defect
+        # class as the 2026-09-03 GET /nets/{id} outage, and what made
+        # Close net fail for those operators.
         result = await db.execute(
-            select(NetRole).where(
+            select(NetRole.id)
+            .where(
                 NetRole.net_id == net.id,
                 NetRole.user_id == user.id,
-                NetRole.role.in_(required_roles),
+                NetRole.role.in_([r.upper() for r in required_roles]),
                 NetRole.is_active == True,  # noqa: E712
             )
+            .limit(1)
         )
-        if result.scalar_one_or_none():
+        if result.scalar_one_or_none() is not None:
             return True
 
     return False
@@ -175,13 +192,17 @@ async def can_manage_net_roles(db: AsyncSession, net: Net, user: User) -> bool:
     if not net.template_id:
         return False
 
+    # limit(1) for the same reason as check_net_permission above -- holding
+    # both NCS and LOGGER on one net is a supported shape, not a data error.
     role_result = await db.execute(
-        select(NetRole.id).where(
+        select(NetRole.id)
+        .where(
             NetRole.net_id == net.id,
             NetRole.user_id == user.id,
             NetRole.role.in_(["NCS", "LOGGER"]),
             NetRole.is_active == True,  # noqa: E712
         )
+        .limit(1)
     )
     if role_result.scalar_one_or_none() is None:
         return False
@@ -437,7 +458,7 @@ async def check_form_permission(
             return FormPermissionResult.APPEND_ONLY
         if form.created_by_id == user.id or is_admin(user):
             return FormPermissionResult.GRANTED
-        if net and await check_net_permission(db, net, user, required_roles=["ncs"]):
+        if net and await check_net_permission(db, net, user, required_roles=["NCS"]):
             return FormPermissionResult.GRANTED
         return FormPermissionResult.DENIED
 
@@ -448,6 +469,6 @@ async def check_form_permission(
         return FormPermissionResult.GRANTED
     if any(e.reported_by_user_id == user.id or e.handed_to_user_id == user.id for e in entries):
         return FormPermissionResult.GRANTED
-    if net and await check_net_permission(db, net, user, required_roles=["ncs", "logger"]):
+    if net and await check_net_permission(db, net, user, required_roles=["NCS", "LOGGER"]):
         return FormPermissionResult.GRANTED
     return FormPermissionResult.DENIED

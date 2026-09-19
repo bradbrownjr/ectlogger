@@ -1,6 +1,14 @@
 """
 Permission matrix tests for check_form_permission (app/permissions.py), per
 TRAFFIC-HANDLING-DESIGN.md D3. One test per grant path, plus denial cases.
+
+NetRole fixtures here must spell the role the way the application stores it,
+upper-case ("NCS", "LOGGER", "RELAY" -- routers/nets_roles.assign_net_role
+normalizes and rejects anything else). Two tests in this file built theirs as
+"ncs" to match a lowercase literal in check_form_permission, so the pair
+agreed with each other and with nothing in the database: the whole traffic
+panel was owner-and-admin-only in production while these tests stayed green.
+Corrected 2026-09-19.
 """
 import pytest
 from datetime import datetime, timezone
@@ -81,7 +89,7 @@ async def test_view_granted_to_net_ncs_logger(db, owner, other):
     net = Net(name="Test Net", owner_id=owner.id)
     db.add(net)
     await db.flush()
-    role = NetRole(net_id=net.id, user_id=other.id, role="ncs")
+    role = NetRole(net_id=net.id, user_id=other.id, role="NCS")
     db.add(role)
     definition = await _definition(db)
     form = await _form(db, definition, created_by_id=owner.id, net_id=net.id)
@@ -139,7 +147,7 @@ async def test_manage_granted_to_net_ncs_while_draft(db, owner, other):
     net = Net(name="Test Net", owner_id=owner.id)
     db.add(net)
     await db.flush()
-    role = NetRole(net_id=net.id, user_id=other.id, role="ncs")
+    role = NetRole(net_id=net.id, user_id=other.id, role="NCS")
     db.add(role)
     definition = await _definition(db)
     form = await _form(db, definition, created_by_id=owner.id, net_id=net.id)

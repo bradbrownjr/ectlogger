@@ -18,7 +18,7 @@ Some nets carry formal message traffic (ARRL radiograms, ICS-213 general message
 
 The toolbar's **Traffic** button only appears when a net has traffic handling enabled *and* you're the net's owner, an admin, or hold an active NCS or Logger role on it. A Standard participant never sees this button on the net view, even on a traffic-enabled net. Their own way to file traffic is the **Traffic** item in the top navigation bar instead, covered on the operators path.
 
-**One open defect affects this page.** Right now the panel only fills in for the net's owner and for admins; an NCS or Logger who opens it gets "Not authorized to view this net's traffic" instead of the list. Filing still works. See [Known issues](/docs/about/known-issues/) for the workaround. The rest of this page describes what the panel does once it opens, which is the same for everyone who can see it. The figures below are taken from the net owner's seat.
+Stepping down to Standard from **Role: NCS** takes the panel away with it, the same as every other staff control. The figures on this page are taken from the net owner's seat; the panel looks the same from any of them.
 
 ## The traffic panel
 

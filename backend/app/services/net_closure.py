@@ -321,7 +321,11 @@ async def close_net_and_notify(
     role_result = await db.execute(
         select(User)
         .join(NetRole, NetRole.user_id == User.id)
-        .where(NetRole.net_id == net_id, NetRole.role.in_(["NCS", "LOGGER", "Relay"]))
+        # "RELAY", not "Relay": NetRole.role is stored upper-case on every
+        # write path, so the title-cased value here never matched a row and
+        # relay operators have never received the closing log (found
+        # 2026-09-19).
+        .where(NetRole.net_id == net_id, NetRole.role.in_(["NCS", "LOGGER", "RELAY"]))
         .where(NetRole.is_active == True)  # noqa: E712
         .where(User.email_notifications == True)  # noqa: E712
         .where(User.notify_net_close == True)  # noqa: E712

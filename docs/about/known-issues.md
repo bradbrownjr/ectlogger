@@ -16,29 +16,7 @@ This page lists confirmed, currently open defects — not roadmap items, not pla
 
 Most of what follows was found while this documentation was being written, by reading the code against what the screens promise. None of it is new breakage. Every one of them has a workaround.
 
-## Net Control and Logger can't open the Traffic panel
-
-On a net with traffic handling turned on, the Traffic panel is meant to be available to that net's NCS and Logger as well as to its owner and to admins. In practice only the owner and admins can see anything in it: everyone else gets **"Not authorized to view this net's traffic"**, even while actively running the net.
-
-**Workaround**: filing still works — the **+** in the panel's header opens the filing dialog normally, and so does **New** in the site-wide **Traffic** section. What you lose is the net-wide view: in the Traffic section you'll see the forms you filed yourself, the ones you're currently holding, and anything handed to or from you, but not every form filed on the net by someone else. Until this is fixed, the practical answer on a busy net is to have the net's owner (or an admin) keep the Traffic panel open, since they can see all of it.
-
-Affects: [Handling traffic](/docs/net-control/handling-traffic/).
-
-## Relay operators don't get a copy of the closing log
-
-When a net closes, the log email goes to the net's owner, to anyone subscribed to the schedule, and to the NCS and Logger who worked it. An operator who worked the net as **Relay** is meant to be on that list too and is not.
-
-**Workaround**: subscribe to the schedule from its **Subscribe** button, which puts you on the list regardless of role. On a one-off net, ask whoever gets the log to forward it.
-
-Affects: [Closing the net](/docs/net-control/closing-the-net/), [Reports and exports](/docs/net-managers/reports-and-exports/).
-
-## Closing a net fails for an operator who holds both NCS and Logger on it
-
-If the same account has been assigned **both** NCS and Logger on one net — which is allowed, and happens when somebody opens the lobby as Logger and then takes net control — clicking **Close net** returns a server error instead of closing it.
-
-**Workaround**: remove one of the two roles from yourself in **Manage Net Control Staff** (the **Roles** button) and close the net again. Or have another NCS or Logger, the net's owner, or an admin close it.
-
-Affects: [Closing the net](/docs/net-control/closing-the-net/).
+Three entries that were on this page when it was published on 2026-09-19 came off it the same day, fixed rather than worked around: the Traffic panel opening for a net's own NCS and Logger, Relay operators getting their copy of the closing log, and **Close net** failing for an operator holding both NCS and Logger. All three were one root cause. See the [changelog](/docs/CHANGELOG/) for that release.
 
 ## Being in the rotation isn't enough to start the net
 

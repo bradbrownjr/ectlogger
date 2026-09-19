@@ -18,6 +18,12 @@ All notable changes to ECTLogger are documented here.
 
 # September 19, 2026
 
+## Bug Fixes
+
+* **Traffic: Net control and logger can open the Traffic panel again** — On a net with traffic handling turned on, the panel only ever filled in for the net's owner and for admins. Anyone else running the net, including its own NCS and logger, was told they were not authorized to view it, so the one view of everything filed on the net was unavailable to the people working it. It now opens for every operator holding an active NCS or logger role on that net, as it was always meant to.
+* **Net Control: Closing a net works when you hold two roles** — If you opened the lobby as logger and then took net control, you held both roles on that net and Close net returned a server error instead of closing it. Closing now works no matter how many roles you hold.
+* **Email: Relay operators get their copy of the closing log** — The closing log email was meant to reach everyone who worked the net, but an operator who worked it as Relay was never on the list and had to subscribe to the schedule to get one. They now receive it the same as NCS and logger do.
+
 ## Improvements
 
 * **Help: Rebuilt help site** — The user guide was one long page trying to serve newcomers, net control, net managers and administrators all at once, illustrated with screenshots of a version of the app that no longer looks like this. It is now a proper site at ectlogger.us/docs, organized by what you are doing: getting started, taking part in a net, running one, managing a net or a schedule, and administering an instance. Every screenshot is current, the controls you need to click are circled in red, there is a search box, and the Help menu now also takes you straight to a Known Issues page listing the problems we already know about and how to work around them.

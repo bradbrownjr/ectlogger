@@ -211,7 +211,7 @@ async def list_net_forms(
     net = net_result.scalar_one_or_none()
     if not net:
         raise HTTPException(status_code=404, detail="Net not found")
-    if not await check_net_permission(db, net, current_user, required_roles=["ncs", "logger"]):
+    if not await check_net_permission(db, net, current_user, required_roles=["NCS", "LOGGER"]):
         raise HTTPException(status_code=403, detail="Not authorized to view this net's traffic")
 
     count_query = select(func.count()).select_from(Form).where(Form.net_id == net_id)
@@ -243,7 +243,7 @@ async def get_net_traffic_summary(
     net = net_result.scalar_one_or_none()
     if not net:
         raise HTTPException(status_code=404, detail="Net not found")
-    if not await check_net_permission(db, net, current_user, required_roles=["ncs", "logger"]):
+    if not await check_net_permission(db, net, current_user, required_roles=["NCS", "LOGGER"]):
         raise HTTPException(status_code=403, detail="Not authorized to view this net's traffic")
 
     return TrafficSummaryResponse(**await compute_net_traffic_counts(db, net_id))

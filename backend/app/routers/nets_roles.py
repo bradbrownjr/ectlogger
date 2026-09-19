@@ -17,6 +17,11 @@ from app.utils import display_callsign, get_avatar_url
 
 router = APIRouter()
 
+# The only three values NetRole.role is ever allowed to hold. The column is a
+# free-text String(50), so this is the constraint -- see assign_net_role.
+VALID_NET_ROLES = {"NCS", "LOGGER", "RELAY"}
+
+
 @router.post("/{net_id}/roles")
 async def assign_net_role(
     net_id: int,
@@ -26,9 +31,23 @@ async def assign_net_role(
     db: AsyncSession = Depends(get_db)
 ):
     """Assign a role to a user for a net (owner or admin only)"""
+    # NetRole.role is a plain String(50), and this is the only endpoint that
+    # takes its value from the caller. Every reader in the codebase compares
+    # against the upper-case spelling, so normalize and constrain here rather
+    # than trusting each client to send the right case -- a stored "ncs" would
+    # be invisible to every permission check, the NCS attribution, the closing
+    # log's recipient list and the statistics, while still showing in the
+    # roles list as if it had worked.
+    role = (role or "").strip().upper()
+    if role not in VALID_NET_ROLES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Role must be one of: {', '.join(sorted(VALID_NET_ROLES))}",
+        )
+
     result = await db.execute(select(Net).where(Net.id == net_id))
     net = result.scalar_one_or_none()
-    
+
     if not net:
         raise HTTPException(status_code=404, detail="Net not found")
 

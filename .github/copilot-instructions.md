@@ -104,9 +104,20 @@ result = await db.execute(
 
 ### Permission Checks
 ```python
-if not await check_net_permission(db, net, user, required_roles=["ncs", "logger"]):
+if not await check_net_permission(db, net, user, required_roles=["NCS", "LOGGER"]):
     raise HTTPException(status_code=403, detail="Permission denied")
 ```
+
+**Role names are upper case.** `NetRole.role` is a plain `String(50)` holding
+`"NCS"`, `"LOGGER"` or `"RELAY"`, and SQLite compares strings case-sensitively.
+This example read `["ncs", "logger"]` until 2026-09-19 and five call sites had
+copied it, so each of those checks matched no row at all and silently collapsed
+to "the net's owner, or an admin" - which is how a net's own NCS and Logger lost
+the Traffic panel and Relay operators stopped getting the closing log.
+`check_net_permission` now upper-cases whatever it is given, and
+`routers/nets_roles.py::assign_net_role` rejects anything outside
+`VALID_NET_ROLES`, but a raw `NetRole.role ==` comparison in a query bypasses
+both: write the upper-case spelling.
 
 ## File Structure
 

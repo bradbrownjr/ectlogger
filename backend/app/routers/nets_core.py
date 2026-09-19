@@ -841,24 +841,17 @@ async def close_net(
     if not net:
         raise HTTPException(status_code=404, detail="Net not found")
     
-    # Allow net closure by NCS, logger, or admin
-    is_authorized = (
-        net.owner_id == current_user.id or
-        is_admin(current_user)
-    )
-    
-    if not is_authorized:
-        # Check if user is a logger for this net
-        result = await db.execute(
-            select(NetRole).where(
-                NetRole.net_id == net_id,
-                NetRole.user_id == current_user.id,
-                NetRole.role.in_(["LOGGER", "NCS"])
-            )
-        )
-        if not result.scalar_one_or_none():
-            raise HTTPException(status_code=403, detail="Not authorized to close this net")
-    
+    # Owner, admin, or an active NCS/Logger on this net. This was a
+    # hand-written copy of check_net_permission that had drifted twice: it
+    # never filtered is_active, so an operator who stepped down to Standard
+    # could still close the net, and its scalar_one_or_none() over a two-role
+    # filter raised MultipleResultsFound for anyone holding both NCS and
+    # LOGGER -- Close net returned a 500 for exactly the person most likely to
+    # be clicking it (opened the lobby as Logger, then took net control).
+    if not await check_net_permission(db, net, current_user, required_roles=["NCS", "LOGGER"]):
+        raise HTTPException(status_code=403, detail="Not authorized to close this net")
+
+
     if net.status == NetStatus.CLOSED:
         raise HTTPException(status_code=400, detail="Net is already closed")
     

@@ -107,44 +107,6 @@ need a pass once it is fixed.
 
 #### Bugs
 
-**🐛 Active Relay operators never receive the net closure log.**
-`services/net_closure.py:324` matches `NetRole.role.in_(["NCS", "LOGGER", "Relay"])`,
-but every path that assigns a role stores `"RELAY"` (`RoleAssignmentDialog.tsx`'s
-own MenuItem value, and both NetView comparisons, which uppercase before testing).
-SQLite string comparison is case-sensitive, so that third entry has never matched
-anything, contradicting the line's own comment. `/docs/net-managers/reports-and-exports/`
-currently promises NCS and Logger only, and says plainly that Relay is not included,
-so the page is honest but describes a bug.
-
-- [ ] Compare against `"RELAY"`, and add a test that a Relay operator is on the recipient list
-
-**🐛 A net's own NCS and Logger cannot see its traffic — only the owner or an admin can.**
-Same root cause as the Relay one above, five more times.
-`routers/traffic_forms.py:214` and `:246` (the per-net Traffic panel's list and its
-disposition summary), `permissions.py:440` and `:451` (whether a form may be managed
-or viewed), and `traffic/visibility.py:55` (the same rule expressed as a query filter)
-all name the roles in lower case — `["ncs", "logger"]` — against a plain `String` column
-that only ever holds `"NCS"` and `"LOGGER"`. No `NetRole` has ever matched any of them,
-so each of those five checks quietly collapses to "the net's owner, or an admin." The
-demo instance shows it plainly: K1COVE, this net's active Logger, opens the Traffic
-panel and is told *Not authorized to view this net's traffic*.
-`/docs/net-control/handling-traffic/` describes the intended rule and its figures are
-taken from the owner's seat for now, noted in the figure manifest.
-The pattern is copied from `.github/copilot-instructions.md`'s own "Permission Checks"
-example, which is written in lower case — fixing that is part of the fix.
-
-- [ ] Normalize in `check_net_permission` (upper-case the caller's `required_roles`), use `"NCS"`/`"LOGGER"` in the two raw queries, upper-case `role` on the way in at `nets_roles.py::assign_net_role` so an unnormalized row can't be written, correct the example in `copilot-instructions.md`, and add a test that an active Logger who is neither owner nor admin can read their own net's traffic
-
-**🐛 Closing a net 500s for anyone holding two roles on it.**
-`routers/nets_core.py::close_net` selects `NetRole` rows where the role is NCS *or*
-LOGGER and calls `scalar_one_or_none()` on the result. A user can legitimately hold
-both on the same net, which raises `MultipleResultsFound` rather than returning a row.
-`permissions.py::is_eligible_for_ncs_auto_grant` already bounds the identical query
-with `.limit(1)` and says why in a comment referencing the 2026-09-03 outage; this
-call site and `check_net_lifecycle_permission` did not get the same treatment.
-
-- [ ] Make both existence checks `.limit(1)`, as the third one already is
-
 **🐛 A rotation member who is not also on the staff list cannot start the net.**
 `start_net`'s staff bypass queries `TemplateStaff` directly rather than going through
 `permissions.py::_is_active_template_staff`, which is what every other staff decision
