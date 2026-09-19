@@ -32,7 +32,7 @@ Open **Roles** on the toolbar (see [The net control desk](/docs/net-control/the-
   <figcaption>Assigning a role here works alongside self check-in; either path can put someone in NCS or Logger.</figcaption>
 </figure>
 
-This dialog is available to the net's owner, an admin, or (on a templated net) staff who already hold an active NCS or Logger role on this specific occurrence themselves. Being on the staff list or rotation isn't enough by itself if you don't also currently hold one of those two roles here, and since 2026-09-19 the **Roles** button doesn't appear at all unless you meet that bar. Before then it was shown to any net staff, and every action inside it was then refused. If a net has no NCS assigned at all, the owner or an admin can also use **Claim NCS**, a recovery button meant for an orphaned net rather than everyday handoffs.
+This dialog is available to the net's manager, an admin, or (on a templated net) staff who already hold an active NCS or Logger role on this specific occurrence themselves. Being on the staff list or rotation isn't enough by itself if you don't also currently hold one of those two roles here, and since 2026-09-19 the **Roles** button doesn't appear at all unless you meet that bar. Before then it was shown to any net staff, and every action inside it was then refused. If a net has no NCS assigned at all, the net's manager or an admin can also use **Claim NCS**, a recovery button meant for an orphaned net rather than everyday handoffs.
 
 ## Stepping down, and stepping away
 

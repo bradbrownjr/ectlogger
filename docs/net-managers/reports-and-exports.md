@@ -43,7 +43,7 @@ This page needs no sign-in to view — callsign and licensee information are alr
 
 When a net closes, ECTLogger emails the log to:
 
-- the net's **owner**, if their own notification preferences have net-close emails on;
+- the net's **manager**, if their own notification preferences have net-close emails on;
 - anyone explicitly **subscribed** to the schedule the net came from, with the same preference on;
 - and every **active NCS, Logger, or Relay on that net itself**, again subject to their own preference — so staff who ran the net get a copy even if they never separately subscribed to the schedule.
 

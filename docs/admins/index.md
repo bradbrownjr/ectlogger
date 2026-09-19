@@ -53,4 +53,4 @@ That last part is the reason this is its own path. "Administrator" gets used for
 
 ## Not here
 
-Everything about a specific net or schedule belongs to whoever owns it, not to you, and lives in [net managers](/docs/net-managers/). Server installation, backups, and TLS are in [self-hosting](/docs/self-hosting/).
+Everything about a specific net or schedule belongs to whoever manages it, not to you, and lives in [net managers](/docs/net-managers/). Server installation, backups, and TLS are in [self-hosting](/docs/self-hosting/).

@@ -40,6 +40,10 @@ Know what you're attaching before you attach it. The snapshot is environment inf
 
 **It never includes your callsign, name, email address, location, chat content, check-in data, or traffic content, and nothing is sent anywhere on its own**. The panel just shows it to you, and you choose whether to paste it or, in the feedback form, check the box to send it along.
 
+## If the page itself isn't working
+
+Before reporting that a button does nothing, try the same thing in a private window, which normally runs with your browser extensions disabled. Ad blockers and script blockers break ECTLogger in ways that look like a fault at our end, sign-in most of all: see [Signing in](/docs/operators/signing-in/#if-the-sign-in-page-does-nothing) for what to allow. If it works in a private window and not in an ordinary one, an extension is the cause, and the useful thing to tell us is which extension.
+
 ## Beyond the app
 
 - **GitHub issues**: [github.com/bradbrownjr/ectlogger/issues](https://github.com/bradbrownjr/ectlogger/issues) — the same tracker Submit Feedback can open an issue in automatically. Good for anything you want to track publicly, search past reports on, or follow up on yourself.

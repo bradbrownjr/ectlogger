@@ -36,6 +36,8 @@ Now go and read your email. The message has a link in it; click it, and you are 
 
 If the email does not arrive within a minute or two, check the spam folder. If your club runs its own instance and no message ever arrives, it is almost certainly the server's mail configuration and not you; tell whoever runs it.
 
+If clicking **Send Magic Link** does nothing at all, or the link in the email opens a page that never finishes signing you in, the usual cause is an ad blocker or a script blocker on your own browser rather than anything at our end. [Signing in](/docs/operators/signing-in/#if-the-sign-in-page-does-nothing) explains what to allow.
+
 There is a second way in, underneath: **Sign in with a password instead**. You have no password yet, so it will not help tonight, but it is worth setting later for the night your email is not working. [Signing in](/docs/operators/signing-in/) covers that, and two-factor authentication along with it.
 
 ## 2. Fill in who you are

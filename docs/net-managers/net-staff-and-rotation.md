@@ -22,7 +22,7 @@ There are two separate lists here, and they answer two different questions. **Au
   <figcaption>Staff can start and run nets the moment they're added. The rotation below is optional; it only decides who gets pre-assigned NCS ahead of time.</figcaption>
 </figure>
 
-From a schedule's **Net Staff** tab (or the **Staff** button on its card), add any operator to the **Authorized Net Staff** list and they can start and run nets from that schedule from that point on, with no rotation slot required. The **Schedule Manager** (the schedule's owner) always has this access implicitly.
+From a schedule's **Net Staff** tab (or the **Staff** button on its card), add any operator to the **Authorized Net Staff** list and they can start and run nets from that schedule from that point on, with no rotation slot required. The **Schedule Manager**, whoever created the schedule or was later handed it, always has this access implicitly.
 
 Each staff row has its own switch to disable someone temporarily without removing them, and a star to promote them to **co-manager**. Co-manager is a strictly higher tier than plain staff: it's for schedule-ownership actions (transferring ownership, merging schedules, archiving or deleting a net from this schedule), not for who can run a net night to night. Plain active staff can already do that.
 

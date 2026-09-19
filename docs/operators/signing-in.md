@@ -28,6 +28,16 @@ The link stays valid for 30 days, which is deliberate: during a multi-day activa
 
 If the message has not arrived in a minute or two, check your spam folder. If your club runs its own instance and no message ever arrives, that is the server's mail configuration and not something you can fix from here; tell whoever runs it.
 
+## If the sign-in page does nothing
+
+Two browser settings break sign-in in ways that don't look like browser settings.
+
+**Scripts blocked.** ECTLogger is a JavaScript application. With scripts blocked for the site, by NoScript, a privacy extension turned up to strict, or a policy set by whoever manages the computer, the page still draws but its buttons do nothing at all.
+
+**An ad or privacy blocker.** The addresses ECTLogger uses to send a magic link and to complete one both have the words `magic-link` in them, and some blocker lists match on that, so the request never leaves your browser. It looks like a fault at our end: **Failed to send magic link** when you click the button, or a link from your email that opens a page which never finishes signing you in. That is why the error message on screen mentions your ad blocker.
+
+The fix for both is to allow this one site in whichever extension is responsible, by allow-listing `app.ectlogger.us` or your club's own address, rather than turning the extension off everywhere. A private window normally runs with extensions disabled, so if sign-in works there and not in an ordinary tab, you have found your answer.
+
 ## Set a password
 
 A magic link needs a working inbox, and there are nights when you don't have one. Your club's mail server has a bad day, your provider decides ECTLogger is spam, or you are operating from somewhere you can reach a repeater but not your email. A password gets you in with nothing but the browser in front of you.

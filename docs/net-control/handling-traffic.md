@@ -12,13 +12,13 @@ permalink: /docs/net-control/handling-traffic/
 
 # Handling traffic
 
-Some nets carry formal message traffic (ARRL radiograms, ICS-213 general messages, or a SKYWARN weather strip) alongside ordinary check-in logging. If a net has Assisted Traffic Handling turned on, NCS, Logger, and the net's owner get a Traffic panel for filing and tracking it, right on the net view.
+Some nets carry formal message traffic (ARRL radiograms, ICS-213 general messages, or a SKYWARN weather strip) alongside ordinary check-in logging. If a net has Assisted Traffic Handling turned on, NCS, Logger, and the net's manager get a Traffic panel for filing and tracking it, right on the net view.
 
 ## Who sees it
 
-The toolbar's **Traffic** button only appears when a net has traffic handling enabled *and* you're the net's owner, an admin, or hold an active NCS or Logger role on it. A Standard participant never sees this button on the net view, even on a traffic-enabled net. Their own way to file traffic is the **Traffic** item in the top navigation bar instead, covered on the operators path.
+The toolbar's **Traffic** button only appears when a net has traffic handling enabled *and* you're the net's manager, an admin, or hold an active NCS or Logger role on it. A Standard participant never sees this button on the net view, even on a traffic-enabled net. Their own way to file traffic is the **Traffic** item in the top navigation bar instead, covered on the operators path.
 
-Stepping down to Standard from **Role: NCS** takes the panel away with it, the same as every other staff control. The figures on this page are taken from the net owner's seat; the panel looks the same from any of them.
+Stepping down to Standard from **Role: NCS** takes the panel away with it, the same as every other staff control. The figures on this page are taken from the net manager's seat; the panel looks the same from any of them.
 
 ## The traffic panel
 
@@ -56,6 +56,12 @@ Two things worth knowing about this log:
 ## Your inbox
 
 Any piece of traffic currently held by you, meaning something you originated or received that hasn't moved on yet, shows up in your own traffic inbox, with a count badge in the top navigation bar. That's the same inbox regardless of which net the traffic came from, so it's worth checking even after a net you were running has closed.
+
+## When something sits too long
+
+Nothing relies on you remembering the message in your pocket. While a piece of traffic is still pending, ECTLogger emails whoever is currently holding it, escalating as it ages, and how fast that happens is set by the message's own precedence: an Emergency message is chased after an hour, a Priority one after four, a Routine or Welfare one after a day. Each level gets three reminders, spaced further apart each time. A message carrying an **HXB** handling instruction, which names its own expiry in hours, follows that deadline instead: one reminder at the halfway mark, and a final notice when the time is up. [Emails we send](/docs/reference/emails/) lists the exact intervals.
+
+The clock starts when the message reaches you, and the reminders stop the moment you log the next hop. There is nothing to mark as done: relaying, delivering, or cancelling it is what ends them, and until one of those happens the message is still yours as far as ECTLogger is concerned. Drill traffic is chased exactly like the real thing; [demo traffic](/docs/reference/glossary/) never is.
 
 ## Exporting
 

@@ -19,7 +19,7 @@ A net doesn't have to be one frequency and one Net Control Station. A multi-band
 If a net has more than one working frequency, each one shows as a chip in the net's header row, next to the status and duration chips. What clicking a chip does depends on who you are:
 
 - **If you're an active NCS**, clicking a chip **claims it as yours**. It becomes the frequency you're monitoring, shown with a star and your own color, and it's added to your own check-in's available frequencies. A different NCS on the same net claims a different chip the same way; nothing stops two NCS from claiming two different frequencies at once, which is exactly the point.
-- **If you're Logger, Relay, or the owner** (but not an active NCS), clicking a chip instead sets it as the net's single **active frequency**, the one highlighted blue in the check-in list for whoever's currently on it.
+- **If you're Logger, Relay, or the net's manager** (but not an active NCS), clicking a chip instead sets it as the net's single **active frequency**, the one highlighted blue in the check-in list for whoever's currently on it.
 - **Ctrl+click** (or Cmd+click on a Mac) always just filters the check-in list down to that frequency, no matter who you are. It never changes anyone's claim or the net's active frequency.
 - On a closed or archived net, chips are view-only, and clicking one no longer does anything.
 

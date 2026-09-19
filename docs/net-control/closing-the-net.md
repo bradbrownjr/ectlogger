@@ -16,7 +16,7 @@ Closing a net is a real state change, not a formality: it ends the live session,
 
 ## Closing it
 
-The toolbar's **Close net** button is available to the net's owner, an admin, or anyone holding an active NCS or Logger role. It asks you to confirm first:
+The toolbar's **Close net** button is available to the net's manager, an admin, or anyone holding an active NCS or Logger role. It asks you to confirm first:
 
 <figure>
   <img src="/docs/img/net-control/close-net-dialog.png"
@@ -29,7 +29,7 @@ Confirm, and the net's status moves to Closed immediately for every viewer.
 ## What happens the moment it closes
 
 - A system message posts to the net's chat noting it closed.
-- A log email goes out to the net's owner (if they've opted in), anyone explicitly subscribed to this schedule, and every active NCS, Logger, and Relay who actually worked this specific occurrence and hasn't opted out. Running a net is enough to get a copy of its own log, even without a separate subscription.
+- A log email goes out to the net's manager (if they've opted in), anyone explicitly subscribed to this schedule, and every active NCS, Logger, and Relay who actually worked this specific occurrence and hasn't opted out. Running a net is enough to get a copy of its own log, even without a separate subscription.
 - If the net has **ICS-309** turned on, that email uses the formal ICS-309 log format and folds in any traffic logged on the net as metadata rows (never the message text itself); otherwise it's a plain net-log email. A recipient with their own preference for ICS-309 gets that format regardless of the net's own setting.
 - Formal traffic filed on the net isn't touched by closing it. Forms keep whatever disposition their own chain of custody says, and you can keep logging handoffs against them after the net closes. See [Handling traffic](/docs/net-control/handling-traffic/).
 

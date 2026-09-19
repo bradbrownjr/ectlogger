@@ -40,7 +40,7 @@ that's the point of a net roster — matching who's on the air to who they are.
 The core of the app is the net log: who checked in, their frequency/mode, their status
 (e.g. has traffic, relay, mobile), and timestamps. This is the operational record of a net
 and is visible to other participants and net control staff during and after the net, and
-may be exported (CSV, ICS-309) or emailed to subscribers by the net's owner.
+may be exported (CSV, ICS-309) or emailed to subscribers by the net's manager.
 
 Chat messages sent during a net are stored as part of that net's record for the same
 reason — they're part of the operational log, not a private conversation.

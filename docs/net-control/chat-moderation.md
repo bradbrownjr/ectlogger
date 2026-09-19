@@ -28,7 +28,7 @@ A plain click hides that station's messages from your own view of this net's cha
 
 ## Muting a station for everyone
 
-This is a staff action: the net's active NCS and Logger, plus the net's owner and any admin. **Shift-click** the same mute icon instead of a plain click, and that station's chat messages stop reaching every other viewer's browser for the rest of this net — not just yours.
+This is a staff action: the net's active NCS and Logger, plus the net's manager and any admin. **Shift-click** the same mute icon instead of a plain click, and that station's chat messages stop reaching every other viewer's browser for the rest of this net — not just yours.
 
 A few things worth knowing about how far this actually reaches:
 

@@ -34,17 +34,17 @@ Here's what each one does, grouped the way the toolbar groups them.
 - **Search** — filters the check-in list by callsign, name, or location as you type. Doesn't touch the underlying data, just what's shown.
 - **Map** — plots every checked-in station with a location ECTLogger could parse, including ones already checked out. See [Location formats](/docs/reference/location-formats/) for what it can and can't read.
 - **Coverage** — station-to-station "who can hear whom" reports, if the net has propagation logging turned on. Not every net does.
-- **Traffic** — opens the traffic panel for this net, if the net has formal traffic handling enabled and you're the owner, an admin, or hold an active NCS or Logger role. A Standard participant never sees this button, even on a traffic-enabled net. See [Handling traffic](/docs/net-control/handling-traffic/).
+- **Traffic** — opens the traffic panel for this net, if the net has formal traffic handling enabled and you're the net's manager, an admin, or hold an active NCS or Logger role. A Standard participant never sees this button, even on a traffic-enabled net. See [Handling traffic](/docs/net-control/handling-traffic/).
 - **Announcements** / **Notes** / **Topics** / **Stats** — read-only views of the schedule's announcements, this net's own notes, prior weeks' topic-of-the-week answers, and this net's statistics page.
 - **Audio** and **Website**, when the net has a stream URL or an info URL set, open those in a new tab.
 
 ### Management (right side)
 
-- **Import** — backfills check-ins from a CSV, for a net that ran off-app or needs bulk correction. Staff only (owner, admin, or active NCS). This is a net-manager-flavored tool; day-to-day logging almost never needs it.
+- **Import** — backfills check-ins from a CSV, for a net that ran off-app or needs bulk correction. Staff only (the net's manager, an admin, or an active NCS). This is a net-manager-flavored tool; day-to-day logging almost never needs it.
 - **Edit net** — the net's settings form. Staff only, and it stays available even after the net closes, since a typo in the log sometimes isn't found until later.
 - **Roles** — opens **Manage Net Control Staff**, where you assign or remove NCS, Logger, and Relay for anyone. On a draft or scheduled net the button's tooltip reads "Assign NCS and logger roles", since any assigned NCS can start the net. Covered in [Roles and stepping away](/docs/net-control/roles-and-stepping-away/).
 - **Role: NCS** / **Role: Standard** — appears only for an operator who already holds an active NCS role on this net, and toggles between acting as NCS and stepping down to a Standard participant without leaving the role behind entirely.
-- **Claim NCS** — a recovery button, shown to the owner or an admin only when a net has no assigned NCS at all.
+- **Claim NCS** — a recovery button, shown to the net's manager or an admin only when a net has no assigned NCS at all.
 - **Raise hand** — a participant-side signal to get NCS's attention; NCS doesn't see this on their own row, since they run the queue rather than joining it.
 - **Step away** / **Just listening** / **Check out** — self-service status changes for your own check-in. Stepping away as the net's only active NCS asks you to confirm first, since it pauses the net until someone returns. See [Roles and stepping away](/docs/net-control/roles-and-stepping-away/).
 - **I hear** — records which stations you can hear, if the net has propagation logging on and allows self-reporting.

@@ -36,7 +36,7 @@ Deleting is the one option here that isn't reversible, and it removes every chec
 
 ## Who can do this
 
-The net's owner, any administrator, whoever currently holds an active NCS role on that specific net, and, for a net created from a schedule, that schedule's owner or an active co-manager.
+The net's manager, any administrator, whoever currently holds an active NCS role on that specific net, and, for a net created from a schedule, that schedule's manager or an active co-manager.
 
 ## Related
 

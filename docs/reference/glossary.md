@@ -62,6 +62,9 @@ This isn't an amateur radio primer. It assumes you already know what a net, a re
 **Net**
 : One radio session, with its own check-in list, chat, and log, moving through the lifecycle Draft, Scheduled, Lobby, Active, and Closed (or Cancelled, for one that never happens).
 
+**Net manager**
+: The account a net or a schedule belongs to, shown as **Net Manager** on its card and as **Schedule Manager** on a schedule's staff tab. Internally it is the record's owner, which is the word the API uses. It is a standing responsibility for the net series, not a job on the air: the manager holds the settings, receives the log, and is very often not the person running tonight's net as NCS. See [Roles and permissions](/docs/reference/roles-and-permissions/).
+
 **Net staff**
 : An operator listed on a schedule's "Authorized Net Staff" roster, distinct from being in the NCS rotation, though a person is often both. See [Roles and permissions](/docs/reference/roles-and-permissions/).
 

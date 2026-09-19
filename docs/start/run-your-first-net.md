@@ -104,7 +104,7 @@ When the net is over, click **Close net**. Confirm in the dialog.
 
 Three things happen. The net moves to **closed** and stops accepting check-ins. A system message goes into the chat saying you closed it. And ECTLogger builds the log and emails it out.
 
-You get a copy because you were Net Control on it. So does the net's owner, and anyone subscribed to the schedule it came from, unless they have turned those emails off in their own profile.
+You get a copy because you were Net Control on it. So does the net's manager, and anyone subscribed to the schedule it came from, unless they have turned those emails off in their own profile.
 
 Go and look at your inbox. The log lists every station, when they checked in, on what frequency, and with what status, which is exactly the record an emergency coordinator or a club secretary asks for after an activation.
 

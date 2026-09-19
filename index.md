@@ -62,7 +62,7 @@ The worst part of a net is not running it. It is the hour afterward, retyping wh
 <div class="feature-grid">
   <div class="feature">
     <h3>The log is done when the net is</h3>
-    <p>Closing a net generates the complete log and emails it to the people who need it: the net's own staff, the schedule's subscribers, and the owner. Check-ins, chat, topic answers, poll results, and a traffic summary.</p>
+    <p>Closing a net generates the complete log and emails it to the people who need it: the net's own staff, the schedule's subscribers, and the net manager. Check-ins, chat, topic answers, poll results, and a traffic summary.</p>
   </div>
   <div class="feature">
     <h3>ICS-309, one click</h3>
@@ -71,6 +71,10 @@ The worst part of a net is not running it. It is the hour afterward, retyping wh
   <div class="feature">
     <h3>Formal traffic, properly handled</h3>
     <p>File an ARRL radiogram, an ICS-213, or an RRI weather strip from inside the net, with live text normalization and word counting. Every hop is logged against the message, so the delivery status of anything filed during your net is visible from the net itself.</p>
+  </div>
+  <div class="feature">
+    <h3>Nobody forgets they are holding a message</h3>
+    <p>Whoever is holding traffic is emailed when it has sat too long, at intervals scaled to the message's precedence: an hour for Emergency, a day for Routine. A message carrying an HXB deadline gets a final notice when that time arrives. The reminders stop the moment the message moves on, and there is nothing to mark done.</p>
   </div>
   <div class="feature">
     <h3>Reports worth sending upward</h3>

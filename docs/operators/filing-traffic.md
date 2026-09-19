@@ -31,7 +31,7 @@ There are two ways in, and which one you get depends on your role, not on the ne
   <figcaption>Traffic in the top navigation bar. When something is waiting on you, a count appears beside it.</figcaption>
 </figure>
 
-**The net's own Traffic panel**, opened from a button on the net toolbar, shows everything filed on that one net side by side with the filing form. That button only appears for the net's owner, an admin, or someone currently holding NCS or Logger on it, so as a participant you will not see it even on a net that has traffic turned on. It is covered in [handling traffic](/docs/net-control/handling-traffic/) on the net control path.
+**The net's own Traffic panel**, opened from a button on the net toolbar, shows everything filed on that one net side by side with the filing form. That button only appears for the net's manager, an admin, or someone currently holding NCS or Logger on it, so as a participant you will not see it even on a net that has traffic turned on. It is covered in [handling traffic](/docs/net-control/handling-traffic/) on the net control path.
 
 That split is deliberate rather than an oversight: traffic is visible to the people in its chain of custody plus that net's staff, so a panel listing *everyone's* traffic on a net is a staff view. Filing itself is open to anyone signed in.
 
