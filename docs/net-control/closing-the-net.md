@@ -26,12 +26,10 @@ The toolbar's **Close net** button is available to the net's owner, an admin, or
 
 Confirm, and the net's status moves to Closed immediately for every viewer.
 
-If you hold **both** NCS and Logger on this net, which happens when you open the lobby as Logger and then take net control, Close net currently returns a server error instead of closing. Drop one of the two roles from yourself in **Manage Net Control Staff** and try again; see [Known issues](/docs/about/known-issues/).
-
 ## What happens the moment it closes
 
 - A system message posts to the net's chat noting it closed.
-- A log email goes out to the net's owner (if they've opted in), anyone explicitly subscribed to this schedule, and every active NCS and Logger who actually worked this specific occurrence and hasn't opted out. Running a net is enough to get a copy of its own log, even without a separate subscription. Relay operators are meant to be on that list too and currently are not; see [Known issues](/docs/about/known-issues/).
+- A log email goes out to the net's owner (if they've opted in), anyone explicitly subscribed to this schedule, and every active NCS, Logger, and Relay who actually worked this specific occurrence and hasn't opted out. Running a net is enough to get a copy of its own log, even without a separate subscription.
 - If the net has **ICS-309** turned on, that email uses the formal ICS-309 log format and folds in any traffic logged on the net as metadata rows (never the message text itself); otherwise it's a plain net-log email. A recipient with their own preference for ICS-309 gets that format regardless of the net's own setting.
 - Formal traffic filed on the net isn't touched by closing it. Forms keep whatever disposition their own chain of custody says, and you can keep logging handoffs against them after the net closes. See [Handling traffic](/docs/net-control/handling-traffic/).
 

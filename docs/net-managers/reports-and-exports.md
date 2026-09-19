@@ -45,9 +45,9 @@ When a net closes, ECTLogger emails the log to:
 
 - the net's **owner**, if their own notification preferences have net-close emails on;
 - anyone explicitly **subscribed** to the schedule the net came from, with the same preference on;
-- and every **active NCS or Logger on that net itself**, again subject to their own preference — so staff who ran the net get a copy even if they never separately subscribed to the schedule.
+- and every **active NCS, Logger, or Relay on that net itself**, again subject to their own preference — so staff who ran the net get a copy even if they never separately subscribed to the schedule.
 
-Each recipient gets ICS-309 formatting if either the net turned it on or that recipient's own profile prefers it. A **Relay** station is meant to be included by the role check above and currently isn't — a [known issue](/docs/about/known-issues/). Until it's fixed, a relay operator who wants their own copy should subscribe to the schedule directly, which puts them on the list regardless of role.
+Each recipient gets ICS-309 formatting if either the net turned it on or that recipient's own profile prefers it.
 
 ## Related
 

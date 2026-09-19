@@ -41,8 +41,15 @@ def form_visibility_clause(user: User) -> ColumnElement:
         )
     )
 
-    # Mirrors check_net_permission(required_roles=["ncs", "logger"]): the net
-    # owner, or a user holding one of those NetRoles on this form's net.
+    # Mirrors check_net_permission(required_roles=["NCS", "LOGGER"]): the net
+    # owner, or a user holding one of those *active* NetRoles on this form's
+    # net. Both halves of that mirror were wrong until 2026-09-19 and wrong in
+    # opposite directions, so this clause and check_form_permission disagreed
+    # about the same form: the role values are stored uppercase, so the
+    # lowercase list here matched nothing and a net's own NCS/Logger saw only
+    # their own chain of custody in the list; and the missing is_active filter
+    # meant that once the case was right, an operator who stepped down to
+    # Standard would keep seeing rows the detail endpoint then 403'd.
     net_ncs_or_logger = exists(
         select(Net.id).where(
             Net.id == Form.net_id,
@@ -52,7 +59,8 @@ def form_visibility_clause(user: User) -> ColumnElement:
                     select(NetRole.id).where(
                         NetRole.net_id == Net.id,
                         NetRole.user_id == user.id,
-                        NetRole.role.in_(["ncs", "logger"]),
+                        NetRole.role.in_(["NCS", "LOGGER"]),
+                        NetRole.is_active == True,  # noqa: E712
                     )
                 ),
             ),

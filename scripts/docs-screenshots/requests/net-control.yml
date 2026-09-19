@@ -217,13 +217,11 @@ shots:
   - id: traffic-panel-docked
     section: net-control
     page: /docs/net-control/handling-traffic/
-    # W1PINE, not the Logger: the traffic panel's own list and summary endpoints
-    # ask check_net_permission for required_roles=["ncs", "logger"] in lower
-    # case, and NetRole.role is a plain string column that always holds "NCS" /
-    # "LOGGER", so no NetRole ever matches and the panel falls back to owner or
-    # admin only. K1COVE is this net's active Logger and gets "Not authorized to
-    # view this net's traffic". Recorded in ROADMAP 0.11; until it is fixed, a
-    # figure taken from the Logger's seat would be a figure of the bug.
+    # W1PINE, the net's owner. K1COVE, this net's active Logger, would do just
+    # as well now that the role-case bug is fixed (2026-09-19) and the panel
+    # opens for a net's own NCS and Logger again; the owner's seat is kept
+    # because the rest of this section's figures are taken from it and the
+    # panel renders identically from either.
     route: /nets/{{net:active}}
     as: W1PINE
     # Wider than the usual 1440 so the Traffic panel's own table has room for
