@@ -62,6 +62,26 @@ Items predating this convention get a **Docs:** line when they are picked up, no
 
 ***Milestone 0 is complete as of 2026-07-29.** Every section has shipped and been pruned. Section numbers are not reused, so commit messages and docs referencing "Milestone 0.4" or "Milestone 0.7" still resolve against the changelog. New codebase-health work should open a new section here rather than reopening a pruned one.*
 
+### 0.10 — `DATABASE_URL` mangles an explicit async driver
+
+**🐛 `sqlite+aiosqlite:///...` becomes `sqlite+aiosqlite+aiosqlite:///...` and the app will not start** *(found 2026-09-18 while standing up the documentation demo instance)*
+
+**Model:** Haiku. **Think:** none.
+**Docs:** self-hosting, if the fix changes what a valid `DATABASE_URL` looks like. Otherwise none (the documented form already works).
+
+`app/database.py` normalizes a SQLite URL by doing a plain string replace of
+`sqlite:///` with `sqlite+aiosqlite:///`. That substring also occurs inside
+`aiosqlite:///`, so a URL that already names the async driver gets it inserted a
+second time, and SQLAlchemy's dialect loader fails with `ValueError: too many
+values to unpack` — an error that says nothing about what is actually wrong.
+
+Nobody has hit this in production because `.env.example` documents the plain
+`sqlite:///./ectlogger.db` form and that is what everyone uses. It is a trap for
+the next person who reasonably assumes the explicit driver form is also
+accepted, and the self-hosting documentation is about to get more eyes on it.
+
+- [ ] Only prepend the driver when it is not already present, and cover both forms with a test
+
 ### 0.8 — Add swap to the production host *(operator task — needs root)*
 
 **⚠️ Manual task for Brad.** Not a code change and not something the agent can do: the
@@ -340,24 +360,32 @@ The screenshots are eight months stale because refreshing them is manual, and an
 
 #### Phases
 
-**Phase 0 — Scaffold** *(not started)*
+**Phase 0 — Scaffold** *(complete 2026-09-19)*
 
-*Structure, voice, roster, path order, preview, and search are all settled below; nothing here is waiting on a decision.*
+- [x] Branch `feature/docs-site`
+- [x] **Preview repo.** A throwaway `ectlogger-docs-preview` repository with Pages enabled, that `feature/docs-site` is pushed to for review. This is the real GitHub Pages build, so the plugin set and versions match production exactly, and it needs nothing installed on the dev host. Delete the repo when the branch merges, and see the limitation recorded below
+- [x] `_data/nav.yml` plus a sidebar. The single `default.html` became a `shell` layout with `default`, `docs`, and `landing` inheriting from it, and the stylesheet moved to `assets/css/site.css`
+- [x] Front-matter template: title, summary, kind, audience, owner, revised, applies-to, permalink. Documented in `docs/DEVELOPMENT.md`
+- [x] `_config.yml` excludes, `jekyll-sitemap`, `robots.txt`, and directory-style permalinks
+- [x] Seed roster and organization names into `docs/DEVELOPMENT.md` before any page is written, so no agent invents its own examples
 
-- [ ] Branch `feature/docs-site`
-- [ ] **Preview repo.** A throwaway `ectlogger-docs-preview` repository with Pages enabled, that `feature/docs-site` is pushed to for review. This is the real GitHub Pages build, so the plugin set and versions match production exactly, and it needs nothing installed on the dev host. Delete the repo when the branch merges
-- [ ] `_data/nav.yml` plus a sidebar in `_layouts/default.html`. Liquid is disabled for page *content* in `_config.yml` but layouts still process it, so this needs no change to that setting
-- [ ] Front-matter template: title, audience, diataxis type, owner, revised date, applies-to
-- [ ] `_config.yml` excludes for `docs/concepts/`, `DEVELOPMENT.md`, `DESIGN.md`, `USER-STORIES.md`; add `jekyll-sitemap` and a `robots.txt`
-- [ ] Seed roster and organization names into `docs/DEVELOPMENT.md` before any page is written, so no agent invents its own examples
+**What the preview repo does not prove.** It serves from a subpath
+(`/ectlogger-docs-preview/`) rather than a domain root, so `scripts/docs-preview.sh`
+rewrites `baseurl` before pushing and anything built from a root-absolute path is
+wrong there and right in production: figures, and any hand-written href starting
+with a single slash, will 404 on the preview. Links emitted by the layouts go
+through `relative_url` and are fine. This was not anticipated when the decision
+was made and it is worth knowing before trusting a preview. What the preview is
+genuinely for is the failure with no other safety net: a Liquid or YAML error in
+a layout takes down every page of the real site at once, and there is no staging.
 
-**Phase 1 — Landing page and documentation home** *(not started)*
-- [ ] `index.md`: the pitch, who it is for, the four paths, one current screenshot, one call to action. No competitor comparisons, stated or implied
-- [ ] `README.md` cut back to a repository README
-- [ ] `/docs/` home with the four path cards and the three tutorials
-- [ ] Screenshot pipeline running end to end, proven by the landing-page hero being generated rather than hand-captured
-- [ ] **Search**, wired in early so every page is indexed as it is written: a `search.json` the site generates from its own pages, plus Lunr in the layout and a search field in the sidebar. This is what `just-the-docs` does, and it is the ordinary answer for a Jekyll site on GitHub Pages. We take the mechanism, not the theme, since the layout already matches the app's Material design and there is no reason to throw that away. The index page needs `render_with_liquid: true` in its own front matter to opt back out of the site-wide Liquid switch-off
-- [ ] `Navbar.tsx` Help menu: **User Guide** points at `/docs/`, and add a **Known Issues** item
+**Phase 1 — Landing page and documentation home** *(complete 2026-09-19)*
+- [x] `index.md`: the pitch, who it is for, the four paths, one current screenshot, one call to action. No competitor comparisons, stated or implied
+- [x] `README.md` cut back to a repository README. The line comparing ECTLogger to "clunky desktop apps or decade-old web interfaces" is gone
+- [x] `/docs/` home with the four path cards and the three tutorials, plus all eight path index pages
+- [x] Screenshot pipeline running end to end, proven by the landing-page hero being generated rather than hand-captured, and by an annotated figure with a real red box
+- [x] **Search**, wired in early so every page is indexed as it is written: a `search.json` the site generates from its own pages, plus Lunr in the layout and a search field in the sidebar. This is what `just-the-docs` does, and it is the ordinary answer for a Jekyll site on GitHub Pages. We take the mechanism, not the theme, since the layout already matches the app's Material design and there is no reason to throw that away. The index page needs `render_with_liquid: true` in its own front matter to opt back out of the site-wide Liquid switch-off
+- [x] `Navbar.tsx` Help menu: **User Guide** points at `/docs/`, and a **Known Issues** item added. `AboutModal.tsx`'s privacy link picked up the trailing slash the new permalinks need
 
 **Phase 2 — Operator path and the three tutorials** *(not started)*
 - [ ] Three "first ten minutes" tutorials, each verified by walking it in a browser against the seeded instance
