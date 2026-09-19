@@ -1,0 +1,8 @@
+{
+  "operators/mobile-checkin-list": {
+    "path": "/docs/img/operators/mobile-checkin-list.png",
+    "alt": "The check-in list on a phone-width screen: a simplified, read-only table with each station's status shown by icon.\n",
+    "caption": "Other stations' rows are read-only on a phone; your own status is still yours to change.",
+    "page": "/docs/operators/in-the-field/"
+  }
+}

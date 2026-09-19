@@ -58,7 +58,7 @@ const AboutModal: React.FC<AboutModalProps> = ({ open, onClose }) => {
               <OpenInNewIcon sx={{ fontSize: 14 }} />
             </Link>
             <Link
-              href="https://ectlogger.us/docs/PRIVACY"
+              href="https://ectlogger.us/docs/PRIVACY/"
               target="_blank"
               rel="noopener noreferrer"
               sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}

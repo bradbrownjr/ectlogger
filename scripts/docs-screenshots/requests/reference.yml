@@ -1,0 +1,42 @@
+# Figures owned by the reference and about paths.
+#
+# Reference pages are tables and lists first; a screenshot is only worth
+# adding where the on-screen thing is hard to describe in a table. The
+# "Bulk add" toolbar button already has a figure in the base shots.yml
+# (id: toolbar-speed-entry) from when the annotation mechanism was proved
+# out, so speed-entry-syntax.md reuses that image rather than declaring a
+# second capture of the same control.
+#
+# See ../README.md for the field reference.
+
+shots:
+  - id: check-in-legend
+    section: reference
+    page: /docs/reference/station-statuses/
+    route: /nets/{{net:active}}
+    as: W1PINE
+    # ":visible" because the net view renders a desktop table and a mobile
+    # one, only one of which is laid out at this viewport.
+    wait_for: 'table:visible tbody tr'
+    # The legend row has no aria-label or test id of its own -- it is a plain
+    # flex Box of Typography captions. Anchor on a tooltip label inside it
+    # that is unique on the page (the inline-edit hint appears only here,
+    # unlike the role/status labels which also appear as row badges) and
+    # capture its direct parent, so the selector survives the row-badge
+    # tooltips changing wording independently of this row's own.
+    element: 'div:has(> span[aria-label="Click any row to edit check-in details inline"])'
+    # No padding: the legend sits flush against the bottom of the table, so
+    # anything above zero slices the last row into the figure.
+    pad: 0
+    alt: >
+      The check-in list legend, reading left to right: NCS (a crown), 2nd NCS
+      (a second crown), Logger (a clipboard), Standard (a check mark), Recheck
+      (two arrows in a circle), Listening (an ear), Relay (a satellite dish),
+      Away (a pause symbol), Traffic (a siren), Announce (a megaphone), and
+      Out (a waving hand), followed by a note that a blue highlight marks a
+      station on the net's active frequency and that clicking a row opens
+      inline editing.
+    caption: >
+      The legend above the check-in list. It mixes three different kinds of
+      thing -- net roles, station statuses, and the Recheck marker -- in one
+      row; see Station statuses for what each entry actually means.

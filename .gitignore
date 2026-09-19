@@ -28,6 +28,11 @@ wheels/
 *.sqlite
 *.sqlite3
 
+# Generated demo data (backend/scripts/seed_demo_data.py) -- throwaway,
+# rebuilt on demand for documentation screenshots, never committed.
+backend/demo.db*
+backend/demo-seed.json
+
 # Environment variables
 .env
 .env.local
@@ -66,3 +71,6 @@ htmlcov/
 
 # Local email digest (not for commit)
 docs/ectlogger-email-digest.md
+
+# Documentation screenshot pipeline
+scripts/docs-screenshots/node_modules/

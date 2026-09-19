@@ -1,0 +1,253 @@
+# Figure requests for the Operators path (docs/operators/). See
+# scripts/docs-screenshots/README.md for the schema and placeholder syntax.
+# All participant-perspective shots use KC1HILL (Priya Nandan), the "you" of
+# this path, per docs/DOC-STYLE.md.
+
+shots:
+  # ========== Account and profile ==========
+  - id: account-profile-tab
+    section: operators
+    page: /docs/operators/account-and-profile/
+    route: /profile
+    as: KC1HILL
+    wait_for: 'form:visible'
+    alt: >
+      The Profile page's Profile tab, showing the Name, Amateur Radio Call
+      Sign, GMRS Call Sign, SKYWARN Spotter Number, and Default Location
+      fields, with Save Changes at the bottom.
+    caption: Your profile identity fields. Only Name is required.
+
+  # ========== Finding a net ==========
+  - id: dashboard-net-list
+    section: operators
+    page: /docs/operators/finding-a-net/
+    route: /dashboard
+    as: KC1HILL
+    # A short viewport: the demo has three nets, and a 1000px window leaves
+    # half the figure empty below them.
+    viewport:
+      width: 1440
+      height: 700
+    wait_for: '.MuiChip-root:visible'
+    alt: >
+      The ECTLogger dashboard, showing three net cards side by side with
+      status chips reading active, scheduled, and closed.
+    caption: Nets you can still take part in sort ahead of ones that are over.
+
+  - id: archived-nets-dialog
+    section: operators
+    page: /docs/operators/finding-a-net/
+    route: /dashboard
+    as: KC1HILL
+    wait_for: 'button[aria-label="view archived"]:visible'
+    steps:
+      - click: 'button[aria-label="view archived"]'
+      - wait_for: '.MuiDialog-paper:visible'
+    element: '.MuiDialog-paper'
+    pad: 12
+    alt: >
+      The Archived and Cancelled Nets dialog, with a search box, From and To
+      date fields, and Attended and Ran as NCS checkboxes.
+    caption: Everything closed, archived, or cancelled lives here, not just this week's nets.
+
+  # ========== Checking in ==========
+  # KC1HILL is already checked into the seeded active net, so the check-in
+  # dialog and its toolbar entry point aren't on screen until there's no
+  # active check-in for this user. Checking out first (a real, reachable
+  # control -- see status-and-checking-out.md) reproduces a station
+  # rechecking in, which opens the same dialog a first-time check-in would.
+  - id: check-in-dialog
+    section: operators
+    page: /docs/operators/checking-in/
+    route: /nets/{{net:active}}
+    # N1DUNE is seeded checked into nothing, so this opens the dialog without
+    # first checking someone out -- which rewrote the demo database.
+    as: N1DUNE
+    wait_for: 'table:visible tbody tr'
+    steps:
+      - click: 'span[aria-label="Check into net"]'
+      - wait_for: '.MuiDialog-paper:visible'
+    element: '.MuiDialog-paper'
+    pad: 16
+    annotate:
+      - selector: 'div.MuiDialogActions-root button:has-text("Check In")'
+        style: box
+    alt: >
+      The Check In dialog, with the Check In button outlined in red at the
+      bottom right of the form. Only the Callsign field is required by
+      default.
+    caption: Only Callsign is required unless the net's manager has turned on more fields.
+
+  # ========== Status, rechecks, and checking out ==========
+  - id: check-in-legend
+    section: operators
+    page: /docs/operators/status-and-checking-out/
+    route: /nets/{{net:active}}
+    as: KC1HILL
+    wait_for: 'table:visible tbody tr'
+    # The table marks a second active NCS with the same tooltip the legend key
+    # carries, so both selectors have to be scoped to the legend strip itself
+    # or they resolve to a row instead.
+    element: 'div:has(> span:text-is("Legend:"))'
+    pad: 8
+    annotate:
+      - selector: 'div:has(> span:text-is("Legend:")) span[aria-label="2nd NCS - assists primary Net Control Station"]'
+        style: underline
+    alt: >
+      The check-in list legend, with the '2nd NCS' entry underlined in red,
+      reading '2nd NCS - assists primary Net Control Station'.
+    caption: The legend mixes roles (NCS, 2nd NCS, Logger), statuses, and the recheck marker in one row.
+
+  - id: status-select-dropdown
+    section: operators
+    page: /docs/operators/status-and-checking-out/
+    route: /nets/{{net:active}}
+    as: KC1HILL
+    wait_for: 'table:visible tbody tr'
+    steps:
+      - click: 'tr:has-text("KC1HILL") .MuiSelect-select'
+      - wait_for: '.MuiMenu-paper:visible'
+    # Clicking the select leaves its tooltip showing over the next column.
+    hide:
+      - '.MuiTooltip-popper'
+    # The table itself, not its scroll container: the container reserves empty
+    # space below the last row that reads as a broken screenshot.
+    element:
+      - 'table'
+      - '.MuiMenu-paper'
+    pad: 8
+    alt: >
+      A check-in row's status dropdown open, listing Checked in, Listening,
+      Relay, Away, Has traffic, Announcements, Mobile, and Checked out.
+    caption: Every status is one dropdown away, on your own row.
+
+  # ========== Chat, polls, and topics ==========
+  - id: chat-mention-composer
+    section: operators
+    page: /docs/operators/chat-and-polls/
+    route: /nets/{{net:active}}
+    # The autocomplete only suggests stations currently signed in, so the menu
+    # cannot open unless a second operator is really connected to this net.
+    with_online: [K1COVE]
+    as: KC1HILL
+    wait_for: 'textarea[placeholder="Type a message, @callsign, or paste an image..."]:visible'
+    steps:
+      - click: 'textarea[placeholder="Type a message, @callsign, or paste an image..."]'
+      - fill:
+          selector: 'textarea[placeholder="Type a message, @callsign, or paste an image..."]'
+          value: '@K'
+      # MUI v5's MenuList renders a plain MuiList-root. There is no
+      # MuiMenuList-root class to wait for.
+      - wait_for: '.MuiPopper-root .MuiMenuItem-root'
+    # The autocomplete is portaled to the body, so the figure is the union of
+    # the composer and the list floating above it.
+    element:
+      - 'textarea[placeholder="Type a message, @callsign, or paste an image..."]'
+      - '.MuiPopper-root'
+    pad: 16
+    alt: >
+      The chat composer containing the text '@K', with an autocomplete list
+      open above it offering K1COVE and KC1HILL.
+    caption: Typing the first letter or two narrows the list to matching stations.
+
+  # ========== Your location and the map ==========
+  - id: location-map
+    section: operators
+    page: /docs/operators/location-and-the-map/
+    route: /nets/{{net:active}}
+    as: KC1HILL
+    wait_for: 'table:visible tbody tr'
+    steps:
+      - click: 'span[aria-label="View check-in locations on map"]'
+      - wait_for: '.leaflet-container:visible'
+      - wait: 800
+    alt: >
+      A net's live check-in map, with colored markers for each station and a
+      legend identifying NCS, Logger, Relay, and station statuses.
+    caption: Every checked-in station with a location ECTLogger can parse, including ones already checked out.
+
+  # ========== Filing traffic ==========
+  # The net toolbar's Traffic button is gated on owner/admin/active NCS/Logger
+  # (NetView.tsx::canViewNetTraffic), so a participant never sees it. The
+  # operator path shows the route a participant actually has: the Traffic item
+  # in the top navigation bar.
+  - id: traffic-nav-item
+    section: operators
+    page: /docs/operators/filing-traffic/
+    route: /nets/{{net:active}}
+    as: KC1HILL
+    wait_for: 'table:visible tbody tr'
+    element: 'header'
+    pad: 4
+    annotate:
+      - selector: 'header >> text=Traffic'
+        style: box
+    alt: >
+      The top navigation bar, with the Traffic item outlined in red, between
+      Schedule and Stats.
+    caption: >
+      Traffic in the top navigation bar. When something is waiting on you, a
+      count appears beside it.
+  - id: traffic-composer-picker
+    section: operators
+    page: /docs/operators/filing-traffic/
+    route: /traffic
+    as: KC1HILL
+    wait_for: 'body:visible'
+    steps:
+      - click: 'button:has-text("New")'
+      - wait_for: '.MuiCard-root:visible'
+    alt: >
+      The traffic composer's form-type picker, showing five cards: ARRL
+      Radiogram, GYX-CAR SKYWARN Report, ICS-213 General Message Form, RRI
+      Strip (General), and RRI WXOBS Weather Observation.
+    caption: Only the types a net's manager enabled are offered here -- asking for an unusual type is still possible through the standalone Traffic section below.
+
+  # ========== Your statistics ==========
+  - id: activity-stat-cards
+    section: operators
+    page: /docs/operators/your-statistics/
+    route: /profile
+    as: KC1HILL
+    viewport:
+      width: 1440
+      height: 700
+    wait_for: '[aria-label="profile tabs"]:visible'
+    steps:
+      - click: '[aria-label="profile tabs"] button:has-text("Activity")'
+      - wait_for: 'text=Total Check-ins'
+    alt: >
+      The Profile Activity tab's stat cards: Total Check-ins, Nets Joined,
+      As NCS, and Last 30 Days.
+    caption: Click any card to see the nets behind the number.
+
+  - id: leaderboard-table
+    section: operators
+    page: /docs/operators/your-statistics/
+    route: /statistics/schedules/{{template:weekly}}
+    as: KC1HILL
+    wait_for: 'table:visible'
+    steps:
+      - click: 'button[role="tab"]:has-text("Check-ins")'
+      - wait_for: 'table:visible tbody tr'
+    alt: >
+      A schedule statistics page's check-in leaderboard, listing callsigns
+      with their appearance count and participation percentage, medal icons
+      next to the top three rows.
+    caption: The check-in leaderboard for a recurring net, filtered to the last 90 days.
+
+  # ========== On a phone in the field ==========
+  - id: mobile-checkin-list
+    section: operators
+    page: /docs/operators/in-the-field/
+    route: /nets/{{net:active}}
+    as: KC1HILL
+    mobile: true
+    viewport:
+      width: 390
+      height: 844
+    wait_for: 'table:visible tbody tr'
+    alt: >
+      The check-in list on a phone-width screen: a simplified, read-only
+      table with each station's status shown by icon.
+    caption: Other stations' rows are read-only on a phone; your own status is still yours to change.

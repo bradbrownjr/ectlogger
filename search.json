@@ -1,0 +1,37 @@
+---
+permalink: /search.json
+layout: null
+sitemap: false
+render_with_liquid: true
+---
+{%- comment -%}
+  The search index. Liquid is switched off site-wide in _config.yml because the
+  documentation quotes code containing double braces; this file opts back in,
+  which is why it carries render_with_liquid above.
+
+  Every page under /docs/ is indexed, with its nav section carried along so a
+  result can say which path it came from.
+{%- endcomment -%}
+[
+{%- assign first = true -%}
+{%- for p in site.pages -%}
+{%- if p.url contains '/docs/' and p.url != '/search.json' and p.noindex != true -%}
+{%- assign section_title = '' -%}
+{%- for section in site.data.nav -%}
+  {%- if p.url contains section.url -%}{%- assign section_title = section.title -%}{%- endif -%}
+  {%- for item in section.items -%}
+    {%- if item.url == p.url -%}{%- assign section_title = section.title -%}{%- endif -%}
+  {%- endfor -%}
+{%- endfor -%}
+{%- unless first -%},{%- endunless -%}
+{%- assign first = false -%}
+{
+"url": {{ p.url | relative_url | jsonify }},
+"title": {{ p.title | default: p.name | jsonify }},
+"section": {{ section_title | jsonify }},
+"summary": {{ p.summary | default: '' | jsonify }},
+"body": {{ p.content | markdownify | strip_html | normalize_whitespace | strip | truncate: 6000 | jsonify }}
+}
+{%- endif -%}
+{%- endfor -%}
+]

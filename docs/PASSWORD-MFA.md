@@ -1,4 +1,16 @@
-# Password Login & Two-Factor Authentication
+---
+title: Passwords and two-factor authentication
+summary: The password fallback for when email is down, TOTP enrollment, rate limiting, and recovering an admin account with no working authenticator.
+kind: Reference
+audience: Server operators and administrators
+owner: KC1JMH
+revised: 2026-09-19
+review_by: 2027-09-19
+applies_to: ECTLogger, hosted and self-hosted
+permalink: /docs/PASSWORD-MFA/
+---
+
+# Passwords and two-factor authentication
 
 Magic link remains the default sign-in method. Password login is an opt-in fallback for
 when outbound email is unavailable and a magic link can't be retrieved at all — added after

@@ -1,4 +1,16 @@
-# ECTLogger Changelog
+---
+title: Changelog
+summary: Every user-facing change, newest first, in the format the in-app What's New dialog reads from.
+kind: Reference
+audience: Everyone
+owner: KC1JMH
+revised: 2026-09-19
+review_by: 2027-09-19
+applies_to: ECTLogger, hosted and self-hosted
+permalink: /docs/CHANGELOG/
+---
+
+# Changelog
 
 All notable changes to ECTLogger are documented here.
 

@@ -1,4 +1,16 @@
-# Security Policy
+---
+title: Security
+summary: What the application does to protect itself, what it expects you to do, and how to report a vulnerability.
+kind: Explanation
+audience: Server operators
+owner: KC1JMH
+revised: 2026-09-19
+review_by: 2027-09-19
+applies_to: ECTLogger, hosted and self-hosted
+permalink: /docs/SECURITY/
+---
+
+# Security
 
 ## Overview
 

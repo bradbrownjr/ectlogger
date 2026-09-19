@@ -61,7 +61,7 @@ interface AdminUser {
   last_active?: string;
   created_at: string;
   schedule_age_bypass: boolean;
-  // Power-user indicators (Admin Tooling roadmap item) - see docs/USER-GUIDE.md
+  // Power-user indicators (Admin Tooling roadmap item) - see docs/admins/users-and-roles.md
   is_ncs: boolean;
   notify_whats_new: boolean;
   has_password: boolean;

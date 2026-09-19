@@ -1,4 +1,16 @@
-# Logging Configuration Guide
+---
+title: Logging
+summary: Log levels, what gets written where, and what to turn up when something is wrong.
+kind: Reference
+audience: Server operators
+owner: KC1JMH
+revised: 2026-09-19
+review_by: 2027-09-19
+applies_to: ECTLogger, self-hosted
+permalink: /docs/LOGGING/
+---
+
+# Logging
 
 ECTLogger uses a configurable logging system that lets you control the verbosity of console output.
 

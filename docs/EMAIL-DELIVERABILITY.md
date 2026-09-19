@@ -1,4 +1,16 @@
-# Email Deliverability Guide
+---
+title: Email deliverability
+summary: SPF, DKIM, DMARC, and the reasons a magic link lands in somebody's junk folder. The most common source of "I cannot log in".
+kind: How-to
+audience: Server operators
+owner: KC1JMH
+revised: 2026-09-19
+review_by: 2027-09-19
+applies_to: ECTLogger, self-hosted
+permalink: /docs/EMAIL-DELIVERABILITY/
+---
+
+# Email deliverability
 
 ## Why Emails Go to Spam
 
@@ -352,4 +364,4 @@ If emails continue going to spam:
 ## Related Documentation
 - [Magic Link Configuration](MAGIC-LINK-CONFIGURATION.md) - Magic link expiration settings
 - [Manual Installation](MANUAL-INSTALLATION.md) - Manual installation and configuration
-- [Self-Hosting Guide](SELF-HOSTING.md) - Self-hosting overview
+- [Self-Hosting Guide](/docs/self-hosting/) - Self-hosting overview

@@ -1,4 +1,16 @@
-# ECTLogger Production Deployment Guide
+---
+title: Production deployment
+summary: TLS, a reverse proxy, a service unit, backups, and the operational checklist for an instance other people depend on.
+kind: How-to
+audience: Server operators
+owner: KC1JMH
+revised: 2026-09-19
+review_by: 2027-09-19
+applies_to: ECTLogger, self-hosted
+permalink: /docs/PRODUCTION-DEPLOYMENT/
+---
+
+# Production deployment
 
 This guide covers deploying ECTLogger to production with SSL/HTTPS using a reverse proxy.
 

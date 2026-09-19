@@ -1,4 +1,16 @@
-# ECTLogger - Quick Start Guide
+---
+title: Quick start
+summary: The shortest path from a clean Linux box to a running ECTLogger instance, for evaluating it or running it on a LAN.
+kind: Tutorial
+audience: Server operators
+owner: KC1JMH
+revised: 2026-09-19
+review_by: 2027-09-19
+applies_to: ECTLogger, self-hosted
+permalink: /docs/QUICKSTART/
+---
+
+# Quick start
 
 ## 🚀 Get Started in 5 Minutes
 
@@ -192,7 +204,7 @@ This ensures the server owner becomes the administrator before anyone else can a
 ## What's Next?
 
 See the full documentation:
-- **[Self-Hosting Guide](SELF-HOSTING.md)** - Overview and requirements
+- **[Self-Hosting Guide](/docs/self-hosting/)** - Overview and requirements
 - **[Manual Installation](MANUAL-INSTALLATION.md)** - Step-by-step manual installation
 - **[Production Deployment](PRODUCTION-DEPLOYMENT.md)** - Deploy with SSL/HTTPS
 - **[Development Guide](DEVELOPMENT.md)** - Development guide and project structure

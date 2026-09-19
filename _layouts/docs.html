@@ -1,0 +1,120 @@
+---
+layout: shell
+---
+{%- comment -%}
+  Work out which section of _data/nav.yml this page belongs to. Two ways a page
+  can match: its URL sits under the section's URL (the normal case), or the
+  section lists it explicitly (how the self-hosting section picks up the
+  top-level documents that have not moved yet).
+{%- endcomment -%}
+{%- assign current_section = nil -%}
+{%- for section in site.data.nav -%}
+  {%- if page.url contains section.url -%}
+    {%- assign current_section = section -%}
+  {%- else -%}
+    {%- for item in section.items -%}
+      {%- if item.url == page.url -%}
+        {%- assign current_section = section -%}
+      {%- endif -%}
+    {%- endfor -%}
+  {%- endif -%}
+{%- endfor -%}
+
+<div class="docs-shell">
+  <nav class="docs-sidebar" id="docs-sidebar" aria-label="Documentation">
+    <div class="docs-search">
+      <label class="visually-hidden" for="docs-search-input">Search the documentation</label>
+      <input type="search" id="docs-search-input" placeholder="Search the docs" autocomplete="off" spellcheck="false">
+      <ul class="search-results" id="docs-search-results" hidden></ul>
+    </div>
+
+    <div id="docs-nav-tree">
+      <h2>Documentation</h2>
+      <ul>
+        <li><a href="{{ '/docs/' | relative_url }}"{% if page.url == '/docs/' %} class="current"{% endif %}>All paths</a></li>
+      </ul>
+
+      {%- for section in site.data.nav %}
+      <h2>{{ section.title }}</h2>
+      <ul>
+        <li><a class="section-link{% if page.url == section.url %} current{% endif %}" href="{{ section.url | relative_url }}">Overview</a></li>
+        {%- if current_section and current_section.title == section.title -%}
+        {%- for item in section.items %}
+        <li><a href="{{ item.url | relative_url }}"{% if page.url == item.url %} class="current" aria-current="page"{% endif %}>{{ item.title }}</a></li>
+        {%- endfor -%}
+        {%- endif %}
+      </ul>
+      {%- endfor %}
+    </div>
+  </nav>
+
+  <article class="content-card">
+    {%- if current_section and page.url != current_section.url %}
+    <p class="breadcrumb">
+      <a href="{{ '/docs/' | relative_url }}">Docs</a>
+      &rsaquo; <a href="{{ current_section.url | relative_url }}">{{ current_section.title }}</a>
+    </p>
+    {%- elsif page.url != '/docs/' %}
+    <p class="breadcrumb"><a href="{{ '/docs/' | relative_url }}">Docs</a></p>
+    {%- endif %}
+
+    {%- if page.kind %}
+    <span class="page-kind">{{ page.kind }}</span>
+    {%- endif %}
+
+    {{ content }}
+
+    {%- comment -%}
+      Previous and next within the section, so a reader working through a path
+      never has to go back to the index to find where they were.
+    {%- endcomment -%}
+    {%- if current_section -%}
+      {%- assign items = current_section.items -%}
+      {%- assign here = nil -%}
+      {%- for item in items -%}
+        {%- if item.url == page.url -%}{%- assign here = forloop.index0 -%}{%- endif -%}
+      {%- endfor -%}
+      {%- if here -%}
+        {%- assign prev_index = here | minus: 1 -%}
+        {%- assign next_index = here | plus: 1 -%}
+        {%- assign item_count = items | size -%}
+        <nav class="page-nav" aria-label="Within this path">
+          {%- if here > 0 -%}
+            {%- assign prev_item = items[prev_index] -%}
+            <a href="{{ prev_item.url | relative_url }}"><span class="nav-dir">Previous</span>{{ prev_item.title }}</a>
+          {%- else -%}
+            <a href="{{ current_section.url | relative_url }}"><span class="nav-dir">Previous</span>{{ current_section.title }} overview</a>
+          {%- endif -%}
+          {%- if next_index < item_count -%}
+            {%- assign next_item = items[next_index] -%}
+            <a href="{{ next_item.url | relative_url }}" style="text-align:right"><span class="nav-dir">Next</span>{{ next_item.title }}</a>
+          {%- endif -%}
+        </nav>
+      {%- endif -%}
+    {%- endif %}
+
+    {%- if page.owner or page.revised or page.applies_to %}
+    <p class="page-footer">
+      {%- if page.audience %}<span>Written for: {{ page.audience }}</span>{% endif -%}
+      {%- if page.applies_to %}<span>Applies to: {{ page.applies_to }}</span>{% endif -%}
+      {%- if page.revised %}<span>Last reviewed: {{ page.revised }}</span>{% endif -%}
+      {%- if page.owner %}<span>Owner: {{ page.owner }}</span>{% endif -%}
+      <span><a href="https://github.com/{{ site.repository }}/edit/main/{{ page.path }}">Suggest a correction</a></span>
+    </p>
+    {%- endif %}
+  </article>
+</div>
+
+<script>
+  // Sidebar disclosure on narrow screens. The sidebar is a plain nav element at
+  // full width, so this only has to exist for the collapsed case.
+  (function() {
+    var toggle = document.getElementById('nav-toggle');
+    var sidebar = document.getElementById('docs-sidebar');
+    if (!toggle || !sidebar) { return; }
+    toggle.addEventListener('click', function() {
+      var open = sidebar.classList.toggle('open');
+      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+  })();
+</script>

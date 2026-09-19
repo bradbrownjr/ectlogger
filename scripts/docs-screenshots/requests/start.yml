@@ -1,0 +1,239 @@
+# Figures for the three tutorials under docs/start/.
+#
+# A tutorial figure is nearly always a "click this" figure, so nearly every
+# shot here carries a red annotation. The prose still names the control by its
+# label: the red box is a convenience, never the instruction itself.
+#
+# See ../README.md for the field reference.
+
+shots:
+  # ========== Check into your first net ==========
+  - id: login-magic-link
+    section: start
+    page: /docs/start/first-check-in/
+    route: /login
+    # No "as": this is the one page in the app a signed-out visitor sees.
+    viewport:
+      width: 1440
+      height: 900
+    wait_for: 'input[name="email"]'
+    steps:
+      - fill:
+          selector: 'input[name="email"]'
+          text: 'robin.teague@example.com'
+    # ":has" because the application bar is a Paper too, and it comes first.
+    element: '.MuiPaper-root:has(input[name="email"])'
+    pad: 16
+    annotate:
+      - selector: 'button:has-text("Send Magic Link")'
+        style: box
+    alt: >
+      The ECTLogger sign-in page, with an Email Address field filled in and
+      the Send Magic Link button outlined in red below it.
+    caption: One field and one button. There is no account to create first.
+
+  - id: dashboard-view-button
+    section: start
+    page: /docs/start/first-check-in/
+    route: /dashboard
+    as: N1DUNE
+    viewport:
+      width: 1440
+      height: 700
+    wait_for: '.MuiChip-root:visible'
+    element: '.MuiCard-root'
+    pad: 12
+    annotate:
+      - selector: '.MuiCard-root >> nth=0 >> text=View'
+        style: box
+    alt: >
+      A net card on the dashboard, with its green active chip in the corner
+      and the View button at the bottom outlined in red.
+    caption: >
+      View opens the net. Nets you can still take part in sort ahead of ones
+      that are over.
+
+  - id: checkin-toolbar-button
+    section: start
+    page: /docs/start/first-check-in/
+    route: /nets/{{net:active}}
+    # N1DUNE is seeded checked into nothing, which is the only way to see the
+    # toolbar as a first-time reader sees it.
+    as: N1DUNE
+    wait_for: 'table:visible tbody tr'
+    element: 'div:has(> span[aria-label="Check into net"])'
+    # The toolbar sits flush under the frequency chips, so any padding above
+    # it slices a row of chips into the figure.
+    pad: 0
+    annotate:
+      - selector: 'span[aria-label="Check into net"]'
+        style: box
+    alt: >
+      The net toolbar, with the check-in button outlined in red among the
+      Search, Map, Announcements, Notes, Topics, and Stats buttons.
+    caption: The net toolbar. What is on it depends on whether you are checked in yet.
+
+  - id: checked-in-row
+    section: start
+    page: /docs/start/first-check-in/
+    route: /nets/{{net:active}}
+    as: N1DUNE
+    # Sized so fifteen rows very nearly fill the list, rather than leaving a
+    # quarter of the figure as empty table.
+    viewport:
+      width: 1440
+      height: 860
+    wait_for: 'table:visible tbody tr'
+    # Actually checks N1DUNE in, which is why run.sh reseeds before a run.
+    steps:
+      - click: 'span[aria-label="Check into net"]'
+        # The dialog opens with the callsign already filled from the account.
+      - wait_for: '.MuiDialog-paper'
+      - click: 'div.MuiDialogActions-root button:has-text("Check In")'
+      - wait_for: 'tr:has-text("N1DUNE")'
+      - wait: 600
+    # The container, not the table: the table is wider than the space it is
+    # given and runs on underneath the chat panel, so clipping to the table
+    # captures chat as well.
+    element: '.MuiTableContainer-root'
+    pad: 0
+    # The callsign cell, not the whole row, for the same reason.
+    annotate:
+      - selector: 'tr:has-text("N1DUNE") td:has-text("N1DUNE")'
+        style: box
+    alt: >
+      A check-in list with fifteen rows in it, the reader's own N1DUNE callsign
+      outlined in red in the last row, alongside a green check mark, the name
+      Robin Teague, and the location Freeport, ME.
+    caption: >
+      Your own row is the one with a status dropdown on it. Everyone else's is
+      read-only to you.
+
+  # ========== Run your first net ==========
+  - id: create-net-name
+    section: start
+    page: /docs/start/run-your-first-net/
+    route: /nets/create
+    as: W1PINE
+    wait_for: 'label:text-is("Net Name")'
+    # Union of the section heading and the last field under it, so the figure
+    # is the Net Information block rather than the whole six-tab form.
+    element:
+      - 'h6:text-is("Net Information")'
+      - 'div.MuiFormControl-root:has(label:text-is("Audio Stream URL"))'
+    pad: 12
+    annotate:
+      - selector: 'div.MuiFormControl-root:has(label:text-is("Net Name"))'
+        style: box
+    alt: >
+      The Create New Net form's Net Information section, with the Net Name
+      field outlined in red at the top, above Description, Info URL, and Audio
+      Stream URL fields.
+    caption: Net Name is the only required field on the whole form.
+
+  - id: start-net-button
+    section: start
+    page: /docs/start/run-your-first-net/
+    route: /nets/{{net:scheduled}}
+    as: W1PORT
+    # The label on the button is "Start net"; its tooltip, and so its
+    # aria-label, is "Start the net".
+    wait_for: 'span[aria-label="Start the net"]'
+    element: 'div:has(> span[aria-label="Start the net"])'
+    pad: 0
+    annotate:
+      - selector: 'span[aria-label="Start the net"]'
+        style: box
+    alt: >
+      The net toolbar on a net that has not started, with the Start net button
+      outlined in red, alongside Net info, Import, Edit net, and Roles.
+    caption: Start net is the first control on the toolbar until the net is running.
+
+  - id: claim-ncs-button
+    section: start
+    page: /docs/start/run-your-first-net/
+    # The seeded ad hoc net that is active with nobody assigned. Claim NCS
+    # only exists in exactly that state.
+    route: /nets/{{net:unstaffed}}
+    as: W1PINE
+    wait_for: 'text=Claim NCS'
+    element: 'div:has(> span[aria-label="Claim NCS role for this net"])'
+    pad: 0
+    annotate:
+      - selector: 'span[aria-label="Claim NCS role for this net"]'
+        style: box
+    alt: >
+      The net toolbar on an active net with nobody assigned, with the Claim NCS
+      button outlined in red.
+    caption: Claim NCS appears only on an active or lobby net that has no Net Control at all.
+
+  - id: bulk-add-window
+    section: start
+    page: /docs/start/run-your-first-net/
+    # The staffed net, not the unstaffed one: Bulk add is hidden until a net
+    # has at least one check-in (NetViewHeader.tsx, "checkInsCount > 0"), so
+    # it does not exist on a net nobody has checked into yet.
+    route: /nets/{{net:active}}
+    as: W1PINE
+    wait_for: 'span[aria-label="Bulk add multiple check-ins"]'
+    steps:
+      - click: 'span[aria-label="Bulk add multiple check-ins"]'
+      - wait_for: '.drag-handle'
+      - fill:
+          selector: 'div:has(> .drag-handle) textarea'
+          text: 'KC1ABC, John, Portland ME; W1XYZ, Sue, Gray ME'
+      - wait: 500
+    element: 'div:has(> .drag-handle)'
+    pad: 12
+    alt: >
+      The Bulk Check-In window, with two comma-separated check-ins typed into
+      its text box, the expected format shown underneath, and an Add button
+      counting the two it is about to create.
+    caption: Sometimes called speed entry. The button is labelled Bulk add.
+
+  # ========== Set up a recurring schedule ==========
+  - id: schedule-recurrence
+    section: start
+    page: /docs/start/first-schedule/
+    route: /scheduler/create
+    as: W1PINE
+    wait_for: '[role="tab"]:has-text("Schedule")'
+    steps:
+      - click: 'button[role="tab"]:has-text("Schedule")'
+      - wait_for: 'label:text-is("Schedule Type")'
+      - click: 'div.MuiFormControl-root:has(label:text-is("Schedule Type")) [role="combobox"]'
+      - click: 'li[role="option"]:has-text("Weekly")'
+      - wait_for: 'label:text-is("Day of Week")'
+      - wait: 400
+    element:
+      - 'div.MuiFormControl-root:has(label:text-is("Schedule Type"))'
+      - 'div.MuiFormControl-root:has(label:text-is("Day of Week"))'
+    # An outlined field's floating label sits on its top border, outside the
+    # box Playwright measures, so this needs more headroom than the default.
+    pad: 20
+    annotate:
+      - selector: 'div.MuiFormControl-root:has(label:text-is("Schedule Type"))'
+        style: box
+    alt: >
+      The Schedule tab of the schedule form, with Schedule Type set to Weekly
+      and outlined in red, and Day of Week and net start time fields below it.
+    caption: Weekly, a day, and a time. From here on, the net creates itself.
+
+  - id: schedule-card
+    section: start
+    page: /docs/start/first-schedule/
+    route: /scheduler
+    as: W1PINE
+    wait_for: '.MuiCard-root'
+    element: '.MuiCard-root'
+    pad: 12
+    annotate:
+      - selector: '.MuiCard-root >> nth=0 >> text=Create'
+        style: box
+    alt: >
+      A schedule card on the Schedule page, showing the schedule name, its
+      recurrence, and Create, Edit, Delete, Stats, Staff, and Subscribe buttons
+      along the bottom, with Create outlined in red.
+    caption: >
+      Create on a schedule card makes this week's net right now, without
+      waiting for the recurrence.

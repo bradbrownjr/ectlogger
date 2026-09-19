@@ -1,4 +1,16 @@
-# ECT Logger — Product Roadmap
+---
+title: Roadmap
+summary: What is planned, what is being considered, and what was found along the way. Not a promise of dates.
+kind: Explanation
+audience: Everyone
+owner: KC1JMH
+revised: 2026-09-19
+review_by: 2027-09-19
+applies_to: ECTLogger, hosted and self-hosted
+permalink: /docs/ROADMAP/
+---
+
+# Roadmap
 
 *Last updated: 2026-09-18*  
 *Compiled from user feedback: AA1GM, KC1UIX, W1BKW, W1MTW, N1GSK, KC1JMH*
@@ -61,6 +73,116 @@ Items predating this convention get a **Docs:** line when they are picked up, no
 *The bulk of this milestone (0.1 confirmed bugs, 0.2 orphaned code, 0.3 guardrails, 0.4 the modularity and componentization program) completed between 2026-07-03 and 2026-07-06 and has been pruned. What it delivered: a test suite and CI pipeline, React error boundaries, WebSocket resilience, SMTP timeouts, IANA timezone validation, composite indexes, shared frontend hooks, `app/permissions.py`, the backend router facades, and the frontend page splits. The patterns those splits established are documented in [`docs/DEVELOPMENT.md`](DEVELOPMENT.md) ("Backend router-split (facade) pattern", "Frontend component-split pattern", "Post-split verification checklist").*
 
 ***Milestone 0 is complete as of 2026-07-29.** Every section has shipped and been pruned. Section numbers are not reused, so commit messages and docs referencing "Milestone 0.4" or "Milestone 0.7" still resolve against the changelog. New codebase-health work should open a new section here rather than reopening a pruned one.*
+
+### 0.10 — `DATABASE_URL` mangles an explicit async driver
+
+**🐛 `sqlite+aiosqlite:///...` becomes `sqlite+aiosqlite+aiosqlite:///...` and the app will not start** *(found 2026-09-18 while standing up the documentation demo instance)*
+
+**Model:** Haiku. **Think:** none.
+**Docs:** self-hosting, if the fix changes what a valid `DATABASE_URL` looks like. Otherwise none (the documented form already works).
+
+`app/database.py` normalizes a SQLite URL by doing a plain string replace of
+`sqlite:///` with `sqlite+aiosqlite:///`. That substring also occurs inside
+`aiosqlite:///`, so a URL that already names the async driver gets it inserted a
+second time, and SQLAlchemy's dialect loader fails with `ValueError: too many
+values to unpack` — an error that says nothing about what is actually wrong.
+
+Nobody has hit this in production because `.env.example` documents the plain
+`sqlite:///./ectlogger.db` form and that is what everyone uses. It is a trap for
+the next person who reasonably assumes the explicit driver form is also
+accepted, and the self-hosting documentation is about to get more eyes on it.
+
+- [ ] Only prepend the driver when it is not already present, and cover both forms with a test
+
+### 0.11 — What the documentation rebuild found in the code
+
+*(found 2026-09-19, while four agents read the application end to end to write the
+documentation site. None of these were introduced by that work; they are what a
+careful read of the code turns up when somebody has to describe its behavior in
+writing.)*
+
+**Model:** Sonnet for the four bugs, Haiku for the copy fixes. **Think:** low.
+**Docs:** the pages that had to write around each one are noted below and will
+need a pass once it is fixed.
+
+#### Bugs
+
+**🐛 Active Relay operators never receive the net closure log.**
+`services/net_closure.py:324` matches `NetRole.role.in_(["NCS", "LOGGER", "Relay"])`,
+but every path that assigns a role stores `"RELAY"` (`RoleAssignmentDialog.tsx`'s
+own MenuItem value, and both NetView comparisons, which uppercase before testing).
+SQLite string comparison is case-sensitive, so that third entry has never matched
+anything, contradicting the line's own comment. `/docs/net-managers/reports-and-exports/`
+currently promises NCS and Logger only, and says plainly that Relay is not included,
+so the page is honest but describes a bug.
+
+- [ ] Compare against `"RELAY"`, and add a test that a Relay operator is on the recipient list
+
+**🐛 A net's own NCS and Logger cannot see its traffic — only the owner or an admin can.**
+Same root cause as the Relay one above, five more times.
+`routers/traffic_forms.py:214` and `:246` (the per-net Traffic panel's list and its
+disposition summary), `permissions.py:440` and `:451` (whether a form may be managed
+or viewed), and `traffic/visibility.py:55` (the same rule expressed as a query filter)
+all name the roles in lower case — `["ncs", "logger"]` — against a plain `String` column
+that only ever holds `"NCS"` and `"LOGGER"`. No `NetRole` has ever matched any of them,
+so each of those five checks quietly collapses to "the net's owner, or an admin." The
+demo instance shows it plainly: K1COVE, this net's active Logger, opens the Traffic
+panel and is told *Not authorized to view this net's traffic*.
+`/docs/net-control/handling-traffic/` describes the intended rule and its figures are
+taken from the owner's seat for now, noted in the figure manifest.
+The pattern is copied from `.github/copilot-instructions.md`'s own "Permission Checks"
+example, which is written in lower case — fixing that is part of the fix.
+
+- [ ] Normalize in `check_net_permission` (upper-case the caller's `required_roles`), use `"NCS"`/`"LOGGER"` in the two raw queries, upper-case `role` on the way in at `nets_roles.py::assign_net_role` so an unnormalized row can't be written, correct the example in `copilot-instructions.md`, and add a test that an active Logger who is neither owner nor admin can read their own net's traffic
+
+**🐛 Closing a net 500s for anyone holding two roles on it.**
+`routers/nets_core.py::close_net` selects `NetRole` rows where the role is NCS *or*
+LOGGER and calls `scalar_one_or_none()` on the result. A user can legitimately hold
+both on the same net, which raises `MultipleResultsFound` rather than returning a row.
+`permissions.py::is_eligible_for_ncs_auto_grant` already bounds the identical query
+with `.limit(1)` and says why in a comment referencing the 2026-09-03 outage; this
+call site and `check_net_lifecycle_permission` did not get the same treatment.
+
+- [ ] Make both existence checks `.limit(1)`, as the third one already is
+
+**🐛 A rotation member who is not also on the staff list cannot start the net.**
+`start_net`'s staff bypass queries `TemplateStaff` directly rather than going through
+`permissions.py::_is_active_template_staff`, which is what every other staff decision
+uses and which counts an active `NCSRotationMember` too. So the one schedule tier that
+exists specifically to say who runs which week cannot, by itself, start one.
+`/docs/reference/roles-and-permissions/` documents the current behavior in footnote 3,
+including the workaround.
+
+- [ ] Route it through `_is_active_template_staff` like everything else
+
+**🐛 The Roles button is offered to staff the backend will refuse.**
+NetView shows Roles on `canManage`, which includes plain template staff, but
+`can_manage_net_roles` additionally requires an active NCS or Logger role on that
+specific net. A staff member with no role yet on tonight's occurrence sees the button
+and gets a 403 from Assign Role. Not reproducible on the demo instance, where the
+seeded Logger happens to also be staff.
+
+- [ ] Gate the button on the same condition the endpoint enforces
+
+#### On-screen copy that is wrong
+
+- [ ] `AdminMaintenanceTab.tsx` tells the admin the banner re-checks every 60 seconds. `MaintenanceBanner.tsx` polls every 10. `/docs/admins/maintenance-banner/` says 10.
+- [ ] `AdminBrandingTab.tsx` says the logo applies to "login, navbar, About". There is no About page; the real three are Navbar, Login, and the printed net report.
+- [ ] `StaffRotationTab.tsx`'s co-manager tooltip still implies co-manager is what lets somebody run nets without a rotation slot. Plain active staff has been able to do that since 2026-09-18.
+- [ ] `NCSStaffModal.tsx`'s button is labelled "Create schedule" but only appears when a schedule already exists, and only pushes the net's NCS operators into that schedule's staff pool. An ad hoc net's owner could reasonably read it as the way to make their net recurring, which it is not.
+- [ ] `Chat.tsx`'s Muted Stations dialog says net-wide mute is "NCS/Logger only". The server check is `check_net_permission(..., ["NCS", "LOGGER"])`, which also passes for the net's owner and for any admin. `/docs/net-control/chat-moderation/` and the roles grid both say the wider thing, because that is what the code does.
+- [ ] Several strings written for a fixed-width terminal use a bare `--` where the rendered page wants an em dash, and the browser wraps them onto two lines as "- -": `traffic/definitions/gyx_car_skywarn.json`'s description ("Google Sheet - - keep the total under 900 characters") and both explanatory lines in `Chat.tsx`'s Muted Stations dialog are the ones a documentation figure caught.
+
+#### Settings and roles that do nothing
+
+- [ ] `AppSettings.traffic_reminder_enabled` is read by `traffic_reminder_service.py` but appears in neither `AppSettingsResponse` nor `AppSettingsUpdate`, so no API call and no UI can change it. Either expose it or drop it.
+- [ ] `UserRole.GUEST` and the global `UserRole.NCS` are both assignable from the admin panel and neither is checked anywhere: `UserRole.ADMIN` is the only role any permission test looks at. `/docs/admins/users-and-roles/` and `/docs/reference/roles-and-permissions/` both say so outright, which is the honest thing to publish but an odd thing to have to write.
+- [ ] `User.show_activity_in_chat` appears to be dead as well.
+- [ ] `NetTemplate.schedule_type`'s column comment omits `one_time`.
+
+#### Data integrity
+
+- [ ] Deleting a user is a hard delete. `CheckIn.user_id`, `NetRole.user_id` and friends carry no `ondelete`, and SQLite foreign keys are never switched on in `database.py`, so the rows are left pointing at an id that no longer exists. Check-ins keep their own stored callsign and name so the log survives, but anything that follows the account link does not. `/docs/admins/users-and-roles/` recommends Ban instead, which is true advice and a poor substitute for the delete working properly.
 
 ### 0.8 — Add swap to the production host *(operator task — needs root)*
 
@@ -340,28 +462,36 @@ The screenshots are eight months stale because refreshing them is manual, and an
 
 #### Phases
 
-**Phase 0 — Scaffold** *(not started)*
+**Phase 0 — Scaffold** *(complete 2026-09-19)*
 
-*Structure, voice, roster, path order, preview, and search are all settled below; nothing here is waiting on a decision.*
+- [x] Branch `feature/docs-site`
+- [x] **Preview repo.** A throwaway `ectlogger-docs-preview` repository with Pages enabled, that `feature/docs-site` is pushed to for review. This is the real GitHub Pages build, so the plugin set and versions match production exactly, and it needs nothing installed on the dev host. Delete the repo when the branch merges, and see the limitation recorded below
+- [x] `_data/nav.yml` plus a sidebar. The single `default.html` became a `shell` layout with `default`, `docs`, and `landing` inheriting from it, and the stylesheet moved to `assets/css/site.css`
+- [x] Front-matter template: title, summary, kind, audience, owner, revised, applies-to, permalink. Documented in `docs/DEVELOPMENT.md`
+- [x] `_config.yml` excludes, `jekyll-sitemap`, `robots.txt`, and directory-style permalinks
+- [x] Seed roster and organization names into `docs/DEVELOPMENT.md` before any page is written, so no agent invents its own examples
 
-- [ ] Branch `feature/docs-site`
-- [ ] **Preview repo.** A throwaway `ectlogger-docs-preview` repository with Pages enabled, that `feature/docs-site` is pushed to for review. This is the real GitHub Pages build, so the plugin set and versions match production exactly, and it needs nothing installed on the dev host. Delete the repo when the branch merges
-- [ ] `_data/nav.yml` plus a sidebar in `_layouts/default.html`. Liquid is disabled for page *content* in `_config.yml` but layouts still process it, so this needs no change to that setting
-- [ ] Front-matter template: title, audience, diataxis type, owner, revised date, applies-to
-- [ ] `_config.yml` excludes for `docs/concepts/`, `DEVELOPMENT.md`, `DESIGN.md`, `USER-STORIES.md`; add `jekyll-sitemap` and a `robots.txt`
-- [ ] Seed roster and organization names into `docs/DEVELOPMENT.md` before any page is written, so no agent invents its own examples
+**What the preview repo does not prove.** It serves from a subpath
+(`/ectlogger-docs-preview/`) rather than a domain root, so `scripts/docs-preview.sh`
+rewrites `baseurl` before pushing and anything built from a root-absolute path is
+wrong there and right in production: figures, and any hand-written href starting
+with a single slash, will 404 on the preview. Links emitted by the layouts go
+through `relative_url` and are fine. This was not anticipated when the decision
+was made and it is worth knowing before trusting a preview. What the preview is
+genuinely for is the failure with no other safety net: a Liquid or YAML error in
+a layout takes down every page of the real site at once, and there is no staging.
 
-**Phase 1 — Landing page and documentation home** *(not started)*
-- [ ] `index.md`: the pitch, who it is for, the four paths, one current screenshot, one call to action. No competitor comparisons, stated or implied
-- [ ] `README.md` cut back to a repository README
-- [ ] `/docs/` home with the four path cards and the three tutorials
-- [ ] Screenshot pipeline running end to end, proven by the landing-page hero being generated rather than hand-captured
-- [ ] **Search**, wired in early so every page is indexed as it is written: a `search.json` the site generates from its own pages, plus Lunr in the layout and a search field in the sidebar. This is what `just-the-docs` does, and it is the ordinary answer for a Jekyll site on GitHub Pages. We take the mechanism, not the theme, since the layout already matches the app's Material design and there is no reason to throw that away. The index page needs `render_with_liquid: true` in its own front matter to opt back out of the site-wide Liquid switch-off
-- [ ] `Navbar.tsx` Help menu: **User Guide** points at `/docs/`, and add a **Known Issues** item
+**Phase 1 — Landing page and documentation home** *(complete 2026-09-19)*
+- [x] `index.md`: the pitch, who it is for, the four paths, one current screenshot, one call to action. No competitor comparisons, stated or implied
+- [x] `README.md` cut back to a repository README. The line comparing ECTLogger to "clunky desktop apps or decade-old web interfaces" is gone
+- [x] `/docs/` home with the four path cards and the three tutorials, plus all eight path index pages
+- [x] Screenshot pipeline running end to end, proven by the landing-page hero being generated rather than hand-captured, and by an annotated figure with a real red box
+- [x] **Search**, wired in early so every page is indexed as it is written: a `search.json` the site generates from its own pages, plus Lunr in the layout and a search field in the sidebar. This is what `just-the-docs` does, and it is the ordinary answer for a Jekyll site on GitHub Pages. We take the mechanism, not the theme, since the layout already matches the app's Material design and there is no reason to throw that away. The index page needs `render_with_liquid: true` in its own front matter to opt back out of the site-wide Liquid switch-off
+- [x] `Navbar.tsx` Help menu: **User Guide** points at `/docs/`, and a **Known Issues** item added. `AboutModal.tsx`'s privacy link picked up the trailing slash the new permalinks need
 
 **Phase 2 — Operator path and the three tutorials** *(not started)*
 - [ ] Three "first ten minutes" tutorials, each verified by walking it in a browser against the seeded instance
-- [ ] Nine operator pages, harvested from `USER-GUIDE.md` where the existing text is good and rewritten where it is not
+- [x] Nine operator pages, harvested from the retired `USER-GUIDE.md` where the existing text was good and rewritten where it was not
 - [ ] Figures for check-in, status, map, chat, and mobile
 
 **Phase 3 — Net staff and net manager paths** *(not started)*
@@ -375,22 +505,22 @@ The screenshots are eight months stale because refreshing them is manual, and an
 - [ ] Reference section, generated from the code where possible so it cannot drift: station statuses and the permissions matrix are the two worth generating
 - [ ] Glossary
 
-**Phase 5 — Sweep, verify, retire** *(not started)*
+**Phase 5 — Sweep, verify, retire** *(in progress)*
 - [ ] Factual sweep of every page against the running app, with the five confirmed drifts above as the starting list
-- [ ] Delete `USER-GUIDE.md` (fully superseded), `training_video_outline.md` (a chat transcript that teaches a login path that does not exist), `assets/screenshots/`
-- [ ] Link check across the whole site, including the links the app itself opens
-- [ ] Every page carries an owner and a review-by date
-- [ ] `docs/about/known-issues.md` seeded from recent feedback submissions
+- [x] Delete `USER-GUIDE.md` (fully superseded), `training_video_outline.md` (a chat transcript that teaches a login path that does not exist), `assets/screenshots/`
+- [x] Link check across the whole site — `scripts/check-docs.py` does it, and also verifies figures, alt text, front matter, bare Liquid braces, and nav coverage
+- [x] Every page carries an owner and a review-by date (`owner` / `review_by` front matter, enforced by the checker)
+- [x] `docs/about/known-issues.md` seeded — from the defects section 0.11 above found in the code, each with a workaround
 - [ ] The whole of "Keeping it current" below, which is the part that decides whether any of this is still true in a year
 
 #### Keeping it current
 
 The 2026-01 screenshots did not go stale because anyone decided to let them. They went stale because nothing made them anyone's problem on the way past. A rebuilt site with no mechanism attached decays the same way and on roughly the same schedule, so these are deliverables of Phase 5, not aspirations:
 
-- **`.github/copilot-instructions.md`, "Documentation Requirements", rewritten.** It currently tells every agent to update `README.md`, `docs/USER-GUIDE.md`, `docs/CHANGELOG.md`, and `docs/DEVELOPMENT.md`. Two of those four will not exist in that role any more, and an instruction naming a deleted file is worse than no instruction, because it gets followed into a new file nobody reads. It must instead name the audience paths and require a feature to say which ones it touches.
+- **✅ `.github/copilot-instructions.md`, "Documentation Requirements", rewritten** (2026-09-19). It named `README.md`, `docs/USER-GUIDE.md`, `docs/CHANGELOG.md`, and `docs/DEVELOPMENT.md`; two of those four no longer exist in that role, and an instruction naming a deleted file is worse than no instruction, because it gets followed into a new file nobody reads. It now carries the audience-path table, requires a change to name the paths it touches, states the front-matter and voice rules, and points at the capture script and the checker.
 - **The `Docs:` line becomes mandatory on new roadmap items**, per the convention added to "How to Read This Document" above. This is the load-bearing piece: it puts documentation inside an item's scope at the moment the item is written, rather than leaving it to a checklist at the end when the budget is gone.
-- **Definition of Done gains a documentation clause** alongside the existing changelog one, so "the pages for its audience paths exist" sits next to "the changelog is updated" rather than below it.
-- **Every page carries an owner and a review-by date** in its front matter, per ISO 26514 and the ITIL lifecycle discipline. A yearly sweep of pages past their review date is a real, bounded task; "is the documentation still accurate" is not.
+- **✅ Definition of Done gained a documentation clause** (2026-09-19), so "the pages for its audience paths exist and the checker passes" sits next to "the changelog is updated" rather than below it.
+- **✅ Every page carries an owner and a review-by date** in its front matter (2026-09-19), per ISO 26514 and the ITIL lifecycle discipline, enforced by `scripts/check-docs.py`. A yearly sweep of pages past their review date is a real, bounded task; "is the documentation still accurate" is not.
 - **Screenshots are regenerated by command, not by hand.** Re-running the capture script is a chore an agent can be handed in one line, which is the whole reason the pipeline exists rather than a folder of PNGs. Worth running against the seeded instance after any release that changes the check-in table, the net toolbar, or the card buttons.
 - **A page that documents an unshipped feature is a bug.** The Public Service Events item already states this rule for itself ("until then no user-facing guide may describe this feature as available"); it generalizes. The site describes production, and a feature baking on a branch gets its pages written on that branch and merged with it.
 
@@ -473,8 +603,8 @@ ECTLogger cannot serve those events today. A check-in typed as a tactical design
 - [ ] Per-post equipment checklists; ICS-217 if still wanted
 
 **Documentation deliverables** *(not started)* — these ship **with** the phases, not after. Until then no user-facing guide may describe this feature as available.
-- [ ] New `docs/EVENT-MANAGER-GUIDE.md` — the audience is the event communications lead, not the NCS. Planning a course and its posts, recruiting and assigning, chasing gaps, race-morning sign-in, handling no-shows, and post-event hours and forms. Drafted alongside Phase 2 and completed at Phase 5, linked from the README documentation index and `docs/USER-GUIDE.md`
-- [ ] `docs/USER-GUIDE.md` — a Public Service Events section covering checking in at a post, shift sign-in and sign-out, and responding to an assignment offer, plus the Alias Callsigns relabel in the profile section
+- [ ] New `docs/EVENT-MANAGER-GUIDE.md` — the audience is the event communications lead, not the NCS. Planning a course and its posts, recruiting and assigning, chasing gaps, race-morning sign-in, handling no-shows, and post-event hours and forms. Drafted alongside Phase 2 and completed at Phase 5, linked from the README documentation index and from the documentation site's net managers path
+- [ ] Operators path — a Public Service Events page covering checking in at a post, shift sign-in and sign-out, and responding to an assignment offer, plus the Alias Callsigns relabel on `/docs/operators/account-and-profile/`
 - [ ] `README.md` — a Public Service Events entry in the feature list and the new guide in the documentation index
 - [ ] `docs/DEVELOPMENT.md` — the `net_post` / `event_post` naming rule, the materialized-shift decision, and the fourth polling service note
 - [ ] `docs/DESIGN.md` — Assignment Board grid conventions and the Post Board panel's place among the NetView side panels
@@ -598,7 +728,7 @@ Two rules fall out of that and both are load-bearing:
 - [ ] Document in the user guide that Google refreshes subscribed feeds on its own schedule, often 12 to 24 hours, so a same-day edit will not appear immediately. Without this line it will be reported as a bug
 
 **Documentation deliverables** *(not started)*
-- [ ] `docs/USER-GUIDE.md` — the calendar view, adding a net to a personal calendar, and subscribing to a feed including how to revoke the link
+- [ ] Operators path — the calendar view, adding a net to a personal calendar, and subscribing to a feed including how to revoke the link
 - [ ] `README.md` — feature list entry once Phase 1 ships
 - [ ] `docs/DEVELOPMENT.md` — the past-versus-projected boundary rule and the iCalendar naming rule
 

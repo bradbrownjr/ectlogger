@@ -1,35 +1,84 @@
-# GitHub Pages Configuration for ECTLogger
-# Using custom layout that matches the app's Material UI design
+# GitHub Pages configuration for ectlogger.us
+#
+# The site is built by GitHub Pages' own Jekyll, with its default plugin set:
+# jekyll-readme-index, jekyll-titles-from-headings, jekyll-optional-front-matter
+# and jekyll-relative-links are all active whether or not they are listed here.
+# Anything added below has to be on the Pages allow list, or the build fails.
 
 title: ECTLogger
-description: A Modern Radio Net Logger for Emergency Communications Teams and SKYWARN Spotter Nets
+description: Real-time net logging for emergency communications teams, SKYWARN spotter nets, and the clubs that run a weekly check-in.
+url: https://ectlogger.us
 
-# Repository info (enables Edit on GitHub link)
+# Repository info (enables the Edit on GitHub links)
 repository: bradbrownjr/ectlogger
 
-# Show downloads button
-show_downloads: true
+show_downloads: false
 
-# Exclude files from the site
+plugins:
+  - jekyll-sitemap
+
+# Directory-style URLs throughout: /docs/operators/checking-in/ rather than
+# .../checking-in.html. The sidebar in _data/nav.yml matches on the page URL,
+# so the two have to agree on the trailing slash.
+permalink: pretty
+
+# What does not get published.
+#
+# The rule is that the site carries information for users of ECTLogger, and the
+# repository carries information for people working on ECTLogger. Design notes,
+# development patterns, user stories, and the concepts/ working documents are
+# the second kind: they are internal thinking, they contradict the shipped
+# product whenever a design changes, and until 2026-09 they were quietly the
+# largest part of what ectlogger.us served.
 exclude:
   - backend/
   - frontend/
+  - scripts/
+  - fail2ban/
+  - node_modules/
+  - vendor/
+  - .venv/
+  - venv/
+  - __pycache__/
+  - "*.pyc"
   - "*.sh"
   - "*.ps1"
   - "*.example"
   - .env
-  - venv/
-  - node_modules/
-  - __pycache__/
-  - "*.pyc"
   - .gitignore
+  - .github/
+  - .claude/
+  - .vscode/
+  - CLAUDE.md
+  - ECTLogger-buglog.txt
+  - ectlogger.service
+  - docs/concepts/
+  - docs/DEVELOPMENT.md
+  - docs/DESIGN.md
+  - docs/DOC-STYLE.md
+  - docs/USER-STORIES.md
+  # A local working note (a two-week list of email subject lines, used to write
+  # docs/reference/emails.md). Already gitignored, so it never reaches the
+  # build; listed here as well so a future change to .gitignore cannot publish
+  # it by accident.
+  - docs/ectlogger-email-digest.md
 
-# Disable Liquid template processing for all pages.
-# The docs contain code examples with {{ }} syntax (JSX, MUI sx props) that
-# Jekyll would otherwise try to evaluate as Liquid template variables, causing
-# build failures. None of the docs use Liquid intentionally.
 defaults:
+  # Liquid is switched off for page content across the whole site, because the
+  # documentation quotes code containing double braces (JSX, MUI style props)
+  # that Jekyll would otherwise try to evaluate as template variables. Layouts
+  # still process Liquid, which is what the sidebar and the search index rely
+  # on. A page that genuinely needs Liquid opts back in with
+  # render_with_liquid: true in its own front matter.
   - scope:
       path: ""
     values:
+      layout: default
       render_with_liquid: false
+
+  # Everything under docs/ gets the sidebar, the search box, and the
+  # breadcrumb. A page opts out with layout: default in its own front matter.
+  - scope:
+      path: "docs"
+    values:
+      layout: docs
