@@ -25,7 +25,9 @@ shots:
     # capture its direct parent, so the selector survives the row-badge
     # tooltips changing wording independently of this row's own.
     element: 'div:has(> span[aria-label="Click any row to edit check-in details inline"])'
-    pad: 10
+    # No padding: the legend sits flush against the bottom of the table, so
+    # anything above zero slices the last row into the figure.
+    pad: 0
     alt: >
       The check-in list legend, reading left to right: NCS (a crown), 2nd NCS
       (a second crown), Logger (a clipboard), Standard (a check mark), Recheck

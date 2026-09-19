@@ -1,80 +1,8 @@
 {
-  "operators/account-profile-tab": {
-    "path": "/docs/img/operators/account-profile-tab.png",
-    "alt": "The Profile page's Profile tab, showing the Name, Amateur Radio Call Sign, GMRS Call Sign, SKYWARN Spotter Number, and Default Location fields, with Save Changes at the bottom.\n",
-    "caption": "Your profile identity fields. Only Name is required.",
-    "page": "/docs/operators/account-and-profile/"
-  },
-  "operators/archived-nets-dialog": {
-    "path": "/docs/img/operators/archived-nets-dialog.png",
-    "alt": "The Archived and Cancelled Nets dialog, with a search box, From and To date fields, and Attended and Ran as NCS checkboxes.\n",
-    "caption": "Everything closed, archived, or cancelled lives here, not just this week's nets.",
-    "page": "/docs/operators/finding-a-net/"
-  },
-  "operators/check-in-dialog": {
-    "path": "/docs/img/operators/check-in-dialog.png",
-    "alt": "The Check In dialog, with the Check In button outlined in red at the bottom right of the form. Only the Callsign field is required by default.\n",
-    "caption": "Only Callsign is required unless the net's manager has turned on more fields.",
-    "page": "/docs/operators/checking-in/"
-  },
-  "operators/check-in-legend": {
-    "path": "/docs/img/operators/check-in-legend.png",
-    "alt": "The check-in list legend, with the '2nd NCS' entry underlined in red, reading '2nd NCS - assists primary Net Control Station'.\n",
-    "caption": "The legend mixes roles (NCS, 2nd NCS, Logger), statuses, and the recheck marker in one row.",
-    "page": "/docs/operators/status-and-checking-out/"
-  },
-  "operators/status-select-dropdown": {
-    "path": "/docs/img/operators/status-select-dropdown.png",
-    "alt": "A check-in row's status dropdown open, listing Checked in, Listening, Relay, Away, Has traffic, Announcements, Mobile, and Checked out.\n",
-    "caption": "Every status is one dropdown away, on your own row.",
-    "page": "/docs/operators/status-and-checking-out/"
-  },
-  "operators/chat-mention-composer": {
-    "path": "/docs/img/operators/chat-mention-composer.png",
-    "alt": "The chat composer containing the text '@K', with an autocomplete list open above it offering K1COVE and KC1HILL.\n",
-    "caption": "Typing the first letter or two narrows the list to matching stations.",
-    "page": "/docs/operators/chat-and-polls/"
-  },
-  "operators/location-map": {
-    "path": "/docs/img/operators/location-map.png",
-    "alt": "A net's live check-in map, with colored markers for each station and a legend identifying NCS, Logger, Relay, and station statuses.\n",
-    "caption": "Every checked-in station with a location ECTLogger can parse, including ones already checked out.",
-    "page": "/docs/operators/location-and-the-map/"
-  },
-  "operators/traffic-nav-item": {
-    "path": "/docs/img/operators/traffic-nav-item.png",
-    "alt": "The top navigation bar, with the Traffic item outlined in red, between Schedule and Stats.\n",
-    "caption": "Traffic in the top navigation bar. The number beside it counts messages waiting on you.\n",
-    "page": "/docs/operators/filing-traffic/"
-  },
-  "operators/traffic-composer-picker": {
-    "path": "/docs/img/operators/traffic-composer-picker.png",
-    "alt": "The traffic composer's form-type picker, showing cards for ARRL Radiogram, ICS-213 General Message, and an RRI weather strip.\n",
-    "caption": "Only the types a net's manager enabled are offered here -- asking for an unusual type is still possible through the standalone Traffic section below.",
-    "page": "/docs/operators/filing-traffic/"
-  },
-  "operators/leaderboard-table": {
-    "path": "/docs/img/operators/leaderboard-table.png",
-    "alt": "A schedule statistics page's check-in leaderboard, listing callsigns with their appearance count and participation percentage, medal icons next to the top three rows.\n",
-    "caption": "The check-in leaderboard for a recurring net, filtered to the last 90 days.",
-    "page": "/docs/operators/your-statistics/"
-  },
-  "operators/dashboard-net-list": {
-    "path": "/docs/img/operators/dashboard-net-list.png",
-    "alt": "The ECTLogger dashboard, showing three net cards side by side with status chips reading active, scheduled, and closed.\n",
-    "caption": "Nets you can still take part in sort ahead of ones that are over.",
-    "page": "/docs/operators/finding-a-net/"
-  },
-  "operators/activity-stat-cards": {
-    "path": "/docs/img/operators/activity-stat-cards.png",
-    "alt": "The Profile Activity tab's stat cards: Total Check-ins, Nets Joined, As NCS, and Last 30 Days.\n",
-    "caption": "Click any card to see the nets behind the number.",
-    "page": "/docs/operators/your-statistics/"
-  },
-  "operators/mobile-checkin-list": {
-    "path": "/docs/img/operators/mobile-checkin-list.png",
-    "alt": "The check-in list on a phone-width screen: a simplified, read-only table with each station's status shown by icon.\n",
-    "caption": "Other stations' rows are read-only on a phone; your own status is still yours to change.",
-    "page": "/docs/operators/in-the-field/"
+  "reference/check-in-legend": {
+    "path": "/docs/img/reference/check-in-legend.png",
+    "alt": "The check-in list legend, reading left to right: NCS (a crown), 2nd NCS (a second crown), Logger (a clipboard), Standard (a check mark), Recheck (two arrows in a circle), Listening (an ear), Relay (a satellite dish), Away (a pause symbol), Traffic (a siren), Announce (a megaphone), and Out (a waving hand), followed by a note that a blue highlight marks a station on the net's active frequency and that clicking a row opens inline editing.\n",
+    "caption": "The legend above the check-in list. It mixes three different kinds of thing -- net roles, station statuses, and the Recheck marker -- in one row; see Station statuses for what each entry actually means.\n",
+    "page": "/docs/reference/station-statuses/"
   }
 }
