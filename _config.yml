@@ -16,6 +16,9 @@ show_downloads: false
 
 plugins:
   - jekyll-sitemap
+  # Keeps the URLs of retired pages working. See redirect_from in
+  # docs/index.md and docs/self-hosting/index.md.
+  - jekyll-redirect-from
 
 # Directory-style URLs throughout: /docs/operators/checking-in/ rather than
 # .../checking-in.html. The sidebar in _data/nav.yml matches on the page URL,

@@ -8,6 +8,10 @@ revised: 2026-09-18
 review_by: 2027-09-18
 applies_to: ECTLogger, self-hosted
 permalink: /docs/self-hosting/
+# The retired docs/SELF-HOSTING.md, whose content was folded in here.
+redirect_from:
+  - /docs/SELF-HOSTING/
+  - /docs/SELF-HOSTING.html
 ---
 
 # Self-hosting

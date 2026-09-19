@@ -8,6 +8,11 @@ revised: 2026-09-18
 review_by: 2027-09-18
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/
+# The retired all-audiences guide. Kept working for bookmarks and for the
+# in-app Help link as it shipped before 2026-09-19.
+redirect_from:
+  - /docs/USER-GUIDE/
+  - /docs/USER-GUIDE.html
 ---
 
 # ECTLogger documentation
