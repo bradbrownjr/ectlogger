@@ -12,7 +12,7 @@ permalink: /docs/operators/checking-in/
 
 # Checking in
 
-Checking in puts your callsign on the net's list. You need to be [signed in](/docs/operators/account-and-profile/) to do it yourself from the app. If you'd rather not create an account, or you're nowhere near a browser, check in over the air instead and let Net Control or the Logger type it in for you. Either way you end up with the same row in the same list.
+Checking in puts your callsign on the net's list. You need to be [signed in](/docs/operators/signing-in/) to do it yourself from the app. If you'd rather not create an account, or you're nowhere near a browser, check in over the air instead and let Net Control or the Logger type it in for you. Either way you end up with the same row in the same list.
 
 ## Opening the check-in form
 

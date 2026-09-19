@@ -251,3 +251,78 @@ shots:
       The check-in list on a phone-width screen: a simplified, read-only
       table with each station's status shown by icon.
     caption: Other stations' rows are read-only on a phone; your own status is still yours to change.
+
+  # ========== Signing in ==========
+  # The password and two-factor controls all live on one tab, so these three
+  # share a click path. Each is captured as its own card rather than as one
+  # figure of the whole tab: the page walks through them as separate jobs, and
+  # a figure with two red boxes on it cannot say which one this step means.
+  - id: login-password-link
+    section: operators
+    page: /docs/operators/signing-in/
+    route: /login
+    # No "as": the sign-in page is what a signed-out visitor sees.
+    viewport:
+      width: 1440
+      height: 900
+    wait_for: 'input[name="email"]'
+    element: '.MuiPaper-root:has(input[name="email"])'
+    pad: 16
+    annotate:
+      - selector: 'button:has-text("Sign in with a password instead")'
+        style: box
+    alt: >
+      The ECTLogger sign-in page, with the Sign in with a password instead
+      link outlined in red below the Send Magic Link button.
+    caption: Easy to miss, because most people never need it. It is at the bottom of the sign-in page.
+
+  - id: security-password-card
+    section: operators
+    page: /docs/operators/signing-in/
+    route: /profile
+    as: KC1HILL
+    wait_for: '[aria-label="profile tabs"]:visible'
+    steps:
+      - click: '[aria-label="profile tabs"] button:has-text("Security")'
+      - wait_for: 'text=Confirm Password'
+    # Every seeded demo account already has a password, so the button reads
+    # Change Password here. The page says both labels for that reason.
+    # Heading and form as a union: the form alone starts below the sentence
+    # that says what a password is for.
+    element:
+      - 'h6:has-text("Password")'
+      - 'form:has(input[name="new-password"])'
+    pad: 16
+    annotate:
+      - selector: 'form:has(input[name="new-password"]) button[type="submit"]'
+        style: box
+    alt: >
+      The Password section of the Profile page's Security tab, with Current
+      Password, New Password, and Confirm Password fields and the Change
+      Password button outlined in red below them.
+    caption: A password is a fallback, not a replacement. The magic link keeps working whether you set one or not.
+
+  - id: security-two-factor-setup
+    section: operators
+    page: /docs/operators/signing-in/
+    route: /profile
+    as: KC1HILL
+    wait_for: '[aria-label="profile tabs"]:visible'
+    steps:
+      - click: '[aria-label="profile tabs"] button:has-text("Security")'
+      - wait_for: 'button:has-text("Set Up Two-Factor Authentication")'
+    # The enrollment screen itself is deliberately not captured: it shows a
+    # working QR code for whichever account was photographed, and a figure of
+    # a real second factor is not a figure worth publishing.
+    element:
+      - 'h6:has-text("Two-Factor Authentication")'
+      - 'button:has-text("Set Up Two-Factor Authentication")'
+    pad: 16
+    annotate:
+      - selector: 'button:has-text("Set Up Two-Factor Authentication")'
+        style: box
+    alt: >
+      The Two-Factor Authentication section of the Security tab, explaining
+      that it adds a 6-digit code from an authenticator app, with the Set Up
+      Two-Factor Authentication button outlined in red.
+    caption: Directly below the password section on the same tab.

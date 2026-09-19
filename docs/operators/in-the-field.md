@@ -17,7 +17,7 @@ ECTLogger is a website, not an installable app — there's no offline mode and n
 ## Before you leave the house
 
 1. **Sign in once, on the device you're taking.** A magic link keeps you signed in for a while afterward, so you shouldn't need to fetch a new one from a spotty inbox in the field.
-2. **Set a password as a backup**, from [Profile > Security](/docs/operators/account-and-profile/). If you do get signed out at a bad moment and email delivery is slow or your inbox is hard to reach from where you are, a password gets you back in without waiting on an email.
+2. **Set a password as a backup**, from [Profile > Security](/docs/operators/signing-in/). If you do get signed out at a bad moment and email delivery is slow or your inbox is hard to reach from where you are, a password gets you back in without waiting on an email.
 3. **Turn on location awareness first, if you want it**, from Profile > Settings. It needs your browser to grant a GPS permission prompt, and that prompt needs connectivity to appear and to be answered — asking for the first time out in the field, with no signal, won't work. See [Your location and the map](/docs/operators/location-and-the-map/).
 4. **Know which net you're checking into** and get to its page once, while you still have a connection, so it's in your browser history or bookmarked for a quick return.
 

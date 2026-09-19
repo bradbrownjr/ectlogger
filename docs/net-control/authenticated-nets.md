@@ -25,7 +25,7 @@ This proves exactly one thing: **the operator checking in holds the TOTP secret 
 ## What it can't verify
 
 - **A check-in with no linked account can never be verified.** There's no account, so there's no secret to check against. The padlock icon still appears, but it's fixed and unclickable. This is exactly the situation for any guest check-in (see [Logging check-ins](/docs/net-control/logging-check-ins/)).
-- **A station whose account doesn't have two-factor authentication enabled** is unverifiable for the same reason: there's no code to compare. The padlock stays open with no way to close it until that operator sets up MFA on their own account.
+- **A station whose account doesn't have two-factor authentication enabled** is unverifiable for the same reason: there's no code to compare. The padlock stays open with no way to close it until that operator sets up MFA on their own account, which they do from [Profile > Security](/docs/operators/signing-in/).
 - A staff-entered check-in (NCS or Logger logging someone in by voice) is check-in data like any other and can be verified the same as a self-check-in, provided the account behind it has MFA enabled. Verification is about the account, not about who typed the row in.
 
 ## Next

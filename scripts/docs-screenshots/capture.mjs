@@ -764,9 +764,29 @@ async function main() {
 
   // An index of every figure with its alt text, so a page author pastes the
   // right markup and a link check can verify that no figure is missing one.
+  //
+  // Merged into whatever is already there rather than written fresh, because
+  // --only and --section capture a handful of shots and this file is supposed
+  // to describe all of them. Writing just this run's figures is how the index
+  // came to list a single figure out of seventy: one --only run, and the rest
+  // were gone. Entries whose PNG no longer exists are dropped, so a renamed or
+  // deleted shot still leaves on its own rather than accumulating.
   const indexPath = join(REPO, 'docs', 'img', 'figures.json');
   mkdirSync(dirname(indexPath), { recursive: true });
-  writeFileSync(indexPath, `${JSON.stringify(figures, null, 2)}\n`);
+  let index = {};
+  if (existsSync(indexPath)) {
+    try {
+      index = JSON.parse(readFileSync(indexPath, 'utf8'));
+    } catch {
+      index = {};
+    }
+  }
+  Object.assign(index, figures);
+  for (const key of Object.keys(index)) {
+    if (!existsSync(join(REPO, 'docs', 'img', `${key}.png`))) delete index[key];
+  }
+  const sorted = Object.fromEntries(Object.entries(index).sort(([a], [b]) => a.localeCompare(b)));
+  writeFileSync(indexPath, `${JSON.stringify(sorted, null, 2)}\n`);
 
   console.log(`\n${Object.keys(figures).length} captured, ${failures.length} failed.`);
   if (failures.length) {

@@ -30,7 +30,7 @@ All notable changes to ECTLogger are documented here.
 
 ## Improvements
 
-* **Help: Rebuilt help site** — The user guide was one long page trying to serve newcomers, net control, net managers and administrators all at once, illustrated with screenshots of a version of the app that no longer looks like this. It is now a proper site at ectlogger.us/docs, organized by what you are doing: getting started, taking part in a net, running one, managing a net or a schedule, and administering an instance. Every screenshot is current, the controls you need to click are circled in red, there is a search box, and the Help menu now also takes you straight to a Known Issues page listing the problems we already know about and how to work around them.
+* **Help: Rebuilt help site** — The user guide was one long page trying to serve newcomers, net control, net managers and administrators all at once, illustrated with screenshots of a version of the app that no longer looks like this. It is now a proper site at ectlogger.us/docs, organized by what you are doing: getting started, taking part in a net, running one, managing a net or a schedule, and administering an instance. Every screenshot is current, the controls you need to click are circled in red, the whole site reads properly on a phone, and there is a search box. Signing in has a page of its own, covering the password fallback for the night email is down and two-factor authentication. The Help menu now also takes you straight to a Known Issues page listing the problems we already know about and how to work around them.
 
 ---
 

@@ -18,7 +18,7 @@ Two-factor authentication (MFA: a code from an authenticator app, on top of your
 
 An admin can read every net and edit every user, which makes that account worth stealing more than any other on the instance. So the requirement isn't just enforced at sign-in. It's checked on every single admin-only action, every time. An admin who hasn't enrolled yet can still sign in normally; they're just sent straight to enrollment (Profile → Security) and the admin panel stays out of reach until they finish. There's no way to reach it with an old session or a half-finished setup.
 
-Enrollment itself (scanning a QR code into an authenticator app, confirming the first code, and saving the one-time backup codes) happens on each person's own Profile → Security tab, not here. This page is about what happens when that goes wrong for someone else.
+Enrollment itself (scanning a QR code into an authenticator app, confirming the first code, and saving the one-time backup codes) happens on each person's own Profile → Security tab, not here; [signing in](/docs/operators/signing-in/) is the page to send someone who asks how. This page is about what happens when that goes wrong for someone else.
 
 ## Resetting someone's two-factor authentication
 

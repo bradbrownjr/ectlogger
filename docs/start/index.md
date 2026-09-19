@@ -29,7 +29,7 @@ Do them in that order if you are starting cold. They build on each other in the 
 ## What you need
 
 - **A callsign.** ECTLogger is built for licensed amateur radio operators, and your callsign is your identity throughout: it is what you log in with, what appears in the net log, and what everyone else sees.
-- **An email address you can read right now.** The normal way in is a magic link: you type your email, we send a link, you click it, you are in. There is no password to invent unless you want one.
+- **An email address you can read right now.** The normal way in is a magic link: you type your email, we send a link, you click it, you are in. There is no password to invent unless you want one, and [signing in](/docs/operators/signing-in/) covers setting one later, for the night email is not working.
 - **A browser.** Anything current, on anything. A phone is fine. A phone is what most people in the field are actually using.
 
 You do not need to install anything, and you do not need permission from anyone. Anybody with a callsign can create an account at [app.ectlogger.us](https://app.ectlogger.us) and run their own nets.

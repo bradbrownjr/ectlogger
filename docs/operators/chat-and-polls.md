@@ -14,7 +14,7 @@ permalink: /docs/operators/chat-and-polls/
 
 Every net has a text chat alongside it. It's a second channel, not a transcript of the net, and useful for a side comment, a link, a question you don't want to key up to ask, or just following along if you're listening rather than transmitting.
 
-You need to be [signed in](/docs/operators/account-and-profile/) to send a message. Signed-out visitors can still read chat on a net they're viewing.
+You need to be [signed in](/docs/operators/signing-in/) to send a message. Signed-out visitors can still read chat on a net they're viewing.
 
 ## Sending a message
 

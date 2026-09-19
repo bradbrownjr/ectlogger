@@ -121,6 +121,12 @@ main {
   border-radius: 4px;
   box-shadow: var(--shadow-1);
   padding: 24px 32px;
+  /* A bare URL, a long callsign list, or an inline code span with no space in
+     it is one word as far as line breaking is concerned, and at phone width a
+     single one of them is wide enough to scroll the page sideways. break-word
+     only breaks a word that would not fit on a line of its own, so ordinary
+     prose is unaffected. */
+  overflow-wrap: break-word;
 }
 
 /* ========== TYPOGRAPHY ========== */
@@ -254,9 +260,16 @@ figcaption {
 }
 
 /* A partial capture of one control, shown at its natural size inside a
-   sentence-sized block rather than blown up to the column width. */
+   sentence-sized block rather than blown up to the column width.
+
+   min(), not a bare 420px: this selector is more specific than the `figure img`
+   rule above, so a plain `max-width: 420px` replaced the 100% cap rather than
+   adding to it. On a phone the article column is about 330px wide, so every
+   one of these figures hung 90px off the right edge and scrolled the whole
+   page sideways -- reported 2026-09-19 against the sign-in figure in the
+   first-check-in tutorial, which was the first figure a new reader ever met. */
 figure.control-figure img {
-  max-width: 420px;
+  max-width: min(420px, 100%);
 }
 
 /* ========== CALLOUTS ==========
@@ -734,6 +747,22 @@ footer a { color: var(--text-secondary); }
   .landing-hero .lede { font-size: 1.0625rem; }
   .landing-section { padding: 40px 16px; }
   .page-nav a { max-width: 100%; }
+
+  /* A phone column is about 330px wide, and almost no table of ours fits in
+     that. Making the table its own scroll box means the columns keep their
+     widths and the reader swipes the table sideways, instead of the whole
+     page sliding out from under the text. .table-scroll does this explicitly
+     for tables wide enough to need it on a desktop too, but every table needs
+     it at this width, and a rule that has to be remembered per page is one
+     that gets forgotten: docs/net-managers/scripts-and-announcements/ and
+     docs/ROADMAP/ were both missing the wrapper and both scrolled sideways on
+     a phone in 2026-09. A table that does have the wrapper simply ends up with
+     a scroller that never has to do anything, which costs nothing. */
+  table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+  }
 }
 
 @media (max-width: 560px) {

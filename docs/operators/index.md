@@ -28,7 +28,9 @@ So the app is not the net. It is a log of the net, and it is also a second chann
 
 ## The pages
 
-**[Your account and profile](/docs/operators/account-and-profile/)** — Getting in with a magic link, or setting a password if you would rather. Your callsign, your name, the grid square or town you operate from, and what other people can see about you.
+**[Signing in](/docs/operators/signing-in/)** — The magic link, the password worth setting for the night email is down, and two-factor authentication: turning it on, what changes once it is on, and what to do when you lose the phone the codes live on.
+
+**[Your account and profile](/docs/operators/account-and-profile/)** — Your callsign, your name, the grid square or town you operate from, what the app emails you about, and what other people can see about you.
 
 **[Finding a net](/docs/operators/finding-a-net/)** — The dashboard, what the net statuses mean, what a lobby is, and how to find a net that has not started yet or one that finished last month.
 

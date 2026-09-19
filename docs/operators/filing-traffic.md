@@ -14,7 +14,7 @@ permalink: /docs/operators/filing-traffic/
 
 "Traffic" here means a formal message, not just a status flag: an ARRL Radiogram, an ICS-213 General Message, or an RRI weather strip (used by SKYWARN nets reporting to a National Weather Service office, such as a WXOBS weather observation). Filing one records it as its own document with its own life after the net, not just a line in the check-in list.
 
-You need to be [signed in](/docs/operators/account-and-profile/) to file traffic, but it isn't gated behind any role, so any signed-in participant can file a message, not only NCS or Logger.
+You need to be [signed in](/docs/operators/signing-in/) to file traffic, but it isn't gated behind any role, so any signed-in participant can file a message, not only NCS or Logger.
 
 Filing a structured message is a different thing from setting your check-in status to **Has traffic** (see [Status, rechecks, and checking out](/docs/operators/status-and-checking-out/)). The status flag just tells NCS you have something to report and needs to be picked up on the air; filing the actual form is what turns that into a message with its own fields, its own handling history, and its own place in the net's records once it's relayed or delivered.
 

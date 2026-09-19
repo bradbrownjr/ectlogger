@@ -1,6 +1,6 @@
 ---
 title: Your account and profile
-summary: Getting in with a magic link or a password, and what your profile controls.
+summary: Your callsign, your default location, your email preferences, and what other operators can see about you.
 kind: How-to
 audience: Operators
 owner: KC1JMH
@@ -14,29 +14,17 @@ permalink: /docs/operators/account-and-profile/
 
 You can look at the [dashboard](/docs/operators/finding-a-net/), a net, the schedule list, and the statistics pages without signing in at all. The moment you want to check yourself in, chat, file traffic, or see your own numbers, you need an account. The good news: there is no registration form. Your account is created the first time you sign in.
 
-## Signing in with a magic link
+## Getting in
 
-This is the normal way in.
+Type your email address on the sign-in page, click **Send Magic Link**, and click the link in the email. If nobody has ever signed in with that address, that creates your account on the spot.
 
-1. Go to the login page and enter your email address.
-2. Check your inbox for an email with a sign-in link. If it doesn't show up in a minute or two, check spam.
-3. Click the link.
-
-That's it. If this is the first time anyone has signed in with that email address, ECTLogger creates your account right then; there's nothing to fill in first. The link is single-use and expires after a few days.
+You can also set a password as a fallback for when email delivery is down, and turn on two-factor authentication on top of either. Both live on the Profile page's **Security** tab, and both are covered in [signing in](/docs/operators/signing-in/).
 
 <figure class="control-figure">
   <img src="/docs/img/operators/account-profile-tab.png"
        alt="The Profile page's Profile tab, showing the Name, Amateur Radio Call Sign, GMRS Call Sign, SKYWARN Spotter Number, and Default Location fields, with Save Changes at the bottom.">
   <figcaption>Your profile identity fields. Only Name is required.</figcaption>
 </figure>
-
-## Setting a password (optional fallback)
-
-A magic link needs a working inbox. If your club's email delivery is ever down, or you'd rather not wait on an email every time, set a password from **Profile > Security**. It's a fallback, not a replacement; the magic link keeps working either way.
-
-Passwords must be at least 12 characters and include a lowercase letter, an uppercase letter, a number, and a special character. Five wrong attempts in a row locks the password login for 15 minutes; your magic link still works during a lockout.
-
-The same Security tab lets you turn on two-factor authentication (TOTP, the six-digit code from an authenticator app) for your own account. It's optional for everyone except admins, who are required to have it. Turning it on shows you a QR code to scan and a set of one-time backup codes. Save those somewhere other than the phone running the authenticator, in case you lose the phone.
 
 ## Your profile
 

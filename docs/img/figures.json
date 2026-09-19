@@ -1,8 +1,398 @@
 {
+  "admins/add-contact-button": {
+    "path": "/docs/img/admins/add-contact-button.png",
+    "alt": "The add contact button, a plus icon in a circle at the bottom right of the Contacts tab, outlined in red.\n",
+    "caption": "Most contacts appear on their own as stations check in. Use this to add someone before their first check-in.\n",
+    "page": "/docs/admins/contacts/"
+  },
+  "admins/branding-default-theme": {
+    "path": "/docs/img/admins/branding-default-theme.png",
+    "alt": "The Default Theme card on the Branding tab, with five named colour swatches -- ECTLogger Blue (currently selected, ticked), Ocean, Forest, Sunset, and Berry -- and a \"Set as System Default\" button outlined in red, greyed out because the selected swatch is already the default.\n",
+    "caption": "Applies only to visitors who have never picked a theme of their own in Profile → Settings.\n",
+    "page": "/docs/admins/branding-and-themes/"
+  },
+  "admins/branding-logo": {
+    "path": "/docs/img/admins/branding-logo.png",
+    "alt": "The Logo card on the Branding tab, with the current mark and an \"Upload Logo\" button outlined in red.\n",
+    "caption": "PNG, JPEG, WebP, or SVG, up to 2 MB.",
+    "page": "/docs/admins/branding-and-themes/"
+  },
+  "admins/change-role-dialog": {
+    "path": "/docs/img/admins/change-role-dialog.png",
+    "alt": "The Change User Role dialog, open for W1PINE, with the Role picker outlined in red and its menu open, offering Guest, User, NCS, and Admin.\n",
+    "caption": "The four roles on offer. Guest and the global NCS role are both selectable here but neither currently changes what the account can do -- see the note below.\n",
+    "page": "/docs/admins/users-and-roles/"
+  },
+  "admins/fields-table": {
+    "path": "/docs/img/admins/fields-table.png",
+    "alt": "The check-in fields table with columns Name, Label, Type, Default Enabled, Default Required, Status, and Actions. Eight rows are marked Built-in and carry an edit pencil only; one row, shelter_capacity / Shelter Capacity, is marked Custom and carries an archive icon as well, outlined in red.\n",
+    "caption": "The Status column is what tells the two apart. A field marked Built-in can be edited but never archived; a Custom field like Shelter Capacity can be archived instead of deleted, so past check-ins that used it stay readable.\n",
+    "page": "/docs/admins/custom-fields/"
+  },
+  "admins/frequency-in-use-row": {
+    "path": "/docs/img/admins/frequency-in-use-row.png",
+    "alt": "A frequency row in the shared frequency list reading 146.940, FM, \"Example County ARES Repeater (PL 100.0)\", with a \"Nets Using\" count of 3 and a delete icon, outlined in red, greyed out and disabled.\n",
+    "caption": "A frequency already picked by at least one net can be edited but not deleted. The count shows how many nets would be affected.\n",
+    "page": "/docs/admins/frequencies/"
+  },
+  "admins/maintenance-banner-settings": {
+    "path": "/docs/img/admins/maintenance-banner-settings.png",
+    "alt": "The Banner Settings card on the Maintenance tab, with the \"Enable banner\" switch outlined in red, above the message field and the optional scheduled start/end times.\n",
+    "caption": "Every signed-in and signed-out visitor sees this banner within about 10 seconds of it being turned on.\n",
+    "page": "/docs/admins/maintenance-banner/"
+  },
+  "admins/security-session-settings": {
+    "path": "/docs/img/admins/security-session-settings.png",
+    "alt": "The Session Settings card on the Security tab, showing the session lifetime field in days and the \"Rolling renewal\" switch outlined in red.\n",
+    "caption": "Changes apply to sessions issued from this point on -- anyone already signed in keeps the expiry they were issued.\n",
+    "page": "/docs/admins/security-and-mfa/"
+  },
+  "admins/self-mfa-reset-disabled": {
+    "path": "/docs/img/admins/self-mfa-reset-disabled.png",
+    "alt": "The admin's own row in the Users table, with the two-factor reset icon outlined in red and greyed out because it is disabled.\n",
+    "caption": "An admin can reset anyone else's two-factor authentication from this table, but never their own -- that would defeat the point of making it mandatory. Ask another admin, or see the recovery path below if none is available.\n",
+    "page": "/docs/admins/security-and-mfa/"
+  },
+  "admins/traffic-definitions-table": {
+    "path": "/docs/img/admins/traffic-definitions-table.png",
+    "alt": "The traffic form definitions table with columns Title, Form Type, Version, Format, Status, Enabled, Sort Order, and Actions. Five rows, all marked Built-in and all enabled: ARRL Radiogram, GYX-CAR SKYWARN Report, ICS-213 General Message Form, RRI Strip (General), and RRI WXOBS Weather Observation. The Radiogram's Enabled switch is outlined in red.\n",
+    "caption": "Turning a format off removes it from the type picker instantly. Past messages filed in that format are unaffected.\n",
+    "page": "/docs/admins/traffic-settings/"
+  },
+  "admins/user-row-actions": {
+    "path": "/docs/img/admins/user-row-actions.png",
+    "alt": "A row in the admin Users table for Alex Reed, W1PINE, with three of its five action icons outlined in red: the pencil (Change role), the circle-with-a-slash beside it (Ban), and the key two icons further along (Reset password). The stopwatch between them and the trash can at the end are not outlined.\n",
+    "caption": "Every row in the Users table carries the same five actions. Change role and Ban are covered here; Reset password and the two-factor reset next to it are covered in Security, MFA, and lockouts.\n",
+    "page": "/docs/admins/users-and-roles/"
+  },
+  "landing/hero": {
+    "path": "/docs/img/landing/hero.png",
+    "alt": "A live net in ECTLogger: fourteen stations in the check-in list with their statuses and locations, frequency chips above the table, and the net control toolbar across the top.\n",
+    "caption": "A net in progress, seen by Net Control.",
+    "page": "/"
+  },
+  "net-control/bulk-add-textarea": {
+    "path": "/docs/img/net-control/bulk-add-textarea.png",
+    "alt": "The Bulk Check-In window: a single multi-line text box for entering several check-ins at once, with a live \"Format:\" line showing the exact field order this net expects.\n",
+    "caption": "The box accepts one check-in per line-segment, separated by semicolons -- see Speed entry syntax for the exact grammar.",
+    "page": "/docs/net-control/speed-entry/"
+  },
+  "net-control/chat-mute-hover": {
+    "path": "/docs/img/net-control/chat-mute-hover.png",
+    "alt": "A chat message from KC1HILL with a hover toolbar showing reaction, reply, and mute icons; the mute icon is outlined in red.\n",
+    "caption": "A plain click mutes a station for you only. As Logger or NCS, shift-click the same icon to mute them for everyone in this net's chat.\n",
+    "page": "/docs/net-control/chat-moderation/"
+  },
+  "net-control/close-net-dialog": {
+    "path": "/docs/img/net-control/close-net-dialog.png",
+    "alt": "The Close Net confirmation dialog: \"Are you sure you want to close this net? This will end the session and send log emails to subscribers,\" with the Close Net button outlined in red.\n",
+    "caption": "There is no scheduled undo for this -- see Closing the net for what to do if you close one by mistake.",
+    "page": "/docs/net-control/closing-the-net/"
+  },
+  "net-control/closed-net-exports": {
+    "path": "/docs/img/net-control/closed-net-exports.png",
+    "alt": "The toolbar on a closed net, as seen by a station with no staff role: Export, ICS-309, ICS-309 PDF, and Report.\n",
+    "caption": "Once a net is closed, its exports are open to anyone who can see the net -- only Archive and Delete stay staff-only.",
+    "page": "/docs/net-control/closing-the-net/"
+  },
+  "net-control/command-bar-ncs": {
+    "path": "/docs/img/net-control/command-bar-ncs.png",
+    "alt": "The net control command bar as Net Control Station sees it on an active net, reading left to right: Bulk add, Search, Map, Traffic, Announcements, Notes, Topics, Stats, Import, Edit net, Roles, Role: NCS, Step away, Just listening, Check out, Close net.\n",
+    "caption": "Every button here is gated by who you are and what state the net is in -- a Standard participant, a Logger, and a Relay operator each see a different subset of this same row.\n",
+    "page": "/docs/net-control/the-net-control-desk/"
+  },
+  "net-control/file-traffic-dialog": {
+    "path": "/docs/img/net-control/file-traffic-dialog.png",
+    "alt": "The File traffic dialog's form-type picker, showing cards for the message types this net has enabled.\n",
+    "caption": "Only the form types this net turned on appear here; the standalone Traffic section can always reach the rest.",
+    "page": "/docs/net-control/handling-traffic/"
+  },
+  "net-control/frequency-chips-claimed": {
+    "path": "/docs/img/net-control/frequency-chips-claimed.png",
+    "alt": "Two frequency chips in the net header: 146.940 MHz FM outlined in red, labelled as the frequency you have claimed, and Brandmeister TG31234 DMR outlined in blue, labelled as the one W1PORT is monitoring.\n",
+    "caption": "Those coloured outlines are the app's own, not a callout on this page. Each active NCS claims a different chip, and the colour follows the operator -- the same red marks W1PINE's row in the check-in list.\n",
+    "page": "/docs/net-control/frequencies-and-multi-ncs/"
+  },
+  "net-control/inline-edit-open": {
+    "path": "/docs/img/net-control/inline-edit-open.png",
+    "alt": "A check-in row for KC1HILL open for inline editing, with the Callsign, Name, and Location cells replaced by text fields you can type into directly.\n",
+    "caption": "Click anywhere on a row to edit it in place. Enter or clicking away saves it; Escape cancels.",
+    "page": "/docs/net-control/logging-check-ins/"
+  },
+  "net-control/manage-roles-dialog": {
+    "path": "/docs/img/net-control/manage-roles-dialog.png",
+    "alt": "The Manage Net Control Staff dialog: a Select User picker, a Role picker set to NCS (Net Control Station), the Assign Role button outlined in red, and a Current Assignments list naming W1PINE and W1PORT as NCS, K1COVE as Logger, and N1LAKE as Relay, each with its own remove control.\n",
+    "caption": "Assigning a role here works alongside self check-in -- either path can put someone in NCS or Logger.",
+    "page": "/docs/net-control/roles-and-stepping-away/"
+  },
+  "net-control/muted-stations-dialog": {
+    "path": "/docs/img/net-control/muted-stations-dialog.png",
+    "alt": "The Muted Stations dialog, listing KC1HILL under \"Your personal mutes\" with an Unmute link, above a separate \"Muted for everyone\" section reading \"No stations muted for everyone.\" \n",
+    "caption": "Personal mutes and net-wide mutes are managed in the same dialog but never mix with each other.",
+    "page": "/docs/net-control/chat-moderation/"
+  },
+  "net-control/ncs-role-toggle": {
+    "path": "/docs/img/net-control/ncs-role-toggle.png",
+    "alt": "The \"Role: NCS\" toolbar button, outlined in red, with the tooltip \"Acting as NCS -- click to step down to Standard\".\n",
+    "caption": "This toggles your own active/standard status on the NCS role you already hold -- it never grants NCS for the first time.",
+    "page": "/docs/net-control/roles-and-stepping-away/"
+  },
+  "net-control/panel-window-controls": {
+    "path": "/docs/img/net-control/panel-window-controls.png",
+    "alt": "A docked panel's title bar controls: detach, open in new window (outlined in red), minimize, and close.\n",
+    "caption": "Every docked panel -- Chat, Activity Log, Map, Coverage, Traffic -- carries this same row.",
+    "page": "/docs/net-control/multiple-monitors/"
+  },
+  "net-control/popped-out-checkins": {
+    "path": "/docs/img/net-control/popped-out-checkins.png",
+    "alt": "The check-in list open in its own bare browser window, with no navigation bar, ready to be dragged onto a second monitor.\n",
+    "caption": "A popped-out pane is a real second window with its own connection to the net -- move it to another monitor and it keeps working on its own.",
+    "page": "/docs/net-control/multiple-monitors/"
+  },
+  "net-control/toolbar-speed-entry": {
+    "path": "/docs/img/net-control/toolbar-speed-entry.png",
+    "alt": "The net control toolbar, with the leftmost button, labelled \"Bulk add\", outlined in red. The rest of the row reads Search, Map, Traffic, Announcements, Notes, Topics, Stats, Import, Edit net, Roles, Role: NCS, Step away, Just listening, Check out, Close net.\n",
+    "caption": "The Bulk add button, leftmost in the net control toolbar.",
+    "page": "/docs/net-control/speed-entry/"
+  },
+  "net-control/traffic-panel-docked": {
+    "path": "/docs/img/net-control/traffic-panel-docked.png",
+    "alt": "The Traffic panel docked below Chat beside the check-in list, showing a \"pending: 1\" summary chip above a table of one urgent ICS-213 addressed to EOC Logistics.\n",
+    "caption": "The Traffic panel opens beside the check-in list -- filing and viewing traffic never leaves the net view.",
+    "page": "/docs/net-control/handling-traffic/"
+  },
+  "net-managers/cancel-net-dialog": {
+    "path": "/docs/img/net-managers/cancel-net-dialog.png",
+    "alt": "The Cancel confirmation dialog for a scheduled net, explaining that the net will be marked Cancelled rather than deleted and won't be recreated by the schedule, with an optional reason field and a Cancel Net button outlined in red.\n",
+    "caption": "Cancelling keeps the occurrence on record in Archived Nets and stops the schedule from quietly recreating it.",
+    "page": "/docs/net-managers/cancelling-and-archiving/"
+  },
+  "net-managers/create-net-frequencies": {
+    "path": "/docs/img/net-managers/create-net-frequencies.png",
+    "alt": "The Communication Plan tab, a table of frequencies with a checkbox column labelled Use outlined in red, plus a row for adding a new frequency.\n",
+    "caption": "Check a frequency's box to make it available on this net; add a new one from the blank row at the bottom.",
+    "page": "/docs/net-managers/creating-a-net/"
+  },
+  "net-managers/create-net-tabs": {
+    "path": "/docs/img/net-managers/create-net-tabs.png",
+    "alt": "The Edit Net tab bar: Basic Info, Net Staff, Communication Plan, Net Script, Announcements, and Check-In Fields.\n",
+    "caption": "Every net -- ad hoc or created from a schedule -- is edited through these six tabs.",
+    "page": "/docs/net-managers/creating-a-net/"
+  },
+  "net-managers/csv-import-dialog": {
+    "path": "/docs/img/net-managers/csv-import-dialog.png",
+    "alt": "The Import Check-ins from CSV dialog on a scheduled net, warning that this backfills a net that already ran, with required Actual Start Time and Actual End Time fields, a Close the net at the end time checkbox, and an Import Template button outlined in red.\n",
+    "caption": "Download the template first -- it has the exact column headers the importer expects, with two sample rows to delete before you import.",
+    "page": "/docs/net-managers/importing-check-ins/"
+  },
+  "net-managers/lobby-and-close-toggles": {
+    "path": "/docs/img/net-managers/lobby-and-close-toggles.png",
+    "alt": "Two switches on the Edit Net Basic Info tab, both off: \"Open the lobby automatically before the net\" and \"Close this net automatically after inactivity,\" each with an explanatory line beneath it.\n",
+    "caption": "Both settings are off by default on every net and every schedule.",
+    "page": "/docs/net-managers/lobby-and-auto-close/"
+  },
+  "net-managers/net-export-toolbar": {
+    "path": "/docs/img/net-managers/net-export-toolbar.png",
+    "alt": "Four toolbar buttons on a closed net: Export, ICS-309, ICS-309 PDF, and Report, with Report outlined in red.\n",
+    "caption": "Export and both ICS-309 buttons download a single file; Report opens the full multi-section report page.",
+    "page": "/docs/net-managers/reports-and-exports/"
+  },
+  "net-managers/net-notes-and-schedule-announcements": {
+    "path": "/docs/img/net-managers/net-notes-and-schedule-announcements.png",
+    "alt": "Two adjacent toolbar buttons, both outlined in red: Announcements, which opens the schedule's standing weekly announcements, and Notes, which opens this one net's own notes.\n",
+    "caption": "Announcements is the schedule's standing text; Notes is this occurrence only. They open two different panels with two different pieces of text.\n",
+    "page": "/docs/net-managers/scripts-and-announcements/"
+  },
+  "net-managers/net-report-header": {
+    "path": "/docs/img/net-managers/net-report-header.png",
+    "alt": "The Net Report page's header with three buttons: Export PDF outlined in red, Export PNG, and View Net.\n",
+    "caption": "The report page needs no sign-in, so the link is safe to hand to anyone who needs the record. Export PNG saves each section as its own image for a newsletter or social post.\n",
+    "page": "/docs/net-managers/reports-and-exports/"
+  },
+  "net-managers/net-script-editor": {
+    "path": "/docs/img/net-managers/net-script-editor.png",
+    "alt": "The Net Script tab: a markdown formatting toolbar (headings, bold, italic, highlight, lists, horizontal rule) above an empty script editor showing example placeholder text for an opening, check-ins, and a closing.\n",
+    "caption": "Net Control reads this during the net -- use the toolbar or paste in Markdown directly.",
+    "page": "/docs/net-managers/scripts-and-announcements/"
+  },
+  "net-managers/schedule-recurrence-options": {
+    "path": "/docs/img/net-managers/schedule-recurrence-options.png",
+    "alt": "The Schedule tab of Edit Schedule, showing schedule type set to Weekly, a day-of-week and time picker, an optional fifth-week operator field, and the auto-lobby, auto-close, and keep-chat-open toggles below it.\n",
+    "caption": "Ad-Hoc, One-Time, Daily, Weekly, or Monthly -- this is also where a weekly schedule's optional fifth-week operator and the auto-lobby / auto-close defaults for every net it creates live.\n",
+    "page": "/docs/net-managers/recurring-schedules/"
+  },
+  "net-managers/schedule-stats-leaderboards": {
+    "path": "/docs/img/net-managers/schedule-stats-leaderboards.png",
+    "alt": "The Leaderboards card on a schedule's statistics page, with four tabs -- Check-ins, NCS, Logger, and Relay -- and a ranked table with medal icons on the top three rows.\n",
+    "caption": "Each leaderboard is its own ranking; a station can lead Check-ins without ever running the net as NCS.",
+    "page": "/docs/net-managers/schedule-statistics/"
+  },
+  "net-managers/staff-and-rotation": {
+    "path": "/docs/img/net-managers/staff-and-rotation.png",
+    "alt": "The Net Staff tab of Edit Schedule: the Schedule Manager, an Authorized Net Staff list with a co-manager star and an active/inactive switch per row, and an NCS Rotation list below it with up/down reordering arrows.\n",
+    "caption": "Staff can start and run nets the moment they're added. The rotation below is optional -- it only decides who gets pre-assigned NCS ahead of time.\n",
+    "page": "/docs/net-managers/net-staff-and-rotation/"
+  },
+  "operators/account-profile-tab": {
+    "path": "/docs/img/operators/account-profile-tab.png",
+    "alt": "The Profile page's Profile tab, showing the Name, Amateur Radio Call Sign, GMRS Call Sign, SKYWARN Spotter Number, and Default Location fields, with Save Changes at the bottom.\n",
+    "caption": "Your profile identity fields. Only Name is required.",
+    "page": "/docs/operators/account-and-profile/"
+  },
+  "operators/activity-stat-cards": {
+    "path": "/docs/img/operators/activity-stat-cards.png",
+    "alt": "The Profile Activity tab's stat cards: Total Check-ins, Nets Joined, As NCS, and Last 30 Days.\n",
+    "caption": "Click any card to see the nets behind the number.",
+    "page": "/docs/operators/your-statistics/"
+  },
+  "operators/archived-nets-dialog": {
+    "path": "/docs/img/operators/archived-nets-dialog.png",
+    "alt": "The Archived and Cancelled Nets dialog, with a search box, From and To date fields, and Attended and Ran as NCS checkboxes.\n",
+    "caption": "Everything closed, archived, or cancelled lives here, not just this week's nets.",
+    "page": "/docs/operators/finding-a-net/"
+  },
+  "operators/chat-mention-composer": {
+    "path": "/docs/img/operators/chat-mention-composer.png",
+    "alt": "The chat composer containing the text '@K', with an autocomplete list open above it offering K1COVE and KC1HILL.\n",
+    "caption": "Typing the first letter or two narrows the list to matching stations.",
+    "page": "/docs/operators/chat-and-polls/"
+  },
+  "operators/check-in-dialog": {
+    "path": "/docs/img/operators/check-in-dialog.png",
+    "alt": "The Check In dialog, with the Check In button outlined in red at the bottom right of the form. Only the Callsign field is required by default.\n",
+    "caption": "Only Callsign is required unless the net's manager has turned on more fields.",
+    "page": "/docs/operators/checking-in/"
+  },
+  "operators/check-in-legend": {
+    "path": "/docs/img/operators/check-in-legend.png",
+    "alt": "The check-in list legend, with the '2nd NCS' entry underlined in red, reading '2nd NCS - assists primary Net Control Station'.\n",
+    "caption": "The legend mixes roles (NCS, 2nd NCS, Logger), statuses, and the recheck marker in one row.",
+    "page": "/docs/operators/status-and-checking-out/"
+  },
+  "operators/dashboard-net-list": {
+    "path": "/docs/img/operators/dashboard-net-list.png",
+    "alt": "The ECTLogger dashboard, showing three net cards side by side with status chips reading active, scheduled, and closed.\n",
+    "caption": "Nets you can still take part in sort ahead of ones that are over.",
+    "page": "/docs/operators/finding-a-net/"
+  },
+  "operators/leaderboard-table": {
+    "path": "/docs/img/operators/leaderboard-table.png",
+    "alt": "A schedule statistics page's check-in leaderboard, listing callsigns with their appearance count and participation percentage, medal icons next to the top three rows.\n",
+    "caption": "The check-in leaderboard for a recurring net, filtered to the last 90 days.",
+    "page": "/docs/operators/your-statistics/"
+  },
+  "operators/location-map": {
+    "path": "/docs/img/operators/location-map.png",
+    "alt": "A net's live check-in map, with colored markers for each station and a legend identifying NCS, Logger, Relay, and station statuses.\n",
+    "caption": "Every checked-in station with a location ECTLogger can parse, including ones already checked out.",
+    "page": "/docs/operators/location-and-the-map/"
+  },
+  "operators/login-password-link": {
+    "path": "/docs/img/operators/login-password-link.png",
+    "alt": "The ECTLogger sign-in page, with the Sign in with a password instead link outlined in red below the Send Magic Link button.\n",
+    "caption": "Easy to miss, because most people never need it. It is at the bottom of the sign-in page.",
+    "page": "/docs/operators/signing-in/"
+  },
   "operators/mobile-checkin-list": {
     "path": "/docs/img/operators/mobile-checkin-list.png",
     "alt": "The check-in list on a phone-width screen: a simplified, read-only table with each station's status shown by icon.\n",
     "caption": "Other stations' rows are read-only on a phone; your own status is still yours to change.",
     "page": "/docs/operators/in-the-field/"
+  },
+  "operators/security-password-card": {
+    "path": "/docs/img/operators/security-password-card.png",
+    "alt": "The Password section of the Profile page's Security tab, with Current Password, New Password, and Confirm Password fields and the Change Password button outlined in red below them.\n",
+    "caption": "A password is a fallback, not a replacement. The magic link keeps working whether you set one or not.",
+    "page": "/docs/operators/signing-in/"
+  },
+  "operators/security-two-factor-setup": {
+    "path": "/docs/img/operators/security-two-factor-setup.png",
+    "alt": "The Two-Factor Authentication section of the Security tab, explaining that it adds a 6-digit code from an authenticator app, with the Set Up Two-Factor Authentication button outlined in red.\n",
+    "caption": "Directly below the password section on the same tab.",
+    "page": "/docs/operators/signing-in/"
+  },
+  "operators/status-select-dropdown": {
+    "path": "/docs/img/operators/status-select-dropdown.png",
+    "alt": "A check-in row's status dropdown open, listing Checked in, Listening, Relay, Away, Has traffic, Announcements, Mobile, and Checked out.\n",
+    "caption": "Every status is one dropdown away, on your own row.",
+    "page": "/docs/operators/status-and-checking-out/"
+  },
+  "operators/traffic-composer-picker": {
+    "path": "/docs/img/operators/traffic-composer-picker.png",
+    "alt": "The traffic composer's form-type picker, showing five cards: ARRL Radiogram, GYX-CAR SKYWARN Report, ICS-213 General Message Form, RRI Strip (General), and RRI WXOBS Weather Observation.\n",
+    "caption": "Only the types a net's manager enabled are offered here -- asking for an unusual type is still possible through the standalone Traffic section below.",
+    "page": "/docs/operators/filing-traffic/"
+  },
+  "operators/traffic-nav-item": {
+    "path": "/docs/img/operators/traffic-nav-item.png",
+    "alt": "The top navigation bar, with the Traffic item outlined in red, between Schedule and Stats.\n",
+    "caption": "Traffic in the top navigation bar. When something is waiting on you, a count appears beside it.\n",
+    "page": "/docs/operators/filing-traffic/"
+  },
+  "reference/check-in-legend": {
+    "path": "/docs/img/reference/check-in-legend.png",
+    "alt": "The check-in list legend, reading left to right: NCS (a crown), 2nd NCS (a second crown), Logger (a clipboard), Standard (a check mark), Recheck (two arrows in a circle), Listening (an ear), Relay (a satellite dish), Away (a pause symbol), Traffic (a siren), Announce (a megaphone), and Out (a waving hand), followed by a note that a blue highlight marks a station on the net's active frequency and that clicking a row opens inline editing.\n",
+    "caption": "The legend above the check-in list. It mixes three different kinds of thing -- net roles, station statuses, and the Recheck marker -- in one row; see Station statuses for what each entry actually means.\n",
+    "page": "/docs/reference/station-statuses/"
+  },
+  "start/bulk-add-window": {
+    "path": "/docs/img/start/bulk-add-window.png",
+    "alt": "The Bulk Check-In window, with two comma-separated check-ins typed into its text box, the expected format shown underneath, and an Add button counting the two it is about to create.\n",
+    "caption": "Sometimes called speed entry. The button is labelled Bulk add.",
+    "page": "/docs/start/run-your-first-net/"
+  },
+  "start/checked-in-row": {
+    "path": "/docs/img/start/checked-in-row.png",
+    "alt": "A check-in list with fifteen rows in it, the reader's own N1DUNE callsign outlined in red in the last row, alongside a green check mark, the name Robin Teague, and the location Freeport, ME.\n",
+    "caption": "Your own row is the one with a status dropdown on it. Everyone else's is read-only to you.\n",
+    "page": "/docs/start/first-check-in/"
+  },
+  "start/checkin-toolbar-button": {
+    "path": "/docs/img/start/checkin-toolbar-button.png",
+    "alt": "The net toolbar, with the check-in button outlined in red among the Search, Map, Announcements, Notes, Topics, and Stats buttons.\n",
+    "caption": "The net toolbar. What is on it depends on whether you are checked in yet.",
+    "page": "/docs/start/first-check-in/"
+  },
+  "start/claim-ncs-button": {
+    "path": "/docs/img/start/claim-ncs-button.png",
+    "alt": "The net toolbar on an active net with nobody assigned, with the Claim NCS button outlined in red.\n",
+    "caption": "Claim NCS appears only on an active or lobby net that has no Net Control at all.",
+    "page": "/docs/start/run-your-first-net/"
+  },
+  "start/create-net-name": {
+    "path": "/docs/img/start/create-net-name.png",
+    "alt": "The Create New Net form's Net Information section, with the Net Name field outlined in red at the top, above Description, Info URL, and Audio Stream URL fields.\n",
+    "caption": "Net Name is the only required field on the whole form.",
+    "page": "/docs/start/run-your-first-net/"
+  },
+  "start/dashboard-view-button": {
+    "path": "/docs/img/start/dashboard-view-button.png",
+    "alt": "A net card on the dashboard, with its green active chip in the corner and the View button at the bottom outlined in red.\n",
+    "caption": "View opens the net. Nets you can still take part in sort ahead of ones that are over.\n",
+    "page": "/docs/start/first-check-in/"
+  },
+  "start/login-magic-link": {
+    "path": "/docs/img/start/login-magic-link.png",
+    "alt": "The ECTLogger sign-in page, with an Email Address field filled in and the Send Magic Link button outlined in red below it.\n",
+    "caption": "One field and one button. There is no account to create first.",
+    "page": "/docs/start/first-check-in/"
+  },
+  "start/schedule-card": {
+    "path": "/docs/img/start/schedule-card.png",
+    "alt": "A schedule card on the Schedule page, showing the schedule name, its recurrence, and Create, Edit, Delete, Stats, Staff, and Subscribe buttons along the bottom, with Create outlined in red.\n",
+    "caption": "Create on a schedule card makes this week's net right now, without waiting for the recurrence.\n",
+    "page": "/docs/start/first-schedule/"
+  },
+  "start/schedule-recurrence": {
+    "path": "/docs/img/start/schedule-recurrence.png",
+    "alt": "The Schedule tab of the schedule form, with Schedule Type set to Weekly and outlined in red, and Day of Week and net start time fields below it.\n",
+    "caption": "Weekly, a day, and a time. From here on, the net creates itself.",
+    "page": "/docs/start/first-schedule/"
+  },
+  "start/start-net-button": {
+    "path": "/docs/img/start/start-net-button.png",
+    "alt": "The net toolbar on a net that has not started, with the Start net button outlined in red, alongside Net info, Import, Edit net, and Roles.\n",
+    "caption": "Start net is the first control on the toolbar until the net is running.",
+    "page": "/docs/start/run-your-first-net/"
   }
 }

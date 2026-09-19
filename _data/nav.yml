@@ -26,6 +26,8 @@
   eyebrow: Path 1
   summary: Taking part in a net. Checking in, keeping your status honest, and getting credit for the time you put in.
   items:
+    - title: Signing in
+      url: /docs/operators/signing-in/
     - title: Your account and profile
       url: /docs/operators/account-and-profile/
     - title: Finding a net
