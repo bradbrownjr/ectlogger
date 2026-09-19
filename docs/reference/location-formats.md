@@ -12,7 +12,7 @@ permalink: /docs/reference/location-formats/
 
 # Location formats
 
-The Location field on a check-in is free text — nothing stops you typing anything into it — but the check-in map, the net report's map, and the statistics map all try to turn it into a point on a map. This page lists every format that parsing actually understands, in the order it tries them, with a real example of each.
+The Location field on a check-in is free text, and nothing stops you typing anything into it, but the check-in map, the net report's map, and the statistics map all try to turn it into a point on a map. This page lists every format that parsing actually understands, in the order it tries them, with a real example of each.
 
 ## What the map understands
 
@@ -30,16 +30,16 @@ The Location field on a check-in is free text — nothing stops you typing anyth
 
 </div>
 
-The parser tries the six coordinate formats first, in the order listed, before falling back to treating the text as an address. A bare grid square and a grid square embedded in a longer string are both accepted — you don't need to strip the town name out first.
+The parser tries the six coordinate formats first, in the order listed, before falling back to treating the text as an address. A bare grid square and a grid square embedded in a longer string are both accepted, so you don't need to strip the town name out first.
 
 ## Addresses: what actually gets geocoded
 
-An address-shaped Location is sent to ECTLogger's own backend, which proxies it to OpenStreetMap's Nominatim geocoder (this keeps a browser from hitting Nominatim's rate limit directly, and the result is cached). If the full address doesn't resolve, the map tries progressively less specific versions by dropping the leading comma-separated segment — for example, `County Rd, Shapleigh, ME` failing outright but `Shapleigh, ME` succeeding — stopping at two remaining segments (normally city and state) so a bad street address never degrades all the way down to a single state-wide pin. There is no cap on how many addresses a net can have geocoded; a large net with many unique locations just takes a little longer to load the first time.
+An address-shaped Location is sent to ECTLogger's own backend, which proxies it to OpenStreetMap's Nominatim geocoder (this keeps a browser from hitting Nominatim's rate limit directly, and the result is cached). If the full address doesn't resolve, the map tries progressively less specific versions by dropping the leading comma-separated segment (`County Rd, Shapleigh, ME` failing outright but `Shapleigh, ME` succeeding), stopping at two remaining segments (normally city and state) so a bad street address never degrades all the way down to a single state-wide pin. There is no cap on how many addresses a net can have geocoded; a large net with many unique locations just takes a little longer to load the first time.
 
 ## What happens when it can't be parsed
 
-A Location that matches none of the coordinate formats and doesn't look enough like an address (a single word with no state, for instance, or an empty field) is not plotted. The station isn't silently dropped from the log — it's listed separately as unmapped, wherever the app tells you which stations aren't on the map, so you can tell a genuinely unparseable location apart from a slow geocode.
+A Location that matches none of the coordinate formats and doesn't look enough like an address (a single word with no state, for instance, or an empty field) is not plotted. The station isn't silently dropped from the log. It's listed separately as unmapped, wherever the app tells you which stations aren't on the map, so you can tell a genuinely unparseable location apart from a slow geocode.
 
 ## What reaches the map
 
-Every station that parses or geocodes successfully appears as a marker, colored by role or status (see [Station statuses](/docs/reference/station-statuses/) for the palette and what takes priority over what). This is one shared pipeline behind the live check-in map, the net report's map, and the net statistics map, so a station that's on one is on all three — including a station that has already checked out. Checking out removes nothing from the map; see the note on that in [Station statuses](/docs/reference/station-statuses/).
+Every station that parses or geocodes successfully appears as a marker, colored by role or status (see [Station statuses](/docs/reference/station-statuses/) for the palette and what takes priority over what). This is one shared pipeline behind the live check-in map, the net report's map, and the net statistics map, so a station that's on one is on all three, including a station that has already checked out. Checking out removes nothing from the map; see the note on that in [Station statuses](/docs/reference/station-statuses/).

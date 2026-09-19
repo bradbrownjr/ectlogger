@@ -55,9 +55,12 @@ exclude:
   - docs/concepts/
   - docs/DEVELOPMENT.md
   - docs/DESIGN.md
+  - docs/DOC-STYLE.md
   - docs/USER-STORIES.md
-  # A working note (a two-week list of email subject lines, used to write
-  # docs/reference/emails.md), not a page. Kept for provenance, not published.
+  # A local working note (a two-week list of email subject lines, used to write
+  # docs/reference/emails.md). Already gitignored, so it never reaches the
+  # build; listed here as well so a future change to .gitignore cannot publish
+  # it by accident.
   - docs/ectlogger-email-digest.md
 
 defaults:

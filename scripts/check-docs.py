@@ -17,8 +17,29 @@ REPO = Path(__file__).resolve().parent.parent
 DOCS = REPO / "docs"
 
 # Pages that are deliberately not published, so nothing should link to them
-# and they are not held to the front-matter rules.
+# and they are not held to the front-matter rules. Read from _config.yml's own
+# exclude list rather than repeated here, because the two drifting apart is how
+# a page ends up linking to something the build never publishes: docs/DESIGN.md
+# and docs/DEVELOPMENT.md were excluded from the site but still counted as
+# valid link targets by this script until 2026-09-19.
 EXCLUDED_DIRS = {"concepts"}
+
+
+def unpublished():
+    """Top-level docs/*.md paths that _config.yml keeps out of the build."""
+    config = (REPO / "_config.yml").read_text(encoding="utf-8")
+    names = set()
+    in_exclude = False
+    for line in config.splitlines():
+        if line.startswith("exclude:"):
+            in_exclude = True
+            continue
+        if in_exclude:
+            if line.startswith("  - "):
+                names.add(line[4:].strip().strip('"'))
+            elif line.strip() and not line.startswith(("  #", "#")):
+                break
+    return names
 
 REQUIRED_FRONT_MATTER = [
     "title", "summary", "kind", "audience", "owner", "revised", "review_by",
@@ -35,8 +56,11 @@ RAW_BLOCK = re.compile(r"\{%\s*raw\s*%\}.*?\{%\s*endraw\s*%\}", re.S)
 
 
 def pages():
+    excluded = unpublished()
     for path in sorted(DOCS.rglob("*.md")):
         if set(path.relative_to(DOCS).parts) & EXCLUDED_DIRS:
+            continue
+        if str(path.relative_to(REPO)) in excluded:
             continue
         yield path
 

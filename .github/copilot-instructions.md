@@ -191,6 +191,13 @@ replaced by it; do not recreate a single all-audiences guide.
   production. A feature baking on a branch gets its pages written on that branch and
   merged with it.
 
+**Before writing or changing a `docs/` page, read
+[`docs/DOC-STYLE.md`](../docs/DOC-STYLE.md).** It is to the documentation site
+what `docs/DESIGN.md` is to the UI: the information architecture, the page
+shape for each Diataxis `kind`, the voice, the figure rules, the example
+roster, the visual tokens, and the accessibility targets. The rules below are
+the short version.
+
 **Writing rules for `docs/` pages**, beyond the site-wide ones further down:
 
 - Every page carries front matter: `title`, `summary`, `kind` (Tutorial, How-to,
@@ -198,8 +205,9 @@ replaced by it; do not recreate a single all-audiences guide.
   `applies_to`, and `permalink`. `scripts/check-docs.py` enforces this.
 - Write for operators, not developers. The forbidden-terms list under "Changelog Item
   Format" applies here too.
-- Em-dashes are used in `docs/` path pages, as a deliberate scoped exception to the
-  baseline no-em-dash rule. See `docs/DEVELOPMENT.md` "Voice".
+- Em-dashes are used **sparingly** in `docs/` path pages, as a deliberate scoped
+  exception to the baseline no-em-dash rule: never two in one sentence, and the
+  `**Term** - definition` list pattern is exempt. See `docs/DOC-STYLE.md` "Voice".
 - Any figure that tells the reader where to click or navigate carries a bright red box
   or underline, drawn at capture time from a selector, never by hand.
 

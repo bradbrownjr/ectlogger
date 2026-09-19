@@ -852,14 +852,14 @@ account password.
 
 ## Documentation site (ectlogger.us)
 
+**The scheme, the voice, the figure rules, and the information architecture
+live in [`docs/DOC-STYLE.md`](DOC-STYLE.md).** Read that before writing or
+changing a page. This section is the build and the commands only.
+
 The public site is built by GitHub Pages from `main`. There is no staging
 site: whatever is on `main` is live within about a minute of the push. Layouts
 live in `_layouts/`, the sidebar in `_data/nav.yml`, styles in
 `assets/css/site.css`, and the pages themselves under `docs/`.
-
-Full plan, including the audience split and the standards it was built
-against: the Documentation & Help Site Overhaul item in
-[ROADMAP.md](ROADMAP.md).
 
 ### Layouts
 
@@ -891,20 +891,14 @@ permalink: /docs/operators/checking-in/
 ```
 
 - **`kind`** is the Diataxis type and is one of **Tutorial**, **How-to**,
-  **Reference**, or **Explanation**. It is not decoration: a page does not mix
-  modes. A tutorial has exactly one path with no choices in it, a how-to
-  assumes you know what you want and gets you there, reference is complete and
-  scannable with no narrative, and explanation is allowed to be discursive.
-  The 1,084-line user guide this site replaced was one document trying to be
-  all four at once, which is why it served nobody.
+  **Reference**, or **Explanation**. A page does not mix modes. See
+  [`DOC-STYLE.md`](DOC-STYLE.md) section 2 for the shape each one takes.
 - **`permalink`** is optional where the file path already produces the right
   URL (`permalink: pretty` is set site-wide), but writing it explicitly means
   moving the file never silently breaks the sidebar.
 - **`revised`** is a real review date, not the date of the last typo fix.
 - **`review_by`** is when that page is next due a read, normally a year after
-  `revised`. It exists so "is the documentation still accurate" turns into a
-  bounded, listable task: pages past their date, in order. Bump both together
-  when you genuinely re-read a page, and neither for a typo fix.
+  `revised`.
 
 ### Checking the site before you commit
 
@@ -920,50 +914,39 @@ problem, so it is safe to put in front of a commit. Run it after any
 documentation change, and after a capture run, since a renamed shot id leaves
 a page pointing at a figure that no longer exists.
 
-### Figures
+### Regenerating the figures
 
-Screenshots are **generated, never hand-captured**. Each audience path keeps
-its own figure requests in `scripts/docs-screenshots/requests/<path>.yml`, and
-the command is `scripts/docs-screenshots/run.sh` (add `--section <path>` or
-`--only <shot-id>` to narrow it). That script reseeds the demo database,
-starts the demo backend on port 8100, and then runs
-`scripts/docs-screenshots/capture.mjs`. Adding a figure means adding a
-manifest entry, not opening an image editor: a hand-annotated PNG cannot be
-regenerated, which is how the site ended up with eight-month-old screenshots
-of a UI that had been redesigned twice. The field reference is
-`scripts/docs-screenshots/README.md`.
+```bash
+scripts/docs-screenshots/run.sh                    # everything
+scripts/docs-screenshots/run.sh --section admins   # one path
+scripts/docs-screenshots/run.sh --only fields-table
+```
 
-Rules that are not negotiable:
+That script reseeds the demo database, starts the demo backend on port 8100,
+and runs `scripts/docs-screenshots/capture.mjs` against the demo frontend on
+port 3100. Neither port is ever beta's. Each audience path keeps its own
+requests in `scripts/docs-screenshots/requests/<path>.yml`; the field
+reference is `scripts/docs-screenshots/README.md`.
 
-- **Captures run against the seeded demo instance, never beta and never
-  production.** Beta holds a copy of production's database, real names and
-  email addresses included. A screenshot of it is a privacy incident.
-- **Annotations are drawn at capture time.** A figure that tells the reader
-  where to click gets a bright red box (`#e53935`) around the target, or a red
-  underline where a box would swallow half the screen. The target is declared
-  in the manifest as a selector, so it follows the control when the layout
-  changes instead of pointing at empty space.
-- **No instruction may exist only inside an image** (WCAG 1.4.5). The prose
-  names the control by its label, and the alt text carries the same
-  instruction in words. A red box is invisible to a screen reader.
-- **Light mode only**, except for the one figure that exists to show the dark
-  theme.
+`scripts/docs-screenshots/inspect.mjs` prints every visible `aria-label`,
+button, table, and dialog on a page, which is how to find a selector rather
+than guessing one from the source:
+
+```bash
+node scripts/docs-screenshots/inspect.mjs /nets/1 --as W1PINE --wait-for 'table:visible tbody tr'
+node scripts/docs-screenshots/inspect.mjs /nets/1 --as W1PINE --ancestors 'span[aria-label="Bulk add multiple check-ins"]'
+```
+
+Seeded demo data: net 1 is the active ARES net (14 check-ins, every station
+status, two active NCS, custom fields), net 2 is scheduled, net 3 is closed
+with a full log. `W1PINE` is NCS, `K1COVE` Logger, `N1LAKE` Relay, `KC1HILL` a
+participant, `W1DEMO` the admin.
 
 ### Example callsigns, names, and organizations
 
 Every worked example, screenshot, and speed-entry sample uses the roster
-below, and nothing else. Do not invent a callsign for a new page.
-
-**The rule: every example callsign carries a four-letter suffix.** The FCC's
-sequential call sign system tops out at a three-letter suffix (1x3 and 2x3
-being the longest forms it issues), so a four-letter suffix is structurally
-unassignable in perpetuity. This is the same reasoning behind `N0CALL`, the
-placeholder WSJT-X and Direwolf ship as their default. It means no screenshot
-can put words in a real licensee's mouth, and a ham reading closely recognizes
-the shape as a placeholder without it looking wrong.
-
-The guide this site replaced used `KC1ABC`, `N1XYZ`, and `W1DEF`, every one of
-which is a callsign the FCC can issue and may already have issued.
+below, and nothing else. Do not invent a callsign. The reasoning is in
+[`DOC-STYLE.md`](DOC-STYLE.md) section 6.
 
 | Callsign | Name | Stands in for |
 |---|---|---|
@@ -974,85 +957,10 @@ which is a callsign the FCC can issue and may already have issued.
 | `W1PORT` | Joan Alderman | Second net control on a multi-frequency net |
 | `N1ROVE` | Chris Baumann | Mobile station, for the status and location examples |
 | `K1CAMP` | Terry Osgood | Shelter station, for the traffic examples |
-| `W2FERN`, `N2OAKS`, `K3BASE`, `W1MILL`, `N1BIRD` | — | Table filler, enough rows for a realistic log |
-| `N0CALL` | — | Reserved for "not configured yet" examples only |
+| `W2FERN`, `N2OAKS`, `K3BASE`, `W1MILL`, `N1BIRD` | (filler) | Table filler, enough rows for a realistic log |
+| `N0CALL` | (none) | Reserved for "not configured yet" examples only |
 
 Organizations: **Example County ARES**, **Example County SKYWARN**, and the
-**Tuesday Evening Club Net**. Named so they cannot be mistaken for a real
-group or tread on anyone's mark.
-
-Locations stay real New England towns, because the map pages need addresses
-that actually geocode and a town name is not personal information.
-
-### Voice
-
-The site is written the way a sysop writes to other operators: practical,
-specific, never breathless.
-
-- "You" for the reader-operator. "We" sparingly, for the project.
-- Sentence case for headings, buttons, and labels. Protocol literals keep
-  their real casing: callsigns, `ICS-309`, `WXOBS`, `@MAINE`.
-- **Contractions are normal, in moderation.** Measured against KC1JMH's own
-  prose, the natural rate is roughly one contraction per seventy words:
-  the retired `docs/USER-GUIDE.md` ran 1.6%, `docs/CHANGELOG.md` 1.0%. Writing them all
-  out reads stiff and stops sounding like a person; leaning on them reads
-  chatty. Neither extreme is the voice. Write the way you would say it to
-  another operator and the rate takes care of itself.
-- **Em-dashes, written as the real character.** This is a deliberate exception
-  to the baseline "no em-dashes in generated text" rule in
-  `.github/copilot-instructions.md`, and it applies to `docs/` path pages only,
-  not to source, comments, or commit messages. KC1JMH's own prose is full of
-  them (the retired `docs/USER-GUIDE.md` had 240, `docs/CHANGELOG.md` has 352) and the
-  changelog's own mandated item format is built around one, so a site written
-  without them would read less like the person it is supposed to sound like,
-  not more. Four of the paths were first drafted with ` -- ` and normalized on
-  2026-09-19; keep new pages consistent with the rest of the site.
-- **Always give the why.** A sentence that says what a control does without
-  saying what problem it solves gets rewritten.
-- Expand an acronym on first use per page, then use it freely. Assume the
-  reader knows amateur radio. Do not assume they know ARES, RRI, or ICS.
-- Be honest about limits, where the reader will hit them, not in a footnote.
-- No developer vocabulary. The changelog's forbidden-terms list applies here
-  too: no "component", "endpoint", "modal", "boolean", "refactor".
-- **No emoji in body copy.** They stay in exactly two places, where they are
-  load-bearing: the roadmap's type tags and the changelog.
-- How-to pages get numbered steps, one action per step, imperative mood, and
-  the outcome stated before the steps. Explanation pages keep the long, dense,
-  technically specific register; that is where it belongs.
-
-### Reusable HTML in a page
-
-Markdown is converted with Kramdown, so raw HTML passes through. The site
-stylesheet defines three things worth reaching for:
-
-```html
-<div class="callout">
-  <span class="callout-label">Note</span>
-  <p>Body.</p>
-</div>
-```
-
-`callout` also takes `warning` and `danger`. The label word is required: a
-callout must never rely on its color to say what it is (WCAG 1.4.1).
-
-```html
-<figure>
-  <img src="/docs/img/operators/check-in-dialog.png"
-       alt="The check-in dialog, with the Check In button outlined in red at the bottom right.">
-  <figcaption>The check-in dialog. Only the callsign is required.</figcaption>
-</figure>
-```
-
-Add `class="control-figure"` for a partial capture of a single control, so it
-renders at its own size instead of stretched to the column width.
-
-### Never do this
-
-- **Never document a feature that is not in production.** A page describing an
-  unshipped feature is a bug. Feature-branch work gets its pages written on
-  that branch and merged with it.
-- **Never take "just one" screenshot from beta.**
-- **Never write bare double braces in a page**, per the GitHub Pages rule in
-  `.github/copilot-instructions.md`. Liquid is switched off for page content
-  in `_config.yml`, which covers most of it, but the search index and the
-  layouts do process Liquid.
+**Tuesday Evening Club Net**. Locations stay real New England towns, because
+the map pages need addresses that actually geocode and a town name is not
+personal information.

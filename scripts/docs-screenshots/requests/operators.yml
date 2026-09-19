@@ -1,7 +1,7 @@
 # Figure requests for the Operators path (docs/operators/). See
 # scripts/docs-screenshots/README.md for the schema and placeholder syntax.
 # All participant-perspective shots use KC1HILL (Priya Nandan), the "you" of
-# this path, per docs/concepts/DOC-SITE-BRIEF.md.
+# this path, per docs/DOC-STYLE.md.
 
 shots:
   # ========== Account and profile ==========

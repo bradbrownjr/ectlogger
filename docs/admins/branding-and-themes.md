@@ -18,7 +18,7 @@ The **Branding** tab controls how the instance looks for everyone who hasn't alr
 
 <figure>
   <img src="/docs/img/admins/branding-default-theme.png"
-       alt="The Default Theme card on the Branding tab, with five named colour swatches — ECTLogger Blue (currently selected, ticked), Ocean, Forest, Sunset, and Berry — and a &quot;Set as System Default&quot; button outlined in red, greyed out because the selected swatch is already the default.">
+       alt="The Default Theme card on the Branding tab, with five named color swatches (ECTLogger Blue, currently selected and ticked, then Ocean, Forest, Sunset, and Berry) and a &quot;Set as System Default&quot; button outlined in red, greyed out because the selected swatch is already the default.">
   <figcaption>Applies only to visitors who have never picked a theme of their own in Profile → Settings.</figcaption>
 </figure>
 

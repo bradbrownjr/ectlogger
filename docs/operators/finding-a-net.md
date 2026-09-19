@@ -12,7 +12,7 @@ permalink: /docs/operators/finding-a-net/
 
 # Finding a net
 
-The dashboard is the front door. It lists every net on the instance, and you don't need to sign in to look — an account is only required once you want to act (check in, chat, file traffic).
+The dashboard is the front door. It lists every net on the instance, and you don't need to sign in to look. An account is only required once you want to act (check in, chat, file traffic).
 
 ## Reading the dashboard
 
@@ -36,11 +36,11 @@ By default, nets are sorted with Active and Lobby first (most recently started a
 
 ## Landing on a net you haven't joined
 
-Open any Active or Lobby net and, if you're signed in and haven't checked in yet, a banner offers to check you in on the spot — see [Checking in](/docs/operators/checking-in/). You can dismiss it and just watch instead; nothing about viewing a net requires joining it.
+Open any Active or Lobby net and, if you're signed in and haven't checked in yet, a banner offers to check you in on the spot; see [Checking in](/docs/operators/checking-in/). You can dismiss it and just watch instead; nothing about viewing a net requires joining it.
 
 ## Finding a net that already happened
 
-Closed and archived nets don't disappear — click **Archived Nets** from the dashboard to open a searchable list of every closed, archived, or cancelled net. You can:
+Closed and archived nets don't disappear. Click **Archived Nets** from the dashboard to open a searchable list of every closed, archived, or cancelled net. You can:
 
 - Search by net name or NCS callsign.
 - Filter by a date range (**From** / **To**).
@@ -52,7 +52,7 @@ Closed and archived nets don't disappear — click **Archived Nets** from the da
   <figcaption>Everything closed, archived, or cancelled lives here, not just this week's nets.</figcaption>
 </figure>
 
-Opening a closed net still shows its full check-in list and report — you don't need to have been there to read the log.
+Opening a closed net still shows its full check-in list and report; you don't need to have been there to read the log.
 
 ## Starring a net you check into often
 
@@ -60,8 +60,8 @@ Click the star icon on a net card to favorite it. Favorited nets always sort to 
 
 ## Finding a net that runs on a schedule
 
-Many nets aren't one-off events — they run weekly, monthly, or on some other recurrence. Recurring nets are set up as a **schedule** (the [net managers](/docs/net-managers/) path covers creating one). You don't need any special access to look at `/scheduler` and see what schedules exist and roughly when they next run; once ECTLogger auto-creates the next occurrence, it shows up on the dashboard the same as any other Scheduled net.
+Many nets aren't one-off events. They run weekly, monthly, or on some other recurrence. Recurring nets are set up as a **schedule** (the [net managers](/docs/net-managers/) path covers creating one). You don't need any special access to look at `/scheduler` and see what schedules exist and roughly when they next run; once ECTLogger auto-creates the next occurrence, it shows up on the dashboard the same as any other Scheduled net.
 
 ## Where the numbers are
 
-If you're trying to find a net because you're chasing a personal statistic — your check-in count, whether you've run a particular net as NCS — that's covered on its own page: [Your statistics](/docs/operators/your-statistics/).
+If you're trying to find a net because you're chasing a personal statistic, such as your check-in count or whether you've run a particular net as NCS, that's covered on its own page: [Your statistics](/docs/operators/your-statistics/).
