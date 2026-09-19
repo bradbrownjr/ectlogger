@@ -896,7 +896,11 @@ const NCSStaffModal: React.FC<NCSStaffModalProps> = ({
                       color="secondary"
                       variant="outlined"
                     >
-                      {pushingStaff ? 'Creating schedule…' : 'Create schedule'}
+                      {/* Says what it does. It was labelled "Create schedule",
+                          which reads as the way to make a one-off net
+                          recurring -- it is not, and it only ever appears when
+                          the net already came from a schedule. */}
+                      {pushingStaff ? 'Copying…' : 'Copy NCS to schedule'}
                     </Button>
                   </span>
                 </Tooltip>

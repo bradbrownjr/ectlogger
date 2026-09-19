@@ -316,7 +316,8 @@ const AdminBrandingTab: React.FC<Props> = ({ showSnackbar }) => {
             <Typography variant="subtitle1" gutterBottom>Logo</Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
               Replace the built-in ECTLogger mark with your own. PNG, JPEG, WebP, or SVG,
-              up to 2 MB. Applies everywhere the logo appears (login, navbar, About).
+              up to 2 MB. Applies everywhere the logo appears: the login page, the
+              navigation bar, the About dialog, and the printed net report.
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
               <AppLogo size={64} variant="default" />

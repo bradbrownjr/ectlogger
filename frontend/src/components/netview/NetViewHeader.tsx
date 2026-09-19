@@ -176,6 +176,10 @@ interface NetViewHeaderProps {
   net: any;
   netId: string | undefined;
   canManage: boolean;
+  // Narrower than canManage: the backend's can_manage_net_roles, which also
+  // requires an active NCS/LOGGER role on this occurrence for net staff. Only
+  // the Roles button uses it — see its entry below.
+  canManageRoles: boolean | undefined;
   canManageCheckIns: boolean | undefined;
   canStartNet: boolean;
   isAdmin: boolean;
@@ -299,6 +303,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
   net,
   netId,
   canManage,
+  canManageRoles,
   canManageCheckIns,
   canStartNet,
   isAdmin,
@@ -534,7 +539,12 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
       // edit-net above: a backfilled or misattributed NCS/Logger role still
       // needs fixing after the fact, and the API has no status guard on
       // assigning or removing a NetRole.
-      visible: canManage,
+      //
+      // canManageRoles, not canManage: assign_net_role/remove_net_role need
+      // an active NCS or LOGGER role on this net on top of staff membership,
+      // so gating on canManage offered the dialog to staff whose every click
+      // then 403'd with a generic toast (net 90, reported 2026-09-11).
+      visible: !!canManageRoles,
       Icon: GroupIcon, color: '#9c27b0', label: 'Roles',
       tooltip: isDraftOrScheduled
         ? 'Assign NCS and logger roles (any assigned NCS can start the net)'

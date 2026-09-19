@@ -161,13 +161,17 @@ const StaffRotationTab: React.FC = () => {
     }
   };
 
-  // Co-Manager is the actual trust bar for independently running nets from
-  // this schedule (self-grant eligibility, role management) -- plain "active"
-  // staff can only manually click Start. This control used to exist only in
-  // the separate Net Staff popup (NCSStaffRosterTab.tsx), so a schedule
-  // manager who only ever used this Edit Schedule page had no way to promote
-  // anyone, leaving staff who should be able to run nets independently stuck
-  // with no real permission on nets auto-created from the schedule.
+  // Co-Manager is a schedule-ownership tier: transferring ownership, merging
+  // templates, archiving or deleting a net. It is NOT what lets somebody run
+  // a net -- plain active staff can start a net from this schedule and can
+  // self-grant NCS or Logger by checking in, which is what
+  // permissions.is_active_template_staff has meant since 2026-09-18. This
+  // comment and the tooltip below both still described the older, narrower
+  // rule until 2026-09-19.
+  //
+  // This control used to exist only in the separate Net Staff popup
+  // (NCSStaffRosterTab.tsx), so a schedule manager who only ever used this
+  // Edit Schedule page had no way to promote anyone.
   const handleToggleCoManager = async (staffId: number, currentCoManager: boolean) => {
     if (!scheduleId) return;
     try {
@@ -470,7 +474,7 @@ const StaffRotationTab: React.FC = () => {
                     }
                   />
                   <ListItemSecondaryAction>
-                    <Tooltip title={s.is_co_manager ? 'Remove co-manager role' : 'Promote to co-manager (can run nets independently, even without a rotation slot)'}>
+                    <Tooltip title={s.is_co_manager ? 'Remove co-manager role' : 'Promote to co-manager (can also transfer ownership, merge schedules, and archive or delete nets)'}>
                       <IconButton
                         type="button"
                         onClick={() => handleToggleCoManager(s.id, s.is_co_manager)}

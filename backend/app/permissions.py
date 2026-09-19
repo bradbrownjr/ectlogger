@@ -93,10 +93,17 @@ async def check_net_permission(
     return False
 
 
-async def _is_active_template_staff(db: AsyncSession, template_id: int, user_id: int) -> bool:
+async def is_active_template_staff(db: AsyncSession, template_id: int, user_id: int) -> bool:
     """Return True when user_id is any active TemplateStaff member or active
     NCS rotation member for template_id -- the "net staff" trust bar shared by
-    the self-grant eligibility checks below and can_manage_net_roles.
+    the self-grant eligibility checks below, can_manage_net_roles, and
+    routers/nets_core.start_net.
+
+    Public (it lost its leading underscore on 2026-09-19) because start_net
+    had its own hand-written TemplateStaff query instead, which is what made
+    Start the one staff decision in the app that did not count an active
+    rotation member. Any new "is this person net staff" question belongs here
+    rather than in another copy of the query.
 
     Plain active staff counts, not just co-managers. `is_co_manager` is a
     higher, schedule-ownership tier (ownership transfer, template merge, net
@@ -161,7 +168,7 @@ async def can_manage_net_roles(db: AsyncSession, net: Net, user: User) -> bool:
 
     Grants access to the owner, any admin, or a "net staff" member (any
     active TemplateStaff or active NCS rotation member for the net's
-    template, per _is_active_template_staff) who currently holds an active
+    template, per is_active_template_staff) who currently holds an active
     NCS or LOGGER role on this specific net.
 
     Deliberately narrower than "any NCS/Logger on this net": the dialog's own
@@ -207,13 +214,13 @@ async def can_manage_net_roles(db: AsyncSession, net: Net, user: User) -> bool:
     if role_result.scalar_one_or_none() is None:
         return False
 
-    return await _is_active_template_staff(db, net.template_id, user.id)
+    return await is_active_template_staff(db, net.template_id, user.id)
 
 
 async def is_eligible_for_ncs_auto_grant(db: AsyncSession, net: Net, user_id: int) -> bool:
     """Return True when *user_id* is eligible to be granted NCS on checking
     into *net*: an active member of the net template's staff (per
-    _is_active_template_staff -- any active TemplateStaff or active NCS
+    is_active_template_staff -- any active TemplateStaff or active NCS
     rotation member), with no existing NetRole on this specific net occurrence
     yet (owner/admin/an already-assigned role don't need this -- they already
     have access, or checking in wouldn't change anything for them).
@@ -262,7 +269,7 @@ async def is_eligible_for_ncs_auto_grant(db: AsyncSession, net: Net, user_id: in
     if existing_result.scalar_one_or_none() is not None:
         return False
 
-    return await _is_active_template_staff(db, net.template_id, user_id)
+    return await is_active_template_staff(db, net.template_id, user_id)
 
 
 async def is_eligible_for_logger_self_grant(db: AsyncSession, net: Net, user_id: int) -> bool:
@@ -275,7 +282,7 @@ async def is_eligible_for_logger_self_grant(db: AsyncSession, net: Net, user_id:
     while waiting for the scheduled NCS -- the workflow this was added for,
     2026-09-05), or the same population eligible for NCS auto-grant (any
     active TemplateStaff or active NCS rotation member for the net's
-    template, per _is_active_template_staff). Logger
+    template, per is_active_template_staff). Logger
     is lower-stakes than NCS but still grants check-in management power, so
     it uses the same trust bar plus the owner rather than being open to
     anyone -- unlike NCS eligibility, which requires a template, the owner
@@ -296,7 +303,7 @@ async def is_eligible_for_logger_self_grant(db: AsyncSession, net: Net, user_id:
     if not net.template_id:
         return False
 
-    return await _is_active_template_staff(db, net.template_id, user_id)
+    return await is_active_template_staff(db, net.template_id, user_id)
 
 
 async def check_net_lifecycle_permission(

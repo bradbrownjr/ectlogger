@@ -1220,7 +1220,7 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
         <DialogContent>
           <Typography variant="subtitle2" sx={{ mt: 0.5 }}>Your personal mutes</Typography>
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-            Hides a station's chat messages from your own view of this net only -- nobody else is affected.
+            Hides a station's chat messages from your own view of this net only — nobody else is affected.
           </Typography>
           {mutedUsers.size === 0 ? (
             <Typography variant="body2" color="text.secondary">No stations muted in this net.</Typography>
@@ -1238,7 +1238,7 @@ const Chat: React.FC<ChatProps> = ({ netId, netStartedAt, netStatus, searchQuery
               <Typography variant="subtitle2" sx={{ mt: 2 }}>Muted for everyone</Typography>
               <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
                 {canManageCheckIns
-                  ? "Hides a station's messages live for every viewer in this net. NCS/Logger only -- doesn't carry over to the net's next occurrence."
+                  ? "Hides a station's messages live for every viewer in this net. Net control, logger, the net's owner, and admins can apply one — it doesn't carry over to the net's next occurrence."
                   : "Hidden from every viewer in this net by staff."}
               </Typography>
               {netMutes.size === 0 ? (
