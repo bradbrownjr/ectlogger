@@ -129,19 +129,23 @@ shots:
     # figure that shows what that button looks like once it is up: Lower hand.
     as: KC1HILL
     wait_for: 'table:visible tbody tr'
-    element: 'div:has(> span[aria-label="Check out of net"])'
-    # Flush under the frequency chips, same as the tutorial's toolbar figure.
-    pad: 0
+    # The union of the four buttons, not the whole toolbar: a full-width
+    # toolbar strip is 1440px of content in a 330px phone column, which scales
+    # its labels down to about three pixels and makes the figure useless on
+    # exactly the device most likely to be reading it.
+    element:
+      - 'span[aria-label="Lower hand"]'
+      - 'span[aria-label="Check out of net"]'
+    pad: 6
     annotate:
       - selector: 'span[aria-label="Step away"]'
         style: box
       - selector: 'span[aria-label="Mark yourself as just listening (not transmitting)"]'
         style: box
     alt: >
-      The net toolbar as it looks once you are checked in, with the Step away
-      and Just listening buttons outlined in red, to the right of Search, Map,
-      Announcements, Notes, Topics, and Stats, and next to a highlighted Lower
-      hand button and a red Check out.
+      The right-hand end of the net toolbar once you are checked in: a
+      highlighted Lower hand button, then Step away and Just listening both
+      outlined in red, then Check out in red.
     caption: >
       The two statuses you actually reach for mid-net have their own buttons,
       so you never have to find your own row.

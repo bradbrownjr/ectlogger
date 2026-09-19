@@ -313,7 +313,7 @@
   },
   "operators/self-status-toolbar": {
     "path": "/docs/img/operators/self-status-toolbar.png",
-    "alt": "The net toolbar as it looks once you are checked in, with the Step away and Just listening buttons outlined in red, to the right of Search, Map, Announcements, Notes, Topics, and Stats, and next to a highlighted Lower hand button and a red Check out.\n",
+    "alt": "The right-hand end of the net toolbar once you are checked in: a highlighted Lower hand button, then Step away and Just listening both outlined in red, then Check out in red.\n",
     "caption": "The two statuses you actually reach for mid-net have their own buttons, so you never have to find your own row.\n",
     "page": "/docs/operators/status-and-checking-out/"
   },

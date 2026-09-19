@@ -48,9 +48,9 @@ The net's toolbar, across the top of the page, carries one-click versions of the
 - **Check out** (a red exit icon) sets Checked out, exactly as the dropdown does.
 - **Raise hand** (a hand icon, and not a status at all) flags that you want to say something without changing your status. That is useful on a net where interrupting isn't the norm and you'd rather NCS notice a raised hand than a random status change. It reads **Lower hand** once your hand is up, and it isn't offered to the acting NCS, who runs the queue rather than joining it.
 
-<figure>
+<figure class="control-figure">
   <img src="/docs/img/operators/self-status-toolbar.png"
-       alt="The net toolbar as it looks once you are checked in, with the Step away and Just listening buttons outlined in red, to the right of Search, Map, Announcements, Notes, Topics, and Stats, and next to a highlighted Lower hand button and a red Check out.">
+       alt="The right-hand end of the net toolbar once you are checked in: a highlighted Lower hand button, then Step away and Just listening both outlined in red, then Check out in red.">
   <figcaption>The two statuses you actually reach for mid-net have their own buttons, so you never have to find your own row.</figcaption>
 </figure>
 

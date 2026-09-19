@@ -102,10 +102,10 @@ A few things worth knowing before you close the tab:
 - **Or use the toolbar, which is quicker.** Now that you are checked in, the toolbar has grown **Step away** and **Just listening** buttons, which set those same two statuses in one click without you finding your row at all. Each one toggles: click it again to come back. There is a **Raise hand** button there too, for when you want Net Control to notice you without changing your status.
 - **Check out when you leave.** Click **Check out** in the toolbar. It does not remove you from the log or the map, it just tells Net Control not to wait for you.
 
-<figure>
+<figure class="control-figure">
   <img src="/docs/img/operators/self-status-toolbar.png"
-       alt="The net toolbar as it looks once you are checked in, with the Step away and Just listening buttons outlined in red, to the right of Search, Map, Announcements, Notes, Topics, and Stats, and next to a highlighted Lower hand button and a red Check out.">
-  <figcaption>The same toolbar as before, once you are on the list. Check in has been replaced by the buttons that act on your own row.</figcaption>
+       alt="The right-hand end of the net toolbar once you are checked in: a highlighted Lower hand button, then Step away and Just listening both outlined in red, then Check out in red.">
+  <figcaption>The right-hand end of the same toolbar, once you are on the list. Check in has been replaced by the buttons that act on your own row.</figcaption>
 </figure>
 
 ## Where to go next
