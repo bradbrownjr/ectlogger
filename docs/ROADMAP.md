@@ -94,6 +94,29 @@ accepted, and the self-hosting documentation is about to get more eyes on it.
 
 - [ ] Only prepend the driver when it is not already present, and cover both forms with a test
 
+### 0.12 — `POST /nets/{id}/start` has no terminal-status guard
+
+**🐛 A closed, archived, or cancelled net can be started again through the API** *(found 2026-09-19 while routing `start_net`'s staff check through the shared helper)*
+
+**Model:** Sonnet. **Think:** low.
+**Docs:** `/docs/net-control/closing-the-net/` if reopening becomes a supported action; none if it is simply blocked.
+
+`routers/nets_core.py::start_net` rejects only `ACTIVE` ("already active") and
+`LOBBY` ("already in lobby mode"). `CLOSED`, `ARCHIVED` and `CANCELLED` fall
+straight through to the lobby-or-active branch and the net is reopened, with
+`started_at` recomputed. The Dashboard never offers Start on those statuses, so
+nobody reaches it by clicking, and this is long-standing behavior rather than
+anything the 2026-09-19 staff-check change introduced.
+
+Worth a decision rather than a reflexive guard, because reopening a net closed
+by mistake, or one the inactivity timeout closed while people were still on
+frequency, is a thing an NCS would plausibly want. Today it happens to work,
+undocumented, with no confirmation and no record that the net was reopened.
+Either make it a real action with the confirmation and audit the rest of the
+lifecycle transitions have, or refuse it outright and point at `restore_net`.
+
+- [ ] Decide whether reopening is supported; then either implement it properly or return 400 for every terminal status
+
 ### 0.8 — Add swap to the production host *(operator task — needs root)*
 
 **⚠️ Manual task for Brad.** Not a code change and not something the agent can do: the
