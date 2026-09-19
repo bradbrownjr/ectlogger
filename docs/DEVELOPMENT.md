@@ -511,7 +511,7 @@ code, so it lives entirely in `app_settings` (Admin → Branding tab,
   visitor toggles, their own browser's choice always wins from then on.
 - `custom_theme_json` — a single admin-defined theme (not per-user-created),
   stored as JSON matching `CustomTheme` in `schemas.py` (mirrors
-  `ThemeDefinition`'s shape: `{name, light: {...}, dark: {...}}`). Injected
+  `ThemeDefinition`'s shape: a name plus a light and a dark palette). Injected
   at runtime as the `'custom'` key wherever `THEMES` is rendered
   (`ThemeSwatchPicker`) or resolved (`getDesignTokens` in `App.tsx`) — it is
   never added to the static `THEMES` constant itself. `'custom'` is always
