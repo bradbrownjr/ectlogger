@@ -86,7 +86,9 @@ For a single red box, let the caption do the work.
 
 Put it in `requests/<section>.yml` rather than in `shots.yml`, so the people
 writing a path are not all editing one file. Anything in `requests/*.yml` is
-merged into the manifest automatically, and duplicate ids are an error.
+merged into the manifest automatically. Ids must be unique **within a section**;
+two paths may each have their own `check-in-legend` because the output path is
+`docs/img/<section>/<id>.png`.
 
 ```yaml
 shots:
@@ -133,8 +135,9 @@ Then paste the figure into the page:
 | `as` | no | Seeded callsign to log in as. Omitted means signed out |
 | `wait_for` | no | Selector to wait for before doing anything |
 | `steps` | no | Ordered interactions: `click`, `hover`, `fill`, `press`, `wait_for`, `wait`, `scroll_to`, `evaluate` |
-| `element` | no | Capture only this element, with `pad` pixels around it |
+| `element` | no | Capture only this element, with `pad` pixels around it. A list of selectors captures their union |
 | `pad` | no | Padding around `element`, default 12 |
+| `with_online` | no | Callsigns to sign in and park on the same route first, so the app sees them as present |
 | `full_page` | no | Capture the scrolled page. Rarely right: the app shell sets `overflow: hidden` on its root, which truncates a full-page capture to one screen. Use a tall `viewport` instead |
 | `viewport` | no | `{width, height}`, default 1440x1000 |
 | `mobile` | no | Touch and mobile emulation, for the field pages |
@@ -142,6 +145,40 @@ Then paste the figure into the page:
 | `annotate` | no | Red boxes and underlines, described above |
 | `settle` | no | Milliseconds to wait after the last step, default 400 |
 | `caption` | no | Figure caption, copied into `figures.json` |
+
+### Capturing a menu together with the control that opened it
+
+MUI mounts a menu, a popover, or an autocomplete at the end of `<body>` rather
+than inside the button that opened it, so no single element contains both. Pass
+`element` a list and the clip becomes the union of every box in it:
+
+```yaml
+    element:
+      - 'table'
+      - '.MuiMenu-paper'
+```
+
+Prefer this over capturing the whole viewport. A page with three cards on it
+leaves two thirds of a 1440x1000 figure empty, which reads as a broken
+screenshot rather than a deliberate one. A shorter `viewport` is the other way
+to get the same result, and shots sharing a geometry are captured together, so
+it costs one extra browser connection no matter how many shots use it.
+
+### Figures that need somebody else to be there
+
+Some of the interface only exists when a second operator is genuinely present.
+The clearest case is the chat composer's `@mention` autocomplete: its roster is
+this net's check-ins intersected with live WebSocket presence, so in a session
+with nobody else signed in the list is empty and the menu never opens. There is
+no fixture for this. `with_online` signs the named callsigns in, parks each on
+the same route, and holds the connection open for the length of the shot:
+
+```yaml
+    with_online: [K1COVE]
+```
+
+They load before the shot's own page does, because a page reads the roster once
+on mount.
 
 ### Placeholders
 

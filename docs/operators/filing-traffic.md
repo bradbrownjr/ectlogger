@@ -17,18 +17,24 @@ You need to be [signed in](/docs/operators/account-and-profile/) to file traffic
 
 Filing a structured message is a different thing from setting your check-in status to **Has traffic** (see [Status, rechecks, and checking out](/docs/operators/status-and-checking-out/)). The status flag just tells NCS you have something to report and needs to be picked up on the air; filing the actual form is what turns that into a message with its own fields, its own handling history, and its own place in the net's records once it's relayed or delivered.
 
-## Filing from inside a net
+## Where you file from
 
-If a net has traffic handling turned on, its toolbar has a traffic button.
+There are two ways in, and which one you get depends on your role, not on the net.
+
+**The Traffic section in the top navigation bar** is the one you will use. It is always there, for every signed-in operator, and it is where your own traffic lives regardless of which net it came from.
 
 <figure class="control-figure">
-  <img src="/docs/img/operators/traffic-toolbar-button.png"
-       alt="The net toolbar, with the Traffic button outlined in red."
+  <img src="/docs/img/operators/traffic-nav-item.png"
+       alt="The top navigation bar, with the Traffic item outlined in red, between Schedule and Stats."
   >
-  <figcaption>Opens the net's Traffic panel, where filing and every message already logged for this net live side by side.</figcaption>
+  <figcaption>Traffic in the top navigation bar. When something is waiting on you, a count appears beside it.</figcaption>
 </figure>
 
-From the panel, filing a new message opens a picker of the message types this net accepts, then the form itself:
+**The net's own Traffic panel**, opened from a button on the net toolbar, shows everything filed on that one net side by side with the filing form. That button only appears for the net's owner, an admin, or someone currently holding NCS or Logger on it, so as a participant you will not see it even on a net that has traffic turned on. It is covered in [handling traffic](/docs/net-control/handling-traffic/) on the net control path.
+
+That split is deliberate rather than an oversight: traffic is visible to the people in its chain of custody plus that net's staff, so a panel listing *everyone's* traffic on a net is a staff view. Filing itself is open to anyone signed in.
+
+From either one, filing a new message opens a picker of the message types the net accepts, then the form itself:
 
 <figure>
   <img src="/docs/img/operators/traffic-composer-picker.png"

@@ -170,6 +170,14 @@ async def _build(db_path: Path, out_path: Path):
                  location="Windham, ME"),
             dict(callsign="N1BIRD", name="Sarah Quimby", role=UserRole.USER,
                  location="Gray, ME"),
+            # Deliberately checked into nothing, anywhere. A figure of the
+            # check-in dialog needs an account that can still open it, and
+            # every other roster member is already checked into the active
+            # net. Without this, capturing that figure meant checking someone
+            # out first, which rewrites the demo database as a side effect of
+            # photographing it.
+            dict(callsign="N1DUNE", name="Robin Teague", role=UserRole.USER,
+                 location="Freeport, ME"),
             # Admin -- see get_admin_user in app/dependencies.py: MFA is
             # mandatory for the ADMIN role, so this account must be seeded
             # with mfa_enabled=True + a real encrypted secret or the admin

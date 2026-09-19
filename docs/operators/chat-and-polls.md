@@ -19,14 +19,14 @@ You need to be [signed in](/docs/operators/account-and-profile/) to send a messa
 
 Type into the box at the bottom and press Enter. You can:
 
-- **@mention** a station by typing `@` and picking from the list that pops up — only stations currently checked into this net with an account are offered, since those are the only ones who can actually be notified.
+- **@mention** a station by typing `@` and picking from the list that pops up. The list is deliberately narrow: it offers only stations checked into this net who have an account *and* have the app open right now, because a highlight has to land somewhere to be worth suggesting. You can still type a callsign out by hand if the operator you want isn't in the list — the mention is resolved against everyone checked into the net, so it will be waiting for them when they next open the message.
 - **Paste an image** (PNG, JPEG, or WEBP) directly into the composer.
 - **Reply** to a specific message by hovering it and clicking the reply icon — your reply carries a small quote of the original above your text, Signal-style. Clicking the quote jumps back to the original message.
 
 <figure>
   <img src="/docs/img/operators/chat-mention-composer.png"
-       alt="The chat composer with an @mention autocomplete list open above it, showing checked-in stations to tag.">
-  <figcaption>Typing @ offers only stations actually checked into this net.</figcaption>
+       alt="The chat composer containing the text '@K', with an autocomplete list open above it offering K1COVE and KC1HILL.">
+  <figcaption>Typing the first letter or two narrows the list to matching stations.</figcaption>
 </figure>
 
 ## Reacting to a message

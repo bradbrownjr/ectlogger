@@ -85,8 +85,15 @@ if (existsSync(requestsDir)) {
   for (const file of readdirSync(requestsDir).filter((f) => f.endsWith('.yml')).sort()) {
     const loaded = yaml.load(readFileSync(resolve(requestsDir, file), 'utf8')) || {};
     for (const shot of loaded.shots || []) {
-      if (shots.some((s) => s.id === shot.id)) {
-        throw new Error(`Duplicate shot id "${shot.id}" in requests/${file}`);
+      // Unique per section, not globally: the output path is
+      // docs/img/<section>/<id>.png, so two paths can each ask for a figure
+      // called "check-in-legend" without clobbering each other. They are
+      // separate captures of the same thing, which is mild waste but far
+      // better than two paths having to negotiate a shared namespace.
+      if (shots.some((s) => s.id === shot.id && s.section === shot.section)) {
+        throw new Error(
+          `Duplicate shot id "${shot.id}" in section "${shot.section}" (requests/${file})`,
+        );
       }
       shots.push(shot);
     }
@@ -298,51 +305,50 @@ async function annotate(page, annotations) {
   await page.addStyleTag({ content: ANNOTATION_CSS });
   const drawn = [];
   for (const a of annotations) {
-    const box = await page.evaluate(({ selector, style, label, pad, labelPosition }) => {
-      // The first match is not necessarily the one on screen. The app mounts a
-      // desktop and a mobile copy of several controls, and MUI parks hidden
-      // measuring elements at -9999px; annotating one of those draws a red box
-      // off the canvas, which looks exactly like no annotation at all.
-      const candidates = [...document.querySelectorAll(selector)].filter((node) => {
-        const box = node.getBoundingClientRect();
-        if (box.width === 0 || box.height === 0) return false;
-        if (box.right < 0 || box.bottom < 0) return false;
-        const style = getComputedStyle(node);
-        return style.visibility !== 'hidden' && style.display !== 'none';
-      });
-      const el = candidates[0];
-      if (!el) return null;
-      const r = el.getBoundingClientRect();
-      if (r.width === 0 && r.height === 0) return null;
+    // Resolved through Playwright, not querySelector in the page: that way an
+    // annotation may use the same selector vocabulary as everything else in
+    // the manifest, including Playwright's own :has-text() and visible=true,
+    // instead of being quietly restricted to plain CSS.
+    const locator = page.locator(visible(a.selector)).first();
+    let rect;
+    try {
+      rect = await locator.boundingBox({ timeout: 10000 });
+    } catch (err) {
+      rect = null;
+    }
+    if (!rect) {
+      throw new Error(`Annotation target not found or not visible: ${a.selector}`);
+    }
+
+    const box = await page.evaluate(({ rect: r, style, label, pad, labelPosition }) => {
       const p = pad == null ? 4 : pad;
-      const top = r.top + window.scrollY - p;
-      const left = r.left + window.scrollX - p;
+      const top = r.y + window.scrollY - p;
+      const left = r.x + window.scrollX - p;
       const width = r.width + p * 2;
       const height = r.height + p * 2;
 
-      const box = document.createElement('div');
-      box.className = `ectdoc-annotation ${style}`;
+      const el = document.createElement('div');
+      el.className = `ectdoc-annotation ${style}`;
       if (style === 'underline') {
-        box.style.top = `${top + height - 2}px`;
-        box.style.left = `${left}px`;
-        box.style.width = `${width}px`;
-        box.style.height = '4px';
+        el.style.top = `${top + height - 2}px`;
+        el.style.left = `${left}px`;
+        el.style.width = `${width}px`;
+        el.style.height = '4px';
       } else {
-        box.style.top = `${top}px`;
-        box.style.left = `${left}px`;
-        box.style.width = `${width}px`;
-        box.style.height = `${height}px`;
+        el.style.top = `${top}px`;
+        el.style.left = `${left}px`;
+        el.style.width = `${width}px`;
+        el.style.height = `${height}px`;
       }
-      document.body.appendChild(box);
+      document.body.appendChild(el);
 
       if (label) {
         const tag = document.createElement('div');
         tag.className = 'ectdoc-annotation-label';
         tag.textContent = label;
-        // Above the box by default, below it when the box is near the top of
-        // the document and the label would be cut off.
-        const above = top > 34;
-        tag.style.top = above ? `${top - 30}px` : `${top + height + 8}px`;
+        // Above the box by default, below it when the target sits so near the
+        // top of the document that the label would be cut off.
+        tag.style.top = top > 34 ? `${top - 30}px` : `${top + height + 8}px`;
         tag.style.left = `${left}px`;
         if (labelPosition === 'right') {
           tag.style.top = `${top + Math.max(0, height / 2 - 12)}px`;
@@ -350,10 +356,10 @@ async function annotate(page, annotations) {
         }
         document.body.appendChild(tag);
       }
-      // Report document coordinates, including the label, so a clipped
-      // capture can be widened to contain the annotation. A red box drawn
-      // outside the crop is worse than no box: the figure looks finished and
-      // points at nothing.
+
+      // Document coordinates, label included, so a clipped capture can be
+      // widened to contain the annotation. A red box outside the crop is worse
+      // than no box: the figure looks finished and points at nothing.
       const labelSlack = label ? 34 : 0;
       return {
         x: left,
@@ -361,10 +367,8 @@ async function annotate(page, annotations) {
         width: width + (labelPosition === 'right' && label ? 160 : 0),
         height: height + labelSlack + (label ? 8 : 0),
       };
-    }, a);
-    if (!box) {
-      throw new Error(`Annotation target not found or not visible: ${a.selector}`);
-    }
+    }, { rect, style: a.style, label: a.label, pad: a.pad, labelPosition: a.labelPosition });
+
     drawn.push(box);
   }
   return drawn;
@@ -372,31 +376,45 @@ async function annotate(page, annotations) {
 
 // ========== STEPS ==========
 
+// Every selector in a step resolves to the visible match, for the same reason
+// annotations do: the app mounts more than one copy of most controls, and
+// clicking the hidden one times out with a message that blames the selector.
+function visible(selector) {
+  return `${expand(selector)} >> visible=true`;
+}
+
 async function runSteps(page, steps) {
   for (const step of steps) {
     const [action] = Object.keys(step);
     const value = step[action];
     switch (action) {
       case 'click':
-        await page.click(expand(value), { timeout: 15000 });
+        await page.locator(visible(value)).first().click({ timeout: 15000 });
         break;
       case 'hover':
-        await page.hover(expand(value), { timeout: 15000 });
+        await page.locator(visible(value)).first().hover({ timeout: 15000 });
         break;
-      case 'fill':
-        await page.fill(expand(value.selector), expand(value.text), { timeout: 15000 });
+      case 'fill': {
+        // "text" is the documented key; "value" is accepted because it is the
+        // obvious guess and failing on it wastes a whole capture run.
+        const text = value.text ?? value.value;
+        if (text === undefined) {
+          throw new Error('A fill step needs "text" (or "value")');
+        }
+        await page.locator(visible(value.selector)).first().fill(String(text), { timeout: 15000 });
         break;
+      }
       case 'press':
         await page.keyboard.press(value);
         break;
       case 'wait_for':
-        await page.waitForSelector(expand(value), { timeout: 20000 });
+        await page.waitForSelector(visible(value), { timeout: 20000 });
         break;
       case 'wait':
         await page.waitForTimeout(value);
         break;
       case 'scroll_to':
-        await page.locator(expand(value)).scrollIntoViewIfNeeded();
+        await page.locator(visible(value)).first().scrollIntoViewIfNeeded();
         break;
       case 'evaluate':
         await page.evaluate(value);
@@ -427,6 +445,50 @@ function geometryKey(g) {
   return `${g.width}x${g.height}@${g.deviceScaleFactor}${g.isMobile ? ' mobile' : ''}`;
 }
 
+// Browserless hands back a browser whose first tab is still settling when the
+// connection opens, and it navigates that tab to about:blank a moment later.
+// If our own goto lands in that window Chrome cancels ours, not its. Only the
+// first shot in a group can hit it, and a second attempt always wins.
+async function gotoWithRetry(page, url) {
+  const options = { waitUntil: 'networkidle', timeout: 45000 };
+  try {
+    await page.goto(url, options);
+  } catch (err) {
+    if (!/interrupted by another navigation/.test(err.message)) throw err;
+    await page.waitForTimeout(500);
+    await page.goto(url, options);
+  }
+}
+
+// Opens the same net as another operator and leaves the session connected.
+//
+// Some of the interface only exists when somebody else is actually there. The
+// @mention autocomplete is the clear case: its roster is the intersection of
+// this net's check-ins with ConnectionManager's live WebSocket presence
+// (nets_core.py's online_user_ids), so in a browser session with nobody else
+// signed in the list is empty and the menu never opens. A figure of it needs a
+// real second session, not a fixture.
+//
+// These run before the shot's own page loads, because the roster arrives with
+// the one GET /nets/{id}/stats the page makes on mount.
+async function openCompanions(browser, callsigns, route, viewport) {
+  const contexts = [];
+  for (const callsign of callsigns) {
+    const context = await browser.newContext({ viewport, colorScheme: 'light' });
+    contexts.push(context);
+    const token = await tokenFor(callsign);
+    await context.addInitScript((t) => {
+      try { window.localStorage.setItem('token', t); } catch (e) { /* private mode */ }
+    }, token);
+    const page = await context.newPage();
+    await gotoWithRetry(page, DEMO_BASE + expand(route));
+    // The socket opens after the net loads, and presence is only recorded once
+    // it is established.
+    await page.waitForTimeout(1500);
+  }
+  return contexts;
+}
+
 async function capture(browser, shot) {
   const viewport = shot.viewport || defaults.viewport || { width: 1440, height: 1000 };
   const context = await browser.newContext({
@@ -440,7 +502,13 @@ async function capture(browser, shot) {
     hasTouch: !!shot.mobile,
   });
 
+  let companions = [];
+
   try {
+    if (shot.with_online?.length) {
+      companions = await openCompanions(browser, shot.with_online, shot.route, viewport);
+    }
+
     // Everything the app stores per browser, set before any script runs: the
     // session token, the theme, and the dismissal keys for the banners and
     // dialogs that would otherwise cover a third of every screenshot.
@@ -457,8 +525,7 @@ async function capture(browser, shot) {
     const page = await context.newPage();
     page.on('pageerror', (e) => console.warn(`    page error: ${e.message}`));
 
-    const url = DEMO_BASE + expand(shot.route);
-    await page.goto(url, { waitUntil: 'networkidle', timeout: 45000 });
+    await gotoWithRetry(page, DEMO_BASE + expand(shot.route));
 
     // Re-assert and then verify. A figure captured at the wrong width is a
     // figure of a layout the reader will never see.
@@ -475,7 +542,7 @@ async function capture(browser, shot) {
     await page.addStyleTag({ content: STABILIZE_CSS });
 
     if (shot.wait_for) {
-      await page.waitForSelector(expand(shot.wait_for), { timeout: 30000 });
+      await page.waitForSelector(visible(shot.wait_for), { timeout: 30000 });
     }
     if (shot.steps) await runSteps(page, shot.steps);
 
@@ -501,24 +568,34 @@ async function capture(browser, shot) {
       // Clip rather than element.screenshot(), so a partial capture can carry
       // padding and still include an annotation drawn outside the element.
       const pad = shot.pad ?? 12;
+      // A list of selectors is allowed, and the clip is their union. A menu or
+      // an autocomplete is portaled to the end of the body rather than nested
+      // inside the control that opened it, so a figure of a control together
+      // with what it opened cannot be described by one element.
+      //
       // ">> visible=true" for the same reason annotations filter for visibility:
       // the app mounts desktop and mobile copies of whole toolbars, and the
       // hidden copy is frequently first in document order.
-      const box = await page
-        .locator(`${expand(shot.element)} >> visible=true`)
-        .first()
-        .boundingBox();
-      if (!box) throw new Error(`Element not visible: ${shot.element}`);
+      const selectors = Array.isArray(shot.element) ? shot.element : [shot.element];
+      const boxes = [];
+      for (const selector of selectors) {
+        const box = await page
+          .locator(`${expand(selector)} >> visible=true`)
+          .first()
+          .boundingBox();
+        if (!box) throw new Error(`Element not visible: ${selector}`);
+        boxes.push(box);
+      }
       const dims = await page.evaluate(() => ({
         w: document.documentElement.scrollWidth,
         h: document.documentElement.scrollHeight,
       }));
-      // Union of the requested element and everything annotated on it.
-      let left = box.x - pad;
-      let top = box.y - pad;
-      let right = box.x + box.width + pad;
-      let bottom = box.y + box.height + pad;
-      for (const a of annotationBoxes) {
+      // Union of every requested element and everything annotated on them.
+      let left = Infinity;
+      let top = Infinity;
+      let right = -Infinity;
+      let bottom = -Infinity;
+      for (const a of [...boxes, ...annotationBoxes]) {
         left = Math.min(left, a.x - pad);
         top = Math.min(top, a.y - pad);
         right = Math.max(right, a.x + a.width + pad);
@@ -542,7 +619,10 @@ async function capture(browser, shot) {
     await page.screenshot(options);
     return outPath;
   } finally {
-    if (!keepOpen) await context.close();
+    if (!keepOpen) {
+      await context.close();
+      for (const c of companions) await c.close();
+    }
   }
 }
 
@@ -586,7 +666,7 @@ async function main() {
         try {
           const path = await capture(browser, shot);
           const rel = path.slice(REPO.length + 1);
-          figures[shot.id] = {
+          figures[`${shot.section}/${shot.id}`] = {
             path: `/${rel}`,
             alt: shot.alt,
             caption: shot.caption || null,
