@@ -427,12 +427,22 @@ For a multi-phase roadmap feature (the kind with its own "Design questions to re
   import sqlite3
   conn = sqlite3.connect('backend/ectlogger.db')
   cur = conn.cursor()
-  cur.execute(\\\"SELECT id, name, status FROM nets WHERE status IN ('active','lobby')\\\")
+  cur.execute(\\\"SELECT id, name, status FROM nets WHERE UPPER(status) IN ('ACTIVE','LOBBY')\\\")
   print('Active/lobby nets:', cur.fetchall())
   cur.execute(\\\"SELECT callsign, last_active FROM users WHERE last_active > datetime('now', '-15 minutes') AND callsign != 'KC1JMH' ORDER BY last_active DESC\\\")
   print('Users active in last 15 min (excluding the developer):', cur.fetchall())
   \""
   ```
+  **`UPPER(status)`, not `status`.** `Net.status` is a SQLAlchemy `Enum(NetStatus)`, which
+  stores the member *name* (`ACTIVE`, `LOBBY`) and not the lower-case value the Python enum
+  carries, and SQLite compares strings case-sensitively. This query read
+  `status IN ('active','lobby')` until 2026-09-19, so it matched nothing and printed an empty
+  list no matter what was running — the half of the check that exists specifically to protect
+  people quietly monitoring a live net was answering "all clear" unconditionally. Same defect
+  class as the lower-case `NetRole.role` literals fixed the same day; see "Role names are upper
+  case" above. `UPPER()` is used rather than the correct literal so the check keeps working
+  whichever way a future migration stores it.
+
   `KC1JMH` is the developer's own account — its activity is this workflow running, not a real
   user, so it's excluded from the user-activity check (it's still caught by the active-net check
   if it's actually running a net). If the net query returns any rows, or the user query returns
