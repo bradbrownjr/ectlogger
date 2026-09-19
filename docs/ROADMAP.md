@@ -94,29 +94,6 @@ accepted, and the self-hosting documentation is about to get more eyes on it.
 
 - [ ] Only prepend the driver when it is not already present, and cover both forms with a test
 
-### 0.12 — `POST /nets/{id}/start` has no terminal-status guard
-
-**🐛 A closed, archived, or cancelled net can be started again through the API** *(found 2026-09-19 while routing `start_net`'s staff check through the shared helper)*
-
-**Model:** Sonnet. **Think:** low.
-**Docs:** `/docs/net-control/closing-the-net/` if reopening becomes a supported action; none if it is simply blocked.
-
-`routers/nets_core.py::start_net` rejects only `ACTIVE` ("already active") and
-`LOBBY` ("already in lobby mode"). `CLOSED`, `ARCHIVED` and `CANCELLED` fall
-straight through to the lobby-or-active branch and the net is reopened, with
-`started_at` recomputed. The Dashboard never offers Start on those statuses, so
-nobody reaches it by clicking, and this is long-standing behavior rather than
-anything the 2026-09-19 staff-check change introduced.
-
-Worth a decision rather than a reflexive guard, because reopening a net closed
-by mistake, or one the inactivity timeout closed while people were still on
-frequency, is a thing an NCS would plausibly want. Today it happens to work,
-undocumented, with no confirmation and no record that the net was reopened.
-Either make it a real action with the confirmation and audit the rest of the
-lifecycle transitions have, or refuse it outright and point at `restore_net`.
-
-- [ ] Decide whether reopening is supported; then either implement it properly or return 400 for every terminal status
-
 ### 0.8 — Add swap to the production host *(operator task — needs root)*
 
 **⚠️ Manual task for Brad.** Not a code change and not something the agent can do: the
@@ -712,6 +689,67 @@ flash: the app should have exactly one "something just happened in this row" ani
 - [ ] Whichever it is, do not build it on the arrow's broken pattern — see the sneak-in arrow bug
       above, whose root cause is exactly a flash timer whose lifetime was borrowed from another
       component's state
+
+### Reopening a Closed Net
+
+**✨ Reopen a net that was closed by mistake, or auto-closed while it was still running** *(KC1JMH, 2026-09-19)*  
+**Model:** Sonnet. One endpoint and one confirmation dialog, but it writes lifecycle
+fields that the report, the statistics pages and the ICS-309 all read, so the blast
+radius is wider than the diff.
+**Think:** think hard. Deciding which fields a reopen clears and which it must preserve
+is the entire problem; the code that follows from the decision is short.
+**Docs:** `/docs/net-control/closing-the-net/` gains the reopen path and what it does to
+the log that was already emailed. `/docs/reference/roles-and-permissions/` gains a grid
+row for who may do it.
+
+Two real situations ask for this. A net gets closed by a misclick, thirty seconds into a
+two-hour activation. Or the inactivity auto-close (shipped 2026-09-15, off by default)
+fires on a net that was genuinely quiet but still running, because a long SKYWARN or ARES
+activation can go an hour between check-ins. In both cases the net is still happening on
+the air and there is currently no way to say so in the app: check-ins, chat, and traffic
+all refuse a closed net, so the operator either loses the rest of the net or starts a
+second one and hand-merges the logs afterward.
+
+This used to happen accidentally. `start_net` listed the statuses it rejects rather than
+the ones it accepts, so `CLOSED`, `ARCHIVED` and `CANCELLED` fell through and the net was
+silently reopened with `started_at` recomputed. That was closed on 2026-09-19 (the
+endpoint now accepts `DRAFT` and `SCHEDULED` only, tests in
+`backend/tests/test_net_start_terminal_status.py`), deliberately leaving reopening
+unsupported rather than half-supported. `close_net` was tightened in the same commit for
+the same reason (it rejected `CLOSED` alone, so an `ARCHIVED` net could be closed back
+down to `CLOSED` and its log re-emailed); it now accepts `ACTIVE` and `LOBBY`, which a
+reopened net will satisfy, so nothing here needs relaxing again. The test file's docstring
+is the best surviving description of what a careless reopen damages, and is worth reading
+before building the careful one.
+
+- [ ] Its own endpoint, not a relaxation of `start_net`. Reopening and starting differ in
+      every side effect that matters, and sharing one route is what produced the accident
+- [ ] **Preserve `started_at`.** Net duration in the report, the statistics pages and the
+      ICS-309 is all derived from it, and the net did not start again, it never finished
+- [ ] Clear `closed_at` (and `auto_close_at`'s effect, if the schedule has one), or the
+      net sits ACTIVE while carrying a closure timestamp, which neither `unarchive` nor
+      `restore_net` will then touch
+- [ ] Do not re-announce. `send_net_start_notifications` is idempotent off
+      `start_notification_sent_at`, so a previously-run net is safe, but do not clear that
+      stamp as part of "resetting" the net
+- [ ] Leave a record: a system chat message naming who reopened it (the same shape the
+      auto-close message uses), and `reopened_at`/`reopened_by_id` if the after-action
+      review needs it in the export rather than only in chat
+- [ ] Decide what closing again sends. A second closure email and a second ICS-309 will
+      reach people who already have the first. Either suppress the duplicate, or mark the
+      reissued log as superseding, but do not send two logs for one net with no indication
+      which is current
+- [ ] Scope which statuses qualify. `CLOSED` is the case being asked for. `ARCHIVED`
+      should likely require `unarchive` first, and `CANCELLED` already has `restore_net`,
+      which is a different action with a correct implementation, so point at it rather
+      than absorbing it
+- [ ] Permission: active NCS or Logger on that net, plus owner and admin, matching Close
+      itself. Do not extend it to plain schedule staff, who cannot close a net either
+- [ ] Confirmation dialog, because the net reappears on every dashboard and rebroadcasts
+      to every connected viewer. State what happens rather than justifying it, per the
+      dialog-copy rule
+- [ ] Re-arm the inactivity auto-close on reopen, or a net reopened because auto-close was
+      wrong will be closed by it again a few minutes later
 
 ### Incident Operations Log & Situational Awareness Feed
 

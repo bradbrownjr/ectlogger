@@ -18,7 +18,7 @@ from sqlalchemy import select
 
 from tests.conftest import auth_headers
 from app.email.net_logs import send_ics309_log, send_net_log
-from app.models import Form, FormDefinition, Net, TrafficAction
+from app.models import Form, FormDefinition, Net, NetStatus, TrafficAction
 from app.traffic.definitions import upsert_form_definitions
 from app.traffic.log import append_entry
 
@@ -125,7 +125,12 @@ async def test_close_net_passes_traffic_summary_to_net_log_email(client, db, own
     monkeypatch.setattr("app.email_service.EmailService.send_net_log", staticmethod(_fake_send_net_log))
 
     await upsert_form_definitions(db)
-    net = Net(name="Close Summary Net", owner_id=owner.id, ics309_enabled=False, traffic_enabled=True)
+    # ACTIVE, not the model's DRAFT default: a net you close is one that is
+    # running. This fixture relied on the default until 2026-09-19, when
+    # close_net still accepted any status but CLOSED and would happily close a
+    # net that had never started, emailing a log for a net that never happened.
+    net = Net(name="Close Summary Net", owner_id=owner.id, ics309_enabled=False,
+              traffic_enabled=True, status=NetStatus.ACTIVE, started_at=datetime.utcnow())
     db.add(net)
     await db.commit()
     await db.refresh(net)

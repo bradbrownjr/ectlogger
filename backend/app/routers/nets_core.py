@@ -616,12 +616,43 @@ async def start_net(
         ):
             raise HTTPException(status_code=403, detail="Not authorized to start this net")
 
+    # Start accepts DRAFT and SCHEDULED and refuses everything else. Until
+    # 2026-09-19 it listed the statuses to reject instead -- ACTIVE and LOBBY,
+    # the two below -- so CLOSED, ARCHIVED and CANCELLED fell straight through
+    # into the lobby-or-active branch and the net was silently reopened:
+    # started_at recomputed (every duration in the report and the ICS-309 is
+    # derived from it), a second NCS role and check-in appended to a log that
+    # had already been exported and emailed at close, closed_at/cancelled_at
+    # left stamped on a net now claiming to be ACTIVE, and -- for a net
+    # cancelled before it ever started, whose start_notification_sent_at was
+    # therefore still null -- the "net is starting" announcement sent to every
+    # subscriber of a net that had been called off. Neither Start button is
+    # rendered on those statuses (NetCard.tsx, NetViewHeader.tsx), so it was
+    # only reachable by calling the API directly.
+    #
+    # Phrased as an allow-list so a status added later defaults to refused
+    # rather than inheriting the same fall-through. Reopening a closed net is a
+    # reasonable thing to want; it needs its own endpoint that clears closed_at,
+    # keeps the original started_at and leaves a record of the reopen, rather
+    # than this one quietly doing half of it. See ROADMAP "Reopen a closed net".
     if net.status == NetStatus.ACTIVE:
         raise HTTPException(status_code=400, detail="Net is already active")
-    
+
     if net.status == NetStatus.LOBBY:
         raise HTTPException(status_code=400, detail="Net is already in lobby mode")
-    
+
+    if net.status == NetStatus.CANCELLED:
+        raise HTTPException(
+            status_code=400,
+            detail="This net was cancelled. Restore it before starting it.",
+        )
+
+    if net.status not in (NetStatus.DRAFT, NetStatus.SCHEDULED):
+        raise HTTPException(
+            status_code=400,
+            detail="A net that has already been closed cannot be started again.",
+        )
+
     # Determine if we should go to LOBBY or ACTIVE
     # Go to LOBBY if there's a scheduled_start_time in the future
     now = datetime.utcnow()
@@ -864,9 +895,23 @@ async def close_net(
         raise HTTPException(status_code=403, detail="Not authorized to close this net")
 
 
+    # Same allow-list shape as start_net above, and for the same reason: this
+    # rejected only CLOSED until 2026-09-19, so an ARCHIVED net could be closed
+    # back down to CLOSED (un-archiving it and sending every subscriber a second
+    # ICS-309 for a net they already had the log for), and a DRAFT or SCHEDULED
+    # net that never ran could be "closed", emailing an empty log. Close is
+    # offered on ACTIVE and LOBBY only (NetViewHeader.tsx), which is what this
+    # now enforces. The unstarted cases belong to cancel_net, which already
+    # takes DRAFT and SCHEDULED and is the action the Dashboard offers there.
     if net.status == NetStatus.CLOSED:
         raise HTTPException(status_code=400, detail="Net is already closed")
-    
+
+    if net.status not in (NetStatus.ACTIVE, NetStatus.LOBBY):
+        raise HTTPException(
+            status_code=400,
+            detail="Only a net that is running can be closed.",
+        )
+
     # The close itself, the status broadcast, the system message and the
     # net-log email all live in services/net_closure.py so the CSV backfill
     # path can reuse them verbatim instead of growing a second copy.
