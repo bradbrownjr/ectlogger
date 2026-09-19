@@ -121,6 +121,31 @@ shots:
       Relay, Away, Has traffic, Announcements, Mobile, and Checked out.
     caption: Every status is one dropdown away, on your own row.
 
+  - id: self-status-toolbar
+    section: operators
+    page: /docs/operators/status-and-checking-out/
+    route: /nets/{{net:active}}
+    # KC1HILL is seeded checked in with a raised hand, so this is also the one
+    # figure that shows what that button looks like once it is up: Lower hand.
+    as: KC1HILL
+    wait_for: 'table:visible tbody tr'
+    element: 'div:has(> span[aria-label="Check out of net"])'
+    # Flush under the frequency chips, same as the tutorial's toolbar figure.
+    pad: 0
+    annotate:
+      - selector: 'span[aria-label="Step away"]'
+        style: box
+      - selector: 'span[aria-label="Mark yourself as just listening (not transmitting)"]'
+        style: box
+    alt: >
+      The net toolbar as it looks once you are checked in, with the Step away
+      and Just listening buttons outlined in red, to the right of Search, Map,
+      Announcements, Notes, Topics, and Stats, and next to a highlighted Lower
+      hand button and a red Check out.
+    caption: >
+      The two statuses you actually reach for mid-net have their own buttons,
+      so you never have to find your own row.
+
   # ========== Chat, polls, and topics ==========
   - id: chat-mention-composer
     section: operators

@@ -311,6 +311,12 @@
     "caption": "Directly below the password section on the same tab.",
     "page": "/docs/operators/signing-in/"
   },
+  "operators/self-status-toolbar": {
+    "path": "/docs/img/operators/self-status-toolbar.png",
+    "alt": "The net toolbar as it looks once you are checked in, with the Step away and Just listening buttons outlined in red, to the right of Search, Map, Announcements, Notes, Topics, and Stats, and next to a highlighted Lower hand button and a red Check out.\n",
+    "caption": "The two statuses you actually reach for mid-net have their own buttons, so you never have to find your own row.\n",
+    "page": "/docs/operators/status-and-checking-out/"
+  },
   "operators/status-select-dropdown": {
     "path": "/docs/img/operators/status-select-dropdown.png",
     "alt": "A check-in row's status dropdown open, listing Checked in, Listening, Relay, Away, Has traffic, Announcements, Mobile, and Checked out.\n",

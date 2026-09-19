@@ -39,10 +39,24 @@ This page is about the first and third. Roles belong to whoever is running the n
 
 That's the complete list. `StationStatus` has exactly these eight values and no others. If you've seen an older guide mention a status called "Available," that was never a real one; every status above except "Checked in" and "Checked out" is something you'd actively choose because it's true of you right now.
 
-You can change your own status at any time while you're checked in, straight from the check-in list, with no NCS or Logger involved, since it's your own row. Two of these have their own dedicated one-click buttons next to your row, separate from the status dropdown:
+You can change your own status at any time while you're checked in, straight from the check-in list, with no NCS or Logger involved, since it's your own row. The dropdown there is the only place all eight are offered.
 
-- **Step away** (the pause icon) toggles you between Checked in and Away and back, for a bathroom break or a quick errand without checking all the way out.
-- **Raise hand** (a separate hand icon, independent of status) flags that you want to say something without changing your status at all. That is useful on a net where interrupting isn't the norm and you'd rather NCS notice a raised hand than a random status change.
+The net's toolbar, across the top of the page, carries one-click versions of the ones you'll actually want mid-net, so you don't have to find your row at all:
+
+- **Step away** (a pause icon) puts you in Away, for a bathroom break or a quick errand without checking all the way out. While you're away the same button reads **Return**, and clicking it puts you back to Checked in.
+- **Just listening** (a headphones icon) puts you in Listening only, for when you're monitoring rather than transmitting. It toggles back the same way.
+- **Check out** (a red exit icon) sets Checked out, exactly as the dropdown does.
+- **Raise hand** (a hand icon, and not a status at all) flags that you want to say something without changing your status. That is useful on a net where interrupting isn't the norm and you'd rather NCS notice a raised hand than a random status change. It reads **Lower hand** once your hand is up, and it isn't offered to the acting NCS, who runs the queue rather than joining it.
+
+<figure>
+  <img src="/docs/img/operators/self-status-toolbar.png"
+       alt="The net toolbar as it looks once you are checked in, with the Step away and Just listening buttons outlined in red, to the right of Search, Map, Announcements, Notes, Topics, and Stats, and next to a highlighted Lower hand button and a red Check out.">
+  <figcaption>The two statuses you actually reach for mid-net have their own buttons, so you never have to find your own row.</figcaption>
+</figure>
+
+On a narrow screen those buttons drop their labels to save room, and then move into the **More** menu at the end of the toolbar if there still isn't space. They do the same thing from there.
+
+The other four statuses (Relay, Has traffic, Announcements, and Mobile) have no button of their own. The dropdown on your row is where you set those.
 
 ## The role badges you'll see but can't set
 

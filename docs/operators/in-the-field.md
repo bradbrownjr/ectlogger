@@ -23,7 +23,7 @@ ECTLogger is a website, not an installable app — there's no offline mode and n
 
 ## What's different on a small screen
 
-The check-in list simplifies on a phone: other stations' rows are read-only (nobody's fields change by an accidental tap while you're scrolling one-handed), and the only per-row action offered is deleting a check-in, which is staff-only anyway. Your own status is still one tap away through the status dropdown, exactly as described in [Status, rechecks, and checking out](/docs/operators/status-and-checking-out/) — that's not staff-gated, it's your row. Chat, the map, and the check-in form itself all work the same as on a desktop, just laid out for a narrower screen.
+The check-in list simplifies on a phone: other stations' rows are read-only (nobody's fields change by an accidental tap while you're scrolling one-handed), and the only per-row action offered is deleting a check-in, which is staff-only anyway. Your own status is still one tap away through the status dropdown, exactly as described in [Status, rechecks, and checking out](/docs/operators/status-and-checking-out/) — that's not staff-gated, it's your row. **Step away**, **Just listening**, and **Check out** are quicker still from the toolbar, which is worth knowing here more than anywhere: on a phone the toolbar shrinks those buttons to icons, and then tucks them into the **More** menu at its end, but they keep working and they save you hunting for your own row on a small screen. Chat, the map, and the check-in form itself all work the same as on a desktop, just laid out for a narrower screen.
 
 <figure>
   <img src="/docs/img/operators/mobile-checkin-list.png"

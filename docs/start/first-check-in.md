@@ -96,10 +96,17 @@ Your callsign appears in the check-in list, with a green check mark against it a
 
 That is it. You are logged, Net Control can see you, and the net's record will show that you took part.
 
-Two things worth doing before you close the tab:
+A few things worth knowing before you close the tab:
 
 - **Set your status honestly if it changes.** The dropdown on your own row is yours. If you step away from the radio, set **Away**; if you are only monitoring, set **Listening only**. Net Control works the list from top to bottom and calls people who say they are there.
+- **Or use the toolbar, which is quicker.** Now that you are checked in, the toolbar has grown **Step away** and **Just listening** buttons, which set those same two statuses in one click without you finding your row at all. Each one toggles: click it again to come back. There is a **Raise hand** button there too, for when you want Net Control to notice you without changing your status.
 - **Check out when you leave.** Click **Check out** in the toolbar. It does not remove you from the log or the map, it just tells Net Control not to wait for you.
+
+<figure>
+  <img src="/docs/img/operators/self-status-toolbar.png"
+       alt="The net toolbar as it looks once you are checked in, with the Step away and Just listening buttons outlined in red, to the right of Search, Map, Announcements, Notes, Topics, and Stats, and next to a highlighted Lower hand button and a red Check out.">
+  <figcaption>The same toolbar as before, once you are on the list. Check in has been replaced by the buttons that act on your own row.</figcaption>
+</figure>
 
 ## Where to go next
 
