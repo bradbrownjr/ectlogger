@@ -560,6 +560,30 @@ async def _build(db_path: Path, out_path: Path):
         await db.commit()
 
         # =================================================================
+        # NET D -- ACTIVE, ad hoc, just started, nobody assigned as NCS and
+        # nothing logged yet. This is the state a net is in for the first
+        # thirty seconds of its life, and there is no other way to
+        # photograph it: "Claim NCS" only appears on an active or lobby net
+        # that has no NCS at all, and the tutorial that walks somebody
+        # through starting their own net needs a figure of it.
+        # =================================================================
+        net_unstaffed = Net(
+            name="Bridgton Simplex Exercise",
+            description="Ad hoc simplex coverage test. Nothing logged yet.",
+            owner_id=users["W1PINE"].id,
+            status=NetStatus.ACTIVE,
+            field_config=_field_config(),
+            ics309_enabled=True,
+            started_at=now - timedelta(minutes=1),
+            frequencies=[f_simplex],
+        )
+        db.add(net_unstaffed)
+        await db.flush()
+        net_unstaffed.active_frequency_id = f_simplex.id
+        await db.commit()
+        await db.refresh(net_unstaffed)
+
+        # =================================================================
         # A truly custom (non-builtin) check-in field, so the admin Fields
         # tab shows more than just the shipped builtins.
         # =================================================================
@@ -570,10 +594,15 @@ async def _build(db_path: Path, out_path: Path):
         ))
         await db.commit()
 
+        # "key" is what scripts/docs-screenshots/capture.mjs matches a
+        # {{net:...}} placeholder against first, so every net has an explicit
+        # one. Two nets are ACTIVE now, and matching on status alone would
+        # make {{net:active}} depend on seeding order.
         manifest["nets"] = [
-            {"id": net_active.id, "name": net_active.name, "status": net_active.status.value, "template_id": net_active.template_id},
-            {"id": net_scheduled.id, "name": net_scheduled.name, "status": net_scheduled.status.value, "template_id": net_scheduled.template_id},
-            {"id": net_closed.id, "name": net_closed.name, "status": net_closed.status.value, "template_id": net_closed.template_id},
+            {"key": "active", "id": net_active.id, "name": net_active.name, "status": net_active.status.value, "template_id": net_active.template_id},
+            {"key": "scheduled", "id": net_scheduled.id, "name": net_scheduled.name, "status": net_scheduled.status.value, "template_id": net_scheduled.template_id},
+            {"key": "closed", "id": net_closed.id, "name": net_closed.name, "status": net_closed.status.value, "template_id": net_closed.template_id},
+            {"key": "unstaffed", "id": net_unstaffed.id, "name": net_unstaffed.name, "status": net_unstaffed.status.value, "template_id": net_unstaffed.template_id},
         ]
 
         current_code, _prev_code = current_totp_codes(admin_totp_secret)

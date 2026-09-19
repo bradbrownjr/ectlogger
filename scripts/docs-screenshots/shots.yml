@@ -46,29 +46,3 @@ shots:
       statuses and locations, frequency chips above the table, and the net
       control toolbar across the top.
     caption: A net in progress, seen by Net Control.
-
-  # Proves the annotation mechanism end to end. Kept as a real figure rather
-  # than a test fixture, because the net toolbar is what a new Net Control
-  # operator needs pointed out first.
-  - id: toolbar-speed-entry
-    section: net-control
-    page: /docs/net-control/speed-entry/
-    route: /nets/{{net:active}}
-    as: W1PINE
-    wait_for: 'table:visible tbody tr'
-    # The toolbar row is an unnamed flex container, so it is addressed through
-    # a control that is definitely in it rather than through an emotion-
-    # generated class name that changes whenever the styles are touched.
-    element: 'div:has(> span[aria-label="Bulk add multiple check-ins"])'
-    pad: 10
-    annotate:
-      - selector: 'span[aria-label="Bulk add multiple check-ins"]'
-        style: box
-    alt: >
-      The net control toolbar, with the leftmost button, labelled "Bulk add",
-      outlined in red. The rest of the row reads Search, Map, Traffic,
-      Announcements, Notes, Topics, Stats, Import, Edit net, Roles, Role: NCS,
-      Step away, Just listening, Check out, Close net.
-    caption: >
-      Speed entry is the "Bulk add" button at the left end of the net toolbar.
-      Its tooltip reads "Bulk add multiple check-ins".

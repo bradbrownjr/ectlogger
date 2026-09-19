@@ -1,0 +1,251 @@
+# Figure requests for the Net managers path (docs/net-managers/). See
+# ../README.md for the schema, the field reference, and the placeholder
+# syntax ({{net:active}}, {{net:closed}}, {{net:scheduled}}, {{template:weekly}}).
+#
+# Every `steps` list here stops short of any state-changing submit (Cancel
+# Net, Delete Permanently, Archive, Close net, Import CSV, Link, Save...).
+# Opening a confirmation dialog or a tab is safe to replay against the shared
+# demo instance; clicking a destructive/mutating button inside one is not,
+# since capture.mjs actually performs the click when it runs for real.
+#
+# W1PINE owns net 1 (active) and template 1 (its weekly schedule, with
+# co-manager K1COVE and rotation W1PINE > W1PORT > K1COVE). W1PORT owns
+# template 2 and net 2 (scheduled, with a real scheduled_start_time so the
+# auto-lobby control renders). K1COVE owns net 3 (closed, full log).
+
+shots:
+  # ========== Creating a net ==========
+  - id: create-net-tabs
+    section: net-managers
+    page: /docs/net-managers/creating-a-net/
+    route: /nets/{{net:active}}/edit
+    as: W1PINE
+    wait_for: 'div[aria-label="net configuration tabs"]'
+    element: 'div[aria-label="net configuration tabs"]'
+    pad: 4
+    alt: >
+      The Edit Net tab bar: Basic Info, Net Staff, Communication Plan, Net
+      Script, Announcements, and Check-In Fields.
+    caption: Every net -- ad hoc or created from a schedule -- is edited through these six tabs.
+
+  - id: create-net-frequencies
+    section: net-managers
+    page: /docs/net-managers/creating-a-net/
+    route: /nets/{{net:active}}/edit
+    as: W1PINE
+    wait_for: 'div[aria-label="net configuration tabs"]'
+    steps:
+      - click: 'div[aria-label="net configuration tabs"] button:has-text("Communication Plan")'
+      - wait_for: 'div[role="tabpanel"]:visible table'
+    element: 'div[role="tabpanel"]:visible'
+    pad: 12
+    annotate:
+      - selector: 'div[role="tabpanel"]:visible th:has-text("Use")'
+        style: box
+    alt: >
+      The Communication Plan tab, a table of frequencies with a checkbox
+      column labelled Use outlined in red, plus a row for adding a new
+      frequency.
+    caption: Check a frequency's box to make it available on this net; add a new one from the blank row at the bottom.
+
+  # ========== Recurring schedules ==========
+  - id: schedule-recurrence-options
+    section: net-managers
+    page: /docs/net-managers/recurring-schedules/
+    route: /scheduler/{{template:weekly}}/edit
+    as: W1PINE
+    wait_for: 'button[role="tab"]:has-text("Schedule")'
+    steps:
+      - click: 'button[role="tab"]:has-text("Schedule")'
+      - wait_for: 'div[role="tabpanel"]:visible'
+    element: 'div[role="tabpanel"]:visible'
+    pad: 12
+    alt: >
+      The Schedule tab of Edit Schedule, showing schedule type set to
+      Weekly, a day-of-week and time picker, an optional fifth-week
+      operator field, and the auto-lobby, auto-close, and keep-chat-open
+      toggles below it.
+    caption: >
+      Ad-Hoc, One-Time, Daily, Weekly, or Monthly -- this is also where a
+      weekly schedule's optional fifth-week operator and the auto-lobby /
+      auto-close defaults for every net it creates live.
+
+  # ========== Net staff and the NCS rotation ==========
+  - id: staff-and-rotation
+    section: net-managers
+    page: /docs/net-managers/net-staff-and-rotation/
+    route: /scheduler/{{template:weekly}}/edit
+    as: W1PINE
+    wait_for: 'button[role="tab"]:has-text("Net Staff")'
+    steps:
+      - click: 'button[role="tab"]:has-text("Net Staff")'
+      - wait_for: 'div[role="tabpanel"]:visible li'
+    element: 'div[role="tabpanel"]:visible'
+    pad: 12
+    alt: >
+      The Net Staff tab of Edit Schedule: the Schedule Manager, an
+      Authorized Net Staff list with a co-manager star and an active/inactive
+      switch per row, and an NCS Rotation list below it with up/down
+      reordering arrows.
+    caption: >
+      Staff can start and run nets the moment they're added. The rotation
+      below is optional -- it only decides who gets pre-assigned NCS ahead of time.
+
+  # ========== Scripts, notes, and announcements ==========
+  - id: net-script-editor
+    section: net-managers
+    page: /docs/net-managers/scripts-and-announcements/
+    route: /nets/{{net:active}}/edit
+    as: W1PINE
+    wait_for: 'div[aria-label="net configuration tabs"]'
+    steps:
+      - click: 'div[aria-label="net configuration tabs"] button:has-text("Net Script")'
+      - wait_for: 'div[role="tabpanel"]:visible textarea'
+    element: 'div[role="tabpanel"]:visible'
+    pad: 12
+    alt: >
+      The Net Script tab: a markdown formatting toolbar (headings, bold,
+      italic, highlight, lists, horizontal rule) above an empty script editor
+      showing example placeholder text for an opening, check-ins, and a closing.
+    caption: Net Control reads this during the net -- use the toolbar or paste in Markdown directly.
+
+  - id: net-notes-and-schedule-announcements
+    section: net-managers
+    page: /docs/net-managers/scripts-and-announcements/
+    route: /nets/{{net:active}}
+    as: W1PINE
+    wait_for: 'table:visible tbody tr'
+    element:
+      - 'button:has-text("Announcements")'
+      - 'button:has-text("Notes")'
+    pad: 10
+    annotate:
+      - selector: 'button:has-text("Announcements")'
+        style: box
+      - selector: 'button:has-text("Notes")'
+        style: box
+    alt: >
+      Two adjacent toolbar buttons, both outlined in red: Announcements,
+      which opens the schedule's standing weekly announcements, and Notes,
+      which opens this one net's own notes.
+    caption: >
+      Announcements is the schedule's standing text; Notes (stored on the net
+      as "announcements" internally) is this occurrence only. They open two
+      different panels with two different pieces of text.
+
+  # ========== Lobby and auto-close settings ==========
+  - id: lobby-and-close-toggles
+    section: net-managers
+    page: /docs/net-managers/lobby-and-auto-close/
+    route: /nets/{{net:scheduled}}/edit
+    as: W1PORT
+    wait_for: 'label:has-text("Close this net automatically after inactivity")'
+    element:
+      - 'label:has-text("Open the lobby automatically before the net")'
+      - 'label:has-text("Close this net automatically after inactivity")'
+    pad: 10
+    alt: >
+      Two switches on the Edit Net Basic Info tab, both off: "Open the lobby
+      automatically before the net" and "Close this net automatically after
+      inactivity," each with an explanatory line beneath it.
+    caption: Both settings are off by default on every net and every schedule.
+
+  # ========== Cancelling, archiving, and restoring ==========
+  - id: cancel-net-dialog
+    section: net-managers
+    page: /docs/net-managers/cancelling-and-archiving/
+    route: /dashboard
+    as: W1PORT
+    wait_for: 'button:has-text("Cancel")'
+    steps:
+      - click: 'button:has-text("Cancel")'
+      - wait_for: '.MuiDialog-paper:visible'
+    element: '.MuiDialog-paper'
+    pad: 12
+    annotate:
+      - selector: 'button:has-text("Cancel Net")'
+        style: box
+    alt: >
+      The Cancel confirmation dialog for a scheduled net, explaining that the
+      net will be marked Cancelled rather than deleted and won't be
+      recreated by the schedule, with an optional reason field and a Cancel
+      Net button outlined in red.
+    caption: Cancelling keeps the occurrence on record in Archived Nets and stops the schedule from quietly recreating it.
+
+  # ========== Reports, ICS-309, and exports ==========
+  - id: net-export-toolbar
+    section: net-managers
+    page: /docs/net-managers/reports-and-exports/
+    route: /nets/{{net:closed}}
+    as: K1COVE
+    wait_for: 'table:visible tbody tr'
+    element:
+      - 'button:has-text("Export")'
+      - 'button:has-text("ICS-309 PDF")'
+      - 'button:has-text("Report")'
+    pad: 8
+    annotate:
+      - selector: 'button:has-text("Report")'
+        style: box
+    alt: >
+      Four toolbar buttons on a closed net: Export, ICS-309, ICS-309 PDF, and
+      Report, with Report outlined in red.
+    caption: Export and both ICS-309 buttons download a single file; Report opens the full multi-section report page.
+
+  - id: net-report-header
+    section: net-managers
+    page: /docs/net-managers/reports-and-exports/
+    route: /nets/{{net:closed}}/report
+    wait_for: 'button:has-text("Export PDF")'
+    element:
+      - 'button:has-text("Export PDF")'
+      - 'button:has-text("Export PNG")'
+      - 'button:has-text("View Net")'
+    pad: 8
+    annotate:
+      - selector: 'button:has-text("Export PDF")'
+        style: box
+    alt: >
+      The Net Report page's header with three buttons: Export PDF outlined
+      in red, Export PNG, and View Net.
+    caption: >
+      The report page needs no sign-in, so the link is safe to hand to
+      anyone who needs the record. Export PNG saves each section as its own
+      image for a newsletter or social post.
+
+  # ========== Importing check-ins ==========
+  - id: csv-import-dialog
+    section: net-managers
+    page: /docs/net-managers/importing-check-ins/
+    route: /nets/{{net:scheduled}}
+    as: W1PORT
+    wait_for: 'button:has-text("Import")'
+    steps:
+      - click: 'button:has-text("Import")'
+      - wait_for: '.MuiDialog-paper:visible'
+    element: '.MuiDialog-paper'
+    pad: 12
+    annotate:
+      - selector: 'button:has-text("Import Template")'
+        style: box
+    alt: >
+      The Import Check-ins from CSV dialog on a scheduled net, warning that
+      this backfills a net that already ran, with required Actual Start Time
+      and Actual End Time fields, a Close the net at the end time checkbox,
+      and an Import Template button outlined in red.
+    caption: Download the template first -- it has the exact column headers the importer expects, with two sample rows to delete before you import.
+
+  # ========== Schedule statistics and leaderboards ==========
+  - id: schedule-stats-leaderboards
+    section: net-managers
+    page: /docs/net-managers/schedule-statistics/
+    route: /statistics/schedules/{{template:weekly}}
+    as: W1PINE
+    wait_for: 'table:visible tbody tr'
+    element: '.MuiPaper-root:has-text("Leaderboards")'
+    pad: 12
+    alt: >
+      The Leaderboards card on a schedule's statistics page, with four tabs
+      -- Check-ins, NCS, Logger, and Relay -- and a ranked table with medal
+      icons on the top three rows.
+    caption: Each leaderboard is its own ranking; a station can lead Check-ins without ever running the net as NCS.

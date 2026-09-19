@@ -1,0 +1,309 @@
+# Figure requests for the Net control path (docs/net-control/). See
+# scripts/docs-screenshots/README.md for the schema and placeholder syntax.
+# Perspective callsigns per docs/DEVELOPMENT.md's roster: W1PINE (NCS) is the
+# primary "you" of this path, K1COVE (Logger) and N1LAKE (Relay) stand in for
+# the other two net-control roles where the page is specifically about them.
+#
+# Two figures below are reused across paths rather than re-declared:
+#   - toolbar-speed-entry is already embedded by docs/reference/speed-entry-syntax.md
+#     (that page's own draft named this id and this section before this file
+#     existed); it is declared here because this file is what actually owns
+#     docs/img/net-control/*.
+#   - reference/check-in-legend (declared in requests/reference.yml, not here)
+#     is embedded again by the-net-control-desk.md and
+#     frequencies-and-multi-ncs.md by pointing at its existing image path --
+#     not redeclared, since a section owns its own ids only.
+
+shots:
+  # ========== The net control desk (tour) ==========
+  - id: command-bar-ncs
+    section: net-control
+    page: /docs/net-control/the-net-control-desk/
+    route: /nets/{{net:active}}
+    as: W1PINE
+    wait_for: 'table:visible tbody tr'
+    # No single selector wraps the whole command bar (it is a plain flex Box
+    # with no id/aria-label of its own -- see NetViewHeader.tsx), so the clip
+    # is the union of the row's first and last button, which spans the row.
+    element:
+      - 'span[aria-label="Bulk add multiple check-ins"]'
+      - 'span[aria-label="Close net"]'
+    pad: 10
+    alt: >
+      The net control command bar as Net Control Station sees it on an active
+      net, reading left to right: Bulk add, Search, Map, Traffic,
+      Announcements, Notes, Topics, Stats, Import, Edit net, Roles, Role: NCS,
+      Step away, Just listening, Check out, Close net.
+    caption: >
+      Every button here is gated by who you are and what state the net is in
+      -- a Standard participant, a Logger, and a Relay operator each see a
+      different subset of this same row.
+
+  - id: toolbar-speed-entry
+    section: net-control
+    page: /docs/net-control/speed-entry/
+    route: /nets/{{net:active}}
+    as: W1PINE
+    wait_for: 'table:visible tbody tr'
+    element:
+      - 'span[aria-label="Bulk add multiple check-ins"]'
+      - 'span[aria-label="Close net"]'
+    pad: 10
+    annotate:
+      - selector: 'span[aria-label="Bulk add multiple check-ins"]'
+        style: box
+    alt: >
+      The net control toolbar, with the leftmost button, labelled "Bulk add",
+      outlined in red. The rest of the row reads Search, Map, Traffic,
+      Announcements, Notes, Topics, Stats, Import, Edit net, Roles, Role: NCS,
+      Step away, Just listening, Check out, Close net.
+    caption: The Bulk add button, leftmost in the net control toolbar.
+
+  # ========== Logging check-ins ==========
+  - id: inline-edit-open
+    section: net-control
+    page: /docs/net-control/logging-check-ins/
+    route: /nets/{{net:active}}
+    as: W1PINE
+    wait_for: 'table:visible tbody tr'
+    steps:
+      - click: 'tr:has-text("KC1HILL") td:nth-child(3)'
+      - wait_for: 'tr:has-text("KC1HILL") input:visible'
+    element: 'tr:has-text("KC1HILL")'
+    pad: 8
+    alt: >
+      A check-in row for KC1HILL open for inline editing, with the Callsign,
+      Name, and Location cells replaced by text fields you can type into
+      directly.
+    caption: Click anywhere on a row to edit it in place. Enter or clicking away saves it; Escape cancels.
+
+  # ========== Speed entry ==========
+  - id: bulk-add-textarea
+    section: net-control
+    page: /docs/net-control/speed-entry/
+    route: /nets/{{net:active}}
+    as: W1PINE
+    wait_for: 'table:visible tbody tr'
+    steps:
+      - click: 'span[aria-label="Bulk add multiple check-ins"]'
+      - wait_for: '.MuiDialog-paper:visible'
+    element: '.MuiDialog-paper'
+    pad: 16
+    alt: >
+      The Bulk add dialog: a single multi-line text box for entering several
+      check-ins at once, with a live "Format:" line above it showing the
+      exact field order this net expects.
+    caption: The box accepts one check-in per line-segment, separated by semicolons -- see Speed entry syntax for the exact grammar.
+
+  # ========== Frequencies and multiple net controls ==========
+  - id: frequency-chips-claimed
+    section: net-control
+    page: /docs/net-control/frequencies-and-multi-ncs/
+    route: /nets/{{net:active}}
+    as: W1PINE
+    wait_for: 'table:visible tbody tr'
+    # This net has two active NCS (W1PINE, W1PORT) each claimed to a
+    # different frequency; the union of their two chips is what the page
+    # needs to show, in their two different NCS colors.
+    element:
+      - 'div[aria-label*="YOUR claimed frequency"]'
+      - 'div[aria-label*="W1PORT is monitoring"]'
+    pad: 12
+    alt: >
+      Two frequency chips in the net header, one starred as "YOUR claimed
+      frequency" in W1PINE's color, the other reading "W1PORT is monitoring
+      this frequency" in a second color.
+    caption: Each active NCS claims a different frequency chip; the color follows the operator, not the frequency.
+
+  # ========== Roles and stepping away ==========
+  - id: manage-roles-dialog
+    section: net-control
+    page: /docs/net-control/roles-and-stepping-away/
+    route: /nets/{{net:active}}
+    as: W1PINE
+    wait_for: 'table:visible tbody tr'
+    steps:
+      - click: 'span[aria-label="Manage NCS and logger roles"]'
+      - wait_for: '.MuiDialog-paper:visible'
+    element: '.MuiDialog-paper'
+    pad: 12
+    annotate:
+      - selector: '.MuiDialog-paper button:has-text("Assign Role")'
+        style: box
+    alt: >
+      The Manage NCS and Logger roles dialog: a user picker, a role picker
+      offering NCS, Logger, or Relay Station, and the Assign Role button
+      outlined in red, above a list of current assignments each with a
+      remove control.
+    caption: Assigning a role here works alongside self check-in -- either path can put someone in NCS or Logger.
+
+  - id: ncs-role-toggle
+    section: net-control
+    page: /docs/net-control/roles-and-stepping-away/
+    route: /nets/{{net:active}}
+    as: W1PINE
+    wait_for: 'table:visible tbody tr'
+    element: 'span[aria-label="Acting as NCS — click to step down to Standard"]'
+    pad: 10
+    annotate:
+      - selector: 'span[aria-label="Acting as NCS — click to step down to Standard"]'
+        style: box
+    alt: >
+      The "Role: NCS" toolbar button, outlined in red, with the tooltip
+      "Acting as NCS -- click to step down to Standard".
+    caption: This toggles your own active/standard status on the NCS role you already hold -- it never grants NCS for the first time.
+
+  # ========== Chat moderation ==========
+  - id: chat-mute-hover
+    section: net-control
+    page: /docs/net-control/chat-moderation/
+    route: /nets/{{net:active}}
+    as: K1COVE
+    wait_for: 'table:visible tbody tr'
+    steps:
+      - hover: 'li:has-text("Copy, listening on the repeater")'
+      - wait: 300
+    element: 'li:has-text("Copy, listening on the repeater")'
+    pad: 10
+    annotate:
+      - selector: 'svg[data-testid="VolumeOffIcon"]'
+        style: box
+    alt: >
+      A chat message from KC1HILL with a hover toolbar showing reaction,
+      reply, and mute icons; the mute icon is outlined in red.
+    caption: >
+      A plain click mutes a station for you only. As Logger or NCS,
+      shift-click the same icon to mute them for everyone in this net's chat.
+
+  - id: muted-stations-dialog
+    section: net-control
+    page: /docs/net-control/chat-moderation/
+    route: /nets/{{net:active}}
+    as: K1COVE
+    wait_for: 'table:visible tbody tr'
+    steps:
+      - hover: 'li:has-text("Copy, listening on the repeater")'
+      - click: 'svg[data-testid="VolumeOffIcon"]'
+      - wait_for: 'text=Manage'
+      - click: 'button:has-text("Manage")'
+      - wait_for: '.MuiDialog-paper:visible'
+    element: '.MuiDialog-paper'
+    pad: 12
+    alt: >
+      The Muted Stations dialog, listing KC1HILL under "Muted for you" and a
+      separate "Muted for everyone" section for net-wide mutes applied by
+      staff.
+    caption: Personal mutes and net-wide mutes are managed in the same dialog but never mix with each other.
+
+  # ========== Handling traffic ==========
+  - id: traffic-panel-docked
+    section: net-control
+    page: /docs/net-control/handling-traffic/
+    route: /nets/{{net:active}}
+    as: K1COVE
+    viewport:
+      width: 1440
+      height: 700
+    wait_for: 'table:visible tbody tr'
+    steps:
+      - click: 'span[aria-label="View and file traffic for this net"]'
+      - wait_for: '[title="File traffic on this net"]:visible'
+    alt: >
+      The Traffic panel docked beside the check-in list, showing a disposition
+      summary strip and a list including an ICS-213 form filed for K1CAMP.
+    caption: The Traffic panel opens beside the check-in list -- filing and viewing traffic never leaves the net view.
+
+  - id: file-traffic-dialog
+    section: net-control
+    page: /docs/net-control/handling-traffic/
+    route: /nets/{{net:active}}
+    as: K1COVE
+    wait_for: 'table:visible tbody tr'
+    steps:
+      - click: 'span[aria-label="View and file traffic for this net"]'
+      - wait_for: '[title="File traffic on this net"]:visible'
+      - click: '[title="File traffic on this net"]'
+      - wait_for: '.MuiDialog-paper:visible'
+    element: '.MuiDialog-paper'
+    pad: 16
+    alt: >
+      The File traffic dialog's form-type picker, showing cards for the
+      message types this net has enabled.
+    caption: Only the form types this net turned on appear here; the standalone Traffic section can always reach the rest.
+
+  # ========== Multiple monitors and wide screens ==========
+  - id: panel-window-controls
+    section: net-control
+    page: /docs/net-control/multiple-monitors/
+    route: /nets/{{net:active}}
+    as: K1COVE
+    viewport:
+      width: 1440
+      height: 700
+    wait_for: 'table:visible tbody tr'
+    steps:
+      - click: 'span[aria-label="View and file traffic for this net"]'
+      - wait_for: '[title="Detach panel"]:visible'
+    element:
+      - '[title="Detach panel"]'
+      - '[title="Open in new window"]'
+      - '[title="Minimize"]'
+      - '[title="Close"]'
+    pad: 10
+    annotate:
+      - selector: '[title="Open in new window"]'
+        style: box
+    alt: >
+      A docked panel's title bar controls: detach, open in new window
+      (outlined in red), minimize, and close.
+    caption: Every docked panel -- Chat, Activity Log, Map, Coverage, Traffic -- carries this same row.
+
+  - id: popped-out-checkins
+    section: net-control
+    page: /docs/net-control/multiple-monitors/
+    route: /nets/{{net:active}}/pane/check-ins
+    as: W1PINE
+    viewport:
+      width: 1100
+      height: 750
+    wait_for: 'table:visible tbody tr'
+    alt: >
+      The check-in list open in its own bare browser window, with no
+      navigation bar, ready to be dragged onto a second monitor.
+    caption: A popped-out pane is a real second window with its own connection to the net -- move it to another monitor and it keeps working on its own.
+
+  # ========== Closing the net ==========
+  - id: close-net-dialog
+    section: net-control
+    page: /docs/net-control/closing-the-net/
+    route: /nets/{{net:active}}
+    as: W1PINE
+    wait_for: 'table:visible tbody tr'
+    steps:
+      - click: 'span[aria-label="Close net"]'
+      - wait_for: '.MuiDialog-paper:visible'
+    element: '.MuiDialog-paper'
+    pad: 12
+    annotate:
+      - selector: '.MuiDialog-paper button:has-text("Close Net")'
+        style: box
+    alt: >
+      The Close Net confirmation dialog: "Are you sure you want to close this
+      net? This will end the session and send log emails to subscribers,"
+      with the Close Net button outlined in red.
+    caption: There is no scheduled undo for this -- see Closing the net for what to do if you close one by mistake.
+
+  - id: closed-net-exports
+    section: net-control
+    page: /docs/net-control/closing-the-net/
+    route: /nets/{{net:closed}}
+    as: KC1HILL
+    wait_for: 'table:visible tbody tr'
+    element:
+      - 'span[aria-label="Export check-ins to CSV"]'
+      - 'span[aria-label="Generate comprehensive net report (PDF)"]'
+    pad: 10
+    alt: >
+      The toolbar on a closed net, as seen by a station with no staff role:
+      Export, ICS-309, ICS-309 PDF, and Report.
+    caption: Once a net is closed, its exports are open to anyone who can see the net -- only Archive and Delete stay staff-only.
