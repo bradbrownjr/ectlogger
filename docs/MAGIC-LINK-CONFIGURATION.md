@@ -1,4 +1,16 @@
-# Magic Link Configuration
+---
+title: Magic link configuration
+summary: How long a login link stays valid, how it is signed, and why the default window is longer than it looks like it should be.
+kind: Reference
+audience: Server operators
+owner: KC1JMH
+revised: 2026-09-19
+review_by: 2027-09-19
+applies_to: ECTLogger, self-hosted
+permalink: /docs/MAGIC-LINK-CONFIGURATION/
+---
+
+# Magic link configuration
 
 ## Overview
 

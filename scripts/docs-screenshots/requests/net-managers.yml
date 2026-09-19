@@ -54,10 +54,18 @@ shots:
     page: /docs/net-managers/recurring-schedules/
     route: /scheduler/{{template:weekly}}/edit
     as: W1PINE
+    # Taller than the default so the tab panel's last row is not sliced in half.
+    viewport:
+      width: 1440
+      height: 1300
     wait_for: 'button[role="tab"]:has-text("Schedule")'
     steps:
       - click: 'button[role="tab"]:has-text("Schedule")'
-      - wait_for: 'div[role="tabpanel"]:visible'
+      # Not just the panel: the form mounts with its own defaults and only then
+      # fills in from the schedule, so a capture taken on the panel appearing
+      # showed this weekly schedule as "Ad-Hoc (Start Manually)". Day of Week
+      # only exists once the loaded value has actually landed in the field.
+      - wait_for: 'label:text-is("Day of Week")'
     element: 'div[role="tabpanel"]:visible'
     pad: 12
     alt: >
@@ -76,12 +84,19 @@ shots:
     page: /docs/net-managers/net-staff-and-rotation/
     route: /scheduler/{{template:weekly}}/edit
     as: W1PINE
+    # Tall enough for the whole panel: the rotation's third row was sliced in
+    # half at the default height.
+    viewport:
+      width: 1440
+      height: 1500
     wait_for: 'button[role="tab"]:has-text("Net Staff")'
     steps:
       - click: 'button[role="tab"]:has-text("Net Staff")'
       - wait_for: 'div[role="tabpanel"]:visible li'
     element: 'div[role="tabpanel"]:visible'
-    pad: 12
+    # No padding, or the app bar sitting directly above the panel puts a strip
+    # of solid blue across the top of the figure.
+    pad: 0
     alt: >
       The Net Staff tab of Edit Schedule: the Schedule Manager, an
       Authorized Net Staff list with a co-manager star and an active/inactive
@@ -129,9 +144,8 @@ shots:
       which opens the schedule's standing weekly announcements, and Notes,
       which opens this one net's own notes.
     caption: >
-      Announcements is the schedule's standing text; Notes (stored on the net
-      as "announcements" internally) is this occurrence only. They open two
-      different panels with two different pieces of text.
+      Announcements is the schedule's standing text; Notes is this occurrence
+      only. They open two different panels with two different pieces of text.
 
   # ========== Lobby and auto-close settings ==========
   - id: lobby-and-close-toggles
@@ -140,9 +154,12 @@ shots:
     route: /nets/{{net:scheduled}}/edit
     as: W1PORT
     wait_for: 'label:has-text("Close this net automatically after inactivity")'
+    # The wrapping Box, not the label: the explanatory line under each switch is
+    # a sibling of the label rather than part of it, so clipping to the labels
+    # slices both sentences in half.
     element:
-      - 'label:has-text("Open the lobby automatically before the net")'
-      - 'label:has-text("Close this net automatically after inactivity")'
+      - 'div:has(> label:has-text("Open the lobby automatically before the net"))'
+      - 'div:has(> label:has-text("Close this net automatically after inactivity"))'
     pad: 10
     alt: >
       Two switches on the Edit Net Basic Info tab, both off: "Open the lobby
@@ -241,6 +258,12 @@ shots:
     page: /docs/net-managers/schedule-statistics/
     route: /statistics/schedules/{{template:weekly}}
     as: W1PINE
+    # Tall enough that the card's last row and its bottom edge are both in the
+    # frame: at the default 1000 the clip stops at the foot of the page and the
+    # figure ends on half a table row, which reads as a broken screenshot.
+    viewport:
+      width: 1440
+      height: 1500
     wait_for: 'table:visible tbody tr'
     element: '.MuiPaper-root:has-text("Leaderboards")'
     pad: 12

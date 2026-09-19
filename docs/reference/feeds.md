@@ -5,13 +5,14 @@ kind: Reference
 audience: Everyone
 owner: KC1JMH
 revised: 2026-09-19
+review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/reference/feeds/
 ---
 
 # Feeds and calendars
 
-ECTLogger publishes two plain RSS feeds. Both are public and unauthenticated -- there is no login token in the URL, nothing to revoke, and nothing that identifies who is subscribed. Point any ordinary RSS reader at either address.
+ECTLogger publishes two plain RSS feeds. Both are public and unauthenticated — there is no login token in the URL, nothing to revoke, and nothing that identifies who is subscribed. Point any ordinary RSS reader at either address.
 
 <div class="table-scroll" markdown="1">
 
@@ -26,9 +27,9 @@ Note the path: these are served from `/feed/...`, not `/api/feed/...` like the r
 
 ## Where to find the address
 
-Neither feed is buried in settings -- both have a visible RSS icon right where you'd look for the thing they cover:
+Neither feed is buried in settings — both have a visible RSS icon right where you'd look for the thing they cover:
 
 - The **Schedule** page has an RSS icon (tooltip: "Subscribe to upcoming nets (RSS)") next to the schedule header.
 - The changelog dialog (opened from **About ECTLogger** in the Help menu, or the notification badge on first login after a release) has an RSS icon (tooltip: "Subscribe to changelog (RSS)") next to its PDF download buttons.
 
-Copy the link target from either icon into your feed reader rather than typing the address by hand -- the exact host is your instance's backend, which may differ from the address you use to browse the app.
+Copy the link target from either icon into your feed reader rather than typing the address by hand — the exact host is your instance's backend, which may differ from the address you use to browse the app.

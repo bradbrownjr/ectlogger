@@ -1296,7 +1296,7 @@ themselves; nothing in this phase sends anything.
 2. Traffic rows in `export_net_ics309` and `send_ics309_log`, **metadata only, never body**.
 3. Net-close email and PDF report summary lines.
 4. Admin tab `AdminTrafficTab.tsx`.
-5. Docs: `README.md` feature list, `docs/USER-GUIDE.md` operator walkthrough,
+5. Docs: `README.md` feature list, `docs/operators/filing-traffic/` and `docs/net-control/handling-traffic/`,
    `docs/CHANGELOG.md` plus `frontend/src/changelog.json`, DEVELOPMENT.md WebSocket table and
    project-structure tree, and removal of the roadmap section per the pruning policy.
 

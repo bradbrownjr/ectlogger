@@ -5,6 +5,7 @@ kind: Explanation
 audience: Server operators
 owner: KC1JMH
 revised: 2026-09-18
+review_by: 2027-09-18
 applies_to: ECTLogger, self-hosted
 permalink: /docs/self-hosting/
 ---
@@ -58,3 +59,47 @@ Be honest about the commitment. An instance needs TLS that renews, email that ge
 ## Upgrading
 
 Deploy by pulling from the repository, not by copying files onto the server. Copying causes drift between what is deployed and what is in version control, and the next deploy silently ships whatever the repository thinks is there. [Production deployment](/docs/PRODUCTION-DEPLOYMENT/) has the procedure, including the part people skip: rebuilding the frontend. A `git pull` alone does not change a single pixel of what users see, because the frontend is a static build.
+
+## Backing it up
+
+Two things need backing up, and they are both small.
+
+**The database.** On the default SQLite setup that is one file:
+
+```bash
+cp backend/ectlogger.db ~/backups/ectlogger-$(date +%Y%m%d).db
+```
+
+On PostgreSQL, `pg_dump ectlogger > ~/backups/ectlogger-$(date +%Y%m%d).sql`. [Production deployment](/docs/PRODUCTION-DEPLOYMENT/) has the same commands in context, alongside the rest of the operational checklist.
+
+**The configuration**, which is not in version control and is the part people forget:
+
+```bash
+cp backend/.env frontend/.env ~/backups/
+```
+
+A backup you have never restored is a hope, not a backup. Restore one into a scratch directory occasionally and start the application against it.
+
+## Moving between environments
+
+`migrate.sh` (and `migrate.ps1` on Windows) rewrites the URLs in your `.env` files when an instance changes address — moving from a LAN IP to a real domain, say. It configures URLs; it does not touch the database schema.
+
+```bash
+./migrate.sh --host ect.example.com
+```
+
+Database schema changes are separate, and are individual scripts in `backend/migrations/` run one at a time. A fresh installation never needs them: it gets the current schema directly.
+
+## When something is wrong
+
+| What you see | Where to look |
+|---|---|
+| Nobody can log in; magic links never arrive | [Email deliverability](/docs/EMAIL-DELIVERABILITY/) first, then your SMTP credentials. Gmail needs an App Password, not the account password |
+| The service will not start, port already in use | Something else is on 8000 or 3000. `ss -lptn 'sport = :8000'` |
+| `Permission denied` running a script | `chmod +x *.sh` |
+| The frontend build is killed partway through | Out of memory. Add swap, or build elsewhere and ship the artifact — see [Production deployment](/docs/PRODUCTION-DEPLOYMENT/) |
+| A page loads but nothing on it works | The backend is down or unreachable through the proxy. `journalctl -u ectlogger -f` |
+
+The running instance also serves its own API documentation at `/docs` on the backend port, which is the fastest way to confirm the backend is alive and answering.
+
+If none of that gets you there, [open an issue](https://github.com/bradbrownjr/ectlogger/issues) with the relevant lines from `journalctl -u ectlogger`.

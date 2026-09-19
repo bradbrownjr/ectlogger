@@ -1,4 +1,16 @@
-# Privacy Policy
+---
+title: Privacy
+summary: What ECTLogger stores about you, who can see it, what leaves the instance, and how to get it removed.
+kind: Explanation
+audience: Everyone
+owner: KC1JMH
+revised: 2026-09-19
+review_by: 2027-09-19
+applies_to: ECTLogger, hosted and self-hosted
+permalink: /docs/PRIVACY/
+---
+
+# Privacy
 
 ECTLogger is free, open-source net logging software built for Emergency Communications
 Teams and SKYWARN spotter nets. This page explains, in plain terms, what data an ECTLogger

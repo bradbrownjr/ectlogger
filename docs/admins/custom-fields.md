@@ -5,6 +5,7 @@ kind: How-to
 audience: Users holding the Admin role
 owner: KC1JMH
 revised: 2026-09-19
+review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/admins/custom-fields/
 ---
@@ -15,13 +16,13 @@ Every field a check-in form can ask for — Name, Location, Spotter #, Weather, 
 
 <figure>
   <img src="/docs/img/admins/fields-table.png"
-       alt="The check-in fields table, listing the built-in fields and one custom field, &quot;Shelter Capacity&quot;, with its archive icon outlined in red.">
-  <figcaption>Built-in fields (grey "Built-in" chip) can be edited but never archived. A custom field like Shelter Capacity can be archived instead of deleted, so past check-ins that used it stay readable.</figcaption>
+       alt="The check-in fields table with columns Name, Label, Type, Default Enabled, Default Required, Status, and Actions. Eight rows are marked Built-in and carry an edit pencil only; one row, shelter_capacity / Shelter Capacity, is marked Custom and carries an archive icon as well, outlined in red.">
+  <figcaption>The Status column is what tells the two apart. A field marked Built-in can be edited but never archived; a Custom field like Shelter Capacity can be archived instead of deleted, so past check-ins that used it stay readable.</figcaption>
 </figure>
 
 ## What ships built in
 
-Eight fields come with the instance and can never be archived: Name and Location (on by default — practically every net wants these), and Spotter #, Weather, Power Source, Power, Feedback, and Notes (off by default, since not every net needs them). You can still edit a built-in field's label, placeholder text, and defaults — you just can't remove it from the list entirely.
+Eight fields come with the instance and can never be archived: Name and Location (on by default — practically every net wants these), and Spotter #, Weather, Power Src, Power, Feedback, and Notes (off by default, since not every net needs them). You can still edit a built-in field's label, placeholder text, and defaults — you just can't remove it from the list entirely.
 
 ## Adding a field
 

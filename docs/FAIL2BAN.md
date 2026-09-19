@@ -1,4 +1,16 @@
-# Fail2Ban Integration for ECTLogger
+---
+title: fail2ban
+summary: Banning the addresses that keep trying: the filters, the jail, and how to verify it is actually catching anything.
+kind: How-to
+audience: Server operators
+owner: KC1JMH
+revised: 2026-09-19
+review_by: 2027-09-19
+applies_to: ECTLogger, self-hosted
+permalink: /docs/FAIL2BAN/
+---
+
+# fail2ban
 
 ECTLogger includes Fail2Ban-compatible security logging to protect against brute-force authentication attacks.
 

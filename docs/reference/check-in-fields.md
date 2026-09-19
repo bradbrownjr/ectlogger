@@ -5,6 +5,7 @@ kind: Reference
 audience: Everyone
 owner: KC1JMH
 revised: 2026-09-19
+review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/reference/check-in-fields/
 ---
@@ -30,24 +31,24 @@ Each of these can be independently enabled or disabled for a given net, and (if 
 | Spotter # | Free text (SKYWARN spotter number) | No | No |
 | Weather Observation | Free text | No | No |
 | Power Src | Free text (e.g. "Generator", "Battery") | No | No |
-| Power | Free text (e.g. "100W", "50W mobile") -- a separate field from Power Src, not the same thing | No | No |
+| Power | Free text (e.g. "100W", "50W mobile") — a separate field from Power Src, not the same thing | No | No |
 | Notes | Free text, multi-line | No | No |
 
 </div>
 
 A field that is disabled for a net never appears on that net's check-in form or in its check-in table, whatever an individual operator's account settings are. A field marked required blocks submission of the check-in form until it's filled in.
 
-There is also a "Feedback" field defined in the same settings and storage as the fields above, and the check-in list can be told to require it, but neither the check-in dialog nor the inline check-in row currently has an input for it -- as of this writing it can only actually be filled in through [Bulk add](/docs/reference/speed-entry-syntax/) or a direct API call, never the ordinary check-in form. If you turn it on expecting a text box to appear, that's a real gap, not something you're missing.
+There is also a "Feedback" field defined in the same settings and storage as the fields above, and the check-in list can be told to require it, but neither the check-in dialog nor the inline check-in row currently has an input for it — as of this writing it can only actually be filled in through [Bulk add](/docs/reference/speed-entry-syntax/) or a direct API call, never the ordinary check-in form. If you turn it on expecting a text box to appear, that's a real gap, not something you're missing.
 
 ## Admin-defined custom fields
 
-An admin can define additional fields (text, a multi-line text area, a number, or a fixed list of choices) from the admin panel. Once defined, a custom field is enabled and required per net using the exact same two checkboxes as the built-in fields above -- there is no separate mechanism or separate settings screen for custom fields versus built-in ones. A net's check-in form renders every enabled field, built-in and custom, from that single list.
+An admin can define additional fields (text, a multi-line text area, a number, or a fixed list of choices) from the admin panel. Once defined, a custom field is enabled and required per net using the exact same two checkboxes as the built-in fields above — there is no separate mechanism or separate settings screen for custom fields versus built-in ones. A net's check-in form renders every enabled field, built-in and custom, from that single list.
 
 Two fields buried in the model layer, `CustomField` and `CustomFieldValue`, look like an older custom-field system but are dead code: nothing in the API or the frontend references them. The real mechanism is the admin-defined field list described above, served at `GET /api/settings/fields`.
 
 ## Topic of the Week and Poll responses
 
-When a net has Topic of the Week or Poll enabled (schedule- or net-level features, not check-in fields), the check-in form gains a locked response field for whichever is turned on. These aren't part of the enable/require field list -- they follow whether the feature itself is on.
+When a net has Topic of the Week or Poll enabled (schedule- or net-level features, not check-in fields), the check-in form gains a locked response field for whichever is turned on. These aren't part of the enable/require field list — they follow whether the feature itself is on.
 
 ## Frequencies
 

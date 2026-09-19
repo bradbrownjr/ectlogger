@@ -1,4 +1,16 @@
-# ECTLogger - Manual Installation Guide
+---
+title: Manual installation
+summary: Every step the quick start performs, done by hand, for when you need to understand or adapt what it did.
+kind: How-to
+audience: Server operators
+owner: KC1JMH
+revised: 2026-09-19
+review_by: 2027-09-19
+applies_to: ECTLogger, self-hosted
+permalink: /docs/MANUAL-INSTALLATION/
+---
+
+# Manual installation
 
 > 📌 **New users**: Start with **[Quick Start Guide](QUICKSTART.md)** for an easier automated setup!
 

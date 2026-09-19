@@ -5,6 +5,7 @@ kind: Explanation
 audience: NCS, Logger, and Relay operators
 owner: KC1JMH
 revised: 2026-09-18
+review_by: 2027-09-18
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-control/
 ---

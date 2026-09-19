@@ -5,6 +5,7 @@ kind: Explanation
 audience: Users holding the Admin role
 owner: KC1JMH
 revised: 2026-09-18
+review_by: 2027-09-18
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/admins/
 ---
@@ -21,7 +22,7 @@ That last part is the reason this is its own path. "Administrator" gets used for
 - See every net on the instance, including ones they have no part in
 - Define the custom check-in fields that nets can ask for
 - Maintain the shared frequency list everyone builds nets from
-- Set the instance's name, logo, and default color theme
+- Set the instance's logo and default color theme
 - Put a banner across the top of the site for everyone
 - Set the security policy: lockouts, session length, and what MFA is required for
 - Decide which traffic form types the instance offers
@@ -40,7 +41,7 @@ That last part is the reason this is its own path. "Administrator" gets used for
 
 **[Shared frequencies](/docs/admins/frequencies/)** — The instance-wide list of repeaters, simplex frequencies, and talkgroups that net creators pick from, so everyone spells the same repeater the same way.
 
-**[Branding and themes](/docs/admins/branding-and-themes/)** — The instance name, the logo, and the default color theme, and what individual users can override for themselves.
+**[Branding and themes](/docs/admins/branding-and-themes/)** — The logo and the default color theme, and what individual users can override for themselves.
 
 **[The maintenance banner](/docs/admins/maintenance-banner/)** — Telling everyone the site is about to go down, and the difference between that and the update notice a user sees after a deploy.
 

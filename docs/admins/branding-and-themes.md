@@ -5,6 +5,7 @@ kind: How-to
 audience: Users holding the Admin role
 owner: KC1JMH
 revised: 2026-09-19
+review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/admins/branding-and-themes/
 ---
@@ -17,11 +18,11 @@ The **Branding** tab controls how the instance looks for everyone who hasn't alr
 
 <figure>
   <img src="/docs/img/admins/branding-default-theme.png"
-       alt="The Default Theme card on the Branding tab, showing a row of color swatches and a &quot;Set as System Default&quot; button outlined in red.">
+       alt="The Default Theme card on the Branding tab, with five named colour swatches — ECTLogger Blue (currently selected, ticked), Ocean, Forest, Sunset, and Berry — and a &quot;Set as System Default&quot; button outlined in red, greyed out because the selected swatch is already the default.">
   <figcaption>Applies only to visitors who have never picked a theme of their own in Profile → Settings.</figcaption>
 </figure>
 
-Pick a swatch and click **Set as System Default**. This is genuinely just a default: anyone who has picked a personal color theme from their own Profile → Settings keeps that choice, and this only affects people who never have.
+Pick a swatch and click **Set as System Default**. The button stays greyed out while the swatch already in force is the one selected, which is why it looks disabled the first time you open the tab. This is genuinely just a default: anyone who has picked a personal color theme from their own Profile → Settings keeps that choice, and this only affects people who never have.
 
 ## Default appearance
 

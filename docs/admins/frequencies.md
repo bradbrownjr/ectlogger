@@ -5,6 +5,7 @@ kind: How-to
 audience: Users holding the Admin role
 owner: KC1JMH
 revised: 2026-09-19
+review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/admins/frequencies/
 ---
@@ -31,7 +32,7 @@ Editing an entry updates it everywhere it's used, immediately — useful for fix
 
 <figure>
   <img src="/docs/img/admins/frequency-in-use-row.png"
-       alt="A frequency row (146.940 MHz) in the shared frequency list, with its &quot;Nets Using&quot; count showing 1 or more and its delete icon, outlined in red, greyed out and disabled.">
+       alt="A frequency row in the shared frequency list reading 146.940, FM, &quot;Example County ARES Repeater (PL 100.0)&quot;, with a &quot;Nets Using&quot; count of 3 and a delete icon, outlined in red, greyed out and disabled.">
   <figcaption>A frequency already picked by at least one net can be edited but not deleted. The count shows how many nets would be affected.</figcaption>
 </figure>
 

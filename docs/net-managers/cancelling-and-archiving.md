@@ -5,6 +5,7 @@ kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
 revised: 2026-09-19
+review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/cancelling-and-archiving/
 ---
@@ -15,7 +16,7 @@ Three different actions live behind the trash-can icon on a net's card, and whic
 
 ## Cancelling a net that hasn't happened
 
-A **draft** or **scheduled** net -- one that hasn't started -- can be **cancelled** instead of deleted. This is deliberate: deleting the row outright used to make the recurring schedule think that slot had never been filled and quietly recreate it, reminder email and all. Cancelling marks the net **Cancelled** with an optional reason, removes it from the active dashboard, and keeps it on record in **Archived Nets** -- and the schedule will never recreate that specific occurrence on its own.
+A **draft** or **scheduled** net — one that hasn't started — can be **cancelled** instead of deleted. This is deliberate: deleting the row outright used to make the recurring schedule think that slot had never been filled and quietly recreate it, reminder email and all. Cancelling marks the net **Cancelled** with an optional reason, removes it from the active dashboard, and keeps it on record in **Archived Nets** — and the schedule will never recreate that specific occurrence on its own.
 
 <figure>
   <img src="/docs/img/net-managers/cancel-net-dialog.png"
@@ -27,15 +28,15 @@ A **draft** or **scheduled** net -- one that hasn't started -- can be **cancelle
 
 ## Archiving a net that's finished
 
-A **closed** net can be **archived** to clear it off the active dashboard while keeping every check-in, chat message, and export exactly as it was -- archiving hides, it never deletes. **Unarchive** reverses it, putting the net back to Closed. If a net is still active or in the lobby when you decide you want it off the list, **Close & Archive** does both steps at once: it closes the net normally (the full log is still emailed as usual) and immediately archives the result.
+A **closed** net can be **archived** to clear it off the active dashboard while keeping every check-in, chat message, and export exactly as it was — archiving hides, it never deletes. **Unarchive** reverses it, putting the net back to Closed. If a net is still active or in the lobby when you decide you want it off the list, **Close & Archive** does both steps at once: it closes the net normally (the full log is still emailed as usual) and immediately archives the result.
 
 ## Deleting
 
-Deleting is the one option here that isn't reversible, and it removes every check-in, every chat message, and every report tied to that net permanently. It's offered as a deliberate alternative next to Cancel and Archive, not the default -- if you only want a net off the active list, Cancel (for one that hasn't run) or Archive (for one that has) keeps the record and gets you the same tidy dashboard.
+Deleting is the one option here that isn't reversible, and it removes every check-in, every chat message, and every report tied to that net permanently. It's offered as a deliberate alternative next to Cancel and Archive, not the default — if you only want a net off the active list, Cancel (for one that hasn't run) or Archive (for one that has) keeps the record and gets you the same tidy dashboard.
 
 ## Who can do this
 
-The net's owner, any administrator, whoever currently holds an active NCS role on that specific net, and -- for a net created from a schedule -- that schedule's owner or an active co-manager.
+The net's owner, any administrator, whoever currently holds an active NCS role on that specific net, and — for a net created from a schedule — that schedule's owner or an active co-manager.
 
 ## Related
 

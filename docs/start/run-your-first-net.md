@@ -5,6 +5,7 @@ kind: Tutorial
 audience: Anyone taking a turn at Net Control
 owner: KC1JMH
 revised: 2026-09-19
+review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/start/run-your-first-net/
 ---

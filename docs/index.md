@@ -5,6 +5,7 @@ kind: Explanation
 audience: Everyone
 owner: KC1JMH
 revised: 2026-09-18
+review_by: 2027-09-18
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/
 ---

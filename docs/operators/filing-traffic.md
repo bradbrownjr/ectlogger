@@ -5,6 +5,7 @@ kind: How-to
 audience: Operators
 owner: KC1JMH
 revised: 2026-09-19
+review_by: 2027-09-19
 applies_to: ECTLogger, hosted instance
 permalink: /docs/operators/filing-traffic/
 ---
@@ -38,7 +39,7 @@ From either one, filing a new message opens a picker of the message types the ne
 
 <figure>
   <img src="/docs/img/operators/traffic-composer-picker.png"
-       alt="The traffic composer's form-type picker, showing cards for ARRL Radiogram, ICS-213 General Message, and an RRI weather strip.">
+       alt="The traffic composer's form-type picker, showing five cards: ARRL Radiogram, GYX-CAR SKYWARN Report, ICS-213 General Message Form, RRI Strip (General), and RRI WXOBS Weather Observation.">
   <figcaption>Only the types a net's manager enabled are offered here — asking for an unusual type is still possible through the standalone Traffic section below.</figcaption>
 </figure>
 

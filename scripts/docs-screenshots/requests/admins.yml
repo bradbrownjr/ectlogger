@@ -22,20 +22,22 @@ shots:
     # delete themselves), which would make for a confusing "click here" figure.
     element: 'tr:has-text("W1PINE")'
     pad: 8
+    # No labels on these three. The icons sit about 30px apart and the tags
+    # are 80-130px wide, so they overlapped each other and the row above into
+    # an unreadable stack. The alt and the caption name them in order instead.
     annotate:
       - selector: 'tr:has-text("W1PINE") button[title="Change Role"]'
         style: box
-        label: 'Change role'
       - selector: 'tr:has-text("W1PINE") button[title="Ban User"]'
         style: box
-        label: 'Ban'
       - selector: 'tr:has-text("W1PINE") button[title="Reset Password"]'
         style: box
-        label: 'Reset password'
     alt: >
-      A row in the admin Users table for W1PINE, with three action icons
-      outlined in red and labeled: a pencil labeled "Change role", a block
-      icon labeled "Ban", and a key icon labeled "Reset password".
+      A row in the admin Users table for Alex Reed, W1PINE, with three of its
+      five action icons outlined in red: the pencil (Change role), the
+      circle-with-a-slash beside it (Ban), and the key two icons further along
+      (Reset password). The stopwatch between them and the trash can at the end
+      are not outlined.
     caption: >
       Every row in the Users table carries the same five actions. Change role
       and Ban are covered here; Reset password and the two-factor reset next
@@ -47,18 +49,27 @@ shots:
     route: /admin/users
     as: W1DEMO
     wait_for: 'table:visible tbody tr'
+    # The dropdown is opened rather than left closed: the caption below is
+    # about which four roles are on offer, and a closed picker showing only
+    # the current one does not show them. MUI portals the menu to the end of
+    # <body>, so the clip is the union of the dialog and the menu paper.
     steps:
       - click: 'tr:has-text("W1PINE") button[title="Change Role"]'
       - wait_for: '.MuiDialog-paper'
-    element: '.MuiDialog-paper'
+      - click: '.MuiDialog-paper .MuiSelect-select'
+      - wait_for: '.MuiPopover-paper .MuiMenuItem-root'
+    element:
+      - '.MuiDialog-paper'
+      - '.MuiPopover-paper'
     pad: 12
+    # No label tag on this one: it landed on top of the dialog's own
+    # "Change role for: W1PINE" line, and the field is already labelled Role.
     annotate:
       - selector: '.MuiDialog-paper .MuiSelect-select'
         style: box
-        label: 'Pick a role'
     alt: >
-      The Change User Role dialog, open for W1PINE, with the role dropdown
-      outlined in red. The dropdown offers Guest, User, NCS, and Admin.
+      The Change User Role dialog, open for W1PINE, with the Role picker
+      outlined in red and its menu open, offering Guest, User, NCS, and Admin.
     caption: >
       The four roles on offer. Guest and the global NCS role are both
       selectable here but neither currently changes what the account can do
@@ -100,12 +111,16 @@ shots:
       - selector: 'tr:has-text("Shelter Capacity") [aria-label="Archive"]'
         style: box
     alt: >
-      The check-in fields table, listing the built-in fields and one custom
-      field, "Shelter Capacity", with its archive icon outlined in red.
+      The check-in fields table with columns Name, Label, Type, Default
+      Enabled, Default Required, Status, and Actions. Eight rows are marked
+      Built-in and carry an edit pencil only; one row, shelter_capacity /
+      Shelter Capacity, is marked Custom and carries an archive icon as well,
+      outlined in red.
     caption: >
-      Built-in fields (grey "Built-in" chip) can be edited but never
-      archived. A custom field like Shelter Capacity can be archived instead
-      of deleted, so past check-ins that used it stay readable.
+      The Status column is what tells the two apart. A field marked Built-in
+      can be edited but never archived; a Custom field like Shelter Capacity
+      can be archived instead of deleted, so past check-ins that used it stay
+      readable.
 
   # ========== FREQUENCIES TAB ==========
   - id: frequency-in-use-row
@@ -123,9 +138,9 @@ shots:
       - selector: 'tr:has-text("146.940") span[aria-label="Cannot delete: frequency is in use"]'
         style: box
     alt: >
-      A frequency row (146.940 MHz) in the shared frequency list, with its
-      "Nets Using" count showing 1 or more and its delete icon, outlined in
-      red, greyed out and disabled.
+      A frequency row in the shared frequency list reading 146.940, FM,
+      "Example County ARES Repeater (PL 100.0)", with a "Nets Using" count of
+      3 and a delete icon, outlined in red, greyed out and disabled.
     caption: >
       A frequency already picked by at least one net can be edited but not
       deleted. The count shows how many nets would be affected.
@@ -146,8 +161,10 @@ shots:
       - selector: 'button:has-text("Set as System Default")'
         style: box
     alt: >
-      The Default Theme card on the Branding tab, showing a row of color
-      swatches and a "Set as System Default" button outlined in red.
+      The Default Theme card on the Branding tab, with five named colour
+      swatches -- ECTLogger Blue (currently selected, ticked), Ocean, Forest,
+      Sunset, and Berry -- and a "Set as System Default" button outlined in
+      red, greyed out because the selected swatch is already the default.
     caption: >
       Applies only to visitors who have never picked a theme of their own in
       Profile → Settings.
@@ -184,9 +201,10 @@ shots:
     element: '.MuiCard-root:has-text("Banner Settings")'
     pad: 8
     annotate:
+      # No label tag: "Enable banner" is already printed beside the switch,
+      # and the tag ran off the right-hand edge of the card repeating it.
       - selector: '.MuiCard-root:has-text("Banner Settings") .MuiSwitch-root'
         style: box
-        label: 'Enable banner'
     alt: >
       The Banner Settings card on the Maintenance tab, with the "Enable
       banner" switch outlined in red, above the message field and the
@@ -208,9 +226,11 @@ shots:
     element: '.MuiCard-root:has-text("Session Settings")'
     pad: 8
     annotate:
+      # No label on this one: the words "Rolling renewal" are already on the
+      # screen immediately to the left of the switch, and a tag repeating them
+      # only pushes the clip out past the right edge of the card.
       - selector: '.MuiCard-root:has-text("Session Settings") .MuiSwitch-root'
         style: box
-        label: 'Rolling renewal'
     alt: >
       The Session Settings card on the Security tab, showing the session
       lifetime field in days and the "Rolling renewal" switch outlined in red.
@@ -234,8 +254,12 @@ shots:
       - selector: 'tr:has-text("ARRL Radiogram") .MuiSwitch-root'
         style: box
     alt: >
-      The traffic form definitions table, listing the ARRL Radiogram among
-      other formats, with its "Enabled" switch outlined in red.
+      The traffic form definitions table with columns Title, Form Type,
+      Version, Format, Status, Enabled, Sort Order, and Actions. Five rows,
+      all marked Built-in and all enabled: ARRL Radiogram, GYX-CAR SKYWARN
+      Report, ICS-213 General Message Form, RRI Strip (General), and RRI
+      WXOBS Weather Observation. The Radiogram's Enabled switch is outlined
+      in red.
     caption: >
       Turning a format off removes it from the type picker instantly. Past
       messages filed in that format are unaffected.

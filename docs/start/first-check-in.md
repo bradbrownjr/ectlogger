@@ -5,6 +5,7 @@ kind: Tutorial
 audience: Anyone new to ECTLogger
 owner: KC1JMH
 revised: 2026-09-19
+review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/start/first-check-in/
 ---

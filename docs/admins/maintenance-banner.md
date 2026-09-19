@@ -5,6 +5,7 @@ kind: How-to
 audience: Users holding the Admin role
 owner: KC1JMH
 revised: 2026-09-19
+review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/admins/maintenance-banner/
 ---
@@ -31,8 +32,8 @@ Turning the banner off — or reaching a scheduled end time — clears it for ev
 
 ## How this differs from the update notice
 
-A second, yellow banner can appear independently of anything on this tab: when the frontend gets redeployed, any browser tab still running the old version shows a "new version available" notice with a **Reload** button. That one isn't something you configure — it's automatic, checked every few minutes, and it's a nudge rather than a blocker, which is why it's yellow instead of red. The two are deliberately different colors for the same reason a real alert and a heads-up look different: red here means "something is actually about to break," yellow there means "no rush, but reload when it's convenient."
+A second, yellow banner can appear independently of anything on this tab: when the frontend gets redeployed, any browser tab still running the old version shows a "new version available" notice with a **Reload** button. That one isn't something you configure — it's automatic, checked every five minutes, and it's a nudge rather than a blocker, which is why it's yellow instead of red. The two are deliberately different colors for the same reason a real alert and a heads-up look different: red here means "something is actually about to break," yellow there means "no rush, but reload when it's convenient."
 
 ## When the banner can't help
 
-This banner is a feature of the running app — if the backend itself is down, or the database is unreachable, nothing on this tab can reach anyone, because the app that would show it isn't running. That situation needs the server-side maintenance page instead, which is set up outside the app entirely. See [self-hosting](/docs/self-hosting/) if that's the kind of outage you're dealing with.
+This banner is a feature of the running app — if the backend itself is down, or the database is unreachable, nothing on this tab can reach anyone, because the app that would show it isn't running. That situation needs the server-side maintenance page instead, which the web server holds up on its own without the app running at all. The procedure is under "Maintenance Mode" in [Production deployment](/docs/PRODUCTION-DEPLOYMENT/), and it's a self-hosting task rather than something an admin can do from inside the app.

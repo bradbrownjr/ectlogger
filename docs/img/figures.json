@@ -1,14 +1,8 @@
 {
-  "net-managers/schedule-recurrence-options": {
-    "path": "/docs/img/net-managers/schedule-recurrence-options.png",
-    "alt": "The Schedule tab of Edit Schedule, showing schedule type set to Weekly, a day-of-week and time picker, an optional fifth-week operator field, and the auto-lobby, auto-close, and keep-chat-open toggles below it.\n",
-    "caption": "Ad-Hoc, One-Time, Daily, Weekly, or Monthly -- this is also where a weekly schedule's optional fifth-week operator and the auto-lobby / auto-close defaults for every net it creates live.\n",
-    "page": "/docs/net-managers/recurring-schedules/"
-  },
-  "start/schedule-recurrence": {
-    "path": "/docs/img/start/schedule-recurrence.png",
-    "alt": "The Schedule tab of the schedule form, with Schedule Type set to Weekly and outlined in red, and Day of Week and net start time fields below it.\n",
-    "caption": "Weekly, a day, and a time. From here on, the net creates itself.",
-    "page": "/docs/start/first-schedule/"
+  "operators/mobile-checkin-list": {
+    "path": "/docs/img/operators/mobile-checkin-list.png",
+    "alt": "The check-in list on a phone-width screen: a simplified, read-only table with each station's status shown by icon.\n",
+    "caption": "Other stations' rows are read-only on a phone; your own status is still yours to change.",
+    "page": "/docs/operators/in-the-field/"
   }
 }

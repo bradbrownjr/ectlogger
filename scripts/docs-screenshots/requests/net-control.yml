@@ -66,11 +66,23 @@ shots:
     route: /nets/{{net:active}}
     as: W1PINE
     wait_for: 'table:visible tbody tr'
+    # The row stops matching :has-text("KC1HILL") the moment it opens for
+    # editing: the callsign moves out of the cell's text and into an input's
+    # value attribute, which Playwright's text matching does not see. So the
+    # click targets the row by callsign and everything after it targets the one
+    # row that has an input in its callsign cell, which is only ever this one.
     steps:
-      - click: 'tr:has-text("KC1HILL") td:nth-child(3)'
-      - wait_for: 'tr:has-text("KC1HILL") input:visible'
-    element: 'tr:has-text("KC1HILL")'
-    pad: 8
+      - click: 'tr:has-text("KC1HILL") td[data-field="callsign"]'
+      - wait_for: 'tr:has(td[data-field="callsign"] input)'
+    # Not the whole row: the table is wider than the space it is given and runs
+    # on underneath the chat panel, so a clip to the tr picks up a slice of chat
+    # down the right-hand side (same reason start.yml's checked-in-row clips to
+    # the container instead). The first cell through Location covers every field
+    # that turns into a text box, which is what this figure is for.
+    element:
+      - 'tr:has(td[data-field="callsign"] input) td:first-child'
+      - 'tr:has(td[data-field="callsign"] input) td[data-field="location"]'
+    pad: 4
     alt: >
       A check-in row for KC1HILL open for inline editing, with the Callsign,
       Name, and Location cells replaced by text fields you can type into
@@ -84,14 +96,17 @@ shots:
     route: /nets/{{net:active}}
     as: W1PINE
     wait_for: 'table:visible tbody tr'
+    # Bulk add is a draggable panel, not a dialog: BulkCheckIn.tsx renders a
+    # bare Paper with a .drag-handle, so there is no .MuiDialog-paper to wait
+    # for. Captured empty, because this page's point is the Format line.
     steps:
       - click: 'span[aria-label="Bulk add multiple check-ins"]'
-      - wait_for: '.MuiDialog-paper:visible'
-    element: '.MuiDialog-paper'
+      - wait_for: '.drag-handle'
+    element: 'div:has(> .drag-handle)'
     pad: 16
     alt: >
-      The Bulk add dialog: a single multi-line text box for entering several
-      check-ins at once, with a live "Format:" line above it showing the
+      The Bulk Check-In window: a single multi-line text box for entering
+      several check-ins at once, with a live "Format:" line showing the
       exact field order this net expects.
     caption: The box accepts one check-in per line-segment, separated by semicolons -- see Speed entry syntax for the exact grammar.
 
@@ -110,10 +125,13 @@ shots:
       - 'div[aria-label*="W1PORT is monitoring"]'
     pad: 12
     alt: >
-      Two frequency chips in the net header, one starred as "YOUR claimed
-      frequency" in W1PINE's color, the other reading "W1PORT is monitoring
-      this frequency" in a second color.
-    caption: Each active NCS claims a different frequency chip; the color follows the operator, not the frequency.
+      Two frequency chips in the net header: 146.940 MHz FM outlined in red,
+      labelled as the frequency you have claimed, and Brandmeister TG31234 DMR
+      outlined in blue, labelled as the one W1PORT is monitoring.
+    caption: >
+      Those coloured outlines are the app's own, not a callout on this page.
+      Each active NCS claims a different chip, and the colour follows the
+      operator -- the same red marks W1PINE's row in the check-in list.
 
   # ========== Roles and stepping away ==========
   - id: manage-roles-dialog
@@ -131,10 +149,10 @@ shots:
       - selector: '.MuiDialog-paper button:has-text("Assign Role")'
         style: box
     alt: >
-      The Manage NCS and Logger roles dialog: a user picker, a role picker
-      offering NCS, Logger, or Relay Station, and the Assign Role button
-      outlined in red, above a list of current assignments each with a
-      remove control.
+      The Manage Net Control Staff dialog: a Select User picker, a Role picker
+      set to NCS (Net Control Station), the Assign Role button outlined in red,
+      and a Current Assignments list naming W1PINE and W1PORT as NCS, K1COVE as
+      Logger, and N1LAKE as Relay, each with its own remove control.
     caption: Assigning a role here works alongside self check-in -- either path can put someone in NCS or Logger.
 
   - id: ncs-role-toggle
@@ -190,40 +208,58 @@ shots:
     element: '.MuiDialog-paper'
     pad: 12
     alt: >
-      The Muted Stations dialog, listing KC1HILL under "Muted for you" and a
-      separate "Muted for everyone" section for net-wide mutes applied by
-      staff.
+      The Muted Stations dialog, listing KC1HILL under "Your personal mutes"
+      with an Unmute link, above a separate "Muted for everyone" section
+      reading "No stations muted for everyone." 
     caption: Personal mutes and net-wide mutes are managed in the same dialog but never mix with each other.
 
   # ========== Handling traffic ==========
   - id: traffic-panel-docked
     section: net-control
     page: /docs/net-control/handling-traffic/
+    # W1PINE, not the Logger: the traffic panel's own list and summary endpoints
+    # ask check_net_permission for required_roles=["ncs", "logger"] in lower
+    # case, and NetRole.role is a plain string column that always holds "NCS" /
+    # "LOGGER", so no NetRole ever matches and the panel falls back to owner or
+    # admin only. K1COVE is this net's active Logger and gets "Not authorized to
+    # view this net's traffic". Recorded in ROADMAP 0.11; until it is fixed, a
+    # figure taken from the Logger's seat would be a figure of the bug.
     route: /nets/{{net:active}}
-    as: K1COVE
+    as: W1PINE
+    # Wider than the usual 1440 so the Traffic panel's own table has room for
+    # its Disposition column; at 1440 the panel cuts the status chip in half.
     viewport:
-      width: 1440
+      width: 1680
       height: 700
     wait_for: 'table:visible tbody tr'
     steps:
       - click: 'span[aria-label="View and file traffic for this net"]'
       - wait_for: '[title="File traffic on this net"]:visible'
+    # The button keeps its tooltip open after the click, over the check-in
+    # list's Callsign header.
+    hide:
+      - '.MuiTooltip-popper'
     alt: >
-      The Traffic panel docked beside the check-in list, showing a disposition
-      summary strip and a list including an ICS-213 form filed for K1CAMP.
+      The Traffic panel docked below Chat beside the check-in list, showing a
+      "pending: 1" summary chip above a table of one urgent ICS-213 addressed
+      to EOC Logistics.
     caption: The Traffic panel opens beside the check-in list -- filing and viewing traffic never leaves the net view.
 
   - id: file-traffic-dialog
     section: net-control
     page: /docs/net-control/handling-traffic/
     route: /nets/{{net:active}}
-    as: K1COVE
+    # W1PINE for the same reason as traffic-panel-docked above.
+    as: W1PINE
     wait_for: 'table:visible tbody tr'
     steps:
       - click: 'span[aria-label="View and file traffic for this net"]'
       - wait_for: '[title="File traffic on this net"]:visible'
       - click: '[title="File traffic on this net"]'
       - wait_for: '.MuiDialog-paper:visible'
+      # The dialog paints before its form definitions arrive, and the first
+      # capture of it was an empty "Choose a form type" with no cards under it.
+      - wait_for: '.MuiDialog-paper .MuiCard-root'
     element: '.MuiDialog-paper'
     pad: 16
     alt: >
@@ -236,7 +272,7 @@ shots:
     section: net-control
     page: /docs/net-control/multiple-monitors/
     route: /nets/{{net:active}}
-    as: K1COVE
+    as: W1PINE
     viewport:
       width: 1440
       height: 700
@@ -244,14 +280,19 @@ shots:
     steps:
       - click: 'span[aria-label="View and file traffic for this net"]'
       - wait_for: '[title="Detach panel"]:visible'
+    # Scoped to one header's control box, and to the Traffic panel's, because
+    # that is the only panel carrying all four: Chat and the Activity Log are
+    # always present and so have no Close. Unscoped, ".first()" resolved
+    # Detach/Minimize against Chat's header and Close against Traffic's, and
+    # the union spanned the whole right-hand column between them.
     element:
-      - '[title="Detach panel"]'
-      - '[title="Open in new window"]'
-      - '[title="Minimize"]'
-      - '[title="Close"]'
-    pad: 10
+      - 'div:has(> button[title="Close"]) > button[title="Detach panel"]'
+      - 'div:has(> button[title="Close"]) > button[title="Close"]'
+    # The controls sit about 4px apart, so any padding at all lets the next
+    # icon along show at the edge. 6 is the least that does not crop the boxes.
+    pad: 6
     annotate:
-      - selector: '[title="Open in new window"]'
+      - selector: 'div:has(> button[title="Close"]) > button[title="Open in new window"]'
         style: box
     alt: >
       A docked panel's title bar controls: detach, open in new window

@@ -57,6 +57,14 @@ const DEMO_API = process.env.DEMO_API_URL || 'http://10.6.26.3:8100/api';
 
 const FORBIDDEN = ['app.ectlogger.us', 'ectbeta.lynwood.us'];
 
+// How many shots one Browserless session takes before it is replaced. See the
+// comment at the reconnect in main() for what happens without this.
+const SHOTS_PER_SESSION = 8;
+
+// The shapes Playwright reports when the far end of the CDP connection has
+// gone, as opposed to anything wrong with the shot itself.
+const SESSION_GONE = /has been closed|Target closed|Target page, context or browser|WebSocket|Protocol error/i;
+
 // ========== ARGUMENTS ==========
 
 const argv = process.argv.slice(2);
@@ -327,20 +335,39 @@ async function annotate(page, annotations) {
       const width = r.width + p * 2;
       const height = r.height + p * 2;
 
+      // NetView.tsx sets document.body.style.zoom (0.8 on a viewport under
+      // 700px tall, 0.9 under 800) so the logging panel fits without
+      // scrolling. Everything above is in the painted coordinates Playwright
+      // measures and clips in, but an element appended to that body is laid
+      // out in pre-zoom pixels and then painted at zoom x -- so a box written
+      // at a painted coordinate lands at 0.9 of it, which is 136px adrift by
+      // the right-hand edge of a 1440px window. Divide the written position
+      // back out, exactly as App.tsx already does for MUI's Poppers, and for
+      // the same reason.
+      const zoom = parseFloat(document.body.style.zoom) || 1;
+      const px = (v) => `${v / zoom}px`;
+
       const el = document.createElement('div');
       el.className = `ectdoc-annotation ${style}`;
       if (style === 'underline') {
-        el.style.top = `${top + height - 2}px`;
-        el.style.left = `${left}px`;
-        el.style.width = `${width}px`;
-        el.style.height = '4px';
+        el.style.top = px(top + height - 2);
+        el.style.left = px(left);
+        el.style.width = px(width);
+        el.style.height = px(4);
       } else {
-        el.style.top = `${top}px`;
-        el.style.left = `${left}px`;
-        el.style.width = `${width}px`;
-        el.style.height = `${height}px`;
+        el.style.top = px(top);
+        el.style.left = px(left);
+        el.style.width = px(width);
+        el.style.height = px(height);
       }
       document.body.appendChild(el);
+
+      // Document coordinates, so a clipped capture can be widened to contain
+      // the annotation. A red box outside the crop is worse than no box: the
+      // figure looks finished and points at nothing.
+      const bounds = {
+        left, top, right: left + width, bottom: top + height,
+      };
 
       if (label) {
         const tag = document.createElement('div');
@@ -348,24 +375,31 @@ async function annotate(page, annotations) {
         tag.textContent = label;
         // Above the box by default, below it when the target sits so near the
         // top of the document that the label would be cut off.
-        tag.style.top = top > 34 ? `${top - 30}px` : `${top + height + 8}px`;
-        tag.style.left = `${left}px`;
+        tag.style.top = px(top > 34 ? top - 30 : top + height + 8);
+        tag.style.left = px(left);
         if (labelPosition === 'right') {
-          tag.style.top = `${top + Math.max(0, height / 2 - 12)}px`;
-          tag.style.left = `${left + width + 10}px`;
+          tag.style.top = px(top + Math.max(0, height / 2 - 12));
+          tag.style.left = px(left + width + 10);
         }
         document.body.appendChild(tag);
+
+        // Measured rather than estimated. A label is as wide as its own text,
+        // which nothing here knows in advance -- the Security tab's "Rolling
+        // renewal" tag sat on a switch near the right edge of its card and ran
+        // off the side of the clip, because the union was widened by a fixed
+        // guess that only applied to labelPosition: right.
+        const r = tag.getBoundingClientRect();
+        bounds.left = Math.min(bounds.left, r.left + window.scrollX);
+        bounds.top = Math.min(bounds.top, r.top + window.scrollY);
+        bounds.right = Math.max(bounds.right, r.right + window.scrollX);
+        bounds.bottom = Math.max(bounds.bottom, r.bottom + window.scrollY);
       }
 
-      // Document coordinates, label included, so a clipped capture can be
-      // widened to contain the annotation. A red box outside the crop is worse
-      // than no box: the figure looks finished and points at nothing.
-      const labelSlack = label ? 34 : 0;
       return {
-        x: left,
-        y: top - labelSlack,
-        width: width + (labelPosition === 'right' && label ? 160 : 0),
-        height: height + labelSlack + (label ? 8 : 0),
+        x: bounds.left,
+        y: bounds.top,
+        width: bounds.right - bounds.left,
+        height: bounds.bottom - bounds.top,
       };
     }, { rect, style: a.style, label: a.label, pad: a.pad, labelPosition: a.labelPosition });
 
@@ -557,6 +591,24 @@ async function capture(browser, shot) {
       });
     }
 
+    // A control inside a panel that scrolls on its own sits at a y the document
+    // itself never reaches: the Edit Net form is taller than its container, so
+    // the two lobby switches measure at y=1100 on a page whose scrollHeight is
+    // the viewport's 1000, and the clip comes out with a negative height. Bring
+    // the requested elements into view before anything is measured. Last first,
+    // then first, so that a pair of elements spanning more than one screenful
+    // settles with the earlier one at the top rather than the later one at the
+    // bottom. It is a no-op for an element that was already fully visible.
+    if (shot.element) {
+      const list = Array.isArray(shot.element) ? shot.element : [shot.element];
+      for (const selector of [list[list.length - 1], list[0]]) {
+        await page.locator(`${expand(selector)} >> visible=true`).first()
+          .scrollIntoViewIfNeeded()
+          .catch(() => { /* measured for real below, which reports it properly */ });
+      }
+      await page.waitForTimeout(200);
+    }
+
     const annotationBoxes = shot.annotate ? await annotate(page, shot.annotate) : [];
 
     const outPath = join(REPO, 'docs', 'img', shot.section, `${shot.id}.png`);
@@ -658,13 +710,39 @@ async function main() {
       defaultViewport: group.geometry,
     }));
     const endpoint = `${BROWSERLESS_URL}${BROWSERLESS_URL.includes('?') ? '&' : '?'}launch=${launch}`;
-    const browser = await chromium.connectOverCDP(endpoint, { timeout: 30000 });
+    const connect = () => chromium.connectOverCDP(endpoint, { timeout: 30000 });
+
+    let browser = null;
+    let sinceConnect = Infinity;
 
     try {
       for (const shot of group.shots) {
+        // Browserless ends a session that has been held open long enough, and
+        // the biggest geometry group is long enough: two full runs died partway
+        // through with "Target page, context or browser has been closed" and
+        // took every remaining shot in the group down with them, which reads as
+        // fifteen unrelated failures rather than one. Reconnecting every so
+        // often keeps each session comfortably inside that limit, and the retry
+        // below covers a session that goes away sooner anyway.
+        if (sinceConnect >= SHOTS_PER_SESSION) {
+          if (browser) await browser.close().catch(() => {});
+          browser = await connect();
+          sinceConnect = 0;
+        }
+        sinceConnect += 1;
+
         process.stdout.write(`  ${shot.id} ... `);
         try {
-          const path = await capture(browser, shot);
+          let path;
+          try {
+            path = await capture(browser, shot);
+          } catch (err) {
+            if (!SESSION_GONE.test(err.message)) throw err;
+            await browser.close().catch(() => {});
+            browser = await connect();
+            sinceConnect = 1;
+            path = await capture(browser, shot);
+          }
           const rel = path.slice(REPO.length + 1);
           figures[`${shot.section}/${shot.id}`] = {
             path: `/${rel}`,
@@ -680,7 +758,7 @@ async function main() {
         }
       }
     } finally {
-      await browser.close();
+      if (browser) await browser.close().catch(() => {});
     }
   }
 

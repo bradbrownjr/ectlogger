@@ -56,7 +56,9 @@ exclude:
   - docs/DEVELOPMENT.md
   - docs/DESIGN.md
   - docs/USER-STORIES.md
-  - docs/training_video_outline.md
+  # A working note (a two-week list of email subject lines, used to write
+  # docs/reference/emails.md), not a page. Kept for provenance, not published.
+  - docs/ectlogger-email-digest.md
 
 defaults:
   # Liquid is switched off for page content across the whole site, because the

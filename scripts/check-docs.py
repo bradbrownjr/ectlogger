@@ -21,7 +21,7 @@ DOCS = REPO / "docs"
 EXCLUDED_DIRS = {"concepts"}
 
 REQUIRED_FRONT_MATTER = [
-    "title", "summary", "kind", "audience", "owner", "revised",
+    "title", "summary", "kind", "audience", "owner", "revised", "review_by",
     "applies_to", "permalink",
 ]
 VALID_KINDS = {"Tutorial", "How-to", "Reference", "Explanation"}

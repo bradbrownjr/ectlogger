@@ -198,8 +198,9 @@ shots:
       - click: 'button:has-text("New")'
       - wait_for: '.MuiCard-root:visible'
     alt: >
-      The traffic composer's form-type picker, showing cards for ARRL
-      Radiogram, ICS-213 General Message, and an RRI weather strip.
+      The traffic composer's form-type picker, showing five cards: ARRL
+      Radiogram, GYX-CAR SKYWARN Report, ICS-213 General Message Form, RRI
+      Strip (General), and RRI WXOBS Weather Observation.
     caption: Only the types a net's manager enabled are offered here -- asking for an unusual type is still possible through the standalone Traffic section below.
 
   # ========== Your statistics ==========

@@ -5,6 +5,7 @@ kind: How-to
 audience: Users holding the Admin role
 owner: KC1JMH
 revised: 2026-09-19
+review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/admins/users-and-roles/
 ---
@@ -34,7 +35,7 @@ To change someone's role: click the pencil icon in their row, pick the new role,
 
 <figure>
   <img src="/docs/img/admins/user-row-actions.png"
-       alt="A row in the admin Users table for W1PINE, with three action icons outlined in red and labeled: a pencil labeled &quot;Change role&quot;, a block icon labeled &quot;Ban&quot;, and a key icon labeled &quot;Reset password&quot;.">
+       alt="A row in the admin Users table for Alex Reed, W1PINE, with three of its five action icons outlined in red: the pencil (Change role), the circle-with-a-slash beside it (Ban), and the key two icons further along (Reset password). The stopwatch between them and the trash can at the end are not outlined.">
   <figcaption>Every row in the Users table carries the same five actions. Change role and Ban are covered here; Reset password and the two-factor reset next to it are covered in Security, MFA, and lockouts.</figcaption>
 </figure>
 

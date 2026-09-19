@@ -5,17 +5,18 @@ kind: How-to
 audience: Users holding the Admin role
 owner: KC1JMH
 revised: 2026-09-19
+review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/admins/traffic-settings/
 ---
 
 # Traffic handling settings
 
-The **Traffic** tab controls which formal message formats (radiograms, ICS-213s — a general message form from the Incident Command System, or ICS, used across emergency response — weather-observation strips, and similar) show up in the type picker when someone files a piece of traffic, the order they're listed in, and the wording of each field's label and help text.
+The **Traffic** tab decides which formal message formats an operator is offered when they file a piece of traffic: ARRL radiograms, ICS-213 general messages, weather-observation strips, and anything else the instance has defined. It also sets the order they're listed in and the wording of each field's label and help text. It does not change what any of those formats *are* — see [the glossary](/docs/reference/glossary/) if a format name here is unfamiliar.
 
 <figure>
   <img src="/docs/img/admins/traffic-definitions-table.png"
-       alt="The traffic form definitions table, listing the ARRL Radiogram among other formats, with its &quot;Enabled&quot; switch outlined in red.">
+       alt="The traffic form definitions table with columns Title, Form Type, Version, Format, Status, Enabled, Sort Order, and Actions. Five rows, all marked Built-in and all enabled: ARRL Radiogram, GYX-CAR SKYWARN Report, ICS-213 General Message Form, RRI Strip (General), and RRI WXOBS Weather Observation. The Radiogram's Enabled switch is outlined in red.">
   <figcaption>Turning a format off removes it from the type picker instantly. Past messages filed in that format are unaffected.</figcaption>
 </figure>
 
@@ -33,7 +34,9 @@ The instance ships with a handful of built-in formats — the ARRL Radiogram and
 
 ## Defining a new strip type
 
-A genuinely new message format — a custom RRI strip with its own set of fields (RRI: Request for Information — one operator defines the fields once, and everyone who answers uses the same set) — isn't created from this tab. Any operator can define one the first time they paste a real example of it while filing a piece of traffic, and from that point on it behaves exactly like a built-in format: it shows up in this table, and from here you can enable, disable, reorder, and relabel it the same as anything else. See [net control](/docs/net-control/) for where that actually happens.
+A genuinely new format isn't created from this tab, and it isn't an admin job. An [RRI strip](/docs/reference/glossary/) is a short slash-delimited message with a fixed set of fields, and any operator defines a new one by pasting a real example of it while filing traffic and labelling the fields they see. From that point on it behaves exactly like a built-in: it appears in this table, and you can enable, disable, reorder, and relabel it here the same as anything else. See [net control](/docs/net-control/) for where that actually happens.
+
+The one thing you can't do is define the same type twice. A second attempt at a `form_type` that already exists is refused rather than shadowing the first, which is what keeps the format meaningful to a receiving station somewhere else.
 
 ## Not here
 
