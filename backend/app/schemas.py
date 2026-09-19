@@ -521,6 +521,10 @@ class NetResponse(NetBase):
     frequencies: List[FrequencyResponse] = []
     check_in_count: Optional[int] = None
     can_manage: bool = False  # True if current user can edit (owner, admin, or NCS)
+    # True if current user may assign/remove NetRoles here (permissions.can_manage_net_roles).
+    # Narrower than can_manage: net staff also need an active NCS/LOGGER role on this occurrence.
+    # Only populated by get_net, not the list view — the Roles button lives on the net view.
+    can_manage_roles: bool = False
     is_owner_or_ncs: bool = False  # True if user has non-admin access (owner/NCS/staff) — used by admin simulation mode
     current_user_ncs_eligible: bool = False  # True if checking in would auto-grant current user NCS (see permissions.is_eligible_for_ncs_auto_grant) — drives the NCS/Standard choice on the check-in prompt/dialog
     current_user_logger_eligible: bool = False  # True if checking in would auto-grant current user LOGGER (see permissions.is_eligible_for_logger_self_grant) — drives the Logger choice on the check-in prompt/dialog
@@ -541,7 +545,7 @@ class NetResponse(NetBase):
     auto_close_at: Optional[datetime] = None
 
     @classmethod
-    def from_orm(cls, net, owner_callsign: str = None, owner_name: str = None, check_in_count: int = None, can_manage: bool = False, is_owner_or_ncs: bool = False, current_user_ncs_eligible: bool = False, current_user_logger_eligible: bool = False, ncs_callsign: str = None, ncs_name: str = None, user_attended: bool = None, user_ran: bool = None, template_schedule_type: str = None, auto_close_at: datetime = None):
+    def from_orm(cls, net, owner_callsign: str = None, owner_name: str = None, check_in_count: int = None, can_manage: bool = False, can_manage_roles: bool = False, is_owner_or_ncs: bool = False, current_user_ncs_eligible: bool = False, current_user_logger_eligible: bool = False, ncs_callsign: str = None, ncs_name: str = None, user_attended: bool = None, user_ran: bool = None, template_schedule_type: str = None, auto_close_at: datetime = None):
         import json
         data = {
             'id': net.id,
@@ -589,6 +593,7 @@ class NetResponse(NetBase):
             'frequencies': [FrequencyResponse.model_validate(f) for f in net.frequencies],
             'check_in_count': check_in_count,
             'can_manage': can_manage,
+            'can_manage_roles': can_manage_roles,
             'is_owner_or_ncs': is_owner_or_ncs,
             'current_user_ncs_eligible': current_user_ncs_eligible,
             'current_user_logger_eligible': current_user_logger_eligible,

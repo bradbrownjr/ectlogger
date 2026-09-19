@@ -14,21 +14,7 @@ permalink: /docs/about/known-issues/
 
 This page lists confirmed, currently open defects — not roadmap items, not planned features, and not things that were fixed before anyone using the app could hit them. For what's planned or being considered, see the [Roadmap](/docs/ROADMAP/) instead. For how to report something new, see [Getting help](/docs/about/getting-help/).
 
-Most of what follows was found while this documentation was being written, by reading the code against what the screens promise. None of it is new breakage. Every one of them has a workaround.
-
-Three entries that were on this page when it was published on 2026-09-19 came off it the same day, fixed rather than worked around: the Traffic panel opening for a net's own NCS and Logger, Relay operators getting their copy of the closing log, and **Close net** failing for an operator holding both NCS and Logger. All three were one root cause. See the [changelog](/docs/CHANGELOG/) for that release.
-
-## Being in the rotation isn't enough to start the net
-
-Everywhere else in ECTLogger, being on a schedule's **Authorized Net Staff** list and being in its **NCS rotation** grant the same access. **Start** is the exception: it checks the staff list only. An operator who is in the rotation but was never added to the staff list can't start a net from that schedule, even on the week the rotation says is theirs.
-
-**Workaround**: add them to the staff list as well. That's where the rest of their access already comes from, and it takes one click on the schedule's **Net Staff** tab. This is documented as current behavior in footnote 3 of [Roles and permissions](/docs/reference/roles-and-permissions/).
-
-## The Roles button appears for staff who can't use it yet
-
-Net staff see the **Roles** button on a net from their schedule before they hold any role on that specific occurrence. Clicking **Assign Role** in the dialog it opens is refused, because assigning roles needs an active NCS or Logger role on that net, not just staff membership on the schedule.
-
-**Workaround**: check yourself in as NCS or Logger first (see [Becoming NCS or Logger by checking yourself in](/docs/reference/roles-and-permissions/)), then the dialog works as expected.
+This page was published on 2026-09-19 with five open defects found while the documentation was being written, by reading the code against what the screens promise. All five were fixed the same day rather than worked around, so only the one below remains. See the [changelog](/docs/CHANGELOG/) for what changed.
 
 ## Self-hosting: an explicit async driver in `DATABASE_URL` breaks startup
 

@@ -1,7 +1,7 @@
 {
   "form_type": "GYX-CAR-SKYWARN",
   "title": "GYX-CAR SKYWARN Report",
-  "description": "Radio Relay International's regional SKYWARN strip for the Gray ME and Caribou ME NWS forecast offices. Formatted to paste directly into the GYX/CAR SKYWARN Google Sheet -- keep the total under 900 characters.",
+  "description": "Radio Relay International's regional SKYWARN strip for the Gray ME and Caribou ME NWS forecast offices. Formatted to paste directly into the GYX/CAR SKYWARN Google Sheet — keep the total under 900 characters.",
   "output_format": "rri_strip",
   "fields": [
     {

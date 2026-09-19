@@ -25,7 +25,9 @@ from app.models import (
 )
 from app.net_start import send_net_start_notifications
 from app.permissions import (
+    can_manage_net_roles,
     check_net_permission,
+    is_active_template_staff,
     is_admin,
     is_eligible_for_logger_self_grant,
     is_eligible_for_ncs_auto_grant,
@@ -261,32 +263,41 @@ async def get_net(
 
     # Compute can_manage for this user
     can_manage = False
+    can_manage_roles = False
     is_owner_or_ncs = False
     if current_user:
         is_owner = net.owner_id == current_user.id
         is_admin = current_user.role == UserRole.ADMIN
-        # Check if user is NCS for this net
+        # Check if user is NCS for this net. limit(1) because net_roles has no
+        # uniqueness constraint on (net_id, user_id, role) -- same bounded
+        # existence check every other NetRole lookup uses.
         ncs_result = await db.execute(
-            select(NetRole).where(
+            select(NetRole.id)
+            .where(
                 NetRole.net_id == net_id,
                 NetRole.user_id == current_user.id,
-                NetRole.role == "NCS"
+                NetRole.role == "NCS",
             )
+            .limit(1)
         )
         is_ncs = ncs_result.scalar_one_or_none() is not None
-        # Active template staff can manage nets created from their template
+        # Active net staff can manage nets created from their template. Uses
+        # the shared helper, so an active NCS rotation member counts here just
+        # as they do for start_net and the self-grant checks; this was a third
+        # hand-written TemplateStaff query until 2026-09-19.
         is_template_staff = False
         if not (is_owner or is_admin or is_ncs) and net.template_id:
-            staff_result = await db.execute(
-                select(TemplateStaff).where(
-                    TemplateStaff.template_id == net.template_id,
-                    TemplateStaff.user_id == current_user.id,
-                    TemplateStaff.is_active == True,
-                )
+            is_template_staff = await is_active_template_staff(
+                db, net.template_id, current_user.id
             )
-            is_template_staff = staff_result.scalar_one_or_none() is not None
         is_owner_or_ncs = is_owner or is_ncs or is_template_staff  # non-admin access; used by frontend simulation mode
         can_manage = is_owner_or_ncs or is_admin
+        # Narrower than can_manage on purpose, and the exact condition
+        # assign_net_role/remove_net_role enforce: net staff additionally need
+        # an active NCS or LOGGER role on this specific occurrence. The Roles
+        # button was rendered on can_manage, so staff with no role yet tonight
+        # were shown a dialog whose every action 403'd.
+        can_manage_roles = await can_manage_net_roles(db, net, current_user)
 
     # Would checking in right now auto-grant this user NCS? Drives the
     # NCS/Standard choice on the check-in prompt/dialog. Independent of
@@ -333,6 +344,7 @@ async def get_net(
         owner_callsign=net.owner.callsign if net.owner else None,
         owner_name=public_display_name(net.owner.name if net.owner else None, current_user is not None),
         can_manage=can_manage,
+        can_manage_roles=can_manage_roles,
         is_owner_or_ncs=is_owner_or_ncs,
         current_user_ncs_eligible=current_user_ncs_eligible,
         current_user_logger_eligible=current_user_logger_eligible,
@@ -588,22 +600,22 @@ async def start_net(
     if not net:
         raise HTTPException(status_code=404, detail="Net not found")
     
-    # Check permissions - owner, admin, NCS, or active template staff can start
+    # Check permissions - owner, admin, NCS, or the net's template staff.
+    #
+    # "Template staff" means is_active_template_staff: any active
+    # TemplateStaff member *or* active NCSRotationMember. This queried
+    # TemplateStaff directly until 2026-09-19, which made Start the one place
+    # in the app where being in a schedule's NCS rotation was not enough --
+    # the tier that exists specifically to say who runs which week could not
+    # start the week that was theirs, unless somebody had also added them to
+    # the staff list. Every other staff decision (self-granting NCS or Logger
+    # on check-in, managing roles) already goes through the helper.
     if not await check_net_permission(db, net, current_user, ["NCS"]):
-        # Also allow active template staff for nets created from their template
-        if net.template_id:
-            staff_result = await db.execute(
-                select(TemplateStaff).where(
-                    TemplateStaff.template_id == net.template_id,
-                    TemplateStaff.user_id == current_user.id,
-                    TemplateStaff.is_active == True,
-                )
-            )
-            if not staff_result.scalar_one_or_none():
-                raise HTTPException(status_code=403, detail="Not authorized to start this net")
-        else:
+        if not net.template_id or not await is_active_template_staff(
+            db, net.template_id, current_user.id
+        ):
             raise HTTPException(status_code=403, detail="Not authorized to start this net")
-    
+
     if net.status == NetStatus.ACTIVE:
         raise HTTPException(status_code=400, detail="Net is already active")
     

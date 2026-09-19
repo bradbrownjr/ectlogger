@@ -94,58 +94,6 @@ accepted, and the self-hosting documentation is about to get more eyes on it.
 
 - [ ] Only prepend the driver when it is not already present, and cover both forms with a test
 
-### 0.11 — What the documentation rebuild found in the code
-
-*(found 2026-09-19, while four agents read the application end to end to write the
-documentation site. None of these were introduced by that work; they are what a
-careful read of the code turns up when somebody has to describe its behavior in
-writing.)*
-
-**Model:** Sonnet for the four bugs, Haiku for the copy fixes. **Think:** low.
-**Docs:** the pages that had to write around each one are noted below and will
-need a pass once it is fixed.
-
-#### Bugs
-
-**🐛 A rotation member who is not also on the staff list cannot start the net.**
-`start_net`'s staff bypass queries `TemplateStaff` directly rather than going through
-`permissions.py::_is_active_template_staff`, which is what every other staff decision
-uses and which counts an active `NCSRotationMember` too. So the one schedule tier that
-exists specifically to say who runs which week cannot, by itself, start one.
-`/docs/reference/roles-and-permissions/` documents the current behavior in footnote 3,
-including the workaround.
-
-- [ ] Route it through `_is_active_template_staff` like everything else
-
-**🐛 The Roles button is offered to staff the backend will refuse.**
-NetView shows Roles on `canManage`, which includes plain template staff, but
-`can_manage_net_roles` additionally requires an active NCS or Logger role on that
-specific net. A staff member with no role yet on tonight's occurrence sees the button
-and gets a 403 from Assign Role. Not reproducible on the demo instance, where the
-seeded Logger happens to also be staff.
-
-- [ ] Gate the button on the same condition the endpoint enforces
-
-#### On-screen copy that is wrong
-
-- [ ] `AdminMaintenanceTab.tsx` tells the admin the banner re-checks every 60 seconds. `MaintenanceBanner.tsx` polls every 10. `/docs/admins/maintenance-banner/` says 10.
-- [ ] `AdminBrandingTab.tsx` says the logo applies to "login, navbar, About". There is no About page; the real three are Navbar, Login, and the printed net report.
-- [ ] `StaffRotationTab.tsx`'s co-manager tooltip still implies co-manager is what lets somebody run nets without a rotation slot. Plain active staff has been able to do that since 2026-09-18.
-- [ ] `NCSStaffModal.tsx`'s button is labelled "Create schedule" but only appears when a schedule already exists, and only pushes the net's NCS operators into that schedule's staff pool. An ad hoc net's owner could reasonably read it as the way to make their net recurring, which it is not.
-- [ ] `Chat.tsx`'s Muted Stations dialog says net-wide mute is "NCS/Logger only". The server check is `check_net_permission(..., ["NCS", "LOGGER"])`, which also passes for the net's owner and for any admin. `/docs/net-control/chat-moderation/` and the roles grid both say the wider thing, because that is what the code does.
-- [ ] Several strings written for a fixed-width terminal use a bare `--` where the rendered page wants an em dash, and the browser wraps them onto two lines as "- -": `traffic/definitions/gyx_car_skywarn.json`'s description ("Google Sheet - - keep the total under 900 characters") and both explanatory lines in `Chat.tsx`'s Muted Stations dialog are the ones a documentation figure caught.
-
-#### Settings and roles that do nothing
-
-- [ ] `AppSettings.traffic_reminder_enabled` is read by `traffic_reminder_service.py` but appears in neither `AppSettingsResponse` nor `AppSettingsUpdate`, so no API call and no UI can change it. Either expose it or drop it.
-- [ ] `UserRole.GUEST` and the global `UserRole.NCS` are both assignable from the admin panel and neither is checked anywhere: `UserRole.ADMIN` is the only role any permission test looks at. `/docs/admins/users-and-roles/` and `/docs/reference/roles-and-permissions/` both say so outright, which is the honest thing to publish but an odd thing to have to write.
-- [ ] `User.show_activity_in_chat` appears to be dead as well.
-- [ ] `NetTemplate.schedule_type`'s column comment omits `one_time`.
-
-#### Data integrity
-
-- [ ] Deleting a user is a hard delete. `CheckIn.user_id`, `NetRole.user_id` and friends carry no `ondelete`, and SQLite foreign keys are never switched on in `database.py`, so the rows are left pointing at an id that no longer exists. Check-ins keep their own stored callsign and name so the log survives, but anything that follows the account link does not. `/docs/admins/users-and-roles/` recommends Ban instead, which is true advice and a poor substitute for the delete working properly.
-
 ### 0.8 — Add swap to the production host *(operator task — needs root)*
 
 **⚠️ Manual task for Brad.** Not a code change and not something the agent can do: the
@@ -472,7 +420,7 @@ a layout takes down every page of the real site at once, and there is no staging
 - [x] Delete `USER-GUIDE.md` (fully superseded), `training_video_outline.md` (a chat transcript that teaches a login path that does not exist), `assets/screenshots/`
 - [x] Link check across the whole site — `scripts/check-docs.py` does it, and also verifies figures, alt text, front matter, bare Liquid braces, and nav coverage
 - [x] Every page carries an owner and a review-by date (`owner` / `review_by` front matter, enforced by the checker)
-- [x] `docs/about/known-issues.md` seeded — from the defects section 0.11 above found in the code, each with a workaround
+- [x] `docs/about/known-issues.md` seeded — from the defects the rebuild found in the code, each with a workaround. All of those were fixed on 2026-09-19 and their entries removed; the page is the standing home for the next ones
 - [ ] The whole of "Keeping it current" below, which is the part that decides whether any of this is still true in a year
 
 #### Keeping it current

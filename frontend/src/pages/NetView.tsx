@@ -1603,6 +1603,7 @@ const NetView: React.FC = () => {
         net={net}
         netId={netId}
         canManage={canManage}
+        canManageRoles={net.can_manage_roles}
         canManageCheckIns={canManageCheckIns}
         canStartNet={canStartNet}
         isAdmin={isAdmin}

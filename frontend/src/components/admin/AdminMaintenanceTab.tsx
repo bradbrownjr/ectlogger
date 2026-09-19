@@ -84,7 +84,7 @@ const AdminMaintenanceTab: React.FC<Props> = ({ showSnackbar }) => {
             <Typography variant="h6" gutterBottom>Banner Settings</Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
               When active, a sitewide warning banner is shown to all visitors — including logged-out users.
-              The banner re-checks its state every 60 seconds, so scheduled start/end times take effect
+              The banner re-checks its state every 10 seconds, so scheduled start/end times take effect
               without requiring a page reload. All times are UTC.
             </Typography>
 
