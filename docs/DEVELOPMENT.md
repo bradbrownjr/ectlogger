@@ -968,6 +968,12 @@ specific, never breathless.
 - "You" for the reader-operator. "We" sparingly, for the project.
 - Sentence case for headings, buttons, and labels. Protocol literals keep
   their real casing: callsigns, `ICS-309`, `WXOBS`, `@MAINE`.
+- **Contractions are normal, in moderation.** Measured against KC1JMH's own
+  prose, the natural rate is roughly one contraction per seventy words:
+  `docs/USER-GUIDE.md` runs 1.6%, `docs/CHANGELOG.md` 1.0%. Writing them all
+  out reads stiff and stops sounding like a person; leaning on them reads
+  chatty. Neither extreme is the voice. Write the way you would say it to
+  another operator and the rate takes care of itself.
 - **Always give the why.** A sentence that says what a control does without
   saying what problem it solves gets rewritten.
 - Expand an acronym on first use per page, then use it freely. Assume the

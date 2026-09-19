@@ -34,6 +34,18 @@ Authoritative sources: `backend/app/models.py` for the data model,
 for who may do it, `frontend/src/pages/` and `frontend/src/components/` for what
 the user sees and what the controls are named.
 
+### Voice calibration
+
+The voice rules live in `docs/DEVELOPMENT.md`. One measured detail worth adding,
+because both extremes have already shown up in drafts:
+
+- **Contractions are normal, in moderation.** Measured against KC1JMH's own
+  prose, the natural rate is roughly one contraction per seventy words:
+  `docs/USER-GUIDE.md` runs 1.6%, `docs/CHANGELOG.md` 1.0%. Writing them all
+  out reads stiff and stops sounding like a person; leaning on them reads
+  chatty. Neither extreme is the voice. Write the way you would say it to
+  another operator and the rate takes care of itself.
+
 ### Use the label that is on the screen
 
 Where the code, the old docs, and the interface disagree about what something is
@@ -50,11 +62,21 @@ not find one. Write "Bulk add", and say that it is sometimes called speed entry.
 - **`StationStatus` is exactly**: CHECKED_IN, HAS_TRAFFIC, LISTENING, RELAY,
   AWAY, ANNOUNCEMENTS, MOBILE, CHECKED_OUT. The old README invented "Available"
   and omitted four real ones.
-- **A recheck is not a status.** It is what happens when an already-checked-in
-  callsign checks in again: the existing row updates rather than a second row
-  appearing. **But** the check-in list legend does show a "Recheck" marker, so
-  a reader will see that word on screen. Explain the distinction; do not simply
-  assert that recheck is not a thing.
+- **A recheck is not a status**, and it does **not** update the existing row.
+  Verified against `routers/check_ins.py::create_check_in` on 2026-09-19: a
+  recheck inserts a **new** `CheckIn` row with `is_recheck=True` and
+  `parent_check_in_id` pointing at that callsign's root check-in, and the list
+  endpoint returns every row. So by default the check-in list really does show
+  two rows for a rechecked callsign, the later one carrying the recheck marker.
+  `NetView.tsx`'s **"Hide duplicate rows"** toggle (off by default, remembered
+  per browser) is what collapses them to one row per callsign.
+
+  An earlier version of this brief said the existing row updates. That was
+  wrong, and it came from `.github/copilot-instructions.md`, which had carried
+  the claim since before the README and the user guide repeated it. All three
+  are now corrected. Mentioned here because it is a good illustration of the
+  standing rule: **the code is authoritative, and a confident sentence in an
+  existing document is not evidence.**
 - **"2nd NCS" is a real label in the check-in list legend**, with the tooltip
   "2nd NCS - assists primary Net Control Station". It is **not** a separate
   assignable role: there is no such `NetRole` value. It is how the list marks an

@@ -64,7 +64,7 @@ It covers: file structure, migration template, AppSettings singleton pattern, de
 
 - **Net**: Radio session with lifecycle: DRAFT → SCHEDULED → ACTIVE → CLOSED
 - **Check-in**: Station logging into active net (callsign, frequency, status)
-- **Recheck**: Same callsign re-checking updates existing record (no duplicates)
+- **Recheck**: Same callsign checking in again. `create_check_in` inserts a **new** `CheckIn` row with `is_recheck=True` and `parent_check_in_id` pointing at the callsign's root check-in — it does **not** update the existing row, and `GET /nets/{id}/check-ins` returns every row, so the list shows one row per check-in event by default. `NetView.tsx`'s "Hide duplicate rows" toggle (`STORAGE_KEYS.CHECKIN_HIDE_DUPLICATES`, off by default, per-browser) is what collapses them to one row per callsign. This line previously read "updates existing record (no duplicates)", which is how that claim reached the README and the user guide; corrected 2026-09-19 against `routers/check_ins.py`
 - **Frequency**: Radio freq/mode or digital talkgroup - nets can have multiple
 - **NetRole**: Per-net roles (NCS, Logger, Relay) separate from global `UserRole`
 
