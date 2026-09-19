@@ -17,21 +17,22 @@ There are exactly eight. This list is read directly from `StationStatus` in the 
 
 <div class="table-scroll" markdown="1">
 
-| Icon shown | Label on screen | Means on the air | Plotted on the map | Also affects |
-|---|---|---|---|---|
-| A green checkmark | Standard | Checked in and available | Yes | Default status; also the icon shown for a role holder (NCS, Logger, Relay) who has no other status set |
-| Two arrows in a circle | Recheck | Re-checked into the net | Yes | Not a separate status -- see "Recheck is not a status" below. A recheck is also a second, separate row in the check-in list unless "Hide duplicate rows" is turned on |
-| An ear | Listening | Monitoring only, not transmitting | Yes | -- |
-| A satellite dish | Relay | Can relay stations NCS cannot hear | Yes | Also a per-net role (see [Roles and permissions](/docs/reference/roles-and-permissions/)); the role badge takes priority over this status when both apply |
-| A pause symbol | Away | Temporarily away, will return | Yes | -- |
-| A siren | Traffic | Has traffic or an emergency to report | Yes | Shows the traffic icon in the toolbar for NCS/Logger if traffic handling (see [Glossary](/docs/reference/glossary/)) is enabled on the net |
-| A megaphone | Announce | Has announcements to share | Yes | -- |
-| A car | Mobile | Mobile station, may only be available briefly | Yes | Sorted above chronological order on nets with mobile-priority sort enabled |
-| A waving hand | Out | Checked out of net | **Yes** | Excluded from the "currently on frequency" count, but not from the map or the log |
+| Icon shown | In the legend | In the dropdown | Means on the air | Plotted on the map | Also affects |
+|---|---|---|---|---|---|
+| A green checkmark | Standard | Checked in | Checked in and available | Yes | Default status; also the icon shown for a role holder (NCS, Logger, Relay) who has no other status set |
+| An ear | Listening | Listening only | Monitoring only, not transmitting | Yes | -- |
+| A satellite dish | Relay | Relay | Can relay stations NCS cannot hear | Yes | Also a per-net role (see [Roles and permissions](/docs/reference/roles-and-permissions/)); the role badge takes priority over this status when both apply |
+| A pause symbol | Away | Away | Temporarily away, will return | Yes | -- |
+| A siren | Traffic | Has traffic | Has traffic or an emergency to report | Yes | Shows the traffic icon in the toolbar for NCS/Logger if traffic handling (see [Glossary](/docs/reference/glossary/)) is enabled on the net |
+| A megaphone | Announce | Announcements | Has announcements to share | Yes | -- |
+| A car | Mobile | Mobile | Mobile station, may only be available briefly | Yes | Sorted above chronological order unless the net's manager has turned mobile-priority sort off. It is on by default |
+| A waving hand | Out | Checked out | Checked out of net | **Yes** | Excluded from the "currently on frequency" count, but not from the map or the log |
 
 </div>
 
-The internal names (used by the API and in exports) are `checked_in`, `listening`, `relay`, `away`, `has_traffic`, `announcements`, `mobile`, and `checked_out`. The screen never shows these lowercase, underscored forms; use the labels in the table above when talking to another operator.
+Two columns, because ECTLogger genuinely uses two sets of words for the same eight things. The legend under the check-in list is written short to fit on one line ("Standard", "Traffic", "Out"); the status dropdown and the net report spell them out ("Checked in", "Has traffic", "Checked out"). They are the same statuses. Nothing changes but the wording.
+
+A CSV export is a third form again: it writes the internal names, `checked_in`, `listening`, `relay`, `away`, `has_traffic`, `announcements`, `mobile`, and `checked_out`. Those are what the API uses too. No screen ever shows them.
 
 ## Checked-out stations are still plotted
 
