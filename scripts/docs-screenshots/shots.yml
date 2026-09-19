@@ -19,6 +19,11 @@ defaults:
   timezone: America/New_York
   settle: 500
 
+  # Transient overlays that would date a figure or cover it. A shot that
+  # actually wants to show one overrides this with its own empty hide list.
+  hide:
+    - '.MuiSnackbar-root'
+
   local_storage:
     # Light mode throughout. The repository made this call once already
     # (commit eaff80c) and the layout's light-only/dark-only image swap has
@@ -32,9 +37,38 @@ shots:
     page: /
     route: /nets/{{net:active}}
     as: W1PINE
-    wait_for: 'table tbody tr'
+    # ":visible" is Playwright's own pseudo-class, not CSS. The net view renders
+    # a desktop table and a mobile one, only one of which is laid out, so every
+    # table selector in this manifest needs it.
+    wait_for: 'table:visible tbody tr'
     alt: >
-      A live net in ECTLogger: eleven stations in the check-in list with their
-      statuses and locations, frequency chips across the top of the table, and
-      the chat panel beside it.
+      A live net in ECTLogger: fourteen stations in the check-in list with their
+      statuses and locations, frequency chips above the table, and the net
+      control toolbar across the top.
     caption: A net in progress, seen by Net Control.
+
+  # Proves the annotation mechanism end to end. Kept as a real figure rather
+  # than a test fixture, because the net toolbar is what a new Net Control
+  # operator needs pointed out first.
+  - id: toolbar-speed-entry
+    section: net-control
+    page: /docs/net-control/speed-entry/
+    route: /nets/{{net:active}}
+    as: W1PINE
+    wait_for: 'table:visible tbody tr'
+    # The toolbar row is an unnamed flex container, so it is addressed through
+    # a control that is definitely in it rather than through an emotion-
+    # generated class name that changes whenever the styles are touched.
+    element: 'div:has(> span[aria-label="Bulk add multiple check-ins"])'
+    pad: 10
+    annotate:
+      - selector: 'span[aria-label="Bulk add multiple check-ins"]'
+        style: box
+    alt: >
+      The net control toolbar, with the leftmost button, labelled "Bulk add",
+      outlined in red. The rest of the row reads Search, Map, Traffic,
+      Announcements, Notes, Topics, Stats, Import, Edit net, Roles, Role: NCS,
+      Step away, Just listening, Check out, Close net.
+    caption: >
+      Speed entry is the "Bulk add" button at the left end of the net toolbar.
+      Its tooltip reads "Bulk add multiple check-ins".

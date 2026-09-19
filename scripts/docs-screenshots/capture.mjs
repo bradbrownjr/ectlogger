@@ -36,8 +36,19 @@ const REPO = resolve(HERE, '..', '..');
 
 // ========== CONFIGURATION ==========
 
+// A ws:// endpoint, not http://. Given an http:// URL, Playwright first fetches
+// /json/version and then connects to whatever webSocketDebuggerUrl it finds
+// there, and this deployment reports ws://0.0.0.0:3000/ — the address it binds
+// on inside its own container, which is not reachable from here. Handing it the
+// WebSocket URL directly skips that lookup.
 const BROWSERLESS_URL = process.env.BROWSERLESS_URL
-  || 'http://10.6.26.2:3000?token=nosi2QszI5M9eN';
+  || 'ws://10.6.26.2:3000?token=nosi2QszI5M9eN';
+
+// Browserless pins its own 800x600 viewport on every page it serves, and that
+// pin beats the viewport Playwright asks for per context. The size therefore
+// has to travel in the connection's launch payload (see main), and the check
+// after each navigation exists because when this goes wrong the app quietly
+// renders its narrow layout and the capture still succeeds.
 
 // The seeded demo instance. Deliberately not defaulted to anything that could
 // be beta or production: those hold real operators' names and addresses.
@@ -188,7 +199,9 @@ async function tokenFor(callsign) {
 
   let result = await attempt();
   if (result.login_status === 'mfa_required') {
-    const secret = user.mfa_secret || seed.mfa_secrets?.[callsign];
+    const secret = user.mfa_secret
+      || seed.mfa_secrets?.[callsign]
+      || (seed.admin_mfa?.callsign === callsign ? seed.admin_mfa.secret : null);
     if (!secret) {
       throw new Error(`${callsign} needs a TOTP code but the seed manifest has no secret for it.`);
     }
@@ -215,12 +228,16 @@ function expand(str) {
   if (typeof str !== 'string') return str;
   return str.replace(/\{\{(\w+):([\w-]+)\}\}/g, (whole, kind, key) => {
     if (kind === 'net') {
-      const net = seed.nets.find((n) => n.key === key || n.status?.toLowerCase() === key);
+      const net = seed.nets.find((n) => n.key === key)
+        || seed.nets.find((n) => n.status?.toLowerCase() === key.toLowerCase())
+        || seed.nets.find((n) => n.name.toLowerCase().includes(key.toLowerCase()));
       if (!net) throw new Error(`No seeded net for ${whole}`);
       return String(net.id);
     }
     if (kind === 'template') {
-      const t = seed.templates.find((x) => x.key === key);
+      const t = seed.templates.find((x) => x.key === key)
+        || seed.templates.find((x) => String(x.id) === key)
+        || seed.templates.find((x) => x.name.toLowerCase().includes(key.toLowerCase()));
       if (!t) throw new Error(`No seeded template for ${whole}`);
       return String(t.id);
     }
@@ -279,12 +296,24 @@ const ANNOTATION_CSS = `
 
 async function annotate(page, annotations) {
   await page.addStyleTag({ content: ANNOTATION_CSS });
+  const drawn = [];
   for (const a of annotations) {
-    const ok = await page.evaluate(({ selector, style, label, pad, labelPosition }) => {
-      const el = document.querySelector(selector);
-      if (!el) return false;
+    const box = await page.evaluate(({ selector, style, label, pad, labelPosition }) => {
+      // The first match is not necessarily the one on screen. The app mounts a
+      // desktop and a mobile copy of several controls, and MUI parks hidden
+      // measuring elements at -9999px; annotating one of those draws a red box
+      // off the canvas, which looks exactly like no annotation at all.
+      const candidates = [...document.querySelectorAll(selector)].filter((node) => {
+        const box = node.getBoundingClientRect();
+        if (box.width === 0 || box.height === 0) return false;
+        if (box.right < 0 || box.bottom < 0) return false;
+        const style = getComputedStyle(node);
+        return style.visibility !== 'hidden' && style.display !== 'none';
+      });
+      const el = candidates[0];
+      if (!el) return null;
       const r = el.getBoundingClientRect();
-      if (r.width === 0 && r.height === 0) return false;
+      if (r.width === 0 && r.height === 0) return null;
       const p = pad == null ? 4 : pad;
       const top = r.top + window.scrollY - p;
       const left = r.left + window.scrollX - p;
@@ -321,12 +350,24 @@ async function annotate(page, annotations) {
         }
         document.body.appendChild(tag);
       }
-      return true;
+      // Report document coordinates, including the label, so a clipped
+      // capture can be widened to contain the annotation. A red box drawn
+      // outside the crop is worse than no box: the figure looks finished and
+      // points at nothing.
+      const labelSlack = label ? 34 : 0;
+      return {
+        x: left,
+        y: top - labelSlack,
+        width: width + (labelPosition === 'right' && label ? 160 : 0),
+        height: height + labelSlack + (label ? 8 : 0),
+      };
     }, a);
-    if (!ok) {
+    if (!box) {
       throw new Error(`Annotation target not found or not visible: ${a.selector}`);
     }
+    drawn.push(box);
   }
+  return drawn;
 }
 
 // ========== STEPS ==========
@@ -368,6 +409,24 @@ async function runSteps(page, steps) {
 
 // ========== CAPTURE ==========
 
+// The screen geometry a shot needs. Browserless pins its own default viewport
+// on every page it hands out, and that pin beats Playwright's per-context
+// viewport, so this has to be settled at connection time rather than per page.
+function geometryOf(shot) {
+  const viewport = shot.viewport || defaults.viewport || { width: 1440, height: 1000 };
+  return {
+    width: viewport.width,
+    height: viewport.height,
+    deviceScaleFactor: shot.scale || defaults.scale || 2,
+    isMobile: !!shot.mobile,
+    hasTouch: !!shot.mobile,
+  };
+}
+
+function geometryKey(g) {
+  return `${g.width}x${g.height}@${g.deviceScaleFactor}${g.isMobile ? ' mobile' : ''}`;
+}
+
 async function capture(browser, shot) {
   const viewport = shot.viewport || defaults.viewport || { width: 1440, height: 1000 };
   const context = await browser.newContext({
@@ -401,6 +460,18 @@ async function capture(browser, shot) {
     const url = DEMO_BASE + expand(shot.route);
     await page.goto(url, { waitUntil: 'networkidle', timeout: 45000 });
 
+    // Re-assert and then verify. A figure captured at the wrong width is a
+    // figure of a layout the reader will never see.
+    await page.setViewportSize(viewport);
+    await page.waitForTimeout(250);
+    const actual = await page.evaluate(() => window.innerWidth);
+    if (Math.abs(actual - viewport.width) > 2) {
+      throw new Error(
+        `Viewport is ${actual}px wide, asked for ${viewport.width}px. `
+        + 'The app would have rendered its narrow layout.',
+      );
+    }
+
     await page.addStyleTag({ content: STABILIZE_CSS });
 
     if (shot.wait_for) {
@@ -412,13 +483,14 @@ async function capture(browser, shot) {
     // in a portal and measure themselves before they land in their final spot.
     await page.waitForTimeout(shot.settle ?? defaults.settle ?? 400);
 
-    if (shot.hide) {
+    const hideSelectors = [...(defaults.hide || []), ...(shot.hide || [])];
+    if (hideSelectors.length) {
       await page.addStyleTag({
-        content: shot.hide.map((s) => `${s} { visibility: hidden !important; }`).join('\n'),
+        content: hideSelectors.map((s) => `${s} { visibility: hidden !important; }`).join('\n'),
       });
     }
 
-    if (shot.annotate) await annotate(page, shot.annotate);
+    const annotationBoxes = shot.annotate ? await annotate(page, shot.annotate) : [];
 
     const outPath = join(REPO, 'docs', 'img', shot.section, `${shot.id}.png`);
     mkdirSync(dirname(outPath), { recursive: true });
@@ -429,17 +501,36 @@ async function capture(browser, shot) {
       // Clip rather than element.screenshot(), so a partial capture can carry
       // padding and still include an annotation drawn outside the element.
       const pad = shot.pad ?? 12;
-      const box = await page.locator(expand(shot.element)).first().boundingBox();
+      // ">> visible=true" for the same reason annotations filter for visibility:
+      // the app mounts desktop and mobile copies of whole toolbars, and the
+      // hidden copy is frequently first in document order.
+      const box = await page
+        .locator(`${expand(shot.element)} >> visible=true`)
+        .first()
+        .boundingBox();
       if (!box) throw new Error(`Element not visible: ${shot.element}`);
       const dims = await page.evaluate(() => ({
         w: document.documentElement.scrollWidth,
         h: document.documentElement.scrollHeight,
       }));
+      // Union of the requested element and everything annotated on it.
+      let left = box.x - pad;
+      let top = box.y - pad;
+      let right = box.x + box.width + pad;
+      let bottom = box.y + box.height + pad;
+      for (const a of annotationBoxes) {
+        left = Math.min(left, a.x - pad);
+        top = Math.min(top, a.y - pad);
+        right = Math.max(right, a.x + a.width + pad);
+        bottom = Math.max(bottom, a.y + a.height + pad);
+      }
+      left = Math.max(0, left);
+      top = Math.max(0, top);
       options.clip = {
-        x: Math.max(0, box.x - pad),
-        y: Math.max(0, box.y - pad),
-        width: Math.min(box.width + pad * 2, dims.w - Math.max(0, box.x - pad)),
-        height: Math.min(box.height + pad * 2, dims.h - Math.max(0, box.y - pad)),
+        x: left,
+        y: top,
+        width: Math.min(right - left, dims.w - left),
+        height: Math.min(bottom - top, dims.h - top),
       };
     } else if (shot.full_page) {
       // Only for pages that actually scroll. The application shell sets
@@ -462,35 +553,55 @@ async function main() {
   console.log(`Browserless:   ${BROWSERLESS_URL.replace(/token=[^&]*/, 'token=***')}`);
   console.log(`Shots:         ${shots.length}\n`);
 
-  // connectOverCDP, not connect: this Browserless deployment speaks the raw
-  // Chrome DevTools Protocol, and playwright.connect() expects a Playwright
-  // server on the other end.
-  const browser = await chromium.connectOverCDP(BROWSERLESS_URL, { timeout: 30000 });
+  // Shots are grouped by the screen geometry they need, and each group gets its
+  // own connection, because the geometry is fixed at connect time.
+  const groups = new Map();
+  for (const shot of shots) {
+    const g = geometryOf(shot);
+    const key = geometryKey(g);
+    if (!groups.has(key)) groups.set(key, { geometry: g, shots: [] });
+    groups.get(key).shots.push(shot);
+  }
 
   const figures = {};
   const failures = [];
 
-  try {
-    for (const shot of shots) {
-      process.stdout.write(`  ${shot.id} ... `);
-      try {
-        const path = await capture(browser, shot);
-        const rel = path.slice(REPO.length + 1);
-        figures[shot.id] = {
-          path: `/${rel}`,
-          alt: shot.alt,
-          caption: shot.caption || null,
-          page: shot.page || null,
-        };
-        console.log('ok');
-      } catch (err) {
-        console.log('FAILED');
-        console.log(`      ${err.message}`);
-        failures.push({ id: shot.id, error: err.message });
+  for (const [key, group] of groups) {
+    console.log(`[${key}]`);
+
+    // connectOverCDP, not connect: this Browserless deployment speaks the raw
+    // Chrome DevTools Protocol, and playwright.connect() expects a Playwright
+    // server on the other end. defaultViewport in the launch payload is the
+    // part that actually decides the page size here.
+    const launch = encodeURIComponent(JSON.stringify({
+      args: ['--hide-scrollbars'],
+      defaultViewport: group.geometry,
+    }));
+    const endpoint = `${BROWSERLESS_URL}${BROWSERLESS_URL.includes('?') ? '&' : '?'}launch=${launch}`;
+    const browser = await chromium.connectOverCDP(endpoint, { timeout: 30000 });
+
+    try {
+      for (const shot of group.shots) {
+        process.stdout.write(`  ${shot.id} ... `);
+        try {
+          const path = await capture(browser, shot);
+          const rel = path.slice(REPO.length + 1);
+          figures[shot.id] = {
+            path: `/${rel}`,
+            alt: shot.alt,
+            caption: shot.caption || null,
+            page: shot.page || null,
+          };
+          console.log('ok');
+        } catch (err) {
+          console.log('FAILED');
+          console.log(`      ${err.message}`);
+          failures.push({ id: shot.id, error: err.message });
+        }
       }
+    } finally {
+      await browser.close();
     }
-  } finally {
-    await browser.close();
   }
 
   // An index of every figure with its alt text, so a page author pastes the

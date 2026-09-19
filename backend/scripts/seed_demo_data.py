@@ -190,6 +190,10 @@ async def _build(db_path: Path, out_path: Path):
                 is_active=True,
                 password_hash=password_hash,
                 email_notifications=True,
+                # Otherwise the onboarding walkthrough auto-opens over the top
+                # of every page the first time each demo account is used, which
+                # is exactly when a screenshot is being taken of it.
+                walkthrough_seen=True,
                 **kwargs,
             )
             if is_admin:
@@ -213,11 +217,11 @@ async def _build(db_path: Path, out_path: Path):
         # =================================================================
         # FREQUENCIES -- shared list, shows up in the admin frequency table.
         # =================================================================
-        f_repeater = Frequency(frequency="146.940 MHz", mode="FM", description="Example County ARES Repeater (PL 100.0)")
-        f_simplex = Frequency(frequency="146.520 MHz", mode="FM", description="2m Simplex Calling/Backup")
+        f_repeater = Frequency(frequency="146.940", mode="FM", description="Example County ARES Repeater (PL 100.0)")
+        f_simplex = Frequency(frequency="146.520", mode="FM", description="2m Simplex Calling/Backup")
         f_dmr = Frequency(mode="DMR", network="Brandmeister", talkgroup="31234", description="Example County DMR Talkgroup")
-        f_skywarn = Frequency(frequency="146.850 MHz", mode="FM", description="Example County SKYWARN Repeater")
-        f_hf = Frequency(frequency="3.930 MHz", mode="LSB", description="Example County ARES HF Net")
+        f_skywarn = Frequency(frequency="146.850", mode="FM", description="Example County SKYWARN Repeater")
+        f_hf = Frequency(frequency="3.930", mode="LSB", description="Example County ARES HF Net")
         db.add_all([f_repeater, f_simplex, f_dmr, f_skywarn, f_hf])
         await db.commit()
         for f in (f_repeater, f_simplex, f_dmr, f_skywarn, f_hf):

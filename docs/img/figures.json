@@ -1,0 +1,8 @@
+{
+  "toolbar-speed-entry": {
+    "path": "/docs/img/net-control/toolbar-speed-entry.png",
+    "alt": "The net control toolbar, with the speed entry button at its far left outlined in red and labelled. The button's tooltip reads \"Bulk add multiple check-ins\".\n",
+    "caption": "Speed entry is the leftmost button on the net toolbar.",
+    "page": "/docs/net-control/speed-entry/"
+  }
+}

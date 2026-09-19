@@ -12,28 +12,42 @@ memory. A figure you cannot regenerate is a figure that goes stale.
 
 ## Running it
 
+All four steps run from the repository root. Use `backend/venv`, not the
+repository-root `.venv` — the latter is a stale environment missing `pyotp`
+and `pip`.
+
 ```bash
 # 1. Build the demo database (fictional roster, no real operator data)
-python backend/scripts/seed_demo_data.py --db backend/demo.db
+backend/venv/bin/python backend/scripts/seed_demo_data.py \
+  --db backend/demo.db --out backend/demo-seed.json
 
 # 2. Start the demo backend on port 8100. Port 8000 is beta's; leave it alone.
-cd backend && DATABASE_URL="sqlite+aiosqlite:///./demo.db" \
-  FRONTEND_URL="http://10.6.26.3:3100" EMAIL_ENABLED=false SMTP_HOST=127.0.0.1 \
-  SECRET_KEY=demo-only-not-a-real-secret \
-  ../.venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 8100
+(cd backend && DATABASE_URL="sqlite:///./demo.db" \
+  FRONTEND_URL="http://10.6.26.3:3100" \
+  EMAIL_ENABLED=false SMTP_HOST=127.0.0.1 SMTP_USER=demo@example.com \
+  SMTP_PASSWORD=demo SMTP_FROM_EMAIL=demo@example.com \
+  SECRET_KEY=demo-only-not-a-real-secret APP_ENV=production \
+  venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 8100)
 
 # 3. Start the demo frontend on port 3100, pointed at that backend
-cd frontend && VITE_API_URL=http://10.6.26.3:8100/api \
+(cd frontend && VITE_API_URL=http://10.6.26.3:8100/api \
   VITE_ALLOWED_HOSTS=10.6.26.3,localhost,127.0.0.1 \
-  npx vite --host 0.0.0.0 --port 3100
+  npx vite --host 0.0.0.0 --port 3100)
 
 # 4. Capture
-cd scripts/docs-screenshots && npm install    # first time only
-node capture.mjs                              # everything
-node capture.mjs --section operators          # one path
-node capture.mjs --only speed-entry           # one figure
-node capture.mjs --list                       # what would be captured
+(cd scripts/docs-screenshots && npm install)   # first time only
+node scripts/docs-screenshots/capture.mjs                     # everything
+node scripts/docs-screenshots/capture.mjs --section operators  # one path
+node scripts/docs-screenshots/capture.mjs --only speed-entry   # one figure
+node scripts/docs-screenshots/capture.mjs --list               # dry run
 ```
+
+Pass `DATABASE_URL` as `sqlite:///./demo.db`, **not** `sqlite+aiosqlite:///`.
+`app/database.py` adds the `+aiosqlite` driver itself with a plain string
+replace of `sqlite:///`, and that substring also matches inside
+`aiosqlite:///`, so handing it the driver form produces
+`sqlite+aiosqlite+aiosqlite:///` and a `too many values to unpack` failure out
+of SQLAlchemy's dialect loader.
 
 Output lands in `docs/img/<section>/<id>.png`, plus `docs/img/figures.json`
 mapping every id to its path, alt text, and caption.
@@ -54,6 +68,19 @@ the control by its label, and the `alt` text carries the same instruction in
 words. A red box is invisible to a screen reader.
 
 **Light mode only**, except the one figure that exists to show the dark theme.
+
+**Selectors resolve to the first *visible* match, not the first match.** The app
+mounts desktop and mobile copies of whole toolbars, and MUI parks hidden
+measuring elements at -9999px, so the first match in document order is
+routinely the one nobody can see. `capture.mjs` filters for visibility on both
+`element` and `annotate`, and `inspect.mjs` reports the visible one, but a
+selector that matches several visible things still takes the first. Make it
+specific.
+
+**A `label` on an annotation sits over the page**, so on a dense toolbar it will
+cover the control next to the one you are pointing at. Use labels when a figure
+carries several annotations and the prose has to refer to them individually.
+For a single red box, let the caption do the work.
 
 ## Adding a figure
 
