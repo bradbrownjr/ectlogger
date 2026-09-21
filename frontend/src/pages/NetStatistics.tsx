@@ -200,13 +200,6 @@ const NetStatistics: React.FC = () => {
   const navigate = useNavigate();
   const theme = useTheme();
   const isDarkMode = theme.palette.mode === 'dark';
-  // Use CartoDB Dark Matter tiles in dark mode, OSM in light mode
-  const tileUrl = isDarkMode
-    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-    : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-  const tileAttribution = isDarkMode
-    ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-    : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -400,6 +393,21 @@ const NetStatistics: React.FC = () => {
   // social-media export layout applies (see PNG_EXPORT_* above).
   const isMapPngExport = pngExportingId === 'net-stats-map';
   const isChartPngExport = pngExportingId === 'net-stats-charts';
+
+  // Use CartoDB Dark Matter tiles in dark mode, OSM in light mode -- but
+  // always fall back to light OSM tiles while capturing the map for PNG
+  // export. CARTO's dark tile endpoint is anonymous/quota-limited and
+  // starts returning a watermarked "API KEY REQUIRED" tile once that quota
+  // is hit; a live map just retries on the next pan/zoom, but an export
+  // bakes whatever tile was loaded at capture time permanently into the
+  // image. CheckInMap.tsx's own PDF export already forces light tiles for
+  // the same reason -- see its `tileUrl` comment.
+  const tileUrl = (isDarkMode && !isMapPngExport)
+    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+    : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+  const tileAttribution = (isDarkMode && !isMapPngExport)
+    ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+    : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
   // The cards the header's "Export PNG" button downloads, in page order. Each
   // is conditional on the same test that decides whether the card renders at

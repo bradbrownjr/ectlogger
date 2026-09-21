@@ -4,8 +4,8 @@ summary: Every user-facing change, newest first, in the format the in-app What's
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-09-19
-review_by: 2027-09-19
+revised: 2026-09-20
+review_by: 2027-09-20
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/CHANGELOG/
 ---
@@ -13,6 +13,14 @@ permalink: /docs/CHANGELOG/
 # Changelog
 
 All notable changes to ECTLogger are documented here.
+
+---
+
+# September 20, 2026
+
+## Bug Fixes
+
+* **Net Statistics: Map export fixed for dark mode** — Downloading the check-in location map as a PNG while using dark mode could produce a map covered by an "API key required" watermark instead of your check-ins. The export now always uses the same plain map style as the printed report, so the download shows the map every time.
 
 ---
 

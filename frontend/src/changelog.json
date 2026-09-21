@@ -1,6 +1,22 @@
 {
-  "version": "2026.09.19c",
+  "version": "2026.09.20",
   "entries": [
+    {
+      "version": "2026.09.20",
+      "date": "2026-09-20",
+      "sections": [
+        {
+          "title": "Bug Fixes",
+          "type": "bugfix",
+          "items": [
+            {
+              "text": "Net Statistics: Map export fixed for dark mode — Downloading the check-in location map as a PNG while using dark mode could produce a map covered by an \"API key required\" watermark instead of your check-ins. The export now always uses the same plain map style as the printed report, so the download shows the map every time.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.09.19c",
       "date": "2026-09-19",
