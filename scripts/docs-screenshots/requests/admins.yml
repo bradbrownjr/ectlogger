@@ -18,7 +18,7 @@ shots:
     as: W1DEMO
     wait_for: 'table:visible tbody tr'
     # W1PINE (seeded NCS) rather than W1DEMO's own row -- the admin's own
-    # row disables Change Role/Ban/Delete (an admin cannot demote, ban, or
+    # row disables Edit User/Ban/Delete (an admin cannot edit, ban, or
     # delete themselves), which would make for a confusing "click here" figure.
     element: 'tr:has-text("W1PINE")'
     pad: 8
@@ -26,7 +26,7 @@ shots:
     # are 80-130px wide, so they overlapped each other and the row above into
     # an unreadable stack. The alt and the caption name them in order instead.
     annotate:
-      - selector: 'tr:has-text("W1PINE") button[title="Change Role"]'
+      - selector: 'tr:has-text("W1PINE") button[title="Edit User"]'
         style: box
       - selector: 'tr:has-text("W1PINE") button[title="Ban User"]'
         style: box
@@ -34,12 +34,12 @@ shots:
         style: box
     alt: >
       A row in the admin Users table for Alex Reed, W1PINE, with three of its
-      five action icons outlined in red: the pencil (Change role), the
+      five action icons outlined in red: the pencil (Edit User), the
       circle-with-a-slash beside it (Ban), and the key two icons further along
       (Reset password). The stopwatch between them and the trash can at the end
       are not outlined.
     caption: >
-      Every row in the Users table carries the same five actions. Change role
+      Every row in the Users table carries the same five actions. Edit User
       and Ban are covered here; Reset password and the two-factor reset next
       to it are covered in Security, MFA, and lockouts.
 
@@ -49,12 +49,13 @@ shots:
     route: /admin/users
     as: W1DEMO
     wait_for: 'table:visible tbody tr'
-    # The dropdown is opened rather than left closed: the caption below is
-    # about which four roles are on offer, and a closed picker showing only
-    # the current one does not show them. MUI portals the menu to the end of
-    # <body>, so the clip is the union of the dialog and the menu paper.
+    # The dropdown is opened rather than left closed: part of the caption
+    # below is about which four roles are on offer, and a closed picker
+    # showing only the current one does not show them. MUI portals the menu
+    # to the end of <body>, so the clip is the union of the dialog and the
+    # menu paper.
     steps:
-      - click: 'tr:has-text("W1PINE") button[title="Change Role"]'
+      - click: 'tr:has-text("W1PINE") button[title="Edit User"]'
       - wait_for: '.MuiDialog-paper'
       - click: '.MuiDialog-paper .MuiSelect-select'
       - wait_for: '.MuiPopover-paper .MuiMenuItem-root'
@@ -62,18 +63,19 @@ shots:
       - '.MuiDialog-paper'
       - '.MuiPopover-paper'
     pad: 12
-    # No label tag on this one: it landed on top of the dialog's own
-    # "Change role for: W1PINE" line, and the field is already labelled Role.
     annotate:
+      - selector: '.MuiDialog-paper input[type="email"]'
+        style: box
       - selector: '.MuiDialog-paper .MuiSelect-select'
         style: box
     alt: >
-      The Change User Role dialog, open for W1PINE, with the Role picker
-      outlined in red and its menu open, offering Guest, User, NCS, and Admin.
+      The Edit User dialog, open for W1PINE, with the Name, Callsign, and
+      Email fields above an open Role picker outlined in red, offering
+      Guest, User, NCS, and Admin.
     caption: >
-      The four roles on offer. Guest and the global NCS role are both
-      selectable here but neither currently changes what the account can do
-      -- see the note below.
+      Name, callsign, email, and role all live in one dialog. Changing the
+      email is how you recover an account that lost access to the address
+      it signed up with -- both the old and new address get notified.
 
   - id: self-mfa-reset-disabled
     section: admins

@@ -4,8 +4,8 @@ summary: Every user-facing change, newest first, in the format the in-app What's
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-09-21
-review_by: 2027-09-21
+revised: 2026-09-22
+review_by: 2027-09-22
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/CHANGELOG/
 ---
@@ -13,6 +13,14 @@ permalink: /docs/CHANGELOG/
 # Changelog
 
 All notable changes to ECTLogger are documented here.
+
+---
+
+# September 22, 2026
+
+## New Features
+
+* **Admin: Fix a user's name, callsign, or login email** — Admins can now correct these directly from the Users tab. If someone loses access to the email they signed up with, an admin can move their account to a new address and they're back in, no lost check-in history required.
 
 ---
 

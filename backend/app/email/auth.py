@@ -106,3 +106,67 @@ async def send_password_changed(email: str):
         html_content=html_content
     )
 
+
+async def send_admin_email_change_notice(old_email: str, new_email: str):
+    """Notify both sides of an admin-initiated login email change (Admin
+    Users "Edit User" dialog): the old address gets a heads-up in case the
+    wrong account was edited, the new address gets a confirmation it's now
+    the login email. Never sent for a user's own self-service change --
+    UserUpdate has no email field, so this path is admin-only by
+    construction."""
+    logger.info("ADMIN EMAIL CHANGE", f"Notifying {old_email} -> {new_email}")
+
+    old_template = Template("""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .footer { margin-top: 30px; font-size: 12px; color: #666; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h2>Your {{ app_name }} account email was changed</h2>
+            <p>An administrator changed the login email on your account from this address to <strong>{{ new_email }}</strong>.</p>
+            <div class="footer">
+                <p>If this wasn't expected, contact an administrator right away.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """)
+    await send_email(
+        to_email=old_email,
+        subject=f"Your {settings.app_name} account email was changed",
+        html_content=old_template.render(app_name=settings.app_name, new_email=new_email)
+    )
+
+    new_template = Template("""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .footer { margin-top: 30px; font-size: 12px; color: #666; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h2>This is now your {{ app_name }} login email</h2>
+            <p>An administrator set this address as the login email for a {{ app_name }} account (previously {{ old_email }}). Use it going forward to sign in via magic link.</p>
+            <div class="footer">
+                <p>If you weren't expecting this, contact an administrator right away.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """)
+    await send_email(
+        to_email=new_email,
+        subject=f"This is now your {settings.app_name} login email",
+        html_content=new_template.render(app_name=settings.app_name, old_email=old_email)
+    )
+

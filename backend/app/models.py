@@ -993,6 +993,26 @@ class Contact(Base):
     user = relationship("User")
 
 
+class AdminAuditLog(Base):
+    """One row per field an admin changed on another user's account via the
+    Admin Users identity-edit dialog (name/callsign/email/role). No admin
+    action anywhere else in the app is audited -- this exists specifically
+    because editing another account's login email is account-recovery/
+    takeover-adjacent, unlike e.g. a role change or a ban."""
+    __tablename__ = "admin_audit_log"
+
+    id = Column(Integer, primary_key=True, index=True)
+    admin_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    target_user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    field = Column(String(50), nullable=False)  # 'name' | 'callsign' | 'email' | 'role'
+    old_value = Column(Text, nullable=True)
+    new_value = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+    admin = relationship("User", foreign_keys=[admin_id])
+    target_user = relationship("User", foreign_keys=[target_user_id])
+
+
 class AppSettings(Base):
     """Global application settings - singleton table with one row"""
     __tablename__ = "app_settings"

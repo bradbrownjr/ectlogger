@@ -83,8 +83,9 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
   // Drives the "updated Xs ago" caption so the admin can see the list is live.
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
-  const [roleDialogOpen, setRoleDialogOpen] = useState(false);
-  const [newRole, setNewRole] = useState('');
+  const [editUserDialogOpen, setEditUserDialogOpen] = useState(false);
+  const [editUserForm, setEditUserForm] = useState({ name: '', callsign: '', email: '', role: '' });
+  const [editUserSaving, setEditUserSaving] = useState(false);
   const [addUserDialogOpen, setAddUserDialogOpen] = useState(false);
   const [addUserForm, setAddUserForm] = useState({ email: '', name: '', callsign: '', role: 'user' });
   const [addUserSaving, setAddUserSaving] = useState(false);
@@ -349,21 +350,37 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
     }
   };
 
-  const handleOpenRoleDialog = (user: AdminUser) => {
+  const handleOpenEditUserDialog = (user: AdminUser) => {
     setSelectedUser(user);
-    setNewRole(user.role);
-    setRoleDialogOpen(true);
+    setEditUserForm({
+      name: user.name || '',
+      callsign: user.callsign || '',
+      email: user.email,
+      role: user.role,
+    });
+    setEditUserDialogOpen(true);
   };
 
-  const handleUpdateRole = async () => {
+  // Combined identity + role edit (recovery path for a user who lost access
+  // to their sign-up email, or a callsign/name that needs correcting).
+  const handleSaveEditUser = async () => {
     if (!selectedUser) return;
+    setEditUserSaving(true);
     try {
-      await api.put(`/users/${selectedUser.id}/role`, { role: newRole });
-      setRoleDialogOpen(false);
+      await api.put(`/users/${selectedUser.id}`, {
+        name: editUserForm.name || null,
+        callsign: editUserForm.callsign || null,
+        email: editUserForm.email,
+        role: editUserForm.role,
+      });
+      setEditUserDialogOpen(false);
+      showSnackbar('User updated.', 'success');
       fetchUsers();
     } catch (error) {
-      console.error('Failed to update role:', error);
-      alert('Failed to update role');
+      console.error('Failed to update user:', error);
+      showSnackbar(getErrorMessage(error, 'Failed to update user'), 'error');
+    } finally {
+      setEditUserSaving(false);
     }
   };
 
@@ -658,8 +675,8 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
                   <TableCell sx={{ whiteSpace: 'nowrap' }}>
                     <IconButton
                       size="small"
-                      onClick={() => handleOpenRoleDialog(user)}
-                      title="Change Role"
+                      onClick={() => handleOpenEditUserDialog(user)}
+                      title="Edit User"
                       disabled={user.id === currentUser?.id}
                     >
                       <EditIcon />
@@ -793,20 +810,45 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
         </Fab>
       </Tooltip>
 
-      {/* Role Change Dialog */}
-      <Dialog open={roleDialogOpen} onClose={() => setRoleDialogOpen(false)}>
-        <DialogTitle>Change User Role</DialogTitle>
+      {/* Edit User Dialog — name, callsign, email, and role in one place.
+          Editing email is the recovery path for a user who lost access to
+          the address they signed up with; both the old and new address get
+          a notification email once saved. */}
+      <Dialog open={editUserDialogOpen} onClose={() => setEditUserDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Edit User</DialogTitle>
         <DialogContent>
-          <Box sx={{ pt: 2, minWidth: 300 }}>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Changing role for: {displayCallsign(selectedUser)}
+          <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Typography variant="body2" color="text.secondary">
+              Editing: {displayCallsign(selectedUser)}
             </Typography>
+            <TextField
+              label="Name"
+              value={editUserForm.name}
+              onChange={(e) => setEditUserForm({ ...editUserForm, name: e.target.value })}
+              fullWidth
+            />
+            <TextField
+              label="Callsign"
+              value={editUserForm.callsign}
+              onChange={(e) => setEditUserForm({ ...editUserForm, callsign: e.target.value.toUpperCase() })}
+              fullWidth
+              inputProps={{ style: { textTransform: 'uppercase' } }}
+            />
+            <TextField
+              label="Email"
+              type="email"
+              value={editUserForm.email}
+              onChange={(e) => setEditUserForm({ ...editUserForm, email: e.target.value })}
+              required
+              fullWidth
+              helperText="Changing this changes where the user's magic-link sign-in goes. Both the old and new address are notified."
+            />
             <FormControl fullWidth>
               <InputLabel>Role</InputLabel>
               <Select
-                value={newRole}
+                value={editUserForm.role}
                 label="Role"
-                onChange={(e) => setNewRole(e.target.value)}
+                onChange={(e) => setEditUserForm({ ...editUserForm, role: e.target.value })}
               >
                 <MenuItem value="guest">Guest</MenuItem>
                 <MenuItem value="user">User</MenuItem>
@@ -817,9 +859,13 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setRoleDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleUpdateRole} variant="contained">
-            Update Role
+          <Button onClick={() => setEditUserDialogOpen(false)} disabled={editUserSaving}>Cancel</Button>
+          <Button
+            onClick={handleSaveEditUser}
+            variant="contained"
+            disabled={!editUserForm.email || editUserSaving}
+          >
+            {editUserSaving ? <CircularProgress size={24} /> : 'Save'}
           </Button>
         </DialogActions>
       </Dialog>

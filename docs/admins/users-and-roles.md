@@ -1,11 +1,11 @@
 ---
 title: Users and roles
-summary: Inviting people, changing what role an account holds, and banning, resetting, or deleting an account.
+summary: Inviting people, editing an account's identity and role, and banning, resetting, or deleting an account.
 kind: How-to
 audience: Users holding the Admin role
 owner: KC1JMH
-revised: 2026-09-19
-review_by: 2027-09-19
+revised: 2026-09-22
+review_by: 2027-09-22
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/admins/users-and-roles/
 ---
@@ -20,23 +20,25 @@ Every account holds exactly one global role, shown as a colored chip in the Role
 
 - **Admin** — full access to this panel, and the only role that requires two-factor authentication (see [Security, MFA, and lockouts](/docs/admins/security-and-mfa/)). An admin can see every net on the instance, but seeing a net is not the same as running it — see "Admin and net control" below.
 - **User** — the default. Anyone who registers, or is invited without picking a different role, gets this. A User can create nets and schedules, check into nets, and do everything an operator does.
-- **NCS** — assignable from the Change Role dialog, but as of this writing nothing in the app actually checks this global role for anything. It doesn't grant control of any net by itself. Net Control authority is a separate, per-net thing (the NCS *role on a specific net*, assigned there, not here) — see [Roles and permissions](/docs/reference/roles-and-permissions/) for how that actually works. Treat this global NCS role as a label for now, not a permission.
+- **NCS** — assignable from the Edit User dialog, but as of this writing nothing in the app actually checks this global role for anything. It doesn't grant control of any net by itself. Net Control authority is a separate, per-net thing (the NCS *role on a specific net*, assigned there, not here) — see [Roles and permissions](/docs/reference/roles-and-permissions/) for how that actually works. Treat this global NCS role as a label for now, not a permission.
 - **Guest** — also assignable here, and also not currently checked anywhere. Picking it changes the chip color and nothing else. Don't confuse it with a *guest check-in* — a station logged into a net with no account at all, which is a completely different thing covered in [The contact directory](/docs/admins/contacts/).
 
 Because NCS and Guest don't currently gate anything, the role you'll actually use day to day is Admin vs. User: promote someone to Admin when they need this panel, and leave everyone else as User.
 
 <figure class="control-figure">
   <img src="/docs/img/admins/change-role-dialog.png"
-       alt="The Change User Role dialog, open for W1PINE, with the role dropdown outlined in red. The dropdown offers Guest, User, NCS, and Admin.">
-  <figcaption>The four roles on offer. Guest and the global NCS role are both selectable here but neither currently changes what the account can do.</figcaption>
+       alt="The Edit User dialog, open for W1PINE, with the Name, Callsign, and Email fields above an open Role picker outlined in red, offering Guest, User, NCS, and Admin.">
+  <figcaption>Name, callsign, email, and role all live in one dialog. Changing the email is how you recover an account that lost access to the address it signed up with -- both the old and new address get notified.</figcaption>
 </figure>
 
-To change someone's role: click the pencil icon in their row, pick the new role, and confirm. It takes effect immediately, with no need for them to sign out and back in.
+To edit someone's name, callsign, email, or role: click the pencil icon in their row, make your changes, and save. Role changes take effect immediately, with no need for the person to sign out and back in.
+
+This is also the recovery path for an account that lost access to the email it signed up with, since that's the address magic-link sign-in goes to: put in the new address here and the person can sign in there instead. Both the old and new address get a notification email, so if you edit the wrong account by mistake, its owner finds out. Editing a callsign here works the same as the person changing it themselves from Profile — see the note on that below. Every name, callsign, email, or role change made from this dialog is recorded (who made it, when, old value, new value), even though nothing else in this panel keeps that kind of record.
 
 <figure>
   <img src="/docs/img/admins/user-row-actions.png"
-       alt="A row in the admin Users table for Alex Reed, W1PINE, with three of its five action icons outlined in red: the pencil (Change role), the circle-with-a-slash beside it (Ban), and the key two icons further along (Reset password). The stopwatch between them and the trash can at the end are not outlined.">
-  <figcaption>Every row in the Users table carries the same five actions. Change role and Ban are covered here; Reset password and the two-factor reset next to it are covered in Security, MFA, and lockouts.</figcaption>
+       alt="A row in the admin Users table for Alex Reed, W1PINE, with three of its five action icons outlined in red: the pencil (Edit User), the circle-with-a-slash beside it (Ban), and the key two icons further along (Reset password). The stopwatch between them and the trash can at the end are not outlined.">
+  <figcaption>Every row in the Users table carries the same five actions. Edit User and Ban are covered here; Reset password and the two-factor reset next to it are covered in Security, MFA, and lockouts.</figcaption>
 </figure>
 
 ## Admin and net control
@@ -58,7 +60,7 @@ Each row's action icons cover the rest of account management:
 - **Reset two-factor authentication** clears their MFA enrollment so they can set it up again from scratch. Only shows up for accounts that have MFA enabled. Covered in more detail in [Security, MFA, and lockouts](/docs/admins/security-and-mfa/).
 - **Delete** permanently removes the account. It cannot be undone, and you can't delete yourself or the account you're currently signed in as. Check-ins that person already logged keep the callsign and name they typed at the time, since those are stored on the check-in itself rather than looked up live from the account. Anything that depends on the account still existing (their profile popup, being credited by a live link rather than by callsign) stops resolving once the account is gone. If your actual goal is "stop this person from doing anything," Ban is almost always the better tool, since it's reversible and Delete isn't.
 
-Changing someone's primary callsign, from their own Profile, doesn't lose their history either: the system remembers the old callsign and keeps their past check-ins and statistics attached to the same account.
+Changing someone's primary callsign, whether from their own Profile or from this dialog, doesn't lose their history either: the system remembers the old callsign and keeps their past check-ins and statistics attached to the same account.
 
 ## Early access to schedule creation
 

@@ -85,6 +85,37 @@ class AdminUserCreate(BaseModel):
         return v
 
 
+class AdminUserUpdate(BaseModel):
+    """Schema for an admin editing another user's identity and/or role
+    (admin only). All fields optional -- only supplied fields are changed.
+    Recovery path for an account that lost access to its sign-up email, or
+    a callsign/name that needs correcting, without deleting and recreating
+    the account (which would lose check-in history and role assignments)."""
+    name: Optional[str] = Field(None, max_length=100)
+    callsign: Optional[str] = Field(None, max_length=20, min_length=3)
+    email: Optional[EmailStr] = None
+    role: Optional[UserRole] = None
+
+    @model_validator(mode='before')
+    @classmethod
+    def empty_strings_to_none(cls, values: dict) -> dict:
+        if isinstance(values, dict) and values.get('callsign') == '':
+            values['callsign'] = None
+        return values
+
+    @field_validator('email')
+    @classmethod
+    def normalize_email_field(cls, v: Optional[str]) -> Optional[str]:
+        return normalize_email(v) if v is not None else v
+
+    @field_validator('callsign')
+    @classmethod
+    def validate_callsign(cls, v: Optional[str]) -> Optional[str]:
+        if v and not re.match(r'^[A-Z0-9/]+$', v):
+            raise ValueError('Callsign must contain only uppercase letters, numbers, and forward slashes')
+        return v
+
+
 class UserUpdate(BaseModel):
     name: Optional[str] = Field(None, max_length=100, min_length=1)
     callsign: Optional[str] = Field(None, max_length=20, min_length=3)

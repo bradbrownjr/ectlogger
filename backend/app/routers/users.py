@@ -7,8 +7,8 @@ from typing import List, Optional
 from io import BytesIO
 from PIL import Image, ImageOps
 from app.database import get_db
-from app.models import User, UserRole, Contact, NetRole, CanHearReport, CheckIn, Frequency, net_frequencies
-from app.schemas import UserResponse, UserUpdate, AdminUserCreate, CallsignLookupResponse, UserDirectoryEntry, UserPopupResponse, CoverageStationResponse, AdminPasswordResetResult
+from app.models import User, UserRole, Contact, NetRole, CanHearReport, CheckIn, Frequency, net_frequencies, AdminAuditLog
+from app.schemas import UserResponse, UserUpdate, AdminUserCreate, AdminUserUpdate, CallsignLookupResponse, UserDirectoryEntry, UserPopupResponse, CoverageStationResponse, AdminPasswordResetResult
 from app.dependencies import get_current_user, get_current_user_optional, get_admin_user
 from app.auth import generate_temporary_password, hash_password
 from app.email_service import EmailService
@@ -549,6 +549,101 @@ async def get_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
+    return UserResponse.from_orm(user)
+
+
+@router.put("/{user_id}", response_model=UserResponse)
+async def admin_update_user(
+    user_id: int,
+    user_update: AdminUserUpdate,
+    current_user: User = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Edit another user's name, callsign, email, and/or role (admin only).
+
+    Recovery path for an account that lost access to its sign-up email, or
+    a callsign/name that needs correcting -- the alternative was previously
+    only deleting and recreating the account, which loses check-in history
+    and role assignments. Mirrors update_my_profile's previous_callsigns
+    bookkeeping on a callsign change. Every changed field is written to
+    admin_audit_log (the only admin action logged anywhere in this app --
+    see AdminAuditLog's docstring for why this one is treated differently).
+    An email change notifies both the old and new address.
+    """
+    import json
+
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    update_data = user_update.dict(exclude_unset=True)
+    if not update_data:
+        return UserResponse.from_orm(user)
+
+    # Pre-check collisions on the two unique columns before mutating, so the
+    # 409 can name the specific field that conflicts -- a bare IntegrityError
+    # can't tell which of email/callsign collided (see update_my_profile).
+    if update_data.get('email') and update_data['email'] != user.email:
+        existing = await db.execute(
+            select(User.id).where(func.lower(User.email) == update_data['email'], User.id != user_id)
+        )
+        if existing.scalar_one_or_none():
+            raise HTTPException(status_code=409, detail="That email is already in use by another account.")
+
+    if update_data.get('callsign') and update_data['callsign'] != user.callsign:
+        existing = await db.execute(
+            select(User.id).where(User.callsign == update_data['callsign'], User.id != user_id)
+        )
+        if existing.scalar_one_or_none():
+            raise HTTPException(status_code=409, detail="That callsign is already in use by another account.")
+
+    if 'callsign' in update_data:
+        new_callsign = update_data['callsign']
+        old_callsign = user.callsign
+        if old_callsign and new_callsign and old_callsign.upper() != new_callsign.upper():
+            try:
+                prev = json.loads(user.previous_callsigns) if user.previous_callsigns else []
+            except (json.JSONDecodeError, TypeError):
+                prev = []
+            if old_callsign.upper() not in [cs.upper() for cs in prev]:
+                prev.append(old_callsign.upper())
+                user.previous_callsigns = json.dumps(prev)
+
+    old_email = user.email
+    changed_fields: List[str] = []
+    for field in ('name', 'callsign', 'email', 'role'):
+        if field not in update_data:
+            continue
+        old_value = getattr(user, field)
+        new_value = update_data[field]
+        old_str = old_value.value if hasattr(old_value, 'value') else old_value
+        new_str = new_value.value if hasattr(new_value, 'value') else new_value
+        if old_str == new_str:
+            continue
+        db.add(AdminAuditLog(
+            admin_id=current_user.id,
+            target_user_id=user.id,
+            field=field,
+            old_value=str(old_str) if old_str is not None else None,
+            new_value=str(new_str) if new_str is not None else None,
+        ))
+        setattr(user, field, new_value)
+        changed_fields.append(field)
+
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="That email or callsign is already in use by another account."
+        )
+    await db.refresh(user)
+
+    if 'email' in changed_fields and old_email and user.email:
+        await EmailService.send_admin_email_change_notice(old_email, user.email)
+
     return UserResponse.from_orm(user)
 
 
