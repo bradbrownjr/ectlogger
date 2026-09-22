@@ -20,7 +20,7 @@ All notable changes to ECTLogger are documented here.
 
 ## Bug Fixes
 
-* **Net Statistics: Map export fixed for dark mode** — Downloading the check-in location map as a PNG while using dark mode could produce a map covered by an "API key required" watermark instead of your check-ins. The export now always uses the same plain map style as the printed report, so the download shows the map every time.
+* **Check-in: Maps fixed for dark mode** — Viewing or downloading a check-in location map while using dark mode could show it covered by an "API key required" watermark instead of your check-ins. Maps now render correctly in dark mode everywhere they appear, including net view, statistics, and downloads.
 
 ---
 

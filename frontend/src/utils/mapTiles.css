@@ -1,0 +1,12 @@
+/* Dark-mode check-in maps used to point at CARTO's free, anonymous dark_all
+   raster tile endpoint. That endpoint is quota-limited and starts returning
+   a watermarked "API KEY REQUIRED" tile once the quota is exhausted -- no
+   CARTO API key exists anywhere in this project, and by 2026-09-21 the
+   anonymous quota was hitting that wall on every dark-mode render, not just
+   occasionally. Dark mode now reuses the same OpenStreetMap tiles as light
+   mode and darkens them with this filter instead -- see mapTiles.ts. This
+   class is applied only to the Leaflet tile pane (via TileLayer's
+   `className`), never to markers, which live in a separate Leaflet pane. */
+.dark-mode-map-tiles {
+  filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9);
+}

@@ -24,6 +24,7 @@ import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 import iconRetina from 'leaflet/dist/images/marker-icon-2x.png';
 import { statisticsApi } from '../services/api';
+import { MAP_TILE_URL, MAP_TILE_ATTRIBUTION, getMapTileClassName } from '../utils/mapTiles';
 
 // Fix default marker icons for Vite
 const DefaultIcon = L.icon({
@@ -102,13 +103,11 @@ const GlobalCheckInMap: React.FC = () => {
     return () => { cancelled = true; };
   }, []);
 
-  // Tile layer — dark mode uses CartoDB Dark Matter (matches existing CheckInMap)
-  const tileUrl = isDarkMode
-    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-    : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-  const tileAttribution = isDarkMode
-    ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-    : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+  // Tile layer -- see utils/mapTiles.ts for why dark mode is a CSS filter on
+  // OSM tiles rather than a separate tile server.
+  const tileUrl = MAP_TILE_URL;
+  const tileAttribution = MAP_TILE_ATTRIBUTION;
+  const tileClassName = getMapTileClassName(isDarkMode);
 
   const positions = useMemo(() => {
     if (!data || data.regions.length === 0) return [] as [number, number][];
@@ -186,7 +185,7 @@ const GlobalCheckInMap: React.FC = () => {
           style={{ height: '100%', width: '100%' }}
           scrollWheelZoom={true}
         >
-          <TileLayer url={tileUrl} attribution={tileAttribution} />
+          <TileLayer url={tileUrl} attribution={tileAttribution} className={tileClassName} />
           <FitBounds positions={positions} />
 
           {data.regions.map((region) => (

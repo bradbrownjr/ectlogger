@@ -1227,3 +1227,24 @@ The report and statistics maps use the SVG pin from
 CSS-rotated square. That divergence is deliberate: both pages capture their map
 through html2canvas for PDF/PNG export, which renders an `img`-wrapped SVG
 reliably and a CSS-transformed div unreliably. Same colors, different shape.
+
+### Map tiles
+
+Every check-in map's base tiles come from `utils/mapTiles.ts`
+(`MAP_TILE_URL`, `MAP_TILE_ATTRIBUTION`, `getMapTileClassName`). Never point a
+`TileLayer` at a different tile server or hand-roll a light/dark URL switch.
+
+Dark mode does not use a separate tile server. It reuses the same
+OpenStreetMap tiles as light mode and darkens them with a CSS `filter`
+(`getMapTileClassName`'s `dark-mode-map-tiles` class, defined in
+`mapTiles.css`), applied only to the Leaflet tile pane so markers keep their
+real colors. An earlier version pointed dark mode at CARTO's free, anonymous
+`dark_all` raster endpoint — no API key exists anywhere in this project — and
+that endpoint's anonymous quota ran out, permanently covering every dark-mode
+map (live and exported) in a watermarked "API KEY REQUIRED" tile. The CSS
+filter has no external dependency and can't run out of quota.
+
+A PDF/PNG export always passes `suppressDark: true` to `getMapTileClassName`
+regardless of theme (see `CheckInMap.tsx`/`NetStatistics.tsx`), since
+html2canvas bakes in whatever's on screen at capture time and the export
+renders on a forced-white background.

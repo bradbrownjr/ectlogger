@@ -74,6 +74,7 @@ import { getErrorMessage } from '../utils/apiErrors';
 import { useAuth } from '../contexts/AuthContext';
 import CardActionButton from '../components/CardActionButton';
 import { exportElementToPdf, exportElementToPng } from '../utils/pdfExport';
+import { MAP_TILE_URL, MAP_TILE_ATTRIBUTION, getMapTileClassName } from '../utils/mapTiles';
 import { computeCheckInTimeline } from '../utils/checkInTimeline';
 
 // Fix default Leaflet marker icons for Vite/webpack
@@ -394,20 +395,13 @@ const NetStatistics: React.FC = () => {
   const isMapPngExport = pngExportingId === 'net-stats-map';
   const isChartPngExport = pngExportingId === 'net-stats-charts';
 
-  // Use CartoDB Dark Matter tiles in dark mode, OSM in light mode -- but
-  // always fall back to light OSM tiles while capturing the map for PNG
-  // export. CARTO's dark tile endpoint is anonymous/quota-limited and
-  // starts returning a watermarked "API KEY REQUIRED" tile once that quota
-  // is hit; a live map just retries on the next pan/zoom, but an export
-  // bakes whatever tile was loaded at capture time permanently into the
-  // image. CheckInMap.tsx's own PDF export already forces light tiles for
-  // the same reason -- see its `tileUrl` comment.
-  const tileUrl = (isDarkMode && !isMapPngExport)
-    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-    : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-  const tileAttribution = (isDarkMode && !isMapPngExport)
-    ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-    : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+  // Tile layer -- see utils/mapTiles.ts for why dark mode is a CSS filter on
+  // OSM tiles rather than a separate tile server. Always plain (unfiltered)
+  // tiles while capturing the map for PNG export, same reasoning as
+  // CheckInMap.tsx's PDF export.
+  const tileUrl = MAP_TILE_URL;
+  const tileAttribution = MAP_TILE_ATTRIBUTION;
+  const tileClassName = getMapTileClassName(isDarkMode, isMapPngExport);
 
   // The cards the header's "Export PNG" button downloads, in page order. Each
   // is conditional on the same test that decides whether the card renders at
@@ -866,6 +860,7 @@ const NetStatistics: React.FC = () => {
                             <TileLayer
                               attribution={tileAttribution}
                               url={tileUrl}
+                              className={tileClassName}
                             />
                             <FitBoundsOnce positions={dualMapData.clusterPositions} resizeToken={isMapPngExport ? 1 : 0} />
                             {mappedCheckIns.map((mapped) => (
@@ -898,6 +893,7 @@ const NetStatistics: React.FC = () => {
                             <TileLayer
                               attribution={tileAttribution}
                               url={tileUrl}
+                              className={tileClassName}
                             />
                             <FitBoundsOnce positions={dualMapData.allPositions} resizeToken={isMapPngExport ? 1 : 0} />
                             {mappedCheckIns.map((mapped) => (
@@ -925,6 +921,7 @@ const NetStatistics: React.FC = () => {
                       <TileLayer
                         attribution={tileAttribution}
                         url={tileUrl}
+                        className={tileClassName}
                       />
                       <FitBoundsOnce
                         positions={mappedCheckIns.map(m => [m.parsedLocation.lat, m.parsedLocation.lon] as [number, number])}
@@ -1109,7 +1106,7 @@ const NetStatistics: React.FC = () => {
                   <Box sx={{ height: 'calc(100vh - 130px)', borderRadius: 1, overflow: 'hidden' }}>
                     <MapContainer key="exp-cluster" center={[39.8283, -98.5795]} zoom={4}
                       style={{ height: '100%', width: '100%' }} scrollWheelZoom>
-                      <TileLayer attribution={tileAttribution} url={tileUrl} />
+                      <TileLayer attribution={tileAttribution} url={tileUrl} className={tileClassName} />
                       <FitBoundsOnce positions={dualMapData.clusterPositions} />
                       {mappedCheckIns.map(mapped => (
                         <Marker key={`exp-c-${mapped.checkIn.id}`}
@@ -1129,7 +1126,7 @@ const NetStatistics: React.FC = () => {
                   <Box sx={{ height: 'calc(100vh - 130px)', borderRadius: 1, overflow: 'hidden' }}>
                     <MapContainer key="exp-overview" center={[39.8283, -98.5795]} zoom={4}
                       style={{ height: '100%', width: '100%' }} scrollWheelZoom>
-                      <TileLayer attribution={tileAttribution} url={tileUrl} />
+                      <TileLayer attribution={tileAttribution} url={tileUrl} className={tileClassName} />
                       <FitBoundsOnce positions={dualMapData.allPositions} />
                       {mappedCheckIns.map(mapped => (
                         <Marker key={`exp-o-${mapped.checkIn.id}`}
@@ -1150,7 +1147,7 @@ const NetStatistics: React.FC = () => {
               <Box sx={{ flex: 1, borderRadius: 1, overflow: 'hidden' }}>
                 <MapContainer key="exp-single" center={[39.8283, -98.5795]} zoom={4}
                   style={{ height: '100%', width: '100%' }} scrollWheelZoom>
-                  <TileLayer attribution={tileAttribution} url={tileUrl} />
+                  <TileLayer attribution={tileAttribution} url={tileUrl} className={tileClassName} />
                   <FitBoundsOnce positions={mappedCheckIns.map(m => [m.parsedLocation.lat, m.parsedLocation.lon] as [number, number])} />
                   {mappedCheckIns.map(mapped => (
                     <Marker key={`exp-${mapped.checkIn.id}`}

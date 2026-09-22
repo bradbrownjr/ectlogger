@@ -31,6 +31,7 @@ import { useMappedCheckIns } from '../hooks/useMappedCheckIns';
 import { getCheckInMarkerColor, buildMarkerLegend } from '../utils/checkInMarkers';
 import { getStatusLabel } from './netview/checkInStatusHelpers';
 import { exportToPdf } from '../utils/pdfExport';
+import { MAP_TILE_URL, MAP_TILE_ATTRIBUTION, getMapTileClassName } from '../utils/mapTiles';
 import type { CanHearReportEntry } from './netview/CoverageReport';
 
 // Fix for default marker icons in webpack/vite
@@ -312,15 +313,13 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
     }
   };
 
-  // Tile layer URLs - dark mode uses CartoDB Dark Matter, but always use
-  // light OSM tiles during PDF export (html2canvas captures what's rendered;
-  // the forced-white PDF background looks wrong with dark CartoDB tiles).
-  const tileUrl = (isDarkMode && !exporting)
-    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-    : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-  const tileAttribution = (isDarkMode && !exporting)
-    ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-    : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+  // Tile layer -- see utils/mapTiles.ts for why dark mode is a CSS filter on
+  // OSM tiles rather than a separate tile server. Always plain (unfiltered)
+  // tiles during PDF export: html2canvas captures what's rendered, and the
+  // forced-white PDF background looks wrong with the darkened filter.
+  const tileUrl = MAP_TILE_URL;
+  const tileAttribution = MAP_TILE_ATTRIBUTION;
+  const tileClassName = getMapTileClassName(isDarkMode, exporting);
 
   // Window position and size state - responsive for mobile.
   // isMobile intentionally still reads window.innerWidth (a real layout
@@ -573,6 +572,7 @@ const CheckInMap: React.FC<CheckInMapProps> = ({ open, onClose, checkIns, netNam
             <TileLayer
               attribution={tileAttribution}
               url={tileUrl}
+              className={tileClassName}
               crossOrigin="anonymous"
             />
             <FitBounds positions={positions} disabled={isExporting} />
