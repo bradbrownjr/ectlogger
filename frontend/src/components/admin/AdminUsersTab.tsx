@@ -43,6 +43,8 @@ import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium';
 import NewReleasesIcon from '@mui/icons-material/NewReleases';
 import VpnKeyIcon from '@mui/icons-material/VpnKey';
 import LockResetIcon from '@mui/icons-material/LockReset';
+import LockIcon from '@mui/icons-material/Lock';
+import LockOpenIcon from '@mui/icons-material/LockOpen';
 import useSortableTable from '../../hooks/useSortableTable';
 import api, { BACKGROUND_REQUEST_CONFIG } from '../../services/api';
 import useVisibilityAwareInterval from '../../hooks/useVisibilityAwareInterval';
@@ -66,6 +68,9 @@ interface AdminUser {
   notify_whats_new: boolean;
   has_password: boolean;
   mfa_enabled: boolean;
+  name_locked: boolean;
+  callsign_locked: boolean;
+  email_locked: boolean;
 }
 
 type UserSortField = 'online' | 'email' | 'name' | 'callsign' | 'role' | 'status' | 'last_active' | 'created_at' | 'is_ncs' | 'notify_whats_new';
@@ -84,7 +89,10 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [editUserDialogOpen, setEditUserDialogOpen] = useState(false);
-  const [editUserForm, setEditUserForm] = useState({ name: '', callsign: '', email: '', role: '' });
+  const [editUserForm, setEditUserForm] = useState({
+    name: '', callsign: '', email: '', role: '',
+    name_locked: false, callsign_locked: false, email_locked: false,
+  });
   const [editUserSaving, setEditUserSaving] = useState(false);
   const [addUserDialogOpen, setAddUserDialogOpen] = useState(false);
   const [addUserForm, setAddUserForm] = useState({ email: '', name: '', callsign: '', role: 'user' });
@@ -357,6 +365,9 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
       callsign: user.callsign || '',
       email: user.email,
       role: user.role,
+      name_locked: user.name_locked,
+      callsign_locked: user.callsign_locked,
+      email_locked: user.email_locked,
     });
     setEditUserDialogOpen(true);
   };
@@ -372,6 +383,9 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
         callsign: editUserForm.callsign || null,
         email: editUserForm.email,
         role: editUserForm.role,
+        name_locked: editUserForm.name_locked,
+        callsign_locked: editUserForm.callsign_locked,
+        email_locked: editUserForm.email_locked,
       });
       setEditUserDialogOpen(false);
       showSnackbar('User updated.', 'success');
@@ -826,6 +840,21 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
               value={editUserForm.name}
               onChange={(e) => setEditUserForm({ ...editUserForm, name: e.target.value })}
               fullWidth
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <Tooltip title={editUserForm.name_locked ? 'Locked — the user can\'t change this themselves. Click to unlock.' : 'Lock so the user can\'t change this themselves'}>
+                      <IconButton
+                        size="small"
+                        onClick={() => setEditUserForm({ ...editUserForm, name_locked: !editUserForm.name_locked })}
+                        aria-label={editUserForm.name_locked ? 'Unlock name' : 'Lock name'}
+                      >
+                        {editUserForm.name_locked ? <LockIcon fontSize="small" color="warning" /> : <LockOpenIcon fontSize="small" />}
+                      </IconButton>
+                    </Tooltip>
+                  </InputAdornment>
+                ),
+              }}
             />
             <TextField
               label="Callsign"
@@ -833,6 +862,21 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
               onChange={(e) => setEditUserForm({ ...editUserForm, callsign: e.target.value.toUpperCase() })}
               fullWidth
               inputProps={{ style: { textTransform: 'uppercase' } }}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <Tooltip title={editUserForm.callsign_locked ? 'Locked — the user can\'t change this themselves. Click to unlock.' : 'Lock so the user can\'t change this themselves'}>
+                      <IconButton
+                        size="small"
+                        onClick={() => setEditUserForm({ ...editUserForm, callsign_locked: !editUserForm.callsign_locked })}
+                        aria-label={editUserForm.callsign_locked ? 'Unlock callsign' : 'Lock callsign'}
+                      >
+                        {editUserForm.callsign_locked ? <LockIcon fontSize="small" color="warning" /> : <LockOpenIcon fontSize="small" />}
+                      </IconButton>
+                    </Tooltip>
+                  </InputAdornment>
+                ),
+              }}
             />
             <TextField
               label="Email"
@@ -842,6 +886,21 @@ const AdminUsersTab: React.FC<Props> = ({ showSnackbar, refreshTrigger }) => {
               required
               fullWidth
               helperText="Changing this changes where the user's magic-link sign-in goes. Both the old and new address are notified."
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <Tooltip title={editUserForm.email_locked ? 'Locked (reserved for when users can self-edit email). Click to unlock.' : 'Lock (reserved for when users can self-edit email)'}>
+                      <IconButton
+                        size="small"
+                        onClick={() => setEditUserForm({ ...editUserForm, email_locked: !editUserForm.email_locked })}
+                        aria-label={editUserForm.email_locked ? 'Unlock email' : 'Lock email'}
+                      >
+                        {editUserForm.email_locked ? <LockIcon fontSize="small" color="warning" /> : <LockOpenIcon fontSize="small" />}
+                      </IconButton>
+                    </Tooltip>
+                  </InputAdornment>
+                ),
+              }}
             />
             <FormControl fullWidth>
               <InputLabel>Role</InputLabel>

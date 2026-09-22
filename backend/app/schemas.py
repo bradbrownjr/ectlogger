@@ -95,6 +95,12 @@ class AdminUserUpdate(BaseModel):
     callsign: Optional[str] = Field(None, max_length=20, min_length=3)
     email: Optional[EmailStr] = None
     role: Optional[UserRole] = None
+    # Padlocks: when set, blocks the user's own PUT /users/me from changing
+    # that field (see update_my_profile). email_locked is stored but
+    # currently inert -- there is no self-service email field to block yet.
+    name_locked: Optional[bool] = None
+    callsign_locked: Optional[bool] = None
+    email_locked: Optional[bool] = None
 
     @model_validator(mode='before')
     @classmethod
@@ -221,6 +227,12 @@ class UserResponse(UserBase):
     # change and whether to offer password login at all.
     has_password: bool = False
     mfa_enabled: bool = False
+    # Admin-set field locks (Admin Users "Edit User" dialog). name_locked and
+    # callsign_locked are enforced server-side in update_my_profile;
+    # email_locked is stored but currently inert (see User.email_locked).
+    name_locked: bool = False
+    callsign_locked: bool = False
+    email_locked: bool = False
 
     class Config:
         from_attributes = True

@@ -36,8 +36,20 @@ async def update_my_profile(
 ):
     """Update current user's profile"""
     import json
-    
+
     update_data = user_update.dict(exclude_unset=True)
+
+    # Admin-set padlocks (Admin Users "Edit User" dialog) block a *change* to
+    # the field, not merely its presence in the payload -- the frontend form
+    # always submits the whole object, so a locked-but-unchanged field must
+    # not trip this or every other field would become unsaveable too.
+    if 'name' in update_data and current_user.name_locked and update_data['name'] != current_user.name:
+        raise HTTPException(status_code=403, detail="Your name has been locked by an administrator and can't be changed here.")
+    if 'callsign' in update_data and current_user.callsign_locked:
+        new_callsign = update_data['callsign']
+        old_callsign = current_user.callsign
+        if (new_callsign or '').upper() != (old_callsign or '').upper():
+            raise HTTPException(status_code=403, detail="Your callsign has been locked by an administrator and can't be changed here.")
 
     # When the primary callsign changes, record the old one in previous_callsigns
     # so check-in history and statistics follow the user across callsign changes.
@@ -569,6 +581,13 @@ async def admin_update_user(
     admin_audit_log (the only admin action logged anywhere in this app --
     see AdminAuditLog's docstring for why this one is treated differently).
     An email change notifies both the old and new address.
+
+    Also accepts name_locked/callsign_locked/email_locked: when set, blocks
+    the user's own PUT /users/me from changing that field going forward (so
+    fixing a spammy name doesn't just get typed right back in). Enforced in
+    update_my_profile; this endpoint itself is never subject to a lock --
+    an admin can always edit a locked field, and can flip the lock in the
+    same request as the edit.
     """
     import json
 
@@ -612,7 +631,7 @@ async def admin_update_user(
 
     old_email = user.email
     changed_fields: List[str] = []
-    for field in ('name', 'callsign', 'email', 'role'):
+    for field in ('name', 'callsign', 'email', 'role', 'name_locked', 'callsign_locked', 'email_locked'):
         if field not in update_data:
             continue
         old_value = getattr(user, field)

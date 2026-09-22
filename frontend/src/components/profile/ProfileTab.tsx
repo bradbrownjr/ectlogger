@@ -64,6 +64,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           margin="normal"
           required
+          disabled={!!user?.name_locked}
           error={looksLikeEmailOrUrl(formData.name)}
           helperText={looksLikeEmailOrUrl(formData.name) ? NAME_FIELD_EMAIL_WARNING : "Your full name or preferred display name"}
         />
@@ -74,6 +75,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({
           value={formData.callsign}
           onChange={(e) => setFormData({ ...formData, callsign: e.target.value.toUpperCase() })}
           margin="normal"
+          disabled={!!user?.callsign_locked}
           helperText={
             formData.callsign ? (
               <>

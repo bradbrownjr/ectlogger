@@ -70,12 +70,14 @@ shots:
         style: box
     alt: >
       The Edit User dialog, open for W1PINE, with the Name, Callsign, and
-      Email fields above an open Role picker outlined in red, offering
-      Guest, User, NCS, and Admin.
+      Email fields (each with its own padlock icon) above an open Role
+      picker outlined in red, offering Guest, User, NCS, and Admin.
     caption: >
       Name, callsign, email, and role all live in one dialog. Changing the
       email is how you recover an account that lost access to the address
-      it signed up with -- both the old and new address get notified.
+      it signed up with -- both the old and new address get notified. The
+      padlock on each field stops the person from changing it themselves
+      afterward.
 
   - id: self-mfa-reset-disabled
     section: admins

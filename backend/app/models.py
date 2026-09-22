@@ -113,6 +113,9 @@ class User(Base):
     email = Column(String(255), unique=True, index=True, nullable=False)
     name = Column(String(255))
     callsign = Column(String(50), unique=True, index=True)  # Primary callsign (Amateur Radio)
+    name_locked = Column(Boolean, default=False, nullable=False)  # Admin-set: blocks the user's own PUT /users/me from changing name
+    callsign_locked = Column(Boolean, default=False, nullable=False)  # Admin-set: blocks the user's own PUT /users/me from changing callsign
+    email_locked = Column(Boolean, default=False, nullable=False)  # Admin-set; currently inert -- UserUpdate has no email field, so self-service email editing doesn't exist yet to block. Stored for when it does.
     gmrs_callsign = Column(String(50), unique=True, index=True, nullable=True)  # GMRS callsign (e.g., WROP123)
     callsigns = Column(Text, default='[]')  # JSON array of additional callsigns
     previous_callsigns = Column(Text, default='[]')  # JSON array of former primary callsigns (auto-populated on callsign change)
