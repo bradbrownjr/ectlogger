@@ -4,14 +4,26 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from app.config import settings
 
+
+def normalize_database_url(url: str) -> str:
+    """Ensure the URL names its async driver, without double-inserting one
+    that is already there.
+
+    "sqlite:///" is a substring of "sqlite+aiosqlite:///", so a plain
+    .replace() on a URL that already names the async driver re-inserts it,
+    producing "sqlite+aiosqlite+aiosqlite:///" and a dialect-loader crash.
+    """
+    if url.startswith("sqlite") and "+aiosqlite" not in url:
+        return url.replace("sqlite:///", "sqlite+aiosqlite:///")
+    if url.startswith("postgresql://"):
+        return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    if url.startswith("mysql://"):
+        return url.replace("mysql://", "mysql+aiomysql://", 1)
+    return url
+
+
 # Convert database URL to async version if needed
-database_url = settings.database_url
-if database_url.startswith("sqlite"):
-    database_url = database_url.replace("sqlite:///", "sqlite+aiosqlite:///")
-elif database_url.startswith("postgresql://"):
-    database_url = database_url.replace("postgresql://", "postgresql+asyncpg://")
-elif database_url.startswith("mysql://"):
-    database_url = database_url.replace("mysql://", "mysql+aiomysql://")
+database_url = normalize_database_url(settings.database_url)
 
 engine = create_async_engine(database_url, echo=True if settings.app_env == "development" else False)
 

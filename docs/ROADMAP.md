@@ -92,7 +92,7 @@ Nobody has hit this in production because `.env.example` documents the plain
 the next person who reasonably assumes the explicit driver form is also
 accepted, and the self-hosting documentation is about to get more eyes on it.
 
-- [ ] Only prepend the driver when it is not already present, and cover both forms with a test
+- [x] Only prepend the driver when it is not already present, and cover both forms with a test
 
 ### 0.8 — Add swap to the production host *(operator task — needs root)*
 
