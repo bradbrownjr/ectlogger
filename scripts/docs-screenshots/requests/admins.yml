@@ -112,10 +112,10 @@ shots:
         style: box
     alt: >
       The check-in fields table with columns Name, Label, Type, Default
-      Enabled, Default Required, Status, and Actions. Eight rows are marked
-      Built-in and carry an edit pencil only; one row, shelter_capacity /
-      Shelter Capacity, is marked Custom and carries an archive icon as well,
-      outlined in red.
+      Enabled, Default Required, Spam Guard, Status, and Actions. Eight rows
+      are marked Built-in and carry an edit pencil only; one row,
+      shelter_capacity / Shelter Capacity, is marked Custom and carries an
+      archive icon as well, outlined in red.
     caption: >
       The Status column is what tells the two apart. A field marked Built-in
       can be edited but never archived; a Custom field like Shelter Capacity
