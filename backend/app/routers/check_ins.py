@@ -7,16 +7,51 @@ from datetime import datetime, UTC
 import json
 import logging
 from app.database import get_db
-from app.models import CheckIn, Net, NetStatus, User, UserRole, StationStatus, NetRole, Contact, Frequency
+from app.models import CheckIn, FieldDefinition, Net, NetStatus, User, UserRole, StationStatus, NetRole, Contact, Frequency
 from app.schemas import CheckInCreate, CheckInUpdate, CheckInResponse, ExpectedCodeResponse, VerifyIdentityRequest
 from app.dependencies import get_current_user, get_current_user_optional
-from app.utils import display_callsign
+from app.utils import display_callsign, looks_like_email_or_url
 from app.permissions import check_net_permission, is_eligible_for_logger_self_grant, is_eligible_for_ncs_auto_grant
 from app.auth import decrypt_mfa_secret, current_totp_codes
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/check-ins", tags=["check-ins"])
+
+
+# ========== SPAM GUARD ==========
+# Built-in check-in fields the guard can apply to -- matches BUILTIN_FIELDS
+# in routers/settings.py. Custom fields are looked up by name directly.
+_SPAM_GUARDABLE_BUILTIN_FIELDS = (
+    'name', 'location', 'skywarn_number', 'weather_observation',
+    'power_source', 'power', 'feedback', 'notes',
+)
+
+
+async def _enforce_spam_guard(db: AsyncSession, field_values: dict) -> None:
+    """Rejects a submitted check-in field value that looks like a URL or
+    email address, for whichever fields an admin has spam_guard_enabled on
+    (Admin > Check-in Fields). `field_values` maps field name (built-in or
+    custom) to its submitted value for this request only -- an unset field
+    is simply absent, not None, so a partial update never re-checks values
+    it didn't touch.
+
+    This is enforced here, not only as the frontend's inline nudge
+    (CheckInFormDialog.tsx), because a soft client-side warning does not
+    stop a deliberate spammer -- nothing prevents a raw API call that skips
+    the UI entirely. See app/utils.py::looks_like_email_or_url."""
+    candidates = {k: v for k, v in field_values.items() if isinstance(v, str) and v}
+    if not candidates:
+        return
+    result = await db.execute(
+        select(FieldDefinition.name, FieldDefinition.label).where(
+            FieldDefinition.spam_guard_enabled == True,  # noqa: E712
+            FieldDefinition.name.in_(candidates.keys()),
+        )
+    )
+    for name, label in result.all():
+        if looks_like_email_or_url(candidates[name]):
+            raise HTTPException(status_code=400, detail=f"{label} can't contain a link or email address")
 
 
 # ========== SHARED CONTACT / USER LOOKUP HELPERS ==========
@@ -112,6 +147,18 @@ async def create_check_in(
     # Allow check-ins in both LOBBY (pre-net staging) and ACTIVE (official net) states
     if net.status not in (NetStatus.ACTIVE, NetStatus.LOBBY):
         raise HTTPException(status_code=400, detail="Net is not active")
+
+    await _enforce_spam_guard(db, {
+        'name': check_in_data.name,
+        'location': check_in_data.location,
+        'skywarn_number': check_in_data.skywarn_number,
+        'weather_observation': check_in_data.weather_observation,
+        'power_source': check_in_data.power_source,
+        'power': check_in_data.power,
+        'feedback': check_in_data.feedback,
+        'notes': check_in_data.notes,
+        **(check_in_data.custom_fields or {}),
+    })
 
     # Try to automatically link to existing user by callsign (amateur or GMRS).
     # Computed early (used below by the self-checkin-disabled gate, then again
@@ -515,7 +562,12 @@ async def update_check_in(
 
     # Update fields
     update_data = check_in_update.dict(exclude_unset=True)
-    
+
+    await _enforce_spam_guard(db, {
+        **{k: v for k, v in update_data.items() if k in _SPAM_GUARDABLE_BUILTIN_FIELDS},
+        **(update_data.get('custom_fields') or {}),
+    })
+
     # Handle available_frequency_ids separately (needs JSON serialization)
     if 'available_frequency_ids' in update_data:
         check_in.available_frequencies = json.dumps(update_data.pop('available_frequency_ids'))

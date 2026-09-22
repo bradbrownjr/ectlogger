@@ -145,6 +145,7 @@ async def create_template(
         schedule_type=template_data.schedule_type,
         schedule_config=schedule_config_json,
         ics309_enabled=template_data.ics309_enabled or False,
+        ics309_hide_muted_stations=template_data.ics309_hide_muted_stations if template_data.ics309_hide_muted_stations is not None else True,
         propagation_logging_enabled=template_data.propagation_logging_enabled or False,
         self_can_hear_enabled=template_data.self_can_hear_enabled if template_data.self_can_hear_enabled is not None else True,
         traffic_enabled=template_data.traffic_enabled or False,
@@ -375,6 +376,8 @@ async def update_template(
             template.fifth_week_user_id = template_data.fifth_week_user_id
     if template_data.ics309_enabled is not None:
         template.ics309_enabled = template_data.ics309_enabled
+    if template_data.ics309_hide_muted_stations is not None:
+        template.ics309_hide_muted_stations = template_data.ics309_hide_muted_stations
     if template_data.propagation_logging_enabled is not None:
         template.propagation_logging_enabled = template_data.propagation_logging_enabled
     if template_data.self_can_hear_enabled is not None:

@@ -80,6 +80,7 @@ const CreateSchedule: React.FC = () => {
 
   // ---- ARES / EmComm features ----
   const [ics309Enabled, setIcs309Enabled] = useState(false);
+  const [ics309HideMutedStations, setIcs309HideMutedStations] = useState(true);
   const [propagationLoggingEnabled, setPropagationLoggingEnabled] = useState(false);
   const [selfCanHearEnabled, setSelfCanHearEnabled] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
@@ -210,6 +211,7 @@ const CreateSchedule: React.FC = () => {
       setLogoUrl(schedule.logo_url || null);
       setScript(schedule.script || '');
       setIcs309Enabled(schedule.ics309_enabled || false);
+      setIcs309HideMutedStations(schedule.ics309_hide_muted_stations !== false);
       setAuthenticated(schedule.authenticated || false);
       setPropagationLoggingEnabled(schedule.propagation_logging_enabled || false);
       setSelfCanHearEnabled(schedule.self_can_hear_enabled !== false);
@@ -296,6 +298,7 @@ const CreateSchedule: React.FC = () => {
       schedule_config: scheduleConfig,
       fifth_week_user_id: fifthWeekUserId,
       ics309_enabled: ics309Enabled,
+      ics309_hide_muted_stations: ics309HideMutedStations,
       propagation_logging_enabled: propagationLoggingEnabled,
       self_can_hear_enabled: selfCanHearEnabled,
       authenticated,
@@ -370,7 +373,9 @@ const CreateSchedule: React.FC = () => {
     isEdit, scheduleId, currentUser, timezoneAbbr,
     name, setName, description, setDescription, infoUrl, setInfoUrl, logoUrl, setLogoUrl,
     script, setScript, announcements, setAnnouncements,
-    ics309Enabled, setIcs309Enabled, mobilePrioritySort, setMobilePrioritySort,
+    ics309Enabled, setIcs309Enabled,
+    ics309HideMutedStations, setIcs309HideMutedStations,
+    mobilePrioritySort, setMobilePrioritySort,
     propagationLoggingEnabled, setPropagationLoggingEnabled,
     selfCanHearEnabled, setSelfCanHearEnabled,
     authenticated, setAuthenticated,

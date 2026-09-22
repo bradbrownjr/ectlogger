@@ -16,7 +16,7 @@ Every field a check-in form can ask for (Name, Location, Spotter #, Weather, Pow
 
 <figure>
   <img src="/docs/img/admins/fields-table.png"
-       alt="The check-in fields table with columns Name, Label, Type, Default Enabled, Default Required, Status, and Actions. Eight rows are marked Built-in and carry an edit pencil only; one row, shelter_capacity / Shelter Capacity, is marked Custom and carries an archive icon as well, outlined in red.">
+       alt="The check-in fields table with columns Name, Label, Type, Default Enabled, Default Required, Spam Guard, Status, and Actions. Eight rows are marked Built-in and carry an edit pencil only; one row, shelter_capacity / Shelter Capacity, is marked Custom and carries an archive icon as well, outlined in red.">
   <figcaption>The Status column is what tells the two apart. A field marked Built-in can be edited but never archived; a Custom field like Shelter Capacity can be archived instead of deleted, so past check-ins that used it stay readable.</figcaption>
 </figure>
 
@@ -32,6 +32,10 @@ Eight fields come with the instance and can never be archived: Name and Location
 4. Pick a **field type**: a single line of text, a multi-line text area, a number, a dropdown (enter one option per line), or a checkbox.
 5. Optionally add placeholder text, and decide whether the field should be **enabled by default** and **required by default** for a brand-new net. Both are just starting points; the person creating a specific net can still turn either on or off for that net.
 6. Set a **sort order** if you want it to appear in a particular spot relative to the others. Built-in fields use 10 through 70; leave custom fields at 100 or higher so they sort after the built-ins unless you have a reason to interleave them.
+
+## Spam Guard
+
+Every field also carries a **Spam Guard** switch, on by default. While it's on, a check-in that submits a value looking like a URL or an email address for that field is rejected outright — not just flagged — whether it came from the check-in form or any other client. This is meant for fields that were never supposed to hold a link: Location, Notes, and the like. Turn it off only for a field you deliberately want to hold a link or address; leaving it on everywhere else is what keeps a station's promotional link or email address out of the check-in list and, from there, out of the official ICS-309 log your group hands to a served agency. See [Reports, ICS-309, and exports](/docs/net-managers/reports-and-exports/) for the matching net-level setting that keeps a muted station's chat out of that same log.
 
 ## Archiving instead of deleting
 

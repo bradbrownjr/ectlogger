@@ -86,6 +86,7 @@ export interface CreateScheduleContextValue {
 
   // ARES / EmComm features
   ics309Enabled: boolean; setIcs309Enabled: Dispatch<SetStateAction<boolean>>;
+  ics309HideMutedStations: boolean; setIcs309HideMutedStations: Dispatch<SetStateAction<boolean>>;
   propagationLoggingEnabled: boolean; setPropagationLoggingEnabled: Dispatch<SetStateAction<boolean>>;
   selfCanHearEnabled: boolean; setSelfCanHearEnabled: Dispatch<SetStateAction<boolean>>;
   authenticated: boolean; setAuthenticated: Dispatch<SetStateAction<boolean>>;

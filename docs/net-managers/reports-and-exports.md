@@ -27,6 +27,10 @@ A closed net's toolbar carries four separate downloads, plus a fifth page of its
 
 ICS-309 export is available on any closed net regardless of whether that net turned on the **Enable ICS-309 Communications Log format** toggle — that toggle only decides whether the automatic closing email uses ICS-309 formatting. The toolbar buttons here are a manual download either way.
 
+### Keeping spam out of the record you hand to a served agency
+
+The ICS-309 log is the copy that leaves your group and reaches a served agency, so it needs to stay clean even when a check-in doesn't. Under **ARES & EmComm Features** when creating or editing a net, **Hide muted stations from ICS-309** is on by default: once net control net-mutes a station for spam or disruption, that station's chat messages are left out of every ICS-309 output — the CSV, the PDF, and the automatic closing email — without deleting anything from the net's own chat log. Nothing else about the net record changes: the station's check-in still appears, and the plain check-in export and net-log email are unaffected. Muting a station is done from the chat panel; see [Net control](/docs/net-control/) for how.
+
 ## The net report page
 
 <figure>

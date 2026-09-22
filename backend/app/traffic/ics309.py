@@ -21,9 +21,22 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models import Form, TrafficAction, TrafficLogEntry
+from app.models import ChatNetMute, Form, TrafficAction, TrafficLogEntry
 from app.traffic.log import not_demo_clause
 from app.utils import display_callsign
+
+
+async def get_ics309_muted_user_ids(db: AsyncSession, net_id: int) -> set:
+    """User ids currently net-muted (ChatNetMute) for this net -- callers
+    exclude their chat rows from the ICS-309 log when
+    Net.ics309_hide_muted_stations is set, so a spammer's garbage never
+    reaches the copy a served agency receives. Does not affect the stored
+    chat log, the plain net log, or check-in rows -- see the setting's
+    docstring on models.Net."""
+    result = await db.execute(
+        select(ChatNetMute.muted_user_id).where(ChatNetMute.net_id == net_id)
+    )
+    return set(result.scalars().all())
 
 _ACTION_VERBS = {
     TrafficAction.ORIGINATED: "originated",

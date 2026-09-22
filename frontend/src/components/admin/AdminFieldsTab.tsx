@@ -59,10 +59,11 @@ interface FieldDefinition {
   is_builtin: boolean;
   is_archived: boolean;
   sort_order: number;
+  spam_guard_enabled: boolean;
   created_at: string;
 }
 
-type FieldSortField = 'name' | 'label' | 'type' | 'default_enabled' | 'default_required' | 'status';
+type FieldSortField = 'name' | 'label' | 'type' | 'default_enabled' | 'default_required' | 'spam_guard_enabled' | 'status';
 
 interface Props {
   showSnackbar: (message: string, severity: 'success' | 'error') => void;
@@ -83,6 +84,7 @@ const AdminFieldsTab: React.FC<Props> = ({ showSnackbar }) => {
     default_enabled: false,
     default_required: false,
     sort_order: 100,
+    spam_guard_enabled: true,
   });
   const [fieldSaving, setFieldSaving] = useState(false);
   const [fieldFilter, setFieldFilter] = useState('');
@@ -142,13 +144,17 @@ const AdminFieldsTab: React.FC<Props> = ({ showSnackbar }) => {
         aVal = a.default_required ? 1 : 0;
         bVal = b.default_required ? 1 : 0;
         break;
+      case 'spam_guard_enabled':
+        aVal = a.spam_guard_enabled ? 1 : 0;
+        bVal = b.spam_guard_enabled ? 1 : 0;
+        break;
       case 'status':
         aVal = a.is_archived ? 0 : a.is_builtin ? 2 : 1;
         bVal = b.is_archived ? 0 : b.is_builtin ? 2 : 1;
         break;
     }
 
-    if (fieldSortField === 'default_enabled' || fieldSortField === 'default_required' || fieldSortField === 'status') {
+    if (fieldSortField === 'default_enabled' || fieldSortField === 'default_required' || fieldSortField === 'spam_guard_enabled' || fieldSortField === 'status') {
       return fieldSortDirection === 'asc'
         ? (aVal as number) - (bVal as number)
         : (bVal as number) - (aVal as number);
@@ -170,6 +176,7 @@ const AdminFieldsTab: React.FC<Props> = ({ showSnackbar }) => {
         default_enabled: field.default_enabled,
         default_required: field.default_required,
         sort_order: field.sort_order,
+        spam_guard_enabled: field.spam_guard_enabled,
       });
     } else {
       setEditingField(null);
@@ -182,6 +189,7 @@ const AdminFieldsTab: React.FC<Props> = ({ showSnackbar }) => {
         default_enabled: false,
         default_required: false,
         sort_order: 100,
+        spam_guard_enabled: true,
       });
     }
     setFieldDialogOpen(true);
@@ -198,6 +206,7 @@ const AdminFieldsTab: React.FC<Props> = ({ showSnackbar }) => {
         default_enabled: fieldForm.default_enabled,
         default_required: fieldForm.default_required,
         sort_order: fieldForm.sort_order,
+        spam_guard_enabled: fieldForm.spam_guard_enabled,
       };
 
       if (editingField) {
@@ -234,7 +243,7 @@ const AdminFieldsTab: React.FC<Props> = ({ showSnackbar }) => {
     }
   };
 
-  const handleToggleFieldDefault = async (field: FieldDefinition, key: 'default_enabled' | 'default_required', value: boolean) => {
+  const handleToggleFieldDefault = async (field: FieldDefinition, key: 'default_enabled' | 'default_required' | 'spam_guard_enabled', value: boolean) => {
     try {
       await api.put(`/settings/fields/${field.id}`, { [key]: value });
       fetchFields();
@@ -343,6 +352,17 @@ const AdminFieldsTab: React.FC<Props> = ({ showSnackbar }) => {
                     Default Required
                   </TableSortLabel>
                 </TableCell>
+                <TableCell align="center" sortDirection={fieldSortField === 'spam_guard_enabled' ? fieldSortDirection : false}>
+                  <Tooltip title="Rejects a submitted value that looks like a URL or email address for this field">
+                    <TableSortLabel
+                      active={fieldSortField === 'spam_guard_enabled'}
+                      direction={fieldSortField === 'spam_guard_enabled' ? fieldSortDirection : 'asc'}
+                      onClick={() => handleFieldSort('spam_guard_enabled')}
+                    >
+                      Spam Guard
+                    </TableSortLabel>
+                  </Tooltip>
+                </TableCell>
                 <TableCell sortDirection={fieldSortField === 'status' ? fieldSortDirection : false}>
                   <TableSortLabel
                     active={fieldSortField === 'status'}
@@ -390,6 +410,14 @@ const AdminFieldsTab: React.FC<Props> = ({ showSnackbar }) => {
                       checked={field.default_required}
                       onChange={(e) => handleToggleFieldDefault(field, 'default_required', e.target.checked)}
                       disabled={field.is_archived || !field.default_enabled}
+                      size="small"
+                    />
+                  </TableCell>
+                  <TableCell align="center">
+                    <Switch
+                      checked={field.spam_guard_enabled}
+                      onChange={(e) => handleToggleFieldDefault(field, 'spam_guard_enabled', e.target.checked)}
+                      disabled={field.is_archived}
                       size="small"
                     />
                   </TableCell>
@@ -520,6 +548,13 @@ const AdminFieldsTab: React.FC<Props> = ({ showSnackbar }) => {
                 />
                 <Typography variant="body2">Required by default</Typography>
               </Box>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Switch
+                checked={fieldForm.spam_guard_enabled}
+                onChange={(e) => setFieldForm({ ...fieldForm, spam_guard_enabled: e.target.checked })}
+              />
+              <Typography variant="body2">Reject links/emails in this field</Typography>
             </Box>
           </Box>
         </DialogContent>

@@ -23,6 +23,7 @@ const BasicInfoTab: React.FC = () => {
     infoUrl, setInfoUrl,
     logoUrl, setLogoUrl,
     ics309Enabled, setIcs309Enabled,
+    ics309HideMutedStations, setIcs309HideMutedStations,
     propagationLoggingEnabled, setPropagationLoggingEnabled,
     selfCanHearEnabled, setSelfCanHearEnabled,
     authenticated, setAuthenticated,
@@ -205,6 +206,21 @@ const BasicInfoTab: React.FC = () => {
           <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
             When enabled, net close emails will use the official ICS-309 format used by ARES, RACES, and EmComm organizations.
           </Typography>
+
+          <Box sx={{ mt: 2 }}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={ics309HideMutedStations}
+                  onChange={(e) => setIcs309HideMutedStations(e.target.checked)}
+                />
+              }
+              label="Hide muted stations from ICS-309"
+            />
+            <Typography variant="caption" color="text.secondary" display="block" sx={{ ml: 4.5 }}>
+              A station net control mutes for spam or disruption is left out of the ICS-309 log (CSV, PDF, and the closing email) — the copy that reaches a served agency. Their chat log and check-in stay on record either way.
+            </Typography>
+          </Box>
 
           <Box sx={{ mt: 2 }}>
             <FormControlLabel

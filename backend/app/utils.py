@@ -89,6 +89,31 @@ def normalize_email(email: str) -> str:
     return email.strip().lower()
 
 
+_EMAIL_LIKE_PATTERN = re.compile(r"\S+@\S+\.\S+")
+_URL_LIKE_PATTERN = re.compile(
+    r"(https?://\S+|www\.\S+|\b[a-z0-9-]+\.(?:com|net|org|us|io|tv|me|co|gov|edu|info|biz)(?:/\S*)?\b)",
+    re.IGNORECASE,
+)
+
+
+def looks_like_email(value: Optional[str]) -> bool:
+    """Mirrors frontend/src/utils/nameFieldGuard.ts's looksLikeEmail -- keep
+    both in sync if either pattern changes."""
+    return bool(value) and bool(_EMAIL_LIKE_PATTERN.search(value.strip()))
+
+
+def looks_like_url(value: Optional[str]) -> bool:
+    """Mirrors frontend/src/utils/nameFieldGuard.ts's looksLikeUrl."""
+    return bool(value) and bool(_URL_LIKE_PATTERN.search(value.strip()))
+
+
+def looks_like_email_or_url(value: Optional[str]) -> bool:
+    """Server-side spam guard for check-in fields (routers/check_ins.py) --
+    the frontend nudge alone never stops a deliberate spammer, since nothing
+    prevents an API call that skips the UI entirely."""
+    return looks_like_email(value) or looks_like_url(value)
+
+
 def _custom_avatar_file_ok(custom_url: str) -> bool:
     """Check that an uploaded avatar's file still exists on disk and isn't empty.
 

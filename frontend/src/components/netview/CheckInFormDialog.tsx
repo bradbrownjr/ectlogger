@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -17,7 +17,8 @@ import {
   Typography,
 } from '@mui/material';
 import type { UseDialogResult } from '../../hooks/useDialog';
-import { looksLikeEmailOrUrl, NAME_FIELD_EMAIL_WARNING } from '../../utils/nameFieldGuard';
+import { looksLikeEmailOrUrl, NAME_FIELD_EMAIL_WARNING, FIELD_SPAM_WARNING } from '../../utils/nameFieldGuard';
+import api from '../../services/api';
 
 // ========== CHECK-IN FORM DIALOG ==========
 // The "Check In to {net}" modal. Renders the dynamic check-in form (fields shown
@@ -99,6 +100,40 @@ const CheckInFormDialog: React.FC<CheckInFormDialogProps> = ({
   pollQuestion,
   pollResponses,
 }) => {
+  // Which check-in fields currently reject a URL/email-looking value --
+  // admin-configurable per field (Admin > Check-in Fields > Spam Guard),
+  // on by default. Fetched once; the dialog is short-lived enough that a
+  // mid-session admin change just takes effect next time it's opened.
+  const [spamGuardedFields, setSpamGuardedFields] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    api.get('/settings/fields')
+      .then((res) => {
+        const guarded = (res.data || [])
+          .filter((f: { spam_guard_enabled?: boolean }) => f.spam_guard_enabled)
+          .map((f: { name: string }) => f.name);
+        setSpamGuardedFields(new Set(guarded));
+      })
+      .catch(() => {
+        // Non-critical: fields just render without the inline warning: the
+        // server-side guard in routers/check_ins.py still enforces this on
+        // submit regardless.
+      });
+  }, []);
+
+  const isSpammy = (fieldName: string, value: string) =>
+    spamGuardedFields.has(fieldName) && looksLikeEmailOrUrl(value);
+
+  const hasSpammyField = [
+    ['name', checkInForm.name],
+    ['location', checkInForm.location],
+    ['skywarn_number', checkInForm.skywarn_number],
+    ['weather_observation', checkInForm.weather_observation],
+    ['power_source', checkInForm.power_source],
+    ['power', checkInForm.power],
+    ['feedback', checkInForm.feedback],
+    ['notes', checkInForm.notes],
+  ].some(([fieldName, value]) => isSpammy(fieldName, value));
+
   const submit = () => {
     onCheckIn();
     dialog.onClose();
@@ -115,7 +150,9 @@ const CheckInFormDialog: React.FC<CheckInFormDialogProps> = ({
       onKeyDown={(e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
           e.preventDefault();
-          submit();
+          if (checkInForm.callsign && !hasSpammyField) {
+            submit();
+          }
         }
       }}
     >
@@ -161,8 +198,8 @@ const CheckInFormDialog: React.FC<CheckInFormDialogProps> = ({
               onChange={(e) => setCheckInForm({ ...checkInForm, name: e.target.value })}
               fullWidth
               required={fieldConfig.name.required}
-              error={looksLikeEmailOrUrl(checkInForm.name)}
-              helperText={looksLikeEmailOrUrl(checkInForm.name) ? NAME_FIELD_EMAIL_WARNING : undefined}
+              error={isSpammy('name', checkInForm.name)}
+              helperText={isSpammy('name', checkInForm.name) ? NAME_FIELD_EMAIL_WARNING : undefined}
             />
           )}
 
@@ -173,6 +210,8 @@ const CheckInFormDialog: React.FC<CheckInFormDialogProps> = ({
               onChange={(e) => setCheckInForm({ ...checkInForm, location: e.target.value })}
               fullWidth
               required={fieldConfig.location.required}
+              error={isSpammy('location', checkInForm.location)}
+              helperText={isSpammy('location', checkInForm.location) ? FIELD_SPAM_WARNING : undefined}
             />
           )}
 
@@ -183,6 +222,8 @@ const CheckInFormDialog: React.FC<CheckInFormDialogProps> = ({
               onChange={(e) => setCheckInForm({ ...checkInForm, skywarn_number: e.target.value })}
               fullWidth
               required={fieldConfig.skywarn_number.required}
+              error={isSpammy('skywarn_number', checkInForm.skywarn_number)}
+              helperText={isSpammy('skywarn_number', checkInForm.skywarn_number) ? FIELD_SPAM_WARNING : undefined}
             />
           )}
 
@@ -195,6 +236,8 @@ const CheckInFormDialog: React.FC<CheckInFormDialogProps> = ({
               multiline
               rows={2}
               required={fieldConfig.weather_observation.required}
+              error={isSpammy('weather_observation', checkInForm.weather_observation)}
+              helperText={isSpammy('weather_observation', checkInForm.weather_observation) ? FIELD_SPAM_WARNING : undefined}
             />
           )}
 
@@ -205,6 +248,8 @@ const CheckInFormDialog: React.FC<CheckInFormDialogProps> = ({
               onChange={(e) => setCheckInForm({ ...checkInForm, power_source: e.target.value })}
               fullWidth
               required={fieldConfig.power_source.required}
+              error={isSpammy('power_source', checkInForm.power_source)}
+              helperText={isSpammy('power_source', checkInForm.power_source) ? FIELD_SPAM_WARNING : undefined}
             />
           )}
 
@@ -215,6 +260,8 @@ const CheckInFormDialog: React.FC<CheckInFormDialogProps> = ({
               onChange={(e) => setCheckInForm({ ...checkInForm, power: e.target.value })}
               fullWidth
               required={fieldConfig.power.required}
+              error={isSpammy('power', checkInForm.power)}
+              helperText={isSpammy('power', checkInForm.power) ? FIELD_SPAM_WARNING : undefined}
             />
           )}
 
@@ -227,6 +274,8 @@ const CheckInFormDialog: React.FC<CheckInFormDialogProps> = ({
               multiline
               rows={2}
               required={fieldConfig.notes.required}
+              error={isSpammy('notes', checkInForm.notes)}
+              helperText={isSpammy('notes', checkInForm.notes) ? FIELD_SPAM_WARNING : undefined}
             />
           )}
 
@@ -314,7 +363,7 @@ const CheckInFormDialog: React.FC<CheckInFormDialogProps> = ({
           onClick={submit}
           variant="contained"
           color="primary"
-          disabled={!checkInForm.callsign}
+          disabled={!checkInForm.callsign || hasSpammyField}
         >
           Check In
         </Button>

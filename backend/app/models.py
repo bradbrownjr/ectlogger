@@ -180,6 +180,11 @@ class Net(Base):
     template_id = Column(Integer, ForeignKey("net_templates.id"), nullable=True)
     field_config = Column(Text, default='{"name": {"enabled": true, "required": false}, "location": {"enabled": true, "required": false}, "skywarn_number": {"enabled": false, "required": false}, "weather_observation": {"enabled": false, "required": false}, "power_source": {"enabled": false, "required": false}, "power": {"enabled": false, "required": false}, "feedback": {"enabled": false, "required": false}, "notes": {"enabled": false, "required": false}}')  # JSON config for check-in fields
     ics309_enabled = Column(Boolean, default=False)  # Generate ICS-309 format on close
+    # On by default: a station net-muted (ChatNetMute) for spam/disruption is
+    # excluded from the ICS-309 Communications Log's chat rows -- the copy
+    # that goes to a served agency -- even though the stored chat log/plain
+    # net log keep everything. See app/traffic/ics309.py::get_ics309_muted_user_ids.
+    ics309_hide_muted_stations = Column(Boolean, nullable=False, default=True)
     propagation_logging_enabled = Column(Boolean, default=False)  # Enable "can hear" station-to-station coverage logging
     self_can_hear_enabled = Column(Boolean, default=True)  # If False, only NCS/logger/relay may record "can hear" reports; regular stations can't self-report
     # Opt-in like ics309_enabled/propagation_logging_enabled above. The default
@@ -274,6 +279,7 @@ class NetTemplate(Base):
     field_config = Column(Text, default='{"name": {"enabled": true, "required": false}, "location": {"enabled": true, "required": false}, "skywarn_number": {"enabled": false, "required": false}, "weather_observation": {"enabled": false, "required": false}, "power_source": {"enabled": false, "required": false}, "power": {"enabled": false, "required": false}, "feedback": {"enabled": false, "required": false}, "notes": {"enabled": false, "required": false}}')
     is_active = Column(Boolean, default=True)
     ics309_enabled = Column(Boolean, default=False)  # Enable ICS-309 format for net close emails
+    ics309_hide_muted_stations = Column(Boolean, nullable=False, default=True)  # Seeds Net.ics309_hide_muted_stations for nets created from this template
     propagation_logging_enabled = Column(Boolean, default=False)  # Seeds Net.propagation_logging_enabled for nets created from this template
     self_can_hear_enabled = Column(Boolean, default=True)  # Seeds Net.self_can_hear_enabled for nets created from this template
     traffic_enabled = Column(Boolean, default=False)  # Seeds Net.traffic_enabled for nets created from this template
@@ -855,6 +861,12 @@ class FieldDefinition(Base):
     placeholder = Column(String(200))  # Placeholder text for input
     default_enabled = Column(Boolean, default=False)  # Enabled by default for new nets
     default_required = Column(Boolean, default=False)  # Required by default for new nets
+    # On by default: rejects a submitted value that looks like a URL or email
+    # address for this field (routers/check_ins.py's create/update guard).
+    # Meant for freeform fields (Location, Notes, ...) that were never meant
+    # to carry a link -- an admin can turn this off for a field deliberately
+    # meant to hold one. See app/utils.py::looks_like_email_or_url.
+    spam_guard_enabled = Column(Boolean, nullable=False, default=True)
     is_builtin = Column(Boolean, default=False)  # True for system fields (name, location, etc.)
     is_archived = Column(Boolean, default=False)  # Archived fields are hidden but data preserved
     sort_order = Column(Integer, default=100)  # Display order

@@ -344,6 +344,7 @@ async def create_field_definition(
         default_enabled=field_data.default_enabled,
         default_required=field_data.default_required,
         sort_order=field_data.sort_order,
+        spam_guard_enabled=field_data.spam_guard_enabled,
         is_builtin=False,
     )
     db.add(field)
@@ -388,6 +389,8 @@ async def update_field_definition(
         field.is_archived = field_data.is_archived
     if field_data.sort_order is not None:
         field.sort_order = field_data.sort_order
+    if field_data.spam_guard_enabled is not None:
+        field.spam_guard_enabled = field_data.spam_guard_enabled
     
     await db.commit()
     await db.refresh(field)

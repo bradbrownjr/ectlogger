@@ -31,6 +31,7 @@ from app.services.net_closure import close_net_and_notify
 from app.traffic.formatters import format_form
 from app.traffic.ics309 import (
     format_traffic_ics309_message,
+    get_ics309_muted_user_ids,
     get_net_traffic_log_entries,
     traffic_from_station,
     traffic_to_station,
@@ -474,6 +475,15 @@ async def _build_ics309_data(db: AsyncSession, net: Net, current_user: Optional[
     )
     chat_messages = chat_result.scalars().all()
 
+    # Stations net-muted (ChatNetMute) for spam/disruption -- excluded from
+    # this log's chat rows when the net opts in (on by default). See
+    # get_ics309_muted_user_ids's docstring.
+    muted_user_ids = (
+        await get_ics309_muted_user_ids(db, net.id)
+        if net.ics309_hide_muted_stations
+        else set()
+    )
+
     # Build log entries combining check-ins and chat
     log_entries = []
 
@@ -493,6 +503,8 @@ async def _build_ics309_data(db: AsyncSession, net: Net, current_user: Optional[
 
     # Add chat messages (non-system)
     for msg in chat_messages:
+        if msg.user_id is not None and msg.user_id in muted_user_ids:
+            continue
         callsign = msg.user.callsign if msg.user and msg.user.callsign else ('System' if msg.is_system else 'Unknown')
         if callsign != 'System':
             log_entries.append({

@@ -46,6 +46,7 @@ def _compare_template_fields(target: NetTemplate, source: NetTemplate) -> list:
         ("schedule_config", "Schedule config"),
         ("field_config", "Field configuration"),
         ("ics309_enabled", "ICS-309 enabled"),
+        ("ics309_hide_muted_stations", "Hide muted stations from ICS-309"),
         ("propagation_logging_enabled", "Station-to-station coverage logging enabled"),
         ("topic_of_week_enabled", "Topic of the Week enabled"),
         ("topic_of_week_prompt", "Topic prompt"),

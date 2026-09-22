@@ -24,6 +24,7 @@ from app.email_service import EmailService
 from app.models import ChatMessage, CheckIn, Net, NetRole, NetStatus, User
 from app.traffic.ics309 import (
     format_traffic_ics309_message,
+    get_ics309_muted_user_ids,
     get_net_traffic_log_entries,
     traffic_from_station,
     traffic_to_station,
@@ -176,6 +177,16 @@ async def close_net_and_notify(
     )
     chat_messages = result.scalars().all()
 
+    # Stations net-muted for spam/disruption -- excluded from the ICS-309
+    # email's chat rows only (never the plain net-log email or the stored
+    # chat log) when the net opts in, on by default. See
+    # get_ics309_muted_user_ids's docstring.
+    muted_user_ids = (
+        await get_ics309_muted_user_ids(db, net_id)
+        if net.ics309_hide_muted_stations
+        else set()
+    )
+
     # Check-ins/chat/timestamps are formatted per-recipient timezone (see
     # resolve_display_tz), so build them lazily per unique tz below rather than
     # once here — two recipients can have different display preferences.
@@ -250,7 +261,10 @@ async def close_net_and_notify(
             chat_messages_data.append({
                 'timestamp': format_time_for_net(to_display_tz(msg.created_at, tz), started_at_local, closed_at_local),
                 'callsign': msg.user.callsign if msg.user and msg.user.callsign else ('System' if msg.is_system else 'Unknown'),
-                'message': msg.message
+                'message': msg.message,
+                # Not read by the plain net-log email -- only used below to
+                # build the ICS-309 email's separately filtered copy.
+                'user_id': msg.user_id,
             })
 
         coverage_edges_data = []
@@ -380,6 +394,14 @@ async def close_net_and_notify(
             )
 
             if use_ics309:
+                # Muted stations' chat rows are hidden from this served-agency
+                # copy only -- check_ins_data itself is untouched, and the
+                # plain net-log email below never sees this filtered list.
+                ics309_chat_messages = (
+                    [m for m in chat_messages_data if m.get('user_id') not in muted_user_ids]
+                    if muted_user_ids
+                    else chat_messages_data
+                )
                 await email_service.send_ics309_log(
                     email=email,
                     net_name=net.name,
@@ -389,7 +411,7 @@ async def close_net_and_notify(
                     check_ins=check_ins_data,
                     started_at=started_at_str,
                     closed_at=closed_at_str,
-                    chat_messages=chat_messages_data if chat_messages_data else None,
+                    chat_messages=ics309_chat_messages if ics309_chat_messages else None,
                     frequencies=freq_strings,
                     traffic_log_rows=traffic_rows_data if traffic_rows_data else None,
                     unsubscribe_token=unsub_token

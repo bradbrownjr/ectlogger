@@ -290,6 +290,7 @@ async def create_net_from_template(
         field_config=template.field_config,
         status=NetStatus.DRAFT,
         ics309_enabled=template.ics309_enabled or False,
+        ics309_hide_muted_stations=template.ics309_hide_muted_stations if template.ics309_hide_muted_stations is not None else True,
         propagation_logging_enabled=template.propagation_logging_enabled or False,
         self_can_hear_enabled=template.self_can_hear_enabled if template.self_can_hear_enabled is not None else True,
         traffic_enabled=template.traffic_enabled or False,

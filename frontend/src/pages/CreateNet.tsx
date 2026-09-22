@@ -85,6 +85,7 @@ const CreateNet: React.FC = () => {
 
   // ---- Feature toggles ----
   const [ics309Enabled, setIcs309Enabled] = useState(false);
+  const [ics309HideMutedStations, setIcs309HideMutedStations] = useState(true);
   const [propagationLoggingEnabled, setPropagationLoggingEnabled] = useState(false);
   const [selfCanHearEnabled, setSelfCanHearEnabled] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
@@ -212,6 +213,7 @@ const CreateNet: React.FC = () => {
       setScript(net.script || '');
       setAnnouncements(net.announcements || '');
       setIcs309Enabled(net.ics309_enabled || false);
+      setIcs309HideMutedStations(net.ics309_hide_muted_stations !== false);
       setPropagationLoggingEnabled(net.propagation_logging_enabled || false);
       setAuthenticated(net.authenticated || false);
       setSelfCanHearEnabled(net.self_can_hear_enabled !== false);
@@ -313,6 +315,7 @@ const CreateNet: React.FC = () => {
         frequency_ids: selectedFrequencyIds,
         field_config: fieldConfig,
         ics309_enabled: ics309Enabled,
+        ics309_hide_muted_stations: ics309HideMutedStations,
         propagation_logging_enabled: propagationLoggingEnabled,
         self_can_hear_enabled: selfCanHearEnabled,
         authenticated,
@@ -367,6 +370,7 @@ const CreateNet: React.FC = () => {
         frequency_ids: selectedFrequencyIds,
         field_config: fieldConfig,
         ics309_enabled: ics309Enabled,
+        ics309_hide_muted_stations: ics309HideMutedStations,
         propagation_logging_enabled: propagationLoggingEnabled,
         self_can_hear_enabled: selfCanHearEnabled,
         authenticated,
@@ -426,6 +430,7 @@ const CreateNet: React.FC = () => {
     script, setScript,
     announcements, setAnnouncements,
     ics309Enabled, setIcs309Enabled,
+    ics309HideMutedStations, setIcs309HideMutedStations,
     propagationLoggingEnabled, setPropagationLoggingEnabled,
     selfCanHearEnabled, setSelfCanHearEnabled,
     authenticated, setAuthenticated,

@@ -4,8 +4,8 @@ summary: Every user-facing change, newest first, in the format the in-app What's
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-09-20
-review_by: 2027-09-20
+revised: 2026-09-21
+review_by: 2027-09-21
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/CHANGELOG/
 ---
@@ -13,6 +13,14 @@ permalink: /docs/CHANGELOG/
 # Changelog
 
 All notable changes to ECTLogger are documented here.
+
+---
+
+# September 21, 2026
+
+## New Features
+
+* **Check-in: Spam has no place in your official log** — A check-in field that looks like a link or email address (Location, Notes, and similar fields) is now rejected outright, and a station net control mutes for spam no longer appears in the ICS-309 Communications Log. These are official forms your group hands to the served agencies you support, so spam never belongs in them.
 
 ---
 

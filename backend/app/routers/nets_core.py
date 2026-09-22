@@ -67,6 +67,7 @@ async def create_net(
         status=NetStatus.DRAFT,
         field_config=json.dumps(net_data.field_config) if net_data.field_config else None,
         ics309_enabled=net_data.ics309_enabled or False,
+        ics309_hide_muted_stations=net_data.ics309_hide_muted_stations if net_data.ics309_hide_muted_stations is not None else True,
         propagation_logging_enabled=net_data.propagation_logging_enabled or False,
         self_can_hear_enabled=net_data.self_can_hear_enabled if net_data.self_can_hear_enabled is not None else True,
         traffic_enabled=net_data.traffic_enabled or False,

@@ -29,3 +29,14 @@ export function looksLikeEmailOrUrl(value: string): boolean {
 }
 
 export const NAME_FIELD_EMAIL_WARNING = "That looks like an email address or a link — enter your first name instead so it isn't shown publicly.";
+
+// Extended 2026-09-21 to other check-in fields (Location, Notes, ...) after a
+// spammer used the Location field for a promotional link/image instead of
+// checking into the net (see NB9D, reported via a served agency's forwarded
+// ICS-309 email). Unlike the Name field above, this is enforced as a hard
+// block (both here and server-side in routers/check_ins.py) rather than a
+// soft nudge -- a colored border alone doesn't stop a deliberate spammer, and
+// nothing stops a raw API call that skips this component entirely. Which
+// fields this applies to is admin-configurable per field (Admin > Check-in
+// Fields > Spam Guard), on by default -- see FieldDefinition.spam_guard_enabled.
+export const FIELD_SPAM_WARNING = "That looks like a link or email address — this field doesn't accept those.";

@@ -1,6 +1,22 @@
 {
-  "version": "2026.09.20b",
+  "version": "2026.09.21",
   "entries": [
+    {
+      "version": "2026.09.21",
+      "date": "2026-09-21",
+      "sections": [
+        {
+          "title": "New Features",
+          "type": "feature",
+          "items": [
+            {
+              "text": "Check-in: Spam has no place in your official log — A check-in field that looks like a link or email address (Location, Notes, and similar fields) is now rejected outright, and a station net control mutes for spam no longer appears in the ICS-309 Communications Log. These are official forms your group hands to the served agencies you support, so spam never belongs in them.",
+              "userImpact": true
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.09.20b",
       "date": "2026-09-20",

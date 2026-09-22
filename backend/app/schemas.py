@@ -399,6 +399,9 @@ class NetBase(BaseModel):
     announcements: Optional[str] = Field(None, max_length=50000)
     field_config: Optional[dict] = None
     ics309_enabled: Optional[bool] = False
+    # On by default: excludes a net-muted station's chat rows from the
+    # ICS-309 log -- see models.Net.ics309_hide_muted_stations.
+    ics309_hide_muted_stations: Optional[bool] = True
     propagation_logging_enabled: Optional[bool] = False
     self_can_hear_enabled: Optional[bool] = True
     # Opt-in, matching the two EmComm toggles above. Nets created before the
@@ -449,6 +452,7 @@ class NetUpdate(BaseModel):
     frequency_ids: Optional[List[int]] = Field(None, max_length=50)
     field_config: Optional[dict] = None
     ics309_enabled: Optional[bool] = None
+    ics309_hide_muted_stations: Optional[bool] = None
     propagation_logging_enabled: Optional[bool] = None
     self_can_hear_enabled: Optional[bool] = None
     traffic_enabled: Optional[bool] = None
@@ -501,6 +505,7 @@ class NetResponse(NetBase):
     active_frequency_id: Optional[int] = None
     field_config: Optional[dict] = None
     ics309_enabled: bool = False
+    ics309_hide_muted_stations: bool = True
     propagation_logging_enabled: bool = False
     self_can_hear_enabled: bool = True
     traffic_enabled: bool = True
@@ -566,6 +571,7 @@ class NetResponse(NetBase):
             'active_frequency_id': net.active_frequency_id,
             'field_config': json.loads(net.field_config) if net.field_config else None,
             'ics309_enabled': net.ics309_enabled or False,
+            'ics309_hide_muted_stations': net.ics309_hide_muted_stations if net.ics309_hide_muted_stations is not None else True,
             'propagation_logging_enabled': net.propagation_logging_enabled or False,
             'self_can_hear_enabled': net.self_can_hear_enabled if net.self_can_hear_enabled is not None else True,
             'traffic_enabled': net.traffic_enabled if net.traffic_enabled is not None else True,
@@ -621,6 +627,7 @@ class NetTemplateBase(BaseModel):
     schedule_config: Optional[dict] = Field(default_factory=dict)  # {day_of_week, week_of_month, time}
     fifth_week_user_id: Optional[int] = None
     ics309_enabled: bool = False  # Enable ICS-309 format for net close emails
+    ics309_hide_muted_stations: bool = True  # Seeds Net.ics309_hide_muted_stations for nets created from this template
     propagation_logging_enabled: bool = False  # Seeds propagation_logging_enabled for nets created from this template
     self_can_hear_enabled: bool = True  # Seeds self_can_hear_enabled for nets created from this template
     traffic_enabled: bool = False  # Seeds traffic_enabled for nets created from this template
@@ -665,6 +672,7 @@ class NetTemplateUpdate(BaseModel):
     fifth_week_user_id: Optional[int] = None
     owner_id: Optional[int] = None  # Allow changing the owner (admin only or current owner)
     ics309_enabled: Optional[bool] = None
+    ics309_hide_muted_stations: Optional[bool] = None
     propagation_logging_enabled: Optional[bool] = None
     self_can_hear_enabled: Optional[bool] = None
     traffic_enabled: Optional[bool] = None
@@ -729,6 +737,7 @@ class NetTemplateResponse(NetTemplateBase):
             'schedule_type': template.schedule_type,
             'schedule_config': json.loads(template.schedule_config) if template.schedule_config else {},
             'ics309_enabled': template.ics309_enabled or False,
+            'ics309_hide_muted_stations': template.ics309_hide_muted_stations if template.ics309_hide_muted_stations is not None else True,
             'propagation_logging_enabled': template.propagation_logging_enabled or False,
             'self_can_hear_enabled': template.self_can_hear_enabled if template.self_can_hear_enabled is not None else True,
             'traffic_enabled': template.traffic_enabled if template.traffic_enabled is not None else True,
@@ -1379,6 +1388,9 @@ class FieldDefinitionBase(BaseModel):
     default_enabled: bool = False
     default_required: bool = False
     sort_order: int = Field(default=100, ge=0)
+    # Rejects a submitted value that looks like a URL/email for this field.
+    # On by default -- see models.FieldDefinition.spam_guard_enabled.
+    spam_guard_enabled: bool = True
 
 
 class FieldDefinitionCreate(FieldDefinitionBase):
@@ -1394,6 +1406,7 @@ class FieldDefinitionUpdate(BaseModel):
     default_required: Optional[bool] = None
     is_archived: Optional[bool] = None
     sort_order: Optional[int] = Field(None, ge=0)
+    spam_guard_enabled: Optional[bool] = None
 
 
 class FieldDefinitionResponse(BaseModel):
@@ -1408,6 +1421,7 @@ class FieldDefinitionResponse(BaseModel):
     is_builtin: bool
     is_archived: bool
     sort_order: int
+    spam_guard_enabled: bool
     created_at: datetime
 
 
@@ -1429,6 +1443,7 @@ class FieldDefinitionResponse(BaseModel):
             is_builtin=field.is_builtin,
             is_archived=field.is_archived,
             sort_order=field.sort_order,
+            spam_guard_enabled=field.spam_guard_enabled,
             created_at=field.created_at,
         )
 
