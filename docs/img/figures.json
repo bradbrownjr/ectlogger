@@ -19,8 +19,8 @@
   },
   "admins/change-role-dialog": {
     "path": "/docs/img/admins/change-role-dialog.png",
-    "alt": "The Change User Role dialog, open for W1PINE, with the Role picker outlined in red and its menu open, offering Guest, User, NCS, and Admin.\n",
-    "caption": "The four roles on offer. Guest and the global NCS role are both selectable here but neither currently changes what the account can do -- see the note below.\n",
+    "alt": "The Edit User dialog, open for W1PINE, with the Name, Callsign, and Email fields (each with its own padlock icon) above an open Role picker outlined in red, offering Guest, User, NCS, and Admin.\n",
+    "caption": "Name, callsign, email, and role all live in one dialog. Changing the email is how you recover an account that lost access to the address it signed up with -- both the old and new address get notified. The padlock on each field stops the person from changing it themselves afterward.\n",
     "page": "/docs/admins/users-and-roles/"
   },
   "admins/fields-table": {
@@ -61,8 +61,8 @@
   },
   "admins/user-row-actions": {
     "path": "/docs/img/admins/user-row-actions.png",
-    "alt": "A row in the admin Users table for Alex Reed, W1PINE, with three of its five action icons outlined in red: the pencil (Change role), the circle-with-a-slash beside it (Ban), and the key two icons further along (Reset password). The stopwatch between them and the trash can at the end are not outlined.\n",
-    "caption": "Every row in the Users table carries the same five actions. Change role and Ban are covered here; Reset password and the two-factor reset next to it are covered in Security, MFA, and lockouts.\n",
+    "alt": "A row in the admin Users table for Alex Reed, W1PINE, with three of its five action icons outlined in red: the pencil (Edit User), the circle-with-a-slash beside it (Ban), and the key two icons further along (Reset password). The stopwatch between them and the trash can at the end are not outlined.\n",
+    "caption": "Every row in the Users table carries the same five actions. Edit User and Ban are covered here; Reset password and the two-factor reset next to it are covered in Security, MFA, and lockouts.\n",
     "page": "/docs/admins/users-and-roles/"
   },
   "landing/hero": {
