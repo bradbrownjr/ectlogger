@@ -74,26 +74,6 @@ Items predating this convention get a **Docs:** line when they are picked up, no
 
 ***Milestone 0 is complete as of 2026-07-29.** Every section has shipped and been pruned. Section numbers are not reused, so commit messages and docs referencing "Milestone 0.4" or "Milestone 0.7" still resolve against the changelog. New codebase-health work should open a new section here rather than reopening a pruned one.*
 
-### 0.10 — `DATABASE_URL` mangles an explicit async driver
-
-**🐛 `sqlite+aiosqlite:///...` becomes `sqlite+aiosqlite+aiosqlite:///...` and the app will not start** *(found 2026-09-18 while standing up the documentation demo instance)*
-
-**Model:** Haiku. **Think:** none.
-**Docs:** self-hosting, if the fix changes what a valid `DATABASE_URL` looks like. Otherwise none (the documented form already works).
-
-`app/database.py` normalizes a SQLite URL by doing a plain string replace of
-`sqlite:///` with `sqlite+aiosqlite:///`. That substring also occurs inside
-`aiosqlite:///`, so a URL that already names the async driver gets it inserted a
-second time, and SQLAlchemy's dialect loader fails with `ValueError: too many
-values to unpack` — an error that says nothing about what is actually wrong.
-
-Nobody has hit this in production because `.env.example` documents the plain
-`sqlite:///./ectlogger.db` form and that is what everyone uses. It is a trap for
-the next person who reasonably assumes the explicit driver form is also
-accepted, and the self-hosting documentation is about to get more eyes on it.
-
-- [x] Only prepend the driver when it is not already present, and cover both forms with a test
-
 ### 0.8 — Add swap to the production host *(operator task — needs root)*
 
 **⚠️ Manual task for Brad.** Not a code change and not something the agent can do: the
