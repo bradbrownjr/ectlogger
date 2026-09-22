@@ -20,7 +20,7 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Admin: Fix and lock a user's name, callsign, or login email** — Admins can now correct these directly from the Users tab, and lock a field so it stays fixed. If someone loses access to the email they signed up with, an admin can move their account to a new address and they're back in, no lost check-in history required.
+* **Admin: Fix a user's name, callsign, or login email** — Admins can now correct these directly from the Users tab. If someone loses access to the email they signed up with, an admin can move their account to a new address and they're back in, no lost check-in history required.
 
 ---
 
