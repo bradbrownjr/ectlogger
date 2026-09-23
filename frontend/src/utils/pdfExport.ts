@@ -27,43 +27,70 @@ export interface PdfExportOptions {
 }
 
 /**
- * Force light mode styles on an element and its children for PDF export
+ * Parse a computed CSS color ("rgb(r, g, b)" / "rgba(r, g, b, a)") into its
+ * channels, or null for anything else (e.g. "transparent").
+ */
+const parseRgb = (color: string): { r: number; g: number; b: number; a: number } | null => {
+  const parts = color.match(/[\d.]+/g);
+  if (!parts || parts.length < 3) return null;
+  return {
+    r: parseFloat(parts[0]),
+    g: parseFloat(parts[1]),
+    b: parseFloat(parts[2]),
+    a: parts.length >= 4 ? parseFloat(parts[3]) : 1,
+  };
+};
+
+const brightnessOf = ({ r, g, b }: { r: number; g: number; b: number }): number =>
+  (r * 299 + g * 587 + b * 114) / 1000;
+
+// Chroma (max channel minus min channel) above this means the color is an
+// intentional hue -- a status badge, a role color -- rather than a dark-mode
+// theme surface, which is always grey (#121212, #1e1e1e, elevation overlays).
+// Brightness alone cannot tell the two apart: the "Listening Only" purple
+// (#9c27b0) is darker than 128, so it was whitened out of every export while
+// the green "Checked In" badge survived only by scoring 135.
+const COLORED_SURFACE_MIN_CHROMA = 40;
+
+// Marks, on the throwaway clone only, an element whose background is kept as
+// a deliberate color, so light text on top of it is left alone too.
+const COLORED_SURFACE_ATTR = 'data-export-colored-surface';
+
+/**
+ * Force light mode styles on an element and its children for PDF export.
+ * Only grey dark backgrounds (theme surfaces) are repainted; colored
+ * backgrounds and the light text sitting on them are preserved.
  */
 const applyLightModeStyles = (element: HTMLElement): void => {
   // Apply white background to the root element
   element.style.backgroundColor = '#ffffff';
   element.style.color = '#000000';
 
-  // Apply to all children with dark backgrounds
   const allElements = element.querySelectorAll('*') as NodeListOf<HTMLElement>;
-  allElements.forEach((el) => {
-    const computedStyle = window.getComputedStyle(el);
-    const bgColor = computedStyle.backgroundColor;
-    
-    // Check if background is dark (rough heuristic)
-    if (bgColor && bgColor !== 'rgba(0, 0, 0, 0)' && bgColor !== 'transparent') {
-      const rgb = bgColor.match(/\d+/g);
-      if (rgb && rgb.length >= 3) {
-        const brightness = (parseInt(rgb[0]) * 299 + parseInt(rgb[1]) * 587 + parseInt(rgb[2]) * 114) / 1000;
-        if (brightness < 128) {
-          // Dark background - make it light
-          el.style.backgroundColor = '#ffffff';
-          el.style.color = '#000000';
-        }
-      }
+
+  // Pass 1: backgrounds. Read every computed style before writing any, so a
+  // repainted parent never changes what a child reports.
+  const styles = Array.from(allElements, (el) => window.getComputedStyle(el));
+  const textColors = styles.map((s) => s.color);
+  allElements.forEach((el, i) => {
+    const bg = parseRgb(styles[i].backgroundColor);
+    if (!bg || bg.a === 0) return;
+    const chroma = Math.max(bg.r, bg.g, bg.b) - Math.min(bg.r, bg.g, bg.b);
+    if (chroma >= COLORED_SURFACE_MIN_CHROMA && bg.a >= 0.5) {
+      el.setAttribute(COLORED_SURFACE_ATTR, '');
+    } else if (brightnessOf(bg) < 128) {
+      // Dark grey theme surface - make it light
+      el.style.backgroundColor = '#ffffff';
+      el.style.color = '#000000';
     }
-    
-    // Check text color
-    const textColor = computedStyle.color;
-    if (textColor) {
-      const rgb = textColor.match(/\d+/g);
-      if (rgb && rgb.length >= 3) {
-        const brightness = (parseInt(rgb[0]) * 299 + parseInt(rgb[1]) * 587 + parseInt(rgb[2]) * 114) / 1000;
-        if (brightness > 200) {
-          // Light text (likely on dark bg) - make it dark
-          el.style.color = '#000000';
-        }
-      }
+  });
+
+  // Pass 2: light text (dark-mode body text) becomes dark, unless it sits
+  // on a preserved colored surface, e.g. white text on a status badge.
+  allElements.forEach((el, i) => {
+    const text = parseRgb(textColors[i]);
+    if (text && brightnessOf(text) > 200 && !el.closest(`[${COLORED_SURFACE_ATTR}]`)) {
+      el.style.color = '#000000';
     }
   });
 };

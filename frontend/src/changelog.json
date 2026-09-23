@@ -1,6 +1,22 @@
 {
-  "version": "2026.09.22",
+  "version": "2026.09.23",
   "entries": [
+    {
+      "version": "2026.09.23",
+      "date": "2026-09-23",
+      "sections": [
+        {
+          "title": "Bug Fixes",
+          "type": "bugfix",
+          "items": [
+            {
+              "text": "Net Report: Status colors in exports — Exported check-in logs (PNG and PDF) now keep every status badge in the color you see on screen, including the purple Listening Only badge, which used to come out blank. Your reports look the same on Facebook as they do in ECTLogger.",
+              "userImpact": false
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.09.22",
       "date": "2026-09-22",

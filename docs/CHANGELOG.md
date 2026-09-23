@@ -4,7 +4,7 @@ summary: Every user-facing change, newest first, in the format the in-app What's
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-09-22
+revised: 2026-09-23
 review_by: 2027-09-22
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/CHANGELOG/
@@ -13,6 +13,14 @@ permalink: /docs/CHANGELOG/
 # Changelog
 
 All notable changes to ECTLogger are documented here.
+
+---
+
+# September 23, 2026
+
+## Bug Fixes
+
+* **Net Report: Status colors in exports** — Exported check-in logs (PNG and PDF) now keep every status badge in the color you see on screen, including the purple Listening Only badge, which used to come out blank. Your reports look the same on Facebook as they do in ECTLogger.
 
 ---
 
