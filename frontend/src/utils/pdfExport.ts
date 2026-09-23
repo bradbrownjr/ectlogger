@@ -359,6 +359,44 @@ export interface PngExportOptions {
 }
 
 /**
+ * Return a copy of the canvas with a small attribution footer appended:
+ * "Created with ECTLogger" plus the address of the instance it came from.
+ * PNG exports are meant to be shared (e.g. posted to Facebook), so the image
+ * itself says where it came from. window.location.host rather than a fixed
+ * URL, so a self-hosted instance credits its own address.
+ */
+const withAttributionFooter = (source: HTMLCanvasElement, scale: number): HTMLCanvasElement => {
+  const footerHeight = 32 * scale;
+  const canvas = document.createElement('canvas');
+  canvas.width = source.width;
+  canvas.height = source.height + footerHeight;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) {
+    throw new Error('Could not get canvas context');
+  }
+
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(source, 0, 0);
+
+  // Hairline divider between the content and the footer
+  ctx.fillStyle = '#e0e0e0';
+  ctx.fillRect(0, source.height, canvas.width, Math.max(1, scale));
+
+  ctx.fillStyle = '#757575';
+  ctx.font = `${12 * scale}px ${window.getComputedStyle(document.body).fontFamily}`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(
+    `Created with ECTLogger \u00b7 ${window.location.host}`,
+    canvas.width / 2,
+    source.height + footerHeight / 2
+  );
+
+  return canvas;
+};
+
+/**
  * Export a DOM element to a single PNG image (e.g. a report section for a
  * social media post) -- same clone/light-mode/canvas-copy capture as
  * exportToPdf, minus the page-splitting.
@@ -375,7 +413,10 @@ export const exportToPng = async (
   } = options;
 
   try {
-    const canvas = await captureElementAsCanvas(element, scale, captureMode);
+    const canvas = withAttributionFooter(
+      await captureElementAsCanvas(element, scale, captureMode),
+      scale
+    );
 
     let finalFilename = filename;
     if (addTimestamp) {

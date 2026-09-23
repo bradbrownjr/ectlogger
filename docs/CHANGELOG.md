@@ -20,7 +20,7 @@ All notable changes to ECTLogger are documented here.
 
 ## Bug Fixes
 
-* **Net Report: Status colors in exports** — Exported check-in logs (PNG and PDF) now keep every status badge in the color you see on screen, including the purple Listening Only badge, which used to come out blank. Your reports look the same on Facebook as they do in ECTLogger.
+* **Net Report: Better-looking exports** — Exported check-in logs (PNG and PDF) now keep every status badge in the color you see on screen, including the purple Listening Only badge, which used to come out blank. PNG images also carry a small footer crediting ECTLogger with the site's address, so anyone who sees your post on Facebook knows where it came from.
 
 ---
 

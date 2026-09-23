@@ -4,7 +4,7 @@ summary: The net report, the PDF, the ICS-309 Communications Log, the per-sectio
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-09-19
+revised: 2026-09-23
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/reports-and-exports/
@@ -39,7 +39,7 @@ The ICS-309 log is the copy that leaves your group and reaches a served agency, 
   <figcaption>The report page needs no sign-in, so the link is safe to hand to anyone who needs the record. Export PNG saves each section as its own image for a newsletter or social post.</figcaption>
 </figure>
 
-This page pulls together everything about the net into one document: check-in statistics, a map, station-to-station coverage (if the net used it), the full chat and activity log, and the ICS-309 log, all in one place. **Export PDF** saves the whole thing as one file. **Export PNG** instead saves each section as its own image, sized for pasting into a newsletter or a social media post, rather than one long page.
+This page pulls together everything about the net into one document: check-in statistics, a map, station-to-station coverage (if the net used it), the full chat and activity log, and the ICS-309 log, all in one place. **Export PDF** saves the whole thing as one file. **Export PNG** instead saves each section as its own image, sized for pasting into a newsletter or a social media post, rather than one long page. Each image carries a small footer crediting ECTLogger with the site's address, so anyone who sees the post knows where it came from.
 
 This page needs no sign-in to view — callsign and licensee information are already public via the FCC's own license database, and free-text fields are redacted for a signed-out viewer the same way the check-in list and chat already are. That makes the link safe to hand to an emergency coordinator, a club newsletter editor, or anyone else who needs the record but doesn't have (or need) an ECTLogger account.
 
