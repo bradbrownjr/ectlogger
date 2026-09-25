@@ -229,7 +229,7 @@ async def _build(db_path: Path, out_path: Path):
         f_simplex = Frequency(frequency="146.520", mode="FM", description="2m Simplex Calling/Backup")
         f_dmr = Frequency(mode="DMR", network="Brandmeister", talkgroup="31234", description="Example County DMR Talkgroup")
         f_skywarn = Frequency(frequency="146.850", mode="FM", description="Example County SKYWARN Repeater")
-        f_hf = Frequency(frequency="3.930", mode="LSB", description="Example County ARES HF Net")
+        f_hf = Frequency(frequency="3.930", mode="SSB", description="Example County ARES HF Net")
         db.add_all([f_repeater, f_simplex, f_dmr, f_skywarn, f_hf])
         await db.commit()
         for f in (f_repeater, f_simplex, f_dmr, f_skywarn, f_hf):

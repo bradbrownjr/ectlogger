@@ -39,3 +39,15 @@ async def test_unknown_mode_is_refused(client, owner):
         headers=auth_headers(owner),
     )
     assert r.status_code == 422
+
+
+async def test_a_row_saved_under_an_older_mode_list_still_loads(client, db):
+    """The mode check applies to input only. It sat on the shared base schema
+    at first, so one row with a since-dropped mode (the demo seed's LSB)
+    failed every frequency list response."""
+    from app.models import Frequency
+    db.add(Frequency(frequency="3.930", mode="LSB"))
+    await db.commit()
+    r = await client.get("/api/frequencies")
+    assert r.status_code == 200
+    assert [f["mode"] for f in r.json()] == ["LSB"]

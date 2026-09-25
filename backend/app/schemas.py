@@ -392,13 +392,18 @@ FREQUENCY_MODE_PATTERN = "^(" + "|".join(re.escape(m) for m in FREQUENCY_MODES) 
 
 class FrequencyBase(BaseModel):
     frequency: Optional[str] = Field(None, max_length=50)
-    mode: str = Field(max_length=20, pattern=FREQUENCY_MODE_PATTERN)
+    # Validated against FREQUENCY_MODES on input only (FrequencyCreate), so a
+    # row saved under an older list still loads instead of failing the whole
+    # frequency list.
+    mode: str = Field(max_length=20)
     network: Optional[str] = Field(None, max_length=100)  # e.g., "Wires-X", "Brandmeister", "REF030C"
     talkgroup: Optional[str] = Field(None, max_length=50)  # e.g., "31665", "Room 12345"
     description: Optional[str] = Field(None, max_length=500)
 
 
 class FrequencyCreate(FrequencyBase):
+    mode: str = Field(max_length=20, pattern=FREQUENCY_MODE_PATTERN)
+
     @model_validator(mode='after')
     def validate_freq_or_network(self):
         """Ensure either frequency or network is provided."""
