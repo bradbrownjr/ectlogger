@@ -20,15 +20,12 @@ All notable changes to ECTLogger are documented here.
 
 ## New Features
 
-* **Frequencies: JS8Call, Packet, and Data modes** — Frequencies can now be marked JS8Call, Packet, or Data, the last covering FLDIGI and other keyboard digital modes, so a digital net's frequency list says how to actually reach it.
-
-## Improvements
-
-* **Reports: Anyone can download the check-in list** — The Export button on a closed net now works for every participant and for visitors who aren't signed in, just like the ICS-309 and the report, so you no longer need a staff role to get a copy of a net you took part in. Visitors get email addresses and phone numbers in notes hidden, the same as on screen.
-* **Net View: Net managers can delete a closed net** — The net's manager, not only an admin, can now delete a closed net, and the confirmation spells out that deleting removes its check-ins, chat, and statistics for good, including from leaderboards and every operator's activity history, so nobody deletes a net thinking it can be brought back. Archive is offered right beside it for keeping the record.
+* **Frequencies: JS8Call, Packet, and Data modes** — Frequencies can now be marked JS8Call, Packet, or Data (for FLDIGI and other digital modes), so a digital net's frequency list shows how to actually reach it.
 
 ## Bug Fixes
 
+* **Reports: CSV export follows the same rule as the other reports** — The Export button now works for anyone who can open a net's report and ICS-309. Before, it was limited to the net's staff, so it was the only way of getting a net's log that didn't follow the same rule as the others.
+* **Net View: Net managers can delete a practice or demo net** — Before, only an admin could delete a closed net. That left a net set up to try the app or show it to someone stuck with its practice check-ins counting toward operators' statistics. Its manager can now delete it, and the confirmation makes clear that deleting is permanent.
 * **Net View: Buttons that match what you can do** — The net toolbar and the net cards on the dashboard now show Close net, Import, Edit, Go live, Archive, Cancel, and Delete only to people who are allowed to use them, so schedule staff no longer see buttons that fail when clicked, a Logger can now find the Close net button, and stepping down as NCS really does hand those controls back.
 * **Frequencies: Shared frequencies are protected** — Only an admin can now change or remove a frequency, and never while a net, a schedule, or a logged check-in still uses it, so nobody can accidentally edit or delete a repeater that another club's nets depend on. You can still add new frequencies and pick them for your nets as before.
 * **Frequencies: Every mode can be saved** — NXDN, M17, VARA, Winlink, and Other can now be saved, and the net and schedule forms offer the same full list of modes as the admin screen, including AM and CW.
