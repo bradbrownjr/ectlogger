@@ -4,7 +4,7 @@ summary: Maintaining the instance-wide list of repeaters, simplex frequencies, a
 kind: How-to
 audience: Users holding the Admin role
 owner: KC1JMH
-revised: 2026-09-19
+revised: 2026-09-25
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/admins/frequencies/
@@ -28,12 +28,12 @@ Either a frequency or a network is required, though not necessarily both, so a d
 
 ## Editing and deleting
 
-Editing an entry updates it everywhere it's used, immediately, which is useful for fixing a typo in a description without having to touch every net that already picked it. Deleting is only possible once no net references the entry at all; the **Nets Using** column tells you that count before you try.
+Editing an entry updates it everywhere it's used, immediately, which is useful for fixing a typo in a description without having to touch every net that already picked it. Deleting is only possible once nothing references the entry at all: no net or schedule lists it, and no station's check-in was logged on it. The **Nets Using** column shows the net count, and the delete icon stays greyed out while any of the three is in use, with a tooltip saying so. Only admins can edit or delete an entry; everyone else who creates nets can add to the list and pick from it, but not change it.
 
 <figure>
   <img src="/docs/img/admins/frequency-in-use-row.png"
        alt="A frequency row in the shared frequency list reading 146.940, FM, &quot;Example County ARES Repeater (PL 100.0)&quot;, with a &quot;Nets Using&quot; count of 3 and a delete icon, outlined in red, greyed out and disabled.">
-  <figcaption>A frequency already picked by at least one net can be edited but not deleted. The count shows how many nets would be affected.</figcaption>
+  <figcaption>A frequency still in use can be edited but not deleted. The count shows how many nets use it.</figcaption>
 </figure>
 
 There's no merge tool for two entries that turn out to be the same repeater under slightly different descriptions. If you spot a near-duplicate, it's worth cleaning up by hand before more nets pick the wrong one.

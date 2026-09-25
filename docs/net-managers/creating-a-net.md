@@ -54,7 +54,7 @@ Add operators here who should be assigned NCS the moment the net is created. Thi
   <figcaption>Check a frequency's box to make it available on this net; add a new one from the blank row at the bottom.</figcaption>
 </figure>
 
-Every net needs at least one frequency or digital talkgroup. Check the boxes in the **Use** column to attach existing ones, or fill in the blank row at the bottom to add a new repeater, simplex frequency, DMR/D-STAR/YSF/P25 network, or GMRS channel and it's added to the shared list for next time. Pressing Enter in any field of that row saves it, same as clicking Add.
+Every net needs at least one frequency or digital talkgroup. Check the boxes in the **Use** column to attach existing ones, or fill in the blank row at the bottom to add a new repeater, simplex frequency, DMR/D-STAR/YSF/P25 network, or GMRS channel and it's added to the shared list for next time. Pressing Enter in any field of that row saves it, same as clicking Add. The list is shared by every net on the site, so you can't change or remove an entry from here; if one is wrong, ask an admin to fix it in [Shared frequencies](/docs/admins/frequencies/).
 
 ### Net script and announcements
 

@@ -45,9 +45,15 @@ interface Frequency {
   description?: string;
   created_at: string;
   net_count: number;
+  schedule_count: number;
+  check_in_count: number;
 }
 
 type FrequencySortField = 'frequency' | 'mode' | 'network' | 'talkgroup' | 'description' | 'net_count';
+
+// A frequency the server will refuse to delete (see frequency_usage in
+// backend/app/routers/frequencies.py).
+const isInUse = (freq: Frequency) => freq.net_count > 0 || freq.schedule_count > 0 || freq.check_in_count > 0;
 
 interface Props {
   showSnackbar: (message: string, severity: 'success' | 'error') => void;
@@ -358,12 +364,13 @@ const AdminFrequenciesTab: React.FC<Props> = ({ showSnackbar }) => {
                           <EditIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
-                      <Tooltip title={freq.net_count > 0 ? 'Cannot delete: frequency is in use' : 'Delete frequency'}>
+                      {/* Same in-use rule the server enforces (routers/frequencies.py::frequency_usage) */}
+                      <Tooltip title={isInUse(freq) ? 'Cannot delete: used by a net, schedule, or check-in' : 'Delete frequency'}>
                         <span>
                           <IconButton
                             size="small"
                             onClick={() => handleDeleteFrequencyClick(freq)}
-                            disabled={freq.net_count > 0}
+                            disabled={isInUse(freq)}
                             color="error"
                           >
                             <DeleteIcon fontSize="small" />

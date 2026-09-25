@@ -18,16 +18,15 @@ import {
   InputAdornment,
   Button,
 } from '@mui/material';
-import DeleteIcon from '@mui/icons-material/Delete';
-import EditIcon from '@mui/icons-material/Edit';
-import CheckIcon from '@mui/icons-material/Check';
-import CloseIcon from '@mui/icons-material/Close';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import { frequencyApi } from '../../services/api';
 
 // ========== SHARED COMMUNICATION PLAN PANEL ==========
-// Frequency / channel selection table used by both CreateSchedule and CreateNet
+// Frequency / channel selection table used by both CreateSchedule and CreateNet.
+// Frequencies are one list shared by every net and schedule, so this panel
+// only selects and adds them; changing or removing one is admin-only
+// (Admin > Frequencies, enforced server-side in routers/frequencies.py).
 
 export interface FrequencyItem {
   id?: number;
@@ -54,8 +53,6 @@ const CommunicationPlanPanel: React.FC<CommunicationPlanPanelProps> = ({
   selectedFrequencyIds,
   setSelectedFrequencyIds,
 }) => {
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [editForm, setEditForm] = useState<FrequencyItem | null>(null);
   const [newFrequency, setNewFrequency] = useState({ frequency: '', mode: 'FM', network: '', talkgroup: '', description: '' });
   const [frequencyFilter, setFrequencyFilter] = useState('');
   const [frequencySortField, setFrequencySortField] = useState<FrequencySortField>('mode');
@@ -96,7 +93,7 @@ const CommunicationPlanPanel: React.FC<CommunicationPlanPanelProps> = ({
     }
   };
 
-  // ---- Frequency CRUD ----
+  // ---- Add a frequency ----
   const handleAddFrequency = async (e?: React.KeyboardEvent) => {
     if (e && e.key !== 'Enter') return;
     if (!newFrequency.frequency && !newFrequency.network) return;
@@ -118,53 +115,6 @@ const CommunicationPlanPanel: React.FC<CommunicationPlanPanelProps> = ({
     }
   };
 
-  const handleDeleteFrequency = async (id: number) => {
-    if (!confirm('Delete this frequency?')) return;
-    try {
-      await frequencyApi.delete(id);
-      setFrequencies(frequencies.filter((f: FrequencyItem) => f.id !== id));
-      setSelectedFrequencyIds(selectedFrequencyIds.filter((fid: number) => fid !== id));
-    } catch (error) {
-      console.error('Failed to delete frequency:', error);
-    }
-  };
-
-  const startEdit = (freq: FrequencyItem) => {
-    setEditingId(freq.id!);
-    setEditForm({ ...freq });
-  };
-
-  const cancelEdit = () => {
-    setEditingId(null);
-    setEditForm(null);
-  };
-
-  const doSaveEdit = async (overrideForm?: FrequencyItem | null) => {
-    const formToSave = overrideForm || editForm;
-    if (!formToSave || !editingId) return;
-    try {
-      const cleanData = {
-        frequency: formToSave.frequency || null,
-        mode: formToSave.mode,
-        network: formToSave.network || null,
-        talkgroup: formToSave.talkgroup || null,
-        description: formToSave.description || null,
-      };
-      const response = await frequencyApi.update(editingId, cleanData);
-      setFrequencies(frequencies.map((f: FrequencyItem) => f.id === editingId ? response.data : f));
-      setEditingId(null);
-      setEditForm(null);
-    } catch (error) {
-      console.error('Failed to update frequency:', error);
-      alert('Failed to update frequency.');
-    }
-  };
-
-  const saveEdit = async (e?: React.KeyboardEvent) => {
-    if (e && e.key !== 'Enter') return;
-    await doSaveEdit();
-  };
-
   const toggleSelection = (id: number) => {
     setSelectedFrequencyIds((prev: number[]) =>
       prev.includes(id) ? prev.filter((fid: number) => fid !== id) : [...prev, id]
@@ -178,11 +128,8 @@ const CommunicationPlanPanel: React.FC<CommunicationPlanPanelProps> = ({
   };
 
   // ---- Row renderers ----
-  const renderEditableRow = (freq: FrequencyItem) => {
-    const isEditing = editingId === freq.id;
-    const form = isEditing ? editForm! : freq;
-    const isAnalog = ['FM', 'SSB', 'GMRS'].includes(form.mode);
-    const isYSF = form.mode === 'YSF';
+  const renderRow = (freq: FrequencyItem) => {
+    const isAnalog = ['FM', 'SSB', 'GMRS'].includes(freq.mode);
 
     return (
       <TableRow key={freq.id}>
@@ -192,87 +139,12 @@ const CommunicationPlanPanel: React.FC<CommunicationPlanPanelProps> = ({
             onChange={() => toggleSelection(freq.id!)}
           />
         </TableCell>
-        <TableCell>
-          {isEditing ? (
-            <FormControl size="small" fullWidth>
-              <Select
-                value={form.mode}
-                onChange={(e: any) => {
-                  const newMode = e.target.value;
-                  const updatedForm = { ...form, mode: newMode };
-                  setEditForm(updatedForm);
-                  doSaveEdit(updatedForm);
-                }}
-              >
-                <MenuItem value="FM">FM</MenuItem>
-                <MenuItem value="GMRS">GMRS</MenuItem>
-                <MenuItem value="SSB">SSB</MenuItem>
-                <MenuItem value="DMR">DMR</MenuItem>
-                <MenuItem value="D-STAR">D-STAR</MenuItem>
-                <MenuItem value="YSF">YSF</MenuItem>
-                <MenuItem value="P25">P25</MenuItem>
-              </Select>
-            </FormControl>
-          ) : (
-            freq.mode
-          )}
-        </TableCell>
-        <TableCell>
-          {isEditing ? (
-            isAnalog ? (
-              <TextField
-                size="small" fullWidth value={form.frequency || ''}
-                onChange={(e: any) => setEditForm({ ...form, frequency: e.target.value, network: '', talkgroup: '' })}
-                onKeyPress={saveEdit} placeholder="146.520 MHz"
-              />
-            ) : (
-              <TextField
-                size="small" fullWidth value={form.network || ''}
-                onChange={(e: any) => setEditForm({ ...form, network: e.target.value, frequency: '' })}
-                onKeyPress={saveEdit} placeholder={isYSF ? 'Room (e.g., UFB)' : 'Network'}
-              />
-            )
-          ) : (
-            getDisplayText(freq)
-          )}
-        </TableCell>
-        <TableCell>
-          {isEditing && !isAnalog && !isYSF ? (
-            <TextField
-              size="small" fullWidth value={form.talkgroup || ''}
-              onChange={(e: any) => setEditForm({ ...form, talkgroup: e.target.value })}
-              onKeyPress={saveEdit} placeholder="TG"
-            />
-          ) : !isAnalog && freq.talkgroup ? (
-            freq.talkgroup
-          ) : (
-            '-'
-          )}
-        </TableCell>
-        <TableCell>
-          {isEditing ? (
-            <TextField
-              size="small" fullWidth value={form.description || ''}
-              onChange={(e: any) => setEditForm({ ...form, description: e.target.value })}
-              onKeyPress={saveEdit}
-            />
-          ) : (
-            freq.description || '-'
-          )}
-        </TableCell>
-        <TableCell>
-          {isEditing ? (
-            <>
-              <IconButton type="button" size="small" onClick={() => saveEdit()} color="primary"><CheckIcon /></IconButton>
-              <IconButton type="button" size="small" onClick={cancelEdit}><CloseIcon /></IconButton>
-            </>
-          ) : (
-            <>
-              <IconButton type="button" size="small" onClick={() => startEdit(freq)}><EditIcon /></IconButton>
-              <IconButton type="button" size="small" onClick={() => handleDeleteFrequency(freq.id!)} color="error"><DeleteIcon /></IconButton>
-            </>
-          )}
-        </TableCell>
+        <TableCell>{freq.mode}</TableCell>
+        <TableCell>{getDisplayText(freq)}</TableCell>
+        <TableCell>{!isAnalog && freq.talkgroup ? freq.talkgroup : '-'}</TableCell>
+        <TableCell>{freq.description || '-'}</TableCell>
+        {/* Actions column holds only the new row's Add button */}
+        <TableCell />
       </TableRow>
     );
   };
@@ -386,7 +258,7 @@ const CommunicationPlanPanel: React.FC<CommunicationPlanPanelProps> = ({
             </TableRow>
           </TableHead>
           <TableBody>
-            {sortedFrequencies.map((freq: FrequencyItem) => renderEditableRow(freq))}
+            {sortedFrequencies.map((freq: FrequencyItem) => renderRow(freq))}
             {renderNewRow()}
           </TableBody>
         </Table>

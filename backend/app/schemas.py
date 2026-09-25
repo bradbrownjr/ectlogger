@@ -405,11 +405,14 @@ class FrequencyResponse(FrequencyBase):
 
 
 class FrequencyWithUsageResponse(FrequencyBase):
-    """Frequency response with net usage count for admin view"""
+    """Frequency response with usage counts for the admin view. Any non-zero
+    count means delete_frequency will refuse it (see frequency_usage)."""
     id: int
     created_at: datetime
     band: Optional[str] = None
     net_count: int = 0
+    schedule_count: int = 0
+    check_in_count: int = 0
 
     class Config:
         from_attributes = True
