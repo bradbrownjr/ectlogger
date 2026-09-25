@@ -4,7 +4,7 @@ summary: What closing generates, who receives it, and what to do if you closed o
 kind: How-to
 audience: NCS, Logger, and Relay operators
 owner: KC1JMH
-revised: 2026-09-19
+revised: 2026-09-25
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-control/closing-the-net/
@@ -16,7 +16,7 @@ Closing a net is a real state change, not a formality: it ends the live session,
 
 ## Closing it
 
-The toolbar's **Close net** button is available to the net's manager, an admin, or anyone holding an active NCS or Logger role. It asks you to confirm first:
+The toolbar's **Close net** button is available to the net's manager, an admin, an active NCS, or anyone on the schedule's net staff or NCS rotation, the same group that can Import or Edit net settings. Holding Logger alone doesn't put the button on your toolbar unless you're also one of those; if that happens, ask the net's manager, NCS, or another staff member to close it instead. It asks you to confirm first:
 
 <figure>
   <img src="/docs/img/net-control/close-net-dialog.png"

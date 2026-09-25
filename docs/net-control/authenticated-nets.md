@@ -4,7 +4,7 @@ summary: Confirming a checked-in station is the account it claims to be, and wha
 kind: Explanation
 audience: NCS, Logger, and Relay operators
 owner: KC1JMH
-revised: 2026-09-19
+revised: 2026-09-25
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-control/authenticated-nets/
@@ -12,11 +12,11 @@ permalink: /docs/net-control/authenticated-nets/
 
 # Authenticated nets
 
-A net's manager can turn on **Authenticated Net** when creating or editing a net or schedule (that switch lives in the net's settings, not on the net view itself; see the net managers path). Once it's on, NCS and Logger get a way to confirm that a checked-in station really is the ECTLogger account it claims to be, using the six-digit code from that operator's authenticator app.
+A net's manager can turn on **Authenticated Net** when creating or editing a net or schedule (that switch lives in the net's settings, not on the net view itself; see the net managers path). Once it's on, the net's manager, an admin, NCS, and Logger get a way to confirm that a checked-in station really is the ECTLogger account it claims to be, using the six-digit code from that operator's authenticator app.
 
 ## What it proves
 
-Every check-in row on an authenticated net shows a padlock next to the callsign. An open padlock means unverified; a closed one means NCS or Logger confirmed a match. Only NCS and Logger can click it to act on it; everyone else sees the same padlock, read-only.
+Every check-in row on an authenticated net shows a padlock next to the callsign. An open padlock means unverified; a closed one means someone confirmed a match. Only the net's manager, an admin, NCS, or Logger can click it to act on it; everyone else sees the same padlock, read-only.
 
 Clicking it opens a dialog showing the current six-digit code ECTLogger computes for that station's account, plus the previous 30-second window's code in case it rolls over mid-sentence while you're reading it aloud together. Ask the operator to read theirs from their authenticator app, compare it to what's on screen, and confirm the match or reject it. A reject explicitly clears any earlier verification rather than just closing the dialog, so a station that was verified once doesn't stay marked as verified after failing a later check.
 

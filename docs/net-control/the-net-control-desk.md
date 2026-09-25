@@ -4,7 +4,7 @@ summary: Every control on the net view, what it does, and which ones you'll actu
 kind: Explanation
 audience: NCS, Logger, and Relay operators
 owner: KC1JMH
-revised: 2026-09-19
+revised: 2026-09-25
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-control/the-net-control-desk/
@@ -40,9 +40,9 @@ Here's what each one does, grouped the way the toolbar groups them.
 
 ### Management (right side)
 
-- **Import** — backfills check-ins from a CSV, for a net that ran off-app or needs bulk correction. Staff only (the net's manager, an admin, or an active NCS). This is a net-manager-flavored tool; day-to-day logging almost never needs it.
+- **Import** — backfills check-ins from a CSV, for a net that ran off-app or needs bulk correction. Staff only: the net's manager, an admin, an active NCS, or anyone on the schedule's net staff or NCS rotation, whether or not they've taken a role on this occurrence yet. This is a net-manager-flavored tool; day-to-day logging almost never needs it.
 - **Edit net** — the net's settings form. Staff only, and it stays available even after the net closes, since a typo in the log sometimes isn't found until later.
-- **Roles** — opens **Manage Net Control Staff**, where you assign or remove NCS, Logger, and Relay for anyone. On a draft or scheduled net the button's tooltip reads "Assign NCS and logger roles", since any assigned NCS can start the net. Covered in [Roles and stepping away](/docs/net-control/roles-and-stepping-away/).
+- **Roles** — opens **Manage Net Control Staff**, where you assign or remove NCS, Logger, and Relay for anyone. On a draft or scheduled net the button's tooltip reads "Assign NCS and logger roles (any assigned NCS can start the net)". Covered in [Roles and stepping away](/docs/net-control/roles-and-stepping-away/).
 - **Role: NCS** / **Role: Standard** — appears only for an operator who already holds an active NCS role on this net, and toggles between acting as NCS and stepping down to a Standard participant without leaving the role behind entirely.
 - **Claim NCS** — a recovery button, shown to the net's manager or an admin only when a net has no assigned NCS at all.
 - **Raise hand** — a participant-side signal to get NCS's attention; NCS doesn't see this on their own row, since they run the queue rather than joining it.
@@ -74,7 +74,7 @@ For adding, editing, and correcting rows in that list, see [Logging check-ins](/
 
 ## What's docked beside the list
 
-On a wide enough screen, Chat and the Activity Log sit docked in a column beside the check-in list by default; on an ultrawide monitor, Script and Notes can join a second column on the left. Every one of these panels, along with Map, Coverage, and Traffic when they're open, can be detached into a floating overlay or popped out into a genuinely separate browser window, so you can spread the desk across more than one monitor. That's its own page: [Multiple monitors and wide screens](/docs/net-control/multiple-monitors/).
+On a wide enough screen, Chat and the Activity Log sit docked in a column beside the check-in list by default; on an ultrawide monitor, Script, Notes, and the schedule's Announcements can join a second column on the left. Every one of these panels, along with Map, Coverage, and Traffic when they're open, can be detached into a floating overlay or popped out into a genuinely separate browser window, so you can spread the desk across more than one monitor. That's its own page: [Multiple monitors and wide screens](/docs/net-control/multiple-monitors/).
 
 ## Which ones actually matter
 
