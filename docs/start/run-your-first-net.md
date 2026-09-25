@@ -1,10 +1,10 @@
 ---
 title: Run your first net
-summary: Create a net, take control of it, log a few stations, and close it out with the log in your inbox. About fifteen minutes.
+summary: Create a net, start it, log a few stations, and close it out with the log in your inbox. About fifteen minutes.
 kind: Tutorial
 audience: Anyone taking a turn at Net Control
 owner: KC1JMH
-revised: 2026-09-19
+revised: 2026-09-25
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/start/run-your-first-net/
@@ -12,31 +12,31 @@ permalink: /docs/start/run-your-first-net/
 
 # Run your first net
 
-By the end of this you will have run a net from start to finish: created it, taken Net Control, logged stations, and closed it out. The log will be sitting in your email.
+By the end of this you will have run a net from start to finish: created it, started it as Net Control, logged stations, and closed it out. The log will be sitting in your email.
 
-You do not need permission from anyone to do this, and you do not need anyone else to take part. Make a net, work it for five minutes, close it. Nothing you do here is visible to your club unless you tell them about it, and a practice net that ran for five minutes with two stations in it is a perfectly ordinary thing to find in the archive.
+You do not need anyone else to take part. Make a net, work it for five minutes, close it. Nothing you do here is visible to your club unless you tell them about it, and a practice net that ran for five minutes with two stations in it is a perfectly ordinary thing to find in the archive.
 
-You should have [checked into a net](/docs/start/first-check-in/) at least once first, so the check-in list is familiar.
+You should have [checked into a net](/docs/start/first-check-in/) at least once first, so the check-in list is familiar. That also matters for a second reason: to keep spammers from filling the dashboard, a brand-new account can't create nets straight away. By default an account has to be a week old and have checked into at least one net, though your instance's admins may have changed that. If **Create Net** at the end of step 1 tells you your account is too new, that is this rule; an admin can give you early access, or you can come back when it says. See [a brand-new account may have to wait](/docs/net-managers/recurring-schedules/#a-brand-new-account-may-have-to-wait).
 
 ## 1. Create the net
 
-From the dashboard, click the **+** button in the bottom right corner. You land on **Create New Net**.
+From the dashboard, click the **+** button in the bottom right corner. You land on **Create Net**.
 
-The form has six tabs across the top. You only need the first one, and on that tab you only need one field.
+The form has seven tabs across the top, because it is the same form used to set up a recurring schedule, opened here for a single net. You need two of the tabs and two fields.
 
-Put something in **Net Name**. Call it what it is: "Thursday practice", "KC1HILL test net", whatever will make sense to you in a week's time.
+On **Basic Info**, put something in **Schedule Name**. It is the net's name, whatever the label says. Call it what it is: "Thursday practice", "KC1HILL test net", whatever will make sense to you in a week's time.
 
 <figure class="control-figure">
   <img src="/docs/img/start/create-net-name.png"
-       alt="The Create New Net form's Net Information section, with the Net Name field outlined in red at the top, above Description, Info URL, and Audio Stream URL fields.">
-  <figcaption>Net Name is the only required field on the whole form.</figcaption>
+       alt="The Create Net form's Basic Info tab, with the Schedule Name field outlined in red at the top, above the Description and Info URL fields.">
+  <figcaption>The name, and a frequency on the Communication Plan tab, are the only two things the form insists on.</figcaption>
 </figure>
 
-While you are here, click the **Communication Plan** tab and add the frequency you will actually be on. It is optional, but the net's log is a record of a radio session, and a record of a radio session with no frequency on it is not worth much to whoever reads it later.
+Then click the **Communication Plan** tab and tick the box next to the frequency you will actually be on. If it isn't in the list, add it in the row at the bottom. **Create Net** stays greyed out until at least one is ticked: the net's log is a record of a radio session, and a record of a radio session with no frequency on it is not worth much to whoever reads it later.
 
-Leave everything else alone. Every other setting on this form has a sensible default, and [creating a net](/docs/net-managers/creating-a-net/) goes through them field by field when you want to change one.
+Leave everything else alone, including the **Schedule** tab, which is already set to a one-time net with no start time. Every other setting has a sensible default, and [creating a net](/docs/net-managers/creating-a-net/) goes through them when you want to change one.
 
-Click **Create Net**. You land on the net you just made.
+Click **Create Net**. You land on the net you just made, and because you made it, you are its Net Control already.
 
 ## 2. Start it
 
@@ -52,34 +52,24 @@ Click **Start net** on the toolbar.
 
 A net with no scheduled start time goes straight to **active**, which is what you want here. (A net that is scheduled for later opens a *lobby* instead, so stations can gather before the official start. That is covered in [lobby and auto-close settings](/docs/net-managers/lobby-and-auto-close/).)
 
-## 3. Take Net Control
+## 3. You are Net Control, and already checked in
 
-Starting a net does not make you Net Control. They are separate on purpose: the person who set the net up is very often not the person running it.
+Whoever clicks **Start net** is Net Control, and ECTLogger checks them in at the same moment, so you don't have to. Look at the check-in list: your callsign is the first row, with a crown against it. A message in the chat says the net was started by you.
 
-Because nobody holds the role yet, the toolbar offers you **Claim NCS**. Click it.
+That matters more than it looks. The net's log is built from the check-in list, so Net Control who never appeared in it would be missing from the record of a net they ran.
 
-<figure class="control-figure">
-  <img src="/docs/img/start/claim-ncs-button.png"
-       alt="The net toolbar on an active net with nobody assigned, with the Claim NCS button outlined in red.">
-  <figcaption>Claim NCS appears only on an active or lobby net that has no Net Control at all.</figcaption>
-</figure>
+The toolbar has grown too. You can now add and edit anyone's check-in, set the active frequency, moderate chat, and close the net, and **Role: NCS** on the toolbar shows which role you hold.
 
-The toolbar grows: you can now add and edit anyone's check-in, set the active frequency, moderate chat, and close the net. A system message goes into the chat saying you claimed it.
-
-Now check yourself in as well, the same way you did as a participant. Claiming the role gives you the controls, but it does not put you in the check-in list, and the net's log is built from that list. Net Control who never checked in is missing from the record of a net they ran. Once you are in the list, your row carries a crown.
-
-It also wakes the rest of the toolbar up. Several controls, Bulk add among them, stay hidden until a net has at least one check-in on it, because there is nothing for them to act on yet. If the button the next step asks for is not there, that is why.
-
-On a net that comes from a recurring schedule you would not do this. There, anyone on the schedule's staff takes Net Control just by checking themselves in and choosing **Check in as NCS**, and Claim NCS never appears. See [roles and stepping away](/docs/net-control/roles-and-stepping-away/).
+On a net that comes from a recurring schedule, it usually works differently: the net is often created with nobody in charge, and whoever on the schedule's staff shows up takes Net Control by checking themselves in and choosing **Check in as NCS**. See [roles and stepping away](/docs/net-control/roles-and-stepping-away/).
 
 ## 4. Log some stations
 
 Stations call you on the air; you type them into the list. Click **Bulk add** on the toolbar.
 
-A small window opens with one big text box. Type a callsign, then a name, then a location, separated by commas, and separate one station from the next with a semicolon:
+A small **Bulk Check-In** window opens with one big text box. Type a callsign, then a name, then a location, separated by commas, and separate one station from the next with a semicolon:
 
 ```
-KC1ABC, John, Portland ME; W1XYZ, Sue, Gray ME
+KC1HILL, Priya, Portland ME; N1ROVE, Chris, Gray ME
 ```
 
 The window tells you the order it expects the fields in, on the **Format** line underneath the box, and that order is this net's own: a net that asks for a spotter number or a weather observation lists those too. You only have to fill in as many as you have. Underneath that is a row of shortcuts for setting a station's status inline, `:jl` for listening only, `:m` for mobile, and so on.
@@ -100,9 +90,9 @@ To fix something you got wrong, click the row. The cell becomes editable in plac
 
 ## 5. Close it out
 
-When the net is over, click **Close net**. Confirm in the dialog.
+When the net is over, click **Close net**, then **Close Net** again in the dialog that asks whether you're sure.
 
-Three things happen. The net moves to **closed** and stops accepting check-ins. A system message goes into the chat saying you closed it. And ECTLogger builds the log and emails it out.
+Three things happen. The net moves to **closed** and stops accepting check-ins. A system message goes into the chat saying the net is closed, with a reminder to archive it once you're done with it, which takes it off everyone's dashboard. And ECTLogger builds the log and emails it out.
 
 You get a copy because you were Net Control on it. So does the net's manager, and anyone subscribed to the schedule it came from, unless they have turned those emails off in their own profile.
 

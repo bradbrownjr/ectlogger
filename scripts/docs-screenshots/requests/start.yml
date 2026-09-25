@@ -113,23 +113,26 @@ shots:
   - id: create-net-name
     section: start
     page: /docs/start/run-your-first-net/
-    route: /nets/create
+    # The dashboard's + button opens the schedule form in one-time mode
+    # (Dashboard.tsx); /nets/create is no longer linked from anywhere.
+    route: /scheduler/create?type=one_time
     as: W1PINE
-    wait_for: 'label:text-is("Net Name")'
-    # Union of the section heading and the last field under it, so the figure
-    # is the Net Information block rather than the whole six-tab form.
+    wait_for: 'label:has-text("Schedule Name")'
+    # Union of the name field and the Info URL field under it, so the figure
+    # is the top of Basic Info rather than the whole seven-tab form.
     element:
-      - 'h6:text-is("Net Information")'
-      - 'div.MuiFormControl-root:has(label:text-is("Audio Stream URL"))'
+      - 'div.MuiFormControl-root:has(label:has-text("Schedule Name"))'
+      - 'div.MuiFormControl-root:has(label:has-text("Info URL"))'
     pad: 12
     annotate:
-      - selector: 'div.MuiFormControl-root:has(label:text-is("Net Name"))'
+      - selector: 'div.MuiFormControl-root:has(label:has-text("Schedule Name"))'
         style: box
     alt: >
-      The Create New Net form's Net Information section, with the Net Name
-      field outlined in red at the top, above Description, Info URL, and Audio
-      Stream URL fields.
-    caption: Net Name is the only required field on the whole form.
+      The Create Net form's Basic Info tab, with the Schedule Name field
+      outlined in red at the top, above the Description and Info URL fields.
+    caption: >
+      The name, and a frequency on the Communication Plan tab, are the only two
+      things the form insists on.
 
   - id: start-net-button
     section: start
@@ -148,24 +151,6 @@ shots:
       The net toolbar on a net that has not started, with the Start net button
       outlined in red, alongside Net info, Import, Edit net, and Roles.
     caption: Start net is the first control on the toolbar until the net is running.
-
-  - id: claim-ncs-button
-    section: start
-    page: /docs/start/run-your-first-net/
-    # The seeded ad hoc net that is active with nobody assigned. Claim NCS
-    # only exists in exactly that state.
-    route: /nets/{{net:unstaffed}}
-    as: W1PINE
-    wait_for: 'text=Claim NCS'
-    element: 'div:has(> span[aria-label="Claim NCS role for this net"])'
-    pad: 0
-    annotate:
-      - selector: 'span[aria-label="Claim NCS role for this net"]'
-        style: box
-    alt: >
-      The net toolbar on an active net with nobody assigned, with the Claim NCS
-      button outlined in red.
-    caption: Claim NCS appears only on an active or lobby net that has no Net Control at all.
 
   - id: bulk-add-window
     section: start

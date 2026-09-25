@@ -359,16 +359,10 @@
     "caption": "The net toolbar. What is on it depends on whether you are checked in yet.",
     "page": "/docs/start/first-check-in/"
   },
-  "start/claim-ncs-button": {
-    "path": "/docs/img/start/claim-ncs-button.png",
-    "alt": "The net toolbar on an active net with nobody assigned, with the Claim NCS button outlined in red.\n",
-    "caption": "Claim NCS appears only on an active or lobby net that has no Net Control at all.",
-    "page": "/docs/start/run-your-first-net/"
-  },
   "start/create-net-name": {
     "path": "/docs/img/start/create-net-name.png",
-    "alt": "The Create New Net form's Net Information section, with the Net Name field outlined in red at the top, above Description, Info URL, and Audio Stream URL fields.\n",
-    "caption": "Net Name is the only required field on the whole form.",
+    "alt": "The Create Net form's Basic Info tab, with the Schedule Name field outlined in red at the top, above the Description and Info URL fields.\n",
+    "caption": "The name, and a frequency on the Communication Plan tab, are the only two things the form insists on.\n",
     "page": "/docs/start/run-your-first-net/"
   },
   "start/dashboard-view-button": {

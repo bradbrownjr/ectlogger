@@ -4,7 +4,7 @@ summary: Get an account, find the net your club is running, and put your callsig
 kind: Tutorial
 audience: Anyone new to ECTLogger
 owner: KC1JMH
-revised: 2026-09-19
+revised: 2026-09-25
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/start/first-check-in/
@@ -20,7 +20,7 @@ This walkthrough uses [app.ectlogger.us](https://app.ectlogger.us), the hosted i
 
 ## 1. Get in
 
-Go to the site. If you are not signed in, you land on the sign-in page.
+Go to the site. You can look around without signing in: you land on the list of nets, with a **Login** button at the top right. Click it to reach the sign-in page.
 
 Type your email address and click **Send Magic Link**.
 
@@ -48,6 +48,8 @@ Put your real name in **Name**, and your callsign in **Primary Call Sign**. Net 
 
 If you hold more than one callsign, or a GMRS callsign as well, add the rest later in your profile. See [your account and profile](/docs/operators/account-and-profile/).
 
+Click **Continue**. A short **ECTLogger Walkthrough** follows, a few cards introducing the main screens. Step through it with **Next**, or click **Skip**. It does not come back on its own, but **Help**, then **Start Walkthrough**, reopens it any time.
+
 ## 3. Find the net
 
 You land on the dashboard, which lists the nets on this instance. An active net carries a green **active** chip.
@@ -60,7 +62,7 @@ Find the net you want and click **View**.
   <figcaption>View opens the net. Nets you can still take part in sort ahead of ones that are over.</figcaption>
 </figure>
 
-If the list is long, the search box filters by net name, description, Net Control's callsign, or frequency. If the net you want is not there at all, it may not have started yet, or it may already be closed; [finding a net](/docs/operators/finding-a-net/) covers where everything else lives.
+If the list is long, click the filter button (the funnel icon near the top right) to open a box that filters by net name, description, Net Control's callsign, or frequency. If the net you want is not there at all, it may not have started yet, or it may already be closed; [finding a net](/docs/operators/finding-a-net/) covers where everything else lives.
 
 ## 4. Check in
 
