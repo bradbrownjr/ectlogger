@@ -40,7 +40,7 @@ Here's what each one does, grouped the way the toolbar groups them.
 
 ### Management (right side)
 
-- **Import** — backfills check-ins from a CSV, for a net that ran off-app or needs bulk correction. Allowed for the net's manager, an admin, or anyone currently acting as NCS, Logger, or Relay. Net staff with no role on this occurrence see the button but are refused until they check in with one; see [Known issues](/docs/about/known-issues/#some-toolbar-buttons-show-for-the-wrong-people). This is a net-manager-flavored tool; day-to-day logging almost never needs it.
+- **Import** — backfills check-ins from a CSV, for a net that ran off-app or needs bulk correction. Shown to the net's manager, an admin, anyone currently acting as NCS, Logger, or Relay, and the schedule's net staff, whether or not they've taken a role on this occurrence yet. This is a net-manager-flavored tool; day-to-day logging almost never needs it.
 - **Edit net** — the net's settings form. Staff only, and it stays available even after the net closes, since a typo in the log sometimes isn't found until later.
 - **Roles** — opens **Manage Net Control Staff**, where you assign or remove NCS, Logger, and Relay for anyone. On a draft or scheduled net the button's tooltip reads "Assign NCS and logger roles (any assigned NCS can start the net)". Covered in [Roles and stepping away](/docs/net-control/roles-and-stepping-away/).
 - **Role: NCS** / **Role: Standard** — appears only for an operator who already holds an active NCS role on this net, and toggles between acting as NCS and stepping down to a Standard participant without leaving the role behind entirely.

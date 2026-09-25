@@ -13,7 +13,7 @@ Regression tests for the two staff-access defects fixed 2026-09-19.
    rendered it on can_manage, which includes plain template staff, while
    assign_net_role/remove_net_role enforce can_manage_net_roles, which
    additionally requires an active NCS or LOGGER role on that specific
-   occurrence. NetResponse.can_manage_roles now carries the real condition
+   occurrence. NetResponse.actions.manage_roles now carries the real condition
    and the button reads that instead.
 """
 import pytest
@@ -114,7 +114,7 @@ async def test_unrelated_user_cannot_start_the_net(client, db, owner, other):
 @pytest.mark.asyncio
 async def test_staff_with_no_role_yet_are_not_offered_the_roles_dialog(client, db, owner, other):
     """Staff membership alone is not enough for assign_net_role, so
-    can_manage_roles has to be False even though can_manage is True."""
+    actions.manage_roles has to be False even though can_manage is True."""
     template = await _template(db, owner.id)
     db.add(TemplateStaff(template_id=template.id, user_id=other.id, is_active=True, is_co_manager=False))
     await db.commit()
@@ -123,7 +123,7 @@ async def test_staff_with_no_role_yet_are_not_offered_the_roles_dialog(client, d
     net = (await client.get(f"/api/nets/{net_id}", headers=auth_headers(other))).json()
 
     assert net["can_manage"] is True
-    assert net["can_manage_roles"] is False
+    assert net["actions"]["manage_roles"] is False
 
     # And the endpoint the button would call agrees.
     refused = await client.post(
@@ -143,7 +143,7 @@ async def test_staff_holding_an_active_ncs_role_are_offered_it(client, db, owner
     await db.commit()
 
     net = (await client.get(f"/api/nets/{net_id}", headers=auth_headers(other))).json()
-    assert net["can_manage_roles"] is True
+    assert net["actions"]["manage_roles"] is True
 
     allowed = await client.post(
         f"/api/nets/{net_id}/roles?user_id={owner.id}&role=LOGGER", headers=auth_headers(other)
@@ -158,4 +158,4 @@ async def test_owner_is_always_offered_it(client, db, owner):
 
     net_id = await _net_from(client, owner, template.id)
     net = (await client.get(f"/api/nets/{net_id}", headers=auth_headers(owner))).json()
-    assert net["can_manage_roles"] is True
+    assert net["actions"]["manage_roles"] is True

@@ -12,9 +12,14 @@ from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.dependencies import get_current_user, get_current_user_optional
-from app.models import CheckIn, Net, NetRole, NetStatus, TemplateStaff, User, net_frequencies
+from app.models import CheckIn, Net, NetRole, NetStatus, User, net_frequencies
 from app.models import Form as TrafficFormModel
-from app.permissions import check_net_lifecycle_permission, check_net_permission
+from app.permissions import (
+    check_net_lifecycle_permission,
+    check_net_permission,
+    may_import_check_ins,
+    net_access,
+)
 from app.schemas import Ics309LogResponse, NetResponse, NetCancelRequest
 from app.services.csv_import import (
     MAX_IMPORT_WINDOW_DAYS,
@@ -202,23 +207,12 @@ async def import_net_csv(
     if not net:
         raise HTTPException(status_code=404, detail="Net not found")
 
-    if not await check_net_permission(db, net, current_user, required_roles=["NCS", "LOGGER", "RELAY"]):
-        # Active template staff can start a net (see nets_core.start_net), so they
-        # can also fix or backfill its log. Without this, a scheduled net that has
-        # no NetRole rows yet is importable only by the owner or an admin -- which
-        # is exactly the net a backfill is for.
-        staff_row = None
-        if net.template_id:
-            staff_result = await db.execute(
-                select(TemplateStaff).where(
-                    TemplateStaff.template_id == net.template_id,
-                    TemplateStaff.user_id == current_user.id,
-                    TemplateStaff.is_active == True,  # noqa: E712
-                )
-            )
-            staff_row = staff_result.scalar_one_or_none()
-        if staff_row is None:
-            raise HTTPException(status_code=403, detail="Not authorized to import into this net")
+    # permissions.may_import_check_ins, which the Import button also reads:
+    # net control on this net, or the schedule's net staff (who can start a
+    # net, so can also backfill its log -- a scheduled net with no NetRole yet
+    # is exactly the one a backfill is for).
+    if not may_import_check_ins(await net_access(db, net, current_user)):
+        raise HTTPException(status_code=403, detail="Not authorized to import into this net")
 
     if not file.filename:
         raise HTTPException(status_code=400, detail="No CSV file uploaded")

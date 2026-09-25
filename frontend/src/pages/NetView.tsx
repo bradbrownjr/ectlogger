@@ -83,6 +83,7 @@ import CanHearDialog from '../components/netview/CanHearDialog';
 import EditTopicResponseDialog from '../components/netview/EditTopicResponseDialog';
 import FileTrafficDialog from '../components/netview/FileTrafficDialog';
 import { watchZoomAwarePopovers } from '../utils/zoomAwarePopovers';
+import { getNetActions } from '../utils/netActions';
 
 interface Frequency {
   id: number;
@@ -358,7 +359,7 @@ const NetView: React.FC = () => {
   const [filteredFrequencyIds, setFilteredFrequencyIds] = useState<number[]>([]);
   // Auto-start ref to prevent multiple go-live triggers
   const autoStartTriggeredRef = useRef(false);
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, simulateRegularUser } = useAuth();
   const { gridSquare } = useLocation();
   const navigate = useNavigate();
 
@@ -1333,7 +1334,10 @@ const NetView: React.FC = () => {
     ? checkIns.find((ci: CheckIn) => ci.id === editTopicCheckInId) || null
     : null;
 
-  const canStartNet = canManage;
+  // Per-action permissions from the server (utils/netActions.ts): each
+  // management button is gated on the flag for its own action.
+  const actions = getNetActions(net, simulateRegularUser);
+  const canStartNet = actions.start;
   
   // Check if net has any actively-serving NCS (a stepped-down NCS's role row
   // stays in netRoles with is_active=false, not deleted -- see toggle_self_net_role).
@@ -1492,7 +1496,8 @@ const NetView: React.FC = () => {
   const handleClaimNCS = async () => {
     try {
       await netApi.claimNcs(Number(netId));
-      await fetchNetRoles();
+      // fetchNet too: the toolbar's per-action flags come from the net.
+      await Promise.all([fetchNetRoles(), fetchNet()]);
       setToastMessage('You are now NCS');
     } catch (error: any) {
       console.error('Failed to claim NCS:', error);
@@ -1504,7 +1509,8 @@ const NetView: React.FC = () => {
   const handleToggleNCSRole = async () => {
     try {
       await netRoleApi.toggleSelf(Number(netId));
-      await fetchNetRoles();
+      // fetchNet too: stepping down removes toolbar actions server-side.
+      await Promise.all([fetchNetRoles(), fetchNet()]);
     } catch (err: any) {
       setToastMessage(getErrorMessage(err, 'Could not toggle NCS role'));
     }
@@ -1603,7 +1609,7 @@ const NetView: React.FC = () => {
         net={net}
         netId={netId}
         canManage={canManage}
-        canManageRoles={net.can_manage_roles}
+        actions={actions}
         canManageCheckIns={canManageCheckIns}
         canStartNet={canStartNet}
         isAdmin={isAdmin}

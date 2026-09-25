@@ -10,8 +10,14 @@ from sqlalchemy.orm import selectinload
 from app.database import get_db
 from app.dependencies import get_current_user, get_current_user_optional
 from app.email_service import EmailService
-from app.models import Net, NetRole, NetStatus, NetTemplateSubscription, TemplateStaff, User, UserRole
-from app.permissions import can_manage_net_roles, is_admin
+from app.models import Net, NetRole, NetStatus, NetTemplateSubscription, TemplateStaff, User
+from app.permissions import (
+    can_manage_net_roles,
+    is_admin,
+    may_claim_ncs,
+    may_email_net_subscribers,
+    net_access,
+)
 from app.schemas import public_display_name
 from app.utils import display_callsign, get_avatar_url
 
@@ -204,8 +210,8 @@ async def claim_ncs_role(
     if not net:
         raise HTTPException(status_code=404, detail="Net not found")
     
-    # Only owner or admin can claim NCS
-    if net.owner_id != current_user.id and not is_admin(current_user):
+    # Only owner or admin can claim NCS (permissions.may_claim_ncs)
+    if not may_claim_ncs(await net_access(db, net, current_user)):
         raise HTTPException(status_code=403, detail="Only net owner or admin can claim NCS")
     
     # Check if there's already an NCS
@@ -512,21 +518,8 @@ async def email_net_subscribers(
         raise HTTPException(status_code=404, detail="Net not found")
     
     # Check permissions - admin, net owner, or active template co-manager.
-    is_admin = current_user.role == UserRole.ADMIN
-    is_owner = net.owner_id == current_user.id
-    is_co_manager = False
-    if net.template_id and not (is_admin or is_owner):
-        co_result = await db.execute(
-            select(TemplateStaff).where(
-                TemplateStaff.template_id == net.template_id,
-                TemplateStaff.user_id == current_user.id,
-                TemplateStaff.is_active == True,
-                TemplateStaff.is_co_manager == True,
-            )
-        )
-        is_co_manager = co_result.scalar_one_or_none() is not None
-
-    if not (is_admin or is_owner or is_co_manager):
+    # permissions.may_email_net_subscribers, which the Email button also reads.
+    if not may_email_net_subscribers(await net_access(db, net, current_user)):
         raise HTTPException(status_code=403, detail="Not authorized to send emails for this net")
 
     recipient_group = (email_data.get('recipient_group') or 'subscribers').strip().lower()

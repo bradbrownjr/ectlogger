@@ -233,6 +233,9 @@ export function useNetWebSocket(deps: NetWebSocketDeps): WebSocket | null {
           if (message.data?.user_id && user?.id === message.data.user_id) {
             fetchNetRoles();
             fetchCheckIns();
+            // This user's own role changed, so the server's per-action
+            // toolbar flags (net.actions) changed with it.
+            fetchNet();
           }
         } else if (message.type === 'status_change') {
           fetchCheckIns();

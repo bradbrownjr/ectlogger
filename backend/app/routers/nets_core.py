@@ -25,10 +25,15 @@ from app.models import (
 )
 from app.net_start import send_net_start_notifications
 from app.permissions import (
-    can_manage_net_roles,
     check_net_permission,
     is_active_template_staff,
     is_admin,
+    load_net_access,
+    may_close_net,
+    may_edit_net,
+    may_start_net,
+    net_access,
+    net_actions,
     is_eligible_for_logger_self_grant,
     is_eligible_for_ncs_auto_grant,
 )
@@ -114,6 +119,17 @@ async def create_net(
     return NetResponse.from_orm(net)
 
 
+def _actions_for(access):
+    """(actions, actions_as_regular_user) for NetResponse. The second is only
+    sent to admins, for the "View as Regular User" preview."""
+    if access is None:
+        return {}, None
+    actions = net_actions(access)
+    if not access.is_admin:
+        return actions, None
+    return actions, net_actions(access.as_regular_user())
+
+
 @router.get("/", response_model=List[NetResponse])
 async def list_nets(
     status: Optional[List[NetStatus]] = Query(None),
@@ -163,8 +179,13 @@ async def list_nets(
             .where(NetRole.net_id.in_(net_ids))
             .where(NetRole.user_id == current_user.id)
             .where(NetRole.role == "NCS")
+            # A stepped-down NCS (toggle_self_net_role) is no longer NCS here.
+            .where(NetRole.is_active == True)  # noqa: E712
         )
         user_ncs_net_ids = set(row[0] for row in ncs_result.fetchall())
+
+    # Per-action permissions for every card, in a fixed number of queries.
+    access_by_net = await load_net_access(db, current_user, nets) if current_user else {}
 
     # For archived net requests, compute personal attendance flags
     user_attended_net_ids: set = set()
@@ -222,6 +243,7 @@ async def list_nets(
             is_ncs = net.id in user_ncs_net_ids
             is_owner_or_ncs = is_owner or is_ncs  # non-admin access; used by frontend simulation mode
             can_manage = is_owner_or_ncs or is_admin
+        actions, actions_as_regular_user = _actions_for(access_by_net.get(net.id))
 
         ncs_callsign, ncs_name = ncs_by_net.get(net.id, (None, None))
         user_attended = (net.id in user_attended_net_ids) if compute_user_flags else None
@@ -232,6 +254,8 @@ async def list_nets(
             owner_name=public_display_name(net.owner.name if net.owner else None, current_user is not None),
             check_in_count=check_in_counts.get(net.id, 0),
             can_manage=can_manage,
+            actions=actions,
+            actions_as_regular_user=actions_as_regular_user,
             is_owner_or_ncs=is_owner_or_ncs,
             ncs_callsign=ncs_callsign,
             ncs_name=public_display_name(ncs_name, current_user is not None),
@@ -264,7 +288,7 @@ async def get_net(
 
     # Compute can_manage for this user
     can_manage = False
-    can_manage_roles = False
+    actions, actions_as_regular_user = _actions_for(None)
     is_owner_or_ncs = False
     if current_user:
         is_owner = net.owner_id == current_user.id
@@ -278,6 +302,8 @@ async def get_net(
                 NetRole.net_id == net_id,
                 NetRole.user_id == current_user.id,
                 NetRole.role == "NCS",
+                # A stepped-down NCS (toggle_self_net_role) is no longer NCS.
+                NetRole.is_active == True,  # noqa: E712
             )
             .limit(1)
         )
@@ -293,12 +319,9 @@ async def get_net(
             )
         is_owner_or_ncs = is_owner or is_ncs or is_template_staff  # non-admin access; used by frontend simulation mode
         can_manage = is_owner_or_ncs or is_admin
-        # Narrower than can_manage on purpose, and the exact condition
-        # assign_net_role/remove_net_role enforce: net staff additionally need
-        # an active NCS or LOGGER role on this specific occurrence. The Roles
-        # button was rendered on can_manage, so staff with no role yet tonight
-        # were shown a dialog whose every action 403'd.
-        can_manage_roles = await can_manage_net_roles(db, net, current_user)
+        # Per-action permissions, each the rule its server action enforces.
+        # Narrower than can_manage on purpose: see permissions.NetAccess.
+        actions, actions_as_regular_user = _actions_for(await net_access(db, net, current_user))
 
     # Would checking in right now auto-grant this user NCS? Drives the
     # NCS/Standard choice on the check-in prompt/dialog. Independent of
@@ -345,7 +368,8 @@ async def get_net(
         owner_callsign=net.owner.callsign if net.owner else None,
         owner_name=public_display_name(net.owner.name if net.owner else None, current_user is not None),
         can_manage=can_manage,
-        can_manage_roles=can_manage_roles,
+        actions=actions,
+        actions_as_regular_user=actions_as_regular_user,
         is_owner_or_ncs=is_owner_or_ncs,
         current_user_ncs_eligible=current_user_ncs_eligible,
         current_user_logger_eligible=current_user_logger_eligible,
@@ -434,8 +458,8 @@ async def update_net(
     if not net:
         raise HTTPException(status_code=404, detail="Net not found")
     
-    # Check permissions - owner, admin, or NCS can update
-    if not await check_net_permission(db, net, current_user, ["NCS"]):
+    # Owner, admin, or an active NCS (permissions.may_edit_net)
+    if not may_edit_net(await net_access(db, net, current_user)):
         raise HTTPException(status_code=403, detail="Not authorized to update this net")
     
     # Update fields
@@ -484,7 +508,7 @@ async def upload_net_logo(
     net = result.scalar_one_or_none()
     if not net:
         raise HTTPException(status_code=404, detail="Net not found")
-    if not await check_net_permission(db, net, current_user, ["NCS"]):
+    if not may_edit_net(await net_access(db, net, current_user)):
         raise HTTPException(status_code=403, detail="Not authorized to update this net")
 
     if file.content_type not in NET_LOGO_ALLOWED_MIME:
@@ -519,7 +543,7 @@ async def delete_net_logo(
     net = result.scalar_one_or_none()
     if not net:
         raise HTTPException(status_code=404, detail="Net not found")
-    if not await check_net_permission(db, net, current_user, ["NCS"]):
+    if not may_edit_net(await net_access(db, net, current_user)):
         raise HTTPException(status_code=403, detail="Not authorized to update this net")
 
     for existing in NET_LOGO_DIR.glob(f"net-{net.id}.*"):
@@ -611,11 +635,9 @@ async def start_net(
     # start the week that was theirs, unless somebody had also added them to
     # the staff list. Every other staff decision (self-granting NCS or Logger
     # on check-in, managing roles) already goes through the helper.
-    if not await check_net_permission(db, net, current_user, ["NCS"]):
-        if not net.template_id or not await is_active_template_staff(
-            db, net.template_id, current_user.id
-        ):
-            raise HTTPException(status_code=403, detail="Not authorized to start this net")
+    # Now permissions.may_start_net, which the Start button also reads.
+    if not may_start_net(await net_access(db, net, current_user)):
+        raise HTTPException(status_code=403, detail="Not authorized to start this net")
 
     # Start accepts DRAFT and SCHEDULED and refuses everything else. Until
     # 2026-09-19 it listed the statuses to reject instead -- ACTIVE and LOBBY,
@@ -768,8 +790,8 @@ async def go_live(
     if not net:
         raise HTTPException(status_code=404, detail="Net not found")
     
-    # Check permissions - owner, admin, or NCS can go live
-    if not await check_net_permission(db, net, current_user, ["NCS"]):
+    # Owner, admin, or an active NCS (permissions.may_edit_net)
+    if not may_edit_net(await net_access(db, net, current_user)):
         raise HTTPException(status_code=403, detail="Not authorized to start this net")
     
     if net.status != NetStatus.LOBBY:
@@ -892,7 +914,8 @@ async def close_net(
     # filter raised MultipleResultsFound for anyone holding both NCS and
     # LOGGER -- Close net returned a 500 for exactly the person most likely to
     # be clicking it (opened the lobby as Logger, then took net control).
-    if not await check_net_permission(db, net, current_user, required_roles=["NCS", "LOGGER"]):
+    # Now permissions.may_close_net, which the Close net button also reads.
+    if not may_close_net(await net_access(db, net, current_user)):
         raise HTTPException(status_code=403, detail="Not authorized to close this net")
 
 

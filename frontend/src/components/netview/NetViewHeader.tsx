@@ -62,6 +62,7 @@ import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium';
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import type { UseDialogResult } from '../../hooks/useDialog';
 import ImageLightbox from '../ImageLightbox';
+import { NetActions } from '../../utils/netActions';
 
 // ========== NET VIEW HEADER ==========
 // Title row (name, description, status/stat/frequency chips) plus a full-width
@@ -176,10 +177,10 @@ interface NetViewHeaderProps {
   net: any;
   netId: string | undefined;
   canManage: boolean;
-  // Narrower than canManage: the backend's can_manage_net_roles, which also
-  // requires an active NCS/LOGGER role on this occurrence for net staff. Only
-  // the Roles button uses it — see its entry below.
-  canManageRoles: boolean | undefined;
+  // Per-action permissions (utils/netActions.ts). Every management button
+  // below is gated on its own flag, never on canManage, which is broader
+  // than what the server allows for most of them.
+  actions: NetActions;
   canManageCheckIns: boolean | undefined;
   canStartNet: boolean;
   isAdmin: boolean;
@@ -303,7 +304,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
   net,
   netId,
   canManage,
-  canManageRoles,
+  actions,
   canManageCheckIns,
   canStartNet,
   isAdmin,
@@ -515,7 +516,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
       // buttons"). Available at every status: a net that ran off-app is exactly
       // the one that needs backfilling.
       key: 'import', group: 'management', priority: 1,
-      visible: canManage,
+      visible: actions.import_check_ins,
       Icon: UploadFileIcon, color: '#2e7d32', label: 'Import',
       tooltip: isDraftOrScheduled
         ? 'Backfill check-ins from a CSV for a net that ran off-app'
@@ -529,7 +530,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
       // net is part of a recurring schedule. CreateNet.tsx shows a notice
       // in this state: logs/notifications have already gone out, so a
       // change here updates the record only and won't re-trigger them.
-      visible: canManage,
+      visible: actions.edit,
       Icon: EditIcon, color: neutralIconColor, label: 'Edit net',
       tooltip: 'Edit net settings', onClick: () => navigate(`/nets/${netId}/edit`),
     },
@@ -540,11 +541,13 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
       // needs fixing after the fact, and the API has no status guard on
       // assigning or removing a NetRole.
       //
-      // canManageRoles, not canManage: assign_net_role/remove_net_role need
-      // an active NCS or LOGGER role on this net on top of staff membership,
-      // so gating on canManage offered the dialog to staff whose every click
-      // then 403'd with a generic toast (net 90, reported 2026-09-11).
-      visible: !!canManageRoles,
+      // actions.manage_roles, not canManage: assign_net_role/remove_net_role
+      // need an active NCS or LOGGER role on this net on top of staff
+      // membership, so gating on canManage offered the dialog to staff whose
+      // every click then 403'd with a generic toast (net 90, reported
+      // 2026-09-11). The same mismatch on Close, Import, Edit and the
+      // lifecycle buttons is why every button here now has its own flag.
+      visible: actions.manage_roles,
       Icon: GroupIcon, color: '#9c27b0', label: 'Roles',
       tooltip: isDraftOrScheduled
         ? 'Assign NCS and logger roles (any assigned NCS can start the net)'
@@ -561,7 +564,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
     },
     {
       key: 'claim-ncs', group: 'management', priority: 2,
-      visible: canManage && isActiveOrLobby && !hasNCS,
+      visible: actions.claim_ncs && isActiveOrLobby && !hasNCS,
       Icon: WorkspacePremiumIcon, color: '#ed6c02', label: 'Claim NCS',
       tooltip: 'Claim NCS role for this net', onClick: onClaimNCS,
     },
@@ -652,13 +655,13 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
     },
     {
       key: 'go-live', group: 'management', priority: 4,
-      visible: canManage && net.status === 'lobby',
+      visible: actions.edit && net.status === 'lobby',
       Icon: PlayArrowIcon, color: '#2e7d32', label: 'Go live',
       tooltip: 'Go live - Start the net officially and notify subscribers', onClick: onGoLive,
     },
     {
       key: 'close-net', group: 'management', priority: 4, emphasis: true,
-      visible: canManage && isActiveOrLobby,
+      visible: actions.close && isActiveOrLobby,
       Icon: CloseIcon, color: '#d32f2f', label: 'Close net',
       tooltip: 'Close net', onClick: () => closeNetDialog.onOpen(),
     },
@@ -688,7 +691,7 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
     },
     {
       key: 'archive', group: 'management', priority: 2,
-      visible: canManage && net.status === 'closed',
+      visible: actions.lifecycle && net.status === 'closed',
       Icon: ArchiveIcon, color: neutralIconColor, label: 'Archive',
       tooltip: 'Archive net', onClick: onArchive,
     },
@@ -700,13 +703,13 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
     },
     {
       key: 'unarchive', group: 'management', priority: 2,
-      visible: canManage && net.status === 'archived',
+      visible: actions.lifecycle && net.status === 'archived',
       Icon: UnarchiveIcon, color: neutralIconColor, label: 'Unarchive',
       tooltip: 'Unarchive net - restore to closed status', onClick: onUnarchive,
     },
     {
       key: 'delete-manager', group: 'management', priority: 2,
-      visible: canManage && (net.status === 'draft' || net.status === 'archived'),
+      visible: actions.lifecycle && (net.status === 'draft' || net.status === 'archived'),
       Icon: DeleteIcon, color: '#d32f2f', label: 'Delete',
       tooltip: 'Delete net', onClick: onDelete,
     },

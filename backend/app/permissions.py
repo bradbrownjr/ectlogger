@@ -10,7 +10,8 @@ old inline styles.
 from __future__ import annotations
 
 import enum
-from typing import List, Optional
+from dataclasses import dataclass, replace
+from typing import Dict, FrozenSet, Iterable, List, Optional
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -162,6 +163,191 @@ async def is_active_template_staff(db: AsyncSession, template_id: int, user_id: 
     return rotation_result.scalar_one_or_none() is not None
 
 
+# =============================================================================
+# PER-ACTION NET RULES
+#
+# One pure function per net action, over NetAccess facts loaded in a fixed
+# number of queries. Each server action and the button that offers it call the
+# same function: the endpoint via net_access(), NetResponse.actions via
+# net_actions()/load_net_access(). Until 2026-09-25 the toolbar and dashboard
+# cards offered Close, Import, Edit, Go live, Archive, Cancel, Delete and
+# Email from one broad "can manage" flag, so net staff with no role on the
+# occurrence saw buttons that 403'd, a Logger who wasn't staff could close a
+# net but had no button, and a stepped-down NCS kept the whole set. A new net
+# action gets a rule here and a field on NetActions, never its own inline
+# check in a router.
+# =============================================================================
+
+@dataclass(frozen=True)
+class NetAccess:
+    """What the per-action rules need to know about one user and one net."""
+    is_admin: bool
+    is_owner: bool
+    # Upper-case NetRole.role values the user holds *actively* on this net.
+    # A role stepped down via toggle_self_net_role (is_active=False) grants
+    # nothing, which is what makes stepping down revoke access.
+    active_roles: FrozenSet[str]
+    has_template: bool
+    # Active TemplateStaff or active NCS rotation member (see
+    # is_active_template_staff): the "net staff" tier.
+    is_template_staff: bool
+    # The schedule's own owner, or an active co-manager: the
+    # schedule-ownership tier above plain staff.
+    is_template_owner: bool
+    is_template_co_manager: bool
+
+    def as_regular_user(self) -> "NetAccess":
+        """The same facts with the admin bypass removed, for the "View as
+        Regular User" preview (see NetResponse.actions_as_regular_user)."""
+        return replace(self, is_admin=False)
+
+
+def _manager(a: NetAccess) -> bool:
+    return a.is_owner or a.is_admin
+
+
+def may_edit_net(a: NetAccess) -> bool:
+    """update_net, the logo endpoints, and go_live."""
+    return _manager(a) or "NCS" in a.active_roles
+
+
+def may_start_net(a: NetAccess) -> bool:
+    """start_net: anyone who may edit, plus the schedule's net staff, who
+    start a net that has no NetRole yet (see is_active_template_staff)."""
+    return may_edit_net(a) or (a.has_template and a.is_template_staff)
+
+
+def may_close_net(a: NetAccess) -> bool:
+    """close_net."""
+    return _manager(a) or bool(a.active_roles & {"NCS", "LOGGER"})
+
+
+def may_import_check_ins(a: NetAccess) -> bool:
+    """import_net_csv: net control staff on the net, or the schedule's net
+    staff, who can start a net and so can backfill its log too."""
+    return (
+        _manager(a)
+        or bool(a.active_roles & {"NCS", "LOGGER", "RELAY"})
+        or (a.has_template and a.is_template_staff)
+    )
+
+
+def may_change_net_lifecycle(a: NetAccess) -> bool:
+    """cancel, restore, archive, unarchive and delete."""
+    return (
+        _manager(a)
+        or "NCS" in a.active_roles
+        or a.is_template_owner
+        or a.is_template_co_manager
+    )
+
+
+def may_claim_ncs(a: NetAccess) -> bool:
+    """claim_ncs_role: the owner/admin recovery path for an orphaned net."""
+    return _manager(a)
+
+
+def may_manage_net_roles(a: NetAccess) -> bool:
+    """assign_net_role / remove_net_role. See can_manage_net_roles."""
+    return _manager(a) or (
+        a.has_template
+        and a.is_template_staff
+        and bool(a.active_roles & {"NCS", "LOGGER"})
+    )
+
+
+def may_email_net_subscribers(a: NetAccess) -> bool:
+    """email_net_subscribers."""
+    return _manager(a) or a.is_template_co_manager
+
+
+def net_actions(a: NetAccess) -> Dict[str, bool]:
+    """Every per-action rule for one NetAccess, keyed as NetResponse.actions
+    (schemas.NetActions) sends them to the app."""
+    return {
+        "edit": may_edit_net(a),
+        "start": may_start_net(a),
+        "close": may_close_net(a),
+        "import_check_ins": may_import_check_ins(a),
+        "lifecycle": may_change_net_lifecycle(a),
+        "claim_ncs": may_claim_ncs(a),
+        "manage_roles": may_manage_net_roles(a),
+        "email_subscribers": may_email_net_subscribers(a),
+    }
+
+
+async def load_net_access(
+    db: AsyncSession, user: User, nets: Iterable[Net]
+) -> Dict[int, NetAccess]:
+    """Return {net.id: NetAccess} for *user* on every net in *nets*, in four
+    queries however many nets there are (the dashboard list needs every
+    card's actions at once). Every lookup is a set membership rather than a
+    scalar_one_or_none(): net_roles and ncs_rotation_members have no
+    uniqueness constraint, and a user holding both NCS and LOGGER on one net
+    is a supported shape."""
+    nets = list(nets)
+    net_ids = [n.id for n in nets]
+    template_ids = {n.template_id for n in nets if n.template_id}
+
+    roles: Dict[int, set] = {}
+    if net_ids:
+        for net_id, role in (await db.execute(
+            select(NetRole.net_id, NetRole.role).where(
+                NetRole.net_id.in_(net_ids),
+                NetRole.user_id == user.id,
+                NetRole.is_active == True,  # noqa: E712
+            )
+        )).all():
+            roles.setdefault(net_id, set()).add((role or "").upper())
+
+    staff: set = set()
+    co_manager: set = set()
+    owned: set = set()
+    if template_ids:
+        for template_id, is_co in (await db.execute(
+            select(TemplateStaff.template_id, TemplateStaff.is_co_manager).where(
+                TemplateStaff.template_id.in_(template_ids),
+                TemplateStaff.user_id == user.id,
+                TemplateStaff.is_active == True,  # noqa: E712
+            )
+        )).all():
+            staff.add(template_id)
+            if is_co:
+                co_manager.add(template_id)
+        staff.update((await db.execute(
+            select(NCSRotationMember.template_id).where(
+                NCSRotationMember.template_id.in_(template_ids),
+                NCSRotationMember.user_id == user.id,
+                NCSRotationMember.is_active == True,  # noqa: E712
+            )
+        )).scalars().all())
+        owned.update((await db.execute(
+            select(NetTemplate.id).where(
+                NetTemplate.id.in_(template_ids),
+                NetTemplate.owner_id == user.id,
+            )
+        )).scalars().all())
+
+    admin = is_admin(user)
+    return {
+        n.id: NetAccess(
+            is_admin=admin,
+            is_owner=n.owner_id == user.id,
+            active_roles=frozenset(roles.get(n.id, ())),
+            has_template=bool(n.template_id),
+            is_template_staff=n.template_id in staff,
+            is_template_owner=n.template_id in owned,
+            is_template_co_manager=n.template_id in co_manager,
+        )
+        for n in nets
+    }
+
+
+async def net_access(db: AsyncSession, net: Net, user: User) -> NetAccess:
+    """NetAccess for one net: what a router loads before checking a rule."""
+    return (await load_net_access(db, user, [net]))[net.id]
+
+
 async def can_manage_net_roles(db: AsyncSession, net: Net, user: User) -> bool:
     """Return True when *user* may assign/remove NetRoles on *net* (the
     "Manage Net Control Staff" dialog's assign/remove actions).
@@ -193,28 +379,7 @@ async def can_manage_net_roles(db: AsyncSession, net: Net, user: User) -> bool:
     net"), and NetView.tsx's handleRemoveRole showed a generic toast instead
     of that actual detail, so neither error ever explained itself.
     """
-    if net.owner_id == user.id or is_admin(user):
-        return True
-
-    if not net.template_id:
-        return False
-
-    # limit(1) for the same reason as check_net_permission above -- holding
-    # both NCS and LOGGER on one net is a supported shape, not a data error.
-    role_result = await db.execute(
-        select(NetRole.id)
-        .where(
-            NetRole.net_id == net.id,
-            NetRole.user_id == user.id,
-            NetRole.role.in_(["NCS", "LOGGER"]),
-            NetRole.is_active == True,  # noqa: E712
-        )
-        .limit(1)
-    )
-    if role_result.scalar_one_or_none() is None:
-        return False
-
-    return await is_active_template_staff(db, net.template_id, user.id)
+    return may_manage_net_roles(await net_access(db, net, user))
 
 
 async def is_eligible_for_ncs_auto_grant(db: AsyncSession, net: Net, user_id: int) -> bool:
@@ -309,50 +474,9 @@ async def is_eligible_for_logger_self_grant(db: AsyncSession, net: Net, user_id:
 async def check_net_lifecycle_permission(
     db: AsyncSession, net: Net, user: User
 ) -> bool:
-    """Return True when the user may archive or delete *net*.
-
-    Grants access to:
-    - The net owner
-    - Any global admin
-    - Any user with NCS role on this specific net
-    - The owner or an active co-manager of the template this net was created from
-    """
-    if net.owner_id == user.id or is_admin(user):
-        return True
-
-    # NCS role on this specific net
-    ncs_result = await db.execute(
-        select(NetRole).where(
-            NetRole.net_id == net.id,
-            NetRole.user_id == user.id,
-            NetRole.role == "NCS",
-        )
-    )
-    if ncs_result.scalar_one_or_none():
-        return True
-
-    # Template manager or active co-manager (net auto-created from a schedule)
-    if net.template_id:
-        tmpl_result = await db.execute(
-            select(NetTemplate).where(
-                NetTemplate.id == net.template_id,
-                NetTemplate.owner_id == user.id,
-            )
-        )
-        if tmpl_result.scalar_one_or_none():
-            return True
-
-        co_mgr_result = await db.execute(
-            select(TemplateStaff).where(
-                TemplateStaff.template_id == net.template_id,
-                TemplateStaff.user_id == user.id,
-                TemplateStaff.is_co_manager == True,
-            )
-        )
-        if co_mgr_result.scalar_one_or_none():
-            return True
-
-    return False
+    """Return True when the user may cancel, restore, archive, unarchive or
+    delete *net*. See may_change_net_lifecycle for the rule."""
+    return may_change_net_lifecycle(await net_access(db, net, user))
 
 
 async def check_template_staff_access(

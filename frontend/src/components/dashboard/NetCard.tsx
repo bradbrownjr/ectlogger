@@ -32,6 +32,7 @@ import ExpandableDescription from '../ExpandableDescription';
 import CardActionButton from '../CardActionButton';
 import ImageLightbox from '../ImageLightbox';
 import { formatDateTime } from '../../utils/dateUtils';
+import { NetActions } from '../../utils/netActions';
 
 // ---- Types ----
 
@@ -63,6 +64,8 @@ export interface Net {
   check_in_count?: number;
   can_manage?: boolean;
   is_owner_or_ncs?: boolean;
+  actions?: Partial<NetActions> | null;
+  actions_as_regular_user?: Partial<NetActions> | null;
   user_attended?: boolean | null;
   user_ran?: boolean | null;
 }
@@ -88,6 +91,8 @@ interface NetCardProps {
   onToggleFavorite: (templateId: number) => void;
   /** Whether the current user can manage this specific net (pre-computed by parent). */
   canManage: boolean;
+  /** Per-action permissions (utils/netActions.ts); each management button is gated on its own. */
+  actions: NetActions;
   preferUtc: boolean;
   onStaffClick: () => void;
   onDeleteClick: () => void;
@@ -105,6 +110,7 @@ const NetCard: React.FC<NetCardProps> = ({
   favorites,
   onToggleFavorite,
   canManage,
+  actions,
   preferUtc,
   onStaffClick,
   onDeleteClick,
@@ -259,7 +265,7 @@ const NetCard: React.FC<NetCardProps> = ({
             First in DOM order so it takes the left/top position, letting
             managers reach these without hunting past the view-only controls
             everyone else sees. Mirrors the Schedule card's group split. */}
-        {canManage && (
+        {(canManage || Object.values(actions).some(Boolean)) && (
           <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-start', gap: 0.5 }}>
             {/* Draft/Scheduled: email, edit, cancel, start — ordered by
                 severity (neutral, then destructive, then the primary action
@@ -267,7 +273,7 @@ const NetCard: React.FC<NetCardProps> = ({
                 without risking an accidental cancel. */}
             {(net.status === 'draft' || net.status === 'scheduled') && (
               <>
-                {net.template_id && (
+                {net.template_id && actions.email_subscribers && (
                   <CardActionButton
                     icon={<EmailIcon />}
                     label="Email"
@@ -275,31 +281,37 @@ const NetCard: React.FC<NetCardProps> = ({
                     onClick={onEmailClick}
                   />
                 )}
-                <CardActionButton
-                  icon={<EditIcon />}
-                  label="Edit"
-                  tooltip="Edit net"
-                  onClick={() => navigate(`/nets/${net.id}/edit`)}
-                />
-                <CardActionButton
-                  icon={<ReportIcon />}
-                  label="Cancel"
-                  color="error"
-                  tooltip="Cancel this net"
-                  onClick={onDeleteClick}
-                />
-                <CardActionButton
-                  icon={<PlayArrowIcon />}
-                  label="Start"
-                  color="success"
-                  tooltip="Start net"
-                  onClick={onStartNet}
-                />
+                {actions.edit && (
+                  <CardActionButton
+                    icon={<EditIcon />}
+                    label="Edit"
+                    tooltip="Edit net"
+                    onClick={() => navigate(`/nets/${net.id}/edit`)}
+                  />
+                )}
+                {actions.lifecycle && (
+                  <CardActionButton
+                    icon={<ReportIcon />}
+                    label="Cancel"
+                    color="error"
+                    tooltip="Cancel this net"
+                    onClick={onDeleteClick}
+                  />
+                )}
+                {actions.start && (
+                  <CardActionButton
+                    icon={<PlayArrowIcon />}
+                    label="Start"
+                    color="success"
+                    tooltip="Start net"
+                    onClick={onStartNet}
+                  />
+                )}
               </>
             )}
 
             {/* Active/Lobby: delete */}
-            {(net.status === 'active' || net.status === 'lobby') && (
+            {(net.status === 'active' || net.status === 'lobby') && actions.lifecycle && (
               <CardActionButton
                 icon={<DeleteIcon />}
                 label="Delete"
@@ -330,19 +342,23 @@ const NetCard: React.FC<NetCardProps> = ({
                   tooltip="Net report (PDF)"
                   onClick={() => navigate(`/nets/${net.id}/report`)}
                 />
-                <CardActionButton
-                  icon={<ArchiveIcon />}
-                  label="Archive"
-                  tooltip="Archive net"
-                  onClick={onArchiveNet}
-                />
-                <CardActionButton
-                  icon={<DeleteIcon />}
-                  label="Delete"
-                  color="error"
-                  tooltip="Delete net"
-                  onClick={onDeleteClick}
-                />
+                {actions.lifecycle && (
+                  <>
+                    <CardActionButton
+                      icon={<ArchiveIcon />}
+                      label="Archive"
+                      tooltip="Archive net"
+                      onClick={onArchiveNet}
+                    />
+                    <CardActionButton
+                      icon={<DeleteIcon />}
+                      label="Delete"
+                      color="error"
+                      tooltip="Delete net"
+                      onClick={onDeleteClick}
+                    />
+                  </>
+                )}
               </>
             )}
           </Box>

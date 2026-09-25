@@ -14,18 +14,11 @@ permalink: /docs/about/known-issues/
 
 This page lists confirmed, currently open defects — not roadmap items, not planned features, and not things that were fixed before anyone using the app could hit them. For what's planned or being considered, see the [Roadmap](/docs/ROADMAP/) instead. For how to report something new, see [Getting help](/docs/about/getting-help/).
 
-This page was published on 2026-09-19 with five open defects found while the documentation was being written, by reading the code against what the screens promise. All five were fixed the same day rather than worked around. A sixth, where naming the database driver explicitly in a self-hosted `DATABASE_URL` stopped the application from starting, was fixed on 2026-09-22; both the plain and the explicit form now work. See the [changelog](/docs/CHANGELOG/) for what changed.
+This page was published on 2026-09-19 with five open defects found while the documentation was being written, by reading the code against what the screens promise. All five were fixed the same day rather than worked around. A sixth, where naming the database driver explicitly in a self-hosted `DATABASE_URL` stopped the application from starting, was fixed on 2026-09-22; both the plain and the explicit form now work. Two more, found on 2026-09-25, were fixed the same day: net toolbar buttons that were offered to people the server then refused (and hidden from a Logger it would have allowed), and five frequency modes on the admin screen that could not be saved. See the [changelog](/docs/CHANGELOG/) for what changed.
 
-## Some toolbar buttons show for the wrong people
+## Nothing open right now
 
-**Found:** 2026-09-25. **Affects:** net staff and Loggers on an active net.
-
-The net toolbar decides who sees **Close net**, **Import**, **Edit net**, and **Archive** by a broader rule than the server uses to decide who may actually do them. Two things follow:
-
-- A member of the schedule's net staff or NCS rotation who hasn't checked into this occurrence as NCS sees those buttons, but clicking them is refused with a permission error.
-- A Logger who isn't on the schedule's staff is allowed to close the net, but never sees the **Close net** button.
-
-**Workaround:** if you're net staff, check yourself in as NCS (or Logger, to close or import) before using those buttons. If you're a Logger without the button, ask the NCS or the net's manager to close the net.
+There are no confirmed open defects as of this page's revision date.
 
 ## If what you've hit isn't here
 

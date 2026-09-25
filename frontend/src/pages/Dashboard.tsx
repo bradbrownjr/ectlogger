@@ -70,6 +70,7 @@ import { formatDateTime } from '../utils/dateUtils';
 import NetCard, { Net, getStatusColor } from '../components/dashboard/NetCard';
 import { useFavorites } from '../hooks/useFavorites';
 import useAccountSortOrder from '../hooks/useAccountSortOrder';
+import { getNetActions } from '../utils/netActions';
 
 const Dashboard: React.FC = () => {
   const [nets, setNets] = useState<Net[]>([]);
@@ -110,6 +111,10 @@ const Dashboard: React.FC = () => {
   );
   // In admin simulation mode, use the non-admin permission flag so buttons reflect what a real user would see
   const canManage = (net: Net) => simulateRegularUser ? (net.is_owner_or_ncs ?? false) : (net.can_manage ?? false);
+  // Per-action permissions (utils/netActions.ts): each management button is
+  // gated on the flag for its own action, which the server computes with the
+  // same rule it enforces.
+  const actionsFor = (net: Net) => getNetActions(net, simulateRegularUser);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -446,6 +451,7 @@ const Dashboard: React.FC = () => {
             favorites={favorites}
             onToggleFavorite={toggleFavorite}
             canManage={canManage(net)}
+            actions={actionsFor(net)}
             preferUtc={user?.prefer_utc ?? false}
             onStaffClick={() => { setSelectedNet(net); setStaffModalOpen(true); }}
             onDeleteClick={() => handleDeleteClick(net)}
@@ -545,7 +551,7 @@ const Dashboard: React.FC = () => {
                 {/* Active net delete: owner/admin/NCS can discard a net */}
                 {/* mid-flight (e.g. an aborted training run). Confirmation */}
                 {/* dialog warns about losing all check-ins and chat. */}
-                {(net.status === 'active' || net.status === 'lobby') && canManage(net) && (
+                {(net.status === 'active' || net.status === 'lobby') && actionsFor(net).lifecycle && (
                   <Tooltip title="Delete">
                     <IconButton size="small" color="error" onClick={() => handleDeleteClick(net)}>
                       <DeleteIcon fontSize="small" />
@@ -553,32 +559,38 @@ const Dashboard: React.FC = () => {
                   </Tooltip>
                 )}
                 {/* Draft/Scheduled net actions */}
-                {(net.status === 'draft' || net.status === 'scheduled') && canManage(net) && (
+                {(net.status === 'draft' || net.status === 'scheduled') && (
                   <>
                     {/* Email subscribers - only if net has a template */}
-                    {net.template_id && (
+                    {net.template_id && actionsFor(net).email_subscribers && (
                       <Tooltip title="Email subscribers">
                         <IconButton size="small" onClick={() => handleEmailClick(net)}>
                           <EmailIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
                     )}
-                    <Tooltip title="Edit">
-                      <IconButton size="small" onClick={() => navigate(`/nets/${net.id}/edit`)}>
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Start">
-                      <IconButton size="small" color="success" onClick={() => handleStartNet(net)}>
-                        <PlayArrowIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
+                    {actionsFor(net).edit && (
+                      <Tooltip title="Edit">
+                        <IconButton size="small" onClick={() => navigate(`/nets/${net.id}/edit`)}>
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                    {actionsFor(net).start && (
+                      <Tooltip title="Start">
+                        <IconButton size="small" color="success" onClick={() => handleStartNet(net)}>
+                          <PlayArrowIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    )}
                     {/* Delete scheduled net (cancel this instance) */}
-                    <Tooltip title="Cancel this net">
-                      <IconButton size="small" color="error" onClick={() => handleDeleteClick(net)}>
-                        <ReportIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
+                    {actionsFor(net).lifecycle && (
+                      <Tooltip title="Cancel this net">
+                        <IconButton size="small" color="error" onClick={() => handleDeleteClick(net)}>
+                          <ReportIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    )}
                   </>
                 )}
                 {/* Closed net actions */}
@@ -989,7 +1001,7 @@ const Dashboard: React.FC = () => {
                             </Tooltip>
                           </>
                         )}
-                        {(user?.role === 'admin' || canManage(net)) && (
+                        {actionsFor(net).lifecycle && (
                           isCancelled ? (
                             <Tooltip title="Restore net">
                               <IconButton
