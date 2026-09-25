@@ -4,7 +4,7 @@ summary: Adding a field for a spotter number, a weather observation, or anything
 kind: How-to
 audience: Users holding the Admin role
 owner: KC1JMH
-revised: 2026-09-19
+revised: 2026-09-25
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/admins/custom-fields/
@@ -27,7 +27,7 @@ Eight fields come with the instance and can never be archived: Name and Location
 ## Adding a field
 
 1. Click the **+** button (bottom right).
-2. Give it an **internal name**, using lowercase letters, numbers, and underscores only (spaces and punctuation get stripped as you type). This can't be changed later, since it's how the value is stored under the hood, so pick something you'd be comfortable seeing in an export a year from now.
+2. Give it an **internal name**, using lowercase letters, numbers, and underscores only (anything else you type, including spaces and punctuation, is replaced with an underscore as you type). This can't be changed later, since it's how the value is stored under the hood, so pick something you'd be comfortable seeing in an export a year from now.
 3. Give it a **display label**, which is what operators actually see on the check-in form.
 4. Pick a **field type**: a single line of text, a multi-line text area, a number, a dropdown (enter one option per line), or a checkbox.
 5. Optionally add placeholder text, and decide whether the field should be **enabled by default** and **required by default** for a brand-new net. Both are just starting points; the person creating a specific net can still turn either on or off for that net.

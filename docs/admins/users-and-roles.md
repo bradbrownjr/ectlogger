@@ -4,7 +4,7 @@ summary: Inviting people, editing an account's identity and role, and banning, r
 kind: How-to
 audience: Users holding the Admin role
 owner: KC1JMH
-revised: 2026-09-22
+revised: 2026-09-25
 review_by: 2027-09-22
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/admins/users-and-roles/
@@ -40,7 +40,7 @@ Each of the Name and Callsign fields has its own padlock. Locking one stops the 
 <figure>
   <img src="/docs/img/admins/user-row-actions.png"
        alt="A row in the admin Users table for Alex Reed, W1PINE, with three of its five action icons outlined in red: the pencil (Edit User), the circle-with-a-slash beside it (Ban), and the key two icons further along (Reset password). The stopwatch between them and the trash can at the end are not outlined.">
-  <figcaption>Every row in the Users table carries the same five actions. Edit User and Ban are covered here; Reset password and the two-factor reset next to it are covered in Security, MFA, and lockouts.</figcaption>
+  <figcaption>Edit User, Ban, Reset password, and Delete appear on every row. The stopwatch shown here only appears when your instance has an account-age or net-participation requirement set for schedule creation, and the two-factor reset only appears on a row where that account has MFA enabled. Edit User and Ban are covered here; Reset password and the two-factor reset are covered in Security, MFA, and lockouts.</figcaption>
 </figure>
 
 ## Admin and net control
@@ -66,7 +66,9 @@ Changing someone's primary callsign, whether from their own Profile or from this
 
 ## Early access to schedule creation
 
-If your instance requires an account to be a certain age or have checked into a minimum number of nets before it can create a recurring schedule (set on the [Security tab](/docs/admins/security-and-mfa/)), a stopwatch icon appears next to accounts that don't meet that bar yet. Click it to grant that one person early access anyway, which is useful for a known, trusted operator who just hasn't hit the threshold.
+If your instance requires an account to be a certain age or have checked into a minimum number of nets before it can create a schedule (set on the [Security tab](/docs/admins/security-and-mfa/)), a stopwatch icon appears next to accounts that don't meet that bar yet. Click it to grant that one person early access anyway, which is useful for a known, trusted operator who just hasn't hit the threshold. This applies to every schedule, including the one-time occurrence the dashboard's **+** button creates behind the scenes when someone starts a net.
+
+Early access bypasses the account-age and net-participation requirements only. It does not raise the daily cap on how many schedules an account can create — that limit still applies even to an account you've granted early access to.
 
 ## Not here
 
