@@ -4,7 +4,7 @@ summary: Every field a check-in can carry, what is always required, and what a n
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-09-19
+revised: 2026-09-25
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/reference/check-in-fields/
@@ -37,6 +37,8 @@ Each of these can be independently enabled or disabled for a given net, and (if 
 </div>
 
 A field that is disabled for a net never appears on that net's check-in form or in its check-in table, whatever an individual operator's account settings are. A field marked required blocks submission of the check-in form until it's filled in.
+
+Every field above, the Feedback field below, and every admin-defined custom field also carries a Spam Guard: it rejects a submitted value that looks like a link or an email address, on by default and enforced on the server, not just as a warning in the form. An admin can turn it off per field from Admin &gt; Check-in Fields, for a field deliberately meant to hold a link.
 
 There is also a "Feedback" field defined in the same settings and storage as the fields above, and the check-in list can be told to require it, but neither the check-in dialog nor the inline check-in row currently has an input for it — as of this writing it can only actually be filled in through [Bulk add](/docs/reference/speed-entry-syntax/) or a direct API call, never the ordinary check-in form. If you turn it on expecting a text box to appear, that's a real gap, not something you're missing.
 

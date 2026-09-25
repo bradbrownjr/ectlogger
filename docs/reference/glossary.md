@@ -4,7 +4,7 @@ summary: Words this site uses in a particular way, including a few that mean som
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-09-19
+revised: 2026-09-25
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/reference/glossary/
@@ -30,7 +30,7 @@ This isn't an amateur radio primer. It assumes you already know what a net, a re
 : Setting a station's status to Out. Does not remove it from the map, the report, or the log; see [Station statuses](/docs/reference/station-statuses/).
 
 **Co-manager**
-: A member of a schedule's staff list with an elevated flag, on top of everything plain net staff can do: transferring schedule ownership and archiving or deleting a net from that schedule. See [Roles and permissions](/docs/reference/roles-and-permissions/).
+: A member of a schedule's staff list with an elevated flag, on top of everything plain net staff can do: transferring schedule ownership, merging the schedule into another, and archiving or deleting a net from that schedule. See [Roles and permissions](/docs/reference/roles-and-permissions/).
 
 **Demo traffic**
 : Traffic explicitly marked as throwaway test data. Excluded from reminders, from ICS-309 and net report output, and from summary counts; deletable by its creator or an admin regardless of what's already been logged against it. Contrast with drill traffic below.

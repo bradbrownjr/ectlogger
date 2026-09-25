@@ -4,7 +4,7 @@ summary: Every format the Location field understands, one real example of each, 
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-09-19
+revised: 2026-09-25
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/reference/location-formats/
@@ -23,14 +23,14 @@ The Location field on a check-in is free text, and nothing stops you typing anyt
 | GPS, decimal degrees | `43.6591, -70.2568` | Comma or plain space between the two numbers. This is Portland, ME. |
 | GPS, degrees-minutes-seconds | `43°39'33"N 70°15'24"W` | The same Portland location, spelled out in DMS. |
 | Maidenhead grid square | `FN43mr` | 4, 6, or 8 characters (field, square, optional subsquare, optional extended precision). Resolves to the center of that square. |
-| Maidenhead grid alongside a place name | `KENNEBUNK FN43SI` | A common convention: a readable town name plus a precise grid, in either order. Any whitespace-separated word that matches the grid pattern is pulled out and used, even surrounded by other text. |
 | UTM | `19T 348123 4834567` | Zone, latitude band letter, easting, northing — roughly Portland, ME's zone. |
 | MGRS | `19TCH4812334567` | Zone, band, 100km grid square letters, then an even-length easting/northing string. |
+| Maidenhead grid alongside a place name | `KENNEBUNK FN43SI` | A common convention: a readable town name plus a precise grid, in either order. Any whitespace-separated word that matches the grid pattern is pulled out and used, even surrounded by other text. |
 | A recognizable address | `Farmington, ME` | Anything with a comma, or ending in a two-letter state abbreviation or a full state name, is treated as an address and sent to the map's geocoder rather than parsed locally. |
 
 </div>
 
-The parser tries the six coordinate formats first, in the order listed, before falling back to treating the text as an address. A bare grid square and a grid square embedded in a longer string are both accepted, so you don't need to strip the town name out first.
+The parser tries the coordinate formats first, in the order listed, before falling back to treating the text as an address: a bare GPS pair or Maidenhead grid square, then UTM, then MGRS, and only then a grid square pulled out of a longer string like a place name. A bare grid square and a grid square embedded in a longer string are both accepted, so you don't need to strip the town name out first.
 
 ## Addresses: what actually gets geocoded
 

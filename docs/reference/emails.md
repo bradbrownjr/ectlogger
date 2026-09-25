@@ -4,7 +4,7 @@ summary: Every message ECTLogger sends, what triggers it, who gets it, and how t
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-09-19
+revised: 2026-09-25
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/reference/emails/
@@ -32,7 +32,7 @@ Every one of these is read directly from the sending code, not from memory. Most
 | Email | Trigger | Recipients | To stop it |
 |---|---|---|---|
 | Net starting | The first moment a net becomes visible to check into — a human opening its lobby, or it going live directly. An automatically opened lobby stays silent until a person confirms the net is really happening. | The net's manager, plus every subscriber to that schedule | Profile setting "Net start notifications" (on by default), and the master switch. |
-| Net closure log | The net closes | The net's manager, every explicit subscriber to that schedule, and (since 2026-09-05) every active NCS, Logger, and Relay on that specific net — so running a net you never separately subscribed to still gets you the log | Profile setting "Net close notifications (with log)" (on by default), and the master switch, checked per recipient |
+| Net closure log | The net closes | The net's manager, every explicit subscriber to that schedule, and every active NCS, Logger, and Relay on that specific net (NCS and Logger since 2026-09-05; Relay was meant to be included from the same date but a case-sensitive comparison silently excluded it until 2026-09-19) — so running a net you never separately subscribed to still gets you the log | Profile setting "Net close notifications (with log)" (on by default), and the master switch, checked per recipient |
 | Duty reminder (NCS) | 24 hours and 1 hour before your scheduled rotation slot | The rotation member on duty for that occurrence | The master switch only — this is a duty reminder, not an optional preference, so there's no separate toggle for it |
 | Duty reminder (staff) | 1 hour before a net from a schedule you're active staff on, whether or not you've separately subscribed | Every active staff member for that schedule, skipped if you already got the NCS or subscriber reminder for the same net | The master switch only, same reasoning as the NCS reminder |
 | Subscriber reminder | 1 hour before a net you've subscribed to, if you opted into reminders specifically | Subscribers with the reminder preference on | Profile setting "Net reminder (1 hour before)" (off by default — subscribing to a schedule alone does not turn this on), and the master switch |
@@ -51,7 +51,7 @@ Only relevant on a net with [traffic](/docs/reference/glossary/) enabled.
 
 | Email | Trigger | Recipients | To stop it |
 |---|---|---|---|
-| Traffic reminder | Escalating: while you're still holding a piece of formal traffic, at intervals set by its precedence — Emergency at 1h/4h/12h held, Priority at 4h/12h/24h, Routine/Welfare at 24h/72h/168h | Whoever currently holds the message | The master switch only. There's a per-message preference behind this in the data model (on by default, described as an operational obligation rather than a passive preference), but as of this writing no Profile screen exposes a way to turn it off separately from the master switch. |
+| Traffic reminder | Escalating: while you're still holding a piece of formal traffic, at intervals set by its precedence — Emergency at 1h/4h/12h held, Priority at 4h/12h/24h, Routine/Welfare at 24h/72h/168h. A message carrying an HXB(n) handling instruction ignores the precedence ladder entirely and gets one reminder instead, at half of the HXB deadline. | Whoever currently holds the message | The master switch only. There's a per-message preference behind this in the data model (on by default, described as an operational obligation rather than a passive preference), but as of this writing no Profile screen exposes a way to turn it off separately from the master switch. |
 | HXB final notice | A message carrying an HXB(n) handling instruction (an expiration time) reaches that deadline | Whoever currently holds the message | Same as above |
 | Weekly stale traffic digest | Once a week, only for a schedule that opted into the digest, if it has traffic that's gone stale | The schedule's manager and active co-managers | Same as above |
 
