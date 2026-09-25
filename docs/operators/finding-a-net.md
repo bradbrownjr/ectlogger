@@ -4,7 +4,7 @@ summary: The dashboard, what each net status means, and how to find one that has
 kind: How-to
 audience: Operators
 owner: KC1JMH
-revised: 2026-09-19
+revised: 2026-09-25
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted instance
 permalink: /docs/operators/finding-a-net/
@@ -26,7 +26,7 @@ Each net shows as a card with a status chip:
 - **Archived** — closed and tucked away; see below.
 - **Cancelled** — a scheduled or draft occurrence that was called off ahead of time rather than deleted, so it doesn't quietly get recreated by the schedule.
 
-By default, nets are sorted with Active and Lobby first (most recently started at the top), then Scheduled and Draft (soonest first), then everything else alphabetically. A search box filters by net name, description, NCS callsign, or frequency. You can switch the sort to plain alphabetical order in your [profile settings](/docs/operators/account-and-profile/) if you'd rather.
+By default, nets are sorted with Active and Lobby first (most recently started at the top), then Scheduled and Draft (soonest first), then everything else alphabetically. A search box filters by net name, description, or frequency, and by the net manager's callsign or name. You can switch the sort to plain alphabetical order in your [profile settings](/docs/operators/account-and-profile/) if you'd rather.
 
 <figure>
   <img src="/docs/img/operators/dashboard-net-list.png"
@@ -40,11 +40,11 @@ Open any Active or Lobby net and, if you're signed in and haven't checked in yet
 
 ## Finding a net that already happened
 
-Closed and archived nets don't disappear. Click **Archived Nets** from the dashboard to open a searchable list of every closed, archived, or cancelled net. You can:
+Closed and archived nets don't disappear. Sign in, then click the archive icon (bottom right of the dashboard) to open a searchable list of every closed, archived, or cancelled net. You can:
 
-- Search by net name or NCS callsign.
+- Search by net name or net manager callsign.
 - Filter by a date range (**From** / **To**).
-- If you're signed in, narrow the list to nets you personally **Attended** or **Ran as NCS**.
+- Narrow the list to nets you personally **Attended** or **Ran as NCS**.
 
 <figure>
   <img src="/docs/img/operators/archived-nets-dialog.png"
@@ -56,7 +56,7 @@ Opening a closed net still shows its full check-in list and report; you don't ne
 
 ## Starring a net you check into often
 
-Click the star icon on a net card to favorite it. Favorited nets always sort to the top of the dashboard, ahead of even an Active net, so the one you show up to every Tuesday doesn't get lost in a long list. This is remembered on the device and browser you set it in, not synced to your account, so it won't follow you if you sign in from a different phone or computer.
+Click the star icon on a net card to favorite it. Favorited nets always sort to the top of the dashboard, ahead of even an Active net, so the one you show up to every Tuesday doesn't get lost in a long list. This is remembered on the device and browser you set it in, not synced to your account, so it won't follow you if you sign in from a different phone or computer. The star only appears on a net that came from a schedule; a one-off, ad hoc net has nothing to favorite.
 
 ## Finding a net that runs on a schedule
 

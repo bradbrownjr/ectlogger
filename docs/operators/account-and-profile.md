@@ -4,7 +4,7 @@ summary: Your callsign, your default location, your email preferences, and what 
 kind: How-to
 audience: Operators
 owner: KC1JMH
-revised: 2026-09-19
+revised: 2026-09-25
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted instance
 permalink: /docs/operators/account-and-profile/
@@ -45,4 +45,4 @@ You can also set a password as a fallback for when email delivery is down, and t
 
 ## What other people see about you
 
-Click any callsign in a check-in list or in chat and a popup shows your name, avatar, and (if you added one) your website link, plus a QRZ.com link built from your callsign automatically. A callsign that isn't clickable belongs to a check-in with no ECTLogger account behind it; see [Checking in](/docs/operators/checking-in/) for what that means.
+Click any callsign in a check-in list or in chat and a popup shows your name, avatar, and (if you added one) your website link, plus a QRZ.com link built from your callsign automatically. This works even for a check-in with no ECTLogger account behind it (someone Net Control logged by voice); the popup then shows whatever name and callsign were entered, without account details like a website link. See [Checking in](/docs/operators/checking-in/) for what a check-in with no account means.

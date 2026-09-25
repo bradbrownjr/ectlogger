@@ -4,7 +4,7 @@ summary: The eight station statuses, what a recheck actually does, and why check
 kind: Explanation
 audience: Operators
 owner: KC1JMH
-revised: 2026-09-19
+revised: 2026-09-25
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted instance
 permalink: /docs/operators/status-and-checking-out/
@@ -27,7 +27,7 @@ This page is about the first and third. Roles belong to whoever is running the n
 | Icon shown | Label | Tooltip | Set it when |
 |---|---|---|---|
 | check mark | Checked in | Checked in and available | The default. You're there and reachable. |
-| ear | Listening | Monitoring only, not transmitting | You're following along but not planning to key up. |
+| ear | Listening only | Monitoring only, not transmitting | You're following along but not planning to key up. |
 | antenna | Relay | Relay station - can relay stations NCS cannot hear | You're passing traffic for a station NCS can't hear directly. |
 | pause | Away | Temporarily away, will return | Stepping away briefly — see below, there's a dedicated button for this. |
 | siren | Has traffic | Has traffic or emergency to report | You have something for NCS, formal or not. |

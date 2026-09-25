@@ -4,7 +4,7 @@ summary: Taking part in a net. Checking in, keeping your status honest, and gett
 kind: Explanation
 audience: Operators who check into nets
 owner: KC1JMH
-revised: 2026-09-18
+revised: 2026-09-25
 review_by: 2027-09-18
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/operators/
@@ -36,7 +36,7 @@ So the app is not the net. It is a log of the net, and it is also a second chann
 
 **[Checking in](/docs/operators/checking-in/)** — The check-in form, which fields are required and which are not, what the net has asked you for, and what happens when you submit.
 
-**[Status, rechecks, and checking out](/docs/operators/status-and-checking-out/)** — The eight station statuses, when to change yours, what a recheck is and why it does not create a second row, and why checking out matters to the person running the net.
+**[Status, rechecks, and checking out](/docs/operators/status-and-checking-out/)** — The eight station statuses, when to change yours, what a recheck actually does to the check-in list, and why checking out matters to the person running the net.
 
 **[Chat, polls, and topics](/docs/operators/chat-and-polls/)** — Talking alongside the net without talking over it. Editing a message, replying to one, tagging a station, and muting one that is bothering you.
 
