@@ -37,6 +37,15 @@ seats, not once in a shared page all three are sent to. Chat is the worked
 example: operators get "talking alongside the net", net control gets
 "moderation and mutes", and they overlap barely at all.
 
+Traffic is the second, and the one most tempting to break the rule for:
+filing a message is `operators/filing-traffic`, handling it during a net is
+`net-control/handling-traffic`, and the form definitions are
+`admins/traffic-settings`. The original rebuild plan called for a traffic
+sub-index as well. It was dropped on 2026-09-25, deliberately: a topic-based
+index sitting over the audience paths is a second information architecture,
+and the moment it exists every new traffic feature has two homes to be written
+into and one to go stale in. Link across the three pages instead.
+
 **The retired `docs/USER-GUIDE.md` is the counterexample.** 1,084 lines, one
 document, five audiences, four Diataxis modes at once. It served nobody, and
 roughly a third of it had drifted out of true with the app. Never rebuild it.
@@ -291,9 +300,20 @@ This is the part that decides whether the site is still accurate in a year.
 - **Run `python3 scripts/check-docs.py` before every documentation commit.** It
   checks internal links, that every referenced figure exists and has alt text,
   that front matter is complete and `kind` is valid, that no page has a bare
-  Liquid brace, and that every page is reachable from `_data/nav.yml`.
+  Liquid brace, and that every page is reachable from `_data/nav.yml`. It also
+  fails when `docs/reference/` falls behind the code: every station status
+  needs its row in `station-statuses.md`, and every account and net role must
+  be named in `roles-and-permissions.md` (net roles in the glossary too). That
+  check is why those pages are hand-written rather than generated.
 - **Re-run the figures** after any release that changes the check-in table, the
   net toolbar, or the card buttons.
+- **Re-walk the tutorials in a browser** after any change to signing in, the
+  dashboard, creating a net or schedule, or the toolbar, as a brand-new account
+  against the demo instance. A tutorial promises a path with no decisions in
+  it, and that promise is only true if somebody has walked it. All three had
+  drifted within a week of being written: a sign-in page nobody lands on, a
+  six-tab form the **+** button no longer opens, a Claim NCS step that never
+  appears, and a frequency they called optional that the form requires.
 
 ---
 
