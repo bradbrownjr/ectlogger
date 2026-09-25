@@ -16,6 +16,7 @@ import ArchiveIcon from '@mui/icons-material/Archive';
 import DeleteIcon from '@mui/icons-material/Delete';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import type { UseDialogResult } from '../../hooks/useDialog';
+import DeleteNetWarning from '../DeleteNetWarning';
 
 // ========== ARCHIVE DIALOGS ==========
 // The post-close archive cluster: the "please archive" reminder snackbar, the
@@ -24,6 +25,10 @@ import type { UseDialogResult } from '../../hooks/useDialog';
 
 interface ArchiveDialogsProps {
   netName: string | undefined;
+  // Archive Instead is offered only for a closed net, the one status the
+  // archive action accepts. The toolbar's Delete also opens this dialog for
+  // draft and archived nets.
+  netStatus: string | undefined;
   archiveReminder: UseDialogResult;
   archiveHelp: UseDialogResult;
   archiveDeleteConfirm: UseDialogResult;
@@ -32,6 +37,7 @@ interface ArchiveDialogsProps {
 }
 
 const ArchiveDialogs: React.FC<ArchiveDialogsProps> = ({
+  netStatus,
   netName,
   archiveReminder,
   archiveHelp,
@@ -107,7 +113,7 @@ const ArchiveDialogs: React.FC<ArchiveDialogsProps> = ({
         </DialogActions>
       </Dialog>
 
-      {/* ========== DELETE CONFIRMATION FROM ARCHIVE REMINDER ========== */}
+      {/* ========== DELETE CONFIRMATION (toolbar Delete, and the archive reminder) ========== */}
       <Dialog
         open={archiveDeleteConfirm.open}
         onClose={archiveDeleteConfirm.onClose}
@@ -126,22 +132,15 @@ const ArchiveDialogs: React.FC<ArchiveDialogsProps> = ({
           </Box>
         </DialogTitle>
         <DialogContent>
-          <Typography sx={{ mb: 2 }}>
-            Deleting this net will <strong>permanently remove</strong> every record tied to it, including:
-          </Typography>
-          <Box component="ul" sx={{ mt: 0, mb: 2, pl: 3 }}>
-            <li><Typography variant="body2">All check-ins logged during this net</Typography></li>
-            <li><Typography variant="body2">All chat messages sent in this net</Typography></li>
-            <li><Typography variant="body2">Net statistics and history for this session</Typography></li>
-          </Box>
-          <Typography color="error" sx={{ mb: 2, fontWeight: 'bold' }}>
-            This cannot be undone.
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            If you only want to hide this net from the active list while keeping the log, choose
-            <strong> Archive Instead</strong>. Archived nets stay searchable in the Archived Nets
-            list and can be restored at any time.
-          </Typography>
+          <DeleteNetWarning />
+          {/* Shows only for a closed net, the one status Archive accepts */}
+          {netStatus === 'closed' && (
+            <Typography variant="body2" color="text.secondary">
+              If you only want to hide this net from the active list while keeping the log, choose
+              <strong> Archive Instead</strong>. Archived nets stay searchable in the Archived Nets
+              list and can be restored at any time.
+            </Typography>
+          )}
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button
@@ -151,18 +150,20 @@ const ArchiveDialogs: React.FC<ArchiveDialogsProps> = ({
           >
             Cancel
           </Button>
-          <Button
-            onClick={() => {
-              archiveDeleteConfirm.onClose();
-              archiveReminder.onClose();
-              onArchive();
-            }}
-            variant="contained"
-            color="warning"
-            startIcon={<ArchiveIcon />}
-          >
-            Archive Instead
-          </Button>
+          {netStatus === 'closed' && (
+            <Button
+              onClick={() => {
+                archiveDeleteConfirm.onClose();
+                archiveReminder.onClose();
+                onArchive();
+              }}
+              variant="contained"
+              color="warning"
+              startIcon={<ArchiveIcon />}
+            >
+              Archive Instead
+            </Button>
+          )}
           <Button
             onClick={async () => {
               archiveDeleteConfirm.onClose();

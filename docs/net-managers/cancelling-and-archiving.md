@@ -4,7 +4,7 @@ summary: Calling off a week without the schedule recreating it, hiding what's fi
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-09-19
+revised: 2026-09-25
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/cancelling-and-archiving/
@@ -32,7 +32,7 @@ A **closed** net can be **archived** to clear it off the active dashboard while 
 
 ## Deleting
 
-Deleting is the one option here that isn't reversible, and it removes every check-in, every chat message, and every report tied to that net permanently. It's offered as a deliberate alternative next to Cancel and Archive, not the default. If you only want a net off the active list, Cancel (for one that hasn't run) or Archive (for one that has) keeps the record and gets you the same tidy dashboard.
+Deleting is the one option here that isn't reversible, and it removes every check-in, every chat message, and every report tied to that net permanently. The net's statistics go with it: it drops out of the schedule's statistics and leaderboards and out of every operator's activity history, and not even an admin can bring it back. You can delete a draft, closed, or archived net as its manager; the confirmation lists all of this before anything is removed. It's offered as a deliberate alternative next to Cancel and Archive, not the default. If you only want a net off the active list, Cancel (for one that hasn't run) or Archive (for one that has) keeps the record and gets you the same tidy dashboard.
 
 ## Who can do this
 

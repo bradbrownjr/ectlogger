@@ -18,6 +18,15 @@ All notable changes to ECTLogger are documented here.
 
 # September 25, 2026
 
+## New Features
+
+* **Frequencies: JS8Call, Packet, and Data modes** — Frequencies can now be marked JS8Call, Packet, or Data, the last covering FLDIGI and other keyboard digital modes, so a digital net's frequency list says how to actually reach it.
+
+## Improvements
+
+* **Reports: Anyone can download the check-in list** — The Export button on a closed net now works for every participant and for visitors who aren't signed in, just like the ICS-309 and the report, so you no longer need a staff role to get a copy of a net you took part in. Visitors get email addresses and phone numbers in notes hidden, the same as on screen.
+* **Net View: Net managers can delete a closed net** — The net's manager, not only an admin, can now delete a closed net, and the confirmation spells out that deleting removes its check-ins, chat, and statistics for good, including from leaderboards and every operator's activity history, so nobody deletes a net thinking it can be brought back. Archive is offered right beside it for keeping the record.
+
 ## Bug Fixes
 
 * **Net View: Buttons that match what you can do** — The net toolbar and the net cards on the dashboard now show Close net, Import, Edit, Go live, Archive, Cancel, and Delete only to people who are allowed to use them, so schedule staff no longer see buttons that fail when clicked, a Logger can now find the Close net button, and stepping down as NCS really does hand those controls back.

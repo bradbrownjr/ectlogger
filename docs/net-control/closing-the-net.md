@@ -35,7 +35,7 @@ Confirm, and the net's status moves to Closed immediately for every viewer.
 
 ## After closing
 
-Once a net is closed, its exports become available to **anyone who can see the net**, not just staff. Export (CSV), ICS-309, ICS-309 PDF, and the full Report are all open to any viewer, participant included.
+Once a net is closed, its exports become available to **anyone who can see the net**, not just staff. Export (CSV), ICS-309, ICS-309 PDF, and the full Report are all open to any viewer, participant included, and to a visitor who isn't signed in. For a visitor, email addresses and phone numbers typed into notes and other free-text fields are hidden, the same as on the check-in list.
 
 <figure>
   <img src="/docs/img/net-control/closed-net-exports.png"
@@ -43,7 +43,7 @@ Once a net is closed, its exports become available to **anyone who can see the n
   <figcaption>Once a net is closed, its exports are open to anyone who can see the net; only Archive and Delete stay staff-only.</figcaption>
 </figure>
 
-**Archive** and **Delete** stay restricted to staff. Right after closing, a reminder appears offering to archive the net. Archiving hides it from the active dashboard while keeping every check-in, chat message, statistic, and report intact and fully searchable in the Archived Nets list, and it can be undone at any time with Unarchive. Deleting is the one genuinely permanent option here: it removes the net and everything in it (check-ins, chat, statistics) with no way to get it back. A closed net can only be deleted outright by an admin; the net's own manager can delete it once it's either a draft or already archived, but not while it's simply closed.
+**Archive** and **Delete** stay restricted to staff. Right after closing, a reminder appears offering to archive the net. Archiving hides it from the active dashboard while keeping every check-in, chat message, statistic, and report intact and fully searchable in the Archived Nets list, and it can be undone at any time with Unarchive. Deleting is the one genuinely permanent option here: it removes the net and everything in it, including its statistics. The net drops out of the schedule's statistics and leaderboards and out of every operator's activity history, and its report and ICS-309 can't be produced again. Nobody can bring it back, not even an admin, and the confirmation says so before anything happens. The net's manager, an admin, an active NCS, and the schedule's manager or co-managers can delete a draft, closed, or archived net.
 
 The check-in list and role assignments both stay editable after closing, so a wrong callsign or a misattributed NCS role can still be fixed after the fact, the same way as while the net was live. See [Logging check-ins](/docs/net-control/logging-check-ins/) and [Roles and stepping away](/docs/net-control/roles-and-stepping-away/).
 

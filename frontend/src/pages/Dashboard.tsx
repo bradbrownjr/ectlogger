@@ -71,6 +71,7 @@ import NetCard, { Net, getStatusColor } from '../components/dashboard/NetCard';
 import { useFavorites } from '../hooks/useFavorites';
 import useAccountSortOrder from '../hooks/useAccountSortOrder';
 import { getNetActions } from '../utils/netActions';
+import DeleteNetWarning from '../components/DeleteNetWarning';
 
 const Dashboard: React.FC = () => {
   const [nets, setNets] = useState<Net[]>([]);
@@ -601,26 +602,26 @@ const Dashboard: React.FC = () => {
                         <BarChartIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
-                    {canManage(net) && (
+                    {/* The log's downloads are open to everyone */}
+                    <Tooltip title="Export log">
+                      <IconButton size="small" sx={{ color: '#4caf50' }} onClick={() => handleExportCSV(net)}>
+                        <DownloadIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Net report (PDF)">
+                      <IconButton size="small" sx={{ color: '#4caf50' }} onClick={() => navigate(`/nets/${net.id}/report`)}>
+                        <PictureAsPdfIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    {actionsFor(net).lifecycle && (
                       <>
-                        <Tooltip title="Export log">
-                          <IconButton size="small" sx={{ color: '#4caf50' }} onClick={() => handleExportCSV(net)}>
-                            <DownloadIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Net report (PDF)">
-                          <IconButton size="small" sx={{ color: '#4caf50' }} onClick={() => navigate(`/nets/${net.id}/report`)}>
-                            <PictureAsPdfIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
                         <Tooltip title="Archive">
                           <IconButton size="small" onClick={() => handleArchiveNet(net.id)}>
                             <ArchiveIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
-                        {/* Owners (and admins) can delete closed nets. The */}
-                        {/* confirmation dialog warns about data loss and */}
-                        {/* offers Archive as a safer alternative. */}
+                        {/* The confirmation spells out what's destroyed */}
+                        {/* and offers Archive as the safer alternative. */}
                         <Tooltip title="Delete">
                           <IconButton size="small" color="error" onClick={() => handleDeleteClick(net)}>
                             <DeleteIcon fontSize="small" />
@@ -1120,18 +1121,7 @@ const Dashboard: React.FC = () => {
           <>
             <DialogTitle>Delete "{netToDelete?.name}"?</DialogTitle>
             <DialogContent>
-              <Typography sx={{ mb: 2 }}>
-                Deleting this net will <strong>permanently remove</strong> every record
-                tied to it, including:
-              </Typography>
-              <Box component="ul" sx={{ mt: 0, mb: 2, pl: 3 }}>
-                <li><Typography variant="body2">All check-ins logged during this net</Typography></li>
-                <li><Typography variant="body2">All chat messages sent in this net</Typography></li>
-                <li><Typography variant="body2">Any reports, statistics, and history for this instance</Typography></li>
-              </Box>
-              <Typography color="error" sx={{ mb: 2, fontWeight: 'bold' }}>
-                This cannot be undone.
-              </Typography>
+              <DeleteNetWarning />
               {netToDelete?.status === 'closed' ? (
                 <Typography variant="body2" color="text.secondary">
                   If you only want to clear this net out of the active list while keeping

@@ -183,7 +183,6 @@ interface NetViewHeaderProps {
   actions: NetActions;
   canManageCheckIns: boolean | undefined;
   canStartNet: boolean;
-  isAdmin: boolean;
   isAuthenticated: boolean;
   isAssignedNCS: boolean;
   isNCS: boolean;
@@ -307,7 +306,6 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
   actions,
   canManageCheckIns,
   canStartNet,
-  isAdmin,
   isAuthenticated,
   isAssignedNCS,
   isNCS,
@@ -696,20 +694,19 @@ const NetViewHeader: React.FC<NetViewHeaderProps> = ({
       tooltip: 'Archive net', onClick: onArchive,
     },
     {
-      key: 'delete-admin', group: 'management', priority: 2,
-      visible: isAdmin && net.status === 'closed',
-      Icon: DeleteIcon, color: '#d32f2f', label: 'Delete',
-      tooltip: 'Delete net', onClick: onDelete,
-    },
-    {
       key: 'unarchive', group: 'management', priority: 2,
       visible: actions.lifecycle && net.status === 'archived',
       Icon: UnarchiveIcon, color: neutralIconColor, label: 'Unarchive',
       tooltip: 'Unarchive net - restore to closed status', onClick: onUnarchive,
     },
     {
-      key: 'delete-manager', group: 'management', priority: 2,
-      visible: actions.lifecycle && (net.status === 'draft' || net.status === 'archived'),
+      // Anyone who may change the net's lifecycle (manager, admin, active
+      // NCS, schedule manager or co-manager) may delete it. Until 2026-09-25
+      // a closed net's Delete was admin-only here, though the server and the
+      // dashboard card already allowed its manager. The confirmation spells
+      // out that the check-ins, chat and statistics go with it.
+      key: 'delete', group: 'management', priority: 2,
+      visible: actions.lifecycle && (net.status === 'draft' || net.status === 'closed' || net.status === 'archived'),
       Icon: DeleteIcon, color: '#d32f2f', label: 'Delete',
       tooltip: 'Delete net', onClick: onDelete,
     },

@@ -1217,10 +1217,9 @@ const NetView: React.FC = () => {
     }
   };
 
-  const handleDelete = async () => {
-    if (!confirm('Delete this net permanently? This cannot be undone.')) return;
-    await handleDeleteConfirmed();
-  };
+  // Opens the shared delete confirmation (ArchiveDialogs), which spells out
+  // that the check-ins, chat and statistics go with it.
+  const handleDelete = () => archiveDeleteConfirm.onOpen();
 
   // Get custom fields (non-builtin) that are enabled for this net
   const getEnabledCustomFields = (): FieldDefinition[] => {
@@ -1612,7 +1611,6 @@ const NetView: React.FC = () => {
         actions={actions}
         canManageCheckIns={canManageCheckIns}
         canStartNet={canStartNet}
-        isAdmin={isAdmin}
         isAuthenticated={isAuthenticated}
         isAssignedNCS={isAssignedNCS}
         isNCS={isNCS}
@@ -3008,6 +3006,7 @@ const NetView: React.FC = () => {
       )}
 
       <ArchiveDialogs
+        netStatus={net?.status}
         netName={net?.name}
         archiveReminder={archiveReminder}
         archiveHelp={archiveHelp}

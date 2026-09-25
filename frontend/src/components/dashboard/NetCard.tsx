@@ -321,27 +321,9 @@ const NetCard: React.FC<NetCardProps> = ({
               />
             )}
 
-            {/* Closed: stats, export, PDF, archive, delete */}
+            {/* Closed: archive, delete (stats, export and report are in the standard row) */}
             {net.status === 'closed' && (
               <>
-                <CardActionButton
-                  icon={<BarChartIcon sx={{ color: '#ff9800' }} />}
-                  label="Stats"
-                  tooltip="Net statistics"
-                  onClick={() => navigate(`/statistics/nets/${net.id}`)}
-                />
-                <CardActionButton
-                  icon={<DownloadIcon sx={{ color: '#4caf50' }} />}
-                  label="Export"
-                  tooltip="Export log"
-                  onClick={onExportCSV}
-                />
-                <CardActionButton
-                  icon={<PictureAsPdfIcon sx={{ color: '#4caf50' }} />}
-                  label="Report"
-                  tooltip="Net report (PDF)"
-                  onClick={() => navigate(`/nets/${net.id}/report`)}
-                />
                 {actions.lifecycle && (
                   <>
                     <CardActionButton
@@ -379,13 +361,31 @@ const NetCard: React.FC<NetCardProps> = ({
             tooltip="View net staff"
             onClick={onStaffClick}
           />
-          {(net.status === 'active' || net.status === 'lobby') && (
+          {(net.status === 'active' || net.status === 'lobby' || net.status === 'closed') && (
             <CardActionButton
               icon={<BarChartIcon sx={{ color: '#ff9800' }} />}
               label="Stats"
               tooltip="Net statistics"
               onClick={() => navigate(`/statistics/nets/${net.id}`)}
             />
+          )}
+          {/* Closed: the log's downloads are open to everyone, like the
+              toolbar's; nothing here changes the net. */}
+          {net.status === 'closed' && (
+            <>
+              <CardActionButton
+                icon={<DownloadIcon sx={{ color: '#4caf50' }} />}
+                label="Export"
+                tooltip="Export log"
+                onClick={onExportCSV}
+              />
+              <CardActionButton
+                icon={<PictureAsPdfIcon sx={{ color: '#4caf50' }} />}
+                label="Report"
+                tooltip="Net report (PDF)"
+                onClick={() => navigate(`/nets/${net.id}/report`)}
+              />
+            </>
           )}
           {net.info_url && (
             <CardActionButton
