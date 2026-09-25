@@ -236,7 +236,12 @@ python3 scripts/check-docs.py
 
 It verifies internal links, that every referenced figure exists, that every figure has
 alt text, that front matter is complete and `kind` is valid, that no page contains bare
-Liquid braces, and that every page is reachable from the site navigation.
+Liquid braces, and that every page is reachable from the site navigation. It also fails
+when the reference pages fall behind the code: every `StationStatus` (by its
+`getStatusLabel` label) needs exactly one row in `docs/reference/station-statuses.md`, and
+every `UserRole` and `VALID_NET_ROLES` entry must be named in
+`docs/reference/roles-and-permissions.md` (net roles also need a glossary entry). Adding a
+status or role therefore means documenting it in the same change.
 
 ### GitHub Pages / Jekyll Rules
 
