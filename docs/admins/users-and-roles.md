@@ -70,6 +70,12 @@ If your instance requires an account to be a certain age or have checked into a 
 
 Early access bypasses the account-age and net-participation requirements only. It does not raise the daily cap on how many schedules an account can create — that limit still applies even to an account you've granted early access to.
 
+## Seeing the app the way everyone else does
+
+Because an admin can do everything, an admin's screen is not what a club member sees: every net shows management buttons, and the admin panel is one click away. To check what an ordinary account actually gets, open your avatar menu at the top right and choose **View as Regular User**. Admin-only controls disappear, the net and schedule pages offer only what your own roles and staff memberships would give you, and an orange **User View** chip sits in the navigation bar as a reminder. Click the chip, or **Exit User View** in the same menu, to switch back.
+
+It changes what the screen shows, not what your account can do. The server still knows you are an admin, so treat it as a preview, not a test account: anything you click still happens with an admin's authority. The setting is remembered in that browser until you turn it off or sign out.
+
 ## Not here
 
 The full grid of what each role and each per-net position can actually do lives in [Roles and permissions](/docs/reference/roles-and-permissions/). Net-specific staff (who's on a schedule's rotation, who can log in as NCS for one particular net) is set from that net or schedule, not from this panel; see [net managers](/docs/net-managers/).
