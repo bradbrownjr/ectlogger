@@ -311,6 +311,95 @@ shots:
       navigation bar, ready to be dragged onto a second monitor.
     caption: A popped-out pane is a real second window with its own connection to the net -- move it to another monitor and it keeps working on its own.
 
+  - id: ultrawide-desk
+    section: net-control
+    page: /docs/net-control/multiple-monitors/
+    route: /nets/{{net:active}}
+    as: W1PINE
+    # xl and up is the only width where the left dock column exists
+    # (useLayoutTier.ts). Scale 1, or a 2400px-wide page becomes a 4800px PNG.
+    viewport:
+      width: 2400
+      height: 1100
+    scale: 1
+    wait_for: 'table:visible tbody tr'
+    steps:
+      - click: 'button:has-text("Notes")'
+      - wait: 600
+      - click: 'button:has-text("Announcements")'
+      - wait: 800
+    alt: >
+      The whole net view on an ultrawide monitor, in three columns: the
+      schedule's Announcements and the net's Notes docked on the left, the check-in
+      list in the middle, and Chat with the Activity Log on the right.
+    caption: >
+      At ultrawide widths, Script, Notes, and Announcements get a column of
+      their own instead of floating over the list.
+
+  - id: detached-panel
+    section: net-control
+    page: /docs/net-control/multiple-monitors/
+    route: /nets/{{net:active}}
+    as: W1PINE
+    viewport:
+      width: 1440
+      height: 900
+    wait_for: 'table:visible tbody tr'
+    steps:
+      - click: 'span[aria-label="View and file traffic for this net"]'
+      - wait_for: '[title="Detach panel"]:visible'
+      - click: '[title="Detach panel"]'
+      - wait: 800
+    alt: >
+      The net view with the Traffic panel detached into a floating window
+      that sits over the check-in list, with its own title bar controls.
+    caption: >
+      Detach keeps a panel in the same browser tab but lets you drag and
+      resize it anywhere over the page.
+
+  # ========== Authenticated nets ==========
+  - id: identity-padlocks
+    section: net-control
+    page: /docs/net-control/authenticated-nets/
+    route: /nets/{{net:authenticated}}
+    as: W1PINE
+    viewport:
+      width: 1440
+      height: 800
+    wait_for: 'table:visible tbody tr'
+    element: 'table:visible'
+    pad: 8
+    annotate:
+      - selector: 'tr:has-text("K1CAMP") button:has(svg[data-testid="LockOpenIcon"])'
+        style: box
+    alt: >
+      The check-in list of an authenticated net. Each callsign has a padlock
+      beside it: closed and green for N1LAKE, whose identity was verified,
+      greyed out for N1ROVE, whose account has no two-factor set up, and open
+      for the others, with K1CAMP's open padlock outlined in red.
+    caption: >
+      A closed padlock means someone confirmed the station's code. Net Control
+      clicks an open one to check it.
+
+  - id: identity-verify-dialog
+    section: net-control
+    page: /docs/net-control/authenticated-nets/
+    route: /nets/{{net:authenticated}}
+    as: W1PINE
+    wait_for: 'table:visible tbody tr'
+    steps:
+      - click: 'tr:has-text("K1CAMP") button:has(svg[data-testid="LockOpenIcon"])'
+      - wait_for: '.MuiDialog-paper:visible'
+    element: '.MuiDialog-paper'
+    pad: 16
+    alt: >
+      The Verify K1CAMP's Identity dialog, showing the station's current
+      six-digit code and the one before it, with Cancel, Reject, and Confirm
+      Match buttons.
+    caption: >
+      Ask the operator to read the code from their authenticator app and
+      compare it with this one.
+
   # ========== Closing the net ==========
   - id: close-net-dialog
     section: net-control

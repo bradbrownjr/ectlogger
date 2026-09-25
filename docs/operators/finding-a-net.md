@@ -30,7 +30,7 @@ By default, nets are sorted with Active and Lobby first (most recently started a
 
 <figure>
   <img src="/docs/img/operators/dashboard-net-list.png"
-       alt="The ECTLogger dashboard, showing three net cards side by side with status chips reading active, scheduled, and closed.">
+       alt="The ECTLogger dashboard, showing a grid of net cards, each with a status chip reading active, scheduled, or closed.">
   <figcaption>Nets you can still take part in sort ahead of ones that are over.</figcaption>
 </figure>
 

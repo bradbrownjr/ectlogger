@@ -23,15 +23,16 @@ shots:
     page: /docs/operators/finding-a-net/
     route: /dashboard
     as: KC1HILL
-    # A short viewport: the demo has three nets, and a 1000px window leaves
-    # half the figure empty below them.
+    # A short viewport, so the figure is the net cards and not a page of
+    # empty background below them. The alt text deliberately names no count:
+    # it said "three net cards" while the seed had four.
     viewport:
       width: 1440
       height: 700
     wait_for: '.MuiChip-root:visible'
     alt: >
-      The ECTLogger dashboard, showing three net cards side by side with
-      status chips reading active, scheduled, and closed.
+      The ECTLogger dashboard, showing a grid of net cards, each with a
+      status chip reading active, scheduled, or closed.
     caption: Nets you can still take part in sort ahead of ones that are over.
 
   - id: archived-nets-dialog

@@ -101,6 +101,12 @@
     "caption": "Every button here is gated by who you are and what state the net is in -- a Standard participant, a Logger, and a Relay operator each see a different subset of this same row.\n",
     "page": "/docs/net-control/the-net-control-desk/"
   },
+  "net-control/detached-panel": {
+    "path": "/docs/img/net-control/detached-panel.png",
+    "alt": "The net view with the Traffic panel detached into a floating window that sits over the check-in list, with its own title bar controls.\n",
+    "caption": "Detach keeps a panel in the same browser tab but lets you drag and resize it anywhere over the page.\n",
+    "page": "/docs/net-control/multiple-monitors/"
+  },
   "net-control/file-traffic-dialog": {
     "path": "/docs/img/net-control/file-traffic-dialog.png",
     "alt": "The File traffic dialog's form-type picker, showing cards for the message types this net has enabled.\n",
@@ -112,6 +118,18 @@
     "alt": "Two frequency chips in the net header: 146.940 MHz FM outlined in red, labelled as the frequency you have claimed, and Brandmeister TG31234 DMR outlined in blue, labelled as the one W1PORT is monitoring.\n",
     "caption": "Those coloured outlines are the app's own, not a callout on this page. Each active NCS claims a different chip, and the colour follows the operator -- the same red marks W1PINE's row in the check-in list.\n",
     "page": "/docs/net-control/frequencies-and-multi-ncs/"
+  },
+  "net-control/identity-padlocks": {
+    "path": "/docs/img/net-control/identity-padlocks.png",
+    "alt": "The check-in list of an authenticated net. Each callsign has a padlock beside it: closed and green for N1LAKE, whose identity was verified, open for the others, with K1CAMP's open padlock outlined in red.\n",
+    "caption": "A closed padlock means someone confirmed the station's code. Net Control clicks an open one to check it.\n",
+    "page": "/docs/net-control/authenticated-nets/"
+  },
+  "net-control/identity-verify-dialog": {
+    "path": "/docs/img/net-control/identity-verify-dialog.png",
+    "alt": "The Verify K1CAMP's Identity dialog, showing the station's current six-digit code and the previous one, with buttons to reject or confirm the match.\n",
+    "caption": "Ask the operator to read the code from their authenticator app and compare it with this one.\n",
+    "page": "/docs/net-control/authenticated-nets/"
   },
   "net-control/inline-edit-open": {
     "path": "/docs/img/net-control/inline-edit-open.png",
@@ -160,6 +178,12 @@
     "alt": "The Traffic panel docked below Chat beside the check-in list, showing a \"pending: 1\" summary chip above a table of one urgent ICS-213 addressed to EOC Logistics.\n",
     "caption": "The Traffic panel opens beside the check-in list -- filing and viewing traffic never leaves the net view.",
     "page": "/docs/net-control/handling-traffic/"
+  },
+  "net-control/ultrawide-desk": {
+    "path": "/docs/img/net-control/ultrawide-desk.png",
+    "alt": "The whole net view on an ultrawide monitor, in three columns: the net's Notes and the schedule's Announcements docked on the left, the check-in list in the middle, and Chat with the Activity Log on the right.\n",
+    "caption": "At ultrawide widths, Script, Notes, and Announcements get a column of their own instead of floating over the list.\n",
+    "page": "/docs/net-control/multiple-monitors/"
   },
   "net-managers/cancel-net-dialog": {
     "path": "/docs/img/net-managers/cancel-net-dialog.png",
@@ -271,7 +295,7 @@
   },
   "operators/dashboard-net-list": {
     "path": "/docs/img/operators/dashboard-net-list.png",
-    "alt": "The ECTLogger dashboard, showing three net cards side by side with status chips reading active, scheduled, and closed.\n",
+    "alt": "The ECTLogger dashboard, showing a grid of net cards, each with a status chip reading active, scheduled, or closed.\n",
     "caption": "Nets you can still take part in sort ahead of ones that are over.",
     "page": "/docs/operators/finding-a-net/"
   },

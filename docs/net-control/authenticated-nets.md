@@ -18,7 +18,19 @@ A net's manager can turn on **Authenticated Net** when creating or editing a net
 
 Every check-in row on an authenticated net shows a padlock next to the callsign. An open padlock means unverified; a closed one means someone confirmed a match. Only the net's manager, an admin, NCS, or Logger can click it to act on it; everyone else sees the same padlock, read-only.
 
-Clicking it opens a dialog showing the current six-digit code ECTLogger computes for that station's account, plus the previous 30-second window's code in case it rolls over mid-sentence while you're reading it aloud together. Ask the operator to read theirs from their authenticator app, compare it to what's on screen, and confirm the match or reject it. A reject explicitly clears any earlier verification rather than just closing the dialog, so a station that was verified once doesn't stay marked as verified after failing a later check.
+<figure>
+  <img src="/docs/img/net-control/identity-padlocks.png"
+       alt="The check-in list of an authenticated net. Each callsign has a padlock beside it: closed and green for N1LAKE, whose identity was verified, greyed out for N1ROVE, whose account has no two-factor set up, and open for the others, with K1CAMP's open padlock outlined in red.">
+  <figcaption>A closed padlock means someone confirmed the station's code. Net Control clicks an open one to check it.</figcaption>
+</figure>
+
+Clicking it opens a dialog showing the current six-digit code ECTLogger computes for that station's account, plus the previous 30-second window's code in case it rolls over mid-sentence while you're reading it aloud together. Ask the operator to read theirs from their authenticator app, compare it to what's on screen, and click **Confirm Match** or **Reject**. A reject explicitly clears any earlier verification rather than just closing the dialog, so a station that was verified once doesn't stay marked as verified after failing a later check.
+
+<figure>
+  <img src="/docs/img/net-control/identity-verify-dialog.png"
+       alt="The Verify K1CAMP's Identity dialog, showing the station's current six-digit code and the one before it, with Cancel, Reject, and Confirm Match buttons.">
+  <figcaption>Ask the operator to read the code from their authenticator app and compare it with this one.</figcaption>
+</figure>
 
 This proves exactly one thing: **the operator checking in holds the TOTP secret tied to that ECTLogger account.** It's the same second factor used for two-factor login, repurposed to confirm identity over the air instead of on a login screen. It does not prove who's physically transmitting, that the account hasn't been shared, or anything about the callsign itself being correctly licensed. It only ties this check-in to that specific account with the same confidence your app's own MFA already relies on.
 

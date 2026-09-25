@@ -4,7 +4,7 @@ summary: Detaching and popping out the check-in list, chat, and other panels, an
 kind: How-to
 audience: NCS, Logger, and Relay operators
 owner: KC1JMH
-revised: 2026-09-19
+revised: 2026-09-25
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-control/multiple-monitors/
@@ -29,6 +29,12 @@ Every docked panel carries the same small row of controls in its header:
 - **Minimize** collapses a panel down to its header bar without closing it, and **Close** removes it from the layout entirely (for panels that have a genuine "not open right now" state, like Coverage and Traffic; Chat and the Activity Log are always present, so their only "put it away" move is detaching or minimizing).
 
 <figure>
+  <img src="/docs/img/net-control/detached-panel.png"
+       alt="The net view with the Traffic panel detached into a floating window that sits over the check-in list, with its own title bar controls.">
+  <figcaption>Detach keeps a panel in the same browser tab but lets you drag and resize it anywhere over the page.</figcaption>
+</figure>
+
+<figure>
   <img src="/docs/img/net-control/popped-out-checkins.png"
        alt="The check-in list open in its own bare browser window, with no navigation bar, ready to be dragged onto a second monitor.">
   <figcaption>A popped-out pane is a real second window with its own connection to the net; move it to another monitor and it keeps working on its own.</figcaption>
@@ -39,6 +45,12 @@ Every layout choice you make (what's docked, what's detached, what's popped out,
 ## On an ultrawide monitor
 
 Past a certain screen width, a second column becomes available on the left side of the page for the net's Script, Notes, and the schedule's Announcements, alongside the existing check-in-list-and-Chat layout on the right. Below that width, those three stay exactly as they've always worked: on-demand floating panels you open when you need them, rather than a fixed part of the layout. Nothing about their content changes, only whether they get a permanent spot on a genuinely wide screen.
+
+<figure>
+  <img src="/docs/img/net-control/ultrawide-desk.png"
+       alt="The whole net view on an ultrawide monitor, in three columns: the schedule's Announcements and the net's Notes docked on the left, the check-in list in the middle, and Chat with the Activity Log on the right.">
+  <figcaption>At ultrawide widths, Script, Notes, and Announcements get a column of their own instead of floating over the list.</figcaption>
+</figure>
 
 ## Next
 

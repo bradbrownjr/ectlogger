@@ -584,6 +584,62 @@ async def _build(db_path: Path, out_path: Path):
         await db.refresh(net_unstaffed)
 
         # =================================================================
+        # NET E -- ACTIVE, ad hoc, Authenticated Net turned on. The only
+        # way to photograph the identity padlock and the verify dialog: every
+        # row shape the page describes is here -- a verified station, two
+        # verifiable ones, an account with no two-factor set up, and a guest
+        # check-in with no account at all. The MFA accounts are ones no
+        # figure signs in as, so enabling MFA on them cannot break a capture
+        # (capture.mjs reads their secrets from manifest["mfa_secrets"]).
+        # =================================================================
+        mfa_secrets = {}
+        for callsign in ("N1LAKE", "K1CAMP", "W2FERN"):
+            secret = generate_totp_secret()
+            users[callsign].mfa_enabled = True
+            users[callsign].mfa_secret_encrypted = encrypt_mfa_secret(secret)
+            mfa_secrets[callsign] = secret
+        auth_started = now - timedelta(minutes=12)
+        net_authenticated = Net(
+            name="Example County ARES Identity Drill",
+            description="Practice net for verifying stations by their authenticator code.",
+            owner_id=users["W1PINE"].id,
+            status=NetStatus.ACTIVE,
+            field_config=_field_config(),
+            ics309_enabled=True,
+            authenticated=True,
+            started_at=auth_started,
+            frequencies=[f_repeater],
+        )
+        db.add(net_authenticated)
+        await db.flush()
+        net_authenticated.active_frequency_id = f_repeater.id
+        db.add(NetRole(net_id=net_authenticated.id, user_id=users["W1PINE"].id, role="NCS",
+                       active_frequency_id=f_repeater.id, assigned_at=auth_started, is_active=True))
+        for callsign, minutes_after, verified in (
+            ("W1PINE", 0, False), ("N1LAKE", 2, True), ("K1CAMP", 4, False),
+            ("W2FERN", 6, False), ("N1ROVE", 8, False), ("N2OAKS", 10, False),
+        ):
+            # N2OAKS is logged as a guest (no linked account) on purpose: the
+            # page says a guest row's padlock is fixed and unclickable.
+            user = users[callsign] if callsign != "N2OAKS" else None
+            db.add(CheckIn(
+                net_id=net_authenticated.id,
+                user_id=user.id if user else None,
+                callsign=callsign,
+                name=user.name if user else "",
+                location=user.location if user else "",
+                status=StationStatus.CHECKED_IN,
+                frequency_id=f_repeater.id,
+                checked_in_at=auth_started + timedelta(minutes=minutes_after),
+                checked_in_by_id=users["W1PINE"].id,
+                identity_verified=verified,
+                identity_verified_at=(auth_started + timedelta(minutes=minutes_after + 1)) if verified else None,
+                identity_verified_by_id=users["W1PINE"].id if verified else None,
+            ))
+        await db.commit()
+        await db.refresh(net_authenticated)
+
+        # =================================================================
         # A truly custom (non-builtin) check-in field, so the admin Fields
         # tab shows more than just the shipped builtins.
         # =================================================================
@@ -603,7 +659,9 @@ async def _build(db_path: Path, out_path: Path):
             {"key": "scheduled", "id": net_scheduled.id, "name": net_scheduled.name, "status": net_scheduled.status.value, "template_id": net_scheduled.template_id},
             {"key": "closed", "id": net_closed.id, "name": net_closed.name, "status": net_closed.status.value, "template_id": net_closed.template_id},
             {"key": "unstaffed", "id": net_unstaffed.id, "name": net_unstaffed.name, "status": net_unstaffed.status.value, "template_id": net_unstaffed.template_id},
+            {"key": "authenticated", "id": net_authenticated.id, "name": net_authenticated.name, "status": net_authenticated.status.value, "template_id": net_authenticated.template_id},
         ]
+        manifest["mfa_secrets"] = mfa_secrets
 
         current_code, _prev_code = current_totp_codes(admin_totp_secret)
         manifest["admin_mfa"] = {
