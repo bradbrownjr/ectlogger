@@ -4,7 +4,7 @@ summary: Things that are confirmed wrong right now, with workarounds where there
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-09-24
+revised: 2026-09-25
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/about/known-issues/
@@ -16,9 +16,24 @@ This page lists confirmed, currently open defects — not roadmap items, not pla
 
 This page was published on 2026-09-19 with five open defects found while the documentation was being written, by reading the code against what the screens promise. All five were fixed the same day rather than worked around. A sixth, where naming the database driver explicitly in a self-hosted `DATABASE_URL` stopped the application from starting, was fixed on 2026-09-22; both the plain and the explicit form now work. See the [changelog](/docs/CHANGELOG/) for what changed.
 
-## Nothing open right now
+## Some toolbar buttons show for the wrong people
 
-There are no confirmed open defects as of this page's revision date.
+**Found:** 2026-09-25. **Affects:** net staff and Loggers on an active net.
+
+The net toolbar decides who sees **Close net**, **Import**, **Edit net**, and **Archive** by a broader rule than the server uses to decide who may actually do them. Two things follow:
+
+- A member of the schedule's net staff or NCS rotation who hasn't checked into this occurrence as NCS sees those buttons, but clicking them is refused with a permission error.
+- A Logger who isn't on the schedule's staff is allowed to close the net, but never sees the **Close net** button.
+
+**Workaround:** if you're net staff, check yourself in as NCS (or Logger, to close or import) before using those buttons. If you're a Logger without the button, ask the NCS or the net's manager to close the net.
+
+## Some frequency modes can't be saved
+
+**Found:** 2026-09-25. **Affects:** admins adding or editing a frequency.
+
+The mode list in **Admin → Frequencies** offers NXDN, M17, VARA, Winlink, and Other, but the server only accepts FM, AM, SSB, USB, LSB, CW, DIGITAL, DMR, D-STAR, FUSION, YSF, P25, and GMRS. Saving a frequency with one of the five extra modes fails.
+
+**Workaround:** pick the closest accepted mode (DIGITAL covers VARA, Winlink, M17, and NXDN) and put the specific mode in the frequency's description.
 
 ## If what you've hit isn't here
 

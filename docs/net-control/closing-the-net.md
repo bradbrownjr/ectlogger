@@ -16,7 +16,7 @@ Closing a net is a real state change, not a formality: it ends the live session,
 
 ## Closing it
 
-The toolbar's **Close net** button is available to the net's manager, an admin, an active NCS, or anyone on the schedule's net staff or NCS rotation, the same group that can Import or Edit net settings. Holding Logger alone doesn't put the button on your toolbar unless you're also one of those; if that happens, ask the net's manager, NCS, or another staff member to close it instead. It asks you to confirm first:
+Closing a net is allowed for the net's manager, an admin, or anyone currently acting as NCS or Logger on it. The toolbar doesn't quite match that rule yet (see [Known issues](/docs/about/known-issues/#some-toolbar-buttons-show-for-the-wrong-people)): a member of the schedule's net staff who hasn't taken a role on this occurrence sees **Close net** but gets refused, and a Logger who isn't net staff can close but has no button. If you're staff, check in as NCS or Logger first; if you're a Logger without the button, ask the NCS or the net's manager to close it. It asks you to confirm first:
 
 <figure>
   <img src="/docs/img/net-control/close-net-dialog.png"
