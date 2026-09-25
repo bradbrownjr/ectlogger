@@ -385,7 +385,11 @@ class UserPopupResponse(BaseModel):
 FREQUENCY_MODES = (
     "FM", "AM", "SSB", "CW", "GMRS",
     "DMR", "D-STAR", "YSF", "P25", "NXDN", "M17",
-    "VARA", "Winlink", "Other",
+    "VARA", "Winlink", "JS8Call", "Packet",
+    # Data: any other digital mode run on a frequency (FLDIGI modes such as
+    # PSK31, Olivia or MT63), when none of the named modes fit.
+    "Data",
+    "Other",
 )
 FREQUENCY_MODE_PATTERN = "^(" + "|".join(re.escape(m) for m in FREQUENCY_MODES) + ")$"
 
@@ -1078,13 +1082,9 @@ class CheckInResponse(CheckInBase):
         obj.identity_verifiable = bool(obj.user and getattr(obj.user, 'mfa_enabled', False))
         result = super().from_orm(obj)
         if redact:
-            from app.utils import redact_contact_info
+            from app.utils import GUEST_REDACTED_CHECK_IN_FIELDS, redact_contact_info
             result = result.model_copy(update={
-                'location': redact_contact_info(result.location),
-                'weather_observation': redact_contact_info(result.weather_observation),
-                'feedback': redact_contact_info(result.feedback),
-                'notes': redact_contact_info(result.notes),
-                'topic_response': redact_contact_info(result.topic_response),
+                **{f: redact_contact_info(getattr(result, f)) for f in GUEST_REDACTED_CHECK_IN_FIELDS},
                 'custom_fields': {
                     k: (redact_contact_info(v) if isinstance(v, str) else v)
                     for k, v in (result.custom_fields or {}).items()

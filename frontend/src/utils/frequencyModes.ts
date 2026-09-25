@@ -32,6 +32,10 @@ export const FREQUENCY_MODES: FrequencyMode[] = [
   { value: 'M17', label: 'M17', entry: 'network' },
   { value: 'VARA', label: 'VARA', entry: 'frequency' },
   { value: 'Winlink', label: 'Winlink', entry: 'frequency' },
+  { value: 'JS8Call', label: 'JS8Call', entry: 'frequency' },
+  { value: 'Packet', label: 'Packet', entry: 'frequency' },
+  // Any other digital mode on a frequency, e.g. FLDIGI's PSK31, Olivia, MT63.
+  { value: 'Data', label: 'Data (FLDIGI and other digital)', entry: 'frequency' },
   { value: 'Other', label: 'Other', entry: 'frequency' },
 ];
 
