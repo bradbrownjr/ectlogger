@@ -4,7 +4,7 @@ summary: Every user-facing change, newest first, in the format the in-app What's
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-09-24
+revised: 2026-09-25
 review_by: 2027-09-22
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/CHANGELOG/
@@ -15,6 +15,14 @@ permalink: /docs/CHANGELOG/
 All notable changes to ECTLogger are documented here.
 
 ---
+
+# September 25, 2026
+
+## Bug Fixes
+
+* **Net View: Buttons that match what you can do** — The net toolbar and the net cards on the dashboard now show Close net, Import, Edit, Go live, Archive, Cancel, and Delete only to people who are allowed to use them, so schedule staff no longer see buttons that fail when clicked, a Logger can now find the Close net button, and stepping down as NCS really does hand those controls back.
+* **Frequencies: Shared frequencies are protected** — Only an admin can now change or remove a frequency, and never while a net, a schedule, or a logged check-in still uses it, so nobody can accidentally edit or delete a repeater that another club's nets depend on. You can still add new frequencies and pick them for your nets as before.
+* **Frequencies: Every mode can be saved** — NXDN, M17, VARA, Winlink, and Other can now be saved, and the net and schedule forms offer the same full list of modes as the admin screen, including AM and CW.
 
 # September 24, 2026
 

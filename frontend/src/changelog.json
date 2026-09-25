@@ -1,6 +1,30 @@
 {
-  "version": "2026.09.24",
+  "version": "2026.09.25",
   "entries": [
+    {
+      "version": "2026.09.25",
+      "date": "2026-09-25",
+      "sections": [
+        {
+          "title": "Bug Fixes",
+          "type": "bugfix",
+          "items": [
+            {
+              "text": "Net View: Buttons that match what you can do — The net toolbar and the net cards on the dashboard now show Close net, Import, Edit, Go live, Archive, Cancel, and Delete only to people who are allowed to use them, so schedule staff no longer see buttons that fail when clicked, a Logger can now find the Close net button, and stepping down as NCS really does hand those controls back.",
+              "userImpact": true
+            },
+            {
+              "text": "Frequencies: Shared frequencies are protected — Only an admin can now change or remove a frequency, and never while a net, a schedule, or a logged check-in still uses it, so nobody can accidentally edit or delete a repeater that another club's nets depend on. You can still add new frequencies and pick them for your nets as before.",
+              "userImpact": true
+            },
+            {
+              "text": "Frequencies: Every mode can be saved — NXDN, M17, VARA, Winlink, and Other can now be saved, and the net and schedule forms offer the same full list of modes as the admin screen, including AM and CW.",
+              "userImpact": false
+            }
+          ]
+        }
+      ]
+    },
     {
       "version": "2026.09.24",
       "date": "2026-09-24",
