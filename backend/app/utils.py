@@ -273,6 +273,12 @@ _EMAIL_RE = re.compile(r'[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}')
 _PHONE_RE = re.compile(r'(?<!\d)(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}(?!\d)')
 
 
+# The free-text check-in fields that go through redact_contact_info for a
+# guest (unauthenticated) viewer, wherever check-ins are shown or exported:
+# CheckInResponse.from_orm and the net CSV export both read this list.
+GUEST_REDACTED_CHECK_IN_FIELDS = ("location", "weather_observation", "feedback", "notes", "topic_response")
+
+
 def redact_contact_info(text: Optional[str]) -> Optional[str]:
     """Best-effort redaction of email addresses and phone numbers from free
     text shown to unauthenticated (guest) viewers of a net's history.

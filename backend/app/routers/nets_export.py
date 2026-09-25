@@ -42,17 +42,22 @@ from app.traffic.ics309 import (
     traffic_to_station,
 )
 from app.traffic.rri_strip import make_nts_safe
-from app.utils import display_callsign, format_ncs_attribution, format_time_for_net, redact_contact_info, resolve_display_tz, to_display_tz
+from app.utils import GUEST_REDACTED_CHECK_IN_FIELDS, display_callsign, format_ncs_attribution, format_time_for_net, redact_contact_info, resolve_display_tz, to_display_tz
 
 router = APIRouter()
 
 @router.get("/{net_id}/export/csv")
 async def export_net_csv(
     net_id: int,
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db)
 ):
-    """Export net check-ins as CSV"""
+    """Export net check-ins as CSV. Open to anyone, like the ICS-309 and the
+    net report: it holds nothing the public check-in list doesn't already
+    show, and a guest gets the same contact-info redaction that list applies
+    (GUEST_REDACTED_CHECK_IN_FIELDS). Until 2026-09-25 it was net-manager
+    and admin only, while the Export button showed for every viewer of a
+    closed net."""
     # Get net with check-ins and frequencies
     result = await db.execute(
         select(Net).options(
@@ -65,10 +70,13 @@ async def export_net_csv(
     if not net:
         raise HTTPException(status_code=404, detail="Net not found")
     
-    # Check permissions - anyone can export a net they have access to
-    if not await check_net_permission(db, net, current_user):
-        raise HTTPException(status_code=403, detail="Not authorized to export this net")
-    
+    # A guest sees free text with contact details redacted, as in the list.
+    def shown(check_in, field):
+        value = getattr(check_in, field)
+        if current_user is None and field in GUEST_REDACTED_CHECK_IN_FIELDS:
+            return redact_contact_info(value)
+        return value
+
     # Build frequency lookup map
     freq_map = {f.id: f for f in net.frequencies}
 
@@ -119,19 +127,19 @@ async def export_net_csv(
             format_time_for_net(to_display_tz(check_in.checked_in_at, tz), display_started_at, display_closed_at),
             check_in.callsign,
             check_in.name,
-            check_in.location,
+            shown(check_in, "location"),
             ', '.join(available_freqs) if available_freqs else "",
             check_in.skywarn_number or "",
-            check_in.weather_observation or "",
+            shown(check_in, "weather_observation") or "",
             check_in.power_source or "",
             check_in.power or "",
-            check_in.feedback or "",
-            check_in.notes or "",
+            shown(check_in, "feedback") or "",
+            shown(check_in, "notes") or "",
             check_in.relayed_by or "",
             check_in.status.value if check_in.status else ""
         ]
         if net.topic_of_week_enabled:
-            row.append(check_in.topic_response or "")
+            row.append(shown(check_in, "topic_response") or "")
         if net.poll_enabled:
             row.append(check_in.poll_response or "")
         writer.writerow(row)

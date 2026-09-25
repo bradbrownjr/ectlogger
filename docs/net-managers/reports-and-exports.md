@@ -4,7 +4,7 @@ summary: The net report, the PDF, the ICS-309 Communications Log, the per-sectio
 kind: How-to
 audience: Net owners, schedule owners, and co-managers
 owner: KC1JMH
-revised: 2026-09-23
+revised: 2026-09-25
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/net-managers/reports-and-exports/
@@ -20,7 +20,7 @@ A closed net's toolbar carries four separate downloads, plus a fifth page of its
   <figcaption>Export and both ICS-309 buttons download a single file; Report opens the full multi-section report page.</figcaption>
 </figure>
 
-- **Export** downloads the raw check-in list as a CSV: every field the net collected, one row per check-in event (including rechecks), in the timezone your own profile prefers.
+- **Export** downloads the raw check-in list as a CSV: every field the net collected, one row per check-in event (including rechecks), in the timezone your own profile prefers. Like the ICS-309 and the Report, anyone can download it; a visitor who isn't signed in gets the same copy with email addresses and phone numbers in free-text fields hidden.
 - **ICS-309** downloads the check-in and chat log formatted as an official ICS-309 Communications Log, as a CSV.
 - **ICS-309 PDF** downloads the same log as a form-accurate, printable PDF.
 - **Report** opens the full **Net Report** page, described below.
