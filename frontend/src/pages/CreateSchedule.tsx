@@ -410,7 +410,7 @@ const CreateSchedule: React.FC = () => {
 
   return (
     <CreateScheduleContext.Provider value={contextValue}>
-      <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
+      <Container maxWidth="md" sx={{ mt: 4, mb: 4, pb: 12 }}>
         <Paper sx={{ p: 3 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: 1 }}>
             <Typography variant="h4" component="h1">

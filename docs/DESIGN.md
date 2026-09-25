@@ -270,6 +270,15 @@ the app.
 FABs stack from right to left at `bottom: 16, right: 16`. Each subsequent FAB adds
 64 px to `right` (56 px button + 8 px gap): 16 → 80 → 144 → 208.
 
+### Page clearance
+The What's New button (`ChangelogNotification.tsx`) is a FAB fixed at
+`bottom: 16, left: 16` on every page, and page FABs sit at the bottom-right.
+Any page whose content can scroll down to the bottom corners (a list, or a form
+with its action buttons at the end) adds `pb: 12` (96 px) to its page
+`Container`, so the last row can scroll clear of the 72 px the FABs occupy.
+Dashboard, Scheduler, Create/Edit Net, and Create/Edit Schedule follow this;
+without it, a form's Cancel/Next buttons end up underneath the info button on a phone.
+
 ### Color convention
 | Role | color |
 |---|---|

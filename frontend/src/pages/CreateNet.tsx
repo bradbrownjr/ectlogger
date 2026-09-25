@@ -468,7 +468,7 @@ const CreateNet: React.FC = () => {
   // ---- Render ----
   return (
     <CreateNetContext.Provider value={contextValue}>
-      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 4, pb: 12 }}>
         <Paper sx={{ p: 3 }}>
           <Typography variant="h4" component="h1" gutterBottom>
             {isInfoMode ? 'Net Information' : isEditMode ? 'Edit Net' : 'Create New Net'}
