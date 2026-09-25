@@ -327,6 +327,23 @@ Before writing an entry, read it back as a user: if a reader would skim it, cons
 
 Both files must be updated together and must tell the same story.
 
+**Always get Brad's approval on changelog wording before it ships.** Draft the
+items, show them to Brad as plain text in the conversation, and commit or deploy
+them only after he approves. This applies to every item in
+`changelog.json`/`CHANGELOG.md`, because what reaches `main` reaches every user's
+badge and the What's New email. Two things to check in every draft:
+- **Get the section right.** A fix for something that should already have worked
+  goes under Bug Fixes, not Improvements, even when the fix gives someone access
+  they didn't have before.
+- **Don't write anything that sounds like a security change when it isn't one.**
+  Say what was wrong and that it now matches everything else ("the CSV export now
+  follows the same rule as the other reports"), not "anyone, even signed-out
+  visitors, can now...".
+
+This rule was added 2026-09-25, after two items shipped without review. One was
+filed under Improvements when it was a bug fix, and its wording announced the fix
+as newly opening access to anyone.
+
 Users see a red badge on the info icon (lower-left) until they view the changelog. The badge only reappears when the top-level `version` string changes, so only bump it when deploying user-facing changes. Subscribed users (Profile → "What's New emails") also receive a consolidated 8 AM email digest the morning after a release.
 
 ### Development Workflow
