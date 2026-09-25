@@ -27,14 +27,6 @@ The net toolbar decides who sees **Close net**, **Import**, **Edit net**, and **
 
 **Workaround:** if you're net staff, check yourself in as NCS (or Logger, to close or import) before using those buttons. If you're a Logger without the button, ask the NCS or the net's manager to close the net.
 
-## Some frequency modes can't be saved
-
-**Found:** 2026-09-25. **Affects:** admins adding or editing a frequency.
-
-The mode list in **Admin → Frequencies** offers NXDN, M17, VARA, Winlink, and Other, but the server only accepts FM, AM, SSB, USB, LSB, CW, DIGITAL, DMR, D-STAR, FUSION, YSF, P25, and GMRS. Saving a frequency with one of the five extra modes fails.
-
-**Workaround:** pick the closest accepted mode (DIGITAL covers VARA, Winlink, M17, and NXDN) and put the specific mode in the frequency's description.
-
 ## If what you've hit isn't here
 
 This page is a snapshot taken on its revision date, not a guarantee. Check [the GitHub issue tracker](https://github.com/bradbrownjr/ectlogger/issues) for anything more recent, and see [Getting help](/docs/about/getting-help/) for how to report something that isn't there yet.

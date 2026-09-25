@@ -21,6 +21,7 @@ import {
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import { frequencyApi } from '../../services/api';
+import { FREQUENCY_MODES, frequencyEntryFor } from '../../utils/frequencyModes';
 
 // ========== SHARED COMMUNICATION PLAN PANEL ==========
 // Frequency / channel selection table used by both CreateSchedule and CreateNet.
@@ -129,7 +130,7 @@ const CommunicationPlanPanel: React.FC<CommunicationPlanPanelProps> = ({
 
   // ---- Row renderers ----
   const renderRow = (freq: FrequencyItem) => {
-    const isAnalog = ['FM', 'SSB', 'GMRS'].includes(freq.mode);
+    const hasTalkgroup = frequencyEntryFor(freq.mode) === 'network';
 
     return (
       <TableRow key={freq.id}>
@@ -141,7 +142,7 @@ const CommunicationPlanPanel: React.FC<CommunicationPlanPanelProps> = ({
         </TableCell>
         <TableCell>{freq.mode}</TableCell>
         <TableCell>{getDisplayText(freq)}</TableCell>
-        <TableCell>{!isAnalog && freq.talkgroup ? freq.talkgroup : '-'}</TableCell>
+        <TableCell>{hasTalkgroup && freq.talkgroup ? freq.talkgroup : '-'}</TableCell>
         <TableCell>{freq.description || '-'}</TableCell>
         {/* Actions column holds only the new row's Add button */}
         <TableCell />
@@ -150,8 +151,9 @@ const CommunicationPlanPanel: React.FC<CommunicationPlanPanelProps> = ({
   };
 
   const renderNewRow = () => {
-    const isAnalog = ['FM', 'SSB', 'GMRS'].includes(newFrequency.mode);
-    const isYSF = newFrequency.mode === 'YSF';
+    const entry = frequencyEntryFor(newFrequency.mode);
+    const isAnalog = entry === 'frequency';
+    const isYSF = entry === 'room';
 
     return (
       <TableRow>
@@ -162,13 +164,9 @@ const CommunicationPlanPanel: React.FC<CommunicationPlanPanelProps> = ({
               value={newFrequency.mode}
               onChange={(e: any) => setNewFrequency({ ...newFrequency, mode: e.target.value })}
             >
-              <MenuItem value="FM">FM</MenuItem>
-              <MenuItem value="GMRS">GMRS</MenuItem>
-              <MenuItem value="SSB">SSB</MenuItem>
-              <MenuItem value="DMR">DMR</MenuItem>
-              <MenuItem value="D-STAR">D-STAR</MenuItem>
-              <MenuItem value="YSF">YSF</MenuItem>
-              <MenuItem value="P25">P25</MenuItem>
+              {FREQUENCY_MODES.map((m) => (
+                <MenuItem key={m.value} value={m.value}>{m.label}</MenuItem>
+              ))}
             </Select>
           </FormControl>
         </TableCell>

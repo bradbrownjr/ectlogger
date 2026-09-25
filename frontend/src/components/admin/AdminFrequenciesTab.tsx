@@ -33,6 +33,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import useSortableTable from '../../hooks/useSortableTable';
+import { FREQUENCY_MODES } from '../../utils/frequencyModes';
 import { frequencyApi } from '../../services/api';
 import { getErrorMessage } from '../../utils/apiErrors';
 
@@ -418,19 +419,9 @@ const AdminFrequenciesTab: React.FC<Props> = ({ showSnackbar }) => {
                 label="Mode"
                 onChange={(e) => setFrequencyForm({ ...frequencyForm, mode: e.target.value })}
               >
-                <MenuItem value="FM">FM</MenuItem>
-                <MenuItem value="AM">AM</MenuItem>
-                <MenuItem value="SSB">SSB</MenuItem>
-                <MenuItem value="CW">CW</MenuItem>
-                <MenuItem value="DMR">DMR</MenuItem>
-                <MenuItem value="D-STAR">D-STAR</MenuItem>
-                <MenuItem value="YSF">YSF (Fusion)</MenuItem>
-                <MenuItem value="P25">P25</MenuItem>
-                <MenuItem value="NXDN">NXDN</MenuItem>
-                <MenuItem value="M17">M17</MenuItem>
-                <MenuItem value="VARA">VARA</MenuItem>
-                <MenuItem value="Winlink">Winlink</MenuItem>
-                <MenuItem value="Other">Other</MenuItem>
+                {FREQUENCY_MODES.map((m) => (
+                  <MenuItem key={m.value} value={m.value}>{m.label}</MenuItem>
+                ))}
               </Select>
             </FormControl>
             <TextField

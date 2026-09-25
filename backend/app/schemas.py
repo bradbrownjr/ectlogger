@@ -375,9 +375,24 @@ class UserPopupResponse(BaseModel):
 
 
 # Frequency Schemas
+# The one list of modes a shared frequency may have. The frontend's pickers
+# read frontend/src/utils/frequencyModes.ts, and tests/test_frequency_modes.py
+# fails if the two lists drift. Until 2026-09-25 this was a regex that
+# disagreed with both pickers: Admin > Frequencies offered NXDN, M17, VARA,
+# Winlink and Other, and saving any of them was rejected. USB, LSB, FUSION and
+# DIGITAL were dropped at the same time: no picker offered them and no
+# production row used them.
+FREQUENCY_MODES = (
+    "FM", "AM", "SSB", "CW", "GMRS",
+    "DMR", "D-STAR", "YSF", "P25", "NXDN", "M17",
+    "VARA", "Winlink", "Other",
+)
+FREQUENCY_MODE_PATTERN = "^(" + "|".join(re.escape(m) for m in FREQUENCY_MODES) + ")$"
+
+
 class FrequencyBase(BaseModel):
     frequency: Optional[str] = Field(None, max_length=50)
-    mode: str = Field(max_length=20, pattern=r'^(FM|AM|SSB|USB|LSB|CW|DIGITAL|DMR|D-STAR|FUSION|YSF|P25|GMRS)$')
+    mode: str = Field(max_length=20, pattern=FREQUENCY_MODE_PATTERN)
     network: Optional[str] = Field(None, max_length=100)  # e.g., "Wires-X", "Brandmeister", "REF030C"
     talkgroup: Optional[str] = Field(None, max_length=50)  # e.g., "31665", "Room 12345"
     description: Optional[str] = Field(None, max_length=500)

@@ -19,7 +19,7 @@ Every frequency, repeater, or digital talkgroup a net can use comes from one sha
 Click the **+** button (bottom right) and fill in:
 
 - **Frequency** — e.g. "146.520 MHz." Leave this blank for a digital-only entry (DMR, D-STAR, Fusion, and similar) that has no analog frequency of its own.
-- **Mode** — FM, AM, SSB, CW, or one of the digital modes (DMR, D-STAR, YSF/Fusion, P25, NXDN, M17), plus VARA and Winlink for HF digital, or Other.
+- **Mode** — FM, AM, SSB, CW, GMRS, or one of the digital modes (DMR, D-STAR, YSF/Fusion, P25, NXDN, M17), plus VARA and Winlink for HF digital, or Other. The net and schedule forms offer the same list.
 - **Network** — for a digital mode, the reflector or network name (Brandmeister, Wires-X, REF030C).
 - **Talkgroup/Room** — the talkgroup ID or room number, where the network has one.
 - **Description** — free text; this is what actually shows up next to the frequency everywhere else in the app, so make it recognizable ("Example County ARES Repeater (PL 100.0)" rather than just "Repeater").
