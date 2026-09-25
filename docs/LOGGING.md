@@ -4,7 +4,7 @@ summary: Log levels, what gets written where, and what to turn up when something
 kind: Reference
 audience: Server operators
 owner: KC1JMH
-revised: 2026-09-19
+revised: 2026-09-25
 review_by: 2027-09-19
 applies_to: ECTLogger, self-hosted
 permalink: /docs/LOGGING/
@@ -147,15 +147,19 @@ sudo systemctl restart ectlogger
 
 ## Log Categories
 
-Logs are organized by category (shown in brackets):
+Logs are organized by category (shown in brackets). This is not an exhaustive list —
+background services log under their own categories (`NCS_REMINDER`, `TRAFFIC_REMINDER`,
+`WHATS_NEW`, and others) — but these are the ones you'll see most:
 
 - **[API]** - API endpoint handling
 - **[AUTH]** - Authentication and token management
 - **[EMAIL]** - Email sending operations
 - **[SMTP]** - SMTP server communication
 - **[MAGIC LINK]** - Magic link generation and verification
-- **[CORS]** - Cross-origin configuration
-- **[ERROR]** - Error conditions
+- **[SECURITY]** - Rate limiting and banned-access attempts
+
+Note that `[ERROR]` in a log line is the **log level**, not a category — it always
+appears alongside one of the categories above (e.g. `[ERROR] [SMTP]`), never on its own.
 
 ## Best Practices
 
@@ -314,5 +318,5 @@ logger.banned_access("banned@example.com", ip="192.168.1.100")
 
 - `LOG_FILE` - See `FAIL2BAN.md` for file logging setup
 - `MAGIC_LINK_EXPIRE_DAYS` - See `MAGIC-LINK-CONFIGURATION.md`
-- `SMTP_*` - See `TROUBLESHOOTING-EMAIL.md`
+- `SMTP_*` - See `EMAIL-DELIVERABILITY.md`
 - `LOG_LEVEL` - This document

@@ -4,7 +4,7 @@ summary: How long a login link stays valid, how it is signed, and why the defaul
 kind: Reference
 audience: Server operators
 owner: KC1JMH
-revised: 2026-09-19
+revised: 2026-09-25
 review_by: 2027-09-19
 applies_to: ECTLogger, self-hosted
 permalink: /docs/MAGIC-LINK-CONFIGURATION/
@@ -61,10 +61,13 @@ For high-security scenarios requiring frequent re-authentication. Note: decimal 
 ## How It Works
 
 1. **User requests magic link** via login page
-2. **System generates JWT token** with configurable expiration
+2. **System generates a signed, time-limited token** (`itsdangerous.URLSafeTimedSerializer`,
+   not a JWT — the JWT-based access token is only minted afterward, once the magic link
+   itself has been verified) with configurable expiration
 3. **Email is sent** with link and expiration information
 4. **User clicks link** within expiration period
-5. **System validates token** and creates session
+5. **System validates the token** and creates a session (a real JWT access token, using the
+   session lifetime from Admin → Security → Session Settings)
 
 ## Email Display Format
 
@@ -103,7 +106,8 @@ async def request_magic_link(request: MagicLinkRequest, db: AsyncSession = Depen
     }
 ```
 
-**Email Service** (`backend/app/email_service.py`):
+**Email Service** (`backend/app/email/auth.py`, re-exported through the
+`backend/app/email_service.py` facade):
 ```python
 async def send_magic_link(email: str, token: str, expire_days: int = 30):
     if expire_days == 1:
@@ -135,7 +139,7 @@ The login page informs users of the configured expiration:
 2. **Email Security**: Requires access to user's email account
 3. **Trusted Operators**: System designed for vetted emergency communications personnel
 4. **Limited Scope**: Application manages emergency net logs, not sensitive personal data
-5. **Session Management**: Sessions last 30 days by default and automatically renew when nearing expiry, so active operators are never interrupted. Both the lifetime and rolling-renewal behavior are configurable in Admin → Security → Session Settings. Re-authentication is only required after the configured lifetime of complete inactivity.
+5. **Session Management**: Sessions last 90 days by default and automatically renew when nearing expiry, so active operators are never interrupted. Both the lifetime and rolling-renewal behavior are configurable in Admin → Security → Session Settings. Re-authentication is only required after the configured lifetime of complete inactivity.
 
 ### Additional Security Measures
 
@@ -210,13 +214,13 @@ However, this defeats the purpose of the enhancement. Consider using at least 1 
 
 ## Related Configuration
 
-- **Session lifetime and rolling renewal**: Configurable in the Admin panel → Security tab → Session Settings. The default is 30 days with rolling renewal enabled. No `.env` change needed. `ACCESS_TOKEN_EXPIRE_MINUTES` in `.env` sets the fallback used on first run before the admin has saved any value.
+- **Session lifetime and rolling renewal**: Configurable in the Admin panel → Security tab → Session Settings. The default is 90 days with rolling renewal enabled. No `.env` change needed — every sign-in explicitly requests the Admin-configured lifetime (falling back to 90 days if no admin has saved Session Settings yet). `ACCESS_TOKEN_EXPIRE_MINUTES` in `.env` is not consulted by the login routes at all, so changing it has no effect on how long a session lasts.
 - `SECRET_KEY`: JWT signing key (must be secure)
 - `SMTP_*`: Email delivery configuration (required for magic links)
 
 ## Support
 
 For issues or questions about magic link configuration, see:
-- `TROUBLESHOOTING-EMAIL.md` - Email delivery issues
+- `EMAIL-DELIVERABILITY.md` - Email delivery issues
 - `README.md` - General setup and configuration
 - GitHub Issues - Report bugs or suggest improvements

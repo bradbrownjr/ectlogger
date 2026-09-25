@@ -4,7 +4,7 @@ summary: Banning the addresses that keep trying: the filters, the jail, and how 
 kind: How-to
 audience: Server operators
 owner: KC1JMH
-revised: 2026-09-19
+revised: 2026-09-25
 review_by: 2027-09-19
 applies_to: ECTLogger, self-hosted
 permalink: /docs/FAIL2BAN/
@@ -142,8 +142,15 @@ location / {
 }
 ```
 
-ECTLogger automatically reads these headers:
-- `X-Forwarded-For` (standard proxy header)
+ECTLogger automatically reads these headers, but only when the connection reaching the
+backend comes directly from `127.0.0.1` or `::1` (`app/security.py::get_client_ip`) — the
+reverse proxy must run on the same host as the backend. If your proxy is a separate
+machine (a remote load balancer, for example), these headers are ignored entirely and
+every request logs as coming from the proxy's own address, which breaks Fail2Ban's
+ability to ban the real client:
+- `X-Forwarded-For` (standard proxy header) — the **last** hop is trusted, since Caddy's
+  `reverse_proxy` (and nginx's `$proxy_add_x_forwarded_for`) append their own view of the
+  client to whatever a client sent, rather than replacing it
 - `X-Real-IP` (nginx-specific)
 
 ## Security Events Logged
@@ -173,7 +180,9 @@ ECTLogger automatically reads these headers:
 ### IPs behind proxy not detected
 
 1. Ensure proxy sends `X-Forwarded-For` or `X-Real-IP`
-2. Check ECTLogger logs show correct client IPs
+2. Confirm the proxy connects to the backend from `127.0.0.1`/`::1` — see the note above.
+   A proxy on a different host is not trusted, and its headers are ignored
+3. Check ECTLogger logs show correct client IPs
 
 ### Fail2Ban fails to start on Debian 12+
 

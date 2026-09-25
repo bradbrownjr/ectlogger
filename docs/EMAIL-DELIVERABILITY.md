@@ -4,7 +4,7 @@ summary: SPF, DKIM, DMARC, and the reasons a magic link lands in somebody's junk
 kind: How-to
 audience: Server operators
 owner: KC1JMH
-revised: 2026-09-19
+revised: 2026-09-25
 review_by: 2027-09-19
 applies_to: ECTLogger, self-hosted
 permalink: /docs/EMAIL-DELIVERABILITY/
@@ -248,8 +248,8 @@ SMTP_FROM_EMAIL=noreply@yourdomain.com
 sudo journalctl -u ectlogger -f | grep EMAIL
 
 # Look for:
-# [SUCCESS] Email sent successfully
-# [ERROR] SMTP ERROR
+# [INFO] [EMAIL] Email sent successfully to ...
+# [ERROR] [SMTP] SMTP error: ...
 ```
 
 ### Track Deliverability

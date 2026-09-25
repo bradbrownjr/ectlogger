@@ -4,7 +4,7 @@ summary: The shortest path from a clean Linux box to a running ECTLogger instanc
 kind: Tutorial
 audience: Server operators
 owner: KC1JMH
-revised: 2026-09-19
+revised: 2026-09-25
 review_by: 2027-09-19
 applies_to: ECTLogger, self-hosted
 permalink: /docs/QUICKSTART/
@@ -20,7 +20,7 @@ permalink: /docs/QUICKSTART/
 |----------|---------|-------------|
 | **RAM** | 2 GB | 4 GB+ |
 | **Storage** | 2 GB | 10 GB+ |
-| **Python** | 3.9+ | 3.11+ |
+| **Python** | 3.11+ | 3.11+ |
 | **Node.js** | 18+ | 22 LTS |
 
 > ⚠️ **Servers with <2GB RAM** will struggle to run ECTLogger reliably. See [PRODUCTION-DEPLOYMENT.md](PRODUCTION-DEPLOYMENT.md#system-requirements) for low-memory workarounds.
@@ -43,7 +43,7 @@ This downloads the installer and shows you the command to run it. Just copy and 
 
 Works on Debian, Ubuntu, Fedora, RHEL, Rocky, and macOS.
 
-After it completes, just run `./run` to launch!
+After it completes, just run `./start.sh` to launch!
 
 ---
 
@@ -137,7 +137,7 @@ Open your browser to:
 
 #### Linux/macOS
 ```bash
-./run
+./start.sh
 ```
 
 #### Windows (PowerShell)
@@ -196,8 +196,9 @@ npm run dev
 
 1. Complete first-time setup and configure email
 2. Access the application and sign in with your email
-3. Verify you have admin access (you'll see the Admin panel in the navigation)
-4. Only then expose the server to the network/internet
+3. Set up two-factor authentication when prompted — admin accounts require it, so the first sign-in is asked to enroll before the Admin panel becomes usable. See [PASSWORD-MFA.md](PASSWORD-MFA.md)
+4. Verify you have admin access (you'll see the Admin panel in the navigation)
+5. Only then expose the server to the network/internet
 
 This ensures the server owner becomes the administrator before anyone else can access the system.
 

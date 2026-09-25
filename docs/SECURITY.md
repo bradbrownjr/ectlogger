@@ -4,7 +4,7 @@ summary: What the application does to protect itself, what it expects you to do,
 kind: Explanation
 audience: Server operators
 owner: KC1JMH
-revised: 2026-09-19
+revised: 2026-09-25
 review_by: 2027-09-19
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/SECURITY/
@@ -53,7 +53,7 @@ The ECT Net Logger application implements comprehensive security measures to pro
 **JWT Token Security:**
 - HS256 algorithm for token signing
 - Configurable secret key via environment variable
-- Token expiration (30 days default)
+- Token expiration (90 days default, admin-configurable in Admin → Security → Session Settings)
 - Token verification on all protected endpoints
 
 **OAuth2 Integration:**
@@ -81,8 +81,9 @@ The ECT Net Logger application implements comprehensive security measures to pro
 - See [Password & Two-Factor Authentication](PASSWORD-MFA.md)
 
 **Role-Based Access Control (RBAC):**
-- User roles: USER, LOGGER, NCS, ADMIN
-- Per-net role assignments via NetRole table
+- Global user roles (`UserRole`): GUEST, USER, NCS, ADMIN
+- LOGGER is not a global role — it, along with NCS and RELAY, is a per-net role assigned
+  via the NetRole table (see below), independent of the account's global role
 - Permission checks before sensitive operations
 - Ownership validation on resource access
 
@@ -313,7 +314,7 @@ npm audit
 
 2. **Rate Limiting Scope**: Current rate limiting is per-IP. Consider adding per-user rate limits for authenticated endpoints.
 
-3. **Session Management**: Session lifetime (default 30 days) and rolling renewal are configurable in Admin → Security → Session Settings. When rolling renewal is on, tokens refresh silently when fewer than 7 days remain. No token revocation mechanism is implemented; consider adding a token blacklist for logout/ban functionality.
+3. **Session Management**: Session lifetime (default 90 days) and rolling renewal are configurable in Admin → Security → Session Settings. When rolling renewal is on, tokens refresh silently when fewer than 7 days remain. No token revocation mechanism is implemented; consider adding a token blacklist for logout/ban functionality.
 
 4. **Audit Logging**: Basic logging implemented. Consider adding comprehensive audit trail for sensitive operations.
 

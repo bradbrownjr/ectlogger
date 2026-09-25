@@ -4,7 +4,7 @@ summary: Every step the quick start performs, done by hand, for when you need to
 kind: How-to
 audience: Server operators
 owner: KC1JMH
-revised: 2026-09-19
+revised: 2026-09-25
 review_by: 2027-09-19
 applies_to: ECTLogger, self-hosted
 permalink: /docs/MANUAL-INSTALLATION/
@@ -30,7 +30,7 @@ ECTLogger is a modern web-based net logger for Emergency Communications Teams an
 
 ## Prerequisites
 
-- Python 3.9 or higher
+- Python 3.11 or higher
 - Node.js 18 or higher
 - Git
 
@@ -90,7 +90,9 @@ DATABASE_URL=sqlite:///./ectlogger.db
 # Security - GENERATE A STRONG SECRET KEY!
 SECRET_KEY=your-very-secure-secret-key-change-this-in-production
 ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=43200  # 30 days (auto-renews on use)
+ACCESS_TOKEN_EXPIRE_MINUTES=1440  # 24 hours; only used before any admin has saved Session Settings.
+                                   # The real session lifetime (default 90 days, with rolling renewal)
+                                   # is set in Admin > Security > Session Settings instead.
 
 # Frontend URL
 FRONTEND_URL=http://localhost:3000
@@ -207,6 +209,13 @@ chmod +x *.sh
 
 ## Setting Up OAuth Providers (Optional)
 
+> **Not currently functional.** Client registration for Google/Microsoft/GitHub exists
+> (`backend/app/routers/auth.py`), but the callback route that exchanges the authorization
+> code for a token is an unimplemented stub (`HTTPException(501)`). Configuring the values
+> below registers the client but sign-in via any of these providers will fail at the
+> callback step. Magic link and password (see [PASSWORD-MFA.md](PASSWORD-MFA.md)) are the
+> only working sign-in methods today. See [SECURITY.md](SECURITY.md) for detail.
+
 ### Google OAuth
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
@@ -285,13 +294,16 @@ chmod +x *.sh
 ### Backend Deployment
 
 1. Set `APP_ENV=production` in `backend/.env`
-2. Use a production WSGI server:
+2. Run the backend with uvicorn directly, without `--reload` — this project does not use
+   gunicorn or a WSGI worker manager anywhere:
    ```bash
-   pip install gunicorn
-   gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
+   cd backend
+   source venv/bin/activate
+   uvicorn app.main:app --host 0.0.0.0 --port 8000
    ```
-
-3. Set up reverse proxy (nginx or Apache)
+   The `install-service.sh` script (or the systemd section below) wraps this same command
+   in a managed service instead of running it in a terminal.
+3. Set up reverse proxy (nginx, Apache, or Caddy — see [PRODUCTION-DEPLOYMENT.md](PRODUCTION-DEPLOYMENT.md))
 4. Enable HTTPS with SSL certificates (Let's Encrypt)
 5. Configure firewall rules
 
@@ -315,28 +327,18 @@ The `dist` folder contains production-ready static files.
 
 ### systemd Service (Linux)
 
-Create `/etc/systemd/system/ectlogger-backend.service`:
+Run `./install-service.sh` from the repo root — it detects the current user and install
+path and writes `/etc/systemd/system/ectlogger.service` for you, running the backend (and,
+unless `SKIP_VITE=true`, the frontend dev server) through `start.sh --service`:
 
-```ini
-[Unit]
-Description=ECTLogger Backend
-After=network.target
-
-[Service]
-Type=notify
-User=your-user
-WorkingDirectory=/path/to/ectlogger/backend
-Environment="PATH=/path/to/ectlogger/backend/venv/bin"
-ExecStart=/path/to/ectlogger/backend/venv/bin/gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
-
-[Install]
-WantedBy=multi-user.target
+```bash
+./install-service.sh
 ```
 
 Enable and start:
 ```bash
-sudo systemctl enable ectlogger-backend
-sudo systemctl start ectlogger-backend
+sudo systemctl enable ectlogger
+sudo systemctl start ectlogger
 ```
 
 Serve with:
@@ -360,7 +362,8 @@ Update these settings:
 ### Email Not Sending
 
 - Verify SMTP credentials
-- For Gmail, ensure "Less secure app access" is enabled or use App Password
+- For Gmail, use an App Password — Google removed the "less secure app access" toggle for
+  personal accounts, so an App Password is the only way to authenticate
 - Check firewall settings for SMTP port
 
 ### Database Connection Errors

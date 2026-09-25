@@ -4,7 +4,7 @@ summary: TLS, a reverse proxy, a service unit, backups, and the operational chec
 kind: How-to
 audience: Server operators
 owner: KC1JMH
-revised: 2026-09-19
+revised: 2026-09-25
 review_by: 2027-09-19
 applies_to: ECTLogger, self-hosted
 permalink: /docs/PRODUCTION-DEPLOYMENT/
@@ -24,7 +24,11 @@ This guide covers deploying ECTLogger to production with SSL/HTTPS using a rever
 | **Storage** | 2 GB | 10 GB+ |
 | **CPU** | 1 core | 2+ cores |
 
-> ⚠️ **1GB RAM servers are NOT recommended.** ECTLogger with Caddy, the Python backend, and Node.js frontend requires ~1.5GB RAM at runtime. Servers with <2GB RAM will experience severe performance issues, timeouts, and may become unresponsive.
+> ⚠️ **1GB RAM servers are NOT recommended.** Caddy and the Python backend together need
+> headroom at runtime, and the frontend build (Node.js, only while building — the built
+> `frontend/dist/` is static files Caddy serves with no Node process running in production)
+> is the step most likely to fail outright on a small server. Servers with <2GB RAM will
+> experience severe performance issues, timeouts, and may become unresponsive.
 
 ### Low-Memory Systems (<2GB RAM)
 
@@ -191,7 +195,7 @@ sudo systemctl reload caddy
 **Start ECTLogger backend:**
 ```bash
 sudo systemctl start ectlogger
-# Or manually: cd ~/ectlogger && ./run --service
+# Or manually: cd ~/ectlogger && ./start.sh --service
 ```
 
 ### 8. Access Your Application
@@ -531,8 +535,8 @@ sudo certbot renew --dry-run
 ### Backup Database
 
 ```bash
-# SQLite
-cp ~/ectlogger/ectlogger.db ~/backups/ectlogger-$(date +%Y%m%d).db
+# SQLite (the default DATABASE_URL is relative to backend/, where the app runs)
+cp ~/ectlogger/backend/ectlogger.db ~/backups/ectlogger-$(date +%Y%m%d).db
 
 # PostgreSQL
 pg_dump -U ectlogger ectlogger > ~/backups/ectlogger-$(date +%Y%m%d).sql
@@ -554,11 +558,11 @@ For complete outages (bad deploy, database failure), use `run.sh` over SSH to se
 
 ```bash
 # Enable maintenance mode (Caddy serves maintenance.html directly)
-cd ~/ectlogger && ./run --maintenance on
-cd ~/ectlogger && ./run --maintenance on --message "Deploying update" --eta "5 minutes"
+cd ~/ectlogger && ./run.sh --maintenance on
+cd ~/ectlogger && ./run.sh --maintenance on --message "Deploying update" --eta "5 minutes"
 
 # Disable maintenance mode (Caddy resumes proxying to backend)
-cd ~/ectlogger && ./run --maintenance off
+cd ~/ectlogger && ./run.sh --maintenance off
 ```
 
 **Required Caddyfile snippet** (add before the `handle` block):
@@ -646,7 +650,7 @@ Already configured in SQLAlchemy settings. For high traffic, consider:
 
 - Check logs: `sudo journalctl -u ectlogger -f`
 - Review SECURITY.md for security best practices
-- See TROUBLESHOOTING-EMAIL.md for email issues
+- See EMAIL-DELIVERABILITY.md for email issues
 - Check QUICKSTART.md for basic setup
 
 For production support, ensure you have:
