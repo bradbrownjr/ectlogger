@@ -477,8 +477,9 @@ const CreateSchedule: React.FC = () => {
             </TabPanel>
 
             {/* ========== NAVIGATION BUTTONS ========== */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3, pt: 2, borderTop: 1, borderColor: 'divider' }}>
-              <Box sx={{ display: 'flex', gap: 2 }}>
+            {/* Wraps on narrow screens so Save never gets pushed off the edge; ml: 'auto' keeps it right-aligned when it drops to its own line */}
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'space-between', mt: 3, pt: 2, borderTop: 1, borderColor: 'divider' }}>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
                 <Button type="button" variant="outlined" onClick={() => navigate('/scheduler')} startIcon={<CloseIcon />}>
                   Cancel
                 </Button>
@@ -499,6 +500,7 @@ const CreateSchedule: React.FC = () => {
                 color="primary"
                 disabled={isTransitioning || !name || selectedFrequencyIds.length === 0}
                 startIcon={<SaveIcon />}
+                sx={{ ml: 'auto' }}
               >
                 {isEdit ? 'Save Changes' : (scheduleType === 'ad_hoc' || scheduleType === 'one_time' ? 'Create Net' : 'Create Schedule')}
               </Button>

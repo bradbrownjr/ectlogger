@@ -569,8 +569,9 @@ const CreateNet: React.FC = () => {
           </TabPanel>
 
           {/* ========== ACTION BUTTONS ========== */}
-          <Box sx={{ mt: 4, pt: 2, borderTop: 1, borderColor: 'divider', display: 'flex', gap: 2, justifyContent: 'space-between' }}>
-            <Box sx={{ display: 'flex', gap: 2 }}>
+          {/* Wraps on narrow screens so the submit buttons never get pushed off the edge; ml: 'auto' keeps them right-aligned when they drop to their own line */}
+          <Box sx={{ mt: 4, pt: 2, borderTop: 1, borderColor: 'divider', display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
               <Button
                 variant="outlined"
                 onClick={() => navigate(isEditMode || isInfoMode ? `/nets/${netId}` : '/dashboard')}
@@ -607,7 +608,7 @@ const CreateNet: React.FC = () => {
               )}
             </Box>
             {!isInfoMode && (
-              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'flex-end', ml: 'auto' }}>
                 {/* Save for this Net: persists changes to the current net only.
                     The schedule (template) is left alone so per-session edits
                     don't accidentally rewrite the schedule's defaults. */}

@@ -4,7 +4,7 @@ summary: Every user-facing change, newest first, in the format the in-app What's
 kind: Reference
 audience: Everyone
 owner: KC1JMH
-revised: 2026-09-23
+revised: 2026-09-24
 review_by: 2027-09-22
 applies_to: ECTLogger, hosted and self-hosted
 permalink: /docs/CHANGELOG/
@@ -13,6 +13,14 @@ permalink: /docs/CHANGELOG/
 # Changelog
 
 All notable changes to ECTLogger are documented here.
+
+---
+
+# September 24, 2026
+
+## Bug Fixes
+
+* **Mobile: Form buttons fit on small screens** — The Cancel, Previous, Next, and Save buttons at the bottom of the net and schedule forms now wrap onto a second line on a phone instead of running off the edge, so Save is always reachable.
 
 ---
 
